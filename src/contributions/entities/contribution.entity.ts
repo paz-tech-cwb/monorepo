@@ -1,14 +1,9 @@
-import { Section } from "src/sections/entities/section.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity('contributions')
 export class Contribution {
 	@PrimaryGeneratedColumn()
 	id: number;
-
-	@OneToOne(() => Section, s => s.contribution)
-	@JoinColumn()
-	section: Section;
 
 	@Column()
 	bank_name: string;

@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AnnouncementsModule } from './announcements/announcements.module';
 import { ContributionsModule } from './contributions/contributions.module';
@@ -29,6 +28,6 @@ import { Event } from './events/entities/event.entity';
 	EventsModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  //providers: [AppService],
 })
 export class AppModule {}
