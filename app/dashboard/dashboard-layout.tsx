@@ -20,18 +20,19 @@ import {
   LogOut,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
 const sidebarItems = [
   { name: "Início", href: "/dashboard", icon: Home },
-  { name: "Usuários", href: "/dashboard/users", icon: Users },
-  { name: "Membros", href: "/dashboard/members", icon: UserCheck },
-  { name: "Enviar notificação", href: "/dashboard/notifications", icon: Bell },
-  { name: "Gerenciar eventos", href: "/dashboard/events", icon: Calendar },
-  { name: "Dados da igreja", href: "/dashboard/church-data", icon: Building2 },
-  { name: "Gerenciar calendário", href: "/dashboard/calendar", icon: CalendarDays },
-  { name: "Life groups", href: "/dashboard/life-groups", icon: Users2 },
-  { name: "Cursos", href: "/dashboard/courses", icon: BookOpen },
-  { name: "Trilhos de cursos", href: "/dashboard/course-tracks", icon: Route },
+  { name: "Usuários", href: "/users", icon: Users },
+  { name: "Membros", href: "/members", icon: UserCheck },
+  { name: "Enviar notificação", href: "/notifications", icon: Bell },
+  { name: "Gerenciar eventos", href: "/events", icon: Calendar },
+  { name: "Dados da igreja", href: "/church-data", icon: Building2 },
+  { name: "Gerenciar calendário", href: "/calendar", icon: CalendarDays },
+  { name: "Life groups", href: "/life-groups", icon: Users2 },
+  { name: "Cursos", href: "/courses", icon: BookOpen },
+  { name: "Trilhos de cursos", href: "/course-tracks", icon: Route },
 ]
 
 interface DashboardLayoutProps {
@@ -39,12 +40,14 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+  const router = useRouter()
   const [currentPath, setCurrentPath] = useState("/dashboard")
 
   const handleNavigation = (href: string) => {
     setCurrentPath(href)
     // In a real app, you would use Next.js router here
     console.log(`Navigating to: ${href}`)
+    router.push(href)
   }
 
   const handleLogout = () => {

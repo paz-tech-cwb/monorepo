@@ -1,5 +1,7 @@
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { DashboardHome } from "@/components/dashboard-home"
+"use client"
+
+import { DashboardLayout } from "@/app/dashboard/dashboard-layout"
+import { DashboardHome } from "@/app/dashboard/dashboard-home"
 
 export default function DashboardPage() {
   // In a real app, you would check authentication here

@@ -2,6 +2,7 @@
 
 import type React from "react"
 
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,14 +12,14 @@ import { Separator } from "@/components/ui/separator"
 import { Chrome, Apple } from "lucide-react"
 
 export function LoginForm() {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSocialLogin = async (provider: "google" | "apple") => {
     setIsLoading(true)
     // Simulate authentication process
     setTimeout(() => {
-      // Redirect to dashboard after successful login
-      window.location.href = "/dashboard"
+      router.push("/dashboard")
     }, 1500)
   }
 
@@ -27,7 +28,7 @@ export function LoginForm() {
     setIsLoading(true)
     // Simulate authentication process
     setTimeout(() => {
-      window.location.href = "/dashboard"
+      router.push("/dashboard")
     }, 1500)
   }
 
