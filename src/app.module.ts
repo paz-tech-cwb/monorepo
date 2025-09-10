@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AnnouncementsModule } from './announcements/announcements.module';
 import { ContributionsModule } from './contributions/contributions.module';
@@ -11,23 +10,22 @@ import { Event } from './events/entities/event.entity';
 
 @Module({
   imports: [
-	TypeOrmModule.forRoot({
-		type: 'postgres',
-		host: '172.28.226.169', // or 'localhost' in dev env
-		port: 5432,
-		username: 'postgres',
-		password: 'postgres',
-		database: 'postgres',
-		entities: [Announcement, Contribution, Event],
-		migrations: ['dist/migrations/*.js'],
-		synchronize: false, // 🚫 do not use in prod
-	}),
-	HomeModule,
-	AnnouncementsModule,
-	ContributionsModule,
-	EventsModule
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: '172.28.226.169', // or 'localhost' in dev env
+      port: 5432,
+      username: 'postgres',
+      password: 'postgres',
+      database: 'postgres',
+      entities: [Announcement, Contribution, Event],
+      migrations: ['dist/migrations/*.js'],
+      synchronize: false, // 🚫 do not use in prod
+    }),
+    HomeModule,
+    AnnouncementsModule,
+    ContributionsModule,
+    EventsModule,
   ],
-  controllers: [AppController],
   //providers: [AppService],
 })
 export class AppModule {}

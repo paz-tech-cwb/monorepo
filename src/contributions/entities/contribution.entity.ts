@@ -1,25 +1,33 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('contributions')
 export class Contribution {
-	@PrimaryGeneratedColumn()
-	id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-	@Column()
-	bank_name: string;
+  @Column({ name: 'bank_name' })
+  bankName: string;
 
-	@Column()
-	branch_name: string;
+  @Column({ name: 'branch_number' })
+  branchNumber: string;
 
-	@Column()
-	account_number: string;
+  @Column({ name: 'account_number' })
+  accountNumber: string;
 
-	@Column()
-	pix_key: string;
+  @Column({ name: 'pix_key' })
+  pixKey: string;
 
-	@CreateDateColumn()
-	created_at: Date;
+  @CreateDateColumn({ name: 'created_at', default: () => "CURRENT_TIMESTAMP" })
+  createdAt: Date;
 
-	@UpdateDateColumn()
-	updated_at: Date;
+  @UpdateDateColumn({ name: 'updated_at', default: () => "CURRENT_TIMESTAMP" })
+  updatedAt: Date;
 }

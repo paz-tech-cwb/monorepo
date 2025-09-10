@@ -1,22 +1,30 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryColumn, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryColumn,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('events')
 export class Event {
-	@PrimaryGeneratedColumn()
-	id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-	@Column()
-	title: string;
+  @Column()
+  title: string;
 
-	@Column({ type: 'timestamp' })
-	date: Date;
+  @Column({ type: 'timestamp' })
+  date: Date;
 
-	@Column()
-	image_url: string;
+  @Column({ name: 'image_url' })
+  imageUrl: string;
 
-	@CreateDateColumn()
-	created_at: Date;
+  @CreateDateColumn({ name: 'created_at', default: () => "CURRENT_TIMESTAMP" })
+  createdAt: Date;
 
-	@UpdateDateColumn()
-	updated_at: Date;
+  @UpdateDateColumn({ name: 'updated_at', default: () => "CURRENT_TIMESTAMP" })
+  updatedAt: Date;
 }
