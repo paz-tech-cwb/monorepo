@@ -25,9 +25,9 @@ export class Contribution {
   @Column({ name: 'pix_key' })
   pixKey: string;
 
-  @CreateDateColumn({ name: 'created_at', default: () => "CURRENT_TIMESTAMP" })
+  @CreateDateColumn({ name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at', default: () => "CURRENT_TIMESTAMP" })
+  @UpdateDateColumn({ name: 'updated_at', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 }
