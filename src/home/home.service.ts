@@ -1,26 +1,38 @@
 import { Injectable } from '@nestjs/common';
 import { CreateHomeDto } from './dto/create-home.dto';
 import { UpdateHomeDto } from './dto/update-home.dto';
+import { AnnouncementsService } from 'src/announcements/announcements.service';
+import { Announcement } from 'src/announcements/entities/announcement.entity';
 
 @Injectable()
 export class HomeService {
-  create(createHomeDto: CreateHomeDto) {
-    return 'This action adds a new home';
-  }
+  constructor(private readonly announcementsService: AnnouncementsService) {}
 
-  findAll() {
-    return `This action returns all home`;
-  }
+  async getHomeContent() {
+    const announcementsList: Announcement[] =
+      await this.announcementsService.findAll();
 
-  findOne(id: number) {
-    return `This action returns a #${id} home`;
-  }
+    announcementsList.forEach((element) => console.log(element.id));
 
-  update(id: number, updateHomeDto: UpdateHomeDto) {
-    return `This action updates a #${id} home`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} home`;
+    const sectionsReturn = {
+      sections: [
+        {
+          type: 'announcements',
+          items: announcementsList,
+		  order: 1
+        },
+        {
+          type: 'contribution',
+          items: '',
+		  order: 2
+        },
+        {
+          type: 'agenda',
+          items: '',
+		  order: 3
+        },
+      ],
+    };
+    return sectionsReturn;
   }
 }

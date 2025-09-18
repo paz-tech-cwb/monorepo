@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
 import { EntityManager } from 'typeorm';
@@ -40,7 +44,7 @@ export class AnnouncementsService {
 
   /**
    * This action returns all announcements.
-   * @returns 
+   * @returns
    */
   async findAll(): Promise<Announcement[]> {
     try {
@@ -53,15 +57,43 @@ export class AnnouncementsService {
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} announcement`;
+  async findOne(id: number): Promise<Announcement> {
+    try {
+      const announcement = await this.entityManager.findOne(Announcement, {
+        where: { id },
+      });
+
+      if (!announcement) {
+        throw new NotFoundException(`Announcement with ID ${id} not found`);
+      }
+
+      return announcement;
+    } catch (error) {
+      throw new NotFoundException(`Announcement with ID ${id} not found`);
+    }
   }
 
-  update(id: number, updateAnnouncementDto: UpdateAnnouncementDto) {
-    return `This action updates a #${id} announcement`;
+  async update(
+    id: number,
+    updateAnnouncementDto: UpdateAnnouncementDto,
+  ): Promise<Announcement> {
+    try {
+      const announcement = await this.findOne(id);
+
+      // merge new values
+      Object.assign(announcement, updateAnnouncementDto);
+
+      // save changes
+      return await this.entityManager.save(Announcement, announcement);
+    } catch (error) {
+      throw new NotFoundException(
+        `It was not possible to update the Announcement.`,
+      );
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} announcement`;
+  async remove(id: number): Promise<void> {
+    const announcement = await this.findOne(id);
+    await this.entityManager.remove(Announcement, announcement);
   }
 }

@@ -10,36 +10,16 @@ import {
 import { HomeService } from './home.service';
 import { CreateHomeDto } from './dto/create-home.dto';
 import { UpdateHomeDto } from './dto/update-home.dto';
+import { Announcement } from 'src/announcements/entities/announcement.entity';
 
 @Controller('home')
 export class HomeController {
   constructor(private readonly homeService: HomeService) {}
 
-  @Post()
-  create(@Body() createHomeDto: CreateHomeDto) {
-    return this.homeService.create(createHomeDto);
-  }
-
   @Get()
-  findAll() {
-    return this.homeService.findAll();
-  }
+  async homeData() {
+    const sections = await this.homeService.getHomeContent();
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.homeService.findOne(+id);
+    return sections;
   }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateHomeDto: UpdateHomeDto) {
-    return this.homeService.update(+id, updateHomeDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.homeService.remove(+id);
-  }
-
-  @Get()
-  async getHome() {}
 }
