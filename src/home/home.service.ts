@@ -3,33 +3,41 @@ import { CreateHomeDto } from './dto/create-home.dto';
 import { UpdateHomeDto } from './dto/update-home.dto';
 import { AnnouncementsService } from 'src/announcements/announcements.service';
 import { Announcement } from 'src/announcements/entities/announcement.entity';
+import { Contribution } from 'src/contributions/entities/contribution.entity';
+import { ContributionsService } from 'src/contributions/contributions.service';
 
 @Injectable()
 export class HomeService {
-  constructor(private readonly announcementsService: AnnouncementsService) {}
+  constructor(
+    private readonly announcementsService: AnnouncementsService,
+    private readonly contributionsService: ContributionsService,
+  ) {}
 
   async getHomeContent() {
     const announcementsList: Announcement[] =
       await this.announcementsService.findAll();
 
-    announcementsList.forEach((element) => console.log(element.id));
+    const contributionsList: Contribution[] =
+      await this.contributionsService.findAll();
+
+    // announcementsList.forEach((element) => console.log(element.id));
 
     const sectionsReturn = {
       sections: [
         {
           type: 'announcements',
           items: announcementsList,
-		  order: 1
+          order: 1,
         },
         {
           type: 'contribution',
-          items: '',
-		  order: 2
+          items: contributionsList,
+          order: 2,
         },
         {
           type: 'agenda',
           items: '',
-		  order: 3
+          order: 3,
         },
       ],
     };
