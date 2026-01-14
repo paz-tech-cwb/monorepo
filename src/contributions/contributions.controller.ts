@@ -10,23 +10,24 @@ import {
 import { ContributionsService } from './contributions.service';
 import { CreateContributionDto } from './dto/create-contribution.dto';
 import { UpdateContributionDto } from './dto/update-contribution.dto';
+import { Contribution } from './entities/contribution.entity';
 
 @Controller('contributions')
 export class ContributionsController {
   constructor(private readonly contributionsService: ContributionsService) {}
 
   @Post()
-  create(@Body() createContributionDto: CreateContributionDto) {
+  create(@Body() createContributionDto: CreateContributionDto): Promise<void> {
     return this.contributionsService.create(createContributionDto);
   }
 
   @Get()
-  findAll() {
+  findAll(): Promise<Contribution[]> {
     return this.contributionsService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string): Promise<Contribution> {
     return this.contributionsService.findOne(+id);
   }
 
@@ -34,7 +35,7 @@ export class ContributionsController {
   update(
     @Param('id') id: string,
     @Body() updateContributionDto: UpdateContributionDto,
-  ) {
+  ): Promise<Contribution> {
     return this.contributionsService.update(+id, updateContributionDto);
   }
 
