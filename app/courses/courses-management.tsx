@@ -18,69 +18,53 @@ import {
 } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Search, Plus, MoreHorizontal, Edit, Trash2, BookOpen, Users, Clock, Award } from "lucide-react"
+import { Search, Plus, MoreHorizontal, Edit, Trash2, BookOpen, Clock, Link as LinkIcon, Image } from "lucide-react"
 
 interface Course {
   id: string
   title: string
   description: string
-  instructor: string
-  duration: string
-  level: "iniciante" | "intermediario" | "avancado"
+  creator: string
+  estimatedHours: number
   category: "teologia" | "lideranca" | "ministerio" | "discipulado"
-  enrolled: number
-  maxStudents: number
-  startDate: string
-  endDate: string
-  status: "upcoming" | "ongoing" | "completed"
-  price: number
+  url?: string
+  imageUrl?: string
+  status: "draft" | "published" | "archived"
 }
 
 const mockCourses: Course[] = [
   {
     id: "1",
-    title: "Fundamentos da Fé Cristã",
-    description: "Curso básico sobre os fundamentos da fé cristã",
-    instructor: "Pastor João Silva",
-    duration: "8 semanas",
-    level: "iniciante",
+    title: "Fundamentos da Fe Crista",
+    description: "Curso basico sobre os fundamentos da fe crista",
+    creator: "Pastor Joao Silva",
+    estimatedHours: 16,
     category: "teologia",
-    enrolled: 25,
-    maxStudents: 30,
-    startDate: "2024-02-01",
-    endDate: "2024-03-28",
-    status: "upcoming",
-    price: 0,
+    url: "https://academia.igrejadapaz.com.br/fundamentos",
+    imageUrl: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=800",
+    status: "published",
   },
   {
     id: "2",
-    title: "Liderança Cristã",
-    description: "Desenvolvimento de líderes para a igreja",
-    instructor: "Pastora Maria Santos",
-    duration: "12 semanas",
-    level: "intermediario",
+    title: "Lideranca Crista",
+    description: "Desenvolvimento de lideres para a igreja",
+    creator: "Pastora Maria Santos",
+    estimatedHours: 24,
     category: "lideranca",
-    enrolled: 15,
-    maxStudents: 20,
-    startDate: "2024-01-15",
-    endDate: "2024-04-08",
-    status: "ongoing",
-    price: 50,
+    url: "https://academia.igrejadapaz.com.br/lideranca",
+    imageUrl: "https://images.unsplash.com/photo-1519834785169-98be25ec3f84?w=800",
+    status: "published",
   },
   {
     id: "3",
-    title: "Ministério de Louvor",
-    description: "Treinamento para músicos e cantores",
-    instructor: "Carlos Mendes",
-    duration: "6 semanas",
-    level: "iniciante",
+    title: "Ministerio de Louvor",
+    description: "Treinamento para musicos e cantores",
+    creator: "Carlos Mendes",
+    estimatedHours: 12,
     category: "ministerio",
-    enrolled: 12,
-    maxStudents: 15,
-    startDate: "2023-11-01",
-    endDate: "2023-12-15",
-    status: "completed",
-    price: 30,
+    url: "https://academia.igrejadapaz.com.br/louvor",
+    imageUrl: "https://images.unsplash.com/photo-1507692049790-de58290a4334?w=800",
+    status: "draft",
   },
 ]
 
@@ -92,20 +76,17 @@ export function CoursesManagement() {
   const [newCourse, setNewCourse] = useState({
     title: "",
     description: "",
-    instructor: "",
-    duration: "",
-    level: "iniciante" as const,
+    creator: "",
+    estimatedHours: 0,
     category: "teologia" as const,
-    maxStudents: 20,
-    startDate: "",
-    endDate: "",
-    price: 0,
+    url: "",
+    imageUrl: "",
   })
 
   const filteredCourses = courses.filter(
     (course) =>
       course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.instructor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.creator.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.category.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
@@ -113,21 +94,17 @@ export function CoursesManagement() {
     const course: Course = {
       id: Date.now().toString(),
       ...newCourse,
-      enrolled: 0,
-      status: "upcoming",
+      status: "draft",
     }
     setCourses([...courses, course])
     setNewCourse({
       title: "",
       description: "",
-      instructor: "",
-      duration: "",
-      level: "iniciante",
+      creator: "",
+      estimatedHours: 0,
       category: "teologia",
-      maxStudents: 20,
-      startDate: "",
-      endDate: "",
-      price: 0,
+      url: "",
+      imageUrl: "",
     })
     setIsAddDialogOpen(false)
   }
@@ -137,14 +114,11 @@ export function CoursesManagement() {
     setNewCourse({
       title: course.title,
       description: course.description,
-      instructor: course.instructor,
-      duration: course.duration,
-      level: course.level,
+      creator: course.creator,
+      estimatedHours: course.estimatedHours,
       category: course.category,
-      maxStudents: course.maxStudents,
-      startDate: course.startDate,
-      endDate: course.endDate,
-      price: course.price,
+      url: course.url || "",
+      imageUrl: course.imageUrl || "",
     })
   }
 
@@ -156,14 +130,11 @@ export function CoursesManagement() {
     setNewCourse({
       title: "",
       description: "",
-      instructor: "",
-      duration: "",
-      level: "iniciante",
+      creator: "",
+      estimatedHours: 0,
       category: "teologia",
-      maxStudents: 20,
-      startDate: "",
-      endDate: "",
-      price: 0,
+      url: "",
+      imageUrl: "",
     })
   }
 
@@ -171,22 +142,11 @@ export function CoursesManagement() {
     setCourses(courses.filter((course) => course.id !== courseId))
   }
 
-  const getLevelBadge = (level: string) => {
-    const variants = {
-      iniciante: { variant: "secondary" as const, text: "Iniciante" },
-      intermediario: { variant: "default" as const, text: "Intermediário" },
-      avancado: { variant: "destructive" as const, text: "Avançado" },
-    }
-
-    const config = variants[level as keyof typeof variants]
-    return <Badge variant={config.variant}>{config.text}</Badge>
-  }
-
   const getCategoryBadge = (category: string) => {
     const variants = {
       teologia: { variant: "default" as const, text: "Teologia" },
-      lideranca: { variant: "secondary" as const, text: "Liderança" },
-      ministerio: { variant: "outline" as const, text: "Ministério" },
+      lideranca: { variant: "secondary" as const, text: "Lideranca" },
+      ministerio: { variant: "outline" as const, text: "Ministerio" },
       discipulado: { variant: "destructive" as const, text: "Discipulado" },
     }
 
@@ -196,18 +156,92 @@ export function CoursesManagement() {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      upcoming: { variant: "secondary" as const, text: "Próximo" },
-      ongoing: { variant: "default" as const, text: "Em andamento" },
-      completed: { variant: "outline" as const, text: "Concluído" },
+      draft: { variant: "secondary" as const, text: "Rascunho" },
+      published: { variant: "default" as const, text: "Publicado" },
+      archived: { variant: "outline" as const, text: "Arquivado" },
     }
 
     const config = variants[status as keyof typeof variants]
     return <Badge variant={config.variant}>{config.text}</Badge>
   }
 
-  const totalStudents = courses.reduce((sum, course) => sum + course.enrolled, 0)
-  const totalCapacity = courses.reduce((sum, course) => sum + course.maxStudents, 0)
-  const ongoingCourses = courses.filter((course) => course.status === "ongoing").length
+  const totalHours = courses.reduce((sum, course) => sum + course.estimatedHours, 0)
+  const publishedCourses = courses.filter((course) => course.status === "published").length
+
+  const CourseForm = ({ isEdit = false }: { isEdit?: boolean }) => (
+    <div className="grid grid-cols-2 gap-4">
+      <div className="col-span-2">
+        <Label htmlFor={isEdit ? "edit-title" : "title"}>Titulo do Curso</Label>
+        <Input
+          id={isEdit ? "edit-title" : "title"}
+          value={newCourse.title}
+          onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
+          placeholder="Nome do curso"
+        />
+      </div>
+      <div className="col-span-2">
+        <Label htmlFor={isEdit ? "edit-description" : "description"}>Descricao</Label>
+        <Textarea
+          id={isEdit ? "edit-description" : "description"}
+          value={newCourse.description}
+          onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
+          placeholder="Descricao do curso"
+          rows={3}
+        />
+      </div>
+      <div>
+        <Label htmlFor={isEdit ? "edit-creator" : "creator"}>Criador</Label>
+        <Input
+          id={isEdit ? "edit-creator" : "creator"}
+          value={newCourse.creator}
+          onChange={(e) => setNewCourse({ ...newCourse, creator: e.target.value })}
+          placeholder="Nome do criador"
+        />
+      </div>
+      <div>
+        <Label htmlFor={isEdit ? "edit-estimatedHours" : "estimatedHours"}>Horas Estimadas</Label>
+        <Input
+          id={isEdit ? "edit-estimatedHours" : "estimatedHours"}
+          type="number"
+          value={newCourse.estimatedHours}
+          onChange={(e) => setNewCourse({ ...newCourse, estimatedHours: Number.parseInt(e.target.value) || 0 })}
+          placeholder="16"
+        />
+      </div>
+      <div>
+        <Label htmlFor={isEdit ? "edit-category" : "category"}>Categoria</Label>
+        <select
+          id={isEdit ? "edit-category" : "category"}
+          value={newCourse.category}
+          onChange={(e) => setNewCourse({ ...newCourse, category: e.target.value as Course["category"] })}
+          className="w-full p-2 border border-input rounded-md bg-background"
+        >
+          <option value="teologia">Teologia</option>
+          <option value="lideranca">Lideranca</option>
+          <option value="ministerio">Ministerio</option>
+          <option value="discipulado">Discipulado</option>
+        </select>
+      </div>
+      <div>
+        <Label htmlFor={isEdit ? "edit-url" : "url"}>URL do Curso</Label>
+        <Input
+          id={isEdit ? "edit-url" : "url"}
+          value={newCourse.url}
+          onChange={(e) => setNewCourse({ ...newCourse, url: e.target.value })}
+          placeholder="https://exemplo.com/curso"
+        />
+      </div>
+      <div className="col-span-2">
+        <Label htmlFor={isEdit ? "edit-imageUrl" : "imageUrl"}>URL da Imagem (Capa)</Label>
+        <Input
+          id={isEdit ? "edit-imageUrl" : "imageUrl"}
+          value={newCourse.imageUrl}
+          onChange={(e) => setNewCourse({ ...newCourse, imageUrl: e.target.value })}
+          placeholder="https://exemplo.com/imagem.jpg"
+        />
+      </div>
+    </div>
+  )
 
   return (
     <div className="space-y-6">
@@ -224,42 +258,40 @@ export function CoursesManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{courses.length}</div>
-            <p className="text-xs text-muted-foreground">{ongoingCourses} em andamento</p>
+            <p className="text-xs text-muted-foreground">{publishedCourses} publicados</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Alunos</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalStudents}</div>
-            <p className="text-xs text-muted-foreground">de {totalCapacity} vagas</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Ocupação</CardTitle>
-            <Award className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{Math.round((totalStudents / totalCapacity) * 100)}%</div>
-            <p className="text-xs text-muted-foreground">Vagas preenchidas</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
+            <CardTitle className="text-sm font-medium">Total de Horas</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              R$ {courses.reduce((sum, course) => sum + course.enrolled * course.price, 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">Arrecadado</p>
+            <div className="text-2xl font-bold">{totalHours}h</div>
+            <p className="text-xs text-muted-foreground">Conteudo total</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Com URL</CardTitle>
+            <LinkIcon className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{courses.filter((c) => c.url).length}</div>
+            <p className="text-xs text-muted-foreground">Cursos com link</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Com Imagem</CardTitle>
+            <Image className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{courses.filter((c) => c.imageUrl).length}</div>
+            <p className="text-xs text-muted-foreground">Cursos com capa</p>
           </CardContent>
         </Card>
       </div>
@@ -283,112 +315,7 @@ export function CoursesManagement() {
                   <DialogTitle>Criar Novo Curso</DialogTitle>
                   <DialogDescription>Preencha os dados do novo curso</DialogDescription>
                 </DialogHeader>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <Label htmlFor="title">Título do Curso</Label>
-                    <Input
-                      id="title"
-                      value={newCourse.title}
-                      onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
-                      placeholder="Nome do curso"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="description">Descrição</Label>
-                    <Textarea
-                      id="description"
-                      value={newCourse.description}
-                      onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
-                      placeholder="Descrição do curso"
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="instructor">Instrutor</Label>
-                    <Input
-                      id="instructor"
-                      value={newCourse.instructor}
-                      onChange={(e) => setNewCourse({ ...newCourse, instructor: e.target.value })}
-                      placeholder="Nome do instrutor"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="duration">Duração</Label>
-                    <Input
-                      id="duration"
-                      value={newCourse.duration}
-                      onChange={(e) => setNewCourse({ ...newCourse, duration: e.target.value })}
-                      placeholder="8 semanas"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="level">Nível</Label>
-                    <select
-                      id="level"
-                      value={newCourse.level}
-                      onChange={(e) => setNewCourse({ ...newCourse, level: e.target.value as any })}
-                      className="w-full p-2 border border-input rounded-md bg-background"
-                    >
-                      <option value="iniciante">Iniciante</option>
-                      <option value="intermediario">Intermediário</option>
-                      <option value="avancado">Avançado</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="category">Categoria</Label>
-                    <select
-                      id="category"
-                      value={newCourse.category}
-                      onChange={(e) => setNewCourse({ ...newCourse, category: e.target.value as any })}
-                      className="w-full p-2 border border-input rounded-md bg-background"
-                    >
-                      <option value="teologia">Teologia</option>
-                      <option value="lideranca">Liderança</option>
-                      <option value="ministerio">Ministério</option>
-                      <option value="discipulado">Discipulado</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="maxStudents">Máximo de Alunos</Label>
-                    <Input
-                      id="maxStudents"
-                      type="number"
-                      value={newCourse.maxStudents}
-                      onChange={(e) =>
-                        setNewCourse({ ...newCourse, maxStudents: Number.parseInt(e.target.value) || 20 })
-                      }
-                      placeholder="20"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="price">Preço (R$)</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      value={newCourse.price}
-                      onChange={(e) => setNewCourse({ ...newCourse, price: Number.parseFloat(e.target.value) || 0 })}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="startDate">Data de Início</Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={newCourse.startDate}
-                      onChange={(e) => setNewCourse({ ...newCourse, startDate: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="endDate">Data de Término</Label>
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={newCourse.endDate}
-                      onChange={(e) => setNewCourse({ ...newCourse, endDate: e.target.value })}
-                    />
-                  </div>
-                </div>
+                <CourseForm />
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                     Cancelar
@@ -414,42 +341,35 @@ export function CoursesManagement() {
             <TableHeader>
               <TableRow>
                 <TableHead>Curso</TableHead>
-                <TableHead>Instrutor</TableHead>
+                <TableHead>Criador</TableHead>
                 <TableHead>Categoria</TableHead>
-                <TableHead>Nível</TableHead>
-                <TableHead>Alunos</TableHead>
+                <TableHead>Horas</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Preço</TableHead>
-                <TableHead className="w-[70px]">Ações</TableHead>
+                <TableHead className="w-[70px]">Acoes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCourses.map((course) => (
                 <TableRow key={course.id}>
                   <TableCell>
-                    <div>
-                      <p className="font-medium">{course.title}</p>
-                      <p className="text-sm text-muted-foreground">{course.duration}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{course.instructor}</TableCell>
-                  <TableCell>{getCategoryBadge(course.category)}</TableCell>
-                  <TableCell>{getLevelBadge(course.level)}</TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="text-sm font-medium">
-                        {course.enrolled}/{course.maxStudents}
-                      </p>
-                      <div className="w-full bg-muted rounded-full h-1.5 mt-1">
-                        <div
-                          className="bg-primary h-1.5 rounded-full"
-                          style={{ width: `${(course.enrolled / course.maxStudents) * 100}%` }}
-                        ></div>
+                    <div className="flex items-center gap-3">
+                      {course.imageUrl && (
+                        <img
+                          src={course.imageUrl}
+                          alt={course.title}
+                          className="h-10 w-10 rounded object-cover"
+                        />
+                      )}
+                      <div>
+                        <p className="font-medium">{course.title}</p>
+                        <p className="text-sm text-muted-foreground truncate max-w-xs">{course.description}</p>
                       </div>
                     </div>
                   </TableCell>
+                  <TableCell>{course.creator}</TableCell>
+                  <TableCell>{getCategoryBadge(course.category)}</TableCell>
+                  <TableCell>{course.estimatedHours}h</TableCell>
                   <TableCell>{getStatusBadge(course.status)}</TableCell>
-                  <TableCell>R$ {course.price}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -483,110 +403,7 @@ export function CoursesManagement() {
             <DialogTitle>Editar Curso</DialogTitle>
             <DialogDescription>Atualize os dados do curso</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <Label htmlFor="edit-title">Título do Curso</Label>
-              <Input
-                id="edit-title"
-                value={newCourse.title}
-                onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
-                placeholder="Nome do curso"
-              />
-            </div>
-            <div className="col-span-2">
-              <Label htmlFor="edit-description">Descrição</Label>
-              <Textarea
-                id="edit-description"
-                value={newCourse.description}
-                onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
-                placeholder="Descrição do curso"
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-instructor">Instrutor</Label>
-              <Input
-                id="edit-instructor"
-                value={newCourse.instructor}
-                onChange={(e) => setNewCourse({ ...newCourse, instructor: e.target.value })}
-                placeholder="Nome do instrutor"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-duration">Duração</Label>
-              <Input
-                id="edit-duration"
-                value={newCourse.duration}
-                onChange={(e) => setNewCourse({ ...newCourse, duration: e.target.value })}
-                placeholder="8 semanas"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-level">Nível</Label>
-              <select
-                id="edit-level"
-                value={newCourse.level}
-                onChange={(e) => setNewCourse({ ...newCourse, level: e.target.value as any })}
-                className="w-full p-2 border border-input rounded-md bg-background"
-              >
-                <option value="iniciante">Iniciante</option>
-                <option value="intermediario">Intermediário</option>
-                <option value="avancado">Avançado</option>
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="edit-category">Categoria</Label>
-              <select
-                id="edit-category"
-                value={newCourse.category}
-                onChange={(e) => setNewCourse({ ...newCourse, category: e.target.value as any })}
-                className="w-full p-2 border border-input rounded-md bg-background"
-              >
-                <option value="teologia">Teologia</option>
-                <option value="lideranca">Liderança</option>
-                <option value="ministerio">Ministério</option>
-                <option value="discipulado">Discipulado</option>
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="edit-maxStudents">Máximo de Alunos</Label>
-              <Input
-                id="edit-maxStudents"
-                type="number"
-                value={newCourse.maxStudents}
-                onChange={(e) => setNewCourse({ ...newCourse, maxStudents: Number.parseInt(e.target.value) || 20 })}
-                placeholder="20"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-price">Preço (R$)</Label>
-              <Input
-                id="edit-price"
-                type="number"
-                value={newCourse.price}
-                onChange={(e) => setNewCourse({ ...newCourse, price: Number.parseFloat(e.target.value) || 0 })}
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-startDate">Data de Início</Label>
-              <Input
-                id="edit-startDate"
-                type="date"
-                value={newCourse.startDate}
-                onChange={(e) => setNewCourse({ ...newCourse, startDate: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-endDate">Data de Término</Label>
-              <Input
-                id="edit-endDate"
-                type="date"
-                value={newCourse.endDate}
-                onChange={(e) => setNewCourse({ ...newCourse, endDate: e.target.value })}
-              />
-            </div>
-          </div>
+          <CourseForm isEdit />
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingCourse(null)}>
               Cancelar

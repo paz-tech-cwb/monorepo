@@ -1,10 +1,5 @@
-import { DashboardLayout } from "@/app/dashboard/dashboard-layout"
-import { CalendarManagement } from "@/app/calendar/calendar-management"
+import { redirect } from "next/navigation"
 
 export default function CalendarPage() {
-  return (
-    <DashboardLayout>
-      <CalendarManagement />
-    </DashboardLayout>
-  )
+  redirect("/events")
 }

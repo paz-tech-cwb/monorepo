@@ -2,7 +2,6 @@
 
 import type React from "react"
 
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import {
@@ -10,7 +9,6 @@ import {
   Users,
   UserCheck,
   Bell,
-  Calendar,
   Building2,
   CalendarDays,
   Users2,
@@ -18,21 +16,48 @@ import {
   Route,
   Menu,
   LogOut,
+  Megaphone,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
+import { useAuth } from "@/lib/hooks/use-auth"
 
-const sidebarItems = [
-  { name: "Início", href: "/dashboard", icon: Home },
-  { name: "Usuários", href: "/users", icon: Users },
-  { name: "Membros", href: "/members", icon: UserCheck },
-  { name: "Enviar notificação", href: "/notifications", icon: Bell },
-  { name: "Gerenciar eventos", href: "/events", icon: Calendar },
-  { name: "Dados da igreja", href: "/church-data", icon: Building2 },
-  { name: "Gerenciar calendário", href: "/calendar", icon: CalendarDays },
-  { name: "Life groups", href: "/life-groups", icon: Users2 },
-  { name: "Cursos", href: "/courses", icon: BookOpen },
-  { name: "Trilhos de cursos", href: "/course-tracks", icon: Route },
+const sidebarSections = [
+  {
+    title: "Principal",
+    items: [
+      { name: "Inicio", href: "/dashboard", icon: Home },
+      { name: "Usuarios", href: "/users", icon: Users },
+      { name: "Membros", href: "/members", icon: UserCheck },
+      { name: "Life groups", href: "/life-groups", icon: Users2 },
+    ],
+  },
+  {
+    title: "Comunicacao",
+    items: [
+      { name: "Notificacoes", href: "/notifications", icon: Bell },
+      { name: "Avisos", href: "/announcements", icon: Megaphone },
+    ],
+  },
+  {
+    title: "Eventos",
+    items: [
+      { name: "Calendario", href: "/events", icon: CalendarDays },
+    ],
+  },
+  {
+    title: "Estudo",
+    items: [
+      { name: "Trilhos", href: "/course-tracks", icon: Route },
+      { name: "Cursos", href: "/courses", icon: BookOpen }
+    ],
+  },
+  {
+    title: "Configuracoes",
+    items: [
+      { name: "Dados da igreja", href: "/church-data", icon: Building2 },
+    ],
+  },
 ]
 
 interface DashboardLayoutProps {
@@ -41,18 +66,16 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter()
-  const [currentPath, setCurrentPath] = useState("/dashboard")
+  const pathname = usePathname()
+  const { logout } = useAuth()
 
   const handleNavigation = (href: string) => {
-    setCurrentPath(href)
-    // In a real app, you would use Next.js router here
-    console.log(`Navigating to: ${href}`)
     router.push(href)
   }
 
-  const handleLogout = () => {
-    // In a real app, you would handle logout logic here
-    window.location.href = "/"
+  const handleLogout = async () => {
+    await logout()
+    router.push("/")
   }
 
   const SidebarContent = () => (
@@ -61,33 +84,42 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <h2 className="text-lg font-semibold text-sidebar-foreground">Painel Admin</h2>
       </div>
       <div className="flex-1 overflow-auto py-4">
-        <nav className="space-y-1 px-2">
-          {sidebarItems.map((item) => {
-            const Icon = item.icon
-            const isActive = currentPath === item.href
-            return (
-              <button
-                key={item.name}
-                onClick={() => handleNavigation(item.href)}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {item.name}
-              </button>
-            )
-          })}
+        <nav className="space-y-6 px-2">
+          {sidebarSections.map((section) => (
+            <div key={section.title}>
+              <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/60">
+                {section.title}
+              </h3>
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  const Icon = item.icon
+                  const isActive = pathname === item.href
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={() => handleNavigation(item.href)}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                        isActive
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                          : "text-sidebar-foreground hover:bg-sidebar-primary/60 hover:text-white/100",
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {item.name}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
       </div>
       <div className="border-t border-sidebar-border p-4">
         <Button
           variant="ghost"
           onClick={handleLogout}
-          className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-primary/80 hover:text-white/80"
         >
           <LogOut className="mr-2 h-4 w-4" />
           Sair

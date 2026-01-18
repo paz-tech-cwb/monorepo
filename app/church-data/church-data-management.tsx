@@ -8,7 +8,25 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Building2, MapPin, Clock, CreditCard, Phone, Globe, Save } from "lucide-react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Building2, MapPin, Clock, CreditCard, Phone, Globe, Save, Plus, MoreHorizontal, Edit, Trash2, Search, DollarSign } from "lucide-react"
+import {
+  useContributions,
+  useCreateContribution,
+  useUpdateContribution,
+  useDeleteContribution,
+} from "@/lib/hooks/use-contributions"
+import type { Contribution, CreateContributionRequest, UpdateContributionRequest } from "@/lib/api/types"
 
 interface ChurchData {
   name: string
@@ -25,12 +43,6 @@ interface ChurchData {
     email: string
     website: string
   }
-  bankDetails: {
-    bankName: string
-    accountNumber: string
-    routingNumber: string
-    accountHolder: string
-  }
   schedule: {
     sunday: { morning: string; evening: string }
     wednesday: { evening: string }
@@ -46,11 +58,11 @@ interface ChurchData {
 }
 
 const initialChurchData: ChurchData = {
-  name: "Igreja Evangélica Esperança",
-  description: "Uma igreja comprometida com o amor de Deus e o serviço à comunidade",
+  name: "Igreja Evangelica Esperanca",
+  description: "Uma igreja comprometida com o amor de Deus e o servico a comunidade",
   address: {
-    street: "Rua da Esperança, 123",
-    city: "São Paulo",
+    street: "Rua da Esperanca, 123",
+    city: "Sao Paulo",
     state: "SP",
     zipCode: "01234-567",
     country: "Brasil",
@@ -59,12 +71,6 @@ const initialChurchData: ChurchData = {
     phone: "(11) 3456-7890",
     email: "contato@igrejaesperanca.com.br",
     website: "www.igrejaesperanca.com.br",
-  },
-  bankDetails: {
-    bankName: "Banco do Brasil",
-    accountNumber: "12345-6",
-    routingNumber: "001",
-    accountHolder: "Igreja Evangélica Esperança",
   },
   schedule: {
     sunday: { morning: "10:00", evening: "19:00" },
@@ -85,6 +91,68 @@ export function ChurchDataManagement() {
   const [isLoading, setIsLoading] = useState(false)
   const [lastSaved, setLastSaved] = useState<string>("2024-01-15 14:30")
 
+  // Contributions state and hooks
+  const { data: contributions = [], isLoading: isLoadingContributions, error: contributionsError } = useContributions()
+  const createMutation = useCreateContribution()
+  const updateMutation = useUpdateContribution()
+  const deleteMutation = useDeleteContribution()
+
+  const [searchTerm, setSearchTerm] = useState("")
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [editingContribution, setEditingContribution] = useState<Contribution | null>(null)
+  const [contributionFormData, setContributionFormData] = useState<CreateContributionRequest>({
+    bankName: "",
+    branchNumber: "",
+    accountNumber: "",
+    pixKey: "",
+  })
+
+  const filteredContributions = contributions.filter(
+    (contribution) =>
+      contribution.bankName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contribution.pixKey.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  const resetContributionForm = () => {
+    setContributionFormData({
+      bankName: "",
+      branchNumber: "",
+      accountNumber: "",
+      pixKey: "",
+    })
+  }
+
+  const handleAddContribution = async () => {
+    await createMutation.mutateAsync(contributionFormData)
+    resetContributionForm()
+    setIsAddDialogOpen(false)
+  }
+
+  const handleEditContribution = (contribution: Contribution) => {
+    setEditingContribution(contribution)
+    setContributionFormData({
+      bankName: contribution.bankName,
+      branchNumber: contribution.branchNumber,
+      accountNumber: contribution.accountNumber,
+      pixKey: contribution.pixKey,
+    })
+  }
+
+  const handleUpdateContribution = async () => {
+    if (!editingContribution) return
+
+    await updateMutation.mutateAsync({
+      id: editingContribution.id,
+      data: contributionFormData as UpdateContributionRequest,
+    })
+    setEditingContribution(null)
+    resetContributionForm()
+  }
+
+  const handleDeleteContribution = async (id: number) => {
+    await deleteMutation.mutateAsync(id)
+  }
+
   const handleSave = async () => {
     setIsLoading(true)
     // Simulate saving data
@@ -95,25 +163,45 @@ export function ChurchDataManagement() {
     }, 1500)
   }
 
-  const updateChurchData = (section: keyof ChurchData, field: string, value: string) => {
+  const updateNestedData = (section: keyof ChurchData, subsection: string, field: string, value: string) => {
     setChurchData((prev) => ({
       ...prev,
       [section]: {
-        ...prev[section],
+        ...(prev[section] as Record<string, unknown>),
+        [subsection]: {
+          ...((prev[section] as Record<string, unknown>)[subsection] as Record<string, unknown>),
+          [field]: value,
+        },
+      },
+    }))
+  }
+
+  const updateAddressField = (field: string, value: string) => {
+    setChurchData((prev) => ({
+      ...prev,
+      address: {
+        ...prev.address,
         [field]: value,
       },
     }))
   }
 
-  const updateNestedData = (section: keyof ChurchData, subsection: string, field: string, value: string) => {
+  const updateContactField = (field: string, value: string) => {
     setChurchData((prev) => ({
       ...prev,
-      [section]: {
-        ...prev[section],
-        [subsection]: {
-          ...(prev[section] as any)[subsection],
-          [field]: value,
-        },
+      contact: {
+        ...prev.contact,
+        [field]: value,
+      },
+    }))
+  }
+
+  const updateSocialMediaField = (field: string, value: string) => {
+    setChurchData((prev) => ({
+      ...prev,
+      socialMedia: {
+        ...prev.socialMedia,
+        [field]: value,
       },
     }))
   }
@@ -123,15 +211,15 @@ export function ChurchDataManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Dados da Igreja</h1>
-          <p className="text-muted-foreground">Gerencie as informações da igreja</p>
+          <p className="text-muted-foreground">Gerencie as informacoes da igreja</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-sm text-muted-foreground">
-            Última atualização: <Badge variant="outline">{lastSaved}</Badge>
+            Ultima atualizacao: <Badge variant="outline">{lastSaved}</Badge>
           </div>
           <Button onClick={handleSave} disabled={isLoading}>
             <Save className="mr-2 h-4 w-4" />
-            {isLoading ? "Salvando..." : "Salvar Alterações"}
+            {isLoading ? "Salvando..." : "Salvar Alteracoes"}
           </Button>
         </div>
       </div>
@@ -140,8 +228,8 @@ export function ChurchDataManagement() {
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="contact">Contato</TabsTrigger>
-          <TabsTrigger value="banking">Bancário</TabsTrigger>
-          <TabsTrigger value="schedule">Horários</TabsTrigger>
+          <TabsTrigger value="banking">Bancario</TabsTrigger>
+          <TabsTrigger value="schedule">Horarios</TabsTrigger>
           <TabsTrigger value="social">Redes Sociais</TabsTrigger>
         </TabsList>
 
@@ -151,9 +239,9 @@ export function ChurchDataManagement() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5" />
-                  Informações Gerais
+                  Informacoes Gerais
                 </CardTitle>
-                <CardDescription>Dados básicos da igreja</CardDescription>
+                <CardDescription>Dados basicos da igreja</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -166,12 +254,12 @@ export function ChurchDataManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="description">Descrição</Label>
+                  <Label htmlFor="description">Descricao</Label>
                   <Textarea
                     id="description"
                     value={churchData.description}
                     onChange={(e) => setChurchData({ ...churchData, description: e.target.value })}
-                    placeholder="Descrição da igreja"
+                    placeholder="Descricao da igreja"
                     rows={4}
                   />
                 </div>
@@ -182,18 +270,18 @@ export function ChurchDataManagement() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
-                  Endereço
+                  Endereco
                 </CardTitle>
-                <CardDescription>Localização da igreja</CardDescription>
+                <CardDescription>Localizacao da igreja</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="street">Endereço</Label>
+                  <Label htmlFor="street">Endereco</Label>
                   <Input
                     id="street"
                     value={churchData.address.street}
-                    onChange={(e) => updateNestedData("address", "street", "street", e.target.value)}
-                    placeholder="Rua, número"
+                    onChange={(e) => updateAddressField("street", e.target.value)}
+                    placeholder="Rua, numero"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -202,7 +290,7 @@ export function ChurchDataManagement() {
                     <Input
                       id="city"
                       value={churchData.address.city}
-                      onChange={(e) => updateNestedData("address", "city", "city", e.target.value)}
+                      onChange={(e) => updateAddressField("city", e.target.value)}
                       placeholder="Cidade"
                     />
                   </div>
@@ -211,7 +299,7 @@ export function ChurchDataManagement() {
                     <Input
                       id="state"
                       value={churchData.address.state}
-                      onChange={(e) => updateNestedData("address", "state", "state", e.target.value)}
+                      onChange={(e) => updateAddressField("state", e.target.value)}
                       placeholder="Estado"
                     />
                   </div>
@@ -222,17 +310,17 @@ export function ChurchDataManagement() {
                     <Input
                       id="zipCode"
                       value={churchData.address.zipCode}
-                      onChange={(e) => updateNestedData("address", "zipCode", "zipCode", e.target.value)}
+                      onChange={(e) => updateAddressField("zipCode", e.target.value)}
                       placeholder="00000-000"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="country">País</Label>
+                    <Label htmlFor="country">Pais</Label>
                     <Input
                       id="country"
                       value={churchData.address.country}
-                      onChange={(e) => updateNestedData("address", "country", "country", e.target.value)}
-                      placeholder="País"
+                      onChange={(e) => updateAddressField("country", e.target.value)}
+                      placeholder="Pais"
                     />
                   </div>
                 </div>
@@ -246,7 +334,7 @@ export function ChurchDataManagement() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Phone className="h-5 w-5" />
-                Informações de Contato
+                Informacoes de Contato
               </CardTitle>
               <CardDescription>Dados para contato com a igreja</CardDescription>
             </CardHeader>
@@ -257,7 +345,7 @@ export function ChurchDataManagement() {
                   <Input
                     id="phone"
                     value={churchData.contact.phone}
-                    onChange={(e) => updateNestedData("contact", "phone", "phone", e.target.value)}
+                    onChange={(e) => updateContactField("phone", e.target.value)}
                     placeholder="(11) 3456-7890"
                   />
                 </div>
@@ -267,7 +355,7 @@ export function ChurchDataManagement() {
                     id="email"
                     type="email"
                     value={churchData.contact.email}
-                    onChange={(e) => updateNestedData("contact", "email", "email", e.target.value)}
+                    onChange={(e) => updateContactField("email", e.target.value)}
                     placeholder="contato@igreja.com"
                   />
                 </div>
@@ -276,7 +364,7 @@ export function ChurchDataManagement() {
                   <Input
                     id="website"
                     value={churchData.contact.website}
-                    onChange={(e) => updateNestedData("contact", "website", "website", e.target.value)}
+                    onChange={(e) => updateContactField("website", e.target.value)}
                     placeholder="www.igreja.com"
                   />
                 </div>
@@ -286,55 +374,245 @@ export function ChurchDataManagement() {
         </TabsContent>
 
         <TabsContent value="banking" className="space-y-4">
+          {/* Contribution Stats */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total de Contas</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{contributions.length}</div>
+                <p className="text-xs text-muted-foreground">Contas cadastradas</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Bancos</CardTitle>
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {new Set(contributions.map((c) => c.bankName)).size}
+                </div>
+                <p className="text-xs text-muted-foreground">Bancos diferentes</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Com PIX</CardTitle>
+                <CreditCard className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {contributions.filter((c) => c.pixKey).length}
+                </div>
+                <p className="text-xs text-muted-foreground">Contas com chave PIX</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Contributions Table */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Dados Bancários
-              </CardTitle>
-              <CardDescription>Informações para doações e transferências</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Contas Bancarias
+                  </CardTitle>
+                  <CardDescription>Informacoes para doacoes e transferencias</CardDescription>
+                </div>
+                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Adicionar Conta
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Adicionar Nova Conta</DialogTitle>
+                      <DialogDescription>Preencha os dados da conta bancaria</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4">
+                      <div>
+                        <Label htmlFor="bankName">Nome do Banco</Label>
+                        <Input
+                          id="bankName"
+                          value={contributionFormData.bankName}
+                          onChange={(e) => setContributionFormData({ ...contributionFormData, bankName: e.target.value })}
+                          placeholder="Ex: Banco do Brasil"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="branchNumber">Agencia</Label>
+                          <Input
+                            id="branchNumber"
+                            value={contributionFormData.branchNumber}
+                            onChange={(e) => setContributionFormData({ ...contributionFormData, branchNumber: e.target.value })}
+                            placeholder="0001"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="accountNumber">Conta</Label>
+                          <Input
+                            id="accountNumber"
+                            value={contributionFormData.accountNumber}
+                            onChange={(e) => setContributionFormData({ ...contributionFormData, accountNumber: e.target.value })}
+                            placeholder="12345-6"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="pixKey">Chave PIX</Label>
+                        <Input
+                          id="pixKey"
+                          value={contributionFormData.pixKey}
+                          onChange={(e) => setContributionFormData({ ...contributionFormData, pixKey: e.target.value })}
+                          placeholder="email@exemplo.com ou CPF/CNPJ"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button onClick={handleAddContribution} disabled={createMutation.isPending}>
+                        {createMutation.isPending ? "Adicionando..." : "Adicionar Conta"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
+            <CardContent>
+              {isLoadingContributions ? (
+                <p className="text-muted-foreground">Carregando contas...</p>
+              ) : contributionsError ? (
+                <p className="text-destructive">Erro ao carregar contas. Tente novamente mais tarde.</p>
+              ) : (
+                <>
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar contas..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="max-w-sm"
+                    />
+                  </div>
+
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Banco</TableHead>
+                        <TableHead>Agencia</TableHead>
+                        <TableHead>Conta</TableHead>
+                        <TableHead>Chave PIX</TableHead>
+                        <TableHead className="w-[70px]">Acoes</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredContributions.map((contribution) => (
+                        <TableRow key={contribution.id}>
+                          <TableCell className="font-medium">{contribution.bankName}</TableCell>
+                          <TableCell>{contribution.branchNumber}</TableCell>
+                          <TableCell>{contribution.accountNumber}</TableCell>
+                          <TableCell>
+                            <span className="truncate max-w-xs block">{contribution.pixKey}</span>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEditContribution(contribution)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteContribution(contribution.id)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Edit Contribution Dialog */}
+          <Dialog open={!!editingContribution} onOpenChange={() => setEditingContribution(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Editar Conta</DialogTitle>
+                <DialogDescription>Atualize os dados da conta bancaria</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4">
                 <div>
-                  <Label htmlFor="bankName">Nome do Banco</Label>
+                  <Label htmlFor="edit-bankName">Nome do Banco</Label>
                   <Input
-                    id="bankName"
-                    value={churchData.bankDetails.bankName}
-                    onChange={(e) => updateNestedData("bankDetails", "bankName", "bankName", e.target.value)}
-                    placeholder="Nome do banco"
+                    id="edit-bankName"
+                    value={contributionFormData.bankName}
+                    onChange={(e) => setContributionFormData({ ...contributionFormData, bankName: e.target.value })}
+                    placeholder="Ex: Banco do Brasil"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="accountHolder">Titular da Conta</Label>
-                  <Input
-                    id="accountHolder"
-                    value={churchData.bankDetails.accountHolder}
-                    onChange={(e) => updateNestedData("bankDetails", "accountHolder", "accountHolder", e.target.value)}
-                    placeholder="Nome do titular"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-branchNumber">Agencia</Label>
+                    <Input
+                      id="edit-branchNumber"
+                      value={contributionFormData.branchNumber}
+                      onChange={(e) => setContributionFormData({ ...contributionFormData, branchNumber: e.target.value })}
+                      placeholder="0001"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-accountNumber">Conta</Label>
+                    <Input
+                      id="edit-accountNumber"
+                      value={contributionFormData.accountNumber}
+                      onChange={(e) => setContributionFormData({ ...contributionFormData, accountNumber: e.target.value })}
+                      placeholder="12345-6"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <Label htmlFor="accountNumber">Número da Conta</Label>
+                  <Label htmlFor="edit-pixKey">Chave PIX</Label>
                   <Input
-                    id="accountNumber"
-                    value={churchData.bankDetails.accountNumber}
-                    onChange={(e) => updateNestedData("bankDetails", "accountNumber", "accountNumber", e.target.value)}
-                    placeholder="12345-6"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="routingNumber">Código do Banco</Label>
-                  <Input
-                    id="routingNumber"
-                    value={churchData.bankDetails.routingNumber}
-                    onChange={(e) => updateNestedData("bankDetails", "routingNumber", "routingNumber", e.target.value)}
-                    placeholder="001"
+                    id="edit-pixKey"
+                    value={contributionFormData.pixKey}
+                    onChange={(e) => setContributionFormData({ ...contributionFormData, pixKey: e.target.value })}
+                    placeholder="email@exemplo.com ou CPF/CNPJ"
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEditingContribution(null)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleUpdateContribution} disabled={updateMutation.isPending}>
+                  {updateMutation.isPending ? "Salvando..." : "Salvar"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="schedule" className="space-y-4">
@@ -342,9 +620,9 @@ export function ChurchDataManagement() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
-                Horários de Funcionamento
+                Horarios de Funcionamento
               </CardTitle>
-              <CardDescription>Horários dos cultos e atividades</CardDescription>
+              <CardDescription>Horarios dos cultos e atividades</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -355,7 +633,7 @@ export function ChurchDataManagement() {
                       type="time"
                       value={churchData.schedule.sunday.morning}
                       onChange={(e) => updateNestedData("schedule", "sunday", "morning", e.target.value)}
-                      placeholder="Manhã"
+                      placeholder="Manha"
                     />
                     <Input
                       type="time"
@@ -386,7 +664,7 @@ export function ChurchDataManagement() {
                   />
                 </div>
                 <div>
-                  <Label>Sábado</Label>
+                  <Label>Sabado</Label>
                   <Input
                     type="time"
                     value={churchData.schedule.saturday.evening}
@@ -416,7 +694,7 @@ export function ChurchDataManagement() {
                   <Input
                     id="facebook"
                     value={churchData.socialMedia.facebook}
-                    onChange={(e) => updateNestedData("socialMedia", "facebook", "facebook", e.target.value)}
+                    onChange={(e) => updateSocialMediaField("facebook", e.target.value)}
                     placeholder="facebook.com/igreja"
                   />
                 </div>
@@ -425,7 +703,7 @@ export function ChurchDataManagement() {
                   <Input
                     id="instagram"
                     value={churchData.socialMedia.instagram}
-                    onChange={(e) => updateNestedData("socialMedia", "instagram", "instagram", e.target.value)}
+                    onChange={(e) => updateSocialMediaField("instagram", e.target.value)}
                     placeholder="@igreja"
                   />
                 </div>
@@ -434,7 +712,7 @@ export function ChurchDataManagement() {
                   <Input
                     id="youtube"
                     value={churchData.socialMedia.youtube}
-                    onChange={(e) => updateNestedData("socialMedia", "youtube", "youtube", e.target.value)}
+                    onChange={(e) => updateSocialMediaField("youtube", e.target.value)}
                     placeholder="youtube.com/igreja"
                   />
                 </div>
@@ -443,7 +721,7 @@ export function ChurchDataManagement() {
                   <Input
                     id="twitter"
                     value={churchData.socialMedia.twitter}
-                    onChange={(e) => updateNestedData("socialMedia", "twitter", "twitter", e.target.value)}
+                    onChange={(e) => updateSocialMediaField("twitter", e.target.value)}
                     placeholder="@igreja"
                   />
                 </div>

@@ -18,362 +18,526 @@ import {
 } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Search, Plus, MoreHorizontal, Edit, Trash2, Calendar, MapPin, Users } from "lucide-react"
-
-interface Event {
-  id: string
-  title: string
-  description: string
-  date: string
-  time: string
-  location: string
-  capacity: number
-  registered: number
-  status: "upcoming" | "ongoing" | "completed" | "cancelled"
-  category: string
-}
-
-const mockEvents: Event[] = [
-  {
-    id: "1",
-    title: "Culto Dominical",
-    description: "Culto de adoração e palavra",
-    date: "2024-01-21",
-    time: "10:00",
-    location: "Templo Principal",
-    capacity: 500,
-    registered: 342,
-    status: "upcoming",
-    category: "Culto",
-  },
-  {
-    id: "2",
-    title: "Reunião de Oração",
-    description: "Momento de oração e intercessão",
-    date: "2024-01-17",
-    time: "19:30",
-    location: "Sala de Oração",
-    capacity: 100,
-    registered: 67,
-    status: "upcoming",
-    category: "Oração",
-  },
-  {
-    id: "3",
-    title: "Retiro de Jovens",
-    description: "Retiro espiritual para jovens",
-    date: "2024-02-15",
-    time: "08:00",
-    location: "Chácara Esperança",
-    capacity: 80,
-    registered: 45,
-    status: "upcoming",
-    category: "Retiro",
-  },
-  {
-    id: "4",
-    title: "Conferência de Mulheres",
-    description: "Conferência especial para mulheres",
-    date: "2024-01-10",
-    time: "14:00",
-    location: "Auditório",
-    capacity: 200,
-    registered: 156,
-    status: "completed",
-    category: "Conferência",
-  },
-]
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Search, Plus, MoreHorizontal, Edit, Trash2, Calendar, MapPin, Loader2, ChevronLeft, ChevronRight, List, CalendarDays, Clock } from "lucide-react"
+import {
+  useAgenda,
+  useCreateAgendaEvent,
+  useUpdateAgendaEvent,
+  useDeleteAgendaEvent,
+} from "@/lib/hooks/use-agenda"
+import type { AgendaEvent, CreateAgendaEventRequest, UpdateAgendaEventRequest } from "@/lib/api/types"
+import { format } from "date-fns"
 
 export function EventsManagement() {
-  const [events, setEvents] = useState<Event[]>(mockEvents)
+  const { data: events = [], isLoading, error } = useAgenda()
+  const createMutation = useCreateAgendaEvent()
+  const updateMutation = useUpdateAgendaEvent()
+  const deleteMutation = useDeleteAgendaEvent()
+
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [editingEvent, setEditingEvent] = useState<Event | null>(null)
-  const [newEvent, setNewEvent] = useState({
+  const [editingEvent, setEditingEvent] = useState<AgendaEvent | null>(null)
+  const [formData, setFormData] = useState<CreateAgendaEventRequest>({
     title: "",
     description: "",
-    date: "",
-    time: "",
-    location: "",
-    capacity: 0,
-    category: "",
+    initialDate: "",
+    finalDate: "",
+    recurrenceType: undefined,
+    image: "",
   })
+
+  // Calendar state
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
   const filteredEvents = events.filter(
     (event) =>
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.location.toLowerCase().includes(searchTerm.toLowerCase()),
+      (event.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
   )
 
-  const handleAddEvent = () => {
-    const event: Event = {
-      id: Date.now().toString(),
-      ...newEvent,
-      registered: 0,
-      status: "upcoming",
-    }
-    setEvents([...events, event])
-    setNewEvent({ title: "", description: "", date: "", time: "", location: "", capacity: 0, category: "" })
-    setIsAddDialogOpen(false)
-  }
-
-  const handleEditEvent = (event: Event) => {
-    setEditingEvent(event)
-    setNewEvent({
-      title: event.title,
-      description: event.description,
-      date: event.date,
-      time: event.time,
-      location: event.location,
-      capacity: event.capacity,
-      category: event.category,
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      description: "",
+      initialDate: "",
+      finalDate: "",
+      recurrenceType: undefined,
+      image: "",
     })
   }
 
-  const handleUpdateEvent = () => {
+  const handleAddEvent = async () => {
+    await createMutation.mutateAsync(formData)
+    resetForm()
+    setIsAddDialogOpen(false)
+  }
+
+  const handleEditEvent = (event: AgendaEvent) => {
+    setEditingEvent(event)
+    setFormData({
+      title: event.title,
+      description: event.description || "",
+      initialDate: event.initialDate,
+      finalDate: event.finalDate || "",
+      recurrenceType: event.recurrenceType,
+      image: event.image || "",
+    })
+  }
+
+  const handleUpdateEvent = async () => {
     if (!editingEvent) return
 
-    setEvents(events.map((event) => (event.id === editingEvent.id ? { ...event, ...newEvent } : event)))
+    await updateMutation.mutateAsync({
+      id: editingEvent.id,
+      data: formData as UpdateAgendaEventRequest,
+    })
     setEditingEvent(null)
-    setNewEvent({ title: "", description: "", date: "", time: "", location: "", capacity: 0, category: "" })
+    resetForm()
   }
 
-  const handleDeleteEvent = (eventId: string) => {
-    setEvents(events.filter((event) => event.id !== eventId))
+  const handleDeleteEvent = async (eventId: number) => {
+    await deleteMutation.mutateAsync(eventId)
   }
 
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      upcoming: { variant: "default" as const, text: "Próximo" },
-      ongoing: { variant: "secondary" as const, text: "Em andamento" },
-      completed: { variant: "outline" as const, text: "Concluído" },
-      cancelled: { variant: "destructive" as const, text: "Cancelado" },
+  const getRecurrenceBadge = (recurrenceType?: string) => {
+    if (!recurrenceType) return null
+    const labels = {
+      weekly: "Semanal",
+      monthly: "Mensal",
+    }
+    return <Badge variant="outline">{labels[recurrenceType as keyof typeof labels]}</Badge>
+  }
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "dd/MM/yyyy HH:mm")
+    } catch {
+      return dateString
+    }
+  }
+
+  // Calendar functions
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+  }
+
+  const getFirstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay()
+  }
+
+  const formatCalendarDate = (year: number, month: number, day: number) => {
+    return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+  }
+
+  const getEventsForDate = (dateString: string) => {
+    return events.filter((event) => {
+      const eventDate = event.initialDate.split("T")[0]
+      return eventDate === dateString
+    })
+  }
+
+  const navigateMonth = (direction: "prev" | "next") => {
+    setCurrentDate((prev) => {
+      const newDate = new Date(prev)
+      if (direction === "prev") {
+        newDate.setMonth(prev.getMonth() - 1)
+      } else {
+        newDate.setMonth(prev.getMonth() + 1)
+      }
+      return newDate
+    })
+  }
+
+  const getTypeColor = (recurrenceType?: string) => {
+    if (!recurrenceType) return "#d97706"
+    const colors = {
+      weekly: "#15803d",
+      monthly: "#3b82f6",
+    }
+    return colors[recurrenceType as keyof typeof colors] || "#6b7280"
+  }
+
+  const renderCalendar = () => {
+    const daysInMonth = getDaysInMonth(currentDate)
+    const firstDay = getFirstDayOfMonth(currentDate)
+    const days = []
+
+    // Empty cells for days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="h-24 border border-border"></div>)
     }
 
-    const config = variants[status as keyof typeof variants]
-    return <Badge variant={config.variant}>{config.text}</Badge>
+    // Days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateString = formatCalendarDate(currentDate.getFullYear(), currentDate.getMonth(), day)
+      const dayEvents = getEventsForDate(dateString)
+      const isSelected = selectedDate === dateString
+
+      days.push(
+        <div
+          key={day}
+          className={`h-24 border border-border p-1 cursor-pointer hover:bg-muted/50 ${
+            isSelected ? "bg-primary/10 border-primary" : ""
+          }`}
+          onClick={() => setSelectedDate(dateString)}
+        >
+          <div className="text-sm font-medium mb-1">{day}</div>
+          <div className="space-y-1">
+            {dayEvents.slice(0, 2).map((event) => (
+              <div
+                key={event.id}
+                className="text-xs p-1 rounded text-white truncate"
+                style={{ backgroundColor: getTypeColor(event.recurrenceType) }}
+              >
+                {event.title}
+              </div>
+            ))}
+            {dayEvents.length > 2 && <div className="text-xs text-muted-foreground">+{dayEvents.length - 2} mais</div>}
+          </div>
+        </div>,
+      )
+    }
+
+    return days
   }
+
+  const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : []
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Gerenciar Eventos</h1>
+          <p className="text-muted-foreground">Carregando eventos...</p>
+        </div>
+        <div className="flex items-center justify-center py-10">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Gerenciar Eventos</h1>
+          <p className="text-destructive">Erro ao carregar eventos. Tente novamente mais tarde.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const EventForm = ({ isEdit = false }: { isEdit?: boolean }) => (
+    <div className="grid grid-cols-2 gap-4">
+      <div className="col-span-2">
+        <Label htmlFor={isEdit ? "edit-title" : "title"}>Titulo</Label>
+        <Input
+          id={isEdit ? "edit-title" : "title"}
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          placeholder="Nome do evento"
+        />
+      </div>
+      <div className="col-span-2">
+        <Label htmlFor={isEdit ? "edit-description" : "description"}>Descricao</Label>
+        <Textarea
+          id={isEdit ? "edit-description" : "description"}
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder="Descricao do evento"
+          rows={3}
+        />
+      </div>
+      <div>
+        <Label htmlFor={isEdit ? "edit-initialDate" : "initialDate"}>Data Inicial</Label>
+        <Input
+          id={isEdit ? "edit-initialDate" : "initialDate"}
+          type="datetime-local"
+          value={formData.initialDate}
+          onChange={(e) => setFormData({ ...formData, initialDate: e.target.value })}
+        />
+      </div>
+      <div>
+        <Label htmlFor={isEdit ? "edit-finalDate" : "finalDate"}>Data Final (opcional)</Label>
+        <Input
+          id={isEdit ? "edit-finalDate" : "finalDate"}
+          type="datetime-local"
+          value={formData.finalDate}
+          onChange={(e) => setFormData({ ...formData, finalDate: e.target.value })}
+        />
+      </div>
+      <div>
+        <Label htmlFor={isEdit ? "edit-recurrenceType" : "recurrenceType"}>Recorrencia</Label>
+        <select
+          id={isEdit ? "edit-recurrenceType" : "recurrenceType"}
+          value={formData.recurrenceType || ""}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              recurrenceType: e.target.value as "weekly" | "monthly" | undefined || undefined,
+            })
+          }
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          <option value="">Sem recorrencia</option>
+          <option value="weekly">Semanal</option>
+          <option value="monthly">Mensal</option>
+        </select>
+      </div>
+      <div>
+        <Label htmlFor={isEdit ? "edit-image" : "image"}>URL da Imagem (opcional)</Label>
+        <Input
+          id={isEdit ? "edit-image" : "image"}
+          value={formData.image}
+          onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+          placeholder="https://exemplo.com/imagem.jpg"
+        />
+      </div>
+    </div>
+  )
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Gerenciar Eventos</h1>
-        <p className="text-muted-foreground">Organize e gerencie os eventos da igreja</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Gerenciar Eventos</h1>
+          <p className="text-muted-foreground">Organize e gerencie os eventos da igreja</p>
+        </div>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Criar Evento
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Criar Novo Evento</DialogTitle>
+              <DialogDescription>Preencha os dados do evento</DialogDescription>
+            </DialogHeader>
+            <EventForm />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleAddEvent} disabled={createMutation.isPending}>
+                {createMutation.isPending ? "Criando..." : "Criar Evento"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Próximos Eventos</CardTitle>
+            <CardTitle className="text-sm font-medium">Total de Eventos</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{events.filter((e) => e.status === "upcoming").length}</div>
-            <p className="text-xs text-muted-foreground">Eventos agendados</p>
+            <div className="text-2xl font-bold">{events.length}</div>
+            <p className="text-xs text-muted-foreground">Eventos cadastrados</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Inscritos</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{events.reduce((sum, event) => sum + event.registered, 0)}</div>
-            <p className="text-xs text-muted-foreground">Pessoas inscritas</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Capacidade Total</CardTitle>
+            <CardTitle className="text-sm font-medium">Eventos Recorrentes</CardTitle>
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{events.reduce((sum, event) => sum + event.capacity, 0)}</div>
-            <p className="text-xs text-muted-foreground">Vagas disponíveis</p>
+            <div className="text-2xl font-bold">
+              {events.filter((e) => e.recurrenceType).length}
+            </div>
+            <p className="text-xs text-muted-foreground">Com recorrencia</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Lista de Eventos</CardTitle>
-              <CardDescription>{filteredEvents.length} evento(s) encontrado(s)</CardDescription>
-            </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Criar Evento
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Criar Novo Evento</DialogTitle>
-                  <DialogDescription>Preencha os dados do evento</DialogDescription>
-                </DialogHeader>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <Label htmlFor="title">Título</Label>
-                    <Input
-                      id="title"
-                      value={newEvent.title}
-                      onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                      placeholder="Nome do evento"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="description">Descrição</Label>
-                    <Textarea
-                      id="description"
-                      value={newEvent.description}
-                      onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                      placeholder="Descrição do evento"
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="date">Data</Label>
-                    <Input
-                      id="date"
-                      type="date"
-                      value={newEvent.date}
-                      onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="time">Horário</Label>
-                    <Input
-                      id="time"
-                      type="time"
-                      value={newEvent.time}
-                      onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="location">Local</Label>
-                    <Input
-                      id="location"
-                      value={newEvent.location}
-                      onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                      placeholder="Local do evento"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="capacity">Capacidade</Label>
-                    <Input
-                      id="capacity"
-                      type="number"
-                      value={newEvent.capacity}
-                      onChange={(e) => setNewEvent({ ...newEvent, capacity: Number.parseInt(e.target.value) || 0 })}
-                      placeholder="Número de vagas"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="category">Categoria</Label>
-                    <Input
-                      id="category"
-                      value={newEvent.category}
-                      onChange={(e) => setNewEvent({ ...newEvent, category: e.target.value })}
-                      placeholder="Categoria do evento"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleAddEvent}>Criar Evento</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-2 mb-4">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar eventos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
-          </div>
+      <Tabs defaultValue="calendar" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="calendar" className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4" />
+            Calendario
+          </TabsTrigger>
+          <TabsTrigger value="list" className="flex items-center gap-2">
+            <List className="h-4 w-4" />
+            Lista
+          </TabsTrigger>
+        </TabsList>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Evento</TableHead>
-                <TableHead>Data/Hora</TableHead>
-                <TableHead>Local</TableHead>
-                <TableHead>Inscritos</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead className="w-[70px]">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredEvents.map((event) => (
-                <TableRow key={event.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{event.title}</p>
-                      <p className="text-sm text-muted-foreground truncate max-w-xs">{event.description}</p>
+        <TabsContent value="calendar" className="space-y-4">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      {currentDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
+                    </CardTitle>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => navigateMonth("prev")}>
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => navigateMonth("next")}>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="text-sm">{event.date}</p>
-                      <p className="text-xs text-muted-foreground">{event.time}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{event.location}</TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="text-sm font-medium">
-                        {event.registered}/{event.capacity}
-                      </p>
-                      <div className="w-full bg-muted rounded-full h-1.5 mt-1">
-                        <div
-                          className="bg-primary h-1.5 rounded-full"
-                          style={{ width: `${(event.registered / event.capacity) * 100}%` }}
-                        ></div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-7 gap-0 mb-2">
+                    {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map((day) => (
+                      <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground">
+                        {day}
                       </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7 gap-0">{renderCalendar()}</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {selectedDate
+                      ? `Eventos - ${new Date(selectedDate + "T00:00:00").toLocaleDateString("pt-BR")}`
+                      : "Selecione uma data"}
+                  </CardTitle>
+                  <CardDescription>
+                    {selectedDate
+                      ? `${selectedDateEvents.length} evento(s) encontrado(s)`
+                      : "Clique em uma data para ver os eventos"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {selectedDateEvents.length > 0 ? (
+                    <div className="space-y-3">
+                      {selectedDateEvents.map((event) => (
+                        <div key={event.id} className="border border-border rounded-lg p-3">
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="font-medium">{event.title}</h4>
+                            {getRecurrenceBadge(event.recurrenceType)}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">{event.description}</p>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {format(new Date(event.initialDate), "HH:mm")}
+                            </div>
+                          </div>
+                          <div className="flex gap-2 mt-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEditEvent(event)}>
+                              <Edit className="h-3 w-3 mr-1" />
+                              Editar
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteEvent(event.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Excluir
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </TableCell>
-                  <TableCell>{getStatusBadge(event.status)}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{event.category}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEditEvent(event)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDeleteEvent(event.id)} className="text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                  ) : selectedDate ? (
+                    <p className="text-sm text-muted-foreground">Nenhum evento nesta data.</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Selecione uma data no calendario para ver os eventos.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="list" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Lista de Eventos</CardTitle>
+                  <CardDescription>{filteredEvents.length} evento(s) encontrado(s)</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center space-x-2 mb-4">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar eventos..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="max-w-sm"
+                />
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Evento</TableHead>
+                    <TableHead>Data Inicial</TableHead>
+                    <TableHead>Data Final</TableHead>
+                    <TableHead>Recorrencia</TableHead>
+                    <TableHead className="w-[70px]">Acoes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEvents.map((event) => (
+                    <TableRow key={event.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{event.title}</p>
+                          <p className="text-sm text-muted-foreground truncate max-w-xs">
+                            {event.description}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>{formatDate(event.initialDate)}</TableCell>
+                      <TableCell>
+                        {event.finalDate ? formatDate(event.finalDate) : "-"}
+                      </TableCell>
+                      <TableCell>{getRecurrenceBadge(event.recurrenceType) || "-"}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditEvent(event)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteEvent(event.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Edit Event Dialog */}
       <Dialog open={!!editingEvent} onOpenChange={() => setEditingEvent(null)}>
@@ -382,78 +546,14 @@ export function EventsManagement() {
             <DialogTitle>Editar Evento</DialogTitle>
             <DialogDescription>Atualize os dados do evento</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <Label htmlFor="edit-title">Título</Label>
-              <Input
-                id="edit-title"
-                value={newEvent.title}
-                onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                placeholder="Nome do evento"
-              />
-            </div>
-            <div className="col-span-2">
-              <Label htmlFor="edit-description">Descrição</Label>
-              <Textarea
-                id="edit-description"
-                value={newEvent.description}
-                onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                placeholder="Descrição do evento"
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-date">Data</Label>
-              <Input
-                id="edit-date"
-                type="date"
-                value={newEvent.date}
-                onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-time">Horário</Label>
-              <Input
-                id="edit-time"
-                type="time"
-                value={newEvent.time}
-                onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-location">Local</Label>
-              <Input
-                id="edit-location"
-                value={newEvent.location}
-                onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                placeholder="Local do evento"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-capacity">Capacidade</Label>
-              <Input
-                id="edit-capacity"
-                type="number"
-                value={newEvent.capacity}
-                onChange={(e) => setNewEvent({ ...newEvent, capacity: Number.parseInt(e.target.value) || 0 })}
-                placeholder="Número de vagas"
-              />
-            </div>
-            <div className="col-span-2">
-              <Label htmlFor="edit-category">Categoria</Label>
-              <Input
-                id="edit-category"
-                value={newEvent.category}
-                onChange={(e) => setNewEvent({ ...newEvent, category: e.target.value })}
-                placeholder="Categoria do evento"
-              />
-            </div>
-          </div>
+          <EventForm isEdit />
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingEvent(null)}>
               Cancelar
             </Button>
-            <Button onClick={handleUpdateEvent}>Salvar</Button>
+            <Button onClick={handleUpdateEvent} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? "Salvando..." : "Salvar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

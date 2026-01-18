@@ -18,72 +18,137 @@ import {
 } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Search, Plus, MoreHorizontal, Edit, Trash2, Route, BookOpen, Users, Target } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Search, Plus, MoreHorizontal, Edit, Trash2, Route, BookOpen, Clock, Target, Link as LinkIcon } from "lucide-react"
+
+interface Course {
+  id: string
+  title: string
+  description: string
+  creator: string
+  estimatedHours: number
+  category: "teologia" | "lideranca" | "ministerio" | "discipulado"
+  url?: string
+  imageUrl?: string
+}
 
 interface CourseTrack {
   id: string
   name: string
   description: string
   category: "lideranca" | "ministerio" | "teologia" | "discipulado"
-  courses: string[]
-  duration: string
-  level: "iniciante" | "intermediario" | "avancado"
-  enrolled: number
-  maxStudents: number
+  courseIds: string[]
+  estimatedHours: number
   status: "active" | "inactive"
   createdAt: string
 }
 
+// Mock available courses
+const availableCourses: Course[] = [
+  {
+    id: "1",
+    title: "Fundamentos da Fe Crista",
+    description: "Curso basico sobre os fundamentos da fe crista",
+    creator: "Pastor Joao Silva",
+    estimatedHours: 16,
+    category: "teologia",
+  },
+  {
+    id: "2",
+    title: "Lideranca Crista",
+    description: "Desenvolvimento de lideres para a igreja",
+    creator: "Pastora Maria Santos",
+    estimatedHours: 24,
+    category: "lideranca",
+  },
+  {
+    id: "3",
+    title: "Ministerio de Louvor",
+    description: "Treinamento para musicos e cantores",
+    creator: "Carlos Mendes",
+    estimatedHours: 12,
+    category: "ministerio",
+  },
+  {
+    id: "4",
+    title: "Hermeneutica Biblica",
+    description: "Interpretacao e estudo das Escrituras",
+    creator: "Pastor Joao Silva",
+    estimatedHours: 20,
+    category: "teologia",
+  },
+  {
+    id: "5",
+    title: "Gestao de Equipes",
+    description: "Como liderar e gerenciar equipes ministeriais",
+    creator: "Pastora Maria Santos",
+    estimatedHours: 16,
+    category: "lideranca",
+  },
+  {
+    id: "6",
+    title: "Evangelismo Pessoal",
+    description: "Tecnicas e praticas de evangelismo",
+    creator: "Pastor Paulo Oliveira",
+    estimatedHours: 10,
+    category: "ministerio",
+  },
+  {
+    id: "7",
+    title: "Discipulado Um a Um",
+    description: "Como discipular individualmente",
+    creator: "Pastora Maria Santos",
+    estimatedHours: 14,
+    category: "discipulado",
+  },
+  {
+    id: "8",
+    title: "Teologia Sistematica",
+    description: "Estudo aprofundado de doutrinas biblicas",
+    creator: "Pastor Joao Silva",
+    estimatedHours: 40,
+    category: "teologia",
+  },
+]
+
 const mockCourseTracks: CourseTrack[] = [
   {
     id: "1",
-    name: "Trilha de Liderança",
-    description: "Formação completa para líderes da igreja",
+    name: "Trilha de Lideranca",
+    description: "Formacao completa para lideres da igreja",
     category: "lideranca",
-    courses: ["Fundamentos da Liderança", "Gestão de Equipes", "Comunicação Eficaz", "Tomada de Decisões"],
-    duration: "6 meses",
-    level: "intermediario",
-    enrolled: 18,
-    maxStudents: 25,
+    courseIds: ["2", "5"],
+    estimatedHours: 40,
     status: "active",
     createdAt: "2023-01-15",
   },
   {
     id: "2",
-    name: "Trilha Teológica",
+    name: "Trilha Teologica",
     description: "Estudo aprofundado das escrituras e teologia",
     category: "teologia",
-    courses: ["Hermenêutica", "Teologia Sistemática", "História da Igreja", "Apologética"],
-    duration: "12 meses",
-    level: "avancado",
-    enrolled: 12,
-    maxStudents: 20,
+    courseIds: ["1", "4", "8"],
+    estimatedHours: 76,
     status: "active",
     createdAt: "2023-02-20",
   },
   {
     id: "3",
-    name: "Trilha de Ministério",
-    description: "Preparação para diferentes ministérios da igreja",
+    name: "Trilha de Ministerio",
+    description: "Preparacao para diferentes ministerios da igreja",
     category: "ministerio",
-    courses: ["Ministério de Louvor", "Ministério Infantil", "Ministério de Jovens", "Evangelismo"],
-    duration: "4 meses",
-    level: "iniciante",
-    enrolled: 22,
-    maxStudents: 30,
+    courseIds: ["3", "6"],
+    estimatedHours: 22,
     status: "active",
     createdAt: "2023-03-10",
   },
   {
     id: "4",
     name: "Trilha de Discipulado",
-    description: "Formação de discipuladores e mentores",
+    description: "Formacao de discipuladores e mentores",
     category: "discipulado",
-    courses: ["Fundamentos do Discipulado", "Mentoria Cristã", "Crescimento Espiritual", "Multiplicação"],
-    duration: "8 meses",
-    level: "intermediario",
-    enrolled: 8,
-    maxStudents: 15,
+    courseIds: ["7"],
+    estimatedHours: 14,
     status: "inactive",
     createdAt: "2023-04-05",
   },
@@ -93,15 +158,16 @@ export function CourseTracksManagement() {
   const [courseTracks, setCourseTracks] = useState<CourseTrack[]>(mockCourseTracks)
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isCoursesDialogOpen, setIsCoursesDialogOpen] = useState(false)
   const [editingTrack, setEditingTrack] = useState<CourseTrack | null>(null)
+  const [managingCoursesTrack, setManagingCoursesTrack] = useState<CourseTrack | null>(null)
+  const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([])
   const [newTrack, setNewTrack] = useState({
     name: "",
     description: "",
     category: "lideranca" as const,
-    courses: [] as string[],
-    duration: "",
-    level: "iniciante" as const,
-    maxStudents: 20,
+    courseIds: [] as string[],
+    estimatedHours: 0,
   })
 
   const filteredTracks = courseTracks.filter(
@@ -111,11 +177,19 @@ export function CourseTracksManagement() {
       track.description.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
+  const getCoursesByIds = (courseIds: string[]) => {
+    return availableCourses.filter((course) => courseIds.includes(course.id))
+  }
+
+  const calculateTotalHours = (courseIds: string[]) => {
+    return getCoursesByIds(courseIds).reduce((sum, course) => sum + course.estimatedHours, 0)
+  }
+
   const handleAddTrack = () => {
     const track: CourseTrack = {
       id: Date.now().toString(),
       ...newTrack,
-      enrolled: 0,
+      estimatedHours: calculateTotalHours(newTrack.courseIds),
       status: "active",
       createdAt: new Date().toISOString().split("T")[0],
     }
@@ -124,10 +198,8 @@ export function CourseTracksManagement() {
       name: "",
       description: "",
       category: "lideranca",
-      courses: [],
-      duration: "",
-      level: "iniciante",
-      maxStudents: 20,
+      courseIds: [],
+      estimatedHours: 0,
     })
     setIsAddDialogOpen(false)
   }
@@ -138,26 +210,30 @@ export function CourseTracksManagement() {
       name: track.name,
       description: track.description,
       category: track.category,
-      courses: track.courses,
-      duration: track.duration,
-      level: track.level,
-      maxStudents: track.maxStudents,
+      courseIds: track.courseIds,
+      estimatedHours: track.estimatedHours,
     })
   }
 
   const handleUpdateTrack = () => {
     if (!editingTrack) return
 
-    setCourseTracks(courseTracks.map((track) => (track.id === editingTrack.id ? { ...track, ...newTrack } : track)))
+    setCourseTracks(courseTracks.map((track) =>
+      track.id === editingTrack.id
+        ? {
+            ...track,
+            ...newTrack,
+            estimatedHours: calculateTotalHours(newTrack.courseIds),
+          }
+        : track
+    ))
     setEditingTrack(null)
     setNewTrack({
       name: "",
       description: "",
       category: "lideranca",
-      courses: [],
-      duration: "",
-      level: "iniciante",
-      maxStudents: 20,
+      courseIds: [],
+      estimatedHours: 0,
     })
   }
 
@@ -165,26 +241,46 @@ export function CourseTracksManagement() {
     setCourseTracks(courseTracks.filter((track) => track.id !== trackId))
   }
 
+  const handleManageCourses = (track: CourseTrack) => {
+    setManagingCoursesTrack(track)
+    setSelectedCourseIds(track.courseIds)
+    setIsCoursesDialogOpen(true)
+  }
+
+  const handleSaveCourses = () => {
+    if (!managingCoursesTrack) return
+
+    setCourseTracks(courseTracks.map((track) =>
+      track.id === managingCoursesTrack.id
+        ? {
+            ...track,
+            courseIds: selectedCourseIds,
+            estimatedHours: calculateTotalHours(selectedCourseIds),
+          }
+        : track
+    ))
+    setIsCoursesDialogOpen(false)
+    setManagingCoursesTrack(null)
+    setSelectedCourseIds([])
+  }
+
+  const toggleCourseSelection = (courseId: string) => {
+    setSelectedCourseIds((prev) =>
+      prev.includes(courseId)
+        ? prev.filter((id) => id !== courseId)
+        : [...prev, courseId]
+    )
+  }
+
   const getCategoryBadge = (category: string) => {
     const variants = {
-      lideranca: { variant: "default" as const, text: "Liderança" },
-      ministerio: { variant: "secondary" as const, text: "Ministério" },
+      lideranca: { variant: "default" as const, text: "Lideranca" },
+      ministerio: { variant: "secondary" as const, text: "Ministerio" },
       teologia: { variant: "outline" as const, text: "Teologia" },
       discipulado: { variant: "destructive" as const, text: "Discipulado" },
     }
 
     const config = variants[category as keyof typeof variants]
-    return <Badge variant={config.variant}>{config.text}</Badge>
-  }
-
-  const getLevelBadge = (level: string) => {
-    const variants = {
-      iniciante: { variant: "secondary" as const, text: "Iniciante" },
-      intermediario: { variant: "default" as const, text: "Intermediário" },
-      avancado: { variant: "destructive" as const, text: "Avançado" },
-    }
-
-    const config = variants[level as keyof typeof variants]
     return <Badge variant={config.variant}>{config.text}</Badge>
   }
 
@@ -194,15 +290,65 @@ export function CourseTracksManagement() {
     )
   }
 
-  const totalStudents = courseTracks.reduce((sum, track) => sum + track.enrolled, 0)
-  const totalCapacity = courseTracks.reduce((sum, track) => sum + track.maxStudents, 0)
+  const totalHours = courseTracks.reduce((sum, track) => sum + track.estimatedHours, 0)
   const activeTracks = courseTracks.filter((track) => track.status === "active").length
+
+  const TrackForm = ({ isEdit = false }: { isEdit?: boolean }) => (
+    <div className="grid grid-cols-2 gap-4">
+      <div className="col-span-2">
+        <Label htmlFor={isEdit ? "edit-name" : "name"}>Nome da Trilha</Label>
+        <Input
+          id={isEdit ? "edit-name" : "name"}
+          value={newTrack.name}
+          onChange={(e) => setNewTrack({ ...newTrack, name: e.target.value })}
+          placeholder="Nome da trilha"
+        />
+      </div>
+      <div className="col-span-2">
+        <Label htmlFor={isEdit ? "edit-description" : "description"}>Descricao</Label>
+        <Textarea
+          id={isEdit ? "edit-description" : "description"}
+          value={newTrack.description}
+          onChange={(e) => setNewTrack({ ...newTrack, description: e.target.value })}
+          placeholder="Descricao da trilha"
+          rows={3}
+        />
+      </div>
+      <div>
+        <Label htmlFor={isEdit ? "edit-category" : "category"}>Categoria</Label>
+        <select
+          id={isEdit ? "edit-category" : "category"}
+          value={newTrack.category}
+          onChange={(e) => setNewTrack({ ...newTrack, category: e.target.value as CourseTrack["category"] })}
+          className="w-full p-2 border border-input rounded-md bg-background"
+        >
+          <option value="lideranca">Lideranca</option>
+          <option value="ministerio">Ministerio</option>
+          <option value="teologia">Teologia</option>
+          <option value="discipulado">Discipulado</option>
+        </select>
+      </div>
+      <div>
+        <Label htmlFor={isEdit ? "edit-estimatedHours" : "estimatedHours"}>Horas Estimadas</Label>
+        <Input
+          id={isEdit ? "edit-estimatedHours" : "estimatedHours"}
+          type="number"
+          value={newTrack.estimatedHours || calculateTotalHours(newTrack.courseIds)}
+          onChange={(e) => setNewTrack({ ...newTrack, estimatedHours: Number.parseInt(e.target.value) || 0 })}
+          placeholder="Auto-calculado pelos cursos"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Se nao informado, sera a soma das horas dos cursos
+        </p>
+      </div>
+    </div>
+  )
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Trilhos de Cursos</h1>
-        <p className="text-muted-foreground">Gerencie as trilhas de formação da igreja</p>
+        <p className="text-muted-foreground">Gerencie as trilhas de formacao da igreja</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -219,23 +365,23 @@ export function CourseTracksManagement() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Alunos</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total de Horas</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalStudents}</div>
-            <p className="text-xs text-muted-foreground">de {totalCapacity} vagas</p>
+            <div className="text-2xl font-bold">{totalHours}h</div>
+            <p className="text-xs text-muted-foreground">Conteudo total</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Ocupação</CardTitle>
+            <CardTitle className="text-sm font-medium">Taxa de Ativacao</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{Math.round((totalStudents / totalCapacity) * 100)}%</div>
-            <p className="text-xs text-muted-foreground">Vagas preenchidas</p>
+            <div className="text-2xl font-bold">{Math.round((activeTracks / courseTracks.length) * 100)}%</div>
+            <p className="text-xs text-muted-foreground">Trilhas ativas</p>
           </CardContent>
         </Card>
 
@@ -246,9 +392,9 @@ export function CourseTracksManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {Math.round(courseTracks.reduce((sum, track) => sum + track.courses.length, 0) / courseTracks.length)}
+              {Math.round(courseTracks.reduce((sum, track) => sum + track.courseIds.length, 0) / courseTracks.length)}
             </div>
-            <p className="text-xs text-muted-foreground">Média de cursos</p>
+            <p className="text-xs text-muted-foreground">Media de cursos</p>
           </CardContent>
         </Card>
       </div>
@@ -272,73 +418,7 @@ export function CourseTracksManagement() {
                   <DialogTitle>Criar Nova Trilha</DialogTitle>
                   <DialogDescription>Preencha os dados da nova trilha de cursos</DialogDescription>
                 </DialogHeader>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <Label htmlFor="name">Nome da Trilha</Label>
-                    <Input
-                      id="name"
-                      value={newTrack.name}
-                      onChange={(e) => setNewTrack({ ...newTrack, name: e.target.value })}
-                      placeholder="Nome da trilha"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="description">Descrição</Label>
-                    <Textarea
-                      id="description"
-                      value={newTrack.description}
-                      onChange={(e) => setNewTrack({ ...newTrack, description: e.target.value })}
-                      placeholder="Descrição da trilha"
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="category">Categoria</Label>
-                    <select
-                      id="category"
-                      value={newTrack.category}
-                      onChange={(e) => setNewTrack({ ...newTrack, category: e.target.value as any })}
-                      className="w-full p-2 border border-input rounded-md bg-background"
-                    >
-                      <option value="lideranca">Liderança</option>
-                      <option value="ministerio">Ministério</option>
-                      <option value="teologia">Teologia</option>
-                      <option value="discipulado">Discipulado</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="level">Nível</Label>
-                    <select
-                      id="level"
-                      value={newTrack.level}
-                      onChange={(e) => setNewTrack({ ...newTrack, level: e.target.value as any })}
-                      className="w-full p-2 border border-input rounded-md bg-background"
-                    >
-                      <option value="iniciante">Iniciante</option>
-                      <option value="intermediario">Intermediário</option>
-                      <option value="avancado">Avançado</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="duration">Duração</Label>
-                    <Input
-                      id="duration"
-                      value={newTrack.duration}
-                      onChange={(e) => setNewTrack({ ...newTrack, duration: e.target.value })}
-                      placeholder="6 meses"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="maxStudents">Máximo de Alunos</Label>
-                    <Input
-                      id="maxStudents"
-                      type="number"
-                      value={newTrack.maxStudents}
-                      onChange={(e) => setNewTrack({ ...newTrack, maxStudents: Number.parseInt(e.target.value) || 20 })}
-                      placeholder="20"
-                    />
-                  </div>
-                </div>
+                <TrackForm />
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                     Cancelar
@@ -365,12 +445,10 @@ export function CourseTracksManagement() {
               <TableRow>
                 <TableHead>Trilha</TableHead>
                 <TableHead>Categoria</TableHead>
-                <TableHead>Nível</TableHead>
                 <TableHead>Cursos</TableHead>
-                <TableHead>Alunos</TableHead>
-                <TableHead>Duração</TableHead>
+                <TableHead>Horas</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="w-[70px]">Ações</TableHead>
+                <TableHead className="w-[70px]">Acoes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -383,38 +461,24 @@ export function CourseTracksManagement() {
                     </div>
                   </TableCell>
                   <TableCell>{getCategoryBadge(track.category)}</TableCell>
-                  <TableCell>{getLevelBadge(track.level)}</TableCell>
                   <TableCell>
                     <div>
-                      <p className="text-sm font-medium">{track.courses.length} cursos</p>
+                      <p className="text-sm font-medium">{track.courseIds.length} cursos</p>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {track.courses.slice(0, 2).map((course, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {course}
+                        {getCoursesByIds(track.courseIds).slice(0, 2).map((course) => (
+                          <Badge key={course.id} variant="outline" className="text-xs">
+                            {course.title}
                           </Badge>
                         ))}
-                        {track.courses.length > 2 && (
+                        {track.courseIds.length > 2 && (
                           <Badge variant="outline" className="text-xs">
-                            +{track.courses.length - 2}
+                            +{track.courseIds.length - 2}
                           </Badge>
                         )}
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="text-sm font-medium">
-                        {track.enrolled}/{track.maxStudents}
-                      </p>
-                      <div className="w-full bg-muted rounded-full h-1.5 mt-1">
-                        <div
-                          className="bg-primary h-1.5 rounded-full"
-                          style={{ width: `${(track.enrolled / track.maxStudents) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{track.duration}</TableCell>
+                  <TableCell>{track.estimatedHours}h</TableCell>
                   <TableCell>{getStatusBadge(track.status)}</TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -424,6 +488,10 @@ export function CourseTracksManagement() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleManageCourses(track)}>
+                          <LinkIcon className="mr-2 h-4 w-4" />
+                          Gerenciar Cursos
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleEditTrack(track)}>
                           <Edit className="mr-2 h-4 w-4" />
                           Editar
@@ -449,78 +517,66 @@ export function CourseTracksManagement() {
             <DialogTitle>Editar Trilha</DialogTitle>
             <DialogDescription>Atualize os dados da trilha</DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <Label htmlFor="edit-name">Nome da Trilha</Label>
-              <Input
-                id="edit-name"
-                value={newTrack.name}
-                onChange={(e) => setNewTrack({ ...newTrack, name: e.target.value })}
-                placeholder="Nome da trilha"
-              />
-            </div>
-            <div className="col-span-2">
-              <Label htmlFor="edit-description">Descrição</Label>
-              <Textarea
-                id="edit-description"
-                value={newTrack.description}
-                onChange={(e) => setNewTrack({ ...newTrack, description: e.target.value })}
-                placeholder="Descrição da trilha"
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-category">Categoria</Label>
-              <select
-                id="edit-category"
-                value={newTrack.category}
-                onChange={(e) => setNewTrack({ ...newTrack, category: e.target.value as any })}
-                className="w-full p-2 border border-input rounded-md bg-background"
-              >
-                <option value="lideranca">Liderança</option>
-                <option value="ministerio">Ministério</option>
-                <option value="teologia">Teologia</option>
-                <option value="discipulado">Discipulado</option>
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="edit-level">Nível</Label>
-              <select
-                id="edit-level"
-                value={newTrack.level}
-                onChange={(e) => setNewTrack({ ...newTrack, level: e.target.value as any })}
-                className="w-full p-2 border border-input rounded-md bg-background"
-              >
-                <option value="iniciante">Iniciante</option>
-                <option value="intermediario">Intermediário</option>
-                <option value="avancado">Avançado</option>
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="edit-duration">Duração</Label>
-              <Input
-                id="edit-duration"
-                value={newTrack.duration}
-                onChange={(e) => setNewTrack({ ...newTrack, duration: e.target.value })}
-                placeholder="6 meses"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-maxStudents">Máximo de Alunos</Label>
-              <Input
-                id="edit-maxStudents"
-                type="number"
-                value={newTrack.maxStudents}
-                onChange={(e) => setNewTrack({ ...newTrack, maxStudents: Number.parseInt(e.target.value) || 20 })}
-                placeholder="20"
-              />
-            </div>
-          </div>
+          <TrackForm isEdit />
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingTrack(null)}>
               Cancelar
             </Button>
             <Button onClick={handleUpdateTrack}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Courses Dialog */}
+      <Dialog open={isCoursesDialogOpen} onOpenChange={setIsCoursesDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Cursos - {managingCoursesTrack?.name}</DialogTitle>
+            <DialogDescription>
+              Selecione os cursos que fazem parte desta trilha.
+              Total de horas selecionadas: {calculateTotalHours(selectedCourseIds)}h
+            </DialogDescription>
+          </DialogHeader>
+          <div className="overflow-y-auto max-h-[50vh] space-y-2">
+            {availableCourses.map((course) => (
+              <div
+                key={course.id}
+                className={`flex items-center space-x-3 p-3 rounded-lg border ${
+                  selectedCourseIds.includes(course.id)
+                    ? "border-primary bg-primary/5"
+                    : "border-border"
+                }`}
+              >
+                <Checkbox
+                  id={`course-${course.id}`}
+                  checked={selectedCourseIds.includes(course.id)}
+                  onCheckedChange={() => toggleCourseSelection(course.id)}
+                />
+                <div className="flex-1">
+                  <label
+                    htmlFor={`course-${course.id}`}
+                    className="text-sm font-medium cursor-pointer"
+                  >
+                    {course.title}
+                  </label>
+                  <p className="text-xs text-muted-foreground">{course.description}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="outline" className="text-xs">
+                      {course.estimatedHours}h
+                    </Badge>
+                    {getCategoryBadge(course.category)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCoursesDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveCourses}>
+              Salvar ({selectedCourseIds.length} cursos)
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
