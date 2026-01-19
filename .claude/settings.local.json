@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(tree:*)",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(pnpm build:*)"
     ]
-  }
+  },
+  "outputStyle": "Explanatory"
 }

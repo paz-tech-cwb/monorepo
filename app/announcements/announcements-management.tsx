@@ -24,6 +24,8 @@ import {
   useUpdateAnnouncement,
   useDeleteAnnouncement,
 } from "@/lib/hooks/use-announcements"
+import { StatsCardSkeleton, TableSkeleton } from "@/components/ui/skeleton-components"
+import { Skeleton } from "@/components/ui/skeleton"
 import type { Announcement, CreateAnnouncementRequest, UpdateAnnouncementRequest } from "@/lib/api/types"
 
 export function AnnouncementsManagement() {
@@ -98,6 +100,28 @@ export function AnnouncementsManagement() {
           <h1 className="text-3xl font-bold text-foreground">Gerenciar Avisos</h1>
           <p className="text-muted-foreground">Carregando avisos...</p>
         </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatsCardSkeleton />
+          <StatsCardSkeleton />
+          <StatsCardSkeleton />
+        </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <Skeleton className="h-6 w-[140px] mb-2" />
+                <Skeleton className="h-4 w-[180px]" />
+              </div>
+              <Skeleton className="h-10 w-[130px]" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-10 w-[250px] mb-4" />
+            <TableSkeleton rows={5} columns={4} />
+          </CardContent>
+        </Card>
       </div>
     )
   }

@@ -921,6 +921,48 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get Admin Dashboard Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "dashboard"]
+            },
+            "description": "Retrieve admin dashboard summary data including stats and recent activity"
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "dashboard"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"stats\": {\n    \"totalMembers\": 1250,\n    \"activeMembers\": 980,\n    \"totalLifeGroups\": 45,\n    \"totalEvents\": 12,\n    \"upcomingEvents\": 5,\n    \"totalCourses\": 18,\n    \"totalCourseTracks\": 4,\n    \"totalAnnouncements\": 8,\n    \"activeAnnouncements\": 4\n  },\n  \"recentActivity\": [\n    {\n      \"id\": 1,\n      \"type\": \"member_joined\",\n      \"description\": \"Novo membro cadastrado: Maria Silva\",\n      \"timestamp\": \"2024-01-20T14:30:00Z\"\n    },\n    {\n      \"id\": 2,\n      \"type\": \"event_created\",\n      \"description\": \"Evento criado: Retiro de Jovens\",\n      \"timestamp\": \"2024-01-20T12:15:00Z\"\n    },\n    {\n      \"id\": 3,\n      \"type\": \"announcement_published\",\n      \"description\": \"Aviso publicado: Campanha de Oracao\",\n      \"timestamp\": \"2024-01-19T18:00:00Z\"\n    },\n    {\n      \"id\": 4,\n      \"type\": \"life_group_created\",\n      \"description\": \"Novo grupo de vida: Celula Centro\",\n      \"timestamp\": \"2024-01-19T10:45:00Z\"\n    },\n    {\n      \"id\": 5,\n      \"type\": \"course_completed\",\n      \"description\": \"15 membros completaram: Fundamentos da Fe\",\n      \"timestamp\": \"2024-01-18T16:30:00Z\"\n    }\n  ],\n  \"upcomingEvents\": [\n    {\n      \"id\": 1,\n      \"title\": \"Culto Dominical - Manha\",\n      \"date\": \"2024-01-21T10:00:00Z\",\n      \"recurrenceType\": \"weekly\"\n    },\n    {\n      \"id\": 2,\n      \"title\": \"Reuniao de Lideres\",\n      \"date\": \"2024-01-22T19:30:00Z\",\n      \"recurrenceType\": null\n    },\n    {\n      \"id\": 3,\n      \"title\": \"Culto de Quarta\",\n      \"date\": \"2024-01-24T19:30:00Z\",\n      \"recurrenceType\": \"weekly\"\n    }\n  ],\n  \"memberGrowth\": [\n    { \"month\": \"Ago\", \"count\": 1150 },\n    { \"month\": \"Set\", \"count\": 1175 },\n    { \"month\": \"Out\", \"count\": 1200 },\n    { \"month\": \"Nov\", \"count\": 1220 },\n    { \"month\": \"Dez\", \"count\": 1235 },\n    { \"month\": \"Jan\", \"count\": 1250 }\n  ]\n}"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

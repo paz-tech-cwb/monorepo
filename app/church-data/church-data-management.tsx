@@ -26,17 +26,21 @@ import {
   useUpdateContribution,
   useDeleteContribution,
 } from "@/lib/hooks/use-contributions"
+import { StatsCardSkeleton, TableSkeleton } from "@/components/ui/skeleton-components"
+import { Skeleton } from "@/components/ui/skeleton"
 import type { Contribution, CreateContributionRequest, UpdateContributionRequest } from "@/lib/api/types"
+import { AddressForm, type AddressFormData } from "@/components/ui/address-form"
 
 interface ChurchData {
   name: string
   description: string
   address: {
-    street: string
-    city: string
-    state: string
-    zipCode: string
+    cep: string
     country: string
+    state: string
+    city: string
+    street: string
+    number: string
   }
   contact: {
     phone: string
@@ -61,11 +65,12 @@ const initialChurchData: ChurchData = {
   name: "Igreja Evangelica Esperanca",
   description: "Uma igreja comprometida com o amor de Deus e o servico a comunidade",
   address: {
-    street: "Rua da Esperanca, 123",
-    city: "Sao Paulo",
-    state: "SP",
-    zipCode: "01234-567",
+    cep: "80410-000",
     country: "Brasil",
+    state: "PR",
+    city: "Curitiba",
+    street: "Rua da Esperanca",
+    number: "123",
   },
   contact: {
     phone: "(11) 3456-7890",
@@ -274,56 +279,12 @@ export function ChurchDataManagement() {
                 </CardTitle>
                 <CardDescription>Localizacao da igreja</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="street">Endereco</Label>
-                  <Input
-                    id="street"
-                    value={churchData.address.street}
-                    onChange={(e) => updateAddressField("street", e.target.value)}
-                    placeholder="Rua, numero"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label htmlFor="city">Cidade</Label>
-                    <Input
-                      id="city"
-                      value={churchData.address.city}
-                      onChange={(e) => updateAddressField("city", e.target.value)}
-                      placeholder="Cidade"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="state">Estado</Label>
-                    <Input
-                      id="state"
-                      value={churchData.address.state}
-                      onChange={(e) => updateAddressField("state", e.target.value)}
-                      placeholder="Estado"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <Label htmlFor="zipCode">CEP</Label>
-                    <Input
-                      id="zipCode"
-                      value={churchData.address.zipCode}
-                      onChange={(e) => updateAddressField("zipCode", e.target.value)}
-                      placeholder="00000-000"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="country">Pais</Label>
-                    <Input
-                      id="country"
-                      value={churchData.address.country}
-                      onChange={(e) => updateAddressField("country", e.target.value)}
-                      placeholder="Pais"
-                    />
-                  </div>
-                </div>
+              <CardContent>
+                <AddressForm
+                  value={churchData.address as AddressFormData}
+                  onChange={(address) => setChurchData({ ...churchData, address })}
+                  idPrefix="church-"
+                />
               </CardContent>
             </Card>
           </div>
@@ -491,7 +452,10 @@ export function ChurchDataManagement() {
             </CardHeader>
             <CardContent>
               {isLoadingContributions ? (
-                <p className="text-muted-foreground">Carregando contas...</p>
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-[250px]" />
+                  <TableSkeleton rows={5} columns={5} />
+                </div>
               ) : contributionsError ? (
                 <p className="text-destructive">Erro ao carregar contas. Tente novamente mais tarde.</p>
               ) : (

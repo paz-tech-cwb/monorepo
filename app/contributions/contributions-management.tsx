@@ -23,6 +23,8 @@ import {
   useUpdateContribution,
   useDeleteContribution,
 } from "@/lib/hooks/use-contributions"
+import { StatsCardSkeleton, TableSkeleton } from "@/components/ui/skeleton-components"
+import { Skeleton } from "@/components/ui/skeleton"
 import type { Contribution, CreateContributionRequest, UpdateContributionRequest } from "@/lib/api/types"
 
 export function ContributionsManagement() {
@@ -94,6 +96,28 @@ export function ContributionsManagement() {
           <h1 className="text-3xl font-bold text-foreground">Gerenciar Contribuicoes</h1>
           <p className="text-muted-foreground">Carregando contribuicoes...</p>
         </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatsCardSkeleton />
+          <StatsCardSkeleton />
+          <StatsCardSkeleton />
+        </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <Skeleton className="h-6 w-[180px] mb-2" />
+                <Skeleton className="h-4 w-[220px]" />
+              </div>
+              <Skeleton className="h-10 w-[140px]" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-10 w-[250px] mb-4" />
+            <TableSkeleton rows={5} columns={5} />
+          </CardContent>
+        </Card>
       </div>
     )
   }

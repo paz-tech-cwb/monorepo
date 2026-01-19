@@ -19,15 +19,28 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Search, Plus, MoreHorizontal, Edit, Trash2, Calendar, MapPin, Loader2, ChevronLeft, ChevronRight, List, CalendarDays, Clock } from "lucide-react"
+import { Search, Plus, MoreHorizontal, Edit, Trash2, Calendar, MapPin, ChevronLeft, ChevronRight, List, CalendarDays, Clock } from "lucide-react"
 import {
   useAgenda,
   useCreateAgendaEvent,
   useUpdateAgendaEvent,
   useDeleteAgendaEvent,
 } from "@/lib/hooks/use-agenda"
-import type { AgendaEvent, CreateAgendaEventRequest, UpdateAgendaEventRequest } from "@/lib/api/types"
+import { StatsCardSkeleton, TableSkeleton, CalendarSkeleton } from "@/components/ui/skeleton-components"
+import { Skeleton } from "@/components/ui/skeleton"
+import type { AgendaEvent, CreateAgendaEventRequest, UpdateAgendaEventRequest, Address } from "@/lib/api/types"
 import { format } from "date-fns"
+import { AddressForm, type AddressFormData } from "@/components/ui/address-form"
+
+// Church default address
+const CHURCH_ADDRESS: Address = {
+  cep: "80410-000",
+  country: "Brasil",
+  state: "PR",
+  city: "Curitiba",
+  street: "Rua Example",
+  number: "123",
+}
 
 export function EventsManagement() {
   const { data: events = [], isLoading, error } = useAgenda()
@@ -45,6 +58,14 @@ export function EventsManagement() {
     finalDate: "",
     recurrenceType: undefined,
     image: "",
+    address: {
+      cep: "",
+      country: "Brasil",
+      state: "",
+      city: "",
+      street: "",
+      number: "",
+    },
   })
 
   // Calendar state
@@ -65,6 +86,14 @@ export function EventsManagement() {
       finalDate: "",
       recurrenceType: undefined,
       image: "",
+      address: {
+        cep: "",
+        country: "Brasil",
+        state: "",
+        city: "",
+        street: "",
+        number: "",
+      },
     })
   }
 
@@ -83,6 +112,14 @@ export function EventsManagement() {
       finalDate: event.finalDate || "",
       recurrenceType: event.recurrenceType,
       image: event.image || "",
+      address: event.address || {
+        cep: "",
+        country: "Brasil",
+        state: "",
+        city: "",
+        street: "",
+        number: "",
+      },
     })
   }
 
@@ -99,6 +136,13 @@ export function EventsManagement() {
 
   const handleDeleteEvent = async (eventId: number) => {
     await deleteMutation.mutateAsync(eventId)
+  }
+
+  const handleUseChurchAddress = () => {
+    setFormData({
+      ...formData,
+      address: { ...CHURCH_ADDRESS },
+    })
   }
 
   const getRecurrenceBadge = (recurrenceType?: string) => {
@@ -208,13 +252,58 @@ export function EventsManagement() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Gerenciar Eventos</h1>
-          <p className="text-muted-foreground">Carregando eventos...</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Gerenciar Eventos</h1>
+            <p className="text-muted-foreground">Carregando eventos...</p>
+          </div>
+          <Skeleton className="h-10 w-[140px]" />
         </div>
-        <div className="flex items-center justify-center py-10">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <StatsCardSkeleton />
+          <StatsCardSkeleton />
         </div>
+
+        <Tabs defaultValue="calendar" className="space-y-4">
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-[120px]" />
+            <Skeleton className="h-10 w-[120px]" />
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-[200px]" />
+                </CardHeader>
+                <CardContent>
+                  <CalendarSkeleton />
+                </CardContent>
+              </Card>
+            </div>
+
+            <div>
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-[180px] mb-2" />
+                  <Skeleton className="h-4 w-[140px]" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="border border-border rounded-lg p-3 space-y-2">
+                        <Skeleton className="h-5 w-[140px]" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-3 w-[100px]" />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </Tabs>
       </div>
     )
   }
@@ -231,69 +320,85 @@ export function EventsManagement() {
   }
 
   const EventForm = ({ isEdit = false }: { isEdit?: boolean }) => (
-    <div className="grid grid-cols-2 gap-4">
-      <div className="col-span-2">
-        <Label htmlFor={isEdit ? "edit-title" : "title"}>Titulo</Label>
-        <Input
-          id={isEdit ? "edit-title" : "title"}
-          value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          placeholder="Nome do evento"
-        />
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-2">
+          <Label htmlFor={isEdit ? "edit-title" : "title"}>Titulo</Label>
+          <Input
+            id={isEdit ? "edit-title" : "title"}
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            placeholder="Nome do evento"
+          />
+        </div>
+        <div className="col-span-2">
+          <Label htmlFor={isEdit ? "edit-description" : "description"}>Descricao</Label>
+          <Textarea
+            id={isEdit ? "edit-description" : "description"}
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Descricao do evento"
+            rows={3}
+          />
+        </div>
+        <div>
+          <Label htmlFor={isEdit ? "edit-initialDate" : "initialDate"}>Data Inicial</Label>
+          <Input
+            id={isEdit ? "edit-initialDate" : "initialDate"}
+            type="datetime-local"
+            value={formData.initialDate}
+            onChange={(e) => setFormData({ ...formData, initialDate: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor={isEdit ? "edit-finalDate" : "finalDate"}>Data Final (opcional)</Label>
+          <Input
+            id={isEdit ? "edit-finalDate" : "finalDate"}
+            type="datetime-local"
+            value={formData.finalDate}
+            onChange={(e) => setFormData({ ...formData, finalDate: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor={isEdit ? "edit-recurrenceType" : "recurrenceType"}>Recorrencia</Label>
+          <select
+            id={isEdit ? "edit-recurrenceType" : "recurrenceType"}
+            value={formData.recurrenceType || ""}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                recurrenceType: e.target.value as "weekly" | "monthly" | undefined || undefined,
+              })
+            }
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <option value="">Sem recorrencia</option>
+            <option value="weekly">Semanal</option>
+            <option value="monthly">Mensal</option>
+          </select>
+        </div>
+        <div>
+          <Label htmlFor={isEdit ? "edit-image" : "image"}>URL da Imagem (opcional)</Label>
+          <Input
+            id={isEdit ? "edit-image" : "image"}
+            value={formData.image}
+            onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+            placeholder="https://exemplo.com/imagem.jpg"
+          />
+        </div>
       </div>
-      <div className="col-span-2">
-        <Label htmlFor={isEdit ? "edit-description" : "description"}>Descricao</Label>
-        <Textarea
-          id={isEdit ? "edit-description" : "description"}
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Descricao do evento"
-          rows={3}
-        />
-      </div>
+
       <div>
-        <Label htmlFor={isEdit ? "edit-initialDate" : "initialDate"}>Data Inicial</Label>
-        <Input
-          id={isEdit ? "edit-initialDate" : "initialDate"}
-          type="datetime-local"
-          value={formData.initialDate}
-          onChange={(e) => setFormData({ ...formData, initialDate: e.target.value })}
-        />
-      </div>
-      <div>
-        <Label htmlFor={isEdit ? "edit-finalDate" : "finalDate"}>Data Final (opcional)</Label>
-        <Input
-          id={isEdit ? "edit-finalDate" : "finalDate"}
-          type="datetime-local"
-          value={formData.finalDate}
-          onChange={(e) => setFormData({ ...formData, finalDate: e.target.value })}
-        />
-      </div>
-      <div>
-        <Label htmlFor={isEdit ? "edit-recurrenceType" : "recurrenceType"}>Recorrencia</Label>
-        <select
-          id={isEdit ? "edit-recurrenceType" : "recurrenceType"}
-          value={formData.recurrenceType || ""}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              recurrenceType: e.target.value as "weekly" | "monthly" | undefined || undefined,
-            })
-          }
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        >
-          <option value="">Sem recorrencia</option>
-          <option value="weekly">Semanal</option>
-          <option value="monthly">Mensal</option>
-        </select>
-      </div>
-      <div>
-        <Label htmlFor={isEdit ? "edit-image" : "image"}>URL da Imagem (opcional)</Label>
-        <Input
-          id={isEdit ? "edit-image" : "image"}
-          value={formData.image}
-          onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-          placeholder="https://exemplo.com/imagem.jpg"
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <MapPin className="h-5 w-5" />
+          Endereco do Evento
+        </h3>
+        <AddressForm
+          value={formData.address as AddressFormData}
+          onChange={(address) => setFormData({ ...formData, address })}
+          idPrefix={isEdit ? "edit-" : ""}
+          showUseChurchAddress={true}
+          onUseChurchAddress={handleUseChurchAddress}
         />
       </div>
     </div>
@@ -313,7 +418,7 @@ export function EventsManagement() {
               Criar Evento
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Criar Novo Evento</DialogTitle>
               <DialogDescription>Preencha os dados do evento</DialogDescription>
@@ -541,7 +646,7 @@ export function EventsManagement() {
 
       {/* Edit Event Dialog */}
       <Dialog open={!!editingEvent} onOpenChange={() => setEditingEvent(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Evento</DialogTitle>
             <DialogDescription>Atualize os dados do evento</DialogDescription>
