@@ -3,7 +3,8 @@
     "allow": [
       "Bash(tree:*)",
       "Bash(xargs cat:*)",
-      "Bash(pnpm build:*)"
+      "Bash(pnpm build:*)",
+      "Bash(npx tsc:*)"
     ]
   },
   "outputStyle": "Explanatory"

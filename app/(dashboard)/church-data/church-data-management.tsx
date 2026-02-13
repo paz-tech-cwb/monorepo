@@ -35,12 +35,15 @@ interface ChurchData {
   name: string
   description: string
   address: {
-    cep: string
+    zipCode: string
     country: string
     state: string
     city: string
+    neighborhood: string
     street: string
     number: string
+    complement?: string | null
+    reference?: string | null
   }
   contact: {
     phone: string
@@ -65,10 +68,11 @@ const initialChurchData: ChurchData = {
   name: "Igreja Evangelica Esperanca",
   description: "Uma igreja comprometida com o amor de Deus e o servico a comunidade",
   address: {
-    cep: "80410-000",
+    zipCode: "80410-000",
     country: "Brasil",
     state: "PR",
     city: "Curitiba",
+    neighborhood: "Centro",
     street: "Rua da Esperanca",
     number: "123",
   },

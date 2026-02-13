@@ -5,6 +5,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { QueryProvider } from '@/providers/query-provider'
 import { AuthProvider } from '@/contexts/auth-context'
 import { AnalyticsProvider } from '@/providers/analytics-provider'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -28,6 +29,7 @@ export default function RootLayout({
             </AnalyticsProvider>
           </AuthProvider>
         </QueryProvider>
+        <Toaster />
         <Analytics />
       </body>
     </html>

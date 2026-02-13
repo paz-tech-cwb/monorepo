@@ -1,12 +1,13 @@
 "use client"
 
 import { useState } from "react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { MarkdownEditor } from "@/components/markdown-editor"
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Search, Plus, MoreHorizontal, Edit, Trash2, Megaphone, Image, Link } from "lucide-react"
 import {
@@ -37,6 +48,7 @@ export function AnnouncementsManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null)
+  const [deletingAnnouncementId, setDeletingAnnouncementId] = useState<number | null>(null)
   const [formData, setFormData] = useState<CreateAnnouncementRequest>({
     title: "",
     subtitle: "",
@@ -44,6 +56,8 @@ export function AnnouncementsManagement() {
     markdownContent: "",
     actionUrl: "",
   })
+
+  const isFormValid = formData.title.trim() !== "" && formData.subtitle.trim() !== ""
 
   const filteredAnnouncements = announcements.filter(
     (announcement) =>
@@ -62,9 +76,14 @@ export function AnnouncementsManagement() {
   }
 
   const handleAddAnnouncement = async () => {
-    await createMutation.mutateAsync(formData)
-    resetForm()
-    setIsAddDialogOpen(false)
+    try {
+      await createMutation.mutateAsync(formData)
+      toast.success("Aviso criado com sucesso!")
+      resetForm()
+      setIsAddDialogOpen(false)
+    } catch {
+      toast.error("Erro ao criar aviso. Tente novamente.")
+    }
   }
 
   const handleEditAnnouncement = (announcement: Announcement) => {
@@ -81,16 +100,28 @@ export function AnnouncementsManagement() {
   const handleUpdateAnnouncement = async () => {
     if (!editingAnnouncement) return
 
-    await updateMutation.mutateAsync({
-      id: editingAnnouncement.id,
-      data: formData as UpdateAnnouncementRequest,
-    })
-    setEditingAnnouncement(null)
-    resetForm()
+    try {
+      await updateMutation.mutateAsync({
+        id: editingAnnouncement.id,
+        data: formData as UpdateAnnouncementRequest,
+      })
+      toast.success("Aviso atualizado com sucesso!")
+      setEditingAnnouncement(null)
+      resetForm()
+    } catch {
+      toast.error("Erro ao atualizar aviso. Tente novamente.")
+    }
   }
 
   const handleDeleteAnnouncement = async (id: number) => {
-    await deleteMutation.mutateAsync(id)
+    try {
+      await deleteMutation.mutateAsync(id)
+      toast.success("Aviso excluido com sucesso!")
+    } catch {
+      toast.error("Erro ao excluir aviso. Tente novamente.")
+    } finally {
+      setDeletingAnnouncementId(null)
+    }
   }
 
   if (isLoading) {
@@ -197,64 +228,69 @@ export function AnnouncementsManagement() {
                   Criar Aviso
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-5xl w-[95vw] h-[90vh] flex flex-col">
                 <DialogHeader>
                   <DialogTitle>Criar Novo Aviso</DialogTitle>
                   <DialogDescription>Preencha os dados do aviso</DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4">
-                  <div>
-                    <Label htmlFor="title">Titulo</Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="Titulo do aviso"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="subtitle">Subtitulo</Label>
-                    <Input
-                      id="subtitle"
-                      value={formData.subtitle}
-                      onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                      placeholder="Subtitulo do aviso"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="imageUrl">URL da Imagem</Label>
-                    <Input
-                      id="imageUrl"
-                      value={formData.imageUrl}
-                      onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                      placeholder="https://exemplo.com/imagem.jpg"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="markdownContent">Conteudo (Markdown)</Label>
-                    <Textarea
-                      id="markdownContent"
-                      value={formData.markdownContent}
-                      onChange={(e) => setFormData({ ...formData, markdownContent: e.target.value })}
-                      placeholder="Conteudo do aviso em Markdown"
-                      rows={5}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="actionUrl">URL de Acao (opcional)</Label>
-                    <Input
-                      id="actionUrl"
-                      value={formData.actionUrl}
-                      onChange={(e) => setFormData({ ...formData, actionUrl: e.target.value })}
-                      placeholder="https://exemplo.com/acao"
-                    />
+                <div className="flex-1 overflow-y-auto">
+                  <div className="grid md:grid-cols-[1fr_2fr] gap-6 h-full">
+                    {/* Metadata fields */}
+                    <div className="grid gap-4 content-start">
+                      <div>
+                        <Label htmlFor="title">Titulo</Label>
+                        <Input
+                          id="title"
+                          value={formData.title}
+                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                          placeholder="Titulo do aviso"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="subtitle">Subtitulo</Label>
+                        <Input
+                          id="subtitle"
+                          value={formData.subtitle}
+                          onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                          placeholder="Subtitulo do aviso"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="imageUrl">URL da Imagem</Label>
+                        <Input
+                          id="imageUrl"
+                          value={formData.imageUrl}
+                          onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                          placeholder="https://exemplo.com/imagem.jpg"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="actionUrl">URL de Acao (opcional)</Label>
+                        <Input
+                          id="actionUrl"
+                          value={formData.actionUrl}
+                          onChange={(e) => setFormData({ ...formData, actionUrl: e.target.value })}
+                          placeholder="https://exemplo.com/acao"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Markdown editor */}
+                    <div className="flex flex-col min-h-[350px]">
+                      <Label className="mb-2">Conteudo (Markdown)</Label>
+                      <MarkdownEditor
+                        value={formData.markdownContent}
+                        onChange={(value) => setFormData({ ...formData, markdownContent: value })}
+                        placeholder="Conteudo do aviso em Markdown"
+                      />
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={handleAddAnnouncement} disabled={createMutation.isPending}>
+                  <Button onClick={handleAddAnnouncement} disabled={!isFormValid || createMutation.isPending}>
                     {createMutation.isPending ? "Criando..." : "Criar Aviso"}
                   </Button>
                 </DialogFooter>
@@ -327,7 +363,7 @@ export function AnnouncementsManagement() {
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleDeleteAnnouncement(announcement.id)}
+                          onClick={() => setDeletingAnnouncementId(announcement.id)}
                           className="text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
@@ -345,69 +381,105 @@ export function AnnouncementsManagement() {
 
       {/* Edit Announcement Dialog */}
       <Dialog open={!!editingAnnouncement} onOpenChange={() => setEditingAnnouncement(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-5xl w-[95vw] h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Editar Aviso</DialogTitle>
             <DialogDescription>Atualize os dados do aviso</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4">
-            <div>
-              <Label htmlFor="edit-title">Titulo</Label>
-              <Input
-                id="edit-title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Titulo do aviso"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-subtitle">Subtitulo</Label>
-              <Input
-                id="edit-subtitle"
-                value={formData.subtitle}
-                onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                placeholder="Subtitulo do aviso"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-imageUrl">URL da Imagem</Label>
-              <Input
-                id="edit-imageUrl"
-                value={formData.imageUrl}
-                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                placeholder="https://exemplo.com/imagem.jpg"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-markdownContent">Conteudo (Markdown)</Label>
-              <Textarea
-                id="edit-markdownContent"
-                value={formData.markdownContent}
-                onChange={(e) => setFormData({ ...formData, markdownContent: e.target.value })}
-                placeholder="Conteudo do aviso em Markdown"
-                rows={5}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-actionUrl">URL de Acao (opcional)</Label>
-              <Input
-                id="edit-actionUrl"
-                value={formData.actionUrl}
-                onChange={(e) => setFormData({ ...formData, actionUrl: e.target.value })}
-                placeholder="https://exemplo.com/acao"
-              />
+          <div className="flex-1 overflow-y-auto">
+            <div className="grid md:grid-cols-[1fr_2fr] gap-6 h-full">
+              {/* Metadata fields */}
+              <div className="grid gap-4 content-start">
+                <div>
+                  <Label htmlFor="edit-title">Titulo</Label>
+                  <Input
+                    id="edit-title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Titulo do aviso"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-subtitle">Subtitulo</Label>
+                  <Input
+                    id="edit-subtitle"
+                    value={formData.subtitle}
+                    onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                    placeholder="Subtitulo do aviso"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-imageUrl">URL da Imagem</Label>
+                  <Input
+                    id="edit-imageUrl"
+                    value={formData.imageUrl}
+                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                    placeholder="https://exemplo.com/imagem.jpg"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-actionUrl">URL de Acao (opcional)</Label>
+                  <Input
+                    id="edit-actionUrl"
+                    value={formData.actionUrl}
+                    onChange={(e) => setFormData({ ...formData, actionUrl: e.target.value })}
+                    placeholder="https://exemplo.com/acao"
+                  />
+                </div>
+              </div>
+
+              {/* Markdown editor */}
+              <div className="flex flex-col min-h-[350px]">
+                <Label className="mb-2">Conteudo (Markdown)</Label>
+                <MarkdownEditor
+                  value={formData.markdownContent}
+                  onChange={(value) => setFormData({ ...formData, markdownContent: value })}
+                  placeholder="Conteudo do aviso em Markdown"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingAnnouncement(null)}>
               Cancelar
             </Button>
-            <Button onClick={handleUpdateAnnouncement} disabled={updateMutation.isPending}>
+            <Button onClick={handleUpdateAnnouncement} disabled={!isFormValid || updateMutation.isPending}>
               {updateMutation.isPending ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={deletingAnnouncementId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingAnnouncementId(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza que deseja excluir este aviso?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acao nao pode ser desfeita. O aviso sera removido permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingAnnouncementId !== null) {
+                  handleDeleteAnnouncement(deletingAnnouncementId)
+                }
+              }}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

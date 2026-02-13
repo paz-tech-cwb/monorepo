@@ -1,20 +1,37 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { agendaApi } from "@/lib/api/endpoints/agenda"
+import { agendaApi, calculateAgendaStats } from "@/lib/api/endpoints/agenda"
 import type {
   CreateAgendaEventRequest,
   UpdateAgendaEventRequest,
+  AgendaStats,
 } from "@/lib/api/types"
 import { trackEvent } from "@/lib/firebase/analytics"
 
 const QUERY_KEY = ["agenda"]
+const GROUPED_QUERY_KEY = ["agenda", "grouped"]
 
 export function useAgenda() {
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: () => agendaApi.getAll(),
   })
+}
+
+export function useAgendaGrouped() {
+  return useQuery({
+    queryKey: GROUPED_QUERY_KEY,
+    queryFn: () => agendaApi.getAllGrouped(),
+  })
+}
+
+export function useAgendaStats(): { data: AgendaStats | undefined; isLoading: boolean; error: Error | null } {
+  const { data: events, isLoading, error } = useAgenda()
+
+  const stats = events ? calculateAgendaStats(events) : undefined
+
+  return { data: stats, isLoading, error }
 }
 
 export function useAgendaEvent(id: number) {

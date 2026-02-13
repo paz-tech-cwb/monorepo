@@ -28,22 +28,25 @@ import {
 } from "@/lib/hooks/use-agenda"
 import { StatsCardSkeleton, TableSkeleton, CalendarSkeleton } from "@/components/ui/skeleton-components"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { AgendaEvent, CreateAgendaEventRequest, UpdateAgendaEventRequest, Address } from "@/lib/api/types"
+import type { AgendaEvent, CreateAgendaEventRequest, UpdateAgendaEventRequest, Address, AgendaStats } from "@/lib/api/types"
+import { useAgendaStats } from "@/lib/hooks/use-agenda"
 import { format } from "date-fns"
 import { AddressForm, type AddressFormData } from "@/components/ui/address-form"
 
 // Church default address
 const CHURCH_ADDRESS: Address = {
-  cep: "80410-000",
+  zipCode: "80410-000",
   country: "Brasil",
   state: "PR",
   city: "Curitiba",
+  neighborhood: "Centro",
   street: "Rua Example",
   number: "123",
 }
 
 export function EventsManagement() {
   const { data: events = [], isLoading, error } = useAgenda()
+  const { data: stats } = useAgendaStats()
   const createMutation = useCreateAgendaEvent()
   const updateMutation = useUpdateAgendaEvent()
   const deleteMutation = useDeleteAgendaEvent()
@@ -56,13 +59,14 @@ export function EventsManagement() {
     description: "",
     initialDate: "",
     finalDate: "",
-    recurrenceType: undefined,
+    recurrence_type: undefined,
     image: "",
     address: {
-      cep: "",
+      zipCode: "",
       country: "Brasil",
       state: "",
       city: "",
+      neighborhood: "",
       street: "",
       number: "",
     },
@@ -84,13 +88,14 @@ export function EventsManagement() {
       description: "",
       initialDate: "",
       finalDate: "",
-      recurrenceType: undefined,
+      recurrence_type: undefined,
       image: "",
       address: {
-        cep: "",
+        zipCode: "",
         country: "Brasil",
         state: "",
         city: "",
+        neighborhood: "",
         street: "",
         number: "",
       },
@@ -110,13 +115,14 @@ export function EventsManagement() {
       description: event.description || "",
       initialDate: event.initialDate,
       finalDate: event.finalDate || "",
-      recurrenceType: event.recurrenceType,
+      recurrence_type: event.recurrence_type,
       image: event.image || "",
       address: event.address || {
-        cep: "",
+        zipCode: "",
         country: "Brasil",
         state: "",
         city: "",
+        neighborhood: "",
         street: "",
         number: "",
       },
@@ -145,13 +151,15 @@ export function EventsManagement() {
     })
   }
 
-  const getRecurrenceBadge = (recurrenceType?: string) => {
+  const getRecurrenceBadge = (recurrenceType?: string | null) => {
     if (!recurrenceType) return null
-    const labels = {
+    const labels: Record<string, string> = {
+      WEEKLY: "Semanal",
+      MONTHLY: "Mensal",
       weekly: "Semanal",
       monthly: "Mensal",
     }
-    return <Badge variant="outline">{labels[recurrenceType as keyof typeof labels]}</Badge>
+    return <Badge variant="outline">{labels[recurrenceType] || recurrenceType}</Badge>
   }
 
   const formatDate = (dateString: string) => {
@@ -194,13 +202,15 @@ export function EventsManagement() {
     })
   }
 
-  const getTypeColor = (recurrenceType?: string) => {
+  const getTypeColor = (recurrenceType?: string | null) => {
     if (!recurrenceType) return "#d97706"
-    const colors = {
+    const colors: Record<string, string> = {
+      WEEKLY: "#15803d",
+      MONTHLY: "#3b82f6",
       weekly: "#15803d",
       monthly: "#3b82f6",
     }
-    return colors[recurrenceType as keyof typeof colors] || "#6b7280"
+    return colors[recurrenceType] || "#6b7280"
   }
 
   const renderCalendar = () => {
@@ -233,7 +243,7 @@ export function EventsManagement() {
               <div
                 key={event.id}
                 className="text-xs p-1 rounded text-white truncate"
-                style={{ backgroundColor: getTypeColor(event.recurrenceType) }}
+                style={{ backgroundColor: getTypeColor(event.recurrence_type) }}
               >
                 {event.title}
               </div>
@@ -360,21 +370,21 @@ export function EventsManagement() {
           />
         </div>
         <div>
-          <Label htmlFor={isEdit ? "edit-recurrenceType" : "recurrenceType"}>Recorrencia</Label>
+          <Label htmlFor={isEdit ? "edit-recurrence_type" : "recurrence_type"}>Recorrencia</Label>
           <select
-            id={isEdit ? "edit-recurrenceType" : "recurrenceType"}
-            value={formData.recurrenceType || ""}
+            id={isEdit ? "edit-recurrence_type" : "recurrence_type"}
+            value={formData.recurrence_type || ""}
             onChange={(e) =>
               setFormData({
                 ...formData,
-                recurrenceType: e.target.value as "weekly" | "monthly" | undefined || undefined,
+                recurrence_type: (e.target.value as "WEEKLY" | "MONTHLY") || undefined,
               })
             }
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <option value="">Sem recorrencia</option>
-            <option value="weekly">Semanal</option>
-            <option value="monthly">Mensal</option>
+            <option value="WEEKLY">Semanal</option>
+            <option value="MONTHLY">Mensal</option>
           </select>
         </div>
         <div>
@@ -443,7 +453,7 @@ export function EventsManagement() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{events.length}</div>
+            <div className="text-2xl font-bold">{stats?.totalEvents ?? events.length}</div>
             <p className="text-xs text-muted-foreground">Eventos cadastrados</p>
           </CardContent>
         </Card>
@@ -455,7 +465,7 @@ export function EventsManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {events.filter((e) => e.recurrenceType).length}
+              {stats?.recurringEvents ?? events.filter((e) => e.recurrence_type).length}
             </div>
             <p className="text-xs text-muted-foreground">Com recorrencia</p>
           </CardContent>
@@ -528,7 +538,7 @@ export function EventsManagement() {
                         <div key={event.id} className="border border-border rounded-lg p-3">
                           <div className="flex items-start justify-between mb-2">
                             <h4 className="font-medium">{event.title}</h4>
-                            {getRecurrenceBadge(event.recurrenceType)}
+                            {getRecurrenceBadge(event.recurrence_type)}
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">{event.description}</p>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -612,7 +622,7 @@ export function EventsManagement() {
                       <TableCell>
                         {event.finalDate ? formatDate(event.finalDate) : "-"}
                       </TableCell>
-                      <TableCell>{getRecurrenceBadge(event.recurrenceType) || "-"}</TableCell>
+                      <TableCell>{getRecurrenceBadge(event.recurrence_type) || "-"}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

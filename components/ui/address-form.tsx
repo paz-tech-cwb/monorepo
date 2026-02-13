@@ -8,12 +8,15 @@ import { Loader2, MapPin } from "lucide-react"
 import { fetchAddressByCEP, formatCEP } from "@/lib/utils/cep"
 
 export interface AddressFormData {
-  cep: string
+  zipCode: string
   country: string
   state: string
   city: string
+  neighborhood: string
   street: string
   number: string
+  complement?: string | null
+  reference?: string | null
 }
 
 interface AddressFormProps {
@@ -36,12 +39,12 @@ export function AddressForm({
 
   const handleCEPChange = (cep: string) => {
     const formatted = formatCEP(cep)
-    onChange({ ...value, cep: formatted })
+    onChange({ ...value, zipCode: formatted })
     setCepError(null)
   }
 
   const handleCEPBlur = async () => {
-    const cleanCEP = value.cep.replace(/\D/g, "")
+    const cleanCEP = value.zipCode.replace(/\D/g, "")
 
     if (cleanCEP.length !== 8) {
       return
@@ -57,6 +60,7 @@ export function AddressForm({
         onChange({
           ...value,
           street: addressData.street,
+          neighborhood: addressData.neighborhood || value.neighborhood,
           city: addressData.city,
           state: addressData.state,
           country: addressData.country,
@@ -72,11 +76,11 @@ export function AddressForm({
   return (
     <div className="grid grid-cols-2 gap-4">
       <div>
-        <Label htmlFor={`${idPrefix}cep`}>CEP</Label>
+        <Label htmlFor={`${idPrefix}zipCode`}>CEP</Label>
         <div className="relative">
           <Input
-            id={`${idPrefix}cep`}
-            value={value.cep}
+            id={`${idPrefix}zipCode`}
+            value={value.zipCode}
             onChange={(e) => handleCEPChange(e.target.value)}
             onBlur={handleCEPBlur}
             placeholder="00000-000"
@@ -122,6 +126,16 @@ export function AddressForm({
       </div>
 
       <div>
+        <Label htmlFor={`${idPrefix}neighborhood`}>Bairro</Label>
+        <Input
+          id={`${idPrefix}neighborhood`}
+          value={value.neighborhood}
+          onChange={(e) => onChange({ ...value, neighborhood: e.target.value })}
+          placeholder="Centro"
+        />
+      </div>
+
+      <div>
         <Label htmlFor={`${idPrefix}street`}>Rua</Label>
         <Input
           id={`${idPrefix}street`}
@@ -138,6 +152,16 @@ export function AddressForm({
           value={value.number}
           onChange={(e) => onChange({ ...value, number: e.target.value })}
           placeholder="123"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor={`${idPrefix}complement`}>Complemento</Label>
+        <Input
+          id={`${idPrefix}complement`}
+          value={value.complement || ""}
+          onChange={(e) => onChange({ ...value, complement: e.target.value || null })}
+          placeholder="Apto 101"
         />
       </div>
 

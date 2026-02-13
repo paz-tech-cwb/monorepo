@@ -18,69 +18,28 @@ import {
 } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Search, Plus, MoreHorizontal, Edit, Trash2, BookOpen, Clock, Link as LinkIcon, Image } from "lucide-react"
-
-interface Course {
-  id: string
-  title: string
-  description: string
-  creator: string
-  estimatedHours: number
-  category: "teologia" | "lideranca" | "ministerio" | "discipulado"
-  url?: string
-  imageUrl?: string
-  status: "draft" | "published" | "archived"
-}
-
-const mockCourses: Course[] = [
-  {
-    id: "1",
-    title: "Fundamentos da Fe Crista",
-    description: "Curso basico sobre os fundamentos da fe crista",
-    creator: "Pastor Joao Silva",
-    estimatedHours: 16,
-    category: "teologia",
-    url: "https://academia.igrejadapaz.com.br/fundamentos",
-    imageUrl: "https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=800",
-    status: "published",
-  },
-  {
-    id: "2",
-    title: "Lideranca Crista",
-    description: "Desenvolvimento de lideres para a igreja",
-    creator: "Pastora Maria Santos",
-    estimatedHours: 24,
-    category: "lideranca",
-    url: "https://academia.igrejadapaz.com.br/lideranca",
-    imageUrl: "https://images.unsplash.com/photo-1519834785169-98be25ec3f84?w=800",
-    status: "published",
-  },
-  {
-    id: "3",
-    title: "Ministerio de Louvor",
-    description: "Treinamento para musicos e cantores",
-    creator: "Carlos Mendes",
-    estimatedHours: 12,
-    category: "ministerio",
-    url: "https://academia.igrejadapaz.com.br/louvor",
-    imageUrl: "https://images.unsplash.com/photo-1507692049790-de58290a4334?w=800",
-    status: "draft",
-  },
-]
+import { Search, Plus, MoreHorizontal, Edit, Trash2, BookOpen, Clock, Link as LinkIcon, Image, Loader2 } from "lucide-react"
+import { useCourses, useCourseStats, useCreateCourse, useUpdateCourse, useDeleteCourse } from "@/lib/hooks/use-courses"
+import type { Course, CourseCategory, CreateCourseRequest, UpdateCourseRequest } from "@/lib/api/types/courses"
 
 export function CoursesManagement() {
-  const [courses, setCourses] = useState<Course[]>(mockCourses)
+  const { data: courses = [], isLoading, error } = useCourses()
+  const { data: stats } = useCourseStats()
+  const createCourseMutation = useCreateCourse()
+  const updateCourseMutation = useUpdateCourse()
+  const deleteCourseMutation = useDeleteCourse()
+
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
-  const [newCourse, setNewCourse] = useState({
+  const [formData, setFormData] = useState({
     title: "",
     description: "",
     creator: "",
-    estimatedHours: 0,
-    category: "teologia" as const,
+    estimated_hours: 0,
+    category: "teologia" as CourseCategory,
     url: "",
-    imageUrl: "",
+    image_url: "",
   })
 
   const filteredCourses = courses.filter(
@@ -90,56 +49,80 @@ export function CoursesManagement() {
       course.category.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleAddCourse = () => {
-    const course: Course = {
-      id: Date.now().toString(),
-      ...newCourse,
-      status: "draft",
-    }
-    setCourses([...courses, course])
-    setNewCourse({
+  const resetForm = () => {
+    setFormData({
       title: "",
       description: "",
       creator: "",
-      estimatedHours: 0,
+      estimated_hours: 0,
       category: "teologia",
       url: "",
-      imageUrl: "",
+      image_url: "",
     })
-    setIsAddDialogOpen(false)
+  }
+
+  const handleAddCourse = async () => {
+    const courseData: CreateCourseRequest = {
+      title: formData.title,
+      description: formData.description,
+      creator: formData.creator,
+      estimated_hours: formData.estimated_hours,
+      category: formData.category,
+      url: formData.url || null,
+      image_url: formData.image_url || null,
+      status: "draft",
+    }
+
+    try {
+      await createCourseMutation.mutateAsync(courseData)
+      resetForm()
+      setIsAddDialogOpen(false)
+    } catch (err) {
+      console.error("Failed to create course:", err)
+    }
   }
 
   const handleEditCourse = (course: Course) => {
     setEditingCourse(course)
-    setNewCourse({
+    setFormData({
       title: course.title,
       description: course.description,
       creator: course.creator,
-      estimatedHours: course.estimatedHours,
+      estimated_hours: course.estimated_hours,
       category: course.category,
       url: course.url || "",
-      imageUrl: course.imageUrl || "",
+      image_url: course.image_url || "",
     })
   }
 
-  const handleUpdateCourse = () => {
+  const handleUpdateCourse = async () => {
     if (!editingCourse) return
 
-    setCourses(courses.map((course) => (course.id === editingCourse.id ? { ...course, ...newCourse } : course)))
-    setEditingCourse(null)
-    setNewCourse({
-      title: "",
-      description: "",
-      creator: "",
-      estimatedHours: 0,
-      category: "teologia",
-      url: "",
-      imageUrl: "",
-    })
+    const updateData: UpdateCourseRequest = {
+      title: formData.title,
+      description: formData.description,
+      creator: formData.creator,
+      estimated_hours: formData.estimated_hours,
+      category: formData.category,
+      url: formData.url || null,
+      image_url: formData.image_url || null,
+    }
+
+    try {
+      await updateCourseMutation.mutateAsync({ id: editingCourse.id, data: updateData })
+      setEditingCourse(null)
+      resetForm()
+    } catch (err) {
+      console.error("Failed to update course:", err)
+    }
   }
 
-  const handleDeleteCourse = (courseId: string) => {
-    setCourses(courses.filter((course) => course.id !== courseId))
+  const handleDeleteCourse = async (courseId: string) => {
+    try {
+      await deleteCourseMutation.mutateAsync(courseId)
+    } catch (err) {
+      console.error("Failed to delete course:", err)
+    }
   }
 
   const getCategoryBadge = (category: string) => {
@@ -165,17 +148,14 @@ export function CoursesManagement() {
     return <Badge variant={config.variant}>{config.text}</Badge>
   }
 
-  const totalHours = courses.reduce((sum, course) => sum + course.estimatedHours, 0)
-  const publishedCourses = courses.filter((course) => course.status === "published").length
-
   const CourseForm = ({ isEdit = false }: { isEdit?: boolean }) => (
     <div className="grid grid-cols-2 gap-4">
       <div className="col-span-2">
         <Label htmlFor={isEdit ? "edit-title" : "title"}>Titulo do Curso</Label>
         <Input
           id={isEdit ? "edit-title" : "title"}
-          value={newCourse.title}
-          onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
           placeholder="Nome do curso"
         />
       </div>
@@ -183,8 +163,8 @@ export function CoursesManagement() {
         <Label htmlFor={isEdit ? "edit-description" : "description"}>Descricao</Label>
         <Textarea
           id={isEdit ? "edit-description" : "description"}
-          value={newCourse.description}
-          onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="Descricao do curso"
           rows={3}
         />
@@ -193,18 +173,18 @@ export function CoursesManagement() {
         <Label htmlFor={isEdit ? "edit-creator" : "creator"}>Criador</Label>
         <Input
           id={isEdit ? "edit-creator" : "creator"}
-          value={newCourse.creator}
-          onChange={(e) => setNewCourse({ ...newCourse, creator: e.target.value })}
+          value={formData.creator}
+          onChange={(e) => setFormData({ ...formData, creator: e.target.value })}
           placeholder="Nome do criador"
         />
       </div>
       <div>
-        <Label htmlFor={isEdit ? "edit-estimatedHours" : "estimatedHours"}>Horas Estimadas</Label>
+        <Label htmlFor={isEdit ? "edit-estimated_hours" : "estimated_hours"}>Horas Estimadas</Label>
         <Input
-          id={isEdit ? "edit-estimatedHours" : "estimatedHours"}
+          id={isEdit ? "edit-estimated_hours" : "estimated_hours"}
           type="number"
-          value={newCourse.estimatedHours}
-          onChange={(e) => setNewCourse({ ...newCourse, estimatedHours: Number.parseInt(e.target.value) || 0 })}
+          value={formData.estimated_hours}
+          onChange={(e) => setFormData({ ...formData, estimated_hours: Number.parseInt(e.target.value) || 0 })}
           placeholder="16"
         />
       </div>
@@ -212,8 +192,8 @@ export function CoursesManagement() {
         <Label htmlFor={isEdit ? "edit-category" : "category"}>Categoria</Label>
         <select
           id={isEdit ? "edit-category" : "category"}
-          value={newCourse.category}
-          onChange={(e) => setNewCourse({ ...newCourse, category: e.target.value as Course["category"] })}
+          value={formData.category}
+          onChange={(e) => setFormData({ ...formData, category: e.target.value as CourseCategory })}
           className="w-full p-2 border border-input rounded-md bg-background"
         >
           <option value="teologia">Teologia</option>
@@ -226,22 +206,38 @@ export function CoursesManagement() {
         <Label htmlFor={isEdit ? "edit-url" : "url"}>URL do Curso</Label>
         <Input
           id={isEdit ? "edit-url" : "url"}
-          value={newCourse.url}
-          onChange={(e) => setNewCourse({ ...newCourse, url: e.target.value })}
+          value={formData.url}
+          onChange={(e) => setFormData({ ...formData, url: e.target.value })}
           placeholder="https://exemplo.com/curso"
         />
       </div>
       <div className="col-span-2">
-        <Label htmlFor={isEdit ? "edit-imageUrl" : "imageUrl"}>URL da Imagem (Capa)</Label>
+        <Label htmlFor={isEdit ? "edit-image_url" : "image_url"}>URL da Imagem (Capa)</Label>
         <Input
-          id={isEdit ? "edit-imageUrl" : "imageUrl"}
-          value={newCourse.imageUrl}
-          onChange={(e) => setNewCourse({ ...newCourse, imageUrl: e.target.value })}
+          id={isEdit ? "edit-image_url" : "image_url"}
+          value={formData.image_url}
+          onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
           placeholder="https://exemplo.com/imagem.jpg"
         />
       </div>
     </div>
   )
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-destructive">Erro ao carregar cursos: {error.message}</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -257,8 +253,8 @@ export function CoursesManagement() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{courses.length}</div>
-            <p className="text-xs text-muted-foreground">{publishedCourses} publicados</p>
+            <div className="text-2xl font-bold">{stats?.totalCourses ?? 0}</div>
+            <p className="text-xs text-muted-foreground">{stats?.publishedCourses ?? 0} publicados</p>
           </CardContent>
         </Card>
 
@@ -268,7 +264,7 @@ export function CoursesManagement() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalHours}h</div>
+            <div className="text-2xl font-bold">{stats?.totalHours ?? 0}h</div>
             <p className="text-xs text-muted-foreground">Conteudo total</p>
           </CardContent>
         </Card>
@@ -279,7 +275,7 @@ export function CoursesManagement() {
             <LinkIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{courses.filter((c) => c.url).length}</div>
+            <div className="text-2xl font-bold">{stats?.coursesWithUrl ?? 0}</div>
             <p className="text-xs text-muted-foreground">Cursos com link</p>
           </CardContent>
         </Card>
@@ -290,7 +286,7 @@ export function CoursesManagement() {
             <Image className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{courses.filter((c) => c.imageUrl).length}</div>
+            <div className="text-2xl font-bold">{stats?.coursesWithImage ?? 0}</div>
             <p className="text-xs text-muted-foreground">Cursos com capa</p>
           </CardContent>
         </Card>
@@ -320,7 +316,10 @@ export function CoursesManagement() {
                   <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={handleAddCourse}>Criar Curso</Button>
+                  <Button onClick={handleAddCourse} disabled={createCourseMutation.isPending}>
+                    {createCourseMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Criar Curso
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -353,9 +352,9 @@ export function CoursesManagement() {
                 <TableRow key={course.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      {course.imageUrl && (
+                      {course.image_url && (
                         <img
-                          src={course.imageUrl}
+                          src={course.image_url}
                           alt={course.title}
                           className="h-10 w-10 rounded object-cover"
                         />
@@ -368,7 +367,7 @@ export function CoursesManagement() {
                   </TableCell>
                   <TableCell>{course.creator}</TableCell>
                   <TableCell>{getCategoryBadge(course.category)}</TableCell>
-                  <TableCell>{course.estimatedHours}h</TableCell>
+                  <TableCell>{course.estimated_hours}h</TableCell>
                   <TableCell>{getStatusBadge(course.status)}</TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -382,7 +381,11 @@ export function CoursesManagement() {
                           <Edit className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDeleteCourse(course.id)} className="text-destructive">
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteCourse(course.id)}
+                          className="text-destructive"
+                          disabled={deleteCourseMutation.isPending}
+                        >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Excluir
                         </DropdownMenuItem>
@@ -408,7 +411,10 @@ export function CoursesManagement() {
             <Button variant="outline" onClick={() => setEditingCourse(null)}>
               Cancelar
             </Button>
-            <Button onClick={handleUpdateCourse}>Salvar</Button>
+            <Button onClick={handleUpdateCourse} disabled={updateCourseMutation.isPending}>
+              {updateCourseMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,12 +1,15 @@
-export type RecurrenceType = "weekly" | "monthly"
+export type RecurrenceType = "WEEKLY" | "MONTHLY"
 
 export interface Address {
-  cep: string
-  country: string
-  state: string
-  city: string
   street: string
   number: string
+  complement?: string | null
+  reference?: string | null
+  neighborhood: string
+  city: string
+  state: string
+  zipCode: string
+  country: string
 }
 
 export interface AgendaEvent {
@@ -15,9 +18,25 @@ export interface AgendaEvent {
   description?: string
   initialDate: string
   finalDate?: string
-  recurrenceType?: RecurrenceType
+  recurrence_type?: RecurrenceType | null
   image?: string
+  church_id?: number
   address?: Address
+}
+
+// API response is grouped by month
+export interface AgendaMonthGroup {
+  month: string
+  ano: string
+  events: AgendaEvent[]
+}
+
+export type AgendaApiResponse = AgendaMonthGroup[]
+
+// Stats derived from agenda data
+export interface AgendaStats {
+  totalEvents: number
+  recurringEvents: number
 }
 
 export interface CreateAgendaEventRequest {
@@ -25,7 +44,7 @@ export interface CreateAgendaEventRequest {
   description?: string
   initialDate: string
   finalDate?: string
-  recurrenceType?: RecurrenceType
+  recurrence_type?: RecurrenceType | null
   image?: string
   address?: Address
 }
@@ -35,7 +54,7 @@ export interface UpdateAgendaEventRequest {
   description?: string
   initialDate?: string
   finalDate?: string
-  recurrenceType?: RecurrenceType
+  recurrence_type?: RecurrenceType | null
   image?: string
   address?: Address
 }

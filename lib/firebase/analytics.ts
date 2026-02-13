@@ -14,6 +14,9 @@ export type AnalyticsEventName =
   | "event_created"
   | "event_updated"
   | "event_deleted"
+  | "course_created"
+  | "course_updated"
+  | "course_deleted"
   | "api_error"
 
 export interface AnalyticsEventParams {
@@ -29,6 +32,9 @@ export interface AnalyticsEventParams {
   event_created: { event_id?: number }
   event_updated: { event_id: number }
   event_deleted: { event_id: number }
+  course_created: { course_id?: string }
+  course_updated: { course_id: string }
+  course_deleted: { course_id: string }
   api_error: { endpoint: string; status: number; message?: string }
 }
 
