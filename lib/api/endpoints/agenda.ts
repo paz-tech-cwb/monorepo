@@ -18,8 +18,8 @@ function flattenAgendaResponse(response: AgendaApiResponse): AgendaEvent[] {
 // Helper to calculate stats from the agenda response
 export function calculateAgendaStats(events: AgendaEvent[]): AgendaStats {
   return {
-    totalEvents: events.length,
-    recurringEvents: events.filter((e) => e.recurrence_type !== null && e.recurrence_type !== undefined).length,
+    total_events: events.length,
+    recurring_events: events.filter((e) => e.recurrence_type !== null && e.recurrence_type !== undefined).length,
   }
 }
 

@@ -56,7 +56,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const idToken = await fbUser.getIdToken()
         const provider = fbUser.providerData[0]?.providerId === "apple.com" ? "apple" : "google"
         const response = await authApi.socialLogin({
-          idToken,
+          id_token: idToken,
           provider,
         })
 

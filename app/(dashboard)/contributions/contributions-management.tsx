@@ -37,24 +37,24 @@ export function ContributionsManagement() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingContribution, setEditingContribution] = useState<Contribution | null>(null)
   const [formData, setFormData] = useState<CreateContributionRequest>({
-    bankName: "",
-    branchNumber: "",
-    accountNumber: "",
-    pixKey: "",
+    bank_name: "",
+    branch_number: "",
+    account_number: "",
+    pix_key: "",
   })
 
   const filteredContributions = contributions.filter(
     (contribution) =>
-      contribution.bankName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contribution.pixKey.toLowerCase().includes(searchTerm.toLowerCase())
+      contribution.bank_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contribution.pix_key.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const resetForm = () => {
     setFormData({
-      bankName: "",
-      branchNumber: "",
-      accountNumber: "",
-      pixKey: "",
+      bank_name: "",
+      branch_number: "",
+      account_number: "",
+      pix_key: "",
     })
   }
 
@@ -67,10 +67,10 @@ export function ContributionsManagement() {
   const handleEditContribution = (contribution: Contribution) => {
     setEditingContribution(contribution)
     setFormData({
-      bankName: contribution.bankName,
-      branchNumber: contribution.branchNumber,
-      accountNumber: contribution.accountNumber,
-      pixKey: contribution.pixKey,
+      bank_name: contribution.bank_name,
+      branch_number: contribution.branch_number,
+      account_number: contribution.account_number,
+      pix_key: contribution.pix_key,
     })
   }
 
@@ -159,7 +159,7 @@ export function ContributionsManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {new Set(contributions.map((c) => c.bankName)).size}
+              {new Set(contributions.map((c) => c.bank_name)).size}
             </div>
             <p className="text-xs text-muted-foreground">Bancos diferentes</p>
           </CardContent>
@@ -172,7 +172,7 @@ export function ContributionsManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {contributions.filter((c) => c.pixKey).length}
+              {contributions.filter((c) => c.pix_key).length}
             </div>
             <p className="text-xs text-muted-foreground">Contas com chave PIX</p>
           </CardContent>
@@ -200,40 +200,40 @@ export function ContributionsManagement() {
                 </DialogHeader>
                 <div className="grid gap-4">
                   <div>
-                    <Label htmlFor="bankName">Nome do Banco</Label>
+                    <Label htmlFor="bank_name">Nome do Banco</Label>
                     <Input
-                      id="bankName"
-                      value={formData.bankName}
-                      onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                      id="bank_name"
+                      value={formData.bank_name}
+                      onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
                       placeholder="Ex: Banco do Brasil"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="branchNumber">Agencia</Label>
+                      <Label htmlFor="branch_number">Agencia</Label>
                       <Input
-                        id="branchNumber"
-                        value={formData.branchNumber}
-                        onChange={(e) => setFormData({ ...formData, branchNumber: e.target.value })}
+                        id="branch_number"
+                        value={formData.branch_number}
+                        onChange={(e) => setFormData({ ...formData, branch_number: e.target.value })}
                         placeholder="0001"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="accountNumber">Conta</Label>
+                      <Label htmlFor="account_number">Conta</Label>
                       <Input
-                        id="accountNumber"
-                        value={formData.accountNumber}
-                        onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                        id="account_number"
+                        value={formData.account_number}
+                        onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
                         placeholder="12345-6"
                       />
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="pixKey">Chave PIX</Label>
+                    <Label htmlFor="pix_key">Chave PIX</Label>
                     <Input
-                      id="pixKey"
-                      value={formData.pixKey}
-                      onChange={(e) => setFormData({ ...formData, pixKey: e.target.value })}
+                      id="pix_key"
+                      value={formData.pix_key}
+                      onChange={(e) => setFormData({ ...formData, pix_key: e.target.value })}
                       placeholder="email@exemplo.com ou CPF/CNPJ"
                     />
                   </div>
@@ -274,11 +274,11 @@ export function ContributionsManagement() {
             <TableBody>
               {filteredContributions.map((contribution) => (
                 <TableRow key={contribution.id}>
-                  <TableCell className="font-medium">{contribution.bankName}</TableCell>
-                  <TableCell>{contribution.branchNumber}</TableCell>
-                  <TableCell>{contribution.accountNumber}</TableCell>
+                  <TableCell className="font-medium">{contribution.bank_name}</TableCell>
+                  <TableCell>{contribution.branch_number}</TableCell>
+                  <TableCell>{contribution.account_number}</TableCell>
                   <TableCell>
-                    <span className="truncate max-w-xs block">{contribution.pixKey}</span>
+                    <span className="truncate max-w-xs block">{contribution.pix_key}</span>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -318,40 +318,40 @@ export function ContributionsManagement() {
           </DialogHeader>
           <div className="grid gap-4">
             <div>
-              <Label htmlFor="edit-bankName">Nome do Banco</Label>
+              <Label htmlFor="edit-bank_name">Nome do Banco</Label>
               <Input
-                id="edit-bankName"
-                value={formData.bankName}
-                onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                id="edit-bank_name"
+                value={formData.bank_name}
+                onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
                 placeholder="Ex: Banco do Brasil"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit-branchNumber">Agencia</Label>
+                <Label htmlFor="edit-branch_number">Agencia</Label>
                 <Input
-                  id="edit-branchNumber"
-                  value={formData.branchNumber}
-                  onChange={(e) => setFormData({ ...formData, branchNumber: e.target.value })}
+                  id="edit-branch_number"
+                  value={formData.branch_number}
+                  onChange={(e) => setFormData({ ...formData, branch_number: e.target.value })}
                   placeholder="0001"
                 />
               </div>
               <div>
-                <Label htmlFor="edit-accountNumber">Conta</Label>
+                <Label htmlFor="edit-account_number">Conta</Label>
                 <Input
-                  id="edit-accountNumber"
-                  value={formData.accountNumber}
-                  onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
+                  id="edit-account_number"
+                  value={formData.account_number}
+                  onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
                   placeholder="12345-6"
                 />
               </div>
             </div>
             <div>
-              <Label htmlFor="edit-pixKey">Chave PIX</Label>
+              <Label htmlFor="edit-pix_key">Chave PIX</Label>
               <Input
-                id="edit-pixKey"
-                value={formData.pixKey}
-                onChange={(e) => setFormData({ ...formData, pixKey: e.target.value })}
+                id="edit-pix_key"
+                value={formData.pix_key}
+                onChange={(e) => setFormData({ ...formData, pix_key: e.target.value })}
                 placeholder="email@exemplo.com ou CPF/CNPJ"
               />
             </div>

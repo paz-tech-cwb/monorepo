@@ -253,8 +253,8 @@ export function CoursesManagement() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalCourses ?? 0}</div>
-            <p className="text-xs text-muted-foreground">{stats?.publishedCourses ?? 0} publicados</p>
+            <div className="text-2xl font-bold">{stats?.total_courses ?? 0}</div>
+            <p className="text-xs text-muted-foreground">{stats?.published_courses ?? 0} publicados</p>
           </CardContent>
         </Card>
 
@@ -264,7 +264,7 @@ export function CoursesManagement() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalHours ?? 0}h</div>
+            <div className="text-2xl font-bold">{stats?.total_hours ?? 0}h</div>
             <p className="text-xs text-muted-foreground">Conteudo total</p>
           </CardContent>
         </Card>
@@ -275,7 +275,7 @@ export function CoursesManagement() {
             <LinkIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.coursesWithUrl ?? 0}</div>
+            <div className="text-2xl font-bold">{stats?.courses_with_url ?? 0}</div>
             <p className="text-xs text-muted-foreground">Cursos com link</p>
           </CardContent>
         </Card>
@@ -286,7 +286,7 @@ export function CoursesManagement() {
             <Image className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.coursesWithImage ?? 0}</div>
+            <div className="text-2xl font-bold">{stats?.courses_with_image ?? 0}</div>
             <p className="text-xs text-muted-foreground">Cursos com capa</p>
           </CardContent>
         </Card>

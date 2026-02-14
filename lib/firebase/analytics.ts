@@ -17,6 +17,17 @@ export type AnalyticsEventName =
   | "course_created"
   | "course_updated"
   | "course_deleted"
+  | "notification_sent"
+  | "notification_deleted"
+  | "user_created"
+  | "user_updated"
+  | "user_deleted"
+  | "user_role_changed"
+  | "member_created"
+  | "member_updated"
+  | "member_deleted"
+  | "member_viewed"
+  | "dashboard_viewed"
   | "api_error"
 
 export interface AnalyticsEventParams {
@@ -35,6 +46,17 @@ export interface AnalyticsEventParams {
   course_created: { course_id?: string }
   course_updated: { course_id: string }
   course_deleted: { course_id: string }
+  notification_sent: { notification_id?: number }
+  notification_deleted: { notification_id: number }
+  user_created: { user_id?: number }
+  user_updated: { user_id: number }
+  user_deleted: { user_id: number }
+  user_role_changed: { user_id: number; new_role: string }
+  member_created: { member_id?: number }
+  member_updated: { member_id: number }
+  member_deleted: { member_id: number }
+  member_viewed: { member_id: number }
+  dashboard_viewed: Record<string, never>
   api_error: { endpoint: string; status: number; message?: string }
 }
 

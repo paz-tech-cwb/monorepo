@@ -28,11 +28,11 @@ export interface CourseApiResponse {
 }
 
 export interface CourseStats {
-  totalCourses: number
-  publishedCourses: number
-  totalHours: number
-  coursesWithUrl: number
-  coursesWithImage: number
+  total_courses: number
+  published_courses: number
+  total_hours: number
+  courses_with_url: number
+  courses_with_image: number
 }
 
 export interface CreateCourseRequest {

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,68 +16,37 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Search, Plus, MoreHorizontal, Edit, Trash2 } from "lucide-react"
-
-interface User {
-  id: string
-  name: string
-  email: string
-  role: "admin" | "moderator" | "user"
-  status: "active" | "inactive"
-  lastLogin: string
-  createdAt: string
-}
-
-const mockUsers: User[] = [
-  {
-    id: "1",
-    name: "João Silva",
-    email: "joao@igreja.com",
-    role: "admin",
-    status: "active",
-    lastLogin: "2024-01-15",
-    createdAt: "2023-06-01",
-  },
-  {
-    id: "2",
-    name: "Maria Santos",
-    email: "maria@igreja.com",
-    role: "moderator",
-    status: "active",
-    lastLogin: "2024-01-14",
-    createdAt: "2023-07-15",
-  },
-  {
-    id: "3",
-    name: "Pedro Costa",
-    email: "pedro@igreja.com",
-    role: "user",
-    status: "inactive",
-    lastLogin: "2024-01-10",
-    createdAt: "2023-08-20",
-  },
-  {
-    id: "4",
-    name: "Ana Oliveira",
-    email: "ana@igreja.com",
-    role: "user",
-    status: "active",
-    lastLogin: "2024-01-15",
-    createdAt: "2023-09-05",
-  },
-]
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from "@/lib/hooks/use-users"
+import { TableSkeleton } from "@/components/ui/skeleton-components"
+import type { AdminUser, UserRole } from "@/lib/api/types"
 
 export function UsersManagement() {
-  const [users, setUsers] = useState<User[]>(mockUsers)
+  const { data: users = [], isLoading, error } = useUsers()
+  const createMutation = useCreateUser()
+  const updateMutation = useUpdateUser()
+  const deleteMutation = useDeleteUser()
+
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null)
+  const [deletingUserId, setDeletingUserId] = useState<number | null>(null)
   const [newUser, setNewUser] = useState({
     name: "",
     email: "",
-    role: "user" as const,
+    role: "user" as UserRole,
   })
 
   const filteredUsers = users.filter(
@@ -85,20 +55,26 @@ export function UsersManagement() {
       user.email.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleAddUser = () => {
-    const user: User = {
-      id: Date.now().toString(),
-      ...newUser,
-      status: "active",
-      lastLogin: "Nunca",
-      createdAt: new Date().toISOString().split("T")[0],
-    }
-    setUsers([...users, user])
+  const resetForm = () => {
     setNewUser({ name: "", email: "", role: "user" })
-    setIsAddDialogOpen(false)
   }
 
-  const handleEditUser = (user: User) => {
+  const handleAddUser = async () => {
+    try {
+      await createMutation.mutateAsync({
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+      })
+      toast.success("Usuario criado com sucesso!")
+      resetForm()
+      setIsAddDialogOpen(false)
+    } catch {
+      toast.error("Erro ao criar usuario. Tente novamente.")
+    }
+  }
+
+  const handleEditUser = (user: AdminUser) => {
     setEditingUser(user)
     setNewUser({
       name: user.name,
@@ -107,16 +83,35 @@ export function UsersManagement() {
     })
   }
 
-  const handleUpdateUser = () => {
+  const handleUpdateUser = async () => {
     if (!editingUser) return
 
-    setUsers(users.map((user) => (user.id === editingUser.id ? { ...user, ...newUser } : user)))
-    setEditingUser(null)
-    setNewUser({ name: "", email: "", role: "user" })
+    try {
+      await updateMutation.mutateAsync({
+        id: editingUser.id,
+        data: {
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+        },
+      })
+      toast.success("Usuario atualizado com sucesso!")
+      setEditingUser(null)
+      resetForm()
+    } catch {
+      toast.error("Erro ao atualizar usuario. Tente novamente.")
+    }
   }
 
-  const handleDeleteUser = (userId: string) => {
-    setUsers(users.filter((user) => user.id !== userId))
+  const handleDeleteUser = async (userId: number) => {
+    try {
+      await deleteMutation.mutateAsync(userId)
+      toast.success("Usuario excluido com sucesso!")
+    } catch {
+      toast.error("Erro ao excluir usuario. Tente novamente.")
+    } finally {
+      setDeletingUserId(null)
+    }
   }
 
   const getRoleBadge = (role: string) => {
@@ -138,28 +133,28 @@ export function UsersManagement() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Usuários</h1>
-        <p className="text-muted-foreground">Gerencie os usuários do sistema</p>
+        <h1 className="text-3xl font-bold text-foreground">Usuarios</h1>
+        <p className="text-muted-foreground">Gerencie os usuarios do sistema</p>
       </div>
 
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Lista de Usuários</CardTitle>
-              <CardDescription>{filteredUsers.length} usuário(s) encontrado(s)</CardDescription>
+              <CardTitle>Lista de Usuarios</CardTitle>
+              <CardDescription>{filteredUsers.length} usuario(s) encontrado(s)</CardDescription>
             </div>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
-                  Adicionar Usuário
+                  Adicionar Usuario
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Adicionar Novo Usuário</DialogTitle>
-                  <DialogDescription>Preencha os dados do novo usuário</DialogDescription>
+                  <DialogTitle>Adicionar Novo Usuario</DialogTitle>
+                  <DialogDescription>Preencha os dados do novo usuario</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -182,14 +177,14 @@ export function UsersManagement() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="role">Função</Label>
+                    <Label htmlFor="role">Funcao</Label>
                     <select
                       id="role"
                       value={newUser.role}
-                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value as any })}
+                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
                       className="w-full p-2 border border-input rounded-md bg-background"
                     >
-                      <option value="user">Usuário</option>
+                      <option value="user">Usuario</option>
                       <option value="moderator">Moderador</option>
                       <option value="admin">Administrador</option>
                     </select>
@@ -199,7 +194,9 @@ export function UsersManagement() {
                   <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={handleAddUser}>Adicionar</Button>
+                  <Button onClick={handleAddUser} disabled={createMutation.isPending}>
+                    {createMutation.isPending ? "Adicionando..." : "Adicionar"}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -209,57 +206,63 @@ export function UsersManagement() {
           <div className="flex items-center space-x-2 mb-4">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar usuários..."
+              placeholder="Buscar usuarios..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-sm"
             />
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Função</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Último Login</TableHead>
-                <TableHead>Criado em</TableHead>
-                <TableHead className="w-[70px]">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{getRoleBadge(user.role)}</TableCell>
-                  <TableCell>{getStatusBadge(user.status)}</TableCell>
-                  <TableCell>{user.lastLogin}</TableCell>
-                  <TableCell>{user.createdAt}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEditUser(user)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDeleteUser(user.id)} className="text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          {isLoading ? (
+            <TableSkeleton rows={5} columns={7} />
+          ) : error ? (
+            <p className="text-destructive text-center py-8">Erro ao carregar usuarios. Tente novamente mais tarde.</p>
+          ) : filteredUsers.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">Nenhum usuario encontrado.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Funcao</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Criado em</TableHead>
+                  <TableHead className="w-[70px]">Acoes</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{getRoleBadge(user.role)}</TableCell>
+                    <TableCell>{getStatusBadge(user.status)}</TableCell>
+                    <TableCell>{user.created_at}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setDeletingUserId(user.id)} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -267,8 +270,8 @@ export function UsersManagement() {
       <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar Usuário</DialogTitle>
-            <DialogDescription>Atualize os dados do usuário</DialogDescription>
+            <DialogTitle>Editar Usuario</DialogTitle>
+            <DialogDescription>Atualize os dados do usuario</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -291,14 +294,14 @@ export function UsersManagement() {
               />
             </div>
             <div>
-              <Label htmlFor="edit-role">Função</Label>
+              <Label htmlFor="edit-role">Funcao</Label>
               <select
                 id="edit-role"
                 value={newUser.role}
-                onChange={(e) => setNewUser({ ...newUser, role: e.target.value as any })}
+                onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
                 className="w-full p-2 border border-input rounded-md bg-background"
               >
-                <option value="user">Usuário</option>
+                <option value="user">Usuario</option>
                 <option value="moderator">Moderador</option>
                 <option value="admin">Administrador</option>
               </select>
@@ -308,10 +311,43 @@ export function UsersManagement() {
             <Button variant="outline" onClick={() => setEditingUser(null)}>
               Cancelar
             </Button>
-            <Button onClick={handleUpdateUser}>Salvar</Button>
+            <Button onClick={handleUpdateUser} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? "Salvando..." : "Salvar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={deletingUserId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingUserId(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza que deseja excluir este usuario?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acao nao pode ser desfeita. O usuario sera removido permanentemente do sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deletingUserId !== null) {
+                  handleDeleteUser(deletingUserId)
+                }
+              }}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

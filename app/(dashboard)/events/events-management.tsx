@@ -35,7 +35,7 @@ import { AddressForm, type AddressFormData } from "@/components/ui/address-form"
 
 // Church default address
 const CHURCH_ADDRESS: Address = {
-  zipCode: "80410-000",
+  zip_code: "80410-000",
   country: "Brasil",
   state: "PR",
   city: "Curitiba",
@@ -57,12 +57,12 @@ export function EventsManagement() {
   const [formData, setFormData] = useState<CreateAgendaEventRequest>({
     title: "",
     description: "",
-    initialDate: "",
-    finalDate: "",
+    initial_date: "",
+    final_date: "",
     recurrence_type: undefined,
     image: "",
     address: {
-      zipCode: "",
+      zip_code: "",
       country: "Brasil",
       state: "",
       city: "",
@@ -86,12 +86,12 @@ export function EventsManagement() {
     setFormData({
       title: "",
       description: "",
-      initialDate: "",
-      finalDate: "",
+      initial_date: "",
+      final_date: "",
       recurrence_type: undefined,
       image: "",
       address: {
-        zipCode: "",
+        zip_code: "",
         country: "Brasil",
         state: "",
         city: "",
@@ -113,12 +113,12 @@ export function EventsManagement() {
     setFormData({
       title: event.title,
       description: event.description || "",
-      initialDate: event.initialDate,
-      finalDate: event.finalDate || "",
+      initial_date: event.initial_date,
+      final_date: event.final_date || "",
       recurrence_type: event.recurrence_type,
       image: event.image || "",
       address: event.address || {
-        zipCode: "",
+        zip_code: "",
         country: "Brasil",
         state: "",
         city: "",
@@ -185,7 +185,7 @@ export function EventsManagement() {
 
   const getEventsForDate = (dateString: string) => {
     return events.filter((event) => {
-      const eventDate = event.initialDate.split("T")[0]
+      const eventDate = event.initial_date.split("T")[0]
       return eventDate === dateString
     })
   }
@@ -352,21 +352,21 @@ export function EventsManagement() {
           />
         </div>
         <div>
-          <Label htmlFor={isEdit ? "edit-initialDate" : "initialDate"}>Data Inicial</Label>
+          <Label htmlFor={isEdit ? "edit-initial_date" : "initial_date"}>Data Inicial</Label>
           <Input
-            id={isEdit ? "edit-initialDate" : "initialDate"}
+            id={isEdit ? "edit-initial_date" : "initial_date"}
             type="datetime-local"
-            value={formData.initialDate}
-            onChange={(e) => setFormData({ ...formData, initialDate: e.target.value })}
+            value={formData.initial_date}
+            onChange={(e) => setFormData({ ...formData, initial_date: e.target.value })}
           />
         </div>
         <div>
-          <Label htmlFor={isEdit ? "edit-finalDate" : "finalDate"}>Data Final (opcional)</Label>
+          <Label htmlFor={isEdit ? "edit-final_date" : "final_date"}>Data Final (opcional)</Label>
           <Input
-            id={isEdit ? "edit-finalDate" : "finalDate"}
+            id={isEdit ? "edit-final_date" : "final_date"}
             type="datetime-local"
-            value={formData.finalDate}
-            onChange={(e) => setFormData({ ...formData, finalDate: e.target.value })}
+            value={formData.final_date}
+            onChange={(e) => setFormData({ ...formData, final_date: e.target.value })}
           />
         </div>
         <div>
@@ -453,7 +453,7 @@ export function EventsManagement() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalEvents ?? events.length}</div>
+            <div className="text-2xl font-bold">{stats?.total_events ?? events.length}</div>
             <p className="text-xs text-muted-foreground">Eventos cadastrados</p>
           </CardContent>
         </Card>
@@ -465,7 +465,7 @@ export function EventsManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.recurringEvents ?? events.filter((e) => e.recurrence_type).length}
+              {stats?.recurring_events ?? events.filter((e) => e.recurrence_type).length}
             </div>
             <p className="text-xs text-muted-foreground">Com recorrencia</p>
           </CardContent>
@@ -544,7 +544,7 @@ export function EventsManagement() {
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {format(new Date(event.initialDate), "HH:mm")}
+                              {format(new Date(event.initial_date), "HH:mm")}
                             </div>
                           </div>
                           <div className="flex gap-2 mt-2">
@@ -618,9 +618,9 @@ export function EventsManagement() {
                           </p>
                         </div>
                       </TableCell>
-                      <TableCell>{formatDate(event.initialDate)}</TableCell>
+                      <TableCell>{formatDate(event.initial_date)}</TableCell>
                       <TableCell>
-                        {event.finalDate ? formatDate(event.finalDate) : "-"}
+                        {event.final_date ? formatDate(event.final_date) : "-"}
                       </TableCell>
                       <TableCell>{getRecurrenceBadge(event.recurrence_type) || "-"}</TableCell>
                       <TableCell>

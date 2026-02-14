@@ -11,11 +11,11 @@ import type {
 // Helper to calculate stats from courses
 export function calculateCourseStats(courses: Course[]): CourseStats {
   return {
-    totalCourses: courses.length,
-    publishedCourses: courses.filter((c) => c.status === "published").length,
-    totalHours: courses.reduce((sum, c) => sum + c.estimated_hours, 0),
-    coursesWithUrl: courses.filter((c) => c.url).length,
-    coursesWithImage: courses.filter((c) => c.image_url).length,
+    total_courses: courses.length,
+    published_courses: courses.filter((c) => c.status === "published").length,
+    total_hours: courses.reduce((sum, c) => sum + c.estimated_hours, 0),
+    courses_with_url: courses.filter((c) => c.url).length,
+    courses_with_image: courses.filter((c) => c.image_url).length,
   }
 }
 

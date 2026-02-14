@@ -52,7 +52,7 @@ interface LifeGroup {
   meetingTime: string
   address: Address
   status: "active" | "inactive"
-  createdAt: string
+  created_at: string
 }
 
 // Mock available members
@@ -184,7 +184,7 @@ const mockLifeGroups: LifeGroup[] = [
       number: "100",
     },
     status: "active",
-    createdAt: "2023-01-15",
+    created_at: "2023-01-15",
   },
   {
     id: "2",
@@ -205,7 +205,7 @@ const mockLifeGroups: LifeGroup[] = [
       number: "200",
     },
     status: "active",
-    createdAt: "2023-02-20",
+    created_at: "2023-02-20",
   },
   {
     id: "3",
@@ -226,7 +226,7 @@ const mockLifeGroups: LifeGroup[] = [
       number: "300",
     },
     status: "active",
-    createdAt: "2023-03-10",
+    created_at: "2023-03-10",
   },
   {
     id: "4",
@@ -247,7 +247,7 @@ const mockLifeGroups: LifeGroup[] = [
       number: "400",
     },
     status: "active",
-    createdAt: "2023-04-05",
+    created_at: "2023-04-05",
   },
 ]
 
@@ -462,7 +462,7 @@ export function LifeGroupsManagement() {
       id: Date.now().toString(),
       ...newGroup,
       status: "active",
-      createdAt: new Date().toISOString().split("T")[0],
+      created_at: new Date().toISOString().split("T")[0],
     }
     setLifeGroups([...lifeGroups, group])
     setNewGroup({
@@ -584,7 +584,7 @@ export function LifeGroupsManagement() {
     )
   }
 
-  const totalMembers = lifeGroups.reduce((sum, group) => sum + group.memberIds.length, 0)
+  const total_members = lifeGroups.reduce((sum, group) => sum + group.memberIds.length, 0)
   const activeGroups = lifeGroups.filter((group) => group.status === "active").length
 
   return (
@@ -612,7 +612,7 @@ export function LifeGroupsManagement() {
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalMembers}</div>
+            <div className="text-2xl font-bold">{total_members}</div>
             <p className="text-xs text-muted-foreground">em todos os grupos</p>
           </CardContent>
         </Card>
@@ -623,7 +623,7 @@ export function LifeGroupsManagement() {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{lifeGroups.length > 0 ? Math.round(totalMembers / lifeGroups.length) : 0}</div>
+            <div className="text-2xl font-bold">{lifeGroups.length > 0 ? Math.round(total_members / lifeGroups.length) : 0}</div>
             <p className="text-xs text-muted-foreground">Membros por grupo</p>
           </CardContent>
         </Card>
@@ -801,13 +801,13 @@ export function LifeGroupsManagement() {
               <CardContent>
                 <div className="space-y-3">
                   {lifeGroups.map((group) => {
-                    const memberCount = group.memberIds.length
-                    const percentage = totalMembers > 0 ? (memberCount / totalMembers) * 100 : 0
+                    const member_count = group.memberIds.length
+                    const percentage = total_members > 0 ? (member_count / total_members) * 100 : 0
                     return (
                       <div key={group.id} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium truncate max-w-[150px]">{group.name}</span>
-                          <span className="text-sm text-muted-foreground">{memberCount} membros</span>
+                          <span className="text-sm text-muted-foreground">{member_count} membros</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-20 bg-muted rounded-full h-2">

@@ -1,24 +1,24 @@
 export interface Announcement {
   id: number
-  imageUrl: string
+  image_url: string
   title: string
   subtitle: string
-  markdownContent: string
-  actionUrl?: string
+  markdown_content: string
+  action_url?: string
 }
 
 export interface CreateAnnouncementRequest {
-  imageUrl: string
+  image_url: string
   title: string
   subtitle: string
-  markdownContent: string
-  actionUrl?: string
+  markdown_content: string
+  action_url?: string
 }
 
 export interface UpdateAnnouncementRequest {
-  imageUrl?: string
+  image_url?: string
   title?: string
   subtitle?: string
-  markdownContent?: string
-  actionUrl?: string
+  markdown_content?: string
+  action_url?: string
 }

@@ -8,7 +8,7 @@ export interface Address {
   neighborhood: string
   city: string
   state: string
-  zipCode: string
+  zip_code: string
   country: string
 }
 
@@ -16,8 +16,8 @@ export interface AgendaEvent {
   id: number
   title: string
   description?: string
-  initialDate: string
-  finalDate?: string
+  initial_date: string
+  final_date?: string
   recurrence_type?: RecurrenceType | null
   image?: string
   church_id?: number
@@ -35,15 +35,15 @@ export type AgendaApiResponse = AgendaMonthGroup[]
 
 // Stats derived from agenda data
 export interface AgendaStats {
-  totalEvents: number
-  recurringEvents: number
+  total_events: number
+  recurring_events: number
 }
 
 export interface CreateAgendaEventRequest {
   title: string
   description?: string
-  initialDate: string
-  finalDate?: string
+  initial_date: string
+  final_date?: string
   recurrence_type?: RecurrenceType | null
   image?: string
   address?: Address
@@ -52,8 +52,8 @@ export interface CreateAgendaEventRequest {
 export interface UpdateAgendaEventRequest {
   title?: string
   description?: string
-  initialDate?: string
-  finalDate?: string
+  initial_date?: string
+  final_date?: string
   recurrence_type?: RecurrenceType | null
   image?: string
   address?: Address

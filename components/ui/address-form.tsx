@@ -8,7 +8,7 @@ import { Loader2, MapPin } from "lucide-react"
 import { fetchAddressByCEP, formatCEP } from "@/lib/utils/cep"
 
 export interface AddressFormData {
-  zipCode: string
+  zip_code: string
   country: string
   state: string
   city: string
@@ -39,12 +39,12 @@ export function AddressForm({
 
   const handleCEPChange = (cep: string) => {
     const formatted = formatCEP(cep)
-    onChange({ ...value, zipCode: formatted })
+    onChange({ ...value, zip_code: formatted })
     setCepError(null)
   }
 
   const handleCEPBlur = async () => {
-    const cleanCEP = value.zipCode.replace(/\D/g, "")
+    const cleanCEP = value.zip_code.replace(/\D/g, "")
 
     if (cleanCEP.length !== 8) {
       return
@@ -76,11 +76,11 @@ export function AddressForm({
   return (
     <div className="grid grid-cols-2 gap-4">
       <div>
-        <Label htmlFor={`${idPrefix}zipCode`}>CEP</Label>
+        <Label htmlFor={`${idPrefix}zip_code`}>CEP</Label>
         <div className="relative">
           <Input
-            id={`${idPrefix}zipCode`}
-            value={value.zipCode}
+            id={`${idPrefix}zip_code`}
+            value={value.zip_code}
             onChange={(e) => handleCEPChange(e.target.value)}
             onBlur={handleCEPBlur}
             placeholder="00000-000"

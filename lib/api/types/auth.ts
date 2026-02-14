@@ -12,7 +12,7 @@ export interface AuthResponse {
 }
 
 export interface SocialLoginRequest {
-  idToken: string
+  id_token: string
   provider: "google" | "apple"
 }
 

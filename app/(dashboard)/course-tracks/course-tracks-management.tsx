@@ -26,10 +26,10 @@ interface Course {
   title: string
   description: string
   creator: string
-  estimatedHours: number
+  estimated_hours: number
   category: "teologia" | "lideranca" | "ministerio" | "discipulado"
   url?: string
-  imageUrl?: string
+  image_url?: string
 }
 
 interface CourseTrack {
@@ -38,9 +38,9 @@ interface CourseTrack {
   description: string
   category: "lideranca" | "ministerio" | "teologia" | "discipulado"
   courseIds: string[]
-  estimatedHours: number
+  estimated_hours: number
   status: "active" | "inactive"
-  createdAt: string
+  created_at: string
 }
 
 // Mock available courses
@@ -50,7 +50,7 @@ const availableCourses: Course[] = [
     title: "Fundamentos da Fe Crista",
     description: "Curso basico sobre os fundamentos da fe crista",
     creator: "Pastor Joao Silva",
-    estimatedHours: 16,
+    estimated_hours: 16,
     category: "teologia",
   },
   {
@@ -58,7 +58,7 @@ const availableCourses: Course[] = [
     title: "Lideranca Crista",
     description: "Desenvolvimento de lideres para a igreja",
     creator: "Pastora Maria Santos",
-    estimatedHours: 24,
+    estimated_hours: 24,
     category: "lideranca",
   },
   {
@@ -66,7 +66,7 @@ const availableCourses: Course[] = [
     title: "Ministerio de Louvor",
     description: "Treinamento para musicos e cantores",
     creator: "Carlos Mendes",
-    estimatedHours: 12,
+    estimated_hours: 12,
     category: "ministerio",
   },
   {
@@ -74,7 +74,7 @@ const availableCourses: Course[] = [
     title: "Hermeneutica Biblica",
     description: "Interpretacao e estudo das Escrituras",
     creator: "Pastor Joao Silva",
-    estimatedHours: 20,
+    estimated_hours: 20,
     category: "teologia",
   },
   {
@@ -82,7 +82,7 @@ const availableCourses: Course[] = [
     title: "Gestao de Equipes",
     description: "Como liderar e gerenciar equipes ministeriais",
     creator: "Pastora Maria Santos",
-    estimatedHours: 16,
+    estimated_hours: 16,
     category: "lideranca",
   },
   {
@@ -90,7 +90,7 @@ const availableCourses: Course[] = [
     title: "Evangelismo Pessoal",
     description: "Tecnicas e praticas de evangelismo",
     creator: "Pastor Paulo Oliveira",
-    estimatedHours: 10,
+    estimated_hours: 10,
     category: "ministerio",
   },
   {
@@ -98,7 +98,7 @@ const availableCourses: Course[] = [
     title: "Discipulado Um a Um",
     description: "Como discipular individualmente",
     creator: "Pastora Maria Santos",
-    estimatedHours: 14,
+    estimated_hours: 14,
     category: "discipulado",
   },
   {
@@ -106,7 +106,7 @@ const availableCourses: Course[] = [
     title: "Teologia Sistematica",
     description: "Estudo aprofundado de doutrinas biblicas",
     creator: "Pastor Joao Silva",
-    estimatedHours: 40,
+    estimated_hours: 40,
     category: "teologia",
   },
 ]
@@ -118,9 +118,9 @@ const mockCourseTracks: CourseTrack[] = [
     description: "Formacao completa para lideres da igreja",
     category: "lideranca",
     courseIds: ["2", "5"],
-    estimatedHours: 40,
+    estimated_hours: 40,
     status: "active",
-    createdAt: "2023-01-15",
+    created_at: "2023-01-15",
   },
   {
     id: "2",
@@ -128,9 +128,9 @@ const mockCourseTracks: CourseTrack[] = [
     description: "Estudo aprofundado das escrituras e teologia",
     category: "teologia",
     courseIds: ["1", "4", "8"],
-    estimatedHours: 76,
+    estimated_hours: 76,
     status: "active",
-    createdAt: "2023-02-20",
+    created_at: "2023-02-20",
   },
   {
     id: "3",
@@ -138,9 +138,9 @@ const mockCourseTracks: CourseTrack[] = [
     description: "Preparacao para diferentes ministerios da igreja",
     category: "ministerio",
     courseIds: ["3", "6"],
-    estimatedHours: 22,
+    estimated_hours: 22,
     status: "active",
-    createdAt: "2023-03-10",
+    created_at: "2023-03-10",
   },
   {
     id: "4",
@@ -148,9 +148,9 @@ const mockCourseTracks: CourseTrack[] = [
     description: "Formacao de discipuladores e mentores",
     category: "discipulado",
     courseIds: ["7"],
-    estimatedHours: 14,
+    estimated_hours: 14,
     status: "inactive",
-    createdAt: "2023-04-05",
+    created_at: "2023-04-05",
   },
 ]
 
@@ -167,7 +167,7 @@ export function CourseTracksManagement() {
     description: "",
     category: "lideranca" as const,
     courseIds: [] as string[],
-    estimatedHours: 0,
+    estimated_hours: 0,
   })
 
   const filteredTracks = courseTracks.filter(
@@ -182,16 +182,16 @@ export function CourseTracksManagement() {
   }
 
   const calculateTotalHours = (courseIds: string[]) => {
-    return getCoursesByIds(courseIds).reduce((sum, course) => sum + course.estimatedHours, 0)
+    return getCoursesByIds(courseIds).reduce((sum, course) => sum + course.estimated_hours, 0)
   }
 
   const handleAddTrack = () => {
     const track: CourseTrack = {
       id: Date.now().toString(),
       ...newTrack,
-      estimatedHours: calculateTotalHours(newTrack.courseIds),
+      estimated_hours: calculateTotalHours(newTrack.courseIds),
       status: "active",
-      createdAt: new Date().toISOString().split("T")[0],
+      created_at: new Date().toISOString().split("T")[0],
     }
     setCourseTracks([...courseTracks, track])
     setNewTrack({
@@ -199,7 +199,7 @@ export function CourseTracksManagement() {
       description: "",
       category: "lideranca",
       courseIds: [],
-      estimatedHours: 0,
+      estimated_hours: 0,
     })
     setIsAddDialogOpen(false)
   }
@@ -211,7 +211,7 @@ export function CourseTracksManagement() {
       description: track.description,
       category: track.category,
       courseIds: track.courseIds,
-      estimatedHours: track.estimatedHours,
+      estimated_hours: track.estimated_hours,
     })
   }
 
@@ -223,7 +223,7 @@ export function CourseTracksManagement() {
         ? {
             ...track,
             ...newTrack,
-            estimatedHours: calculateTotalHours(newTrack.courseIds),
+            estimated_hours: calculateTotalHours(newTrack.courseIds),
           }
         : track
     ))
@@ -233,7 +233,7 @@ export function CourseTracksManagement() {
       description: "",
       category: "lideranca",
       courseIds: [],
-      estimatedHours: 0,
+      estimated_hours: 0,
     })
   }
 
@@ -255,7 +255,7 @@ export function CourseTracksManagement() {
         ? {
             ...track,
             courseIds: selectedCourseIds,
-            estimatedHours: calculateTotalHours(selectedCourseIds),
+            estimated_hours: calculateTotalHours(selectedCourseIds),
           }
         : track
     ))
@@ -290,7 +290,7 @@ export function CourseTracksManagement() {
     )
   }
 
-  const totalHours = courseTracks.reduce((sum, track) => sum + track.estimatedHours, 0)
+  const totalHours = courseTracks.reduce((sum, track) => sum + track.estimated_hours, 0)
   const activeTracks = courseTracks.filter((track) => track.status === "active").length
 
   const TrackForm = ({ isEdit = false }: { isEdit?: boolean }) => (
@@ -329,12 +329,12 @@ export function CourseTracksManagement() {
         </select>
       </div>
       <div>
-        <Label htmlFor={isEdit ? "edit-estimatedHours" : "estimatedHours"}>Horas Estimadas</Label>
+        <Label htmlFor={isEdit ? "edit-estimated_hours" : "estimated_hours"}>Horas Estimadas</Label>
         <Input
-          id={isEdit ? "edit-estimatedHours" : "estimatedHours"}
+          id={isEdit ? "edit-estimated_hours" : "estimated_hours"}
           type="number"
-          value={newTrack.estimatedHours || calculateTotalHours(newTrack.courseIds)}
-          onChange={(e) => setNewTrack({ ...newTrack, estimatedHours: Number.parseInt(e.target.value) || 0 })}
+          value={newTrack.estimated_hours || calculateTotalHours(newTrack.courseIds)}
+          onChange={(e) => setNewTrack({ ...newTrack, estimated_hours: Number.parseInt(e.target.value) || 0 })}
           placeholder="Auto-calculado pelos cursos"
         />
         <p className="text-xs text-muted-foreground mt-1">
@@ -478,7 +478,7 @@ export function CourseTracksManagement() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{track.estimatedHours}h</TableCell>
+                  <TableCell>{track.estimated_hours}h</TableCell>
                   <TableCell>{getStatusBadge(track.status)}</TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -562,7 +562,7 @@ export function CourseTracksManagement() {
                   <p className="text-xs text-muted-foreground">{course.description}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <Badge variant="outline" className="text-xs">
-                      {course.estimatedHours}h
+                      {course.estimated_hours}h
                     </Badge>
                     {getCategoryBadge(course.category)}
                   </div>

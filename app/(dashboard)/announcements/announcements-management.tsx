@@ -52,9 +52,9 @@ export function AnnouncementsManagement() {
   const [formData, setFormData] = useState<CreateAnnouncementRequest>({
     title: "",
     subtitle: "",
-    imageUrl: "",
-    markdownContent: "",
-    actionUrl: "",
+    image_url: "",
+    markdown_content: "",
+    action_url: "",
   })
 
   const isFormValid = formData.title.trim() !== "" && formData.subtitle.trim() !== ""
@@ -69,9 +69,9 @@ export function AnnouncementsManagement() {
     setFormData({
       title: "",
       subtitle: "",
-      imageUrl: "",
-      markdownContent: "",
-      actionUrl: "",
+      image_url: "",
+      markdown_content: "",
+      action_url: "",
     })
   }
 
@@ -91,9 +91,9 @@ export function AnnouncementsManagement() {
     setFormData({
       title: announcement.title,
       subtitle: announcement.subtitle,
-      imageUrl: announcement.imageUrl,
-      markdownContent: announcement.markdownContent,
-      actionUrl: announcement.actionUrl || "",
+      image_url: announcement.image_url,
+      markdown_content: announcement.markdown_content,
+      action_url: announcement.action_url || "",
     })
   }
 
@@ -194,7 +194,7 @@ export function AnnouncementsManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {announcements.filter((a) => a.imageUrl).length}
+              {announcements.filter((a) => a.image_url).length}
             </div>
             <p className="text-xs text-muted-foreground">Avisos com imagem</p>
           </CardContent>
@@ -207,7 +207,7 @@ export function AnnouncementsManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {announcements.filter((a) => a.actionUrl).length}
+              {announcements.filter((a) => a.action_url).length}
             </div>
             <p className="text-xs text-muted-foreground">Avisos com link de acao</p>
           </CardContent>
@@ -256,20 +256,20 @@ export function AnnouncementsManagement() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="imageUrl">URL da Imagem</Label>
+                        <Label htmlFor="image_url">URL da Imagem</Label>
                         <Input
-                          id="imageUrl"
-                          value={formData.imageUrl}
-                          onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                          id="image_url"
+                          value={formData.image_url}
+                          onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                           placeholder="https://exemplo.com/imagem.jpg"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="actionUrl">URL de Acao (opcional)</Label>
+                        <Label htmlFor="action_url">URL de Acao (opcional)</Label>
                         <Input
-                          id="actionUrl"
-                          value={formData.actionUrl}
-                          onChange={(e) => setFormData({ ...formData, actionUrl: e.target.value })}
+                          id="action_url"
+                          value={formData.action_url}
+                          onChange={(e) => setFormData({ ...formData, action_url: e.target.value })}
                           placeholder="https://exemplo.com/acao"
                         />
                       </div>
@@ -279,8 +279,8 @@ export function AnnouncementsManagement() {
                     <div className="flex flex-col min-h-[350px]">
                       <Label className="mb-2">Conteudo (Markdown)</Label>
                       <MarkdownEditor
-                        value={formData.markdownContent}
-                        onChange={(value) => setFormData({ ...formData, markdownContent: value })}
+                        value={formData.markdown_content}
+                        onChange={(value) => setFormData({ ...formData, markdown_content: value })}
                         placeholder="Conteudo do aviso em Markdown"
                       />
                     </div>
@@ -330,21 +330,21 @@ export function AnnouncementsManagement() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {announcement.imageUrl ? (
+                    {announcement.image_url ? (
                       <span className="text-green-600">Sim</span>
                     ) : (
                       <span className="text-muted-foreground">Nao</span>
                     )}
                   </TableCell>
                   <TableCell>
-                    {announcement.actionUrl ? (
+                    {announcement.action_url ? (
                       <a
-                        href={announcement.actionUrl}
+                        href={announcement.action_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-primary hover:underline truncate max-w-xs block"
                       >
-                        {announcement.actionUrl}
+                        {announcement.action_url}
                       </a>
                     ) : (
                       <span className="text-muted-foreground">-</span>
@@ -409,20 +409,20 @@ export function AnnouncementsManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-imageUrl">URL da Imagem</Label>
+                  <Label htmlFor="edit-image_url">URL da Imagem</Label>
                   <Input
-                    id="edit-imageUrl"
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                    id="edit-image_url"
+                    value={formData.image_url}
+                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                     placeholder="https://exemplo.com/imagem.jpg"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-actionUrl">URL de Acao (opcional)</Label>
+                  <Label htmlFor="edit-action_url">URL de Acao (opcional)</Label>
                   <Input
-                    id="edit-actionUrl"
-                    value={formData.actionUrl}
-                    onChange={(e) => setFormData({ ...formData, actionUrl: e.target.value })}
+                    id="edit-action_url"
+                    value={formData.action_url}
+                    onChange={(e) => setFormData({ ...formData, action_url: e.target.value })}
                     placeholder="https://exemplo.com/acao"
                   />
                 </div>
@@ -432,8 +432,8 @@ export function AnnouncementsManagement() {
               <div className="flex flex-col min-h-[350px]">
                 <Label className="mb-2">Conteudo (Markdown)</Label>
                 <MarkdownEditor
-                  value={formData.markdownContent}
-                  onChange={(value) => setFormData({ ...formData, markdownContent: value })}
+                  value={formData.markdown_content}
+                  onChange={(value) => setFormData({ ...formData, markdown_content: value })}
                   placeholder="Conteudo do aviso em Markdown"
                 />
               </div>

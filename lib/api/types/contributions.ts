@@ -1,21 +1,21 @@
 export interface Contribution {
   id: number
-  bankName: string
-  branchNumber: string
-  accountNumber: string
-  pixKey: string
+  bank_name: string
+  branch_number: string
+  account_number: string
+  pix_key: string
 }
 
 export interface CreateContributionRequest {
-  bankName: string
-  branchNumber: string
-  accountNumber: string
-  pixKey: string
+  bank_name: string
+  branch_number: string
+  account_number: string
+  pix_key: string
 }
 
 export interface UpdateContributionRequest {
-  bankName?: string
-  branchNumber?: string
-  accountNumber?: string
-  pixKey?: string
+  bank_name?: string
+  branch_number?: string
+  account_number?: string
+  pix_key?: string
 }
