@@ -16,8 +16,6 @@ const protectedRoutes = [
   "/contributions",
 ]
 
-const publicRoutes = ["/", "/auth"]
-
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -25,21 +23,14 @@ export function middleware(request: NextRequest) {
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   )
 
-  const isPublicRoute = publicRoutes.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  )
-
-  // For protected routes, we check for the presence of a session indicator
-  // The actual authentication is handled client-side by Firebase
-  // This middleware provides a basic redirect for unauthenticated users
   if (isProtectedRoute) {
     const hasSession = request.cookies.get("auth_session")
 
-    // If no session cookie, the client-side auth will handle the redirect
-    // This is a soft check - the real auth happens in AuthProvider
     if (!hasSession) {
-      // We allow the request but the client will redirect if needed
-      return NextResponse.next()
+      // No session cookie -- redirect to login page
+      const loginUrl = new URL("/", request.url)
+      loginUrl.searchParams.set("redirect", pathname)
+      return NextResponse.redirect(loginUrl)
     }
   }
 

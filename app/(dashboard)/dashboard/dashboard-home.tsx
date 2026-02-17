@@ -18,6 +18,7 @@ import {
   Pie,
   Cell,
 } from "recharts"
+import { useRouter } from "next/navigation"
 import { useDashboardStats, useAccessTrends, useMemberGrowth, useLifeGroupDistribution } from "@/lib/hooks/use-dashboard"
 import { StatsCardSkeleton } from "@/components/ui/skeleton-components"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -25,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 const PIE_COLORS = ["#15803d", "#84cc16", "#d97706", "#3b82f6", "#8b5cf6", "#ec4899"]
 
 export function DashboardHome() {
+  const router = useRouter()
   const { data: stats, isLoading: statsLoading } = useDashboardStats()
   const { data: accessTrends, isLoading: trendsLoading } = useAccessTrends()
   const { data: memberGrowth, isLoading: growthLoading } = useMemberGrowth()
@@ -229,7 +231,7 @@ export function DashboardHome() {
             <CardDescription>Envie notificacoes push para todos os usuarios do app</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full">Criar Notificacao</Button>
+            <Button className="w-full" onClick={() => router.push("/notifications")}>Criar Notificacao</Button>
           </CardContent>
         </Card>
 
@@ -252,7 +254,7 @@ export function DashboardHome() {
                 <Badge variant="secondary">Quarta</Badge>
               </div>
             </div>
-            <Button variant="outline" className="w-full mt-4 bg-transparent">
+            <Button variant="outline" className="w-full mt-4 bg-transparent" onClick={() => router.push("/events")}>
               Ver Todos
             </Button>
           </CardContent>

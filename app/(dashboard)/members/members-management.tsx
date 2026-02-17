@@ -43,7 +43,7 @@ export function MembersManagement() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingMember, setEditingMember] = useState<Member | null>(null)
   const [deletingMemberId, setDeletingMemberId] = useState<number | null>(null)
-  const [newMember, setNewMember] = useState({
+  const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
@@ -60,18 +60,18 @@ export function MembersManagement() {
   )
 
   const resetForm = () => {
-    setNewMember({ name: "", email: "", phone: "", address: "", birth_date: "", life_group: "" })
+    setFormData({ name: "", email: "", phone: "", address: "", birth_date: "", life_group: "" })
   }
 
-  const handleAddMember = async () => {
+  const handleAdd = async () => {
     try {
       await createMutation.mutateAsync({
-        name: newMember.name,
-        email: newMember.email,
-        phone: newMember.phone,
-        address: newMember.address || undefined,
-        birth_date: newMember.birth_date,
-        life_group: newMember.life_group || undefined,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        address: formData.address || undefined,
+        birth_date: formData.birth_date || undefined,
+        life_group: formData.life_group || undefined,
       })
       toast.success("Membro adicionado com sucesso!")
       resetForm()
@@ -81,31 +81,31 @@ export function MembersManagement() {
     }
   }
 
-  const handleEditMember = (member: Member) => {
+  const handleEdit = (member: Member) => {
     setEditingMember(member)
-    setNewMember({
+    setFormData({
       name: member.name,
       email: member.email,
-      phone: member.phone,
+      phone: member.phone || "",
       address: member.address || "",
-      birth_date: member.birth_date,
+      birth_date: member.birth_date || "",
       life_group: member.life_group || "",
     })
   }
 
-  const handleUpdateMember = async () => {
+  const handleUpdate = async () => {
     if (!editingMember) return
 
     try {
       await updateMutation.mutateAsync({
         id: editingMember.id,
         data: {
-          name: newMember.name,
-          email: newMember.email,
-          phone: newMember.phone,
-          address: newMember.address || undefined,
-          birth_date: newMember.birth_date,
-          life_group: newMember.life_group || undefined,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone || undefined,
+          address: formData.address || undefined,
+          birth_date: formData.birth_date || undefined,
+          life_group: formData.life_group || undefined,
         },
       })
       toast.success("Membro atualizado com sucesso!")
@@ -116,7 +116,7 @@ export function MembersManagement() {
     }
   }
 
-  const handleDeleteMember = async (memberId: number) => {
+  const handleDelete = async (memberId: number) => {
     try {
       await deleteMutation.mutateAsync(memberId)
       toast.success("Membro excluido com sucesso!")
@@ -129,7 +129,9 @@ export function MembersManagement() {
 
   const getStatusBadge = (status: string) => {
     return (
-      <Badge variant={status === "active" ? "default" : "secondary"}>{status === "active" ? "Ativo" : "Inativo"}</Badge>
+      <Badge variant={status === "active" ? "default" : "secondary"}>
+        {status === "active" ? "Ativo" : "Inativo"}
+      </Badge>
     )
   }
 
@@ -164,8 +166,8 @@ export function MembersManagement() {
                     <Label htmlFor="name">Nome</Label>
                     <Input
                       id="name"
-                      value={newMember.name}
-                      onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="Nome completo"
                     />
                   </div>
@@ -174,8 +176,8 @@ export function MembersManagement() {
                     <Input
                       id="email"
                       type="email"
-                      value={newMember.email}
-                      onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="email@exemplo.com"
                     />
                   </div>
@@ -183,8 +185,8 @@ export function MembersManagement() {
                     <Label htmlFor="phone">Telefone</Label>
                     <Input
                       id="phone"
-                      value={newMember.phone}
-                      onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       placeholder="(11) 99999-9999"
                     />
                   </div>
@@ -193,26 +195,26 @@ export function MembersManagement() {
                     <Input
                       id="birth_date"
                       type="date"
-                      value={newMember.birth_date}
-                      onChange={(e) => setNewMember({ ...newMember, birth_date: e.target.value })}
+                      value={formData.birth_date}
+                      onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="life_group">Life Group</Label>
+                    <Input
+                      id="life_group"
+                      value={formData.life_group}
+                      onChange={(e) => setFormData({ ...formData, life_group: e.target.value })}
+                      placeholder="Nome do Life Group"
                     />
                   </div>
                   <div className="col-span-2">
                     <Label htmlFor="address">Endereco</Label>
                     <Input
                       id="address"
-                      value={newMember.address}
-                      onChange={(e) => setNewMember({ ...newMember, address: e.target.value })}
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       placeholder="Endereco completo"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="life_group">Life Group</Label>
-                    <Input
-                      id="life_group"
-                      value={newMember.life_group}
-                      onChange={(e) => setNewMember({ ...newMember, life_group: e.target.value })}
-                      placeholder="Nome do Life Group"
                     />
                   </div>
                 </div>
@@ -220,7 +222,7 @@ export function MembersManagement() {
                   <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={handleAddMember} disabled={createMutation.isPending}>
+                  <Button onClick={handleAdd} disabled={createMutation.isPending}>
                     {createMutation.isPending ? "Adicionando..." : "Adicionar"}
                   </Button>
                 </DialogFooter>
@@ -240,7 +242,7 @@ export function MembersManagement() {
           </div>
 
           {isLoading ? (
-            <TableSkeleton rows={5} columns={7} />
+            <TableSkeleton rows={5} columns={6} />
           ) : error ? (
             <p className="text-destructive text-center py-8">Erro ao carregar membros. Tente novamente mais tarde.</p>
           ) : filteredMembers.length === 0 ? (
@@ -254,7 +256,6 @@ export function MembersManagement() {
                   <TableHead>Telefone</TableHead>
                   <TableHead>Life Group</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Membro desde</TableHead>
                   <TableHead className="w-[70px]">Acoes</TableHead>
                 </TableRow>
               </TableHeader>
@@ -263,10 +264,9 @@ export function MembersManagement() {
                   <TableRow key={member.id}>
                     <TableCell className="font-medium">{member.name}</TableCell>
                     <TableCell>{member.email}</TableCell>
-                    <TableCell>{member.phone}</TableCell>
+                    <TableCell>{member.phone || "-"}</TableCell>
                     <TableCell>{member.life_group || "-"}</TableCell>
                     <TableCell>{getStatusBadge(member.status)}</TableCell>
-                    <TableCell>{member.membership_date}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -275,7 +275,7 @@ export function MembersManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditMember(member)}>
+                          <DropdownMenuItem onClick={() => handleEdit(member)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
@@ -294,7 +294,7 @@ export function MembersManagement() {
         </CardContent>
       </Card>
 
-      {/* Edit Member Dialog */}
+      {/* Edit Dialog */}
       <Dialog open={!!editingMember} onOpenChange={() => setEditingMember(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -306,8 +306,8 @@ export function MembersManagement() {
               <Label htmlFor="edit-name">Nome</Label>
               <Input
                 id="edit-name"
-                value={newMember.name}
-                onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Nome completo"
               />
             </div>
@@ -316,8 +316,8 @@ export function MembersManagement() {
               <Input
                 id="edit-email"
                 type="email"
-                value={newMember.email}
-                onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="email@exemplo.com"
               />
             </div>
@@ -325,8 +325,8 @@ export function MembersManagement() {
               <Label htmlFor="edit-phone">Telefone</Label>
               <Input
                 id="edit-phone"
-                value={newMember.phone}
-                onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="(11) 99999-9999"
               />
             </div>
@@ -335,26 +335,26 @@ export function MembersManagement() {
               <Input
                 id="edit-birth_date"
                 type="date"
-                value={newMember.birth_date}
-                onChange={(e) => setNewMember({ ...newMember, birth_date: e.target.value })}
+                value={formData.birth_date}
+                onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-life_group">Life Group</Label>
+              <Input
+                id="edit-life_group"
+                value={formData.life_group}
+                onChange={(e) => setFormData({ ...formData, life_group: e.target.value })}
+                placeholder="Nome do Life Group"
               />
             </div>
             <div className="col-span-2">
               <Label htmlFor="edit-address">Endereco</Label>
               <Input
                 id="edit-address"
-                value={newMember.address}
-                onChange={(e) => setNewMember({ ...newMember, address: e.target.value })}
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 placeholder="Endereco completo"
-              />
-            </div>
-            <div className="col-span-2">
-              <Label htmlFor="edit-life_group">Life Group</Label>
-              <Input
-                id="edit-life_group"
-                value={newMember.life_group}
-                onChange={(e) => setNewMember({ ...newMember, life_group: e.target.value })}
-                placeholder="Nome do Life Group"
               />
             </div>
           </div>
@@ -362,7 +362,7 @@ export function MembersManagement() {
             <Button variant="outline" onClick={() => setEditingMember(null)}>
               Cancelar
             </Button>
-            <Button onClick={handleUpdateMember} disabled={updateMutation.isPending}>
+            <Button onClick={handleUpdate} disabled={updateMutation.isPending}>
               {updateMutation.isPending ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
@@ -389,7 +389,7 @@ export function MembersManagement() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
                 if (deletingMemberId !== null) {
-                  handleDeleteMember(deletingMemberId)
+                  handleDelete(deletingMemberId)
                 }
               }}
               disabled={deleteMutation.isPending}

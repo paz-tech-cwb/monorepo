@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { membersApi } from "@/lib/api/endpoints/members"
-import type { CreateMemberRequest, UpdateMemberRequest } from "@/lib/api/types"
+import type { CreateMemberRequest, UpdateMemberRequest } from "@/lib/api/types/members"
 import { trackEvent } from "@/lib/firebase/analytics"
 
 const QUERY_KEY = ["members"]
@@ -14,22 +14,14 @@ export function useMembers() {
   })
 }
 
-export function useMember(id: number | null) {
-  return useQuery({
-    queryKey: [...QUERY_KEY, id],
-    queryFn: () => membersApi.getById(id!),
-    enabled: !!id,
-  })
-}
-
 export function useCreateMember() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (data: CreateMemberRequest) => membersApi.create(data),
-    onSuccess: (newMember) => {
+    onSuccess: (member) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
-      trackEvent("member_created", { member_id: newMember.id })
+      trackEvent("member_created", { member_id: member.id })
     },
   })
 }
@@ -40,9 +32,9 @@ export function useUpdateMember() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateMemberRequest }) =>
       membersApi.update(id, data),
-    onSuccess: (updatedMember) => {
+    onSuccess: (member) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
-      trackEvent("member_updated", { member_id: updatedMember.id })
+      trackEvent("member_updated", { member_id: member.id })
     },
   })
 }

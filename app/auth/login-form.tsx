@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,12 +11,15 @@ import { useAuth } from "@/lib/hooks/use-auth"
 
 export function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { loginWithGoogle, loginWithApple, isLoading, isAuthenticated } = useAuth()
   const [error, setError] = useState<string | null>(null)
 
+  const redirectTo = searchParams.get("redirect") || "/dashboard"
+
   // Redirect if already authenticated
   if (isAuthenticated) {
-    router.push("/dashboard")
+    router.push(redirectTo)
     return null
   }
 
@@ -24,7 +27,7 @@ export function LoginForm() {
     try {
       setError(null)
       await loginWithGoogle()
-      router.push("/dashboard")
+      router.push(redirectTo)
     } catch (err) {
       console.error("Google login error:", err)
       setError("Falha ao fazer login com Google. Tente novamente.")
@@ -35,7 +38,7 @@ export function LoginForm() {
     try {
       setError(null)
       await loginWithApple()
-      router.push("/dashboard")
+      router.push(redirectTo)
     } catch (err) {
       console.error("Apple login error:", err)
       setError("Falha ao fazer login com Apple. Tente novamente.")

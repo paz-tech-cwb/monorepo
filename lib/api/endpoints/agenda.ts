@@ -7,9 +7,6 @@ import type {
   UpdateAgendaEventRequest,
 } from "../types"
 
-// Mock API base URL for agenda endpoint
-const AGENDA_MOCK_BASE_URL = "https://d21c4655-831b-482d-8992-73131fa5cd0f.mock.pstmn.io/api"
-
 // Helper to flatten the grouped API response into a flat array
 function flattenAgendaResponse(response: AgendaApiResponse): AgendaEvent[] {
   return response.flatMap((monthGroup) => monthGroup.events)
@@ -24,24 +21,14 @@ export function calculateAgendaStats(events: AgendaEvent[]): AgendaStats {
 }
 
 export const agendaApi = {
-  // Fetch from mock API and flatten the grouped response
+  // Fetch all events and flatten the grouped response
   getAll: async (): Promise<AgendaEvent[]> => {
-    const response = await fetch(`${AGENDA_MOCK_BASE_URL}/events`)
-    if (!response.ok) {
-      throw new Error(`Failed to fetch agenda: ${response.status} ${response.statusText}`)
-    }
-    const data: AgendaApiResponse = await response.json()
+    const data = await api.get<AgendaApiResponse>("/events")
     return flattenAgendaResponse(data)
   },
 
   // Get raw grouped response (useful for month-based views)
-  getAllGrouped: async (): Promise<AgendaApiResponse> => {
-    const response = await fetch(`${AGENDA_MOCK_BASE_URL}/events`)
-    if (!response.ok) {
-      throw new Error(`Failed to fetch agenda: ${response.status} ${response.statusText}`)
-    }
-    return response.json()
-  },
+  getAllGrouped: () => api.get<AgendaApiResponse>("/events"),
 
   getById: (id: number) => api.get<AgendaEvent>(`/events/${id}`),
 

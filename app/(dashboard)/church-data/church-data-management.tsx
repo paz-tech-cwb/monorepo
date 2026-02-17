@@ -1,6 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -19,6 +22,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Building2, MapPin, Clock, CreditCard, Phone, Globe, Save, Plus, MoreHorizontal, Edit, Trash2, Search, DollarSign } from "lucide-react"
 import {
   useContributions,
@@ -26,12 +30,12 @@ import {
   useUpdateContribution,
   useDeleteContribution,
 } from "@/lib/hooks/use-contributions"
-import { StatsCardSkeleton, TableSkeleton } from "@/components/ui/skeleton-components"
-import { Skeleton } from "@/components/ui/skeleton"
+import { useChurch, useUpdateChurch } from "@/lib/hooks/use-church"
+import { TableSkeleton } from "@/components/ui/skeleton-components"
 import type { Contribution, CreateContributionRequest, UpdateContributionRequest } from "@/lib/api/types"
 import { AddressForm, type AddressFormData } from "@/components/ui/address-form"
 
-interface ChurchData {
+interface ChurchFormData {
   name: string
   description: string
   address: {
@@ -64,41 +68,83 @@ interface ChurchData {
   }
 }
 
-const initialChurchData: ChurchData = {
-  name: "Igreja Evangelica Esperanca",
-  description: "Uma igreja comprometida com o amor de Deus e o servico a comunidade",
+const emptyFormData: ChurchFormData = {
+  name: "",
+  description: "",
   address: {
-    zip_code: "80410-000",
+    zip_code: "",
     country: "Brasil",
-    state: "PR",
-    city: "Curitiba",
-    neighborhood: "Centro",
-    street: "Rua da Esperanca",
-    number: "123",
+    state: "",
+    city: "",
+    neighborhood: "",
+    street: "",
+    number: "",
+    complement: null,
+    reference: null,
   },
   contact: {
-    phone: "(11) 3456-7890",
-    email: "contato@igrejaesperanca.com.br",
-    website: "www.igrejaesperanca.com.br",
+    phone: "",
+    email: "",
+    website: "",
   },
   schedule: {
-    sunday: { morning: "10:00", evening: "19:00" },
-    wednesday: { evening: "19:30" },
-    friday: { evening: "19:30" },
-    saturday: { evening: "19:00" },
+    sunday: { morning: "", evening: "" },
+    wednesday: { evening: "" },
+    friday: { evening: "" },
+    saturday: { evening: "" },
   },
   socialMedia: {
-    facebook: "facebook.com/igrejaesperanca",
-    instagram: "@igrejaesperanca",
-    youtube: "youtube.com/igrejaesperanca",
-    twitter: "@igrejaesperanca",
+    facebook: "",
+    instagram: "",
+    youtube: "",
+    twitter: "",
   },
 }
 
 export function ChurchDataManagement() {
-  const [churchData, setChurchData] = useState<ChurchData>(initialChurchData)
-  const [isLoading, setIsLoading] = useState(false)
-  const [lastSaved, setLastSaved] = useState<string>("2024-01-15 14:30")
+  const { data: church, isLoading: isLoadingChurch } = useChurch()
+  const churchUpdateMutation = useUpdateChurch()
+
+  const [churchData, setChurchData] = useState<ChurchFormData>(emptyFormData)
+
+  useEffect(() => {
+    if (!church) return
+    setChurchData({
+      name: church.name,
+      description: church.description ?? "",
+      address: {
+        zip_code: church.address.zip_code,
+        country: church.address.country,
+        state: church.address.state,
+        city: church.address.city,
+        neighborhood: church.address.neighborhood,
+        street: church.address.street,
+        number: church.address.number,
+        complement: church.address.complement ?? null,
+        reference: church.address.reference ?? null,
+      },
+      contact: {
+        phone: church.contact.phone,
+        email: church.contact.email,
+        website: church.contact.website,
+      },
+      schedule: {
+        sunday: {
+          morning: church.schedule.sunday?.morning ?? "",
+          evening: church.schedule.sunday?.evening ?? "",
+        },
+        wednesday: { evening: church.schedule.wednesday?.evening ?? "" },
+        friday: { evening: church.schedule.friday?.evening ?? "" },
+        saturday: { evening: church.schedule.saturday?.evening ?? "" },
+      },
+      socialMedia: {
+        facebook: church.social_media.facebook ?? "",
+        instagram: church.social_media.instagram ?? "",
+        youtube: church.social_media.youtube ?? "",
+        twitter: church.social_media.twitter ?? "",
+      },
+    })
+  }, [church])
 
   // Contributions state and hooks
   const { data: contributions = [], isLoading: isLoadingContributions, error: contributionsError } = useContributions()
@@ -149,7 +195,6 @@ export function ChurchDataManagement() {
 
   const handleUpdateContribution = async () => {
     if (!editingContribution) return
-
     await updateMutation.mutateAsync({
       id: editingContribution.id,
       data: contributionFormData as UpdateContributionRequest,
@@ -163,16 +208,28 @@ export function ChurchDataManagement() {
   }
 
   const handleSave = async () => {
-    setIsLoading(true)
-    // Simulate saving data
-    setTimeout(() => {
-      setIsLoading(false)
-      setLastSaved(new Date().toLocaleString("pt-BR"))
-      alert("Dados salvos com sucesso!")
-    }, 1500)
+    await churchUpdateMutation.mutateAsync({
+      name: churchData.name,
+      description: churchData.description || null,
+      address: churchData.address,
+      contact: churchData.contact,
+      schedule: {
+        sunday: churchData.schedule.sunday,
+        wednesday: churchData.schedule.wednesday,
+        friday: churchData.schedule.friday,
+        saturday: churchData.schedule.saturday,
+      },
+      social_media: {
+        facebook: churchData.socialMedia.facebook || undefined,
+        instagram: churchData.socialMedia.instagram || undefined,
+        youtube: churchData.socialMedia.youtube || undefined,
+        twitter: churchData.socialMedia.twitter || undefined,
+      },
+    })
+    toast.success("Dados salvos com sucesso!")
   }
 
-  const updateNestedData = (section: keyof ChurchData, subsection: string, field: string, value: string) => {
+  const updateNestedData = (section: keyof ChurchFormData, subsection: string, field: string, value: string) => {
     setChurchData((prev) => ({
       ...prev,
       [section]: {
@@ -215,6 +272,10 @@ export function ChurchDataManagement() {
     }))
   }
 
+  const lastSaved = church?.updated_at
+    ? format(new Date(church.updated_at), "dd/MM/yyyy HH:mm", { locale: ptBR })
+    : null
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -223,12 +284,14 @@ export function ChurchDataManagement() {
           <p className="text-muted-foreground">Gerencie as informacoes da igreja</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-sm text-muted-foreground">
-            Ultima atualizacao: <Badge variant="outline">{lastSaved}</Badge>
-          </div>
-          <Button onClick={handleSave} disabled={isLoading}>
+          {lastSaved && (
+            <div className="text-sm text-muted-foreground">
+              Ultima atualizacao: <Badge variant="outline">{lastSaved}</Badge>
+            </div>
+          )}
+          <Button onClick={handleSave} disabled={churchUpdateMutation.isPending || isLoadingChurch}>
             <Save className="mr-2 h-4 w-4" />
-            {isLoading ? "Salvando..." : "Salvar Alteracoes"}
+            {churchUpdateMutation.isPending ? "Salvando..." : "Salvar Alteracoes"}
           </Button>
         </div>
       </div>
@@ -243,55 +306,82 @@ export function ChurchDataManagement() {
         </TabsList>
 
         <TabsContent value="general" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Informacoes Gerais
-                </CardTitle>
-                <CardDescription>Dados basicos da igreja</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Nome da Igreja</Label>
-                  <Input
-                    id="name"
-                    value={churchData.name}
-                    onChange={(e) => setChurchData({ ...churchData, name: e.target.value })}
-                    placeholder="Nome da igreja"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">Descricao</Label>
-                  <Textarea
-                    id="description"
-                    value={churchData.description}
-                    onChange={(e) => setChurchData({ ...churchData, description: e.target.value })}
-                    placeholder="Descricao da igreja"
-                    rows={4}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+          {isLoadingChurch ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-4 w-32" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-4 w-40" />
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
+                    Informacoes Gerais
+                  </CardTitle>
+                  <CardDescription>Dados basicos da igreja</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">Nome da Igreja</Label>
+                    <Input
+                      id="name"
+                      value={churchData.name}
+                      onChange={(e) => setChurchData({ ...churchData, name: e.target.value })}
+                      placeholder="Nome da igreja"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="description">Descricao</Label>
+                    <Textarea
+                      id="description"
+                      value={churchData.description}
+                      onChange={(e) => setChurchData({ ...churchData, description: e.target.value })}
+                      placeholder="Descricao da igreja"
+                      rows={4}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Endereco
-                </CardTitle>
-                <CardDescription>Localizacao da igreja</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AddressForm
-                  value={churchData.address as AddressFormData}
-                  onChange={(address) => setChurchData({ ...churchData, address })}
-                  idPrefix="church-"
-                />
-              </CardContent>
-            </Card>
-          </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Endereco
+                  </CardTitle>
+                  <CardDescription>Localizacao da igreja</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AddressForm
+                    value={churchData.address as AddressFormData}
+                    onChange={(address) => setChurchData({ ...churchData, address })}
+                    idPrefix="church-"
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="contact" className="space-y-4">
@@ -304,36 +394,44 @@ export function ChurchDataManagement() {
               <CardDescription>Dados para contato com a igreja</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-3">
-                <div>
-                  <Label htmlFor="phone">Telefone</Label>
-                  <Input
-                    id="phone"
-                    value={churchData.contact.phone}
-                    onChange={(e) => updateContactField("phone", e.target.value)}
-                    placeholder="(11) 3456-7890"
-                  />
+              {isLoadingChurch ? (
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={churchData.contact.email}
-                    onChange={(e) => updateContactField("email", e.target.value)}
-                    placeholder="contato@igreja.com"
-                  />
+              ) : (
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div>
+                    <Label htmlFor="phone">Telefone</Label>
+                    <Input
+                      id="phone"
+                      value={churchData.contact.phone}
+                      onChange={(e) => updateContactField("phone", e.target.value)}
+                      placeholder="(11) 3456-7890"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={churchData.contact.email}
+                      onChange={(e) => updateContactField("email", e.target.value)}
+                      placeholder="contato@igreja.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="website">Website</Label>
+                    <Input
+                      id="website"
+                      value={churchData.contact.website}
+                      onChange={(e) => updateContactField("website", e.target.value)}
+                      placeholder="www.igreja.com"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="website">Website</Label>
-                  <Input
-                    id="website"
-                    value={churchData.contact.website}
-                    onChange={(e) => updateContactField("website", e.target.value)}
-                    placeholder="www.igreja.com"
-                  />
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -593,55 +691,64 @@ export function ChurchDataManagement() {
               <CardDescription>Horarios dos cultos e atividades</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label>Domingo</Label>
-                  <div className="grid grid-cols-2 gap-2 mt-1">
+              {isLoadingChurch ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <Label>Domingo</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      <Input
+                        type="time"
+                        value={churchData.schedule.sunday.morning}
+                        onChange={(e) => updateNestedData("schedule", "sunday", "morning", e.target.value)}
+                        placeholder="Manha"
+                      />
+                      <Input
+                        type="time"
+                        value={churchData.schedule.sunday.evening}
+                        onChange={(e) => updateNestedData("schedule", "sunday", "evening", e.target.value)}
+                        placeholder="Noite"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Quarta-feira</Label>
                     <Input
                       type="time"
-                      value={churchData.schedule.sunday.morning}
-                      onChange={(e) => updateNestedData("schedule", "sunday", "morning", e.target.value)}
-                      placeholder="Manha"
-                    />
-                    <Input
-                      type="time"
-                      value={churchData.schedule.sunday.evening}
-                      onChange={(e) => updateNestedData("schedule", "sunday", "evening", e.target.value)}
+                      value={churchData.schedule.wednesday.evening}
+                      onChange={(e) => updateNestedData("schedule", "wednesday", "evening", e.target.value)}
                       placeholder="Noite"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Sexta-feira</Label>
+                    <Input
+                      type="time"
+                      value={churchData.schedule.friday.evening}
+                      onChange={(e) => updateNestedData("schedule", "friday", "evening", e.target.value)}
+                      placeholder="Noite"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Sabado</Label>
+                    <Input
+                      type="time"
+                      value={churchData.schedule.saturday.evening}
+                      onChange={(e) => updateNestedData("schedule", "saturday", "evening", e.target.value)}
+                      placeholder="Noite"
+                      className="mt-1"
                     />
                   </div>
                 </div>
-                <div>
-                  <Label>Quarta-feira</Label>
-                  <Input
-                    type="time"
-                    value={churchData.schedule.wednesday.evening}
-                    onChange={(e) => updateNestedData("schedule", "wednesday", "evening", e.target.value)}
-                    placeholder="Noite"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label>Sexta-feira</Label>
-                  <Input
-                    type="time"
-                    value={churchData.schedule.friday.evening}
-                    onChange={(e) => updateNestedData("schedule", "friday", "evening", e.target.value)}
-                    placeholder="Noite"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label>Sabado</Label>
-                  <Input
-                    type="time"
-                    value={churchData.schedule.saturday.evening}
-                    onChange={(e) => updateNestedData("schedule", "saturday", "evening", e.target.value)}
-                    placeholder="Noite"
-                    className="mt-1"
-                  />
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -656,44 +763,53 @@ export function ChurchDataManagement() {
               <CardDescription>Links das redes sociais da igreja</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="facebook">Facebook</Label>
-                  <Input
-                    id="facebook"
-                    value={churchData.socialMedia.facebook}
-                    onChange={(e) => updateSocialMediaField("facebook", e.target.value)}
-                    placeholder="facebook.com/igreja"
-                  />
+              {isLoadingChurch ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
                 </div>
-                <div>
-                  <Label htmlFor="instagram">Instagram</Label>
-                  <Input
-                    id="instagram"
-                    value={churchData.socialMedia.instagram}
-                    onChange={(e) => updateSocialMediaField("instagram", e.target.value)}
-                    placeholder="@igreja"
-                  />
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <Label htmlFor="facebook">Facebook</Label>
+                    <Input
+                      id="facebook"
+                      value={churchData.socialMedia.facebook}
+                      onChange={(e) => updateSocialMediaField("facebook", e.target.value)}
+                      placeholder="facebook.com/igreja"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="instagram">Instagram</Label>
+                    <Input
+                      id="instagram"
+                      value={churchData.socialMedia.instagram}
+                      onChange={(e) => updateSocialMediaField("instagram", e.target.value)}
+                      placeholder="@igreja"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="youtube">YouTube</Label>
+                    <Input
+                      id="youtube"
+                      value={churchData.socialMedia.youtube}
+                      onChange={(e) => updateSocialMediaField("youtube", e.target.value)}
+                      placeholder="youtube.com/igreja"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="twitter">Twitter</Label>
+                    <Input
+                      id="twitter"
+                      value={churchData.socialMedia.twitter}
+                      onChange={(e) => updateSocialMediaField("twitter", e.target.value)}
+                      placeholder="@igreja"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="youtube">YouTube</Label>
-                  <Input
-                    id="youtube"
-                    value={churchData.socialMedia.youtube}
-                    onChange={(e) => updateSocialMediaField("youtube", e.target.value)}
-                    placeholder="youtube.com/igreja"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="twitter">Twitter</Label>
-                  <Input
-                    id="twitter"
-                    value={churchData.socialMedia.twitter}
-                    onChange={(e) => updateSocialMediaField("twitter", e.target.value)}
-                    placeholder="@igreja"
-                  />
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

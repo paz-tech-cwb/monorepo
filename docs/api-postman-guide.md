@@ -1177,7 +1177,7 @@ Content-Type: application/json
 
 ---
 
-### GET /admin/dashboard/stats
+### GET /dashboard/stats
 
 **Description**: Retrieve only the summary statistics for the dashboard.
 
@@ -1198,7 +1198,7 @@ Content-Type: application/json
 
 ---
 
-### GET /admin/dashboard/access-trends
+### GET /dashboard/access-trends
 
 **Description**: Retrieve access trend data for charts.
 
@@ -1220,7 +1220,7 @@ Content-Type: application/json
 
 ---
 
-### GET /admin/dashboard/member-growth
+### GET /dashboard/member-growth
 
 **Description**: Retrieve member growth data over time.
 
@@ -1241,7 +1241,7 @@ Content-Type: application/json
 
 ---
 
-### GET /admin/dashboard/life-groups-distribution
+### GET /dashboard/life-groups-distribution
 
 **Description**: Retrieve life group distribution data for charts.
 
@@ -1257,6 +1257,112 @@ Content-Type: application/json
   { "name": "Criancas", "member_count": 45 }
 ]
 ```
+
+---
+
+## 12. Church
+
+### GET /church
+
+**Description**: Retrieve the church data.
+
+**Headers**:
+- Authorization: Bearer {{access_token}}
+
+**Response** (200):
+```json
+{
+  "id": 1,
+  "name": "Igreja Evangelica Paz",
+  "description": "Uma igreja comprometida com o amor de Deus",
+  "address": {
+    "street": "Rua da Igreja",
+    "number": "123",
+    "complement": null,
+    "reference": null,
+    "neighborhood": "Centro",
+    "city": "Curitiba",
+    "state": "PR",
+    "zip_code": "80000-000",
+    "country": "Brasil"
+  },
+  "contact": {
+    "phone": "(41) 3456-7890",
+    "email": "contato@paz.com",
+    "website": "www.paz.com"
+  },
+  "schedule": {
+    "sunday": { "morning": "10:00", "evening": "19:00" },
+    "wednesday": { "evening": "19:30" },
+    "friday": { "evening": "19:30" },
+    "saturday": { "evening": "19:00" }
+  },
+  "social_media": {
+    "facebook": "facebook.com/paz",
+    "instagram": "@paz",
+    "youtube": "youtube.com/paz",
+    "twitter": "@paz"
+  },
+  "updated_at": "2024-01-15T00:00:00Z"
+}
+```
+
+---
+
+### PUT /church
+
+**Description**: Update church data. All fields are optional.
+
+**Headers**:
+- Authorization: Bearer {{access_token}}
+- Content-Type: application/json
+
+**Request Body**:
+```json
+{
+  "name": "Igreja Evangelica Paz",
+  "description": "Uma igreja comprometida com o amor de Deus",
+  "address": {
+    "street": "Rua da Igreja",
+    "number": "123",
+    "complement": null,
+    "reference": null,
+    "neighborhood": "Centro",
+    "city": "Curitiba",
+    "state": "PR",
+    "zip_code": "80000-000",
+    "country": "Brasil"
+  },
+  "contact": {
+    "phone": "(41) 3456-7890",
+    "email": "contato@paz.com",
+    "website": "www.paz.com"
+  },
+  "schedule": {
+    "sunday": { "morning": "10:00", "evening": "19:00" },
+    "wednesday": { "evening": "19:30" },
+    "friday": { "evening": "19:30" },
+    "saturday": { "evening": "19:00" }
+  },
+  "social_media": {
+    "facebook": "facebook.com/paz",
+    "instagram": "@paz",
+    "youtube": "youtube.com/paz",
+    "twitter": "@paz"
+  }
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| name | string | No | Church name |
+| description | string/null | No | Church description |
+| address | object | No | Full address object (all sub-fields optional) |
+| contact | object | No | Contact info (all sub-fields optional) |
+| schedule | object | No | Service schedule (all day sub-fields optional) |
+| social_media | object | No | Social media links (all sub-fields optional) |
+
+**Response** (200): Updated church object (same structure as GET)
 
 ---
 
@@ -1317,37 +1423,173 @@ All endpoints may return the following error responses:
 | Variable | Initial Value | Description |
 |----------|---------------|-------------|
 | `base_url` | `http://localhost:3001/api` | API base URL |
-| `access_token` | (empty) | Set after login |
-| `refresh_token` | (empty) | Set after login |
+| `access_token` | (empty) | Auto-set by Tests scripts after login/refresh |
+| `refresh_token` | (empty) | Auto-set by Tests scripts after login/refresh |
+| `user_id` | (empty) | Auto-set after login |
+| `user_email` | (empty) | Auto-set after login |
+| `user_name` | (empty) | Auto-set after login |
 
-3. For the `Authorization` header, use: `Bearer {{access_token}}`
-4. After calling `/auth/social-login`, save the tokens to your environment variables using Postman's **Tests** tab:
+3. For the `Authorization` header on all authenticated requests, use: `Bearer {{access_token}}`
+
+---
+
+## Postman Test Scripts (Post-Response)
+
+These scripts go in the **Tests** tab (also called "Post-response" in newer Postman versions) of each request. They run automatically after the response is received, validate the response, and persist tokens so every subsequent request in the collection can use them.
+
+### POST /auth/social-login -- Tests script
+
+Paste this into the **Tests** tab of the `POST {{base_url}}/auth/social-login` request:
 
 ```javascript
+// -- POST /auth/social-login -- Tests (post-response) script --
+
+pm.test("Status code is 200", function () {
+    pm.response.to.have.status(200);
+});
+
+pm.test("Response has access_token", function () {
+    const json = pm.response.json();
+    pm.expect(json).to.have.property("access_token");
+    pm.expect(json.access_token).to.be.a("string").and.not.be.empty;
+});
+
+pm.test("Response has refresh_token", function () {
+    const json = pm.response.json();
+    pm.expect(json).to.have.property("refresh_token");
+    pm.expect(json.refresh_token).to.be.a("string").and.not.be.empty;
+});
+
+pm.test("Response has user object", function () {
+    const json = pm.response.json();
+    pm.expect(json).to.have.property("user");
+    pm.expect(json.user).to.have.property("id");
+    pm.expect(json.user).to.have.property("email");
+});
+
+// -- Store tokens as environment variables for reuse across the collection --
 const response = pm.response.json();
+
 pm.environment.set("access_token", response.access_token);
 pm.environment.set("refresh_token", response.refresh_token);
+
+// -- Store user info (optional, but useful for debugging and parameterised requests) --
+if (response.user) {
+    pm.environment.set("user_id", response.user.id);
+    pm.environment.set("user_email", response.user.email);
+    pm.environment.set("user_name", response.user.name || "");
+}
+
+console.log("Tokens stored. access_token: " + response.access_token.substring(0, 20) + "...");
 ```
 
-5. Add a **Pre-request Script** to automatically refresh expired tokens:
+### POST /auth/refresh -- Tests script
+
+Paste this into the **Tests** tab of the `POST {{base_url}}/auth/refresh` request:
 
 ```javascript
-const refreshToken = pm.environment.get("refresh_token");
-if (refreshToken) {
-  pm.sendRequest({
-    url: pm.environment.get("base_url") + "/auth/refresh",
-    method: "POST",
-    header: { "Content-Type": "application/json" },
-    body: {
-      mode: "raw",
-      raw: JSON.stringify({ refresh_token: refreshToken })
+// -- POST /auth/refresh -- Tests (post-response) script --
+
+pm.test("Status code is 200", function () {
+    pm.response.to.have.status(200);
+});
+
+pm.test("Response has new access_token", function () {
+    const json = pm.response.json();
+    pm.expect(json).to.have.property("access_token");
+    pm.expect(json.access_token).to.be.a("string").and.not.be.empty;
+});
+
+pm.test("Response has new refresh_token", function () {
+    const json = pm.response.json();
+    pm.expect(json).to.have.property("refresh_token");
+    pm.expect(json.refresh_token).to.be.a("string").and.not.be.empty;
+});
+
+// -- Overwrite stored tokens so the rest of the collection uses the fresh ones --
+const response = pm.response.json();
+
+pm.environment.set("access_token", response.access_token);
+pm.environment.set("refresh_token", response.refresh_token);
+
+console.log("Tokens refreshed. New access_token: " + response.access_token.substring(0, 20) + "...");
+```
+
+### Using the stored tokens in other requests
+
+Once you have run `POST /auth/social-login` (or `POST /auth/refresh`), the `access_token` and `refresh_token` environment variables are populated automatically. To authenticate any other request in the collection:
+
+**Option A -- Authorization header (recommended)**
+
+In the request's **Headers** tab, add:
+
+| Key | Value |
+|-----|-------|
+| `Authorization` | `Bearer {{access_token}}` |
+
+**Option B -- Postman Authorization tab**
+
+1. Open the request (or the collection root to apply it to all requests).
+2. Go to the **Authorization** tab.
+3. Select **Type**: `Bearer Token`.
+4. Set **Token** to: `{{access_token}}`.
+
+Either option resolves the variable at send-time using the value stored by the Tests script.
+
+### (Optional) Collection-level Pre-request Script for auto-refresh
+
+If you want every request to silently refresh an expired token before it fires, add this as a **Pre-request Script** at the **collection** level:
+
+```javascript
+// -- Collection-level Pre-request Script -- Auto-refresh expired tokens --
+
+const accessToken = pm.environment.get("access_token");
+
+// Only attempt refresh if we have a refresh_token but no access_token,
+// or if the access_token JWT is expired.
+let needsRefresh = !accessToken;
+
+if (accessToken && !needsRefresh) {
+    try {
+        // Decode the JWT payload (middle segment) to check expiry
+        const payload = JSON.parse(atob(accessToken.split(".")[1]));
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+        // Refresh 60 seconds before actual expiry to avoid race conditions
+        needsRefresh = payload.exp && (payload.exp - 60) < nowInSeconds;
+    } catch (e) {
+        // If decoding fails, let the request proceed as-is
+        needsRefresh = false;
     }
-  }, function (err, res) {
-    if (!err && res.code === 200) {
-      const data = res.json();
-      pm.environment.set("access_token", data.access_token);
-      pm.environment.set("refresh_token", data.refresh_token);
+}
+
+if (needsRefresh) {
+    const refreshToken = pm.environment.get("refresh_token");
+    if (refreshToken) {
+        pm.sendRequest({
+            url: pm.environment.get("base_url") + "/auth/refresh",
+            method: "POST",
+            header: { "Content-Type": "application/json" },
+            body: {
+                mode: "raw",
+                raw: JSON.stringify({ refresh_token: refreshToken })
+            }
+        }, function (err, res) {
+            if (!err && res.code === 200) {
+                const data = res.json();
+                pm.environment.set("access_token", data.access_token);
+                pm.environment.set("refresh_token", data.refresh_token);
+                console.log("Auto-refreshed tokens via pre-request script.");
+            } else {
+                console.log("Auto-refresh failed. You may need to re-login via /auth/social-login.");
+            }
+        });
     }
-  });
 }
 ```
+
+### Quick-start workflow
+
+1. **Import the collection** and create the environment with the variables listed above.
+2. **Send `POST /auth/social-login`** with a valid `id_token` and `provider`. The Tests script stores the tokens automatically.
+3. **Send any authenticated request** -- the `{{access_token}}` variable is already populated.
+4. **When the token expires**, either call `POST /auth/refresh` manually, or rely on the collection-level pre-request script to handle it for you.

@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import {
   Home,
   Users,
-  UserCheck,
   Bell,
   Building2,
   CalendarDays,
@@ -25,8 +24,7 @@ const sidebarSections = [
     title: "Principal",
     items: [
       { name: "Inicio", href: "/dashboard", icon: Home },
-      { name: "Usuarios", href: "/users", icon: Users },
-      { name: "Membros", href: "/members", icon: UserCheck },
+      { name: "Membros", href: "/members", icon: Users },
       { name: "Life groups", href: "/life-groups", icon: Users2 },
     ],
   },

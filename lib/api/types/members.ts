@@ -4,12 +4,12 @@ export interface Member {
   id: number
   name: string
   email: string
-  phone: string
+  phone?: string
   address?: string
-  birth_date: string
+  birth_date?: string
   life_group?: string
   status: MemberStatus
-  membership_date: string
+  membership_date?: string
   created_at: string
   updated_at: string
 }
@@ -17,9 +17,9 @@ export interface Member {
 export interface CreateMemberRequest {
   name: string
   email: string
-  phone: string
+  phone?: string
   address?: string
-  birth_date: string
+  birth_date?: string
   life_group?: string
 }
 

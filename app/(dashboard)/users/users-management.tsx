@@ -46,7 +46,7 @@ export function UsersManagement() {
   const [newUser, setNewUser] = useState({
     name: "",
     email: "",
-    role: "user" as UserRole,
+    role: "member" as UserRole,
   })
 
   const filteredUsers = users.filter(
@@ -56,7 +56,7 @@ export function UsersManagement() {
   )
 
   const resetForm = () => {
-    setNewUser({ name: "", email: "", role: "user" })
+    setNewUser({ name: "", email: "", role: "member" })
   }
 
   const handleAddUser = async () => {
@@ -115,13 +115,16 @@ export function UsersManagement() {
   }
 
   const getRoleBadge = (role: string) => {
-    const variants = {
-      admin: "destructive",
-      moderator: "default",
-      user: "secondary",
-    } as const
+    const config = {
+      admin: { variant: "destructive" as const, label: "Admin" },
+      pastor: { variant: "default" as const, label: "Pastor" },
+      supervisor: { variant: "default" as const, label: "Supervisor" },
+      "lg-leader": { variant: "outline" as const, label: "Lider Life Group" },
+      member: { variant: "secondary" as const, label: "Membro" },
+    }
 
-    return <Badge variant={variants[role as keyof typeof variants]}>{role}</Badge>
+    const { variant, label } = config[role as keyof typeof config] ?? { variant: "secondary" as const, label: role }
+    return <Badge variant={variant}>{label}</Badge>
   }
 
   const getStatusBadge = (status: string) => {
@@ -184,8 +187,10 @@ export function UsersManagement() {
                       onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
                       className="w-full p-2 border border-input rounded-md bg-background"
                     >
-                      <option value="user">Usuario</option>
-                      <option value="moderator">Moderador</option>
+                      <option value="member">Membro</option>
+                      <option value="lg-leader">Lider Life Group</option>
+                      <option value="supervisor">Supervisor</option>
+                      <option value="pastor">Pastor</option>
                       <option value="admin">Administrador</option>
                     </select>
                   </div>
@@ -301,8 +306,10 @@ export function UsersManagement() {
                 onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
                 className="w-full p-2 border border-input rounded-md bg-background"
               >
-                <option value="user">Usuario</option>
-                <option value="moderator">Moderador</option>
+                <option value="member">Membro</option>
+                <option value="lg-leader">Lider Life Group</option>
+                <option value="supervisor">Supervisor</option>
+                <option value="pastor">Pastor</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>

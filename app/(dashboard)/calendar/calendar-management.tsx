@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,74 +17,25 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react"
-
-interface CalendarEvent {
-  id: string
-  title: string
-  description: string
-  date: string
-  time: string
-  location: string
-  type: "culto" | "reuniao" | "evento" | "conferencia" | "retiro"
-  color: string
-}
-
-const mockEvents: CalendarEvent[] = [
-  {
-    id: "1",
-    title: "Culto Dominical",
-    description: "Culto de adoração e palavra",
-    date: "2024-01-21",
-    time: "10:00",
-    location: "Templo Principal",
-    type: "culto",
-    color: "#15803d",
-  },
-  {
-    id: "2",
-    title: "Reunião de Oração",
-    description: "Momento de oração e intercessão",
-    date: "2024-01-17",
-    time: "19:30",
-    location: "Sala de Oração",
-    type: "reuniao",
-    color: "#84cc16",
-  },
-  {
-    id: "3",
-    title: "Retiro de Jovens",
-    description: "Retiro espiritual para jovens",
-    date: "2024-01-25",
-    time: "08:00",
-    location: "Chácara Esperança",
-    type: "retiro",
-    color: "#d97706",
-  },
-  {
-    id: "4",
-    title: "Conferência de Mulheres",
-    description: "Conferência especial para mulheres",
-    date: "2024-01-28",
-    time: "14:00",
-    location: "Auditório",
-    type: "conferencia",
-    color: "#3b82f6",
-  },
-]
+import { useAgenda, useCreateAgendaEvent } from "@/lib/hooks/use-agenda"
+import type { AgendaEvent, RecurrenceType } from "@/lib/api/types"
 
 export function CalendarManagement() {
-  const [events, setEvents] = useState<CalendarEvent[]>(mockEvents)
-  const [currentDate, setCurrentDate] = useState(new Date(2024, 0, 1)) // January 2024
+  const { data: events = [], isLoading } = useAgenda()
+  const createMutation = useCreateAgendaEvent()
+
+  const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [newEvent, setNewEvent] = useState({
     title: "",
     description: "",
-    date: "",
-    time: "",
-    location: "",
-    type: "evento" as const,
+    initial_date: "",
+    initial_time: "",
+    final_date: "",
+    recurrence_type: "" as RecurrenceType | "",
   })
 
   const getDaysInMonth = (date: Date) => {
@@ -94,46 +46,42 @@ export function CalendarManagement() {
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay()
   }
 
-  const formatDate = (year: number, month: number, day: number) => {
+  const formatDateKey = (year: number, month: number, day: number) => {
     return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
   }
 
   const getEventsForDate = (dateString: string) => {
-    return events.filter((event) => event.date === dateString)
+    return events.filter((event) => {
+      const eventDate = event.initial_date.split("T")[0]
+      return eventDate === dateString
+    })
   }
 
-  const handleAddEvent = () => {
-    const event: CalendarEvent = {
-      id: Date.now().toString(),
-      ...newEvent,
-      color: getTypeColor(newEvent.type),
+  const handleAddEvent = async () => {
+    try {
+      const initial_date = newEvent.initial_time
+        ? `${newEvent.initial_date}T${newEvent.initial_time}:00Z`
+        : `${newEvent.initial_date}T00:00:00Z`
+
+      await createMutation.mutateAsync({
+        title: newEvent.title,
+        description: newEvent.description || undefined,
+        initial_date,
+        final_date: newEvent.final_date ? `${newEvent.final_date}T23:59:59Z` : undefined,
+        recurrence_type: (newEvent.recurrence_type as RecurrenceType) || null,
+      })
+      toast.success("Evento criado com sucesso!")
+      setNewEvent({ title: "", description: "", initial_date: "", initial_time: "", final_date: "", recurrence_type: "" })
+      setIsAddDialogOpen(false)
+    } catch {
+      toast.error("Erro ao criar evento. Tente novamente.")
     }
-    setEvents([...events, event])
-    setNewEvent({ title: "", description: "", date: "", time: "", location: "", type: "evento" })
-    setIsAddDialogOpen(false)
   }
 
-  const getTypeColor = (type: string) => {
-    const colors = {
-      culto: "#15803d",
-      reuniao: "#84cc16",
-      evento: "#d97706",
-      conferencia: "#3b82f6",
-      retiro: "#dc2626",
-    }
-    return colors[type as keyof typeof colors] || "#6b7280"
-  }
-
-  const getTypeBadge = (type: string) => {
-    const variants = {
-      culto: "default",
-      reuniao: "secondary",
-      evento: "outline",
-      conferencia: "destructive",
-      retiro: "default",
-    } as const
-
-    return <Badge variant={variants[type as keyof typeof variants] || "outline"}>{type}</Badge>
+  const getRecurrenceBadge = (type?: RecurrenceType | null) => {
+    if (!type) return null
+    const labels: Record<RecurrenceType, string> = { WEEKLY: "Semanal", MONTHLY: "Mensal" }
+    return <Badge variant="outline" className="text-xs">{labels[type]}</Badge>
   }
 
   const navigateMonth = (direction: "prev" | "next") => {
@@ -153,14 +101,12 @@ export function CalendarManagement() {
     const firstDay = getFirstDayOfMonth(currentDate)
     const days = []
 
-    // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-24 border border-border"></div>)
+      days.push(<div key={`empty-${i}`} className="h-24 border border-border" />)
     }
 
-    // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateString = formatDate(currentDate.getFullYear(), currentDate.getMonth(), day)
+      const dateString = formatDateKey(currentDate.getFullYear(), currentDate.getMonth(), day)
       const dayEvents = getEventsForDate(dateString)
       const isSelected = selectedDate === dateString
 
@@ -177,13 +123,14 @@ export function CalendarManagement() {
             {dayEvents.slice(0, 2).map((event) => (
               <div
                 key={event.id}
-                className="text-xs p-1 rounded text-white truncate"
-                style={{ backgroundColor: event.color }}
+                className="text-xs p-1 rounded text-white truncate bg-primary"
               >
                 {event.title}
               </div>
             ))}
-            {dayEvents.length > 2 && <div className="text-xs text-muted-foreground">+{dayEvents.length - 2} mais</div>}
+            {dayEvents.length > 2 && (
+              <div className="text-xs text-muted-foreground">+{dayEvents.length - 2} mais</div>
+            )}
           </div>
         </div>,
       )
@@ -198,7 +145,7 @@ export function CalendarManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Gerenciar Calendário</h1>
+          <h1 className="text-3xl font-bold text-foreground">Gerenciar Calendario</h1>
           <p className="text-muted-foreground">Visualize e gerencie os eventos da igreja</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -211,11 +158,11 @@ export function CalendarManagement() {
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Criar Novo Evento</DialogTitle>
-              <DialogDescription>Adicione um evento ao calendário</DialogDescription>
+              <DialogDescription>Adicione um evento ao calendario</DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <Label htmlFor="title">Título</Label>
+                <Label htmlFor="title">Titulo</Label>
                 <Input
                   id="title"
                   value={newEvent.title}
@@ -224,55 +171,53 @@ export function CalendarManagement() {
                 />
               </div>
               <div className="col-span-2">
-                <Label htmlFor="description">Descrição</Label>
+                <Label htmlFor="description">Descricao</Label>
                 <Textarea
                   id="description"
                   value={newEvent.description}
                   onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                  placeholder="Descrição do evento"
+                  placeholder="Descricao do evento"
                   rows={3}
                 />
               </div>
               <div>
-                <Label htmlFor="date">Data</Label>
+                <Label htmlFor="initial_date">Data de Inicio</Label>
                 <Input
-                  id="date"
+                  id="initial_date"
                   type="date"
-                  value={newEvent.date}
-                  onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                  value={newEvent.initial_date}
+                  onChange={(e) => setNewEvent({ ...newEvent, initial_date: e.target.value })}
                 />
               </div>
               <div>
-                <Label htmlFor="time">Horário</Label>
+                <Label htmlFor="initial_time">Horario</Label>
                 <Input
-                  id="time"
+                  id="initial_time"
                   type="time"
-                  value={newEvent.time}
-                  onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                  value={newEvent.initial_time}
+                  onChange={(e) => setNewEvent({ ...newEvent, initial_time: e.target.value })}
                 />
               </div>
               <div>
-                <Label htmlFor="location">Local</Label>
+                <Label htmlFor="final_date">Data de Termino</Label>
                 <Input
-                  id="location"
-                  value={newEvent.location}
-                  onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                  placeholder="Local do evento"
+                  id="final_date"
+                  type="date"
+                  value={newEvent.final_date}
+                  onChange={(e) => setNewEvent({ ...newEvent, final_date: e.target.value })}
                 />
               </div>
               <div>
-                <Label htmlFor="type">Tipo</Label>
+                <Label htmlFor="recurrence_type">Recorrencia</Label>
                 <select
-                  id="type"
-                  value={newEvent.type}
-                  onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value as any })}
+                  id="recurrence_type"
+                  value={newEvent.recurrence_type}
+                  onChange={(e) => setNewEvent({ ...newEvent, recurrence_type: e.target.value as RecurrenceType | "" })}
                   className="w-full p-2 border border-input rounded-md bg-background"
                 >
-                  <option value="evento">Evento</option>
-                  <option value="culto">Culto</option>
-                  <option value="reuniao">Reunião</option>
-                  <option value="conferencia">Conferência</option>
-                  <option value="retiro">Retiro</option>
+                  <option value="">Sem recorrencia</option>
+                  <option value="WEEKLY">Semanal</option>
+                  <option value="MONTHLY">Mensal</option>
                 </select>
               </div>
             </div>
@@ -280,7 +225,9 @@ export function CalendarManagement() {
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleAddEvent}>Criar Evento</Button>
+              <Button onClick={handleAddEvent} disabled={createMutation.isPending}>
+                {createMutation.isPending ? "Criando..." : "Criar Evento"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -306,14 +253,20 @@ export function CalendarManagement() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-7 gap-0 mb-2">
-                {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => (
-                  <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground">
-                    {day}
+              {isLoading ? (
+                <Skeleton className="h-[400px] w-full" />
+              ) : (
+                <>
+                  <div className="grid grid-cols-7 gap-0 mb-2">
+                    {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map((day) => (
+                      <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground">
+                        {day}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-0">{renderCalendar()}</div>
+                  <div className="grid grid-cols-7 gap-0">{renderCalendar()}</div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -323,7 +276,7 @@ export function CalendarManagement() {
             <CardHeader>
               <CardTitle>
                 {selectedDate
-                  ? `Eventos - ${new Date(selectedDate).toLocaleDateString("pt-BR")}`
+                  ? `Eventos - ${new Date(selectedDate + "T00:00:00").toLocaleDateString("pt-BR")}`
                   : "Selecione uma data"}
               </CardTitle>
               <CardDescription>
@@ -339,18 +292,22 @@ export function CalendarManagement() {
                     <div key={event.id} className="border border-border rounded-lg p-3">
                       <div className="flex items-start justify-between mb-2">
                         <h4 className="font-medium">{event.title}</h4>
-                        {getTypeBadge(event.type)}
+                        {getRecurrenceBadge(event.recurrence_type)}
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">{event.description}</p>
+                      {event.description && (
+                        <p className="text-sm text-muted-foreground mb-2">{event.description}</p>
+                      )}
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {event.time}
+                          {new Date(event.initial_date).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                         </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {event.location}
-                        </div>
+                        {event.address && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {event.address.city}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -358,7 +315,7 @@ export function CalendarManagement() {
               ) : selectedDate ? (
                 <p className="text-sm text-muted-foreground">Nenhum evento nesta data.</p>
               ) : (
-                <p className="text-sm text-muted-foreground">Selecione uma data no calendário para ver os eventos.</p>
+                <p className="text-sm text-muted-foreground">Selecione uma data no calendario para ver os eventos.</p>
               )}
             </CardContent>
           </Card>
