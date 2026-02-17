@@ -15,6 +15,7 @@ import {
   Route,
   LogOut,
   Megaphone,
+  GitMerge,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -25,6 +26,7 @@ const sidebarSections = [
     items: [
       { name: "Inicio", href: "/dashboard", icon: Home },
       { name: "Membros", href: "/members", icon: Users },
+      { name: "Jornada", href: "/member-journey", icon: GitMerge },
       { name: "Life groups", href: "/life-groups", icon: Users2 },
     ],
   },

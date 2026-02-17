@@ -29,6 +29,7 @@ export type AnalyticsEventName =
   | "member_viewed"
   | "dashboard_viewed"
   | "church_updated"
+  | "member_stage_updated"
   | "api_error"
 
 export interface AnalyticsEventParams {
@@ -59,6 +60,7 @@ export interface AnalyticsEventParams {
   member_viewed: { member_id: number }
   dashboard_viewed: Record<string, never>
   church_updated: { church_id: number }
+  member_stage_updated: { member_id: number; stage_id: number }
   api_error: { endpoint: string; status: number; message?: string }
 }
 

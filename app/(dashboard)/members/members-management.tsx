@@ -28,9 +28,10 @@ import {
 } from "@/components/ui/alert-dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Search, Plus, MoreHorizontal, Edit, Trash2 } from "lucide-react"
+import { Search, Plus, MoreHorizontal, Edit, Trash2, GitMerge } from "lucide-react"
 import { useMembers, useCreateMember, useUpdateMember, useDeleteMember } from "@/lib/hooks/use-members"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
+import { JourneySheet } from "./journey-sheet"
 import type { Member } from "@/lib/api/types"
 
 export function MembersManagement() {
@@ -43,6 +44,7 @@ export function MembersManagement() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingMember, setEditingMember] = useState<Member | null>(null)
   const [deletingMemberId, setDeletingMemberId] = useState<number | null>(null)
+  const [journeyMember, setJourneyMember] = useState<Member | null>(null)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -279,6 +281,10 @@ export function MembersManagement() {
                             <Edit className="mr-2 h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setJourneyMember(member)}>
+                            <GitMerge className="mr-2 h-4 w-4" />
+                            Ver Jornada
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setDeletingMemberId(member.id)} className="text-destructive">
                             <Trash2 className="mr-2 h-4 w-4" />
                             Excluir
@@ -368,6 +374,13 @@ export function MembersManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Journey Sheet */}
+      <JourneySheet
+        member={journeyMember}
+        open={journeyMember !== null}
+        onOpenChange={(open) => { if (!open) setJourneyMember(null) }}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog

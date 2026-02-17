@@ -1,0 +1,4078 @@
+{
+  "info": {
+    "_postman_id": "5749219f-0c2d-4732-b9fb-7108a2059609",
+    "name": "Paz Church API",
+    "description": "API collection for Paz Church admin application",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth (WIP)",
+      "item": [
+        {
+          "name": "Social Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.environment.set(\"access_token\", response.access_token);",
+                  "pm.environment.set(\"refresh_token\", response.refresh_token);",
+                  "",
+                  "console.log(\"Tokens stored. access_token: \" + response.access_token.substring(0, 20) + \"...\");"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "505e54de-7370-4d54-8c18-74d4ca372d9d",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_token\": \"{{firebase_id_token}}\",\n  \"provider\": \"google\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/social-login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "social-login"
+              ]
+            },
+            "description": "Authenticate user with Firebase ID token"
+          },
+          "response": [
+            {
+              "id": "5b2a6f2f-b118-438a-a7dd-2302f9ef8ab7",
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id_token\": \"firebase-id-token\",\n  \"provider\": \"google\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/social-login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "social-login"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"user\": {\n    \"id\": 1,\n    \"email\": \"admin@igrejadapaz.com.br\",\n    \"name\": \"Administrador\",\n    \"picture\": \"https://lh3.googleusercontent.com/a/default-user=s96-c\"\n  },\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwibmFtZSI6IkFkbWluaXN0cmFkb3IiLCJpYXQiOjE3MDAwMDAwMDB9.mock-token\",\n  \"refresh_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzAwMDAwMDAwfQ.mock-refresh\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.environment.set(\"access_token\", response.access_token);",
+                  "pm.environment.set(\"refresh_token\", response.refresh_token);",
+                  "",
+                  "console.log(\"Tokens refreshed. New access_token: \" + response.access_token.substring(0, 20) + \"...\");"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "915acf9a-9865-418f-9ab3-a4fcc0d68f9f",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Refresh access token using refresh token"
+          },
+          "response": [
+            {
+              "id": "9a24355e-106f-4d93-bd33-6f095aaeb547",
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refresh_token\": \"old-refresh-token\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/refresh",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "refresh"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwibmFtZSI6IkFkbWluaXN0cmFkb3IiLCJpYXQiOjE3MDAwMDAwMDF9.new-mock-token\",\n  \"refresh_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzAwMDAwMDAxfQ.new-mock-refresh\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "id": "3952002c-c5d2-4517-a328-fb864aa61a54",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Logout and invalidate tokens"
+          },
+          "response": [
+            {
+              "id": "7a40b289-db97-4904-abc5-21a1178e168a",
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/logout",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "logout"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "id": "1e7ef766-b35d-4601-88ea-af9bd17e5b12"
+    },
+    {
+      "name": "Announcements",
+      "item": [
+        {
+          "name": "Get All Announcements",
+          "id": "5486c65e-055e-4a01-b2d0-5c604fd09903",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/announcements",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "announcements"
+              ]
+            },
+            "description": "Retrieve all announcements"
+          },
+          "response": [
+            {
+              "id": "7a6968d3-4b2c-49a7-a6f8-e19348ad7834",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/announcements",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "announcements"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n    {\n        \"id\": 1,\n        \"image_url\": \"https://example.com/image.jpg\",\n        \"title\": \"Culto Especial\",\n        \"subtitle\": \"Venha participar do nosso culto especial\",\n        \"markdown_content\": \"# Culto Especial\\n\\nDetalhes do evento...\",\n        \"action_url\": \"https://example.com/event\"\n    }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get Announcement by ID",
+          "id": "c301b0c8-8df1-4df8-9d88-070a20c7eb40",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/announcements/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "announcements",
+                "1"
+              ]
+            },
+            "description": "Retrieve a specific announcement by ID"
+          },
+          "response": [
+            {
+              "id": "e809f35f-043b-4a0e-9243-669c0d8bcefe",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/announcements/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "announcements",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"id\": 1,\n    \"image_url\": \"https://example.com/image.jpg\",\n    \"title\": \"Culto Especial\",\n    \"subtitle\": \"Venha participar do nosso culto especial\",\n    \"markdown_content\": \"# Culto Especial\\n\\nDetalhes do evento...\",\n    \"action_url\": \"https://example.com/event\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Announcement",
+          "id": "bfdfa87c-74a3-4862-95dd-986a401ad2c5",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"image_url\": \"https://example.com/image.jpg\",\n    \"title\": \"Novo Anuncio\",\n    \"subtitle\": \"Subtitulo do anuncio\",\n    \"markdown_content\": \"# Conteudo\\n\\nTexto em markdown...\",\n    \"action_url\": \"https://example.com/action\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/announcements",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "announcements"
+              ]
+            },
+            "description": "Create a new announcement"
+          },
+          "response": [
+            {
+              "id": "2c8f94a7-6b14-4a68-91a7-787c64e0e9e9",
+              "name": "Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"image_url\":\"https://example.com/image.jpg\",\"title\":\"Novo Aviso\",\"subtitle\":\"Subtitulo do aviso\",\"markdown_content\":\"# Conteudo\\n\\nDescricao do aviso...\",\"action_url\":\"https://example.com/action\"}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/announcements",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "announcements"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"id\": 2,\n    \"image_url\": \"https://example.com/image.jpg\",\n    \"title\": \"Novo Anuncio\",\n    \"subtitle\": \"Subtitulo do anuncio\",\n    \"markdown_content\": \"# Conteudo\\n\\nTexto em markdown...\",\n    \"action_url\": \"https://example.com/action\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Announcement",
+          "id": "8b908eec-8e4b-4ac9-b1d4-70a2a2893685",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Titulo Atualizado\",\n    \"subtitle\": \"Novo subtitulo\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/announcements/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "announcements",
+                "1"
+              ]
+            },
+            "description": "Update an existing announcement"
+          },
+          "response": [
+            {
+              "id": "ba664c50-0d63-47bc-a354-ab262c5f1b14",
+              "name": "Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Aviso Atualizado\",\n  \"subtitle\": \"Novo subtitulo\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/announcements/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "announcements",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": 1,\n  \"image_url\": \"https://example.com/image.jpg\",\n  \"title\": \"Titulo Atualizado\",\n  \"subtitle\": \"Novo subtitulo\",\n  \"markdown_content\": \"# Culto Especial\\n\\nDetalhes do evento...\",\n  \"action_url\": \"https://example.com/event\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Announcement",
+          "id": "4a53bf61-930d-4183-9865-2f3782883e90",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/announcements/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "announcements",
+                "1"
+              ]
+            },
+            "description": "Delete an announcement"
+          },
+          "response": [
+            {
+              "id": "bc7efd76-3db6-439c-8ee0-448451d5b3fd",
+              "name": "Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/announcements/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "announcements",
+                    "1"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "id": "8625c59c-f42c-4c27-8f4a-fdf1fcff1279"
+    },
+    {
+      "name": "Contributions",
+      "item": [
+        {
+          "name": "Get All Contributions",
+          "id": "6217a520-4578-4845-82cd-295a3ed31f5f",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/contributions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contributions"
+              ]
+            },
+            "description": "Retrieve all contribution accounts"
+          },
+          "response": [
+            {
+              "id": "05678646-9895-4574-a4ed-34e58dc0bbef",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/contributions",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "contributions"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n    {\n        \"id\": 1,\n        \"bank_name\": \"Banco do Brasil\",\n        \"branch_number\": \"1234\",\n        \"account_number\": \"56789-0\",\n        \"pix_key\": \"igreja@paz.com\"\n    }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get Contribution by ID",
+          "id": "ed9d19bf-aedc-4af1-b95e-c647b71525b1",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/contributions/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contributions",
+                "1"
+              ]
+            },
+            "description": "Retrieve a specific contribution account by ID"
+          },
+          "response": [
+            {
+              "id": "d817dfbb-c685-4383-8ee3-fea0eea5fc81",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/contributions/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "contributions",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"id\": 1,\n    \"bank_name\": \"Banco do Brasil\",\n    \"branch_number\": \"1234\",\n    \"account_number\": \"56789-0\",\n    \"pix_key\": \"igreja@paz.com\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Contribution",
+          "id": "c15d46d5-9575-43c4-ad3e-2bbbcba66a14",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"bank_name\": \"Bradesco\",\n    \"branch_number\": \"4321\",\n    \"account_number\": \"98765-4\",\n    \"pix_key\": \"igreja@paz.com.br\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/contributions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contributions"
+              ]
+            },
+            "description": "Create a new contribution account"
+          },
+          "response": [
+            {
+              "id": "072120aa-97f5-499f-951f-9193ea312096",
+              "name": "Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"bank_name\":\"Banco do Brasil\",\"branch_number\":\"0001\",\"account_number\":\"12345-6\",\"pix_key\":\"igreja@paz.com.br\"}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/contributions",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "contributions"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\"id\":4,\"bank_name\":\"Banco do Brasil\",\"branch_number\":\"0001\",\"account_number\":\"12345-6\",\"pix_key\":\"igreja@paz.com.br\"}"
+            }
+          ]
+        },
+        {
+          "name": "Update Contribution",
+          "id": "5ba3006d-f520-4854-978d-7bbf75483c62",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"pix_key\": \"novaChave@pix.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/contributions/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contributions",
+                "1"
+              ]
+            },
+            "description": "Update an existing contribution account"
+          },
+          "response": [
+            {
+              "id": "3241a4ca-340f-49e9-9515-d206347e628e",
+              "name": "Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pixKey\": \"novo-pix@paz.com.br\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/contributions/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "contributions",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"id\": 1,\n    \"bank_name\": \"Banco do Brasil\",\n    \"branch_number\": \"1234\",\n    \"account_number\": \"56789-0\",\n    \"pix_key\": \"novaChave@pix.com\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Contribution",
+          "id": "2daeb26b-eade-4ed5-83f2-adeea1324121",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/contributions/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contributions",
+                "1"
+              ]
+            },
+            "description": "Delete a contribution account"
+          },
+          "response": [
+            {
+              "id": "d50ca184-e0ba-470e-8179-2d86a2deb264",
+              "name": "Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/contributions/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "contributions",
+                    "1"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "id": "d6deb30d-c333-4a9e-a0e6-805fea68b208"
+    },
+    {
+      "name": "Events (Current)",
+      "item": [
+        {
+          "name": "Get All Events",
+          "id": "9aa4b837-65eb-4dcd-968b-9556afa3a325",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/events",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "events"
+              ]
+            },
+            "description": "Retrieve all agenda events"
+          },
+          "response": [
+            {
+              "id": "ead467af-22e5-42bb-886e-4fe566fee0ba",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/events",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "events"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n    {\n        \"month\": \"Janeiro\",\n        \"ano\": \"2024\",\n        \"events\": [\n            {\n                \"id\": 1,\n                \"title\": \"Culto Dominical\",\n                \"description\": \"Culto de domingo pela manha\",\n                \"initial_date\": \"2024-01-07T09:00:00Z\",\n                \"final_date\": \"2024-01-07T12:00:00Z\",\n                \"recurrence_type\": \"WEEKLY\",\n                \"image\": \"https://example.com/culto.jpg\",\n                \"church_id\": 1,\n                \"address\": {\n                    \"street\": \"Rua da Igreja\",\n                    \"number\": \"100\",\n                    \"complement\": \"Sala 1\",\n                    \"reference\": \"Proximo ao mercado\",\n                    \"neighborhood\": \"Centro\",\n                    \"city\": \"Curitiba\",\n                    \"state\": \"PR\",\n                    \"zip_code\": \"80000-000\",\n                    \"country\": \"Brasil\"\n                }\n            }\n        ]\n    }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get Event by ID",
+          "id": "48b5070e-dfa8-4597-991f-8948331d26a2",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/events/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "events",
+                "1"
+              ]
+            },
+            "description": "Retrieve a specific agenda event by ID"
+          },
+          "response": [
+            {
+              "id": "0adc1c27-96a3-4e2b-bcb4-cc85664e0bf2",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/events/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "events",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"id\": 1,\n    \"title\": \"Culto Dominical\",\n    \"description\": \"Culto de domingo pela manha\",\n    \"initial_date\": \"2024-01-07T09:00:00Z\",\n    \"final_date\": \"2024-01-07T12:00:00Z\",\n    \"recurrence_type\": \"WEEKLY\",\n    \"image\": \"https://example.com/culto.jpg\",\n    \"church_id\": 1,\n    \"address\": {\n        \"street\": \"Rua da Igreja\",\n        \"number\": \"100\",\n        \"complement\": null,\n        \"reference\": null,\n        \"neighborhood\": \"Centro\",\n        \"city\": \"Curitiba\",\n        \"state\": \"PR\",\n        \"zip_code\": \"80000-000\",\n        \"country\": \"Brasil\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Event",
+          "id": "80d1053d-5141-4fd6-a9d1-a58b004fd5bd",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Retiro de Jovens\",\n    \"description\": \"Retiro anual de jovens da igreja\",\n    \"initial_date\": \"2024-03-15T08:00:00Z\",\n    \"final_date\": \"2024-03-17T18:00:00Z\",\n    \"recurrence_type\": null,\n    \"image\": \"https://example.com/retiro.jpg\",\n    \"address\": {\n        \"street\": \"Estrada Rural\",\n        \"number\": \"500\",\n        \"complement\": \"Sitio Paz\",\n        \"reference\": \"Km 10\",\n        \"neighborhood\": \"Zona Rural\",\n        \"city\": \"Campo Largo\",\n        \"state\": \"PR\",\n        \"zip_code\": \"83600-000\",\n        \"country\": \"Brasil\"\n    }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/events",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "events"
+              ]
+            },
+            "description": "Create a new agenda event"
+          },
+          "response": [
+            {
+              "id": "99e12688-76a7-470f-8754-3b3584fd1442",
+              "name": "Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"title\":\"Novo Evento\",\"description\":\"Descricao do evento\",\"initial_date\":\"2024-01-21T10:00:00Z\",\"final_date\":\"2024-01-21T12:00:00Z\",\"recurrence_type\":\"WEEKLY\",\"image\":\"https://example.com/event.jpg\"}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/events",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "events"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"id\": 5,\n    \"title\": \"Retiro de Jovens\",\n    \"description\": \"Retiro anual de jovens da igreja\",\n    \"initial_date\": \"2024-03-15T08:00:00Z\",\n    \"final_date\": \"2024-03-17T18:00:00Z\",\n    \"recurrence_type\": null,\n    \"image\": \"https://example.com/retiro.jpg\",\n    \"church_id\": 1,\n    \"address\": {\n        \"street\": \"Estrada Rural\",\n        \"number\": \"500\",\n        \"complement\": \"Sitio Paz\",\n        \"reference\": \"Km 10\",\n        \"neighborhood\": \"Zona Rural\",\n        \"city\": \"Campo Largo\",\n        \"state\": \"PR\",\n        \"zip_code\": \"83600-000\",\n        \"country\": \"Brasil\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Event",
+          "id": "111f8311-5b20-4e02-9a15-0cd5792d8ee2",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Retiro de Jovens 2024\",\n  \"description\": \"Atualizado: Retiro anual\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/events/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "events",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Update an existing agenda event"
+          },
+          "response": [
+            {
+              "id": "073b74b6-741d-4f9f-85c3-5157fc3e1c9a",
+              "name": "Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Evento Atualizado\",\n  \"description\": \"Nova descricao\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/events/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "events",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"title\": \"Retiro de Jovens\",\n    \"description\": \"Retiro anual de jovens da igreja\",\n    \"initial_date\": \"2024-03-15T08:00:00Z\",\n    \"final_date\": \"2024-03-17T18:00:00Z\",\n    \"recurrence_type\": null,\n    \"image\": \"https://example.com/retiro.jpg\",\n    \"address\": {\n        \"street\": \"Estrada Rural\",\n        \"number\": \"500\",\n        \"complement\": \"Sitio Paz\",\n        \"reference\": \"Km 10\",\n        \"neighborhood\": \"Zona Rural\",\n        \"city\": \"Campo Largo\",\n        \"state\": \"PR\",\n        \"zip_code\": \"83600-000\",\n        \"country\": \"Brasil\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Event",
+          "id": "1f86e3e8-5efc-48f4-b96f-ede31a25e561",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/events/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "events",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Delete an agenda event"
+          },
+          "response": [
+            {
+              "id": "bf800370-00f1-4aea-b2fc-9050187051eb",
+              "name": "Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/events/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "events",
+                    "1"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "id": "5a76e8f6-4c63-4bde-b6ff-86b88ffab61a"
+    },
+    {
+      "name": "Home",
+      "item": [
+        {
+          "name": "Get Home Data",
+          "id": "f2d544c3-0325-470a-aee1-69d2a5ffc93e",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/home",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "home"
+              ]
+            },
+            "description": "Retrieve home page data including announcements"
+          },
+          "response": [
+            {
+              "id": "dd236683-89eb-4e70-8adb-79aa2b831030",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/home",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "home"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"sections\": [\n        {\n            \"type\": \"announcements\",\n            \"items\": [\n                {\n                    \"id\": 1,\n                    \"image_url\": \"https://flutter.github.io/assets-for-api-docs/assets/material/content_based_color_scheme_1.png\",\n                    \"title\": \"Escola bíblica da Fé\",\n                    \"subtitle\": \"Lorem ipsum\",\n                    \"markdown_content\": \"![Flutter Logo](https://flutter.github.io/assets-for-api-docs/assets/material/content_based_color_scheme_3.png) <video src=\\\"http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4\\\">\\n\\n# Welcome to Paz Church Curitiba\\n\\nWelcome to the **Paz App**! Here you'll find resources, inspiration, and ways to connect with our community.\\n\\n## Agenda\\n\\n- Sunday Service: 10:00 AM\\n- Life Group Meetings: Wednesdays, 7:30 PM\\n- Special Events: See [our calendar](https://pazchurch.com/events)\\n\\n## My Journey\\n\\nTrack your spiritual growth and access study materials:\\n\\n1. **Bible Reading Plan**\\n2. **YouTube Ministrations**\\n3. **Courses**\\n4. **Life Group Studies**\\n\\n## Contribute\\n\\nSupport our mission by making a PIX donation:\\n\\n```\\nPIX Key: pazchurch@pix.com.br\\n```\\n\\n## Inspiration\\n\\n> \\\"For where two or three gather in my name, there am I with them.\\\"  \\n> — Matthew 18:20\\n\\n---\\n\\nThank you for being part of our community!\"\n                },\n                {\n                    \"id\": 2,\n                    \"image_url\": \"https://flutter.github.io/assets-for-api-docs/assets/material/content_based_color_scheme_2.png\",\n                    \"title\": \"Escola bíblica da Fé\",\n                    \"subtitle\": \"Lorem ipsum dolor sit amet, consectetur adipiscing elit\",\n                    \"markdown_content\": \"# Welcome to Paz Church Curitiba\\n\\nWelcome to the **Paz App**! Here you'll find resources, inspiration, and ways to connect with our community.\\n\\n## Agenda\\n\\n- Sunday Service: 10:00 AM\\n- Life Group Meetings: Wednesdays, 7:30 PM\\n- Special Events: See [our calendar](https://pazchurch.com/events)\\n\\n## My Journey\\n\\nTrack your spiritual growth and access study materials:\\n\\n1. **Bible Reading Plan**\\n2. **YouTube Ministrations**\\n3. **Courses**\\n4. **Life Group Studies**\\n\\n## Contribute\\n\\nSupport our mission by making a PIX donation:\\n\\n```\\nPIX Key: pazchurch@pix.com.br\\n```\\n\\n## Inspiration\\n\\n> \\\"For where two or three gather in my name, there am I with them.\\\"  \\n> — Matthew 18:20\\n\\n---\\n\\nThank you for being part of our community!\"\n                },\n                {\n                    \"id\": 3,\n                    \"image_url\": \"https://flutter.github.io/assets-for-api-docs/assets/material/content_based_color_scheme_3.png\",\n                    \"title\": \"Escola bíblica da Fé\",\n                    \"subtitle\": \"Lorem ipsum dolor sit amet, consectetur adipiscing elit\",\n                    \"markdown_content\": \"# Welcome to Paz Church Curitiba\\n\\nWelcome to the **Paz App**! Here you'll find resources, inspiration, and ways to connect with our community.\\n\\n## Agenda\\n\\n- Sunday Service: 10:00 AM\\n- Life Group Meetings: Wednesdays, 7:30 PM\\n- Special Events: See [our calendar](https://pazchurch.com/events)\\n\\n## My Journey\\n\\nTrack your spiritual growth and access study materials:\\n\\n1. **Bible Reading Plan**\\n2. **YouTube Ministrations**\\n3. **Courses**\\n4. **Life Group Studies**\\n\\n## Contribute\\n\\nSupport our mission by making a PIX donation:\\n\\n```\\nPIX Key: pazchurch@pix.com.br\\n```\\n\\n## Inspiration\\n\\n> \\\"For where two or three gather in my name, there am I with them.\\\"  \\n> — Matthew 18:20\\n\\n---\\n\\nThank you for being part of our community!\"\n                }\n            ],\n            \"order\": 1\n        },\n        {\n            \"type\": \"contribution\",\n            \"bank\": {\n                \"name\": \"Banco do Brasil\",\n                \"branch_number\": \"2920-3\",\n                \"account_number\": \"40754-2\",\n                \"pix_key\": \"18.975.120/0001-70\"\n            },\n            \"order\": 2\n        },\n        {\n            \"type\": \"agenda\",\n            \"events\":\n                {\n                    \"id\": 2,\n                    \"title\": \"Culto celebração\",\n                    \"date\": \"2025-08-20T09:00:00Z\",\n                    \"image_url\": \"https://i.ytimg.com/vi/_3lOV9P2P6A/maxresdefault.jpg\"\n                },\n                {\n                    \"id\": 3,\n                    \"title\": \"Culto celebração\",\n                    \"date\": \"2025-08-20T20:00:00Z\",\n                    \"image_url\": \"https://i.ytimg.com/vi/_3lOV9P2P6A/maxresdefault.jpg\"\n                },\n                {\n                    \"id\": 4,\n                    \"title\": \"Culto das mulheres\",\n                    \"date\": \"2025-08-30T20:00:00Z\",\n                    \"image_url\": \"https://i.ytimg.com/vi/_3lOV9P2P6A/maxresdefault.jpg\"\n                }\n            ],\n            \"order\": 3\n        }\n    ]\n}"
+            }
+          ]
+        }
+      ],
+      "id": "5033d13c-3498-4dda-accb-704004aad3bb"
+    },
+    {
+      "name": "Academy (Next)",
+      "item": [
+        {
+          "name": "Trilhos (Course Tracks)",
+          "item": [
+            {
+              "name": "GET All Tracks",
+              "id": "bcae7bc7-93fd-4fb1-a3ee-6b4a9ec849cc",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/tracks",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "tracks"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "id": "4c1fe115-43ad-4fab-8ded-e50f64c0d94c",
+                  "name": "GET All Tracks",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/tracks",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "tracks"
+                      ]
+                    }
+                  },
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "description": "",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [
+                    {
+                      "expires": "Invalid Date",
+                      "domain": "",
+                      "path": ""
+                    }
+                  ],
+                  "body": "[\n    {\n        \"id\": 1,\n        \"title\": \"Fundamentos da Fé\",\n        \"description\": \"Trilha introdutória para novos membros aprenderem os fundamentos bíblicos essenciais da vida cristã.\",\n        \"category\": \"discipulado\",\n        \"status\": \"active\",\n        \"estimated_hours\": 12,\n        \"created_at\": \"2024-08-15T10:30:00Z\",\n        \"image_url\": \"\",\n        \"course_ids\": [\n            101,\n            102,\n            103\n        ]\n    },\n    {\n        \"id\": 2,\n        \"title\": \"Formação de Líderes\",\n        \"description\": \"Capacitação para membros que desejam assumir posições de liderança nos ministérios da igreja.\",\n        \"category\": \"lideranca\",\n        \"status\": \"active\",\n        \"estimated_hours\": 24,\n        \"created_at\": \"2024-09-01T14:00:00Z\",\n        \"image_url\": \"\",\n        \"course_ids\": [\n            201,\n            202,\n            203,\n            204\n        ]\n    },\n    {\n        \"id\": 3,\n        \"title\": \"Teologia Sistemática Básica\",\n        \"description\": \"Estudo aprofundado das doutrinas fundamentais da fé cristã reformada.\",\n        \"category\": \"teologia\",\n        \"status\": \"active\",\n        \"estimated_hours\": 40,\n        \"created_at\": \"2024-07-20T08:00:00Z\",\n        \"image_url\": \"\",\n        \"course_ids\": [\n            301,\n            302,\n            303,\n            304,\n            305\n        ]\n    },\n    {\n        \"id\": 4,\n        \"title\": \"Ministério de Louvor\",\n        \"description\": \"Preparação técnica e espiritual para integrantes do ministério de música e adoração.\",\n        \"category\": \"ministerio\",\n        \"status\": \"active\",\n        \"estimated_hours\": 16,\n        \"created_at\": \"2024-10-05T09:15:00Z\",\n        \"image_url\": \"\",\n        \"course_ids\": [\n            401,\n            402\n        ]\n    },\n    {\n        \"id\": 5,\n        \"title\": \"Aconselhamento Pastoral\",\n        \"description\": \"Treinamento em aconselhamento bíblico para pastores auxiliares e líderes de células.\",\n        \"category\": \"lideranca\",\n        \"status\": \"inactive\",\n        \"estimated_hours\": 30,\n        \"created_at\": \"2024-06-10T11:45:00Z\",\n        \"image_url\": \"\",\n        \"course_ids\": [\n            501,\n            502,\n            503\n        ]\n    }\n]"
+                }
+              ]
+            },
+            {
+              "name": "GET Tracks by ID",
+              "id": "0fd49680-c018-4f6a-b58a-2256ce07ef9a",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/tracks/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "tracks",
+                    "1"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "id": "c280fef2-d814-4da4-bec8-a7b4f89bc01c",
+                  "name": "GET Tracks by ID",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/tracks/1",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "tracks",
+                        "1"
+                      ]
+                    }
+                  },
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "description": "",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [
+                    {
+                      "expires": "Invalid Date",
+                      "domain": "",
+                      "path": ""
+                    }
+                  ],
+                  "body": "{\n    \"id\": 1,\n    \"title\": \"Fundamentos da Fé\",\n    \"description\": \"Trilha introdutória para novos membros aprenderem os fundamentos bíblicos essenciais da vida cristã.\",\n    \"category\": \"discipulado\",\n    \"status\": \"active\",\n    \"estimated_hours\": 12,\n    \"create_at\": \"2024-08-15T10:30:00Z\",\n    \"image_url\": \"\",\n    \"course_ids\": [\n        101,\n        102,\n        103\n    ]\n}"
+                }
+              ]
+            },
+            {
+              "name": "POST Track",
+              "id": "98810477-3655-4086-882c-fdc29c3b6620",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Trilha de Lideranca\",\n  \"description\": \"Formacao completa para lideres e pastores da igreja, incluindo gestao de equipes, visao ministerial e desenvolvimento espiritual\",\n  \"category_id\": 1,\n  \"courseIds\": [],\n  \"estimatedHours\": 56,\n  \"status\": \"active\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/trilhos",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "trilhos"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "id": "73ff359e-a52a-4da6-add0-185e8ffd34e6",
+                  "name": "POST Track",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"title\": \"Teologia Sistemática\",\n    \"description\": \"Estudo aprofundado das doutrinas cristãs\",\n    \"category\": \"teologia\",\n    \"status\": \"active\",\n    \"image_url\": \"\",\n    \"course_ids\": []\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/trilhos",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "trilhos"
+                      ]
+                    }
+                  },
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "description": "",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [
+                    {
+                      "expires": "Invalid Date",
+                      "domain": "",
+                      "path": ""
+                    }
+                  ],
+                  "body": "{\n    \"id\": 3,\n    \"title\": \"Teologia Sistemática\",\n    \"description\": \"Estudo aprofundado das doutrinas cristãs\",\n    \"category\": \"teologia\",\n    \"status\": \"active\",\n    \"estimated_hours\": 0,\n    \"created_at\": \"2024-02-11T14:30:00Z\",\n    \"courses\": []\n}"
+                }
+              ]
+            },
+            {
+              "name": "PUT Update Track",
+              "id": "3906c5d4-35e1-4376-92d1-0f3e47d9d3cf",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": \"1\",\n  \"name\": \"Trilha de Lideranca Avancada\",\n  \"description\": \"Formacao avancada para lideres experientes, incluindo mentoria, plantacao de igrejas e desenvolvimento de novos lideres\",\n  \"category\": \"lideranca\",\n  \"courseIds\": [\"1\", \"2\", \"5\", \"11\", \"12\"],\n  \"estimatedHours\": 80,\n  \"status\": \"active\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/trilhos/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "trilhos",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "DELETE Track",
+              "id": "b3004add-279b-4192-965e-75540df6a764",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/trilhos/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "trilhos",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "id": "33a3a5dc-d560-4302-8cb3-d3e93c7ab073"
+        },
+        {
+          "name": "Cursos (Courses)",
+          "item": [
+            {
+              "name": "GET All Courses",
+              "id": "209427ad-4e1d-492f-ab7f-74c66d888f8f",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/cursos",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "cursos"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "id": "b9058f1b-b9b6-49f8-8c8b-7183abda347a",
+                  "name": "GET All Courses",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/courses",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "courses"
+                      ]
+                    }
+                  },
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "description": "",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "[\n    {\n        \"id\": \"c1a2b3c4-d5e6-7890-abcd-ef1234567890\",\n        \"title\": \"Fundamentos da Fe\",\n        \"description\": \"Curso basico de teologia\",\n        \"creator\": \"Pastor Carlos\",\n        \"creator_id\": \"user-123\",\n        \"estimated_hours\": 12,\n        \"category\": \"teologia\",\n        \"url\": \"https://example.com/course/1\",\n        \"image_url\": \"https://example.com/course-image.jpg\",\n        \"thumbnail_url\": \"https://example.com/course-thumb.jpg\",\n        \"status\": \"published\",\n        \"created_at\": \"2024-01-01T00:00:00Z\",\n        \"updated_at\": \"2024-01-15T00:00:00Z\"\n    }\n]"
+                }
+              ]
+            },
+            {
+              "name": "GET Courses by ID",
+              "id": "fd385769-95eb-4677-b748-67590c0edf76",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/courses/:id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "courses",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "id": "b48a52cb-196d-402e-98d0-5d3950fcb5e0",
+                  "name": "GET Courses by ID",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{base_url}}/courses/:id",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "courses",
+                        ":id"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "1"
+                        }
+                      ]
+                    }
+                  },
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "description": "",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [
+                    {
+                      "expires": "Invalid Date",
+                      "domain": "",
+                      "path": ""
+                    }
+                  ],
+                  "body": "{\n    \"id\": \"c1a2b3c4-d5e6-7890-abcd-ef1234567890\",\n    \"title\": \"Fundamentos da Fe\",\n    \"description\": \"Curso basico de teologia\",\n    \"creator\": \"Pastor Carlos\",\n    \"creator_id\": \"user-123\",\n    \"estimated_hours\": 12,\n    \"category\": \"teologia\",\n    \"url\": \"https://example.com/course/1\",\n    \"image_url\": \"https://example.com/course-image.jpg\",\n    \"thumbnail_url\": \"https://example.com/course-thumb.jpg\",\n    \"status\": \"published\",\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-15T00:00:00Z\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "POST Courses",
+              "id": "12208b72-daa3-41c2-bc70-68ca922b7136",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"title\": \"Lideranca Crista\",\n    \"description\": \"Aprenda principios de lideranca biblica\",\n    \"creator\": \"Pastor Ana\",\n    \"creator_id\": \"user-456\",\n    \"estimated_hours\": 8,\n    \"category\": \"lideranca\",\n    \"url\": \"https://example.com/course/new\",\n    \"image_url\": \"https://example.com/new-course.jpg\",\n    \"thumbnail_url\": \"https://example.com/new-course-thumb.jpg\",\n    \"status\": \"draft\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/courses",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "courses"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "id": "eb7bb2ac-a06e-47a9-b1c4-183de6739233",
+                  "name": "POST Courses",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"title\": \"Fundamentos da Fe Crista\",\n  \"description\": \"Curso basico sobre os fundamentos da fe crista, abordando salvacao, batismo, oracao e vida devocional\",\n  \"creator\": \"Pastor Joao Silva\",\n  \"estimatedHours\": 16,\n  \"category\": \"teologia\",\n  \"url\": \"https://academia.igrejadapaz.com.br/fundamentos\",\n  \"imageUrl\": \"https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=800\",\n  \"status\": \"published\"\n}",
+                      "options": {
+                        "raw": {
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/courses",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "courses"
+                      ]
+                    }
+                  },
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "description": "",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [
+                    {
+                      "expires": "Invalid Date",
+                      "domain": "",
+                      "path": ""
+                    }
+                  ],
+                  "body": "{\n    \"id\": \"c1a2b3c4-d5e6-7890-abcd-ef1234567890\",\n    \"title\": \"Fundamentos da Fe\",\n    \"description\": \"Curso basico de teologia\",\n    \"creator\": \"Pastor Carlos\",\n    \"creator_id\": \"user-123\",\n    \"estimated_hours\": 12,\n    \"category\": \"teologia\",\n    \"url\": \"https://example.com/course/1\",\n    \"image_url\": \"https://example.com/course-image.jpg\",\n    \"thumbnail_url\": \"https://example.com/course-thumb.jpg\",\n    \"status\": \"published\",\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-15T00:00:00Z\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "PUT Update Courses",
+              "id": "3e25bb40-5eda-4696-ad99-66dc513aa10e",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"status\": \"published\",\n    \"estimated_hours\": 10\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/courses/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "courses",
+                    "1"
+                  ]
+                }
+              },
+              "response": [
+                {
+                  "id": "36069f4e-ecfa-44be-8ebb-2bc175ff5490",
+                  "name": "PUT Update Courses",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "Authorization",
+                        "value": "Bearer {{access_token}}"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"id\": \"1\",\n  \"title\": \"Fundamentos da Fe Crista - Edicao Revisada\",\n  \"description\": \"Curso basico revisado com novos materiais sobre salvacao, batismo, Santa Ceia, oracao e vida devocional\",\n  \"creator\": \"Pastor Joao Silva\",\n  \"estimatedHours\": 20,\n  \"category\": \"teologia\",\n  \"url\": \"https://academia.igrejadapaz.com.br/fundamentos-v2\",\n  \"imageUrl\": \"https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=800\",\n  \"status\": \"published\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/cursos/1",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "cursos",
+                        "1"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json",
+                      "description": "",
+                      "type": "text"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"id\": \"c1a2b3c4-d5e6-7890-abcd-ef1234567890\",\n    \"title\": \"Fundamentos da Fe\",\n    \"description\": \"Curso basico de teologia\",\n    \"creator\": \"Pastor Carlos\",\n    \"creator_id\": \"user-123\",\n    \"estimated_hours\": 12,\n    \"category\": \"teologia\",\n    \"url\": \"https://example.com/course/1\",\n    \"image_url\": \"https://example.com/course-image.jpg\",\n    \"thumbnail_url\": \"https://example.com/course-thumb.jpg\",\n    \"status\": \"published\",\n    \"created_at\": \"2024-01-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-15T00:00:00Z\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "DELETE Courses",
+              "id": "964d7f64-2d59-4c67-9711-f74900523395",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/courses/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "courses",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "id": "faa11aa8-205e-4788-ba21-58253a161ec7"
+        },
+        {
+          "name": "Get Academy Data",
+          "id": "087e8386-2c89-4ad9-a868-f6696e659dd9",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/academy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "academy"
+              ]
+            },
+            "description": "Retrieve academy data including course tracks"
+          },
+          "response": [
+            {
+              "id": "12f3ae1b-00b9-4b3f-a156-8bf9584f56e8",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/academy",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "academy"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"sections\": [\n        {\n            \"study_id\": 1,\n            \"type\": \"life_group\",\n            \"title\": \"Life Group\",\n            \"subtitle\": \"Estudo base para aplicação nos lifes\",\n            \"image_url\": \"https://i.ytimg.com/vi/_3lOV9P2P6A/maxresdefault.jpg\",\n            \"markdown_content\": \"![Flutter Logo](https://flutter.github.io/assets-for-api-docs/assets/material/content_based_color_scheme_3.png) <video src=\\\"http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4\\\">\\n\\n# Welcome to Paz Church Curitiba\\n\\nWelcome to the **Paz App**! Here you'll find resources, inspiration, and ways to connect with our community.\\n\\n## Agenda\\n\\n- Sunday Service: 10:00 AM\\n- Life Group Meetings: Wednesdays, 7:30 PM\\n- Special Events: See [our calendar](https://pazchurch.com/events)\\n\\n## My Journey\\n\\nTrack your spiritual growth and access study materials:\\n\\n1. **Bible Reading Plan**\\n2. **YouTube Ministrations**\\n3. **Courses**\\n4. **Life Group Studies**\\n\\n## Contribute\\n\\nSupport our mission by making a PIX donation:\\n\\n```\\nPIX Key: pazchurch@pix.com.br\\n```\\n\\n## Inspiration\\n\\n> \\\"For where two or three gather in my name, there am I with them.\\\"  \\n> — Matthew 18:20\\n\\n---\\n\\nThank you for being part of our community!\",\n            \"order\": 1\n        },\n        {\n            \"type\": \"ministrations\",\n            \"title\": \"Ministrações\",\n            \"items\": [\n                {\n                    \"id\": 1,\n                    \"title\": \"O extraordinário de Deus - Part II 👑 O extraordinário de Deus - Part II 👑 O extraordinário de Deus - Part II 👑 O extraordinário de Deus - Part II 👑\",\n                    \"subtitle\": \"Pr. Jackson Mendes O extraordinário de Deus - Part II 👑 O extraordinário de Deus - Part II 👑 O extraordinário de Deus - Part II 👑 O extraordinário de Deus - Part II 👑 \",\n                    \"image_url\": \"https://i.ytimg.com/vi/fcxgp5Lydco/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLA6dJYjRYntdDhzP4f7jK5Y6EjlIQ\",\n                    \"video_url\": \"https://www.youtube.com/watch?v=fcxgp5Lydco\"\n                },\n                {\n                    \"id\": 2,\n                    \"title\": \"Asas para a Vitória\",\n                    \"subtitle\": \"Sup de área: Alan maciel\",\n                    \"image_url\": \"https://i.ytimg.com/vi/GIVR48gjAr4/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLBVqJ9o9gqp4SOP2PYbBbnSsi3BhQ\",\n                    \"video_url\": \"https://www.youtube.com/watch?v=GIVR48gjAr4&t=1033s&pp=0gcJCa0JAYcqIYzv\"\n                },\n                {\n                    \"id\": 3,\n                    \"title\": \"O extraordinário de Deus 👑\",\n                    \"subtitle\": \"Pr. Jackson Mendes\",\n                    \"image_url\": \"https://i.ytimg.com/vi/GIVR48gjAr4/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLBVqJ9o9gqp4SOP2PYbBbnSsi3BhQ\",\n                    \"video_url\": \"https://www.youtube.com/watch?v=o_r3p4lEPkI\"\n                },\n                {\n                    \"id\": 4,\n                    \"title\": \"Atitudes que levam a altitude\",\n                    \"subtitle\": \"Pr. Jackson Mendes\",\n                    \"image_url\": \"https://i.ytimg.com/vi/GIVR48gjAr4/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLBVqJ9o9gqp4SOP2PYbBbnSsi3BhQ\",\n                    \"video_url\": \"https://www.youtube.com/watch?v=DJ40x9uEQdE&t=1s\"\n                }\n            ],\n            \"order\": 2\n        },\n        {\n            \"type\": \"courses\",\n            \"title\": \"Cursos\",\n            \"subtitle\": \"Seus próximos passos\",\n            \"items\": [\n                {\n                    \"id\": 1,\n                    \"title\": \"Estação DNA\",\n                    \"description\": \"\",\n                    \"done\": true,\n                    \"image_url\": \"https://i.ytimg.com/vi/GIVR48gjAr4/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLBVqJ9o9gqp4SOP2PYbBbnSsi3BhQ\"\n                },\n                {\n                    \"id\": 2,\n                    \"title\": \"Estação DNA\",\n                    \"description\": \"\",\n                    \"done\": false,\n                    \"image_url\": \"https://i.ytimg.com/vi/GIVR48gjAr4/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLBVqJ9o9gqp4SOP2PYbBbnSsi3BhQ\"\n                },\n                {\n                    \"id\": 3,\n                    \"title\": \"Expresso 1\",\n                    \"description\": \"\",\n                    \"done\": false,\n                    \"image_url\": \"https://i.ytimg.com/vi/GIVR48gjAr4/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLBVqJ9o9gqp4SOP2PYbBbnSsi3BhQ\"\n                },\n                {\n                    \"id\": 4,\n                    \"title\": \"Expresso 2\",\n                    \"description\": \"\",\n                    \"done\": false,\n                    \"image_url\": \"https://i.ytimg.com/vi/GIVR48gjAr4/hqdefault.jpg?sqp=-oaymwEnCNACELwBSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLBVqJ9o9gqp4SOP2PYbBbnSsi3BhQ\"\n                }\n            ],\n            \"order\": 3\n        }\n    ]\n}"
+            }
+          ]
+        }
+      ],
+      "id": "daa48b61-d1b9-4a55-9e57-be2be6a1292e"
+    },
+    {
+      "name": "Admin (WIP)",
+      "item": [
+        {
+          "name": "Get Admin Dashboard Stats",
+          "id": "048170a1-8f43-4303-8057-0b075a4a2962",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/dashboard/stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard",
+                "stats"
+              ]
+            },
+            "description": "Retrieve admin dashboard summary data including stats and recent activity"
+          },
+          "response": [
+            {
+              "id": "bccbe558-f302-4f6e-adbd-dd98f6053f38",
+              "name": "200",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/stats",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "stats"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"total_members\": 1234,\n    \"active_members\": 856,\n    \"total_life_groups\": 24,\n    \"events_this_month\": 12,\n    \"new_members_this_month\": 18,\n    \"contributions_this_month\": 45000.00\n}"
+            },
+            {
+              "id": "ebe9a607-4dea-4d7d-a056-8572fa6505e8",
+              "name": "401",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/stats",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "stats"
+                  ]
+                }
+              },
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Get Admin Dashboard Access Trends",
+          "id": "a2197627-2607-455a-8189-6061cd426d90",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/dashboard/access-trends",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard",
+                "access-trends"
+              ]
+            },
+            "description": "Retrieve admin dashboard summary data including stats and recent activity"
+          },
+          "response": [
+            {
+              "id": "6fe0f33a-8a1c-40bc-9d44-6ba9ea77c11b",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/access-trends",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "access-trends"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n    {\n        \"date\": \"Jan\",\n        \"access_count\": 1200\n    },\n    {\n        \"date\": \"Fev\",\n        \"access_count\": 1400\n    },\n    {\n        \"date\": \"Mar\",\n        \"access_count\": 1100\n    },\n    {\n        \"date\": \"Abr\",\n        \"access_count\": 1600\n    },\n    {\n        \"date\": \"Mai\",\n        \"access_count\": 1800\n    },\n    {\n        \"date\": \"Jun\",\n        \"access_count\": 2100\n    },\n    {\n        \"date\": \"Jul\",\n        \"access_count\": 2400\n    }\n]"
+            },
+            {
+              "id": "38ab6da6-958d-4df9-9136-7c347826fec9",
+              "name": "401",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/access-trends",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "access-trends"
+                  ]
+                }
+              },
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Get Admin Dashboard Member Growth",
+          "id": "e99ee9f9-09d9-44b0-a482-a5dc239b1d0c",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/dashboard/member-growth",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard",
+                "member-growth"
+              ]
+            },
+            "description": "Retrieve admin dashboard summary data including stats and recent activity"
+          },
+          "response": [
+            {
+              "id": "fcfbc43f-0934-42d2-ab6b-94e89e326041",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/member-growth",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "member-growth"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n    {\n        \"month\": \"Jan\",\n        \"new_members\": 15,\n        \"total_members\": 780\n    },\n    {\n        \"month\": \"Fev\",\n        \"new_members\": 18,\n        \"total_members\": 798\n    },\n    {\n        \"month\": \"Mar\",\n        \"new_members\": 14,\n        \"total_members\": 812\n    },\n    {\n        \"month\": \"Abr\",\n        \"new_members\": 13,\n        \"total_members\": 825\n    },\n    {\n        \"month\": \"Mai\",\n        \"new_members\": 16,\n        \"total_members\": 841\n    },\n    {\n        \"month\": \"Jun\",\n        \"new_members\": 15,\n        \"total_members\": 856\n    }\n]"
+            },
+            {
+              "id": "e76b39e1-980b-40e6-8947-6e63cb711245",
+              "name": "401",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/member-growth",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "member-growth"
+                  ]
+                }
+              },
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Get Admin Dashboard Life Group Distribution",
+          "id": "8f2b02ba-2999-42e3-bec6-dfa169927eac",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/dashboard/life-groups-distribution",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard",
+                "life-groups-distribution"
+              ]
+            },
+            "description": "Retrieve admin dashboard summary data including stats and recent activity"
+          },
+          "response": [
+            {
+              "id": "85b35eb5-20a5-4c54-96cb-fda7cf6a7eb8",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/life-groups-distribution",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "life-groups-distribution"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n    {\n        \"name\": \"Jovens\",\n        \"member_count\": 120\n    },\n    {\n        \"name\": \"Adultos\",\n        \"member_count\": 350\n    },\n    {\n        \"name\": \"Idosos\",\n        \"member_count\": 80\n    },\n    {\n        \"name\": \"Criancas\",\n        \"member_count\": 45\n    }\n]"
+            },
+            {
+              "id": "760652e8-27cb-4b8d-a8cf-3ea485967187",
+              "name": "401",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard/life-groups-distribution",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "dashboard",
+                    "life-groups-distribution"
+                  ]
+                }
+              },
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "id": "544ac6e9-b1ac-49ce-9763-c58c96aec98a"
+    },
+    {
+      "name": "Notifications (WIP)",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "id": "4c71bc5b-4841-4dad-a0fb-9adb3bbffda2",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "a0c21635-1bb2-4da9-a47f-ba510f646a0c",
+              "name": "notifications",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/notifications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notifications"
+                  ]
+                }
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": "[\n    {\n        \"id\": 1,\n        \"title\": \"Lembrete de Culto\",\n        \"message\": \"Nao esqueca do culto de amanha as 9h\",\n        \"channels\": [\n            \"push\",\n            \"email\"\n        ],\n        \"target_audience\": \"all\",\n        \"recipients\": 856,\n        \"status\": \"sent\",\n        \"sent_at\": \"2024-01-15T10:00:00Z\"\n    }\n]"
+            },
+            {
+              "id": "69dfa2b8-6cca-49f2-9669-7c4f42625c45",
+              "name": "401",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "",
+                    "value": "",
+                    "type": "text",
+                    "disabled": true
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/notifications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notifications"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Get Notifications By Id",
+          "id": "ab1541a8-4d12-4742-9493-5376d3d5d8c1",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "9ff21016-173f-44b8-bdbb-46beb3183d27",
+              "name": "notifications",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/notifications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notifications"
+                  ]
+                }
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": "{\n    \"id\": 1,\n    \"title\": \"Lembrete de Culto\",\n    \"message\": \"Nao esqueca do culto de amanha as 9h\",\n    \"channels\": [\n        \"push\",\n        \"email\"\n    ],\n    \"target_audience\": \"all\",\n    \"recipients\": 856,\n    \"status\": \"sent\",\n    \"sent_at\": \"2024-01-15T10:00:00Z\"\n}"
+            },
+            {
+              "id": "231e84cb-7116-460d-82a1-5def209a4641",
+              "name": "401",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/notifications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notifications"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Post Notifications",
+          "id": "55f5354f-147c-4635-9d27-20acaba64b6d",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"Evento Especial\",\n    \"message\": \"Voce esta convidado para o evento especial neste sabado\",\n    \"channels\": [\n        \"push\",\n        \"whatsapp\"\n    ],\n    \"target_audience\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "c79d98c1-36fa-40d3-9d16-be517c1d22d5",
+              "name": "notifications",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/notifications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notifications"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": "{\n    \"id\": 2,\n    \"title\": \"Evento Especial\",\n    \"message\": \"Voce esta convidado para o evento especial neste sabado\",\n    \"channels\": [\n        \"push\",\n        \"whatsapp\"\n    ],\n    \"target_audience\": \"active\",\n    \"recipients\": 650,\n    \"status\": \"pending\",\n    \"sent_at\": \"2024-01-16T14:00:00Z\"\n}"
+            },
+            {
+              "id": "77c6f59a-84d0-47a4-a21c-155a9cd14464",
+              "name": "401",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/notifications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notifications"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Delete Notifications",
+          "id": "66dfcb38-db3f-4d00-921b-663d832331db",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "8c51b2a9-5f5a-43a2-b033-56eadb515fc0",
+              "name": "notifications",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/notifications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notifications"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": ""
+            },
+            {
+              "id": "e8a2a698-0f53-4093-b01c-1b67564e9196",
+              "name": "401",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/notifications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notifications"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "id": "49b53271-c0cd-4f81-adbf-692d6182e315"
+    },
+    {
+      "name": "Users (WIP)",
+      "item": [
+        {
+          "name": "Get Users",
+          "id": "be4d9546-837b-4108-9df5-e419794728eb",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "f551e705-61e2-4682-a7a1-e5693c0c9203",
+              "name": "example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/users",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": "[\n    {\n        \"id\": 1,\n        \"name\": \"Joao Silva\",\n        \"email\": \"joao@igreja.com\",\n        \"role\": \"admin\",\n        \"status\": \"active\",\n        \"avatar\": \"https://example.com/avatar.jpg\",\n        \"created_at\": \"2023-06-01T00:00:00Z\",\n        \"updated_at\": \"2024-01-15T00:00:00Z\"\n    },\n    {\n        \"id\": 2,\n        \"name\": \"Maria Santos\",\n        \"email\": \"maria@igreja.com\",\n        \"role\": \"moderator\",\n        \"status\": \"active\",\n        \"avatar\": null,\n        \"created_at\": \"2023-07-15T00:00:00Z\",\n        \"updated_at\": \"2024-01-10T00:00:00Z\"\n    }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get Users By Id",
+          "id": "33ab8a2d-a936-4429-b748-39af4a4c870d",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "a41714fd-2cf0-437b-a4b6-b9e280e52812",
+              "name": "example",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/users/:id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": "{\n    \"id\": 1,\n    \"name\": \"Joao Silva\",\n    \"email\": \"joao@igreja.com\",\n    \"role\": \"admin\",\n    \"status\": \"active\",\n    \"avatar\": \"https://example.com/avatar.jpg\",\n    \"created_at\": \"2023-06-01T00:00:00Z\",\n    \"updated_at\": \"2024-01-15T00:00:00Z\"\n}"
+            },
+            {
+              "id": "ceb96461-0c7f-401b-8ada-e3e440cf7bca",
+              "name": "401",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/users/:id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Post Users",
+          "id": "9bff1af2-428e-4081-9dcf-8c613760483b",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pedro Costa\",\n  \"email\": \"pedro@igreja.com\",\n  \"role\": \"user\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "27c078ce-2e98-4391-9358-99f08c570412",
+              "name": "example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/users",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": "{\n  \"id\": 3,\n  \"name\": \"Pedro Costa\",\n  \"email\": \"pedro@igreja.com\",\n  \"role\": \"user\",\n  \"status\": \"active\",\n  \"avatar\": null,\n  \"created_at\": \"2024-01-16T00:00:00Z\",\n  \"updated_at\": \"2024-01-16T00:00:00Z\"\n}"
+            },
+            {
+              "id": "2260774b-c125-4bb0-8316-8b8777144aa5",
+              "name": "401",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/users",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Put Users",
+          "id": "bddae48a-0a0c-4650-84e6-3f310966c77a",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Pedro Costa Junior\",\n    \"role\": \"moderator\",\n    \"status\": \"inactive\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "Path Variables/users/:id",
+              "host": [
+                "Path Variables"
+              ],
+              "path": [
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "3"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "d875e1c4-9952-4042-ad3b-c5f130ea9e07",
+              "name": "example",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/users/:id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "3"
+                    }
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": "{\n    \"id\": 3,\n    \"name\": \"Pedro Costa Junior\",\n    \"email\": \"pedro@igreja.com\",\n    \"role\": \"moderator\",\n    \"status\": \"inactive\",\n    \"avatar\": null,\n    \"created_at\": \"2024-01-16T00:00:00Z\",\n    \"updated_at\": \"2024-01-17T00:00:00Z\"\n}"
+            },
+            {
+              "id": "85026262-39ab-49c9-a467-311221b492fd",
+              "name": "example Copy",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/users/:id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "3"
+                    }
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": ""
+            }
+          ]
+        },
+        {
+          "name": "Delete Users",
+          "id": "5c519ec0-c9f4-41f4-a4e4-b1e657d36bd7",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "Path Variables/users/:id",
+              "host": [
+                "Path Variables"
+              ],
+              "path": [
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "3"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "4c13011c-07c0-448b-8819-dfc5bcc365b0",
+              "name": "example",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/users/:id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "3"
+                    }
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": ""
+            },
+            {
+              "id": "627db9cd-1001-44db-bc0b-b632b5496184",
+              "name": "401",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/users/:id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "3"
+                    }
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json",
+                  "description": "",
+                  "type": "text"
+                }
+              ],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "id": "25ffd107-fd82-4263-9fbb-876b1d6d5eb6"
+    },
+    {
+      "name": "Member Journey",
+      "item": [
+        {
+          "name": "Get Journey Feed",
+          "id": "daabf345-33c8-4d77-b0f7-bb626f62d8da",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/member-journey/feed?stage_id=3&life_group=Grupo Alpha&from=2024-01-01&to=2024-12-31&page=1&per_page=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "member-journey",
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "stage_id",
+                  "value": "3",
+                  "description": "Filter by stage ID (1–8). Optional."
+                },
+                {
+                  "key": "life_group",
+                  "value": "Grupo Alpha",
+                  "description": "Filter by life group name. Optional."
+                },
+                {
+                  "key": "from",
+                  "value": "2024-01-01",
+                  "description": "Start date (ISO 8601). Optional."
+                },
+                {
+                  "key": "to",
+                  "value": "2024-12-31",
+                  "description": "End date (ISO 8601). Optional."
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default 1). Optional."
+                },
+                {
+                  "key": "per_page",
+                  "value": "20",
+                  "description": "Items per page (default 20). Optional."
+                }
+              ]
+            },
+            "description": "Returns a paginated activity feed of member journey stage completions. All query parameters are optional."
+          },
+          "response": [
+            {
+              "id": "3becabc5-0406-4bd8-b496-45c59217b95f",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/member-journey/feed?stage_id=3&life_group=Grupo Alpha&from=2024-01-01&to=2024-12-31&page=1&per_page=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "member-journey",
+                    "feed"
+                  ],
+                  "query": [
+                    {
+                      "key": "stage_id",
+                      "value": "3"
+                    },
+                    {
+                      "key": "life_group",
+                      "value": "Grupo Alpha"
+                    },
+                    {
+                      "key": "from",
+                      "value": "2024-01-01"
+                    },
+                    {
+                      "key": "to",
+                      "value": "2024-12-31"
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"activities\": [\n    {\n      \"id\": 101,\n      \"member_id\": 42,\n      \"member_name\": \"Joana Souza\",\n      \"life_group\": \"Grupo Alpha\",\n      \"stage_id\": 3,\n      \"stage_key\": \"first_courses\",\n      \"stage_label\": \"Primeiros Cursos\",\n      \"completed_at\": \"2024-03-15T14:30:00Z\",\n      \"note\": \"Concluiu o curso de membros com louvor.\"\n    },\n    {\n      \"id\": 102,\n      \"member_id\": 57,\n      \"member_name\": \"Carlos Mendes\",\n      \"life_group\": \"Grupo Alpha\",\n      \"stage_id\": 3,\n      \"stage_key\": \"first_courses\",\n      \"stage_label\": \"Primeiros Cursos\",\n      \"completed_at\": \"2024-04-02T10:00:00Z\",\n      \"note\": null\n    }\n  ],\n  \"total\": 2,\n  \"page\": 1,\n  \"per_page\": 20\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Journey Stats",
+          "id": "6ef0ead1-aa16-404a-98f3-fab939743202",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/member-journey/stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "member-journey",
+                "stats"
+              ]
+            },
+            "description": "Returns the count of members at each journey stage."
+          },
+          "response": [
+            {
+              "id": "d6d57c8a-a37a-4f97-ae7f-ac0a5afab9e1",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/member-journey/stats",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "member-journey",
+                    "stats"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"stage_id\": 1,\n    \"stage_key\": \"salvation\",\n    \"stage_label\": \"Salvação\",\n    \"count\": 320\n  },\n  {\n    \"stage_id\": 2,\n    \"stage_key\": \"registration\",\n    \"stage_label\": \"Cadastro\",\n    \"count\": 285\n  },\n  {\n    \"stage_id\": 3,\n    \"stage_key\": \"first_courses\",\n    \"stage_label\": \"Primeiros Cursos\",\n    \"count\": 198\n  },\n  {\n    \"stage_id\": 4,\n    \"stage_key\": \"discovery\",\n    \"stage_label\": \"Evento de Descoberta\",\n    \"count\": 154\n  },\n  {\n    \"stage_id\": 5,\n    \"stage_key\": \"life_group\",\n    \"stage_label\": \"Life Group\",\n    \"count\": 112\n  },\n  {\n    \"stage_id\": 6,\n    \"stage_key\": \"discipleship\",\n    \"stage_label\": \"Discipulado\",\n    \"count\": 78\n  },\n  {\n    \"stage_id\": 7,\n    \"stage_key\": \"water_baptism\",\n    \"stage_label\": \"Batismo nas Águas\",\n    \"count\": 61\n  },\n  {\n    \"stage_id\": 8,\n    \"stage_key\": \"disciple_maker\",\n    \"stage_label\": \"Fazedor de Discípulos\",\n    \"count\": 34\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get Member Journey",
+          "id": "9dbc54f2-753e-469c-8efe-4eda2d1adbf6",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/member-journey/42",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "member-journey",
+                "42"
+              ]
+            },
+            "description": "Returns the full journey record for a single member, including the status of all 8 stages."
+          },
+          "response": [
+            {
+              "id": "368da3f2-68ea-4976-bd99-b248b93bae9b",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/member-journey/42",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "member-journey",
+                    "42"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"member_id\": 42,\n  \"member_name\": \"Joana Souza\",\n  \"member_email\": \"joana.souza@email.com\",\n  \"life_group\": \"Grupo Alpha\",\n  \"current_stage_id\": 4,\n  \"stages\": [\n    {\n      \"stage_id\": 1,\n      \"stage_key\": \"salvation\",\n      \"completed\": true,\n      \"completed_at\": \"2022-06-10T09:00:00Z\",\n      \"note\": \"Aceitou Jesus no culto de domingo.\"\n    },\n    {\n      \"stage_id\": 2,\n      \"stage_key\": \"registration\",\n      \"completed\": true,\n      \"completed_at\": \"2022-06-15T11:00:00Z\",\n      \"note\": null\n    },\n    {\n      \"stage_id\": 3,\n      \"stage_key\": \"first_courses\",\n      \"completed\": true,\n      \"completed_at\": \"2024-03-15T14:30:00Z\",\n      \"note\": \"Concluiu o curso de membros com louvor.\"\n    },\n    {\n      \"stage_id\": 4,\n      \"stage_key\": \"discovery\",\n      \"completed\": false,\n      \"completed_at\": null,\n      \"note\": null\n    },\n    {\n      \"stage_id\": 5,\n      \"stage_key\": \"life_group\",\n      \"completed\": false,\n      \"completed_at\": null,\n      \"note\": null\n    },\n    {\n      \"stage_id\": 6,\n      \"stage_key\": \"discipleship\",\n      \"completed\": false,\n      \"completed_at\": null,\n      \"note\": null\n    },\n    {\n      \"stage_id\": 7,\n      \"stage_key\": \"water_baptism\",\n      \"completed\": false,\n      \"completed_at\": null,\n      \"note\": null\n    },\n    {\n      \"stage_id\": 8,\n      \"stage_key\": \"disciple_maker\",\n      \"completed\": false,\n      \"completed_at\": null,\n      \"note\": null\n    }\n  ],\n  \"last_updated_at\": \"2024-03-15T14:30:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Member Stage",
+          "id": "a68302dd-6d36-4d7e-91b0-4d1a5c31187a",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stage_id\": 4,\n  \"completed\": true,\n  \"completed_at\": \"2024-05-20T18:00:00Z\",\n  \"note\": \"Participou do Evento de Descoberta de maio.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/member-journey/42/stage",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "member-journey",
+                "42",
+                "stage"
+              ]
+            },
+            "description": "Mark a journey stage as completed (or roll it back). Returns the updated MemberJourney record. Fields: stage_id (1–8, required), completed (bool, required), completed_at (ISO 8601, optional), note (string, optional)."
+          },
+          "response": [
+            {
+              "id": "e2969079-eb39-420d-a5bf-9a823430a054",
+              "name": "Success",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"stage_id\": 4,\n  \"completed\": true,\n  \"completed_at\": \"2024-05-20T18:00:00Z\",\n  \"note\": \"Participou do Evento de Descoberta de maio.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/member-journey/42/stage",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "member-journey",
+                    "42",
+                    "stage"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"member_id\": 42,\n  \"member_name\": \"Joana Souza\",\n  \"member_email\": \"joana.souza@email.com\",\n  \"life_group\": \"Grupo Alpha\",\n  \"current_stage_id\": 5,\n  \"stages\": [\n    {\n      \"stage_id\": 1,\n      \"stage_key\": \"salvation\",\n      \"completed\": true,\n      \"completed_at\": \"2022-06-10T09:00:00Z\",\n      \"note\": \"Aceitou Jesus no culto de domingo.\"\n    },\n    {\n      \"stage_id\": 2,\n      \"stage_key\": \"registration\",\n      \"completed\": true,\n      \"completed_at\": \"2022-06-15T11:00:00Z\",\n      \"note\": null\n    },\n    {\n      \"stage_id\": 3,\n      \"stage_key\": \"first_courses\",\n      \"completed\": true,\n      \"completed_at\": \"2024-03-15T14:30:00Z\",\n      \"note\": \"Concluiu o curso de membros com louvor.\"\n    },\n    {\n      \"stage_id\": 4,\n      \"stage_key\": \"discovery\",\n      \"completed\": true,\n      \"completed_at\": \"2024-05-20T18:00:00Z\",\n      \"note\": \"Participou do Evento de Descoberta de maio.\"\n    },\n    {\n      \"stage_id\": 5,\n      \"stage_key\": \"life_group\",\n      \"completed\": false,\n      \"completed_at\": null,\n      \"note\": null\n    },\n    {\n      \"stage_id\": 6,\n      \"stage_key\": \"discipleship\",\n      \"completed\": false,\n      \"completed_at\": null,\n      \"note\": null\n    },\n    {\n      \"stage_id\": 7,\n      \"stage_key\": \"water_baptism\",\n      \"completed\": false,\n      \"completed_at\": null,\n      \"note\": null\n    },\n    {\n      \"stage_id\": 8,\n      \"stage_key\": \"disciple_maker\",\n      \"completed\": false,\n      \"completed_at\": null,\n      \"note\": null\n    }\n  ],\n  \"last_updated_at\": \"2024-05-20T18:00:00Z\"\n}"
+            }
+          ]
+        }
+      ],
+      "id": "a79aec06-ba04-4d6f-b799-d23a4b9bd4f6"
+    },
+    {
+      "name": "Members",
+      "item": [
+        {
+          "name": "Get All Members",
+          "id": "d5627f8b-96f4-4baa-91fb-5866630c0060",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/members",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "members"
+              ]
+            },
+            "description": "Retrieve all church members"
+          },
+          "response": [
+            {
+              "id": "e51832b1-1a88-4826-8f29-d29bee966afc",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/members",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "members"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": 1,\n    \"name\": \"Maria Silva\",\n    \"email\": \"maria.silva@email.com\",\n    \"phone\": \"+55 41 99999-0001\",\n    \"address\": \"Rua das Flores, 100, Curitiba - PR\",\n    \"birth_date\": \"1990-04-15\",\n    \"life_group\": \"Grupo Alpha\",\n    \"status\": \"active\",\n    \"membership_date\": \"2020-03-01\",\n    \"created_at\": \"2020-03-01T10:00:00Z\",\n    \"updated_at\": \"2024-01-10T08:00:00Z\"\n  },\n  {\n    \"id\": 2,\n    \"name\": \"Carlos Pereira\",\n    \"email\": \"carlos.pereira@email.com\",\n    \"phone\": \"+55 41 99999-0002\",\n    \"address\": \"Av. Sete de Setembro, 200, Curitiba - PR\",\n    \"birth_date\": \"1985-08-22\",\n    \"life_group\": \"Grupo Beta\",\n    \"status\": \"active\",\n    \"membership_date\": \"2019-07-15\",\n    \"created_at\": \"2019-07-15T10:00:00Z\",\n    \"updated_at\": \"2024-01-10T08:00:00Z\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get Member by ID",
+          "id": "b4feeec1-47b0-424c-b35f-1c8a387c067c",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/members/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "members",
+                "1"
+              ]
+            },
+            "description": "Retrieve a specific member by ID"
+          },
+          "response": [
+            {
+              "id": "683f52d4-b749-4cd4-aad7-9ed5dd3fd918",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/members/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "members",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Maria Silva\",\n  \"email\": \"maria.silva@email.com\",\n  \"phone\": \"+55 41 99999-0001\",\n  \"address\": \"Rua das Flores, 100, Curitiba - PR\",\n  \"birth_date\": \"1990-04-15\",\n  \"life_group\": \"Grupo Alpha\",\n  \"status\": \"active\",\n  \"membership_date\": \"2020-03-01\",\n  \"created_at\": \"2020-03-01T10:00:00Z\",\n  \"updated_at\": \"2024-01-10T08:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Member",
+          "id": "e75e3f25-f22f-4942-9637-5c657a98d9a5",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ana Costa\",\n  \"email\": \"ana.costa@email.com\",\n  \"phone\": \"+55 41 99999-0003\",\n  \"address\": \"Rua XV de Novembro, 300, Curitiba - PR\",\n  \"birth_date\": \"1995-11-30\",\n  \"life_group\": \"Grupo Alpha\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/members",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "members"
+              ]
+            },
+            "description": "Create a new church member"
+          },
+          "response": [
+            {
+              "id": "9b223e75-0f20-480b-a380-49b6419675fe",
+              "name": "Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Ana Costa\",\n  \"email\": \"ana.costa@email.com\",\n  \"phone\": \"+55 41 99999-0003\",\n  \"address\": \"Rua XV de Novembro, 300, Curitiba - PR\",\n  \"birth_date\": \"1995-11-30\",\n  \"life_group\": \"Grupo Alpha\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/members",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "members"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": 3,\n  \"name\": \"Ana Costa\",\n  \"email\": \"ana.costa@email.com\",\n  \"phone\": \"+55 41 99999-0003\",\n  \"address\": \"Rua XV de Novembro, 300, Curitiba - PR\",\n  \"birth_date\": \"1995-11-30\",\n  \"life_group\": \"Grupo Alpha\",\n  \"status\": \"active\",\n  \"membership_date\": null,\n  \"created_at\": \"2024-05-20T14:00:00Z\",\n  \"updated_at\": \"2024-05-20T14:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Member",
+          "id": "8d334db4-5720-4907-9711-f11764df0bbe",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+55 41 88888-0001\",\n  \"life_group\": \"Grupo Beta\",\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/members/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "members",
+                "1"
+              ]
+            },
+            "description": "Update an existing member. To change a member's life group, update the life_group field here."
+          },
+          "response": [
+            {
+              "id": "81cc7188-6c7e-4028-9c48-3f9dcf9269ff",
+              "name": "Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"phone\": \"+55 41 88888-0001\",\n  \"life_group\": \"Grupo Beta\",\n  \"status\": \"active\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/members/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "members",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Maria Silva\",\n  \"email\": \"maria.silva@email.com\",\n  \"phone\": \"+55 41 88888-0001\",\n  \"address\": \"Rua das Flores, 100, Curitiba - PR\",\n  \"birth_date\": \"1990-04-15\",\n  \"life_group\": \"Grupo Beta\",\n  \"status\": \"active\",\n  \"membership_date\": \"2020-03-01\",\n  \"created_at\": \"2020-03-01T10:00:00Z\",\n  \"updated_at\": \"2024-05-20T14:30:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Member",
+          "id": "5707e97c-2fd5-42cb-8f39-33bf75f8c6a3",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/members/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "members",
+                "1"
+              ]
+            },
+            "description": "Delete a member by ID"
+          },
+          "response": [
+            {
+              "id": "5b7ea33a-52b9-41a0-8222-2f5c8adb1f85",
+              "name": "No Content",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/members/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "members",
+                    "1"
+                  ]
+                }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "text",
+              "header": [],
+              "cookie": [],
+              "body": ""
+            }
+          ]
+        }
+      ],
+      "id": "2a4a29c4-c825-4bd8-8ab5-177a9779fce1",
+      "description": "Church member directory — CRUD for Member records. Life Groups are derived from the life_group field on these records (no dedicated /life-groups endpoint)."
+    },
+    {
+      "name": "Church Data",
+      "item": [
+        {
+          "name": "Get Church",
+          "id": "d961c333-b657-4423-9ff8-8000adbec5ba",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/church",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "church"
+              ]
+            },
+            "description": "Retrieve the church record (address, contact, schedule, social media)"
+          },
+          "response": [
+            {
+              "id": "875b9d1d-c694-4cd6-9ac1-9079e9cc9d7c",
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/church",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "church"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Igreja da Paz Curitiba\",\n  \"description\": \"Uma igreja comprometida com o discipulado e o crescimento espiritual.\",\n  \"address\": {\n    \"street\": \"Rua Padre Agostinho\",\n    \"number\": \"2880\",\n    \"complement\": null,\n    \"reference\": \"Proximo ao Parque Barigui\",\n    \"neighborhood\": \"Bigorrilho\",\n    \"city\": \"Curitiba\",\n    \"state\": \"PR\",\n    \"zip_code\": \"80710-000\",\n    \"country\": \"Brasil\"\n  },\n  \"contact\": {\n    \"phone\": \"+55 41 3333-0000\",\n    \"email\": \"contato@igrejadapaz.com.br\",\n    \"website\": \"https://igrejadapaz.com.br\"\n  },\n  \"schedule\": {\n    \"sunday\": {\"morning\": \"09:00\", \"evening\": \"19:00\"},\n    \"wednesday\": {\"evening\": \"19:30\"},\n    \"friday\": {\"evening\": \"20:00\"},\n    \"saturday\": {}\n  },\n  \"social_media\": {\n    \"facebook\": \"https://facebook.com/igrejadapaz\",\n    \"instagram\": \"https://instagram.com/igrejadapaz\",\n    \"youtube\": \"https://youtube.com/@igrejadapaz\",\n    \"twitter\": null\n  },\n  \"updated_at\": \"2024-01-10T08:00:00Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Church",
+          "id": "f0283b97-7399-44d8-9dc9-c423d66467d7",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Igreja da Paz Curitiba\",\n  \"description\": \"Uma igreja comprometida com o discipulado e o crescimento espiritual.\",\n  \"contact\": {\n    \"phone\": \"+55 41 3333-1111\",\n    \"email\": \"contato@igrejadapaz.com.br\",\n    \"website\": \"https://igrejadapaz.com.br\"\n  },\n  \"social_media\": {\n    \"instagram\": \"https://instagram.com/igrejadapaz_cwb\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/church",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "church"
+              ]
+            },
+            "description": "Update the church record. All fields are optional — send only what needs to change. Nested objects (address, contact, schedule, social_media) are merged partially."
+          },
+          "response": [
+            {
+              "id": "d22369ef-45ae-4365-b905-2149b132bc28",
+              "name": "Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"contact\": {\n    \"phone\": \"+55 41 3333-1111\"\n  },\n  \"social_media\": {\n    \"instagram\": \"https://instagram.com/igrejadapaz_cwb\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/church",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "church"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": 1,\n  \"name\": \"Igreja da Paz Curitiba\",\n  \"description\": \"Uma igreja comprometida com o discipulado e o crescimento espiritual.\",\n  \"address\": {\n    \"street\": \"Rua Padre Agostinho\",\n    \"number\": \"2880\",\n    \"complement\": null,\n    \"reference\": \"Proximo ao Parque Barigui\",\n    \"neighborhood\": \"Bigorrilho\",\n    \"city\": \"Curitiba\",\n    \"state\": \"PR\",\n    \"zip_code\": \"80710-000\",\n    \"country\": \"Brasil\"\n  },\n  \"contact\": {\n    \"phone\": \"+55 41 3333-1111\",\n    \"email\": \"contato@igrejadapaz.com.br\",\n    \"website\": \"https://igrejadapaz.com.br\"\n  },\n  \"schedule\": {\n    \"sunday\": {\"morning\": \"09:00\", \"evening\": \"19:00\"},\n    \"wednesday\": {\"evening\": \"19:30\"},\n    \"friday\": {\"evening\": \"20:00\"},\n    \"saturday\": {}\n  },\n  \"social_media\": {\n    \"facebook\": \"https://facebook.com/igrejadapaz\",\n    \"instagram\": \"https://instagram.com/igrejadapaz_cwb\",\n    \"youtube\": \"https://youtube.com/@igrejadapaz\",\n    \"twitter\": null\n  },\n  \"updated_at\": \"2024-05-20T15:00:00Z\"\n}"
+            }
+          ]
+        }
+      ],
+      "id": "0fdcc780-76f0-4458-bee1-0e370fb4c0f4",
+      "description": "Church settings — single church record. GET to read, PUT to update."
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "id": "5f1b9762-95e4-4054-b8da-0c6334206e07",
+      "key": "base_url",
+      "value": "{{api_base_url}}"
+    }
+  ]
+}
