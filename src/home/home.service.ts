@@ -1,6 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { CreateHomeDto } from './dto/create-home.dto';
-import { UpdateHomeDto } from './dto/update-home.dto';
 import { AnnouncementsService } from 'src/announcements/announcements.service';
 import { Announcement } from 'src/announcements/entities/announcement.entity';
 import { Contribution } from 'src/contributions/entities/contribution.entity';
