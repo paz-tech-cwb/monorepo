@@ -1,21 +1,43 @@
+import { Expose } from 'class-transformer';
 import {
   IsString,
   IsOptional,
   IsEmail,
-  IsDate,
-  IsPhoneNumber,
-  IsNumber,
+  IsDateString,
+  IsIn,
 } from 'class-validator';
 
 export class CreateUserDto {
-  @IsString({ message: 'Name must be a string.' })
+  @Expose()
+  @IsString()
   name: string;
 
-  @IsOptional()
-  @IsEmail({}, { message: 'Email must be a valid email address.' })
-  email?: string;
+  @Expose()
+  @IsEmail()
+  email: string;
 
+  @Expose()
   @IsOptional()
-  @IsNumber({}, { message: 'Role ID must be a number.' })
-  roleId?: number;
+  @IsString()
+  phone?: string;
+
+  @Expose()
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @Expose()
+  @IsOptional()
+  @IsDateString()
+  birth_date?: string;
+
+  @Expose()
+  @IsOptional()
+  @IsString()
+  life_group?: string;
+
+  @Expose()
+  @IsOptional()
+  @IsIn(['admin', 'pastor', 'supervisor', 'lg-leader', 'member'])
+  role?: string;
 }

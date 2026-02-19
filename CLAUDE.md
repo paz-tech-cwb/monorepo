@@ -81,6 +81,18 @@ docker compose up -d
 
 All entity properties MUST use `camelCase` with explicit `@Column({ name: 'snake_case' })` mapping. Some older entities (Announcement, Contribution, Event) still use `snake_case` properties directly — these should be migrated when touched. New entities and new columns must always follow the `camelCase` property + `snake_case` name mapping pattern.
 
+## snake_case vs camelCase — Convention
+
+`snake_case` is the **API JSON transport layer** convention only. It does not leak into internal TypeScript code:
+
+- **Entity properties**: always `camelCase` (e.g., `socialMedia`, `updatedAt`)
+- **Service / business logic code**: always `camelCase`
+- **Request DTOs** (`CreateXDto`, `UpdateXDto`): use `@Expose({ name: 'snake_case_key' })` to map incoming snake_case JSON body → camelCase TS properties
+- **Response DTOs** (`XResponseDto`): use `@Expose({ name: 'snake_case_key' })` to serialize camelCase TS properties → snake_case JSON response
+- **Controllers** that return plain objects already shaped in snake_case (via a `toResponse()` helper): annotate with `@SerializeOptions({ strategy: 'exposeAll', excludeExtraneousValues: false })` to bypass the global `excludeAll` serializer strategy
+
+Never name a TypeScript entity property or service variable in snake_case — keep all internal TypeScript code camelCase and let the DTO layer handle the boundary conversion.
+
 ## Security Conventions
 
 - **JWT secrets**: Must be provided via environment variables (`ACCESS_TOKEN_SECRET`, `REFRESH_TOKEN_SECRET`). No fallback defaults — app fails to start if missing. Secrets should be 32+ characters.

@@ -19,23 +19,36 @@ export class User {
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  email: string | null;
+
+  @Column({ name: 'phone_number', type: 'varchar', length: 15, nullable: true })
+  phoneNumber: string | null;
+
   @ManyToOne(() => Address, { nullable: true })
   address: Address;
 
   @Column({ name: 'birth_date', type: 'date', nullable: true })
-  birthDate: Date;
+  birthDate: Date | null;
 
-  @Column({ name: 'phone_number', type: 'varchar', length: 15, nullable: true })
-  phoneNumber: string;
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  picture: string | null;
 
-  @Column({ type: 'varchar', length: 255 })
-  email: string;
-
-  @Column({ nullable: true })
-  picture: string;
-
-  @ManyToOne(() => Role)
+  @ManyToOne(() => Role, { nullable: true })
   role: Role;
+
+  // Flat role slug for admin-ui: 'admin', 'pastor', 'supervisor', 'lg-leader', 'member'
+  @Column({ name: 'role_slug', type: 'varchar', length: 50, nullable: true })
+  roleSlug: string | null;
+
+  @Column({ name: 'life_group', type: 'varchar', length: 255, nullable: true })
+  lifeGroup: string | null;
+
+  @Column({ type: 'varchar', length: 20, default: 'active' })
+  status: string;
+
+  @Column({ name: 'membership_date', type: 'date', nullable: true })
+  membershipDate: Date | null;
 
   @OneToMany(() => UserAccount, (userAccount) => userAccount.user, {
     nullable: true,

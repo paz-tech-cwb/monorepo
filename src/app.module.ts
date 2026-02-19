@@ -11,10 +11,15 @@ import { UsersModule } from './users/users.module';
 import { RolesModule } from './roles/roles.module';
 import { AddressesModule } from './addresses/addresses.module';
 import { AuthModule } from './auth/auth.module';
+import { MembersModule } from './members/members.module';
+import { CoursesModule } from './courses/courses.module';
+import { AcademyModule } from './academy/academy.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { ChurchModule } from './church/church.module';
+import { MemberJourneyModule } from './member-journey/member-journey.module';
+import { AdminDashboardModule } from './admin-dashboard/admin-dashboard.module';
 
 import ormconfig from './configs/orm.config';
-import { Announcement } from './announcements/entities/announcement.entity';
-import { Contribution } from './contributions/entities/contribution.entity';
 
 @Module({
   imports: [
@@ -37,17 +42,6 @@ import { Contribution } from './contributions/entities/contribution.entity';
     }),
     TypeOrmModule.forRoot(ormconfig),
     AuthModule,
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: '172.28.226.169', // or 'localhost' in dev env
-      port: 5432,
-      username: 'postgres',
-      password: 'postgres',
-      database: 'postgres',
-      entities: [Announcement, Contribution, Event],
-      migrations: ['dist/migrations/*.js'],
-      synchronize: false, // 🚫 do not use in prod
-    }),
     HomeModule,
     AnnouncementsModule,
     ContributionsModule,
@@ -55,6 +49,13 @@ import { Contribution } from './contributions/entities/contribution.entity';
     UsersModule,
     RolesModule,
     AddressesModule,
+    MembersModule,
+    CoursesModule,
+    AcademyModule,
+    NotificationsModule,
+    ChurchModule,
+    MemberJourneyModule,
+    AdminDashboardModule,
   ],
   providers: [
     {
@@ -63,4 +64,4 @@ import { Contribution } from './contributions/entities/contribution.entity';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

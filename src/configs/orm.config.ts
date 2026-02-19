@@ -6,6 +6,12 @@ import { Contribution } from '../contributions/entities/contribution.entity';
 import { Event } from '../events/entities/event.entity';
 import { User } from '../users/entities/user.entity';
 import { UserAccount } from '../users/entities/account.entity';
+import { Member } from '../members/entities/member.entity';
+import { Course } from '../courses/entities/course.entity';
+import { CourseTrack } from '../academy/entities/course-track.entity';
+import { Notification } from '../notifications/entities/notification.entity';
+import { Church } from '../church/entities/church.entity';
+import { MemberJourneyStage } from '../member-journey/entities/member-journey-stage.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -24,6 +30,12 @@ const config: DataSourceOptions = {
     Event,
     User,
     UserAccount,
+    Member,
+    Course,
+    CourseTrack,
+    Notification,
+    Church,
+    MemberJourneyStage,
   ],
   migrations: ['dist/migrations/*.js'],
   synchronize: process.env.DB_SYNCHRONIZE === 'true',
