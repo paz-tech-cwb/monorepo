@@ -26,7 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { CheckCircle2, Circle, Loader2, Copy } from "lucide-react"
 import { useMemberJourney, useUpdateMemberStage } from "@/lib/hooks/use-member-journey"
 import { JOURNEY_STAGES } from "@/lib/api/types/member-journey"
-import type { Member } from "@/lib/api/types"
+import type { AdminUser } from "@/lib/api/types"
 import type { JourneyStageId, JourneyStageKey } from "@/lib/api/types"
 
 const STAGE_MESSAGES: Record<JourneyStageKey, { title: string; message: string }> = {
@@ -40,7 +40,7 @@ const STAGE_MESSAGES: Record<JourneyStageKey, { title: string; message: string }
   disciple_maker: { title: "Parabéns, líder!",              message: "Você chegou à etapa mais impactante: discipular outros. A missão continua em você." },
 }
 
-function inferStagesFromMember(member: Member): Partial<Record<JourneyStageKey, string>> {
+function inferStagesFromMember(member: AdminUser): Partial<Record<JourneyStageKey, string>> {
   const inferred: Partial<Record<JourneyStageKey, string>> = {}
   inferred.registration = member.membership_date ?? member.created_at
   if (member.life_group) inferred.life_group = member.updated_at
@@ -223,7 +223,7 @@ function UpdateStageForm({ memberId, onSuccess }: UpdateStageFormProps) {
 }
 
 interface JourneySheetProps {
-  member: Member | null
+  member: AdminUser | null
   open: boolean
   onOpenChange: (open: boolean) => void
 }

@@ -1,5 +1,5 @@
 import { api } from "../client"
-import type { AdminUser, CreateUserRequest, UpdateUserRequest } from "../types"
+import type { AdminUser, CreateUserRequest, UpdateUserRequest, UpdateUserRoleRequest } from "../types"
 
 export const usersApi = {
   getAll: async () => {
@@ -14,6 +14,9 @@ export const usersApi = {
 
   update: (id: number, data: UpdateUserRequest) =>
     api.put<AdminUser>(`/users/${id}`, data),
+
+  updateRole: (id: number, data: UpdateUserRoleRequest) =>
+    api.patch<AdminUser>(`/users/${id}/role`, data),
 
   delete: (id: number) => api.delete<void>(`/users/${id}`),
 }

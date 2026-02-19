@@ -41,8 +41,8 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { useLifeGroups } from "@/lib/hooks/use-life-groups"
-import { useUpdateMember } from "@/lib/hooks/use-members"
-import type { Member } from "@/lib/api/types"
+import { useUpdateUser } from "@/lib/hooks/use-users"
+import type { AdminUser } from "@/lib/api/types"
 
 type SortOption = "name-asc" | "name-desc" | "date-asc" | "date-desc"
 
@@ -52,10 +52,10 @@ type SortOption = "name-asc" | "name-desc" | "date-asc" | "date-desc"
 // ---------------------------------------------------------------------------
 
 interface MemberItemProps {
-  member: Member
+  member: AdminUser
   isCurrentMember: boolean
-  onAdd: (member: Member) => void
-  onRemove: (member: Member) => void
+  onAdd: (member: AdminUser) => void
+  onRemove: (member: AdminUser) => void
   isPending: boolean
 }
 
@@ -74,9 +74,9 @@ const MemberItem = ({
     <div className="flex-1">
       <p className="text-sm font-medium">{member.name}</p>
       <p className="text-xs text-muted-foreground">{member.email}</p>
-      {member.phone && (
+      {(member.phone_number || member.phone) && (
         <Badge variant="outline" className="text-xs mt-1">
-          {member.phone}
+          {member.phone_number || member.phone}
         </Badge>
       )}
     </div>
@@ -123,7 +123,7 @@ const MemberItem = ({
 
 export function LifeGroupsManagement() {
   const { data: lifeGroups, allMembers, isLoading } = useLifeGroups()
-  const updateMember = useUpdateMember()
+  const updateUser = useUpdateUser()
 
   const [searchTerm, setSearchTerm] = useState("")
   const [managingGroupName, setManagingGroupName] = useState<string | null>(null)
@@ -195,9 +195,9 @@ export function LifeGroupsManagement() {
     setIsMembersDialogOpen(true)
   }
 
-  function handleAssignMember(member: Member, groupName: string) {
+  function handleAssignMember(member: AdminUser, groupName: string) {
     setPendingMemberId(member.id)
-    updateMember.mutate(
+    updateUser.mutate(
       { id: member.id, data: { life_group: groupName } },
       {
         onSuccess: () => {
@@ -212,10 +212,10 @@ export function LifeGroupsManagement() {
     )
   }
 
-  function handleRemoveMember(member: Member) {
+  function handleRemoveMember(member: AdminUser) {
     setPendingMemberId(member.id)
-    updateMember.mutate(
-      // Sending an empty string removes the member from any group.
+    updateUser.mutate(
+      // Sending an empty string removes the user from any group.
       // The backend treats an empty/null life_group as "no group".
       { id: member.id, data: { life_group: "" } },
       {

@@ -1,10 +1,22 @@
-export type UserRole = "admin" | "pastor" | "supervisor" | "lg-leader" | "member"
+export type UserRole =
+  | "admin"
+  | "pastor"
+  | "area_leader"
+  | "sector_leader"
+  | "life_group_leader"
+  | "member"
+  // Legacy aliases kept for backwards compatibility with existing data
+  | "supervisor"
+  | "lg-leader"
+
 export type UserStatus = "active" | "inactive"
 
 export interface AdminUser {
   id: number
   name: string
   email: string
+  phone_number?: string
+  /** Legacy field — some responses may still use `phone` */
   phone?: string
   address?: string
   birth_date?: string
@@ -20,7 +32,7 @@ export interface AdminUser {
 export interface CreateUserRequest {
   name: string
   email: string
-  phone?: string
+  phone_number?: string
   address?: string
   birth_date?: string
   life_group?: string
@@ -30,11 +42,15 @@ export interface CreateUserRequest {
 export interface UpdateUserRequest {
   name?: string
   email?: string
-  phone?: string
+  phone_number?: string
   address?: string
   birth_date?: string
   life_group?: string
   role?: UserRole
   status?: UserStatus
   avatar?: string
+}
+
+export interface UpdateUserRoleRequest {
+  role: UserRole
 }

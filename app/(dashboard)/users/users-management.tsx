@@ -29,14 +29,31 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Search, Plus, MoreHorizontal, Edit, Trash2 } from "lucide-react"
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from "@/lib/hooks/use-users"
+import { useUsers, useCreateUser, useUpdateUser, useUpdateUserRole, useDeleteUser } from "@/lib/hooks/use-users"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
 import type { AdminUser, UserRole } from "@/lib/api/types"
+
+const ROLE_OPTIONS: { value: UserRole; label: string; badgeVariant: "destructive" | "default" | "outline" | "secondary" }[] = [
+  { value: "member",            label: "Membro",              badgeVariant: "secondary" },
+  { value: "life_group_leader", label: "Lider de Life Group", badgeVariant: "outline" },
+  { value: "sector_leader",     label: "Lider de Setor",      badgeVariant: "outline" },
+  { value: "area_leader",       label: "Lider de Area",       badgeVariant: "outline" },
+  { value: "pastor",            label: "Pastor",              badgeVariant: "default" },
+  { value: "admin",             label: "Administrador",       badgeVariant: "destructive" },
+]
+
+function getRoleBadge(role: string) {
+  const opt = ROLE_OPTIONS.find((o) => o.value === role)
+  const variant = opt?.badgeVariant ?? "secondary"
+  const label = opt?.label ?? role
+  return <Badge variant={variant}>{label}</Badge>
+}
 
 export function UsersManagement() {
   const { data: users = [], isLoading, error } = useUsers()
   const createMutation = useCreateUser()
   const updateMutation = useUpdateUser()
+  const updateRoleMutation = useUpdateUserRole()
   const deleteMutation = useDeleteUser()
 
   const [searchTerm, setSearchTerm] = useState("")
@@ -87,12 +104,19 @@ export function UsersManagement() {
     if (!editingUser) return
 
     try {
+      // If role changed, use the dedicated role endpoint
+      if (newUser.role !== editingUser.role) {
+        await updateRoleMutation.mutateAsync({
+          id: editingUser.id,
+          data: { role: newUser.role },
+        })
+      }
+
       await updateMutation.mutateAsync({
         id: editingUser.id,
         data: {
           name: newUser.name,
           email: newUser.email,
-          role: newUser.role,
         },
       })
       toast.success("Usuario atualizado com sucesso!")
@@ -114,24 +138,13 @@ export function UsersManagement() {
     }
   }
 
-  const getRoleBadge = (role: string) => {
-    const config = {
-      admin: { variant: "destructive" as const, label: "Admin" },
-      pastor: { variant: "default" as const, label: "Pastor" },
-      supervisor: { variant: "default" as const, label: "Supervisor" },
-      "lg-leader": { variant: "outline" as const, label: "Lider Life Group" },
-      member: { variant: "secondary" as const, label: "Membro" },
-    }
-
-    const { variant, label } = config[role as keyof typeof config] ?? { variant: "secondary" as const, label: role }
-    return <Badge variant={variant}>{label}</Badge>
-  }
-
   const getStatusBadge = (status: string) => {
     return (
       <Badge variant={status === "active" ? "default" : "secondary"}>{status === "active" ? "Ativo" : "Inativo"}</Badge>
     )
   }
+
+  const isSaving = updateMutation.isPending || updateRoleMutation.isPending
 
   return (
     <div className="space-y-6">
@@ -187,11 +200,9 @@ export function UsersManagement() {
                       onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
                       className="w-full p-2 border border-input rounded-md bg-background"
                     >
-                      <option value="member">Membro</option>
-                      <option value="lg-leader">Lider Life Group</option>
-                      <option value="supervisor">Supervisor</option>
-                      <option value="pastor">Pastor</option>
-                      <option value="admin">Administrador</option>
+                      {ROLE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -306,11 +317,9 @@ export function UsersManagement() {
                 onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
                 className="w-full p-2 border border-input rounded-md bg-background"
               >
-                <option value="member">Membro</option>
-                <option value="lg-leader">Lider Life Group</option>
-                <option value="supervisor">Supervisor</option>
-                <option value="pastor">Pastor</option>
-                <option value="admin">Administrador</option>
+                {ROLE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -318,8 +327,8 @@ export function UsersManagement() {
             <Button variant="outline" onClick={() => setEditingUser(null)}>
               Cancelar
             </Button>
-            <Button onClick={handleUpdateUser} disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? "Salvando..." : "Salvar"}
+            <Button onClick={handleUpdateUser} disabled={isSaving}>
+              {isSaving ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>

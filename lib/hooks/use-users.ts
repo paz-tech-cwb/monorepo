@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { usersApi } from "@/lib/api/endpoints/users"
-import type { CreateUserRequest, UpdateUserRequest } from "@/lib/api/types"
+import type { CreateUserRequest, UpdateUserRequest, UpdateUserRoleRequest } from "@/lib/api/types"
 import { trackEvent } from "@/lib/firebase/analytics"
 
 const QUERY_KEY = ["users"]
@@ -49,6 +49,22 @@ export function useUpdateUser() {
           new_role: data.role,
         })
       }
+    },
+  })
+}
+
+export function useUpdateUserRole() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateUserRoleRequest }) =>
+      usersApi.updateRole(id, data),
+    onSuccess: (updatedUser) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      trackEvent("user_role_changed", {
+        user_id: updatedUser.id,
+        new_role: updatedUser.role,
+      })
     },
   })
 }

@@ -29,29 +29,44 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Search, Plus, MoreHorizontal, Edit, Trash2, GitMerge } from "lucide-react"
-import { useMembers, useCreateMember, useUpdateMember, useDeleteMember } from "@/lib/hooks/use-members"
+import { useUsers, useCreateUser, useUpdateUser, useUpdateUserRole, useDeleteUser } from "@/lib/hooks/use-users"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
 import { JourneySheet } from "./journey-sheet"
-import type { Member } from "@/lib/api/types"
+import type { AdminUser, UserRole } from "@/lib/api/types"
+
+const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
+  { value: "member", label: "Membro" },
+  { value: "life_group_leader", label: "Lider de Life Group" },
+  { value: "sector_leader", label: "Lider de Setor" },
+  { value: "area_leader", label: "Lider de Area" },
+  { value: "pastor", label: "Pastor" },
+  { value: "admin", label: "Administrador" },
+]
+
+function getRoleLabel(role: string): string {
+  return ROLE_OPTIONS.find((o) => o.value === role)?.label ?? role
+}
 
 export function MembersManagement() {
-  const { data: members = [], isLoading, error } = useMembers()
-  const createMutation = useCreateMember()
-  const updateMutation = useUpdateMember()
-  const deleteMutation = useDeleteMember()
+  const { data: members = [], isLoading, error } = useUsers()
+  const createMutation = useCreateUser()
+  const updateMutation = useUpdateUser()
+  const updateRoleMutation = useUpdateUserRole()
+  const deleteMutation = useDeleteUser()
 
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [editingMember, setEditingMember] = useState<Member | null>(null)
+  const [editingMember, setEditingMember] = useState<AdminUser | null>(null)
   const [deletingMemberId, setDeletingMemberId] = useState<number | null>(null)
-  const [journeyMember, setJourneyMember] = useState<Member | null>(null)
+  const [journeyMember, setJourneyMember] = useState<AdminUser | null>(null)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
+    phone_number: "",
     address: "",
     birth_date: "",
     life_group: "",
+    role: "member" as UserRole,
   })
 
   const filteredMembers = members.filter(
@@ -62,7 +77,7 @@ export function MembersManagement() {
   )
 
   const resetForm = () => {
-    setFormData({ name: "", email: "", phone: "", address: "", birth_date: "", life_group: "" })
+    setFormData({ name: "", email: "", phone_number: "", address: "", birth_date: "", life_group: "", role: "member" })
   }
 
   const handleAdd = async () => {
@@ -70,10 +85,11 @@ export function MembersManagement() {
       await createMutation.mutateAsync({
         name: formData.name,
         email: formData.email,
-        phone: formData.phone || undefined,
+        phone_number: formData.phone_number || undefined,
         address: formData.address || undefined,
         birth_date: formData.birth_date || undefined,
         life_group: formData.life_group || undefined,
+        role: formData.role,
       })
       toast.success("Membro adicionado com sucesso!")
       resetForm()
@@ -83,15 +99,16 @@ export function MembersManagement() {
     }
   }
 
-  const handleEdit = (member: Member) => {
+  const handleEdit = (member: AdminUser) => {
     setEditingMember(member)
     setFormData({
       name: member.name,
       email: member.email,
-      phone: member.phone || "",
+      phone_number: member.phone_number || member.phone || "",
       address: member.address || "",
       birth_date: member.birth_date || "",
       life_group: member.life_group || "",
+      role: member.role,
     })
   }
 
@@ -99,12 +116,20 @@ export function MembersManagement() {
     if (!editingMember) return
 
     try {
+      // If role changed, fire the dedicated role endpoint
+      if (formData.role !== editingMember.role) {
+        await updateRoleMutation.mutateAsync({
+          id: editingMember.id,
+          data: { role: formData.role },
+        })
+      }
+
       await updateMutation.mutateAsync({
         id: editingMember.id,
         data: {
           name: formData.name,
           email: formData.email,
-          phone: formData.phone || undefined,
+          phone_number: formData.phone_number || undefined,
           address: formData.address || undefined,
           birth_date: formData.birth_date || undefined,
           life_group: formData.life_group || undefined,
@@ -136,6 +161,8 @@ export function MembersManagement() {
       </Badge>
     )
   }
+
+  const isSaving = updateMutation.isPending || updateRoleMutation.isPending
 
   return (
     <div className="space-y-6">
@@ -184,11 +211,11 @@ export function MembersManagement() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="phone">Telefone</Label>
+                    <Label htmlFor="phone_number">Telefone</Label>
                     <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      id="phone_number"
+                      value={formData.phone_number}
+                      onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
                       placeholder="(11) 99999-9999"
                     />
                   </div>
@@ -209,6 +236,19 @@ export function MembersManagement() {
                       onChange={(e) => setFormData({ ...formData, life_group: e.target.value })}
                       placeholder="Nome do Life Group"
                     />
+                  </div>
+                  <div>
+                    <Label htmlFor="role">Funcao</Label>
+                    <select
+                      id="role"
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+                      className="w-full p-2 border border-input rounded-md bg-background"
+                    >
+                      {ROLE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="col-span-2">
                     <Label htmlFor="address">Endereco</Label>
@@ -257,6 +297,7 @@ export function MembersManagement() {
                   <TableHead>Email</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead>Life Group</TableHead>
+                  <TableHead>Funcao</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="w-[70px]">Acoes</TableHead>
                 </TableRow>
@@ -266,8 +307,11 @@ export function MembersManagement() {
                   <TableRow key={member.id}>
                     <TableCell className="font-medium">{member.name}</TableCell>
                     <TableCell>{member.email}</TableCell>
-                    <TableCell>{member.phone || "-"}</TableCell>
+                    <TableCell>{member.phone_number || member.phone || "-"}</TableCell>
                     <TableCell>{member.life_group || "-"}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{getRoleLabel(member.role)}</Badge>
+                    </TableCell>
                     <TableCell>{getStatusBadge(member.status)}</TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -328,11 +372,11 @@ export function MembersManagement() {
               />
             </div>
             <div>
-              <Label htmlFor="edit-phone">Telefone</Label>
+              <Label htmlFor="edit-phone_number">Telefone</Label>
               <Input
-                id="edit-phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                id="edit-phone_number"
+                value={formData.phone_number}
+                onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
                 placeholder="(11) 99999-9999"
               />
             </div>
@@ -354,6 +398,19 @@ export function MembersManagement() {
                 placeholder="Nome do Life Group"
               />
             </div>
+            <div>
+              <Label htmlFor="edit-role">Funcao</Label>
+              <select
+                id="edit-role"
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+                className="w-full p-2 border border-input rounded-md bg-background"
+              >
+                {ROLE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
             <div className="col-span-2">
               <Label htmlFor="edit-address">Endereco</Label>
               <Input
@@ -368,8 +425,8 @@ export function MembersManagement() {
             <Button variant="outline" onClick={() => setEditingMember(null)}>
               Cancelar
             </Button>
-            <Button onClick={handleUpdate} disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? "Salvando..." : "Salvar"}
+            <Button onClick={handleUpdate} disabled={isSaving}>
+              {isSaving ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>
