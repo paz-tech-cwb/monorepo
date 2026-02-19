@@ -5,6 +5,7 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
+    "dev:mock": "NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api/mock NEXT_PUBLIC_API_MOCK_ENABLED=true next dev",
     "lint": "next lint",
     "start": "next start"
   },

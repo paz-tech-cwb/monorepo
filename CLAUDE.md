@@ -1,6 +1,10 @@
-# Paz Church Admin UI
+# CLAUDE.md
 
-Church administration dashboard built with **Next.js 15** (App Router), **React 19**, **TypeScript 5**, and **shadcn/ui**.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+Admin dashboard for Paz Church Curitiba, built with **Next.js 15** (App Router), **React 19**, **TypeScript 5**, and **shadcn/ui**.
 
 ## Tech Stack
 
@@ -108,14 +112,14 @@ middleware.ts                        # Route protection (cookie-based)
 
 ## Conventions
 
-### API JSON Payloads — snake_case
+### API JSON Payloads — snake_case at the transport layer
 
-All JSON payloads sent to and received from the backend API **must use snake_case** for property names.
+`snake_case` is the **API JSON transport convention only** — it is the wire format agreed between backend and clients.
 
-TypeScript interfaces in `lib/api/types/` mirror the exact JSON shape — no transformation layer.
+TypeScript interfaces in `lib/api/types/` mirror the exact JSON shape with no transformation layer. This means `snake_case` keys flow from the API types directly into component code (form state, table cells, etc.).
 
 ```typescript
-// Correct
+// Correct — mirrors the API JSON shape
 export interface AdminUser {
   id: number
   life_group?: string
@@ -125,7 +129,7 @@ export interface AdminUser {
   updated_at: string
 }
 
-// Wrong — do NOT use camelCase for API fields
+// Wrong — do NOT use camelCase for API types; there is no transform layer
 export interface AdminUser {
   id: number
   lifeGroup?: string
@@ -133,7 +137,9 @@ export interface AdminUser {
 }
 ```
 
-This applies to all request/response DTOs (`Create*Request`, `Update*Request`, etc.).
+This applies to all request/response types (`Create*Request`, `Update*Request`, etc.).
+
+**Do NOT add a camelCase↔snake_case transformation layer** (e.g., axios interceptors that rename keys). The backend is responsible for emitting snake_case JSON; the admin-ui consumes it as-is.
 
 ### Three-Tier API Architecture
 

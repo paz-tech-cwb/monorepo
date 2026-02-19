@@ -3,7 +3,7 @@ export interface Contribution {
   bank_name: string
   branch_number: string
   account_number: string
-  pix_key: string
+  pix_key: string | null
 }
 
 export interface CreateContributionRequest {

@@ -34,7 +34,7 @@ export function useCreateContribution() {
     onSuccess: (newContribution) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       trackEvent("contribution_created", {
-        contribution_id: newContribution.id,
+        contribution_id: newContribution?.id,
       })
     },
   })

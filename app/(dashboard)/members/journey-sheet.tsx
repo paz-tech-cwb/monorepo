@@ -261,52 +261,54 @@ export function JourneySheet({ member, open, onOpenChange }: JourneySheetProps) 
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto">
-        <SheetHeader className="mb-6">
+      <SheetContent className="w-full sm:max-w-md flex flex-col">
+        <SheetHeader className="mb-4 shrink-0">
           <SheetTitle>{member.name} — Jornada</SheetTitle>
           <SheetDescription>
             Life Group: {member.life_group ?? "—"}
           </SheetDescription>
         </SheetHeader>
 
-        {!journey && !isLoading && (
-          <div className="mb-4 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800">
-            Etapas estimadas com base no cadastro
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto px-4 py-2 pr-3">
+          {!journey && !isLoading && (
+            <div className="mb-4 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800">
+              Etapas estimadas com base no cadastro
+            </div>
+          )}
 
-        {isLoading ? (
-          <div className="space-y-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 rounded-md" />
-            ))}
-          </div>
-        ) : (
-          <div className="mb-6">
-            {JOURNEY_STAGES.map((stage) => {
-              const { completed, completedAt, note, isInferred } = getStageState(
-                stage.id as JourneyStageId,
-                stage.key
-              )
-              const isCurrent = !completed && stage.id === currentStageId
-              return (
-                <StepperItem
-                  key={stage.id}
-                  stageId={stage.id as JourneyStageId}
-                  stageKey={stage.key}
-                  label={stage.label}
-                  completed={completed}
-                  completedAt={completedAt}
-                  note={note}
-                  isInferred={isInferred}
-                  isCurrent={isCurrent}
-                />
-              )
-            })}
-          </div>
-        )}
+          {isLoading ? (
+            <div className="space-y-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 rounded-md" />
+              ))}
+            </div>
+          ) : (
+            <div>
+              {JOURNEY_STAGES.map((stage) => {
+                const { completed, completedAt, note, isInferred } = getStageState(
+                  stage.id as JourneyStageId,
+                  stage.key
+                )
+                const isCurrent = !completed && stage.id === currentStageId
+                return (
+                  <StepperItem
+                    key={stage.id}
+                    stageId={stage.id as JourneyStageId}
+                    stageKey={stage.key}
+                    label={stage.label}
+                    completed={completed}
+                    completedAt={completedAt}
+                    note={note}
+                    isInferred={isInferred}
+                    isCurrent={isCurrent}
+                  />
+                )
+              })}
+            </div>
+          )}
+        </div>
 
-        <div className="space-y-2">
+        <div className="shrink-0 border-t px-4 pt-4 pb-2 space-y-2">
           <Button
             variant="outline"
             size="sm"

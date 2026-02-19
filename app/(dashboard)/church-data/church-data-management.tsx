@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { toast } from "sonner"
@@ -101,14 +102,34 @@ const emptyFormData: ChurchFormData = {
   },
 }
 
+const VALID_TABS = ["general", "contact", "banking", "schedule", "social"] as const
+type TabValue = (typeof VALID_TABS)[number]
+
 export function ChurchDataManagement() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const initialTab = (): TabValue => {
+    const param = searchParams.get("tab")
+    return (VALID_TABS as readonly string[]).includes(param ?? "") ? (param as TabValue) : "general"
+  }
+
+  const [activeTab, setActiveTab] = useState<TabValue>(initialTab)
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as TabValue)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set("tab", value)
+    router.replace(`?${params.toString()}`, { scroll: false })
+  }
+
   const { data: church, isLoading: isLoadingChurch } = useChurch()
   const churchUpdateMutation = useUpdateChurch()
 
   const [churchData, setChurchData] = useState<ChurchFormData>(emptyFormData)
 
   useEffect(() => {
-    if (!church) return
+    if (!church || !church.address) return
     setChurchData({
       name: church.name,
       description: church.description ?? "",
@@ -164,8 +185,8 @@ export function ChurchDataManagement() {
 
   const filteredContributions = contributions.filter(
     (contribution) =>
-      contribution.bank_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contribution.pix_key.toLowerCase().includes(searchTerm.toLowerCase())
+      contribution.bank_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contribution.pix_key?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const resetContributionForm = () => {
@@ -178,9 +199,14 @@ export function ChurchDataManagement() {
   }
 
   const handleAddContribution = async () => {
-    await createMutation.mutateAsync(contributionFormData)
-    resetContributionForm()
-    setIsAddDialogOpen(false)
+    try {
+      await createMutation.mutateAsync(contributionFormData)
+      toast.success("Conta bancaria adicionada com sucesso!")
+      resetContributionForm()
+      setIsAddDialogOpen(false)
+    } catch {
+      toast.error("Erro ao adicionar conta bancaria. Tente novamente.")
+    }
   }
 
   const handleEditContribution = (contribution: Contribution) => {
@@ -195,16 +221,26 @@ export function ChurchDataManagement() {
 
   const handleUpdateContribution = async () => {
     if (!editingContribution) return
-    await updateMutation.mutateAsync({
-      id: editingContribution.id,
-      data: contributionFormData as UpdateContributionRequest,
-    })
-    setEditingContribution(null)
-    resetContributionForm()
+    try {
+      await updateMutation.mutateAsync({
+        id: editingContribution.id,
+        data: contributionFormData as UpdateContributionRequest,
+      })
+      toast.success("Conta bancaria atualizada com sucesso!")
+      setEditingContribution(null)
+      resetContributionForm()
+    } catch {
+      toast.error("Erro ao atualizar conta bancaria. Tente novamente.")
+    }
   }
 
   const handleDeleteContribution = async (id: number) => {
-    await deleteMutation.mutateAsync(id)
+    try {
+      await deleteMutation.mutateAsync(id)
+      toast.success("Conta bancaria removida com sucesso!")
+    } catch {
+      toast.error("Erro ao remover conta bancaria. Tente novamente.")
+    }
   }
 
   const handleSave = async () => {
@@ -296,7 +332,7 @@ export function ChurchDataManagement() {
         </div>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="contact">Contato</TabsTrigger>

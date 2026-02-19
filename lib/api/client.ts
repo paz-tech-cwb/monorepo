@@ -160,6 +160,28 @@ function redirectToLogin() {
 }
 
 // ---------------------------------------------------------------------------
+// Response body helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true only when the response actually carries a JSON body worth
+ * parsing.  We skip parsing when:
+ *   • status is 204 or 205 (semantically "no content")
+ *   • Content-Length header is explicitly "0"
+ *   • Content-Type header is absent or does not include "application/json"
+ *
+ * This prevents a JSON.parse() failure on empty bodies (e.g. when the backend
+ * returns 204 for DELETE/PUT) which would otherwise cause mutateAsync to
+ * reject and show a false error toast even though the HTTP request succeeded.
+ */
+function hasJsonBody(response: Response): boolean {
+  if (response.status === 204 || response.status === 205) return false
+  if (response.headers.get("content-length") === "0") return false
+  const contentType = response.headers.get("content-type") ?? ""
+  return contentType.includes("application/json")
+}
+
+// ---------------------------------------------------------------------------
 // Core fetch wrapper
 // ---------------------------------------------------------------------------
 
@@ -175,10 +197,6 @@ async function executeFetch<T>(
     body: body ? JSON.stringify(body) : undefined,
   })
 
-  if (response.status === 204) {
-    return { response, data: undefined }
-  }
-
   if (!response.ok) {
     let errorData: unknown
     try {
@@ -187,6 +205,14 @@ async function executeFetch<T>(
       errorData = null
     }
     throw new ApiError(response.status, response.statusText, errorData)
+  }
+
+  // Do not attempt to parse a body when there is none.
+  // Covers: 204 No Content, 205 Reset Content, and any response whose
+  // Content-Type is not JSON (or whose Content-Length is explicitly "0").
+  const hasBody = hasJsonBody(response)
+  if (!hasBody) {
+    return { response, data: undefined }
   }
 
   const data = (await response.json()) as T

@@ -1,5 +1,10 @@
+import { Suspense } from "react"
 import { ChurchDataManagement } from "./church-data-management"
 
 export default function ChurchDataPage() {
-  return <ChurchDataManagement />
+  return (
+    <Suspense>
+      <ChurchDataManagement />
+    </Suspense>
+  )
 }
