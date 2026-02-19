@@ -8,6 +8,7 @@ import { EntityManager } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 
 @Injectable()
 export class UsersService {
@@ -22,13 +23,12 @@ export class UsersService {
       name: user.name,
       email: user.email ?? null,
       phone: user.phoneNumber ?? null,
-      address: null,
       birth_date: user.birthDate
         ? new Date(user.birthDate).toISOString().split('T')[0]
         : null,
       life_group: user.lifeGroup ?? null,
-      role: user.roleSlug ?? 'member',
-      status: user.status ?? 'active',
+      role: user.roleSlug,
+      status: user.status,
       avatar: user.picture ?? null,
       membership_date: user.membershipDate
         ? new Date(user.membershipDate).toISOString().split('T')[0]
@@ -108,6 +108,20 @@ export class UsersService {
       if (error instanceof NotFoundException) throw error;
       throw new BadRequestException(
         'An error occurred while updating the user.',
+      );
+    }
+  }
+
+  async updateRole(id: number, dto: UpdateUserRoleDto) {
+    try {
+      const user = await this.findOneEntity(id);
+      user.roleSlug = dto.role;
+      const saved = await this.entityManager.save(User, user);
+      return this.toResponse(saved);
+    } catch (error: unknown) {
+      if (error instanceof NotFoundException) throw error;
+      throw new BadRequestException(
+        'An error occurred while updating the user role.',
       );
     }
   }

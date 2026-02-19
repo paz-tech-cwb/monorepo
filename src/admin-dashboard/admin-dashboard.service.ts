@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
-import { Member } from '../members/entities/member.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class AdminDashboardService {
@@ -12,17 +12,18 @@ export class AdminDashboardService {
 
   async getStats() {
     try {
-      const totalMembers = await this.entityManager.count(Member);
+      // Count ALL users — users table is now the single source of truth
+      const totalMembers = await this.entityManager.count(User);
 
-      const activeMembers = await this.entityManager.count(Member, {
+      const activeMembers = await this.entityManager.count(User, {
         where: { status: 'active' },
       });
 
       const lifeGroupsResult = await this.entityManager
-        .createQueryBuilder(Member, 'member')
-        .select('COUNT(DISTINCT member.life_group)::int', 'count')
-        .where('member.life_group IS NOT NULL')
-        .andWhere("member.life_group != ''")
+        .createQueryBuilder(User, 'u')
+        .select('COUNT(DISTINCT u.life_group)::int', 'count')
+        .where('u.life_group IS NOT NULL')
+        .andWhere("u.life_group != ''")
         .getRawOne<{ count: number }>();
 
       const totalLifeGroups = Number(lifeGroupsResult?.count ?? 0);
@@ -31,8 +32,8 @@ export class AdminDashboardService {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
       const newMembersThisMonth = await this.entityManager
-        .createQueryBuilder(Member, 'member')
-        .where('member.created_at >= :start', { start: startOfMonth })
+        .createQueryBuilder(User, 'u')
+        .where('u.created_at >= :start', { start: startOfMonth })
         .getCount();
 
       return {
@@ -75,11 +76,11 @@ export class AdminDashboardService {
     try {
       // Monthly rollup: past 12 months
       const results = await this.entityManager
-        .createQueryBuilder(Member, 'member')
-        .select("TO_CHAR(member.created_at, 'YYYY-MM')", 'month')
-        .addSelect('COUNT(member.id)::int', 'new_members')
-        .groupBy("TO_CHAR(member.created_at, 'YYYY-MM')")
-        .orderBy("TO_CHAR(member.created_at, 'YYYY-MM')", 'ASC')
+        .createQueryBuilder(User, 'u')
+        .select("TO_CHAR(u.created_at, 'YYYY-MM')", 'month')
+        .addSelect('COUNT(u.id)::int', 'new_members')
+        .groupBy("TO_CHAR(u.created_at, 'YYYY-MM')")
+        .orderBy("TO_CHAR(u.created_at, 'YYYY-MM')", 'ASC')
         .limit(12)
         .getRawMany<{ month: string; new_members: number }>();
 
@@ -103,12 +104,12 @@ export class AdminDashboardService {
   async getLifeGroupDistribution() {
     try {
       const results = await this.entityManager
-        .createQueryBuilder(Member, 'member')
-        .select('member.life_group', 'name')
-        .addSelect('COUNT(member.id)::int', 'member_count')
-        .where('member.life_group IS NOT NULL')
-        .andWhere("member.life_group != ''")
-        .groupBy('member.life_group')
+        .createQueryBuilder(User, 'u')
+        .select('u.life_group', 'name')
+        .addSelect('COUNT(u.id)::int', 'member_count')
+        .where('u.life_group IS NOT NULL')
+        .andWhere("u.life_group != ''")
+        .groupBy('u.life_group')
         .orderBy('member_count', 'DESC')
         .getRawMany<{ name: string; member_count: number }>();
 

@@ -96,6 +96,8 @@ export class AuthService implements OnModuleInit {
       throw new HttpException('Unsupported provider', HttpStatus.BAD_REQUEST);
     }
 
+    userData.email = userData.email.toLowerCase();
+
     let user = await this.userRepo.findOne({
       where: { email: userData.email },
     });
@@ -104,6 +106,7 @@ export class AuthService implements OnModuleInit {
         name: userData.name,
         email: userData.email,
         picture: userData.photo ?? undefined,
+        roleSlug: 'member',
       });
       await this.userRepo.save(user);
     }
@@ -116,6 +119,7 @@ export class AuthService implements OnModuleInit {
         name: user.name,
         email: user.email,
         picture: user.picture,
+        role: user.roleSlug,
       },
       access_token: tokens.accessToken,
       refresh_token: tokens.refreshToken,
@@ -192,6 +196,7 @@ export class AuthService implements OnModuleInit {
         name: user.name,
         email: user.email,
         picture: user.picture,
+        role: user.roleSlug,
       },
       access_token: tokens.accessToken,
       refresh_token: tokens.refreshToken,

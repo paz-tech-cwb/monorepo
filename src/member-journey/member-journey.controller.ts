@@ -5,6 +5,7 @@ import {
   Body,
   Param,
   Query,
+  Request,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -38,6 +39,11 @@ export class MemberJourneyController {
       page: page ? parseInt(page, 10) : undefined,
       per_page: perPage ? parseInt(perPage, 10) : undefined,
     });
+  }
+
+  @Get('me')
+  getMyJourney(@Request() req) {
+    return this.memberJourneyService.getMyJourney(req.user.id);
   }
 
   @Get(':memberId')

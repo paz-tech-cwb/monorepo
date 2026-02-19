@@ -11,7 +11,6 @@ import { UsersModule } from './users/users.module';
 import { RolesModule } from './roles/roles.module';
 import { AddressesModule } from './addresses/addresses.module';
 import { AuthModule } from './auth/auth.module';
-import { MembersModule } from './members/members.module';
 import { CoursesModule } from './courses/courses.module';
 import { AcademyModule } from './academy/academy.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -49,7 +48,6 @@ import ormconfig from './configs/orm.config';
     UsersModule,
     RolesModule,
     AddressesModule,
-    MembersModule,
     CoursesModule,
     AcademyModule,
     NotificationsModule,

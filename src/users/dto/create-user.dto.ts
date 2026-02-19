@@ -6,6 +6,7 @@ import {
   IsDateString,
   IsIn,
 } from 'class-validator';
+import { VALID_ROLE_SLUGS } from './update-user-role.dto';
 
 export class CreateUserDto {
   @Expose()
@@ -23,11 +24,6 @@ export class CreateUserDto {
 
   @Expose()
   @IsOptional()
-  @IsString()
-  address?: string;
-
-  @Expose()
-  @IsOptional()
   @IsDateString()
   birth_date?: string;
 
@@ -38,6 +34,6 @@ export class CreateUserDto {
 
   @Expose()
   @IsOptional()
-  @IsIn(['admin', 'pastor', 'supervisor', 'lg-leader', 'member'])
+  @IsIn(VALID_ROLE_SLUGS)
   role?: string;
 }

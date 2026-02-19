@@ -6,7 +6,7 @@ import {
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import { MemberJourneyStage } from './entities/member-journey-stage.entity';
-import { Member } from '../members/entities/member.entity';
+import { User } from '../users/entities/user.entity';
 import { UpdateMemberStageDto } from './dto/update-member-stage.dto';
 
 const JOURNEY_STAGES = [
@@ -47,7 +47,7 @@ export class MemberJourneyService {
   }
 
   private buildMemberJourneyResponse(
-    member: Member,
+    user: User,
     stages: MemberJourneyStage[],
   ) {
     const orderedStages = JOURNEY_STAGES.map((def) => {
@@ -72,40 +72,44 @@ export class MemberJourneyService {
     }, new Date(0));
 
     return {
-      member_id: member.id,
-      member_name: member.name,
-      member_email: member.email,
-      life_group: member.lifeGroup ?? null,
+      member_id: user.id,
+      member_name: user.name,
+      member_email: user.email,
+      life_group: user.lifeGroup ?? null,
       current_stage_id: currentStageId,
       stages: orderedStages,
       last_updated_at: lastUpdated,
     };
   }
 
-  async getMemberJourney(memberId: number) {
-    const member = await this.entityManager.findOne(Member, {
-      where: { id: memberId },
+  async getMemberJourney(userId: number) {
+    const user = await this.entityManager.findOne(User, {
+      where: { id: userId },
     });
-    if (!member) {
-      throw new NotFoundException(`Member with ID ${memberId} not found`);
+    if (!user) {
+      throw new NotFoundException(`Member with ID ${userId} not found`);
     }
 
-    await this.ensureStagesExist(memberId);
+    await this.ensureStagesExist(userId);
 
     const stages = await this.entityManager.find(MemberJourneyStage, {
-      where: { memberId },
+      where: { memberId: userId },
       order: { stageId: 'ASC' },
     });
 
-    return this.buildMemberJourneyResponse(member, stages);
+    return this.buildMemberJourneyResponse(user, stages);
   }
 
-  async updateStage(memberId: number, dto: UpdateMemberStageDto) {
-    const member = await this.entityManager.findOne(Member, {
-      where: { id: memberId },
+  async getMyJourney(userId: number) {
+    return this.getMemberJourney(userId);
+  }
+
+  async updateStage(userId: number, dto: UpdateMemberStageDto) {
+    const user = await this.entityManager.findOne(User, {
+      where: { id: userId },
     });
-    if (!member) {
-      throw new NotFoundException(`Member with ID ${memberId} not found`);
+    if (!user) {
+      throw new NotFoundException(`Member with ID ${userId} not found`);
     }
 
     const stageDef = JOURNEY_STAGES.find((s) => s.id === dto.stage_id);
@@ -114,12 +118,12 @@ export class MemberJourneyService {
     }
 
     let stage = await this.entityManager.findOne(MemberJourneyStage, {
-      where: { memberId, stageId: dto.stage_id },
+      where: { memberId: userId, stageId: dto.stage_id },
     });
 
     if (!stage) {
       stage = this.entityManager.create(MemberJourneyStage, {
-        memberId,
+        memberId: userId,
         stageId: dto.stage_id,
         stageKey: stageDef.key,
       });
@@ -136,12 +140,12 @@ export class MemberJourneyService {
     await this.entityManager.save(MemberJourneyStage, stage);
 
     // Return full member journey
-    await this.ensureStagesExist(memberId);
+    await this.ensureStagesExist(userId);
     const stages = await this.entityManager.find(MemberJourneyStage, {
-      where: { memberId },
+      where: { memberId: userId },
       order: { stageId: 'ASC' },
     });
-    return this.buildMemberJourneyResponse(member, stages);
+    return this.buildMemberJourneyResponse(user, stages);
   }
 
   async getStats() {
@@ -187,12 +191,12 @@ export class MemberJourneyService {
 
       let qb = this.entityManager
         .createQueryBuilder(MemberJourneyStage, 'mjs')
-        .innerJoin(Member, 'member', 'member.id = mjs.member_id')
+        .innerJoin(User, 'u', 'u.id = mjs.member_id')
         .select([
           'mjs.id AS id',
           'mjs.member_id AS member_id',
-          'member.name AS member_name',
-          'member.life_group AS life_group',
+          'u.name AS member_name',
+          'u.life_group AS life_group',
           'mjs.stage_id AS stage_id',
           'mjs.stage_key AS stage_key',
           'mjs.completed_at AS completed_at',
@@ -207,7 +211,7 @@ export class MemberJourneyService {
       }
 
       if (params.life_group) {
-        qb = qb.andWhere('member.life_group = :lifeGroup', {
+        qb = qb.andWhere('u.life_group = :lifeGroup', {
           lifeGroup: params.life_group,
         });
       }

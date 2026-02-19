@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Put,
+  Patch,
   Param,
   Delete,
   UseGuards,
@@ -14,6 +15,9 @@ import { AuthGuard } from '@nestjs/passport';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('users')
@@ -38,6 +42,14 @@ export class UsersController {
   @Put(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(+id, updateUserDto);
+  }
+
+  // Admin-only: update a single user's role
+  @Patch(':id/role')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  updateRole(@Param('id') id: string, @Body() updateUserRoleDto: UpdateUserRoleDto) {
+    return this.usersService.updateRole(+id, updateUserRoleDto);
   }
 
   @Delete(':id')

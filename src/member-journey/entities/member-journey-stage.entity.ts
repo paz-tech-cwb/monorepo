@@ -7,16 +7,16 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Member } from '../../members/entities/member.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Entity('member_journey_stages')
 export class MemberJourneyStage {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Member, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'member_id' })
-  member: Member;
+  member: User;
 
   @Column({ name: 'member_id' })
   memberId: number;
