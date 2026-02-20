@@ -14,7 +14,7 @@ export const contributionsApi = {
     api.post<Contribution>("/contributions", data),
 
   update: (id: number, data: UpdateContributionRequest) =>
-    api.put<Contribution>(`/contributions/${id}`, data),
+    api.patch<Contribution>(`/contributions/${id}`, data),
 
   delete: (id: number) => api.delete<void>(`/contributions/${id}`),
 }

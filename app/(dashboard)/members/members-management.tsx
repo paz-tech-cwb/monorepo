@@ -71,8 +71,8 @@ export function MembersManagement() {
 
   const filteredMembers = members.filter(
     (member) =>
-      member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (member.name ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (member.email ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (member.life_group || "").toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
