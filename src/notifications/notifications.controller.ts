@@ -8,12 +8,17 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  SerializeOptions,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { NotificationsService } from './notifications.service';
 import { SendNotificationDto } from './dto/send-notification.dto';
 
 @UseGuards(AuthGuard('jwt'))
+@SerializeOptions({
+  strategy: 'exposeAll',
+  excludeExtraneousValues: false,
+})
 @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}

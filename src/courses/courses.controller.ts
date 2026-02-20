@@ -9,6 +9,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  SerializeOptions,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { CoursesService } from './courses.service';
@@ -16,6 +17,10 @@ import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 
 @UseGuards(AuthGuard('jwt'))
+@SerializeOptions({
+  strategy: 'exposeAll',
+  excludeExtraneousValues: false,
+})
 @Controller('courses')
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}

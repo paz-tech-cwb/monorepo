@@ -13,6 +13,7 @@ import * as crypto from 'crypto';
 import { JwksClient } from 'jwks-rsa';
 import { UserAccount } from 'src/users/entities/account.entity';
 import { User } from 'src/users/entities/user.entity';
+import { Role } from 'src/roles/entities/role.entity';
 import { Repository } from 'typeorm';
 
 const ACCESS_TOKEN_EXPIRES_IN = '24h';
@@ -42,6 +43,8 @@ export class AuthService implements OnModuleInit {
     private userRepo: Repository<User>,
     @InjectRepository(UserAccount)
     private userAccountRepo: Repository<UserAccount>,
+    @InjectRepository(Role)
+    private roleRepo: Repository<Role>,
     private configService: ConfigService,
   ) {
     this.accessTokenSecret = this.configService.getOrThrow<string>(
@@ -102,11 +105,22 @@ export class AuthService implements OnModuleInit {
       where: { email: userData.email },
     });
     if (!user) {
+      // Fetch the 'member' role (ID 6)
+      const memberRole = await this.roleRepo.findOne({
+        where: { slug: 'member' },
+      });
+      if (!memberRole) {
+        throw new HttpException(
+          'Member role not found in database',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
       user = this.userRepo.create({
         name: userData.name,
         email: userData.email,
         picture: userData.photo ?? undefined,
-        roleSlug: 'member',
+        role: memberRole,
       });
       await this.userRepo.save(user);
     }
@@ -119,7 +133,7 @@ export class AuthService implements OnModuleInit {
         name: user.name,
         email: user.email,
         picture: user.picture,
-        role: user.roleSlug,
+        role: user.role?.slug ?? null,
       },
       access_token: tokens.accessToken,
       refresh_token: tokens.refreshToken,
@@ -196,7 +210,7 @@ export class AuthService implements OnModuleInit {
         name: user.name,
         email: user.email,
         picture: user.picture,
-        role: user.roleSlug,
+        role: user.role?.slug ?? null,
       },
       access_token: tokens.accessToken,
       refresh_token: tokens.refreshToken,

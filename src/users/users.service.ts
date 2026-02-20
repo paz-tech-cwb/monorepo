@@ -6,6 +6,7 @@ import {
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import { User } from './entities/user.entity';
+import { Role } from '../roles/entities/role.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
@@ -27,7 +28,7 @@ export class UsersService {
         ? new Date(user.birthDate).toISOString().split('T')[0]
         : null,
       life_group: user.lifeGroup ?? null,
-      role: user.roleSlug,
+      role: user.role?.slug ?? null,
       status: user.status,
       avatar: user.picture ?? null,
       membership_date: user.membershipDate
@@ -40,19 +41,29 @@ export class UsersService {
 
   async create(dto: CreateUserDto) {
     try {
+      // Resolve role by slug or default to 'member'
+      const roleSlug = dto.role ?? 'member';
+      const role = await this.entityManager.findOne(Role, {
+        where: { slug: roleSlug },
+      });
+      if (!role) {
+        throw new BadRequestException(`Invalid role: ${roleSlug}`);
+      }
+
       const user = new User();
       user.name = dto.name;
       user.email = dto.email;
       user.phoneNumber = dto.phone ?? null;
       user.birthDate = dto.birth_date ? new Date(dto.birth_date) : null;
       user.lifeGroup = dto.life_group ?? null;
-      user.roleSlug = dto.role ?? 'member';
+      user.role = role;
       user.status = 'active';
       user.membershipDate = new Date();
 
       const saved = await this.entityManager.save(User, user);
       return this.toResponse(saved);
     } catch (error: unknown) {
+      if (error instanceof BadRequestException) throw error;
       throw new BadRequestException(
         'An error occurred while creating the user.',
       );
@@ -98,7 +109,15 @@ export class UsersService {
       if (dto.birth_date !== undefined)
         user.birthDate = dto.birth_date ? new Date(dto.birth_date) : null;
       if (dto.life_group !== undefined) user.lifeGroup = dto.life_group || null;
-      if (dto.role !== undefined) user.roleSlug = dto.role;
+      if (dto.role !== undefined) {
+        const role = await this.entityManager.findOne(Role, {
+          where: { slug: dto.role },
+        });
+        if (!role) {
+          throw new BadRequestException(`Invalid role: ${dto.role}`);
+        }
+        user.role = role;
+      }
       if (dto.status !== undefined) user.status = dto.status;
       if (dto.avatar !== undefined) user.picture = dto.avatar;
 
@@ -106,6 +125,7 @@ export class UsersService {
       return this.toResponse(saved);
     } catch (error: unknown) {
       if (error instanceof NotFoundException) throw error;
+      if (error instanceof BadRequestException) throw error;
       throw new BadRequestException(
         'An error occurred while updating the user.',
       );
@@ -115,11 +135,18 @@ export class UsersService {
   async updateRole(id: number, dto: UpdateUserRoleDto) {
     try {
       const user = await this.findOneEntity(id);
-      user.roleSlug = dto.role;
+      const role = await this.entityManager.findOne(Role, {
+        where: { slug: dto.role },
+      });
+      if (!role) {
+        throw new BadRequestException(`Invalid role: ${dto.role}`);
+      }
+      user.role = role;
       const saved = await this.entityManager.save(User, user);
       return this.toResponse(saved);
     } catch (error: unknown) {
       if (error instanceof NotFoundException) throw error;
+      if (error instanceof BadRequestException) throw error;
       throw new BadRequestException(
         'An error occurred while updating the user role.',
       );

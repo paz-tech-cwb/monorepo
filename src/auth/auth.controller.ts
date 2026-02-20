@@ -6,6 +6,7 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  SerializeOptions,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
@@ -20,6 +21,7 @@ export class AuthController {
 
   @Post('social-login')
   @HttpCode(HttpStatus.OK)
+  @SerializeOptions({ strategy: 'exposeAll', excludeExtraneousValues: false })
   async socialLogin(@Body() socialLoginDto: SocialLoginDto) {
     return this.authService.socialLogin(
       socialLoginDto.provider,
@@ -29,6 +31,7 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @SerializeOptions({ strategy: 'exposeAll', excludeExtraneousValues: false })
   async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
     return this.authService.refreshTokens(refreshTokenDto.refreshToken);
   }

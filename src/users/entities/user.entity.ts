@@ -34,12 +34,8 @@ export class User {
   @Column({ type: 'varchar', length: 500, nullable: true })
   picture: string | null;
 
-  @ManyToOne(() => Role, { nullable: true })
+  @ManyToOne(() => Role, { nullable: false, eager: true })
   role: Role;
-
-  // Flat role slug: 'admin', 'pastor', 'area_leader', 'sector_leader', 'life_group_leader', 'member'
-  @Column({ name: 'role_slug', type: 'varchar', length: 50, nullable: false, default: 'member' })
-  roleSlug: string;
 
   @Column({ name: 'life_group', type: 'varchar', length: 255, nullable: true })
   lifeGroup: string | null;

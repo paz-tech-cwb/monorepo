@@ -36,7 +36,7 @@ const config: DataSourceOptions = {
     MemberJourneyStage,
   ],
   migrations: ['dist/migrations/*.js'],
-  synchronize: process.env.DB_SYNCHRONIZE === 'true',
+  synchronize: process.env.DB_SYNCHRONIZE === 'false',
   logging: process.env.DB_LOGGING === 'true',
 };
 

@@ -1,8 +1,12 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards, SerializeOptions } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminDashboardService } from './admin-dashboard.service';
 
 @UseGuards(AuthGuard('jwt'))
+@SerializeOptions({
+  strategy: 'exposeAll',
+  excludeExtraneousValues: false,
+})
 @Controller('admin/dashboard')
 export class AdminDashboardController {
   constructor(private readonly adminDashboardService: AdminDashboardService) {}

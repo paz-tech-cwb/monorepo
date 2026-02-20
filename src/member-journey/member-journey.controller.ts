@@ -7,12 +7,17 @@ import {
   Query,
   Request,
   UseGuards,
+  SerializeOptions,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { MemberJourneyService } from './member-journey.service';
 import { UpdateMemberStageDto } from './dto/update-member-stage.dto';
 
 @UseGuards(AuthGuard('jwt'))
+@SerializeOptions({
+  strategy: 'exposeAll',
+  excludeExtraneousValues: false,
+})
 @Controller('member-journey')
 export class MemberJourneyController {
   constructor(private readonly memberJourneyService: MemberJourneyService) {}
