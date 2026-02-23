@@ -5,6 +5,8 @@ import {
   IsEmail,
   IsDateString,
   IsIn,
+  IsNumber,
+  IsArray,
 } from 'class-validator';
 import { VALID_ROLE_SLUGS } from './update-user-role.dto';
 
@@ -29,10 +31,21 @@ export class UpdateUserDto {
   @IsDateString()
   birth_date?: string;
 
-  @Expose()
+  @Expose({ name: 'sector_id' })
   @IsOptional()
-  @IsString()
-  life_group?: string;
+  @IsNumber()
+  sectorId?: number;
+
+  @Expose({ name: 'life_group_id' })
+  @IsOptional()
+  @IsNumber()
+  lifeGroupId?: number;
+
+  @Expose({ name: 'completed_courses' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  completedCourses?: string[];
 
   @Expose()
   @IsOptional()

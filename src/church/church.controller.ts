@@ -1,4 +1,11 @@
-import { Controller, Get, Put, Body, UseGuards, SerializeOptions } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Body,
+  UseGuards,
+  SerializeOptions,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ChurchService } from './church.service';
 import { UpdateChurchDto } from './dto/update-church.dto';

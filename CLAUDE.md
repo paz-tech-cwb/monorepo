@@ -55,7 +55,19 @@ docker compose up -d
 - `entities/<name>.entity.ts` — TypeORM entity
 - `dto/create-<name>.dto.ts` / `dto/update-<name>.dto.ts` — request DTOs
 
-**Feature modules:** auth, users, roles, addresses, announcements, contributions, events, home
+**Feature modules:** auth, users, roles, addresses, announcements, contributions, events, home, areas, sectors, life-groups, meeting-reports, conversions
+
+**IMPORTANT — User Entity Architecture:**
+The `User` entity (`src/users/entities/user.entity.ts`) serves a dual purpose:
+1. **Authentication account** (email, picture, role, OAuth accounts)
+2. **Church member profile** (phoneNumber, birthDate, address, sector, lifeGroup, completedCourses)
+
+**DO NOT create a separate "Member" or "Members" entity.** The User entity already handles all member data. This architectural decision:
+- Prevents data duplication
+- Simplifies the codebase (one entity vs two)
+- Aligns with the reality that every church member needs a User account to authenticate
+
+When working with member data (registration, course completion, sector/life group assignment), use the existing `UsersService` and `/api/users` endpoints.
 
 **Database:**
 - TypeORM with PostgreSQL. Config in `src/configs/orm.config.ts` (used by the app) and `src/configs/data.source.ts` (used by TypeORM CLI for migrations).

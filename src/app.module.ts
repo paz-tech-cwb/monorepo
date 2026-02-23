@@ -17,6 +17,11 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ChurchModule } from './church/church.module';
 import { MemberJourneyModule } from './member-journey/member-journey.module';
 import { AdminDashboardModule } from './admin-dashboard/admin-dashboard.module';
+import { AreasModule } from './areas/areas.module';
+import { SectorsModule } from './sectors/sectors.module';
+import { LifeGroupsModule } from './life-groups/life-groups.module';
+import { MeetingReportsModule } from './meeting-reports/meeting-reports.module';
+import { ConversionsModule } from './conversions/conversions.module';
 
 import ormconfig from './configs/orm.config';
 
@@ -54,6 +59,11 @@ import ormconfig from './configs/orm.config';
     ChurchModule,
     MemberJourneyModule,
     AdminDashboardModule,
+    AreasModule,
+    SectorsModule,
+    LifeGroupsModule,
+    MeetingReportsModule,
+    ConversionsModule,
   ],
   providers: [
     {

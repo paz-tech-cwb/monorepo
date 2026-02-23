@@ -1,0 +1,57 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Put,
+  Param,
+  Delete,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  SerializeOptions,
+  ParseIntPipe,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { LifeGroupsService } from './life-groups.service';
+import { CreateLifeGroupDto } from './dto/create-life-group.dto';
+import { UpdateLifeGroupDto } from './dto/update-life-group.dto';
+
+@UseGuards(AuthGuard('jwt'))
+@SerializeOptions({
+  strategy: 'exposeAll',
+  excludeExtraneousValues: false,
+})
+@Controller('life-groups')
+export class LifeGroupsController {
+  constructor(private readonly lifeGroupsService: LifeGroupsService) {}
+
+  @Post()
+  create(@Body() createLifeGroupDto: CreateLifeGroupDto) {
+    return this.lifeGroupsService.create(createLifeGroupDto);
+  }
+
+  @Get()
+  findAll() {
+    return this.lifeGroupsService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.lifeGroupsService.findOne(id);
+  }
+
+  @Put(':id')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateLifeGroupDto: UpdateLifeGroupDto,
+  ) {
+    return this.lifeGroupsService.update(id, updateLifeGroupDto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.lifeGroupsService.remove(id);
+  }
+}

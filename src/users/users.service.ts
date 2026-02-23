@@ -7,6 +7,9 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import { User } from './entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
+import { Sector } from '../sectors/entities/sector.entity';
+import { LifeGroup } from '../life-groups/entities/life-group.entity';
+import { Course } from '../courses/entities/course.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
@@ -27,7 +30,26 @@ export class UsersService {
       birth_date: user.birthDate
         ? new Date(user.birthDate).toISOString().split('T')[0]
         : null,
-      life_group: user.lifeGroup ?? null,
+      sector_id: user.sector?.id ?? null,
+      sector: user.sector
+        ? {
+            id: user.sector.id,
+            name: user.sector.name,
+          }
+        : null,
+      life_group_id: user.lifeGroup?.id ?? null,
+      life_group: user.lifeGroup
+        ? {
+            id: user.lifeGroup.id,
+            name: user.lifeGroup.name,
+          }
+        : null,
+      completed_courses: user.completedCourses
+        ? user.completedCourses.map((course) => ({
+            id: course.id,
+            title: course.title,
+          }))
+        : [],
       role: user.role?.slug ?? null,
       status: user.status,
       avatar: user.picture ?? null,
@@ -50,18 +72,63 @@ export class UsersService {
         throw new BadRequestException(`Invalid role: ${roleSlug}`);
       }
 
+      // Resolve sector if provided
+      let sector: Sector | null = null;
+      if (dto.sectorId) {
+        sector = await this.entityManager.findOne(Sector, {
+          where: { id: dto.sectorId },
+        });
+        if (!sector) {
+          throw new BadRequestException(`Invalid sector_id: ${dto.sectorId}`);
+        }
+      }
+
+      // Resolve life group if provided
+      let lifeGroup: LifeGroup | null = null;
+      if (dto.lifeGroupId) {
+        lifeGroup = await this.entityManager.findOne(LifeGroup, {
+          where: { id: dto.lifeGroupId },
+        });
+        if (!lifeGroup) {
+          throw new BadRequestException(
+            `Invalid life_group_id: ${dto.lifeGroupId}`,
+          );
+        }
+      }
+
+      // Resolve courses if provided
+      let courses: Course[] = [];
+      if (dto.completedCourses && dto.completedCourses.length > 0) {
+        courses = await this.entityManager.findByIds(
+          Course,
+          dto.completedCourses,
+        );
+        if (courses.length !== dto.completedCourses.length) {
+          throw new BadRequestException('One or more invalid course IDs');
+        }
+      }
+
       const user = new User();
       user.name = dto.name;
       user.email = dto.email;
       user.phoneNumber = dto.phone ?? null;
       user.birthDate = dto.birth_date ? new Date(dto.birth_date) : null;
-      user.lifeGroup = dto.life_group ?? null;
+      user.sector = sector;
+      user.lifeGroup = lifeGroup;
+      user.completedCourses = courses;
       user.role = role;
       user.status = 'active';
       user.membershipDate = new Date();
 
       const saved = await this.entityManager.save(User, user);
-      return this.toResponse(saved);
+
+      // Reload with relations for response
+      const reloaded = await this.entityManager.findOne(User, {
+        where: { id: saved.id },
+        relations: ['sector', 'lifeGroup', 'completedCourses'],
+      });
+
+      return this.toResponse(reloaded!);
     } catch (error: unknown) {
       if (error instanceof BadRequestException) throw error;
       throw new BadRequestException(
@@ -73,6 +140,7 @@ export class UsersService {
   async findAll() {
     try {
       const users = await this.entityManager.find(User, {
+        relations: ['sector', 'lifeGroup', 'completedCourses'],
         order: { name: 'ASC' },
       });
       return users.map((u) => this.toResponse(u));
@@ -84,7 +152,10 @@ export class UsersService {
   }
 
   async findOne(id: number) {
-    const user = await this.entityManager.findOne(User, { where: { id } });
+    const user = await this.entityManager.findOne(User, {
+      where: { id },
+      relations: ['sector', 'lifeGroup', 'completedCourses'],
+    });
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
@@ -92,7 +163,10 @@ export class UsersService {
   }
 
   async findOneEntity(id: number): Promise<User> {
-    const user = await this.entityManager.findOne(User, { where: { id } });
+    const user = await this.entityManager.findOne(User, {
+      where: { id },
+      relations: ['sector', 'lifeGroup', 'completedCourses'],
+    });
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
@@ -108,7 +182,52 @@ export class UsersService {
       if (dto.phone !== undefined) user.phoneNumber = dto.phone ?? null;
       if (dto.birth_date !== undefined)
         user.birthDate = dto.birth_date ? new Date(dto.birth_date) : null;
-      if (dto.life_group !== undefined) user.lifeGroup = dto.life_group || null;
+
+      if (dto.sectorId !== undefined) {
+        if (dto.sectorId === null) {
+          user.sector = null;
+        } else {
+          const sector = await this.entityManager.findOne(Sector, {
+            where: { id: dto.sectorId },
+          });
+          if (!sector) {
+            throw new BadRequestException(`Invalid sector_id: ${dto.sectorId}`);
+          }
+          user.sector = sector;
+        }
+      }
+
+      if (dto.lifeGroupId !== undefined) {
+        if (dto.lifeGroupId === null) {
+          user.lifeGroup = null;
+        } else {
+          const lifeGroup = await this.entityManager.findOne(LifeGroup, {
+            where: { id: dto.lifeGroupId },
+          });
+          if (!lifeGroup) {
+            throw new BadRequestException(
+              `Invalid life_group_id: ${dto.lifeGroupId}`,
+            );
+          }
+          user.lifeGroup = lifeGroup;
+        }
+      }
+
+      if (dto.completedCourses !== undefined) {
+        if (dto.completedCourses.length === 0) {
+          user.completedCourses = [];
+        } else {
+          const courses = await this.entityManager.findByIds(
+            Course,
+            dto.completedCourses,
+          );
+          if (courses.length !== dto.completedCourses.length) {
+            throw new BadRequestException('One or more invalid course IDs');
+          }
+          user.completedCourses = courses;
+        }
+      }
+
       if (dto.role !== undefined) {
         const role = await this.entityManager.findOne(Role, {
           where: { slug: dto.role },
@@ -122,7 +241,14 @@ export class UsersService {
       if (dto.avatar !== undefined) user.picture = dto.avatar;
 
       const saved = await this.entityManager.save(User, user);
-      return this.toResponse(saved);
+
+      // Reload with relations for response
+      const reloaded = await this.entityManager.findOne(User, {
+        where: { id: saved.id },
+        relations: ['sector', 'lifeGroup', 'completedCourses'],
+      });
+
+      return this.toResponse(reloaded!);
     } catch (error: unknown) {
       if (error instanceof NotFoundException) throw error;
       if (error instanceof BadRequestException) throw error;

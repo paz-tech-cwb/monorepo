@@ -3,13 +3,18 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  ManyToMany,
   OneToMany,
+  JoinTable,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Role } from '../../roles/entities/role.entity';
 import { Address } from '../../addresses/entities/address.entity';
 import { UserAccount } from './account.entity';
+import { Sector } from '../../sectors/entities/sector.entity';
+import { LifeGroup } from '../../life-groups/entities/life-group.entity';
+import { Course } from '../../courses/entities/course.entity';
 
 @Entity('users')
 export class User {
@@ -37,8 +42,19 @@ export class User {
   @ManyToOne(() => Role, { nullable: false, eager: true })
   role: Role;
 
-  @Column({ name: 'life_group', type: 'varchar', length: 255, nullable: true })
-  lifeGroup: string | null;
+  @ManyToOne(() => Sector, { nullable: true })
+  sector: Sector | null;
+
+  @ManyToOne(() => LifeGroup, { nullable: true })
+  lifeGroup: LifeGroup | null;
+
+  @ManyToMany(() => Course, { nullable: true })
+  @JoinTable({
+    name: 'user_courses',
+    joinColumn: { name: 'user_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'course_id', referencedColumnName: 'id' },
+  })
+  completedCourses: Course[];
 
   @Column({ type: 'varchar', length: 20, default: 'active' })
   status: string;

@@ -46,10 +46,7 @@ export class MemberJourneyService {
     }
   }
 
-  private buildMemberJourneyResponse(
-    user: User,
-    stages: MemberJourneyStage[],
-  ) {
+  private buildMemberJourneyResponse(user: User, stages: MemberJourneyStage[]) {
     const orderedStages = JOURNEY_STAGES.map((def) => {
       const stage = stages.find((s) => s.stageId === def.id);
       return {

@@ -21,9 +21,8 @@ export class AdminDashboardService {
 
       const lifeGroupsResult = await this.entityManager
         .createQueryBuilder(User, 'u')
-        .select('COUNT(DISTINCT u.life_group)::int', 'count')
-        .where('u.life_group IS NOT NULL')
-        .andWhere("u.life_group != ''")
+        .select('COUNT(DISTINCT u.lifeGroupId)::int', 'count')
+        .where('u.lifeGroupId IS NOT NULL')
         .getRawOne<{ count: number }>();
 
       const totalLifeGroups = Number(lifeGroupsResult?.count ?? 0);
@@ -105,11 +104,11 @@ export class AdminDashboardService {
     try {
       const results = await this.entityManager
         .createQueryBuilder(User, 'u')
-        .select('u.life_group', 'name')
+        .leftJoin('u.lifeGroup', 'lg')
+        .select('lg.name', 'name')
         .addSelect('COUNT(u.id)::int', 'member_count')
-        .where('u.life_group IS NOT NULL')
-        .andWhere("u.life_group != ''")
-        .groupBy('u.life_group')
+        .where('u.lifeGroupId IS NOT NULL')
+        .groupBy('lg.name')
         .orderBy('member_count', 'DESC')
         .getRawMany<{ name: string; member_count: number }>();
 

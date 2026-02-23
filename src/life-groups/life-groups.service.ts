@@ -1,0 +1,128 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectEntityManager } from '@nestjs/typeorm';
+import { EntityManager } from 'typeorm';
+import { LifeGroup } from './entities/life-group.entity';
+import { CreateLifeGroupDto } from './dto/create-life-group.dto';
+import { UpdateLifeGroupDto } from './dto/update-life-group.dto';
+
+@Injectable()
+export class LifeGroupsService {
+  constructor(
+    @InjectEntityManager()
+    private readonly entityManager: EntityManager,
+  ) {}
+
+  private toResponse(lifeGroup: LifeGroup) {
+    return {
+      id: lifeGroup.id,
+      name: lifeGroup.name,
+      leader_id: lifeGroup.leader?.id ?? null,
+      sector_id: lifeGroup.sector?.id ?? null,
+      location: lifeGroup.location ?? null,
+      meeting_day: lifeGroup.meetingDay ?? null,
+      meeting_time: lifeGroup.meetingTime ?? null,
+      created_at: lifeGroup.createdAt,
+      updated_at: lifeGroup.updatedAt,
+    };
+  }
+
+  async create(dto: CreateLifeGroupDto) {
+    try {
+      const lifeGroup = this.entityManager.create(LifeGroup, {
+        name: dto.name,
+        leader: dto.leader_id ? { id: dto.leader_id } : null,
+        sector: dto.sector_id ? { id: dto.sector_id } : null,
+        location: dto.location ?? null,
+        meetingDay: dto.meeting_day ?? null,
+        meetingTime: dto.meeting_time ?? null,
+      });
+      const saved = await this.entityManager.save(lifeGroup);
+      const loaded = await this.entityManager.findOne(LifeGroup, {
+        where: { id: saved.id },
+        relations: ['leader', 'sector'],
+      });
+      return this.toResponse(loaded!);
+    } catch (error: unknown) {
+      throw new BadRequestException(
+        'An error occurred while creating the life group.',
+      );
+    }
+  }
+
+  async findAll() {
+    try {
+      const lifeGroups = await this.entityManager.find(LifeGroup, {
+        relations: ['leader', 'sector'],
+        order: { name: 'ASC' },
+      });
+      return lifeGroups.map((lg) => this.toResponse(lg));
+    } catch (error: unknown) {
+      throw new BadRequestException(
+        'An error occurred while retrieving life groups.',
+      );
+    }
+  }
+
+  async findOne(id: number) {
+    const lifeGroup = await this.entityManager.findOne(LifeGroup, {
+      where: { id },
+      relations: ['leader', 'sector'],
+    });
+    if (!lifeGroup) {
+      throw new NotFoundException(`Life group with ID ${id} not found`);
+    }
+    return this.toResponse(lifeGroup);
+  }
+
+  async findOneEntity(id: number): Promise<LifeGroup> {
+    const lifeGroup = await this.entityManager.findOne(LifeGroup, {
+      where: { id },
+      relations: ['leader', 'sector'],
+    });
+    if (!lifeGroup) {
+      throw new NotFoundException(`Life group with ID ${id} not found`);
+    }
+    return lifeGroup;
+  }
+
+  async update(id: number, dto: UpdateLifeGroupDto) {
+    try {
+      const lifeGroup = await this.findOneEntity(id);
+
+      if (dto.name !== undefined) lifeGroup.name = dto.name;
+      if (dto.leader_id !== undefined)
+        lifeGroup.leader = dto.leader_id
+          ? ({ id: dto.leader_id } as any)
+          : null;
+      if (dto.sector_id !== undefined)
+        lifeGroup.sector = dto.sector_id
+          ? ({ id: dto.sector_id } as any)
+          : null;
+      if (dto.location !== undefined) lifeGroup.location = dto.location;
+      if (dto.meeting_day !== undefined) lifeGroup.meetingDay = dto.meeting_day;
+      if (dto.meeting_time !== undefined)
+        lifeGroup.meetingTime = dto.meeting_time;
+
+      const saved = await this.entityManager.save(LifeGroup, lifeGroup);
+      const loaded = await this.entityManager.findOne(LifeGroup, {
+        where: { id: saved.id },
+        relations: ['leader', 'sector'],
+      });
+      return this.toResponse(loaded!);
+    } catch (error: unknown) {
+      if (error instanceof NotFoundException) throw error;
+      throw new BadRequestException(
+        'An error occurred while updating the life group.',
+      );
+    }
+  }
+
+  async remove(id: number): Promise<void> {
+    const lifeGroup = await this.findOneEntity(id);
+    await this.entityManager.remove(LifeGroup, lifeGroup);
+  }
+}
