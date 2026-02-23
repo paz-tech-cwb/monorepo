@@ -25,6 +25,9 @@ export interface AdminUser {
   status: UserStatus
   avatar?: string
   membership_date?: string
+  sector_id?: number | null
+  life_group_id?: number | null
+  completed_courses?: number[]
   created_at: string
   updated_at: string
 }
@@ -37,6 +40,9 @@ export interface CreateUserRequest {
   birth_date?: string
   life_group?: string
   role: UserRole
+  sector_id?: number | null
+  life_group_id?: number | null
+  completed_courses?: number[]
 }
 
 export interface UpdateUserRequest {
@@ -49,8 +55,48 @@ export interface UpdateUserRequest {
   role?: UserRole
   status?: UserStatus
   avatar?: string
+  sector_id?: number | null
+  life_group_id?: number | null
+  completed_courses?: number[]
 }
 
 export interface UpdateUserRoleRequest {
   role: UserRole
+}
+
+// Member-specific types (using /api/users endpoint)
+export interface MemberUser {
+  id: number
+  full_name: string
+  birthday_date: string
+  cellphone: string
+  address?: string
+  sector_id: number | null
+  life_group_id: number | null
+  leader_name?: string
+  completed_courses?: number[]
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateMemberUserRequest {
+  full_name: string
+  birthday_date: string
+  cellphone: string
+  address?: string
+  sector_id: number
+  life_group_id: number
+  leader_name?: string
+  completed_courses?: number[]
+}
+
+export interface UpdateMemberUserRequest {
+  full_name?: string
+  birthday_date?: string
+  cellphone?: string
+  address?: string
+  sector_id?: number
+  life_group_id?: number
+  leader_name?: string
+  completed_courses?: number[]
 }

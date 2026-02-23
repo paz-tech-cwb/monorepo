@@ -1,5 +1,13 @@
 import { api } from "../client"
-import type { AdminUser, CreateUserRequest, UpdateUserRequest, UpdateUserRoleRequest } from "../types"
+import type {
+  AdminUser,
+  CreateUserRequest,
+  UpdateUserRequest,
+  UpdateUserRoleRequest,
+  MemberUser,
+  CreateMemberUserRequest,
+  UpdateMemberUserRequest
+} from "../types"
 
 export const usersApi = {
   getAll: async () => {
@@ -19,4 +27,11 @@ export const usersApi = {
     api.patch<AdminUser>(`/users/${id}/role`, data),
 
   delete: (id: number) => api.delete<void>(`/users/${id}`),
+
+  // Member-specific operations (using /api/users endpoint)
+  createMember: (data: CreateMemberUserRequest) =>
+    api.post<MemberUser>("/users", data),
+
+  updateMember: (id: number, data: UpdateMemberUserRequest) =>
+    api.put<MemberUser>(`/users/${id}`, data),
 }
