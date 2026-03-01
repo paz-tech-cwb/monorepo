@@ -33,7 +33,63 @@ git submodule update --init --recursive
 
 ## Running locally
 
-### 1. Backend
+### All at once (recommended)
+
+Start all services from the root with a single command:
+
+```bash
+# 1. Install root dev tooling (first time only)
+npm install
+
+# 2. Copy and fill in secrets
+cp .env.example .env
+
+# 3. Start an iOS Simulator or Android emulator, then:
+npm run dev
+```
+
+This starts PostgreSQL (Docker), the backend, admin-ui, and the Flutter app concurrently with labeled, colored output. Each service auto-restarts on file changes.
+
+| Service | URL / target |
+|---------|-------------|
+| admin-ui | http://localhost:3000 |
+| backend API | http://localhost:3001/api |
+| mobile app | connected device / emulator |
+
+> **Flutter prerequisite:** a simulator or physical device must be running before `npm run dev`. Start one first:
+> ```bash
+> open -a Simulator                              # iOS
+> flutter emulators --launch <emulator-id>       # Android
+> ```
+> To target a specific device, edit `dev:mobile` in the root `package.json`.
+
+Individual service scripts are also available:
+
+```bash
+npm run dev:backend   # backend only
+npm run dev:admin     # admin-ui only
+npm run dev:mobile    # Flutter only
+npm run db            # PostgreSQL only (detached Docker)
+```
+
+### First-time database setup
+
+After the backend container is running, apply migrations once:
+
+```bash
+docker compose exec backend npm run migration:run
+# or locally:
+cd backend && npm run migration:run
+```
+
+---
+
+### Running services individually
+
+<details>
+<summary>Expand for per-service setup</summary>
+
+#### Backend
 
 ```bash
 cd backend
@@ -44,7 +100,7 @@ npm run migration:run
 npm run start:dev      # http://localhost:3001/api
 ```
 
-### 2. Admin UI
+#### Admin UI
 
 ```bash
 cd admin-ui
@@ -53,12 +109,31 @@ npm install
 npm run dev   # http://localhost:3000
 ```
 
-### 3. Mobile App
+#### Mobile App
 
 ```bash
 cd mobile-app
 flutter pub get
 flutter run   # requires a connected device or emulator
+```
+
+</details>
+
+---
+
+### Docker (all services containerized)
+
+To run the backend and admin-ui fully containerized (e.g. for staging):
+
+```bash
+cp .env.example .env   # fill in all vars including Firebase
+docker compose up --build
+```
+
+Services start at the same URLs. Run migrations after the first boot:
+
+```bash
+docker compose exec backend npm run migration:run
 ```
 
 ---
