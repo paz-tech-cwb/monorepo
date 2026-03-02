@@ -36,11 +36,6 @@ export class UpdateUserDto {
   @IsNumber()
   sectorId?: number;
 
-  @Expose({ name: 'life_group_id' })
-  @IsOptional()
-  @IsNumber()
-  lifeGroupId?: number;
-
   @Expose({ name: 'completed_courses' })
   @IsOptional()
   @IsArray()

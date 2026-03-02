@@ -8,7 +8,6 @@ import { EntityManager } from 'typeorm';
 import { User } from './entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
 import { Sector } from '../sectors/entities/sector.entity';
-import { LifeGroup } from '../life-groups/entities/life-group.entity';
 import { Course } from '../courses/entities/course.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -37,12 +36,8 @@ export class UsersService {
             name: user.sector.name,
           }
         : null,
-      life_groups: user.lifeGroups
-        ? user.lifeGroups.map((lg) => ({
-            id: lg.id,
-            name: lg.name,
-          }))
-        : [],
+      life_group_ids: user.lifeGroups?.map((lg) => lg.id) ?? [],
+      life_groups: user.lifeGroups?.map((lg) => ({ id: lg.id, name: lg.name })) ?? [],
       completed_courses: user.completedCourses
         ? user.completedCourses.map((course) => ({
             id: course.id,
@@ -82,19 +77,6 @@ export class UsersService {
         }
       }
 
-      // Resolve life group if provided
-      let lifeGroup: LifeGroup | null = null;
-      if (dto.lifeGroupId) {
-        lifeGroup = await this.entityManager.findOne(LifeGroup, {
-          where: { id: dto.lifeGroupId },
-        });
-        if (!lifeGroup) {
-          throw new BadRequestException(
-            `Invalid life_group_id: ${dto.lifeGroupId}`,
-          );
-        }
-      }
-
       // Resolve courses if provided
       let courses: Course[] = [];
       if (dto.completedCourses && dto.completedCourses.length > 0) {
@@ -113,7 +95,7 @@ export class UsersService {
       user.phoneNumber = dto.phone ?? null;
       user.birthDate = dto.birth_date ? new Date(dto.birth_date) : null;
       user.sector = sector;
-      user.lifeGroups = lifeGroup ? [lifeGroup] : [];
+      user.lifeGroups = [];
       user.completedCourses = courses;
       user.role = role;
       user.status = 'active';
@@ -193,22 +175,6 @@ export class UsersService {
             throw new BadRequestException(`Invalid sector_id: ${dto.sectorId}`);
           }
           user.sector = sector;
-        }
-      }
-
-      if (dto.lifeGroupId !== undefined) {
-        if (dto.lifeGroupId === null) {
-          user.lifeGroups = [];
-        } else {
-          const lifeGroup = await this.entityManager.findOne(LifeGroup, {
-            where: { id: dto.lifeGroupId },
-          });
-          if (!lifeGroup) {
-            throw new BadRequestException(
-              `Invalid life_group_id: ${dto.lifeGroupId}`,
-            );
-          }
-          user.lifeGroups = [lifeGroup];
         }
       }
 
