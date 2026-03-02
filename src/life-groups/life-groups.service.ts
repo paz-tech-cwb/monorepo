@@ -8,6 +8,7 @@ import { EntityManager } from 'typeorm';
 import { LifeGroup } from './entities/life-group.entity';
 import { CreateLifeGroupDto } from './dto/create-life-group.dto';
 import { UpdateLifeGroupDto } from './dto/update-life-group.dto';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class LifeGroupsService {
@@ -25,6 +26,12 @@ export class LifeGroupsService {
       location: lifeGroup.location ?? null,
       meeting_day: lifeGroup.meetingDay ?? null,
       meeting_time: lifeGroup.meetingTime ?? null,
+      member_count: lifeGroup.users?.length ?? 0,
+      members: lifeGroup.users?.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email ?? '',
+      })) ?? [],
       created_at: lifeGroup.createdAt,
       updated_at: lifeGroup.updatedAt,
     };
@@ -43,7 +50,7 @@ export class LifeGroupsService {
       const saved = await this.entityManager.save(lifeGroup);
       const loaded = await this.entityManager.findOne(LifeGroup, {
         where: { id: saved.id },
-        relations: ['leader', 'sector'],
+        relations: ['leader', 'sector', 'users'],
       });
       return this.toResponse(loaded!);
     } catch (error: unknown) {
@@ -56,7 +63,7 @@ export class LifeGroupsService {
   async findAll() {
     try {
       const lifeGroups = await this.entityManager.find(LifeGroup, {
-        relations: ['leader', 'sector'],
+        relations: ['leader', 'sector', 'users'],
         order: { name: 'ASC' },
       });
       return lifeGroups.map((lg) => this.toResponse(lg));
@@ -70,7 +77,7 @@ export class LifeGroupsService {
   async findOne(id: number) {
     const lifeGroup = await this.entityManager.findOne(LifeGroup, {
       where: { id },
-      relations: ['leader', 'sector'],
+      relations: ['leader', 'sector', 'users'],
     });
     if (!lifeGroup) {
       throw new NotFoundException(`Life group with ID ${id} not found`);
@@ -81,7 +88,7 @@ export class LifeGroupsService {
   async findOneEntity(id: number): Promise<LifeGroup> {
     const lifeGroup = await this.entityManager.findOne(LifeGroup, {
       where: { id },
-      relations: ['leader', 'sector'],
+      relations: ['leader', 'sector', 'users'],
     });
     if (!lifeGroup) {
       throw new NotFoundException(`Life group with ID ${id} not found`);
@@ -110,7 +117,7 @@ export class LifeGroupsService {
       const saved = await this.entityManager.save(LifeGroup, lifeGroup);
       const loaded = await this.entityManager.findOne(LifeGroup, {
         where: { id: saved.id },
-        relations: ['leader', 'sector'],
+        relations: ['leader', 'sector', 'users'],
       });
       return this.toResponse(loaded!);
     } catch (error: unknown) {
@@ -124,5 +131,33 @@ export class LifeGroupsService {
   async remove(id: number): Promise<void> {
     const lifeGroup = await this.findOneEntity(id);
     await this.entityManager.remove(LifeGroup, lifeGroup);
+  }
+
+  async addMember(lifeGroupId: number, userId: number): Promise<void> {
+    const lifeGroup = await this.findOneEntity(lifeGroupId);
+    const user = await this.entityManager.findOne(User, {
+      where: { id: userId },
+      relations: ['lifeGroups'],
+    });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+    const alreadyMember = user.lifeGroups.some((lg) => lg.id === lifeGroupId);
+    if (!alreadyMember) {
+      user.lifeGroups.push(lifeGroup);
+      await this.entityManager.save(User, user);
+    }
+  }
+
+  async removeMember(lifeGroupId: number, userId: number): Promise<void> {
+    const user = await this.entityManager.findOne(User, {
+      where: { id: userId },
+      relations: ['lifeGroups'],
+    });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+    user.lifeGroups = user.lifeGroups.filter((lg) => lg.id !== lifeGroupId);
+    await this.entityManager.save(User, user);
   }
 }
