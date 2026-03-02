@@ -54,4 +54,22 @@ export class LifeGroupsController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.lifeGroupsService.remove(id);
   }
+
+  @Post(':id/members/:userId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  addMember(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('userId', ParseIntPipe) userId: number,
+  ) {
+    return this.lifeGroupsService.addMember(id, userId);
+  }
+
+  @Delete(':id/members/:userId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeMember(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('userId', ParseIntPipe) userId: number,
+  ) {
+    return this.lifeGroupsService.removeMember(id, userId);
+  }
 }
