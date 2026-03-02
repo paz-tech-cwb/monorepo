@@ -150,6 +150,7 @@ export class LifeGroupsService {
   }
 
   async removeMember(lifeGroupId: number, userId: number): Promise<void> {
+    await this.findOneEntity(lifeGroupId); // throws NotFoundException if group not found
     const user = await this.entityManager.findOne(User, {
       where: { id: userId },
       relations: ['lifeGroups'],
