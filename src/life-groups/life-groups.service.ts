@@ -143,6 +143,7 @@ export class LifeGroupsService {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
     const alreadyMember = user.lifeGroups.some((lg) => lg.id === lifeGroupId);
+    // Idempotent: no-op if user is already a member
     if (!alreadyMember) {
       user.lifeGroups.push(lifeGroup);
       await this.entityManager.save(User, user);
@@ -158,7 +159,11 @@ export class LifeGroupsService {
     if (!user) {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
+    // Idempotent: no-op if user is not a member
+    const lengthBefore = user.lifeGroups.length;
     user.lifeGroups = user.lifeGroups.filter((lg) => lg.id !== lifeGroupId);
-    await this.entityManager.save(User, user);
+    if (user.lifeGroups.length < lengthBefore) {
+      await this.entityManager.save(User, user);
+    }
   }
 }
