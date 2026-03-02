@@ -72,7 +72,7 @@ export class MemberJourneyService {
       member_id: user.id,
       member_name: user.name,
       member_email: user.email,
-      life_groups: user.lifeGroups ?? [],
+      life_groups: user.lifeGroups?.map((lg) => ({ id: lg.id, name: lg.name })) ?? [],
       current_stage_id: currentStageId,
       stages: orderedStages,
       last_updated_at: lastUpdated,
@@ -195,7 +195,6 @@ export class MemberJourneyService {
           'mjs.id AS id',
           'mjs.member_id AS member_id',
           'u.name AS member_name',
-          'u.life_group AS life_group',
           'mjs.stage_id AS stage_id',
           'mjs.stage_key AS stage_key',
           'mjs.completed_at AS completed_at',
@@ -210,9 +209,14 @@ export class MemberJourneyService {
       }
 
       if (params.life_group) {
-        qb = qb.andWhere('u.life_group = :lifeGroup', {
-          lifeGroup: params.life_group,
-        });
+        qb = qb.andWhere(
+          `EXISTS (
+            SELECT 1 FROM user_life_groups ulg
+            JOIN life_groups lg ON lg.id = ulg.life_group_id
+            WHERE ulg.user_id = u.id AND lg.name = :lifeGroup
+          )`,
+          { lifeGroup: params.life_group },
+        );
       }
 
       if (params.from) {
@@ -237,7 +241,6 @@ export class MemberJourneyService {
           id: number;
           member_id: number;
           member_name: string;
-          life_group: string | null;
           stage_id: number;
           stage_key: string;
           completed_at: Date | null;
@@ -252,7 +255,6 @@ export class MemberJourneyService {
           id: row.id,
           member_id: row.member_id,
           member_name: row.member_name,
-          life_group: row.life_group ?? null,
           stage_id: Number(row.stage_id),
           stage_key: row.stage_key,
           stage_label: stageDef?.label ?? row.stage_key,
