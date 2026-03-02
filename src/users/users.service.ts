@@ -37,13 +37,12 @@ export class UsersService {
             name: user.sector.name,
           }
         : null,
-      life_group_id: user.lifeGroup?.id ?? null,
-      life_group: user.lifeGroup
-        ? {
-            id: user.lifeGroup.id,
-            name: user.lifeGroup.name,
-          }
-        : null,
+      life_groups: user.lifeGroups
+        ? user.lifeGroups.map((lg) => ({
+            id: lg.id,
+            name: lg.name,
+          }))
+        : [],
       completed_courses: user.completedCourses
         ? user.completedCourses.map((course) => ({
             id: course.id,
@@ -114,7 +113,7 @@ export class UsersService {
       user.phoneNumber = dto.phone ?? null;
       user.birthDate = dto.birth_date ? new Date(dto.birth_date) : null;
       user.sector = sector;
-      user.lifeGroup = lifeGroup;
+      user.lifeGroups = lifeGroup ? [lifeGroup] : [];
       user.completedCourses = courses;
       user.role = role;
       user.status = 'active';
@@ -125,7 +124,7 @@ export class UsersService {
       // Reload with relations for response
       const reloaded = await this.entityManager.findOne(User, {
         where: { id: saved.id },
-        relations: ['sector', 'lifeGroup', 'completedCourses'],
+        relations: ['sector', 'lifeGroups', 'completedCourses'],
       });
 
       return this.toResponse(reloaded!);
@@ -140,7 +139,7 @@ export class UsersService {
   async findAll() {
     try {
       const users = await this.entityManager.find(User, {
-        relations: ['sector', 'lifeGroup', 'completedCourses'],
+        relations: ['sector', 'lifeGroups', 'completedCourses'],
         order: { name: 'ASC' },
       });
       return users.map((u) => this.toResponse(u));
@@ -154,7 +153,7 @@ export class UsersService {
   async findOne(id: number) {
     const user = await this.entityManager.findOne(User, {
       where: { id },
-      relations: ['sector', 'lifeGroup', 'completedCourses'],
+      relations: ['sector', 'lifeGroups', 'completedCourses'],
     });
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
@@ -165,7 +164,7 @@ export class UsersService {
   async findOneEntity(id: number): Promise<User> {
     const user = await this.entityManager.findOne(User, {
       where: { id },
-      relations: ['sector', 'lifeGroup', 'completedCourses'],
+      relations: ['sector', 'lifeGroups', 'completedCourses'],
     });
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
@@ -199,7 +198,7 @@ export class UsersService {
 
       if (dto.lifeGroupId !== undefined) {
         if (dto.lifeGroupId === null) {
-          user.lifeGroup = null;
+          user.lifeGroups = [];
         } else {
           const lifeGroup = await this.entityManager.findOne(LifeGroup, {
             where: { id: dto.lifeGroupId },
@@ -209,7 +208,7 @@ export class UsersService {
               `Invalid life_group_id: ${dto.lifeGroupId}`,
             );
           }
-          user.lifeGroup = lifeGroup;
+          user.lifeGroups = [lifeGroup];
         }
       }
 
@@ -245,7 +244,7 @@ export class UsersService {
       // Reload with relations for response
       const reloaded = await this.entityManager.findOne(User, {
         where: { id: saved.id },
-        relations: ['sector', 'lifeGroup', 'completedCourses'],
+        relations: ['sector', 'lifeGroups', 'completedCourses'],
       });
 
       return this.toResponse(reloaded!);

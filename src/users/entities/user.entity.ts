@@ -45,8 +45,13 @@ export class User {
   @ManyToOne(() => Sector, { nullable: true })
   sector: Sector | null;
 
-  @ManyToOne(() => LifeGroup, { nullable: true })
-  lifeGroup: LifeGroup | null;
+  @ManyToMany(() => LifeGroup, (lifeGroup) => lifeGroup.users)
+  @JoinTable({
+    name: 'user_life_groups',
+    joinColumn: { name: 'user_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'life_group_id', referencedColumnName: 'id' },
+  })
+  lifeGroups: LifeGroup[];
 
   @ManyToMany(() => Course, { nullable: true })
   @JoinTable({

@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  ManyToMany,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -31,6 +32,9 @@ export class LifeGroup {
 
   @Column({ name: 'meeting_time', type: 'time', nullable: true })
   meetingTime: string | null;
+
+  @ManyToMany(() => User, (user) => user.lifeGroups)
+  users: User[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

@@ -72,7 +72,7 @@ export class MemberJourneyService {
       member_id: user.id,
       member_name: user.name,
       member_email: user.email,
-      life_group: user.lifeGroup ?? null,
+      life_groups: user.lifeGroups ?? [],
       current_stage_id: currentStageId,
       stages: orderedStages,
       last_updated_at: lastUpdated,
@@ -82,6 +82,7 @@ export class MemberJourneyService {
   async getMemberJourney(userId: number) {
     const user = await this.entityManager.findOne(User, {
       where: { id: userId },
+      relations: ['lifeGroups'],
     });
     if (!user) {
       throw new NotFoundException(`Member with ID ${userId} not found`);
@@ -104,6 +105,7 @@ export class MemberJourneyService {
   async updateStage(userId: number, dto: UpdateMemberStageDto) {
     const user = await this.entityManager.findOne(User, {
       where: { id: userId },
+      relations: ['lifeGroups'],
     });
     if (!user) {
       throw new NotFoundException(`Member with ID ${userId} not found`);
