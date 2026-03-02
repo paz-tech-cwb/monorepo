@@ -65,19 +65,17 @@ export function MembersManagement() {
     phone_number: "",
     address: "",
     birth_date: "",
-    life_group: "",
     role: "member" as UserRole,
   })
 
   const filteredMembers = members.filter(
     (member) =>
       (member.name ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (member.email ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (member.life_group || "").toLowerCase().includes(searchTerm.toLowerCase()),
+      (member.email ?? "").toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const resetForm = () => {
-    setFormData({ name: "", email: "", phone_number: "", address: "", birth_date: "", life_group: "", role: "member" })
+    setFormData({ name: "", email: "", phone_number: "", address: "", birth_date: "", role: "member" })
   }
 
   const handleAdd = async () => {
@@ -88,7 +86,6 @@ export function MembersManagement() {
         phone_number: formData.phone_number || undefined,
         address: formData.address || undefined,
         birth_date: formData.birth_date || undefined,
-        life_group: formData.life_group || undefined,
         role: formData.role,
       })
       toast.success("Membro adicionado com sucesso!")
@@ -107,7 +104,6 @@ export function MembersManagement() {
       phone_number: member.phone_number || member.phone || "",
       address: member.address || "",
       birth_date: member.birth_date || "",
-      life_group: member.life_group || "",
       role: member.role,
     })
   }
@@ -132,7 +128,6 @@ export function MembersManagement() {
           phone_number: formData.phone_number || undefined,
           address: formData.address || undefined,
           birth_date: formData.birth_date || undefined,
-          life_group: formData.life_group || undefined,
         },
       })
       toast.success("Membro atualizado com sucesso!")
@@ -229,15 +224,6 @@ export function MembersManagement() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="life_group">Life Group</Label>
-                    <Input
-                      id="life_group"
-                      value={formData.life_group}
-                      onChange={(e) => setFormData({ ...formData, life_group: e.target.value })}
-                      placeholder="Nome do Life Group"
-                    />
-                  </div>
-                  <div>
                     <Label htmlFor="role">Funcao</Label>
                     <select
                       id="role"
@@ -308,7 +294,7 @@ export function MembersManagement() {
                     <TableCell className="font-medium">{member.name}</TableCell>
                     <TableCell>{member.email}</TableCell>
                     <TableCell>{member.phone_number || member.phone || "-"}</TableCell>
-                    <TableCell>{member.life_group || "-"}</TableCell>
+                    <TableCell>{member.life_groups.map((g) => g.name).join(", ") || "-"}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{getRoleLabel(member.role)}</Badge>
                     </TableCell>
@@ -387,15 +373,6 @@ export function MembersManagement() {
                 type="date"
                 value={formData.birth_date}
                 onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-life_group">Life Group</Label>
-              <Input
-                id="edit-life_group"
-                value={formData.life_group}
-                onChange={(e) => setFormData({ ...formData, life_group: e.target.value })}
-                placeholder="Nome do Life Group"
               />
             </div>
             <div>

@@ -21,14 +21,18 @@ export function useLifeGroups() {
     const groupMap = new Map<string, LifeGroup>()
 
     for (const user of users) {
+      // @ts-expect-error // TODO: rewrite in Task 7 — life_group replaced by life_groups[]
       if (!user.life_group) continue
 
+      // @ts-expect-error // TODO: rewrite in Task 7 — life_group replaced by life_groups[]
       const existing = groupMap.get(user.life_group)
       if (existing) {
         existing.members.push(user)
         existing.member_count += 1
       } else {
+        // @ts-expect-error // TODO: rewrite in Task 7 — life_group replaced by life_groups[]
         groupMap.set(user.life_group, {
+          // @ts-expect-error // TODO: rewrite in Task 7 — life_group replaced by life_groups[]
           name: user.life_group,
           member_count: 1,
           members: [user],

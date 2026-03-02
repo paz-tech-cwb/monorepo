@@ -43,7 +43,7 @@ const STAGE_MESSAGES: Record<JourneyStageKey, { title: string; message: string }
 function inferStagesFromMember(member: AdminUser): Partial<Record<JourneyStageKey, string>> {
   const inferred: Partial<Record<JourneyStageKey, string>> = {}
   inferred.registration = member.membership_date ?? member.created_at
-  if (member.life_group) inferred.life_group = member.updated_at
+  if (member.life_groups.length > 0) inferred.life_group = member.updated_at
   return inferred
 }
 
@@ -265,7 +265,7 @@ export function JourneySheet({ member, open, onOpenChange }: JourneySheetProps) 
         <SheetHeader className="mb-4 shrink-0">
           <SheetTitle>{member.name} — Jornada</SheetTitle>
           <SheetDescription>
-            Life Group: {member.life_group ?? "—"}
+            Life Group: {member.life_groups.map((g) => g.name).join(", ") || "—"}
           </SheetDescription>
         </SheetHeader>
 

@@ -20,13 +20,13 @@ export interface AdminUser {
   phone?: string
   address?: string
   birth_date?: string
-  life_group?: string
   role: UserRole
   status: UserStatus
   avatar?: string
   membership_date?: string
   sector_id?: number | null
-  life_group_id?: number | null
+  life_group_ids: number[]
+  life_groups: { id: number; name: string }[]
   completed_courses?: number[]
   created_at: string
   updated_at: string
@@ -38,10 +38,8 @@ export interface CreateUserRequest {
   phone_number?: string
   address?: string
   birth_date?: string
-  life_group?: string
   role: UserRole
   sector_id?: number | null
-  life_group_id?: number | null
   completed_courses?: number[]
 }
 
@@ -51,12 +49,10 @@ export interface UpdateUserRequest {
   phone_number?: string
   address?: string
   birth_date?: string
-  life_group?: string
   role?: UserRole
   status?: UserStatus
   avatar?: string
   sector_id?: number | null
-  life_group_id?: number | null
   completed_courses?: number[]
 }
 

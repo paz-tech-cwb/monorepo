@@ -38,6 +38,7 @@ import {
   UserPlus,
   UserMinus,
   Loader2,
+  Plus,
 } from "lucide-react"
 import { toast } from "sonner"
 import { useLifeGroups } from "@/lib/hooks/use-life-groups"
@@ -132,12 +133,15 @@ export function LifeGroupsManagement() {
   const [sortOption, setSortOption] = useState<SortOption>("name-asc")
   // Tracks which member id is currently being mutated
   const [pendingMemberId, setPendingMemberId] = useState<number | null>(null)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [newGroupName, setNewGroupName] = useState("")
 
   // ----- derived stats -------------------------------------------------------
 
   const totalMembers = allMembers.length
   const totalGroups = lifeGroups.length
-  const membersInAGroup = allMembers.filter((m) => !!m.life_group).length
+  // TODO: update in Task 8 — life_group replaced by life_groups[]
+  const membersInAGroup = allMembers.filter((m) => !!(m as any).life_group).length // eslint-disable-line
   const avgPerGroup =
     totalGroups > 0
       ? Math.round(lifeGroups.reduce((s, g) => s + g.member_count, 0) / totalGroups)
@@ -177,12 +181,14 @@ export function LifeGroupsManagement() {
   }, [allMembers, memberSearchTerm, sortOption])
 
   const currentGroupMembers = useMemo(
-    () => sortedAndFilteredMembers.filter((m) => m.life_group === managingGroupName),
+    // TODO: update in Task 8 — life_group replaced by life_groups[]
+    () => sortedAndFilteredMembers.filter((m) => (m as any).life_group === managingGroupName), // eslint-disable-line
     [sortedAndFilteredMembers, managingGroupName]
   )
 
   const nonGroupMembers = useMemo(
-    () => sortedAndFilteredMembers.filter((m) => m.life_group !== managingGroupName),
+    // TODO: update in Task 8 — life_group replaced by life_groups[]
+    () => sortedAndFilteredMembers.filter((m) => (m as any).life_group !== managingGroupName), // eslint-disable-line
     [sortedAndFilteredMembers, managingGroupName]
   )
 
@@ -195,9 +201,22 @@ export function LifeGroupsManagement() {
     setIsMembersDialogOpen(true)
   }
 
+  function handleCreateGroup() {
+    const name = newGroupName.trim()
+    if (!name) return
+    if (lifeGroups.some((g) => g.name.toLowerCase() === name.toLowerCase())) {
+      toast.error("Já existe um grupo com esse nome")
+      return
+    }
+    setIsCreateDialogOpen(false)
+    setNewGroupName("")
+    handleManageMembers(name)
+  }
+
   function handleAssignMember(member: AdminUser, groupName: string) {
     setPendingMemberId(member.id)
     updateUser.mutate(
+      // @ts-expect-error // TODO: update in Task 8 — life_group replaced by life_groups[]
       { id: member.id, data: { life_group: groupName } },
       {
         onSuccess: () => {
@@ -215,8 +234,7 @@ export function LifeGroupsManagement() {
   function handleRemoveMember(member: AdminUser) {
     setPendingMemberId(member.id)
     updateUser.mutate(
-      // Sending an empty string removes the user from any group.
-      // The backend treats an empty/null life_group as "no group".
+      // @ts-expect-error // TODO: update in Task 8 — life_group replaced by life_groups[]
       { id: member.id, data: { life_group: "" } },
       {
         onSuccess: () => {
@@ -314,6 +332,10 @@ export function LifeGroupsManagement() {
                     {filteredGroups.length} grupo(s) encontrado(s)
                   </CardDescription>
                 </div>
+                <Button onClick={() => { setNewGroupName(""); setIsCreateDialogOpen(true) }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Grupo
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -437,6 +459,33 @@ export function LifeGroupsManagement() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Create Life Group Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Novo Life Group</DialogTitle>
+            <DialogDescription>
+              Digite o nome do grupo. Em seguida você poderá adicionar membros.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            placeholder="Nome do grupo..."
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleCreateGroup()}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateGroup} disabled={!newGroupName.trim()}>
+              Criar e Adicionar Membros
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Manage Members Dialog */}
       <Dialog open={isMembersDialogOpen} onOpenChange={setIsMembersDialogOpen}>
