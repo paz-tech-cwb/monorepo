@@ -37,9 +37,9 @@ export class LifeGroupsManyToMany1757250000019 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP INDEX "IDX_user_life_groups_life_group"`);
-    await queryRunner.query(`DROP INDEX "IDX_user_life_groups_user"`);
-    await queryRunner.query(`DROP TABLE "user_life_groups"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_user_life_groups_life_group"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_user_life_groups_user"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "user_life_groups"`);
 
     await queryRunner.query(`
       ALTER TABLE "users"
