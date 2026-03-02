@@ -1,54 +1,74 @@
 "use client"
 
-import { useMemo } from "react"
-import { useUsers } from "./use-users"
-import type { LifeGroup } from "@/lib/api/types/life-groups"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { lifeGroupsApi } from "@/lib/api/endpoints/life-groups"
+import type { CreateLifeGroupRequest, UpdateLifeGroupRequest } from "@/lib/api/types"
+import { trackEvent } from "@/lib/firebase/analytics"
 
-/**
- * Derives life groups from the users list.
- *
- * There is no /life-groups API endpoint — groups are aggregated from the
- * `life_group` string field on each User. This hook re-uses the cached
- * users query (no extra network request) and builds the group list via
- * useMemo so it only recomputes when the users data changes.
- */
+const QUERY_KEY = ["life-groups"]
+const USERS_KEY = ["users"]
+
 export function useLifeGroups() {
-  const usersQuery = useUsers()
+  return useQuery({
+    queryKey: QUERY_KEY,
+    queryFn: () => lifeGroupsApi.getAll(),
+  })
+}
 
-  const lifeGroups = useMemo<LifeGroup[]>(() => {
-    const users = usersQuery.data ?? []
+export function useCreateLifeGroup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: CreateLifeGroupRequest) => lifeGroupsApi.create(data),
+    onSuccess: (group) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      trackEvent("life_group_created", { life_group_id: group.id })
+    },
+  })
+}
 
-    const groupMap = new Map<string, LifeGroup>()
+export function useUpdateLifeGroup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UpdateLifeGroupRequest }) =>
+      lifeGroupsApi.update(id, data),
+    onSuccess: (group) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      trackEvent("life_group_updated", { life_group_id: group.id })
+    },
+  })
+}
 
-    for (const user of users) {
-      // @ts-expect-error // TODO: rewrite in Task 7 — life_group replaced by life_groups[]
-      if (!user.life_group) continue
+export function useDeleteLifeGroup() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => lifeGroupsApi.remove(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      trackEvent("life_group_deleted", { life_group_id: id })
+    },
+  })
+}
 
-      // @ts-expect-error // TODO: rewrite in Task 7 — life_group replaced by life_groups[]
-      const existing = groupMap.get(user.life_group)
-      if (existing) {
-        existing.members.push(user)
-        existing.member_count += 1
-      } else {
-        // @ts-expect-error // TODO: rewrite in Task 7 — life_group replaced by life_groups[]
-        groupMap.set(user.life_group, {
-          // @ts-expect-error // TODO: rewrite in Task 7 — life_group replaced by life_groups[]
-          name: user.life_group,
-          member_count: 1,
-          members: [user],
-        })
-      }
-    }
+export function useAddLifeGroupMember() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ lifeGroupId, userId }: { lifeGroupId: number; userId: number }) =>
+      lifeGroupsApi.addMember(lifeGroupId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: USERS_KEY })
+    },
+  })
+}
 
-    return Array.from(groupMap.values()).sort((a, b) =>
-      a.name.localeCompare(b.name, "pt-BR")
-    )
-  }, [usersQuery.data])
-
-  return {
-    ...usersQuery,
-    data: lifeGroups,
-    /** Raw users list — useful for the "assign user to group" UI */
-    allMembers: usersQuery.data ?? [],
-  }
+export function useRemoveLifeGroupMember() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ lifeGroupId, userId }: { lifeGroupId: number; userId: number }) =>
+      lifeGroupsApi.removeMember(lifeGroupId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: USERS_KEY })
+    },
+  })
 }
