@@ -21,6 +21,16 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -185,10 +195,16 @@ export function LifeGroupsManagement() {
   const [form, setForm] = useState<LifeGroupFormData>(EMPTY_FORM)
 
   // Members dialog state
-  const [managingGroup, setManagingGroup] = useState<LifeGroup | null>(null)
+  const [managingGroupId, setManagingGroupId] = useState<number | null>(null)
+  const managingGroup = managingGroupId != null
+    ? lifeGroups.find((g) => g.id === managingGroupId) ?? null
+    : null
   const [isMembersDialogOpen, setIsMembersDialogOpen] = useState(false)
   const [memberSearchTerm, setMemberSearchTerm] = useState("")
   const [pendingMemberId, setPendingMemberId] = useState<number | null>(null)
+
+  // Delete confirmation state
+  const [deletingGroup, setDeletingGroup] = useState<LifeGroup | null>(null)
 
   // ----- derived stats -------------------------------------------------------
 
@@ -257,7 +273,7 @@ export function LifeGroupsManagement() {
           toast.success("Grupo criado")
           setIsFormOpen(false)
           // Immediately open member management for the new group
-          setManagingGroup(newGroup)
+          setManagingGroupId(newGroup.id)
           setMemberSearchTerm("")
           setIsMembersDialogOpen(true)
         },
@@ -268,13 +284,19 @@ export function LifeGroupsManagement() {
 
   function handleDelete(group: LifeGroup) {
     deleteLifeGroup.mutate(group.id, {
-      onSuccess: () => toast.success(`"${group.name}" excluído`),
-      onError: () => toast.error("Erro ao excluir grupo"),
+      onSuccess: () => {
+        toast.success(`"${group.name}" excluído`)
+        setDeletingGroup(null)
+      },
+      onError: () => {
+        toast.error("Erro ao excluir grupo")
+        setDeletingGroup(null)
+      },
     })
   }
 
   function handleManageMembers(group: LifeGroup) {
-    setManagingGroup(group)
+    setManagingGroupId(group.id)
     setMemberSearchTerm("")
     setIsMembersDialogOpen(true)
   }
@@ -469,7 +491,7 @@ export function LifeGroupsManagement() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
-                            onClick={() => handleDelete(group)}
+                            onClick={() => setDeletingGroup(group)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Excluir
@@ -597,7 +619,10 @@ export function LifeGroupsManagement() {
       </Dialog>
 
       {/* Manage Members Dialog */}
-      <Dialog open={isMembersDialogOpen} onOpenChange={setIsMembersDialogOpen}>
+      <Dialog open={isMembersDialogOpen} onOpenChange={(open) => {
+        setIsMembersDialogOpen(open)
+        if (!open) setManagingGroupId(null)
+      }}>
         <DialogContent className="max-w-2xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Gerenciar Membros — {managingGroup?.name}</DialogTitle>
@@ -683,6 +708,32 @@ export function LifeGroupsManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletingGroup} onOpenChange={(open) => !open && setDeletingGroup(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Life Group</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o grupo &quot;{deletingGroup?.name}&quot;?
+              Esta ação não pode ser desfeita e todos os membros serão removidos do grupo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deletingGroup && handleDelete(deletingGroup)}
+              disabled={deleteLifeGroup.isPending}
+            >
+              {deleteLifeGroup.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
