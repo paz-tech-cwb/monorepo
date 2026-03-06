@@ -4,6 +4,14 @@ import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -24,32 +32,97 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Search,
   MoreHorizontal,
   Users2,
   User,
   BarChart3,
-  ArrowUpDown,
   UserPlus,
   UserMinus,
   Loader2,
   Plus,
+  Pencil,
+  Trash2,
 } from "lucide-react"
 import { toast } from "sonner"
-import { useLifeGroups } from "@/lib/hooks/use-life-groups"
-import { useUpdateUser } from "@/lib/hooks/use-users"
+import {
+  useLifeGroups,
+  useCreateLifeGroup,
+  useUpdateLifeGroup,
+  useDeleteLifeGroup,
+  useAddLifeGroupMember,
+  useRemoveLifeGroupMember,
+} from "@/lib/hooks/use-life-groups"
+import { useUsers } from "@/lib/hooks/use-users"
+import { useSectors } from "@/lib/hooks/use-sectors"
+import type { LifeGroup, CreateLifeGroupRequest } from "@/lib/api/types"
 import type { AdminUser } from "@/lib/api/types"
 
-type SortOption = "name-asc" | "name-desc" | "date-asc" | "date-desc"
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const MEETING_DAYS = [
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+  "Domingo",
+  "Sem dia fixo",
+] as const
 
 // ---------------------------------------------------------------------------
-// Sub-components defined outside the main component to prevent re-mount on
-// every render (avoids focus loss in inputs inside dialogs).
+// LifeGroup form — used for both Create and Edit
+// ---------------------------------------------------------------------------
+
+interface LifeGroupFormData {
+  name: string
+  location: string
+  meeting_day: string
+  meeting_time: string
+  leader_id: string   // string for select value; converted to number on submit
+  sector_id: string
+}
+
+const EMPTY_FORM: LifeGroupFormData = {
+  name: "",
+  location: "",
+  meeting_day: "",
+  meeting_time: "",
+  leader_id: "",
+  sector_id: "",
+}
+
+function groupToForm(g: LifeGroup): LifeGroupFormData {
+  return {
+    name: g.name,
+    location: g.location ?? "",
+    meeting_day: g.meeting_day ?? "",
+    meeting_time: g.meeting_time ?? "",
+    leader_id: g.leader_id != null ? String(g.leader_id) : "",
+    sector_id: g.sector_id != null ? String(g.sector_id) : "",
+  }
+}
+
+function formToRequest(f: LifeGroupFormData): CreateLifeGroupRequest {
+  return {
+    name: f.name.trim(),
+    location: f.location.trim() || null,
+    meeting_day: f.meeting_day || null,
+    meeting_time: f.meeting_time || null,
+    leader_id: f.leader_id ? Number(f.leader_id) : null,
+    sector_id: f.sector_id ? Number(f.sector_id) : null,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// MemberItem sub-component
 // ---------------------------------------------------------------------------
 
 interface MemberItemProps {
@@ -60,13 +133,7 @@ interface MemberItemProps {
   isPending: boolean
 }
 
-const MemberItem = ({
-  member,
-  isCurrentMember,
-  onAdd,
-  onRemove,
-  isPending,
-}: MemberItemProps) => (
+const MemberItem = ({ member, isCurrentMember, onAdd, onRemove, isPending }: MemberItemProps) => (
   <div
     className={`flex items-center justify-between p-3 rounded-lg border ${
       isCurrentMember ? "border-primary bg-primary/5" : "border-border"
@@ -75,11 +142,6 @@ const MemberItem = ({
     <div className="flex-1">
       <p className="text-sm font-medium">{member.name}</p>
       <p className="text-xs text-muted-foreground">{member.email}</p>
-      {(member.phone_number || member.phone) && (
-        <Badge variant="outline" className="text-xs mt-1">
-          {member.phone_number || member.phone}
-        </Badge>
-      )}
     </div>
     {isCurrentMember ? (
       <Button
@@ -89,30 +151,11 @@ const MemberItem = ({
         onClick={() => onRemove(member)}
         className="text-destructive hover:text-destructive"
       >
-        {isPending ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <>
-            <UserMinus className="h-4 w-4 mr-1" />
-            Remover
-          </>
-        )}
+        {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><UserMinus className="h-4 w-4 mr-1" />Remover</>}
       </Button>
     ) : (
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={isPending}
-        onClick={() => onAdd(member)}
-      >
-        {isPending ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <>
-            <UserPlus className="h-4 w-4 mr-1" />
-            Adicionar
-          </>
-        )}
+      <Button variant="outline" size="sm" disabled={isPending} onClick={() => onAdd(member)}>
+        {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <><UserPlus className="h-4 w-4 mr-1" />Adicionar</>}
       </Button>
     )}
   </div>
@@ -123,101 +166,124 @@ const MemberItem = ({
 // ---------------------------------------------------------------------------
 
 export function LifeGroupsManagement() {
-  const { data: lifeGroups, allMembers, isLoading } = useLifeGroups()
-  const updateUser = useUpdateUser()
+  const { data: lifeGroups = [], isLoading } = useLifeGroups()
+  const { data: allUsers = [] } = useUsers()
+  const { data: sectors = [] } = useSectors()
 
+  const createLifeGroup = useCreateLifeGroup()
+  const updateLifeGroup = useUpdateLifeGroup()
+  const deleteLifeGroup = useDeleteLifeGroup()
+  const addMember = useAddLifeGroupMember()
+  const removeMember = useRemoveLifeGroupMember()
+
+  // Group list state
   const [searchTerm, setSearchTerm] = useState("")
-  const [managingGroupName, setManagingGroupName] = useState<string | null>(null)
+
+  // Create / Edit dialog state
+  const [isFormOpen, setIsFormOpen] = useState(false)
+  const [editingGroup, setEditingGroup] = useState<LifeGroup | null>(null)
+  const [form, setForm] = useState<LifeGroupFormData>(EMPTY_FORM)
+
+  // Members dialog state
+  const [managingGroup, setManagingGroup] = useState<LifeGroup | null>(null)
   const [isMembersDialogOpen, setIsMembersDialogOpen] = useState(false)
   const [memberSearchTerm, setMemberSearchTerm] = useState("")
-  const [sortOption, setSortOption] = useState<SortOption>("name-asc")
-  // Tracks which member id is currently being mutated
   const [pendingMemberId, setPendingMemberId] = useState<number | null>(null)
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [newGroupName, setNewGroupName] = useState("")
 
   // ----- derived stats -------------------------------------------------------
 
-  const totalMembers = allMembers.length
   const totalGroups = lifeGroups.length
-  // TODO: update in Task 8 — life_group replaced by life_groups[]
-  const membersInAGroup = allMembers.filter((m) => !!(m as any).life_group).length // eslint-disable-line
-  const avgPerGroup =
-    totalGroups > 0
-      ? Math.round(lifeGroups.reduce((s, g) => s + g.member_count, 0) / totalGroups)
-      : 0
-
-  // ----- filtered groups list ------------------------------------------------
+  const totalMembers = allUsers.length
+  const membersInAGroup = allUsers.filter((u) => u.life_group_ids?.length > 0).length
+  const avgPerGroup = totalGroups > 0
+    ? Math.round(lifeGroups.reduce((s, g) => s + g.member_count, 0) / totalGroups)
+    : 0
 
   const filteredGroups = lifeGroups.filter((g) =>
     g.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  // ----- members dialog logic ------------------------------------------------
+  // ----- members dialog ------------------------------------------------------
 
-  const managingGroup = lifeGroups.find((g) => g.name === managingGroupName) ?? null
-
-  const sortedAndFilteredMembers = useMemo(() => {
-    const filtered = allMembers.filter(
-      (m) =>
-        m.name.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
-        m.email.toLowerCase().includes(memberSearchTerm.toLowerCase())
-    )
-
-    return [...filtered].sort((a, b) => {
-      switch (sortOption) {
-        case "name-asc":
-          return a.name.localeCompare(b.name, "pt-BR")
-        case "name-desc":
-          return b.name.localeCompare(a.name, "pt-BR")
-        case "date-asc":
-          return (a.membership_date ?? "").localeCompare(b.membership_date ?? "")
-        case "date-desc":
-          return (b.membership_date ?? "").localeCompare(a.membership_date ?? "")
-        default:
-          return 0
-      }
-    })
-  }, [allMembers, memberSearchTerm, sortOption])
-
-  const currentGroupMembers = useMemo(
-    // TODO: update in Task 8 — life_group replaced by life_groups[]
-    () => sortedAndFilteredMembers.filter((m) => (m as any).life_group === managingGroupName), // eslint-disable-line
-    [sortedAndFilteredMembers, managingGroupName]
+  const currentGroupMemberIds = useMemo(
+    () => new Set(managingGroup?.members.map((m) => m.id) ?? []),
+    [managingGroup]
   )
 
-  const nonGroupMembers = useMemo(
-    // TODO: update in Task 8 — life_group replaced by life_groups[]
-    () => sortedAndFilteredMembers.filter((m) => (m as any).life_group !== managingGroupName), // eslint-disable-line
-    [sortedAndFilteredMembers, managingGroupName]
+  const filteredUsers = useMemo(
+    () => allUsers.filter(
+      (u) =>
+        u.name.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
+        u.email.toLowerCase().includes(memberSearchTerm.toLowerCase())
+    ),
+    [allUsers, memberSearchTerm]
   )
+
+  const currentGroupMembers = filteredUsers.filter((u) => currentGroupMemberIds.has(u.id))
+  const nonGroupMembers = filteredUsers.filter((u) => !currentGroupMemberIds.has(u.id))
 
   // ----- handlers ------------------------------------------------------------
 
-  function handleManageMembers(groupName: string) {
-    setManagingGroupName(groupName)
+  function openCreate() {
+    setEditingGroup(null)
+    setForm(EMPTY_FORM)
+    setIsFormOpen(true)
+  }
+
+  function openEdit(group: LifeGroup) {
+    setEditingGroup(group)
+    setForm(groupToForm(group))
+    setIsFormOpen(true)
+  }
+
+  function handleFormSubmit() {
+    if (!form.name.trim()) return
+    const request = formToRequest(form)
+
+    if (editingGroup) {
+      updateLifeGroup.mutate(
+        { id: editingGroup.id, data: request },
+        {
+          onSuccess: () => {
+            toast.success("Grupo atualizado")
+            setIsFormOpen(false)
+          },
+          onError: () => toast.error("Erro ao atualizar grupo"),
+        }
+      )
+    } else {
+      createLifeGroup.mutate(request, {
+        onSuccess: (newGroup) => {
+          toast.success("Grupo criado")
+          setIsFormOpen(false)
+          // Immediately open member management for the new group
+          setManagingGroup(newGroup)
+          setMemberSearchTerm("")
+          setIsMembersDialogOpen(true)
+        },
+        onError: () => toast.error("Erro ao criar grupo"),
+      })
+    }
+  }
+
+  function handleDelete(group: LifeGroup) {
+    deleteLifeGroup.mutate(group.id, {
+      onSuccess: () => toast.success(`"${group.name}" excluído`),
+      onError: () => toast.error("Erro ao excluir grupo"),
+    })
+  }
+
+  function handleManageMembers(group: LifeGroup) {
+    setManagingGroup(group)
     setMemberSearchTerm("")
-    setSortOption("name-asc")
     setIsMembersDialogOpen(true)
   }
 
-  function handleCreateGroup() {
-    const name = newGroupName.trim()
-    if (!name) return
-    if (lifeGroups.some((g) => g.name.toLowerCase() === name.toLowerCase())) {
-      toast.error("Já existe um grupo com esse nome")
-      return
-    }
-    setIsCreateDialogOpen(false)
-    setNewGroupName("")
-    handleManageMembers(name)
-  }
-
-  function handleAssignMember(member: AdminUser, groupName: string) {
+  function handleAddMember(member: AdminUser) {
+    if (!managingGroup) return
     setPendingMemberId(member.id)
-    updateUser.mutate(
-      // @ts-expect-error // TODO: update in Task 8 — life_group replaced by life_groups[]
-      { id: member.id, data: { life_group: groupName } },
+    addMember.mutate(
+      { lifeGroupId: managingGroup.id, userId: member.id },
       {
         onSuccess: () => {
           toast.success(`${member.name} adicionado ao grupo`)
@@ -232,10 +298,10 @@ export function LifeGroupsManagement() {
   }
 
   function handleRemoveMember(member: AdminUser) {
+    if (!managingGroup) return
     setPendingMemberId(member.id)
-    updateUser.mutate(
-      // @ts-expect-error // TODO: update in Task 8 — life_group replaced by life_groups[]
-      { id: member.id, data: { life_group: "" } },
+    removeMember.mutate(
+      { lifeGroupId: managingGroup.id, userId: member.id },
       {
         onSuccess: () => {
           toast.success(`${member.name} removido do grupo`)
@@ -248,6 +314,8 @@ export function LifeGroupsManagement() {
       }
     )
   }
+
+  const isFormPending = createLifeGroup.isPending || updateLifeGroup.isPending
 
   // ----- loading state -------------------------------------------------------
 
@@ -280,7 +348,6 @@ export function LifeGroupsManagement() {
             <p className="text-xs text-muted-foreground">grupos ativos</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Membros em Grupos</CardTitle>
@@ -291,10 +358,9 @@ export function LifeGroupsManagement() {
             <p className="text-xs text-muted-foreground">de {totalMembers} membros</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Media por Grupo</CardTitle>
+            <CardTitle className="text-sm font-medium">Média por Grupo</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -302,7 +368,6 @@ export function LifeGroupsManagement() {
             <p className="text-xs text-muted-foreground">membros por grupo</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Sem Grupo</CardTitle>
@@ -310,178 +375,222 @@ export function LifeGroupsManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalMembers - membersInAGroup}</div>
-            <p className="text-xs text-muted-foreground">membros nao alocados</p>
+            <p className="text-xs text-muted-foreground">membros não alocados</p>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="groups" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="groups">Grupos</TabsTrigger>
-          <TabsTrigger value="reports">Relatorios</TabsTrigger>
-        </TabsList>
+      {/* Groups table */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Lista de Life Groups</CardTitle>
+              <CardDescription>{filteredGroups.length} grupo(s) encontrado(s)</CardDescription>
+            </div>
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Grupo
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-2 mb-4">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar grupos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
 
-        {/* Groups list tab */}
-        <TabsContent value="groups">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Lista de Life Groups</CardTitle>
-                  <CardDescription>
-                    {filteredGroups.length} grupo(s) encontrado(s)
-                  </CardDescription>
-                </div>
-                <Button onClick={() => { setNewGroupName(""); setIsCreateDialogOpen(true) }}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Novo Grupo
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-2 mb-4">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar grupos..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-sm"
-                />
-              </div>
-
-              {filteredGroups.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  {searchTerm
-                    ? `Nenhum grupo encontrado para "${searchTerm}"`
-                    : "Nenhum grupo cadastrado. Atribua membros a um grupo pelo cadastro de membros."}
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Grupo</TableHead>
-                      <TableHead>Membros</TableHead>
-                      <TableHead className="w-[70px]">Acoes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredGroups.map((group) => (
-                      <TableRow key={group.name}>
-                        <TableCell>
-                          <p className="font-medium">{group.name}</p>
-                        </TableCell>
-                        <TableCell>
-                          <p className="text-sm font-medium">
-                            {group.member_count} membro(s)
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate max-w-xs">
-                            {group.members
-                              .slice(0, 3)
-                              .map((m) => m.name)
-                              .join(", ")}
-                            {group.member_count > 3 &&
-                              ` +${group.member_count - 3} outros`}
-                          </p>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleManageMembers(group.name)}
-                              >
-                                <Users2 className="mr-2 h-4 w-4" />
-                                Gerenciar Membros
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Reports tab */}
-        <TabsContent value="reports">
-          <Card>
-            <CardHeader>
-              <CardTitle>Distribuicao de Membros por Grupo</CardTitle>
-              <CardDescription>Quantidade de membros em cada grupo</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {lifeGroups.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhum dado disponivel.</p>
-              ) : (
-                <div className="space-y-3">
-                  {lifeGroups.map((group) => {
-                    const percentage =
-                      membersInAGroup > 0
-                        ? (group.member_count / membersInAGroup) * 100
-                        : 0
-                    return (
-                      <div
-                        key={group.name}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-sm font-medium truncate max-w-[180px]">
-                            {group.name}
-                          </span>
-                          <span className="text-sm text-muted-foreground whitespace-nowrap">
-                            {group.member_count} membro(s)
-                          </span>
+          {filteredGroups.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              {searchTerm
+                ? `Nenhum grupo encontrado para "${searchTerm}"`
+                : "Nenhum grupo cadastrado. Crie o primeiro grupo clicando em \"Novo Grupo\"."}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Grupo</TableHead>
+                  <TableHead>Local</TableHead>
+                  <TableHead>Reunião</TableHead>
+                  <TableHead>Membros</TableHead>
+                  <TableHead className="w-[70px]">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredGroups.map((group) => (
+                  <TableRow key={group.id}>
+                    <TableCell>
+                      <p className="font-medium">{group.name}</p>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm text-muted-foreground">{group.location ?? "—"}</p>
+                    </TableCell>
+                    <TableCell>
+                      {group.meeting_day || group.meeting_time ? (
+                        <div className="text-sm">
+                          {group.meeting_day && <p>{group.meeting_day}</p>}
+                          {group.meeting_time && (
+                            <p className="text-muted-foreground">{group.meeting_time}</p>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2 ml-4">
-                          <div className="w-24 bg-muted rounded-full h-2">
-                            <div
-                              className="bg-primary h-2 rounded-full"
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
-                          <span className="text-xs text-muted-foreground w-8 text-right">
-                            {Math.round(percentage)}%
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">—</p>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm font-medium">{group.member_count} membro(s)</p>
+                      <p className="text-xs text-muted-foreground truncate max-w-xs">
+                        {group.members.slice(0, 3).map((m) => m.name).join(", ")}
+                        {group.member_count > 3 && ` +${group.member_count - 3} outros`}
+                      </p>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleManageMembers(group)}>
+                            <Users2 className="mr-2 h-4 w-4" />
+                            Gerenciar Membros
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEdit(group)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleDelete(group)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Create Life Group Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-sm">
+      {/* Create / Edit Dialog */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Novo Life Group</DialogTitle>
+            <DialogTitle>{editingGroup ? "Editar Life Group" : "Novo Life Group"}</DialogTitle>
             <DialogDescription>
-              Digite o nome do grupo. Em seguida você poderá adicionar membros.
+              {editingGroup
+                ? "Atualize os dados do grupo."
+                : "Preencha os dados do novo grupo. Você poderá adicionar membros em seguida."}
             </DialogDescription>
           </DialogHeader>
-          <Input
-            placeholder="Nome do grupo..."
-            value={newGroupName}
-            onChange={(e) => setNewGroupName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleCreateGroup()}
-            autoFocus
-          />
+
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <Label htmlFor="lg-name">Nome *</Label>
+              <Input
+                id="lg-name"
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Ex: Grupo da Quarta"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="lg-location">Local</Label>
+              <Input
+                id="lg-location"
+                value={form.location}
+                onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                placeholder="Ex: Rua das Flores, 123"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>Dia da Reunião</Label>
+                <Select
+                  value={form.meeting_day}
+                  onValueChange={(v) => setForm((f) => ({ ...f, meeting_day: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MEETING_DAYS.map((day) => (
+                      <SelectItem key={day} value={day}>{day}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="lg-time">Horário</Label>
+                <Input
+                  id="lg-time"
+                  type="time"
+                  value={form.meeting_time}
+                  onChange={(e) => setForm((f) => ({ ...f, meeting_time: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Líder</Label>
+              <Select
+                value={form.leader_id}
+                onValueChange={(v) => setForm((f) => ({ ...f, leader_id: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um líder..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {allUsers.map((u) => (
+                    <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Setor</Label>
+              <Select
+                value={form.sector_id}
+                onValueChange={(v) => setForm((f) => ({ ...f, sector_id: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um setor..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {sectors.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsFormOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleCreateGroup} disabled={!newGroupName.trim()}>
-              Criar e Adicionar Membros
+            <Button onClick={handleFormSubmit} disabled={!form.name.trim() || isFormPending}>
+              {isFormPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              {editingGroup ? "Salvar" : "Criar e Adicionar Membros"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -491,14 +600,12 @@ export function LifeGroupsManagement() {
       <Dialog open={isMembersDialogOpen} onOpenChange={setIsMembersDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle>Gerenciar Membros — {managingGroupName}</DialogTitle>
+            <DialogTitle>Gerenciar Membros — {managingGroup?.name}</DialogTitle>
             <DialogDescription>
-              Adicione ou remova membros deste grupo. As alteracoes sao aplicadas
-              imediatamente.
+              Adicione ou remova membros deste grupo. As alterações são aplicadas imediatamente.
             </DialogDescription>
           </DialogHeader>
 
-          {/* Search and Sort Controls */}
           <div className="flex items-center gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -509,32 +616,9 @@ export function LifeGroupsManagement() {
                 className="pl-9"
               />
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <ArrowUpDown className="h-4 w-4 mr-2" />
-                  Ordenar
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setSortOption("name-asc")}>
-                  Nome (A-Z) {sortOption === "name-asc" && "✓"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortOption("name-desc")}>
-                  Nome (Z-A) {sortOption === "name-desc" && "✓"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortOption("date-asc")}>
-                  Data de entrada (mais antigo) {sortOption === "date-asc" && "✓"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortOption("date-desc")}>
-                  Data de entrada (mais recente) {sortOption === "date-desc" && "✓"}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
 
           <div className="overflow-y-auto max-h-[50vh] space-y-4 pr-1">
-            {/* Current group members */}
             {currentGroupMembers.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -549,9 +633,7 @@ export function LifeGroupsManagement() {
                       key={member.id}
                       member={member}
                       isCurrentMember={true}
-                      onAdd={(m) =>
-                        managingGroupName && handleAssignMember(m, managingGroupName)
-                      }
+                      onAdd={handleAddMember}
                       onRemove={handleRemoveMember}
                       isPending={pendingMemberId === member.id}
                     />
@@ -564,7 +646,6 @@ export function LifeGroupsManagement() {
               <div className="border-t border-border" />
             )}
 
-            {/* Non-members */}
             {nonGroupMembers.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -579,9 +660,7 @@ export function LifeGroupsManagement() {
                       key={member.id}
                       member={member}
                       isCurrentMember={false}
-                      onAdd={(m) =>
-                        managingGroupName && handleAssignMember(m, managingGroupName)
-                      }
+                      onAdd={handleAddMember}
                       onRemove={handleRemoveMember}
                       isPending={pendingMemberId === member.id}
                     />
