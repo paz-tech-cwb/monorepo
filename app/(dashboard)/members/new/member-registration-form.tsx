@@ -27,6 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useCreateMemberUser } from "@/lib/hooks/use-users"
 import { useSectors } from "@/lib/hooks/use-sectors"
 import { useCourses } from "@/lib/hooks/use-courses"
+import { useLifeGroups } from "@/lib/hooks/use-life-groups"
 import { formatPhoneBR, validatePhoneBR } from "@/lib/utils/phone"
 import { format } from "date-fns"
 
@@ -52,6 +53,7 @@ export function MemberRegistrationForm() {
   const createMutation = useCreateMemberUser()
   const { data: sectors = [] } = useSectors()
   const { data: courses = [] } = useCourses()
+  const { data: lifeGroups = [] } = useLifeGroups()
 
   const [phoneValue, setPhoneValue] = useState("")
   const [selectedCourses, setSelectedCourses] = useState<number[]>([])
@@ -218,10 +220,11 @@ export function MemberRegistrationForm() {
                     <SelectValue placeholder="Selecione um Life Group" />
                   </SelectTrigger>
                   <SelectContent>
-                    {/* Placeholder - Life Groups should come from API */}
-                    <SelectItem value="1">Life Group 1</SelectItem>
-                    <SelectItem value="2">Life Group 2</SelectItem>
-                    <SelectItem value="3">Life Group 3</SelectItem>
+                    {lifeGroups.map((group) => (
+                      <SelectItem key={group.id} value={String(group.id)}>
+                        {group.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {errors.life_group_ids && (
