@@ -234,7 +234,11 @@ export class UsersService {
       }
       user.role = role;
       const saved = await this.entityManager.save(User, user);
-      return this.toResponse(saved);
+      const reloaded = await this.entityManager.findOne(User, {
+        where: { id: saved.id },
+        relations: ['sector', 'lifeGroups', 'completedCourses'],
+      });
+      return this.toResponse(reloaded!);
     } catch (error: unknown) {
       if (error instanceof NotFoundException) throw error;
       if (error instanceof BadRequestException) throw error;
