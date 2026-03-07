@@ -112,7 +112,7 @@ function StepperItem({
           </p>
         )}
         {note && (
-          <p className="text-xs text-muted-foreground italic mt-0.5">"{note}"</p>
+          <p className="text-xs text-muted-foreground italic mt-0.5">&ldquo;{note}&rdquo;</p>
         )}
         {!completed && !isCurrent && (
           <p className="text-xs text-muted-foreground mt-0.5">—</p>

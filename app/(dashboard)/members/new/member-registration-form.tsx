@@ -40,9 +40,7 @@ const memberSchema = z.object({
   sector_id: z.number({
     required_error: "Setor e obrigatorio",
   }),
-  life_group_id: z.number({
-    required_error: "Life Group e obrigatorio",
-  }),
+  life_group_ids: z.array(z.number()).min(1, "Life Group e obrigatorio"),
   leader_name: z.string().optional(),
   completed_courses: z.array(z.number()).optional(),
 })
@@ -208,12 +206,12 @@ export function MemberRegistrationForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="life_group_id">
+                <Label htmlFor="life_group_ids">
                   Life Group <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   onValueChange={(value) =>
-                    setValue("life_group_id", parseInt(value))
+                    setValue("life_group_ids", [parseInt(value)])
                   }
                 >
                   <SelectTrigger>
@@ -226,9 +224,9 @@ export function MemberRegistrationForm() {
                     <SelectItem value="3">Life Group 3</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.life_group_id && (
+                {errors.life_group_ids && (
                   <p className="text-sm text-destructive">
-                    {errors.life_group_id.message}
+                    {errors.life_group_ids.message}
                   </p>
                 )}
               </div>

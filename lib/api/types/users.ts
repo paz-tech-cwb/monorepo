@@ -68,7 +68,8 @@ export interface MemberUser {
   cellphone: string
   address?: string
   sector_id: number | null
-  life_group_id: number | null
+  life_group_ids: number[]
+  life_groups: { id: number; name: string }[]
   leader_name?: string
   completed_courses?: number[]
   created_at: string
@@ -81,7 +82,7 @@ export interface CreateMemberUserRequest {
   cellphone: string
   address?: string
   sector_id: number
-  life_group_id: number
+  life_group_ids: number[]
   leader_name?: string
   completed_courses?: number[]
 }
@@ -92,7 +93,7 @@ export interface UpdateMemberUserRequest {
   cellphone?: string
   address?: string
   sector_id?: number
-  life_group_id?: number
+  life_group_ids?: number[]
   leader_name?: string
   completed_courses?: number[]
 }

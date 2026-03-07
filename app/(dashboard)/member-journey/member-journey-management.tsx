@@ -153,7 +153,7 @@ function ActivityCard({ activity }: { activity: JourneyActivity }) {
           </p>
           {activity.note && (
             <p className="text-xs text-muted-foreground italic mt-1">
-              "{activity.note}"
+              &ldquo;{activity.note}&rdquo;
             </p>
           )}
         </div>
