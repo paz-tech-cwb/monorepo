@@ -11,5 +11,5 @@ export * from "./church"
 export * from "./member-journey"
 export * from "./areas"
 export * from "./sectors"
-export * from "./members"
+
 export * from "./conversions"
