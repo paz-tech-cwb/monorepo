@@ -29,6 +29,7 @@ A full-featured notification system for Paz Church Curitiba that allows church s
 - In-app notification inbox (bell icon feed) — future feature
 - Per-notification read receipts or open-rate analytics
 - A/B testing of notification content
+- Per-user delivery retries (partial failure = overall `sent`; no per-user dispatch log)
 
 ---
 
@@ -58,6 +59,8 @@ Replaces the existing stub entity. Adds `category`, `segment`, `scheduled_at`, `
 - Immediate: `pending` → `processing` → `sent` | `failed`
 - Scheduled: `scheduled` → `processing` → `sent` | `failed`
 
+**Partial failure rule:** If at least one user receives at least one channel, status = `sent`. If every dispatch attempt fails, status = `failed`. If the resolved user list is empty, status = `sent` with `recipients_count = 0`.
+
 **Segment JSONB shape:**
 ```json
 {
@@ -72,6 +75,8 @@ Replaces the existing stub entity. Adds `category`, `segment`, `scheduled_at`, `
 ```
 `type: "all"` ignores `filters`. `type: "filtered"` applies all non-empty filter keys as AND conditions.
 
+`filters.status` maps to the `status` column on the `users` table (existing column, values `active` / `inactive`).
+
 ### New: `user_device_tokens` table
 
 Stores FCM tokens per user. One user may have multiple tokens (multiple devices).
@@ -82,6 +87,7 @@ Stores FCM tokens per user. One user may have multiple tokens (multiple devices)
 | `user_id` | int FK → users | |
 | `token` | varchar UNIQUE | FCM registration token |
 | `platform` | enum | `android`, `ios` |
+| `last_used_at` | timestamp | Updated on every successful send; used for periodic stale-token cleanup |
 | `created_at` | timestamp | |
 | `updated_at` | timestamp | |
 
@@ -93,6 +99,7 @@ One row per user, created automatically on first login with all columns defaulti
 |---|---|---|
 | `id` | int PK | |
 | `user_id` | int FK UNIQUE → users | |
+| `all_notifications_enabled` | bool | true |
 | `push_enabled` | bool | true |
 | `email_enabled` | bool | true |
 | `sms_enabled` | bool | true |
@@ -105,6 +112,8 @@ One row per user, created automatically on first login with all columns defaulti
 | `created_at` | timestamp | |
 | `updated_at` | timestamp | |
 
+`all_notifications_enabled = false` overrides all other preferences — no notifications are sent to this user regardless of individual toggles.
+
 ---
 
 ## Backend Architecture
@@ -116,14 +125,14 @@ All notification work lives in `src/notifications/`. Related user-facing endpoin
 ```
 src/notifications/
   notifications.module.ts
-  notifications.controller.ts       # CRUD + reach preview
-  notifications.service.ts          # Segment resolution, CRUD, queue registration
-  notification-dispatch.service.ts  # Fans out to channel providers
+  notifications.controller.ts               # CRUD + reach preview
+  notifications.service.ts                  # Segment resolution, CRUD, queue registration
+  notification-dispatch.service.ts          # Fans out to channel providers
   providers/
-    fcm.service.ts                   # Firebase Admin SDK
-    email.service.ts                 # Resend SDK
-    sms.service.ts                   # Twilio SDK
-    whatsapp.service.ts              # Meta Cloud API
+    fcm.service.ts                           # Firebase Admin SDK
+    email.service.ts                         # Resend SDK
+    sms.service.ts                           # Twilio SDK
+    whatsapp.service.ts                      # Meta Cloud API
   entities/
     notification.entity.ts
   dto/
@@ -147,45 +156,12 @@ src/users/
 |---|---|
 | `NotificationsService` | CRUD, segment-to-user-list resolution, reach count calculation, timer registration for scheduled notifications |
 | `NotificationDispatchService` | Receives a notification + resolved user list; filters each user by their preferences; calls channel providers |
-| `FcmService` | Sends to all `user_device_tokens` for each target user via Firebase Admin SDK; auto-deletes stale tokens on `registration-token-not-registered` error |
+| `FcmService` | Sends to all `user_device_tokens` for each target user via Firebase Admin SDK; auto-deletes stale tokens on `registration-token-not-registered` error; updates `last_used_at` on success |
 | `EmailService` | Sends via Resend SDK to `user.email` |
 | `SmsService` | Sends via Twilio SDK to `user.phone_number` |
 | `WhatsappService` | Sends via Meta Cloud API to `user.phone_number` |
 | `UserDeviceTokensService` | Register / remove FCM tokens |
 | `UserNotificationPreferencesService` | Get / upsert preferences; create default row on first login |
-
-### Dispatch flow
-
-```
-Admin POST /notifications
-  │
-  ├─ scheduled_at is null?
-  │     └─ YES → status = "pending" → dispatch immediately (async, non-blocking)
-  │
-  └─ scheduled_at is future?
-        └─ status = "scheduled" → register setTimeout for exact scheduled_at
-              └─ On fire: dispatch
-
-dispatch(notification):
-  status = "processing"
-  resolve segment → [User, ...]
-  for each user:
-    filter channels by user.notification_preferences (channel toggles)
-    filter by user.notification_preferences (topic toggle for notification.category)
-    if no channels remain → skip user
-    else → dispatch to remaining channels
-  recipients_count = count of users who received at least one channel
-  status = all failed? "failed" : "sent"
-  sent_at = now
-```
-
-### Scheduled notification recovery on startup
-
-On `NestJS onApplicationBootstrap`:
-1. Query: `SELECT * FROM notifications WHERE status = 'scheduled' AND scheduled_at > NOW()`
-2. For each result, register a `setTimeout` for `scheduled_at - now` ms
-3. Query: `SELECT * FROM notifications WHERE status = 'scheduled' AND scheduled_at <= NOW()`
-4. Dispatch these immediately (missed while server was down)
 
 ### API Endpoints
 
@@ -196,15 +172,37 @@ All endpoints require `AuthGuard('jwt')`. Notification write endpoints additiona
 | `POST` | `/notifications` | admin, pastor | Create and queue/schedule a notification |
 | `GET` | `/notifications` | admin, pastor | List all notifications (history) |
 | `GET` | `/notifications/:id` | admin, pastor | Get single notification |
-| `DELETE` | `/notifications/:id` | admin, pastor | Delete (only if status is pending or scheduled) |
-| `GET` | `/notifications/reach` | admin, pastor | Preview reach for a segment + channels |
+| `DELETE` | `/notifications/:id` | admin, pastor | Delete (only if status is `pending` or `scheduled`; `409` otherwise) |
+| `POST` | `/notifications/reach` | admin, pastor | Preview reach for a segment + channels |
 | `POST` | `/users/device-tokens` | any authenticated | Register FCM token |
 | `DELETE` | `/users/device-tokens/:token` | any authenticated | Remove FCM token |
 | `GET` | `/users/me/notification-preferences` | any authenticated | Get own preferences |
 | `PUT` | `/users/me/notification-preferences` | any authenticated | Update own preferences |
 
-### Reach preview response shape
+### Request / Response contracts
 
+**`POST /notifications` — request body:**
+```typescript
+{
+  title: string                    // required
+  message: string                  // required
+  category: NotificationCategory   // required
+  channels: string[]               // required, min length 1; values: "push","email","sms","whatsapp"
+  segment: NotificationSegment     // required
+  scheduled_at?: string | null     // optional ISO 8601 timestamp; must be in the future if provided (422 otherwise)
+}
+```
+
+**`POST /notifications/reach` — request body (same shape minus title/message/scheduled_at):**
+```typescript
+{
+  channels: string[]
+  segment: NotificationSegment
+  category: NotificationCategory
+}
+```
+
+**`POST /notifications/reach` — response:**
 ```json
 {
   "total": 247,
@@ -219,8 +217,55 @@ All endpoints require `AuthGuard('jwt')`. Notification write endpoints additiona
   }
 }
 ```
+`excluded` counts users who match the segment but have that channel disabled — shown in the admin UI as "49 users have push disabled."
 
-`excluded` counts users who match the segment but have that channel disabled — shown as a note in the admin UI ("49 users have push disabled").
+**HTTP error codes:**
+| Scenario | Code |
+|---|---|
+| `DELETE` notification with `status = sent/failed/processing` | `409 Conflict` |
+| `POST /notifications` with `scheduled_at` in the past | `422 Unprocessable Entity` |
+| Invalid segment shape | `400 Bad Request` |
+| Unauthorized role | `403 Forbidden` |
+
+### Dispatch flow
+
+```
+Admin POST /notifications
+  │
+  ├─ scheduled_at is null?
+  │     └─ YES → status = "pending" → dispatch immediately (async, non-blocking setImmediate)
+  │
+  └─ scheduled_at is future?
+        └─ status = "scheduled" → register setTimeout for (scheduled_at - now) ms
+              └─ On fire: dispatch
+
+dispatch(notification):
+  status = "processing"
+  resolve segment → [User, ...]
+  if users list is empty:
+    recipients_count = 0; status = "sent"; sent_at = now; return
+
+  successCount = 0
+  for each user:
+    if user.preferences.all_notifications_enabled = false → skip
+    filter channels by user.preferences (push_enabled, email_enabled, etc.)
+    filter by user.preferences topic toggle (events_enabled, etc.) for notification.category
+    if no channels remain → skip user
+    dispatch to remaining channels (each provider independently; one failing does not block others)
+    if at least one channel succeeded → successCount++
+
+  recipients_count = successCount
+  status = successCount > 0 ? "sent" : "failed"
+  sent_at = now
+```
+
+### Scheduled notification recovery on startup
+
+On `NestJS onApplicationBootstrap`:
+1. Query: `WHERE status = 'scheduled' AND scheduled_at > NOW()` → register `setTimeout` for each
+2. Query: `WHERE status = 'scheduled' AND scheduled_at <= NOW()` → dispatch each immediately
+
+Using `>` and `<=` ensures no notification falls into both or neither bucket.
 
 ### Environment variables (additions to backend `.env`)
 
@@ -248,35 +293,47 @@ META_WHATSAPP_PHONE_NUMBER_ID=
 
 ## Admin-UI Design
 
+### File structure
+
+```
+lib/api/types/notifications.ts              # Request/response interfaces (snake_case)
+lib/api/endpoints/notifications.ts          # Thin wrappers: sendNotification, getNotifications, deleteNotification, getReach
+lib/hooks/use-notifications.ts              # TanStack Query hooks
+app/(dashboard)/notifications/
+  page.tsx                                  # Server component
+  notification-system.tsx                   # "use client" — tabs: Compose + History
+```
+
 ### Notification composer (redesign of existing `notification-system.tsx`)
 
-The composer is split into a two-column layout:
+Two-column layout:
 
 **Left column (form):**
 1. **Category** — pill badge row; one selected at a time (Announcements, Events, Life Group, Academy, Admin Alerts)
-2. **Channels** — 2×2 card grid; each card shows icon, name, provider label, checkmark; multi-select
-3. **Audience segment** — filter builder; each filter row has a type dropdown + value dropdown + remove button; an "Add filter" button appends a new row; filter types: Status, Role, Sector, Life Group
+2. **Channels** — 2×2 card grid; each card shows icon, name, provider label, checkmark; multi-select; at least one required
+3. **Audience segment** — filter builder; each filter row has a type dropdown + value dropdown + remove button; "Add filter" appends a new row; filter types: Status, Role, Sector, Life Group; no filters = all members
 4. **Message** — Title input + Message textarea
 
 **Right sidebar:**
-- **Estimated Reach box** — shows total recipients count + per-channel breakdown + exclusion note; updates live (debounced 500ms) as admin changes segment or channels; calls `GET /notifications/reach`
-- **Schedule toggle** — toggles date + time inputs; when off, sends immediately
+- **Estimated Reach box** — total recipients count + per-channel breakdown + exclusion notes; updates live (debounced 500ms) as admin changes segment or channels; calls `POST /notifications/reach`
+- **Schedule toggle** — toggles date + time inputs; when off, sends immediately on submit
 - **Send / Schedule button**
 
 ### History tab
 
-Table columns: Title, Category, Channels (pills), Segment (summary text), Recipients, Status (badge), Actions.
+Table columns: Title, Category, Channels (pills), Segment (human-readable summary), Recipients, Status (badge), Sent by, Actions.
 
 Actions per row:
-- **Duplicate** — pre-fills composer with copied fields, resets status; admin edits and sends as new notification
-- **Delete** — only enabled for `pending` and `scheduled` status
+- **Duplicate** — pre-fills composer with copied fields; resets status; admin edits and sends as a new notification
+- **Delete** — only enabled for `pending` and `scheduled` status; calls `DELETE /notifications/:id`
 
 Status badges: `sent` (green), `scheduled` (orange), `pending` (blue), `failed` (red).
 
-### New API types
+### TypeScript types
 
 ```typescript
-// lib/api/types/notifications.ts additions
+// lib/api/types/notifications.ts
+
 export type NotificationCategory =
   | 'events' | 'announcements' | 'life_group' | 'academy' | 'admin_alerts'
 
@@ -304,7 +361,23 @@ export interface Notification {
   status: NotificationStatus
   scheduled_at: string | null
   sent_at: string | null
+  created_by: number
   created_at: string
+}
+
+export interface CreateNotificationRequest {
+  title: string
+  message: string
+  category: NotificationCategory
+  channels: string[]
+  segment: NotificationSegment
+  scheduled_at?: string | null
+}
+
+export interface NotificationReachRequest {
+  channels: string[]
+  segment: NotificationSegment
+  category: NotificationCategory
 }
 
 export interface NotificationReachResponse {
@@ -312,38 +385,64 @@ export interface NotificationReachResponse {
   by_channel: Record<string, number>
   excluded: Record<string, number>
 }
+
+export interface UpdateNotificationPreferencesRequest {
+  all_notifications_enabled?: boolean
+  push_enabled?: boolean
+  email_enabled?: boolean
+  sms_enabled?: boolean
+  whatsapp_enabled?: boolean
+  events_enabled?: boolean
+  announcements_enabled?: boolean
+  life_group_enabled?: boolean
+  academy_enabled?: boolean
+  admin_alerts_enabled?: boolean
+}
 ```
 
 ---
 
 ## Mobile (Flutter)
 
+### Packages to add to `pubspec.yaml`
+
+```yaml
+firebase_messaging: ^14.x
+flutter_local_notifications: ^17.x
+```
+
+`firebase_admin` is a server-side SDK only — it does NOT go in Flutter. The Firebase Admin SDK is used only in the NestJS `FcmService`.
+
 ### FCM setup
 
-1. Add `firebase_messaging` and `firebase_admin` packages to `pubspec.yaml`
-2. On login success: request notification permission (iOS) → get FCM token → `POST /users/device-tokens`
-3. Register `FirebaseMessaging.onTokenRefresh` listener → re-POST new token
-4. On logout: `DELETE /users/device-tokens/:token` → clear stored token
+1. On login success: request notification permission (iOS only via `messaging.requestPermission()`)
+2. Get FCM token via `FirebaseMessaging.instance.getToken()`
+3. If token is null (permission denied on iOS): skip registration silently — do not show an error
+4. If token is non-null: `POST /users/device-tokens` with token + platform
+5. Register `FirebaseMessaging.instance.onTokenRefresh` listener → re-POST new token on refresh
+6. On logout: `DELETE /users/device-tokens/:token` → clear locally stored token
 
 **Message handlers:**
 - `FirebaseMessaging.onMessage` (foreground) — show local notification banner via `flutter_local_notifications`
-- `FirebaseMessaging.onMessageOpenedApp` (background tap) — navigate to relevant screen based on `category` in payload
-- `FirebaseMessaging.onBackgroundMessage` (terminated) — static top-level handler
+- `FirebaseMessaging.onMessageOpenedApp` (background tap) — navigate to relevant screen based on `category` in payload data
+- `FirebaseMessaging.onBackgroundMessage` (terminated) — static top-level handler (must be a top-level function, not a class method)
 
 ### Notification preferences screen
 
-Located at `lib/features/profile/notification_preferences_screen.dart`.
+Location: `lib/features/profile/notification_preferences_screen.dart`
 
-**Structure:**
-- Master toggle ("All Notifications") — disables/enables all toggles visually and saves a global mute
-- **Channels section**: Push, Email, SMS, WhatsApp — each shows the user's contact info as subtitle
+**GetX controller:** `NotificationPreferencesController`
+- Loads preferences from `GET /users/me/notification-preferences` on screen open
+- Each toggle change calls `PUT /users/me/notification-preferences` immediately (optimistic UI; rollback on error)
+
+**Screen structure:**
+- **Master toggle** ("All Notifications") — maps to `all_notifications_enabled`; when turned off, greys out all other toggles visually (they remain editable but `all_notifications_enabled = false` overrides them server-side)
+- **Channels section**: Push (subtitle: device type), Email (subtitle: user email), SMS (subtitle: phone number), WhatsApp (subtitle: phone number)
 - **Topics section**: Events, Announcements, Life Group, Academy, Admin Alerts
 
-All toggles default to `true`. State loaded from `GET /users/me/notification-preferences` on screen open. Each toggle change calls `PUT /users/me/notification-preferences` immediately (optimistic UI).
+All preferences default to `true`. Preferences row is created automatically on first login by `UserNotificationPreferencesService`.
 
-**GetX controller:** `NotificationPreferencesController` — handles loading, saving, and error rollback.
-
-### New backend endpoints consumed by mobile
+### Backend endpoints consumed by mobile
 
 | Endpoint | When called |
 |---|---|
@@ -358,12 +457,17 @@ All toggles default to `true`. State loaded from `GET /users/me/notification-pre
 
 | Scenario | Behavior |
 |---|---|
-| One channel provider fails | Other channels still dispatched; overall status reflects partial success |
-| All channel providers fail | `status = "failed"` |
-| FCM token invalid | Auto-delete token from DB; skip that device silently |
-| User has no email | Skip email channel for that user |
-| User has no phone number | Skip SMS and WhatsApp for that user |
+| One channel provider fails, others succeed | Other channels proceed; overall status = `sent` |
+| All channel providers fail for all users | `status = "failed"` |
+| No users match the segment | `recipients_count = 0`, `status = "sent"` |
+| FCM token invalid (`registration-token-not-registered`) | Auto-delete token from DB; skip that device silently |
+| User has no email | Skip email channel for that user silently |
+| User has no phone number | Skip SMS and WhatsApp for that user silently |
+| User has `all_notifications_enabled = false` | Skip user entirely for all channels |
 | Server restart with pending scheduled notifications | Bootstrap recovery re-registers timers or dispatches missed ones immediately |
+| iOS notification permission denied | FCM token is null; skip device token registration; no error shown to user |
+| `DELETE` notification with non-pending/non-scheduled status | `409 Conflict` |
+| `POST /notifications` with `scheduled_at` in the past | `422 Unprocessable Entity` |
 
 ---
 
@@ -380,7 +484,7 @@ All toggles default to `true`. State loaded from `GET /users/me/notification-pre
 
 ## Database Migrations
 
-Three new migrations required:
-1. Alter `notifications` table — add `category`, `segment`, `scheduled_at`, `created_by`; change `status` enum; remove `target_audience`
-2. Create `user_device_tokens` table
-3. Create `user_notification_preferences` table
+Three new migrations required (in order):
+1. **Alter `notifications` table** — add `category` (enum), `segment` (jsonb), `scheduled_at` (timestamp nullable), `created_by` (int FK); change `status` enum values; remove `target_audience` column; rename `recipients` → `recipients_count`
+2. **Create `user_device_tokens` table** — with `last_used_at` column
+3. **Create `user_notification_preferences` table** — with `all_notifications_enabled` column and all channel/topic boolean columns defaulting to `true`
