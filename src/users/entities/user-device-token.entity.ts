@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -16,12 +17,13 @@ export class UserDeviceToken {
   id: number;
 
   @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
   @Column({ type: 'varchar', unique: true })
   token: string;
 
-  @Column({ type: 'enum', enum: ['android', 'ios'] })
+  @Column({ type: 'enum', enum: ['android', 'ios'], enumName: 'device_platform_enum' })
   platform: DevicePlatform;
 
   @Column({ name: 'last_used_at', type: 'timestamp', nullable: true })

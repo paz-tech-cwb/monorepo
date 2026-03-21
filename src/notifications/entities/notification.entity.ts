@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -43,7 +44,7 @@ export class Notification {
   @Column({ type: 'text' })
   message: string;
 
-  @Column({ type: 'enum', enum: ['events', 'announcements', 'life_group', 'academy', 'admin_alerts'] })
+  @Column({ type: 'enum', enum: ['events', 'announcements', 'life_group', 'academy', 'admin_alerts'], enumName: 'notification_category_enum' })
   category: NotificationCategory;
 
   @Column({ type: 'jsonb' })
@@ -58,6 +59,7 @@ export class Notification {
   @Column({
     type: 'enum',
     enum: ['pending', 'processing', 'scheduled', 'sent', 'failed'],
+    enumName: 'notification_status_enum',
     default: 'pending',
   })
   status: NotificationStatus;
@@ -69,6 +71,7 @@ export class Notification {
   sentAt: Date | null;
 
   @ManyToOne(() => User, { nullable: true, eager: false })
+  @JoinColumn({ name: 'created_by' })
   createdBy: User | null;
 
   @CreateDateColumn({ name: 'created_at' })

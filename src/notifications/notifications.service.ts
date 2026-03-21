@@ -21,8 +21,8 @@ export class NotificationsService {
       title: notification.title,
       message: notification.message,
       channels: notification.channels,
-      target_audience: notification.targetAudience,
-      recipients: notification.recipients,
+      segment: notification.segment,
+      recipients_count: notification.recipientsCount,
       status: notification.status,
       sent_at: notification.sentAt,
     };
@@ -34,8 +34,8 @@ export class NotificationsService {
         title: dto.title,
         message: dto.message,
         channels: dto.channels,
-        targetAudience: dto.target_audience,
-        recipients: 0,
+        segment: { type: 'all' },
+        recipientsCount: 0,
         status: 'sent',
         sentAt: new Date(),
       });

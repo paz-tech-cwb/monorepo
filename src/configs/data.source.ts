@@ -50,6 +50,6 @@ export const AppDataSource = new DataSource({
     UserNotificationPreferences,
   ],
   migrations: ['dist/database/migrations/*.js'],
-  synchronize: process.env.DB_SYNCHRONIZE === 'false',
+  synchronize: process.env.DB_SYNCHRONIZE === 'true',
   logging: process.env.DB_LOGGING === 'true',
 });
