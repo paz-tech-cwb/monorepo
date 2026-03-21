@@ -16,6 +16,8 @@ import { Sector } from '../sectors/entities/sector.entity';
 import { LifeGroup } from '../life-groups/entities/life-group.entity';
 import { MeetingReport } from '../meeting-reports/entities/meeting-report.entity';
 import { Conversion } from '../conversions/entities/conversion.entity';
+import { UserDeviceToken } from '../users/entities/user-device-token.entity';
+import { UserNotificationPreferences } from '../users/entities/user-notification-preferences.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -44,6 +46,8 @@ const config: DataSourceOptions = {
     LifeGroup,
     MeetingReport,
     Conversion,
+    UserDeviceToken,
+    UserNotificationPreferences,
   ],
   migrations: ['dist/migrations/*.js'],
   synchronize: process.env.DB_SYNCHRONIZE === 'false',

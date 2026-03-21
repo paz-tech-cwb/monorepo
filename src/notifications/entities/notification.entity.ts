@@ -2,9 +2,35 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { User } from '../../users/entities/user.entity';
+
+export type NotificationCategory =
+  | 'events'
+  | 'announcements'
+  | 'life_group'
+  | 'academy'
+  | 'admin_alerts';
+
+export type NotificationStatus =
+  | 'pending'
+  | 'processing'
+  | 'scheduled'
+  | 'sent'
+  | 'failed';
+
+export interface NotificationSegment {
+  type: 'all' | 'filtered';
+  filters?: {
+    roles?: string[];
+    sector_ids?: number[];
+    life_group_ids?: number[];
+    status?: 'active' | 'inactive';
+  };
+}
 
 @Entity('notifications')
 export class Notification {
@@ -17,20 +43,33 @@ export class Notification {
   @Column({ type: 'text' })
   message: string;
 
+  @Column({ type: 'enum', enum: ['events', 'announcements', 'life_group', 'academy', 'admin_alerts'] })
+  category: NotificationCategory;
+
   @Column({ type: 'jsonb' })
   channels: string[];
 
-  @Column({ name: 'target_audience', type: 'varchar', length: 100 })
-  targetAudience: string;
+  @Column({ type: 'jsonb' })
+  segment: NotificationSegment;
 
-  @Column({ type: 'int', default: 0 })
-  recipients: number;
+  @Column({ name: 'recipients_count', type: 'int', default: 0 })
+  recipientsCount: number;
 
-  @Column({ type: 'varchar', length: 20, default: 'pending' })
-  status: string;
+  @Column({
+    type: 'enum',
+    enum: ['pending', 'processing', 'scheduled', 'sent', 'failed'],
+    default: 'pending',
+  })
+  status: NotificationStatus;
+
+  @Column({ name: 'scheduled_at', type: 'timestamp', nullable: true })
+  scheduledAt: Date | null;
 
   @Column({ name: 'sent_at', type: 'timestamp', nullable: true })
   sentAt: Date | null;
+
+  @ManyToOne(() => User, { nullable: true, eager: false })
+  createdBy: User | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
