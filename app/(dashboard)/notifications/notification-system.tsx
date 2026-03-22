@@ -180,7 +180,18 @@ export function NotificationSystem() {
       segment: item.segment,
     })
     setScheduleEnabled(false)
-    setFilters([])
+
+    // Rebuild filter pills from the duplicated segment
+    const rebuilt: Array<{ type: string; value: string }> = []
+    if (item.segment.type === 'filtered' && item.segment.filters) {
+      const { roles, sector_ids, life_group_ids, status } = item.segment.filters
+      roles?.forEach(r => rebuilt.push({ type: 'role', value: r }))
+      sector_ids?.forEach(id => rebuilt.push({ type: 'sector', value: String(id) }))
+      life_group_ids?.forEach(id => rebuilt.push({ type: 'life_group', value: String(id) }))
+      if (status) rebuilt.push({ type: 'status', value: status })
+    }
+    setFilters(rebuilt)
+
     setActiveTab('compose')
     toast.info('Notificação duplicada para edição')
   }
