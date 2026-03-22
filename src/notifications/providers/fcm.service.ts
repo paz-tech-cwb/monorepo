@@ -8,7 +8,7 @@ export class FcmService implements OnModuleInit {
 
   constructor(private readonly deviceTokensService: UserDeviceTokensService) {}
 
-  onModuleInit() {
+  onModuleInit(): void {
     if (!admin.apps.length) {
       admin.initializeApp({
         credential: admin.credential.cert({

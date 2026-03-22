@@ -1,9 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
-import twilio from 'twilio';
+import twilio, { Twilio } from 'twilio';
 
 @Injectable()
 export class SmsService {
   private readonly logger = new Logger(SmsService.name);
+  private readonly client: Twilio;
+
+  constructor() {
+    this.client = twilio(
+      process.env.TWILIO_ACCOUNT_SID,
+      process.env.TWILIO_AUTH_TOKEN,
+    );
+  }
 
   async sendToUser(
     phoneNumber: string | null,
@@ -11,11 +19,7 @@ export class SmsService {
   ): Promise<boolean> {
     if (!phoneNumber) return false;
     try {
-      const client = twilio(
-        process.env.TWILIO_ACCOUNT_SID,
-        process.env.TWILIO_AUTH_TOKEN,
-      );
-      await client.messages.create({
+      await this.client.messages.create({
         body: `${payload.title}\n\n${payload.body}`,
         from: process.env.TWILIO_FROM_NUMBER,
         to: phoneNumber,

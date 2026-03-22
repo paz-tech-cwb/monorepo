@@ -33,7 +33,12 @@ export class WhatsAppService {
           }),
         },
       );
-      return res.ok;
+      if (!res.ok) {
+        const body = await res.text();
+        this.logger.error(`WhatsApp send failed to ${phoneNumber}: HTTP ${res.status} — ${body}`);
+        return false;
+      }
+      return true;
     } catch (err: unknown) {
       this.logger.error(`WhatsApp send failed to ${phoneNumber}: ${(err as Error).message}`);
       return false;

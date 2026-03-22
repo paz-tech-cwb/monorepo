@@ -4,7 +4,7 @@ import { Resend } from 'resend';
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private resend: Resend;
+  private readonly resend: Resend;
 
   constructor() {
     this.resend = new Resend(process.env.RESEND_API_KEY);
