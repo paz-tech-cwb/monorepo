@@ -4,6 +4,19 @@ import { EntityManager } from 'typeorm';
 import { UserNotificationPreferences } from './entities/user-notification-preferences.entity';
 import { UpdateNotificationPreferencesDto } from './dto/update-notification-preferences.dto';
 
+export interface NotificationPreferencesResponse {
+  all_notifications_enabled: boolean;
+  push_enabled: boolean;
+  email_enabled: boolean;
+  sms_enabled: boolean;
+  whatsapp_enabled: boolean;
+  events_enabled: boolean;
+  announcements_enabled: boolean;
+  life_group_enabled: boolean;
+  academy_enabled: boolean;
+  admin_alerts_enabled: boolean;
+}
+
 @Injectable()
 export class UserNotificationPreferencesService {
   constructor(
@@ -46,7 +59,7 @@ export class UserNotificationPreferencesService {
     return this.entityManager.save(prefs);
   }
 
-  toResponse(prefs: UserNotificationPreferences) {
+  toResponse(prefs: UserNotificationPreferences): NotificationPreferencesResponse {
     return {
       all_notifications_enabled: prefs.allNotificationsEnabled,
       push_enabled: prefs.pushEnabled,

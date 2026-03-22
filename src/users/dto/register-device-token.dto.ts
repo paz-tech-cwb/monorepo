@@ -1,5 +1,6 @@
 import { IsIn, IsString, IsNotEmpty } from 'class-validator';
 import { Expose } from 'class-transformer';
+import { DevicePlatform } from '../entities/user-device-token.entity';
 
 export class RegisterDeviceTokenDto {
   @Expose()
@@ -9,5 +10,5 @@ export class RegisterDeviceTokenDto {
 
   @Expose()
   @IsIn(['android', 'ios'])
-  platform: 'android' | 'ios';
+  platform: DevicePlatform;
 }
