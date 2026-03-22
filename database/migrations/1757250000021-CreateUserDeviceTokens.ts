@@ -5,10 +5,13 @@ export class CreateUserDeviceTokens1757250000021 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      CREATE TYPE "device_platform_enum" AS ENUM ('android', 'ios')
+      DO $$ BEGIN
+        CREATE TYPE "device_platform_enum" AS ENUM ('android', 'ios');
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$
     `);
     await queryRunner.query(`
-      CREATE TABLE "user_device_tokens" (
+      CREATE TABLE IF NOT EXISTS "user_device_tokens" (
         "id" SERIAL PRIMARY KEY,
         "user_id" integer NOT NULL,
         "token" varchar NOT NULL,
@@ -22,7 +25,7 @@ export class CreateUserDeviceTokens1757250000021 implements MigrationInterface {
       )
     `);
     await queryRunner.query(`
-      CREATE INDEX "IDX_user_device_tokens_user" ON "user_device_tokens" ("user_id")
+      CREATE INDEX IF NOT EXISTS "IDX_user_device_tokens_user" ON "user_device_tokens" ("user_id")
     `);
   }
 

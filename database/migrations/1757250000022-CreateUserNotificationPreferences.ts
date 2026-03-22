@@ -5,7 +5,7 @@ export class CreateUserNotificationPreferences1757250000022 implements Migration
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      CREATE TABLE "user_notification_preferences" (
+      CREATE TABLE IF NOT EXISTS "user_notification_preferences" (
         "id" SERIAL PRIMARY KEY,
         "user_id" integer NOT NULL,
         "all_notifications_enabled" boolean NOT NULL DEFAULT true,
