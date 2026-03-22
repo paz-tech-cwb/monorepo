@@ -4,6 +4,8 @@ import { MigrationInterface, QueryRunner } from "typeorm";
 export class InsertAnnouncementsData1757199750633 implements MigrationInterface {
 
     public async up(queryRunner: QueryRunner): Promise<void> {
+		const [{ count }] = await queryRunner.query(`SELECT COUNT(*)::int as count FROM "announcements"`);
+		if (count > 0) return;
 		await queryRunner.manager.insert(Announcement, [
 			{
 				imageUrl: "https://flutter.github.io/assets-for-api-docs/assets/material/content_based_color_scheme_1.png",

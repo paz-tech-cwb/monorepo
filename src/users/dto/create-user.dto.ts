@@ -1,21 +1,47 @@
+import { Expose } from 'class-transformer';
 import {
   IsString,
   IsOptional,
   IsEmail,
-  IsDate,
-  IsPhoneNumber,
+  IsDateString,
+  IsIn,
   IsNumber,
+  IsArray,
 } from 'class-validator';
+import { VALID_ROLE_SLUGS } from './update-user-role.dto';
 
 export class CreateUserDto {
-  @IsString({ message: 'Name must be a string.' })
+  @Expose()
+  @IsString()
   name: string;
 
-  @IsOptional()
-  @IsEmail({}, { message: 'Email must be a valid email address.' })
-  email?: string;
+  @Expose()
+  @IsEmail()
+  email: string;
 
+  @Expose()
   @IsOptional()
-  @IsNumber({}, { message: 'Role ID must be a number.' })
-  roleId?: number;
+  @IsString()
+  phone?: string;
+
+  @Expose()
+  @IsOptional()
+  @IsDateString()
+  birth_date?: string;
+
+  @Expose({ name: 'sector_id' })
+  @IsOptional()
+  @IsNumber()
+  sectorId?: number;
+
+  @Expose({ name: 'completed_courses' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  completedCourses?: string[];
+
+  @Expose()
+  @IsOptional()
+  @IsIn(VALID_ROLE_SLUGS)
+  role?: string;
 }

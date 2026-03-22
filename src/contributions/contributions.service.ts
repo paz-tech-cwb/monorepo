@@ -3,8 +3,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
 import { CreateContributionDto } from './dto/create-contribution.dto';
 import { UpdateContributionDto } from './dto/update-contribution.dto';
+import { ContributionResponseDto } from './dto/contribution-response.dto';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import { Contribution } from './entities/contribution.entity';
@@ -45,9 +47,10 @@ export class ContributionsService {
    * This action returns all contributions.
    * @returns
    */
-  async findAll(): Promise<Contribution[]> {
+  async findAll(): Promise<ContributionResponseDto[]> {
     try {
-      return await this.entityManager.find(Contribution);
+      const contributions = await this.entityManager.find(Contribution);
+      return plainToInstance(ContributionResponseDto, contributions);
     } catch (error) {
       console.log('Error: ', error);
       throw new BadRequestException(
@@ -56,7 +59,7 @@ export class ContributionsService {
     }
   }
 
-  async findOne(id: number): Promise<Contribution> {
+  async findOne(id: number): Promise<ContributionResponseDto> {
     try {
       const contribution = await this.entityManager.findOne(Contribution, {
         where: { id },
@@ -66,25 +69,30 @@ export class ContributionsService {
         throw new NotFoundException(`Contribution with ID ${id} not found`);
       }
 
-      return contribution;
-    } catch (error) {
+      return plainToInstance(ContributionResponseDto, contribution);
+    } catch {
       throw new NotFoundException(`Contribution with ID ${id} not found`);
     }
   }
 
   async update(
     id: number,
-    updateAnnouncementDto: UpdateContributionDto,
-  ): Promise<Contribution> {
+    updateContributionDto: UpdateContributionDto,
+  ): Promise<ContributionResponseDto> {
     try {
-      const contribution = await this.findOne(id);
+      const contribution = await this.entityManager.findOne(Contribution, {
+        where: { id },
+      });
 
-      // merge new values
-      Object.assign(contribution, updateAnnouncementDto);
+      if (!contribution) {
+        throw new NotFoundException(`Contribution with ID ${id} not found`);
+      }
 
-      // save changes
-      return await this.entityManager.save(Contribution, contribution);
-    } catch (error) {
+      Object.assign(contribution, updateContributionDto);
+
+      const saved = await this.entityManager.save(Contribution, contribution);
+      return plainToInstance(ContributionResponseDto, saved);
+    } catch {
       throw new NotFoundException(
         `It was not possible to update the Contribution.`,
       );
@@ -92,7 +100,14 @@ export class ContributionsService {
   }
 
   async remove(id: number): Promise<void> {
-    const contribution = await this.findOne(id);
+    const contribution = await this.entityManager.findOne(Contribution, {
+      where: { id },
+    });
+
+    if (!contribution) {
+      throw new NotFoundException(`Contribution with ID ${id} not found`);
+    }
+
     await this.entityManager.remove(Contribution, contribution);
   }
 }

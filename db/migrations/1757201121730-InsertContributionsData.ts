@@ -4,6 +4,8 @@ import { MigrationInterface, QueryRunner } from "typeorm";
 export class InsertContributionsData1757201121730 implements MigrationInterface {
 
     public async up(queryRunner: QueryRunner): Promise<void> {
+		const [{ count }] = await queryRunner.query(`SELECT COUNT(*)::int as count FROM "contributions"`);
+		if (count > 0) return;
 		await queryRunner.manager.insert(Contribution, [
 			{
 				bankName: "Banco do Brasil",

@@ -6,12 +6,17 @@ import {
   Patch,
   Param,
   Delete,
+  SerializeOptions,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 
 @Controller('events')
+@SerializeOptions({
+  strategy: 'exposeAll',
+  excludeExtraneousValues: false,
+})
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 

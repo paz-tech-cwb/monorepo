@@ -6,12 +6,17 @@ import {
   Patch,
   Param,
   Delete,
+  SerializeOptions,
 } from '@nestjs/common';
 import { AddressesService } from './addresses.service';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
 
 @Controller('addresses')
+@SerializeOptions({
+  strategy: 'exposeAll',
+  excludeExtraneousValues: false,
+})
 export class AddressesController {
   constructor(private readonly addressesService: AddressesService) {}
 

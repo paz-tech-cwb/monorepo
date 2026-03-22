@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  SerializeOptions,
 } from '@nestjs/common';
 import { AnnouncementsService } from './announcements.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
@@ -13,6 +14,10 @@ import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
 import { Announcement } from './entities/announcement.entity';
 
 @Controller('announcements')
+@SerializeOptions({
+  strategy: 'exposeAll',
+  excludeExtraneousValues: false,
+})
 export class AnnouncementsController {
   constructor(private readonly announcementsService: AnnouncementsService) {}
 

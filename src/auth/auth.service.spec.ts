@@ -47,6 +47,7 @@ describe('AuthService', () => {
           ACCESS_TOKEN_SECRET: ACCESS_SECRET,
           REFRESH_TOKEN_SECRET: REFRESH_SECRET,
           GOOGLE_CLIENT_ID: GOOGLE_CLIENT_ID,
+          FIREBASE_PROJECT_ID: 'test-firebase-project',
         };
         if (!map[key]) throw new Error(`Missing config key: ${key}`);
         return map[key];
@@ -103,8 +104,8 @@ describe('AuthService', () => {
       const result = await service.socialLogin('google', 'fake-google-token');
 
       expect(result.user.email).toBe(googlePayload.email);
-      expect(result.accessToken).toBeDefined();
-      expect(result.refreshToken).toBeDefined();
+      expect(result.access_token).toBeDefined();
+      expect(result.refresh_token).toBeDefined();
       expect(userRepo.create).toHaveBeenCalled();
       expect(userRepo.save).toHaveBeenCalled();
     });
@@ -185,8 +186,8 @@ describe('AuthService', () => {
       const result = await service.refreshTokens(validToken);
 
       expect(account.isRevoked).toBe(true);
-      expect(result.accessToken).toBeDefined();
-      expect(result.refreshToken).toBeDefined();
+      expect(result.access_token).toBeDefined();
+      expect(result.refresh_token).toBeDefined();
       expect(result.user.id).toBe(mockUser.id);
     });
 

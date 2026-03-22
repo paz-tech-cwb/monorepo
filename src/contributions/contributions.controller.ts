@@ -10,7 +10,7 @@ import {
 import { ContributionsService } from './contributions.service';
 import { CreateContributionDto } from './dto/create-contribution.dto';
 import { UpdateContributionDto } from './dto/update-contribution.dto';
-import { Contribution } from './entities/contribution.entity';
+import { ContributionResponseDto } from './dto/contribution-response.dto';
 
 @Controller('contributions')
 export class ContributionsController {
@@ -22,12 +22,12 @@ export class ContributionsController {
   }
 
   @Get()
-  findAll(): Promise<Contribution[]> {
+  findAll(): Promise<ContributionResponseDto[]> {
     return this.contributionsService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Promise<Contribution> {
+  findOne(@Param('id') id: string): Promise<ContributionResponseDto> {
     return this.contributionsService.findOne(+id);
   }
 
@@ -35,12 +35,12 @@ export class ContributionsController {
   update(
     @Param('id') id: string,
     @Body() updateContributionDto: UpdateContributionDto,
-  ): Promise<Contribution> {
+  ): Promise<ContributionResponseDto> {
     return this.contributionsService.update(+id, updateContributionDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id') id: string): Promise<void> {
     return this.contributionsService.remove(+id);
   }
 }

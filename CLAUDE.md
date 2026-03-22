@@ -55,7 +55,19 @@ docker compose up -d
 - `entities/<name>.entity.ts` — TypeORM entity
 - `dto/create-<name>.dto.ts` / `dto/update-<name>.dto.ts` — request DTOs
 
-**Feature modules:** auth, users, roles, addresses, announcements, contributions, events, home
+**Feature modules:** auth, users, roles, addresses, announcements, contributions, events, home, areas, sectors, life-groups, meeting-reports, conversions
+
+**IMPORTANT — User Entity Architecture:**
+The `User` entity (`src/users/entities/user.entity.ts`) serves a dual purpose:
+1. **Authentication account** (email, picture, role, OAuth accounts)
+2. **Church member profile** (phoneNumber, birthDate, address, sector, lifeGroup, completedCourses)
+
+**DO NOT create a separate "Member" or "Members" entity.** The User entity already handles all member data. This architectural decision:
+- Prevents data duplication
+- Simplifies the codebase (one entity vs two)
+- Aligns with the reality that every church member needs a User account to authenticate
+
+When working with member data (registration, course completion, sector/life group assignment), use the existing `UsersService` and `/api/users` endpoints.
 
 **Database:**
 - TypeORM with PostgreSQL. Config in `src/configs/orm.config.ts` (used by the app) and `src/configs/data.source.ts` (used by TypeORM CLI for migrations).
@@ -80,6 +92,18 @@ docker compose up -d
 ## Entity Column Naming
 
 All entity properties MUST use `camelCase` with explicit `@Column({ name: 'snake_case' })` mapping. Some older entities (Announcement, Contribution, Event) still use `snake_case` properties directly — these should be migrated when touched. New entities and new columns must always follow the `camelCase` property + `snake_case` name mapping pattern.
+
+## snake_case vs camelCase — Convention
+
+`snake_case` is the **API JSON transport layer** convention only. It does not leak into internal TypeScript code:
+
+- **Entity properties**: always `camelCase` (e.g., `socialMedia`, `updatedAt`)
+- **Service / business logic code**: always `camelCase`
+- **Request DTOs** (`CreateXDto`, `UpdateXDto`): use `@Expose({ name: 'snake_case_key' })` to map incoming snake_case JSON body → camelCase TS properties
+- **Response DTOs** (`XResponseDto`): use `@Expose({ name: 'snake_case_key' })` to serialize camelCase TS properties → snake_case JSON response
+- **Controllers** that return plain objects already shaped in snake_case (via a `toResponse()` helper): annotate with `@SerializeOptions({ strategy: 'exposeAll', excludeExtraneousValues: false })` to bypass the global `excludeAll` serializer strategy
+
+Never name a TypeScript entity property or service variable in snake_case — keep all internal TypeScript code camelCase and let the DTO layer handle the boundary conversion.
 
 ## Security Conventions
 

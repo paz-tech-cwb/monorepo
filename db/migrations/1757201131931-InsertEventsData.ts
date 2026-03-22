@@ -4,6 +4,8 @@ import { MigrationInterface, QueryRunner } from "typeorm";
 export class InsertEventsData1757201131931 implements MigrationInterface {
 
     public async up(queryRunner: QueryRunner): Promise<void> {
+		const [{ count }] = await queryRunner.query(`SELECT COUNT(*)::int as count FROM "events"`);
+		if (count > 0) return;
 		await queryRunner.manager.insert(Event, [
 			{
 				title: "Power Night",
