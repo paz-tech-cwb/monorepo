@@ -16,13 +16,7 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
-import { NotificationSegment } from './entities/notification.entity';
-
-class ReachDto {
-  channels: string[];
-  segment: NotificationSegment;
-  category: string;
-}
+import { ReachDto } from './dto/reach.dto';
 
 @UseGuards(AuthGuard('jwt'))
 @SerializeOptions({ strategy: 'exposeAll', excludeExtraneousValues: false })

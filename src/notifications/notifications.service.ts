@@ -133,7 +133,7 @@ export class NotificationsService implements OnApplicationBootstrap {
     });
     const prefsMap = new Map(allPrefs.map((p) => [p.user.id, p]));
 
-    const CATEGORY_PREF_MAP: Record<string, string> = {
+    const CATEGORY_PREF_MAP: Record<string, keyof UserNotificationPreferences> = {
       events: 'eventsEnabled',
       announcements: 'announcementsEnabled',
       life_group: 'lifeGroupEnabled',
@@ -142,7 +142,7 @@ export class NotificationsService implements OnApplicationBootstrap {
     };
     const categoryPrefKey = CATEGORY_PREF_MAP[category];
 
-    const CHANNEL_PREF_MAP: Record<string, string> = {
+    const CHANNEL_PREF_MAP: Record<string, keyof UserNotificationPreferences> = {
       push: 'pushEnabled',
       email: 'emailEnabled',
       sms: 'smsEnabled',
@@ -158,11 +158,11 @@ export class NotificationsService implements OnApplicationBootstrap {
     for (const userId of userIds) {
       const prefs = prefsMap.get(userId);
       if (prefs && !prefs.allNotificationsEnabled) continue;
-      if (prefs && categoryPrefKey && !(prefs as unknown as Record<string, boolean>)[categoryPrefKey]) continue;
+      if (prefs && categoryPrefKey && !prefs[categoryPrefKey]) continue;
 
       for (const ch of channels) {
         const chPrefKey = CHANNEL_PREF_MAP[ch];
-        if (prefs && chPrefKey && !(prefs as unknown as Record<string, boolean>)[chPrefKey]) {
+        if (prefs && chPrefKey && !prefs[chPrefKey]) {
           excluded[ch] = (excluded[ch] ?? 0) + 1;
         } else {
           by_channel[ch] = (by_channel[ch] ?? 0) + 1;
@@ -185,7 +185,7 @@ export class NotificationsService implements OnApplicationBootstrap {
     setTimeout(() => this.runDispatch(notification), Math.max(delay, 0));
   }
 
-  async resolveSegment(segment: NotificationSegment): Promise<User[]> {
+  private async resolveSegment(segment: NotificationSegment): Promise<User[]> {
     // role is a ManyToOne relation to Role entity with a slug field
     const qb: SelectQueryBuilder<User> = this.entityManager
       .createQueryBuilder(User, 'u')
@@ -213,7 +213,7 @@ export class NotificationsService implements OnApplicationBootstrap {
     return qb.getMany();
   }
 
-  toResponse(n: Notification) {
+  private toResponse(n: Notification) {
     return {
       id: n.id,
       title: n.title,

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getEntityManagerToken } from '@nestjs/typeorm';
-import { UnprocessableEntityException } from '@nestjs/common';
+import { ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { NotificationDispatchService } from './notification-dispatch.service';
 
@@ -68,5 +68,34 @@ describe('NotificationsService', () => {
 
     await service.create(dto, 1);
     expect(mockEntityManager.save).toHaveBeenCalled();
+  });
+
+  it('findOne() throws NotFoundException when not found', async () => {
+    mockEntityManager.findOne.mockResolvedValue(null);
+    await expect(service.findOne(99)).rejects.toThrow(NotFoundException);
+  });
+
+  it('remove() throws ConflictException when status is sent', async () => {
+    mockEntityManager.findOne.mockResolvedValue({ id: 1, status: 'sent' });
+    await expect(service.remove(1)).rejects.toThrow(ConflictException);
+  });
+
+  it('remove() throws NotFoundException when notification not found', async () => {
+    mockEntityManager.findOne.mockResolvedValue(null);
+    await expect(service.remove(99)).rejects.toThrow(NotFoundException);
+  });
+
+  it('getReach() returns zero counts for empty segment', async () => {
+    const mockQb = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    };
+    mockEntityManager.createQueryBuilder.mockReturnValue(mockQb);
+
+    const result = await service.getReach({ type: 'all' }, ['push', 'email'], 'announcements');
+    expect(result.total).toBe(0);
+    expect(result.by_channel.push).toBe(0);
+    expect(result.by_channel.email).toBe(0);
   });
 });

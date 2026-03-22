@@ -12,14 +12,14 @@ import {
 import { Expose, Type } from 'class-transformer';
 import { NotificationCategory } from '../entities/notification.entity';
 
-class SegmentFiltersDto {
+export class SegmentFiltersDto {
   @IsOptional() @IsArray() roles?: string[];
   @IsOptional() @IsArray() sector_ids?: number[];
   @IsOptional() @IsArray() life_group_ids?: number[];
   @IsOptional() @IsIn(['active', 'inactive']) status?: 'active' | 'inactive';
 }
 
-class SegmentDto {
+export class SegmentDto {
   @IsIn(['all', 'filtered'])
   type: 'all' | 'filtered';
 
