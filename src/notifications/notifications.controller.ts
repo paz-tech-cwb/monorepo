@@ -1,44 +1,67 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Param,
+  Controller,
   Delete,
-  UseGuards,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Post,
   SerializeOptions,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { Roles } from 'src/common/decorators/roles.decorator';
 import { NotificationsService } from './notifications.service';
-import { SendNotificationDto } from './dto/send-notification.dto';
+import { CreateNotificationDto } from './dto/create-notification.dto';
+import { NotificationSegment } from './entities/notification.entity';
+
+class ReachDto {
+  channels: string[];
+  segment: NotificationSegment;
+  category: string;
+}
 
 @UseGuards(AuthGuard('jwt'))
-@SerializeOptions({
-  strategy: 'exposeAll',
-  excludeExtraneousValues: false,
-})
+@SerializeOptions({ strategy: 'exposeAll', excludeExtraneousValues: false })
 @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Post()
-  send(@Body() sendNotificationDto: SendNotificationDto) {
-    return this.notificationsService.send(sendNotificationDto);
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'pastor')
+  create(@Body() dto: CreateNotificationDto, @Request() req: { user: { id: number } }) {
+    return this.notificationsService.create(dto, req.user.id);
+  }
+
+  // NOTE: 'reach' must be declared before ':id' to prevent route collision
+  @Post('reach')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'pastor')
+  getReach(@Body() dto: ReachDto) {
+    return this.notificationsService.getReach(dto.segment, dto.channels, dto.category);
   }
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'pastor')
   findAll() {
     return this.notificationsService.findAll();
   }
 
   @Get(':id')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'pastor')
   findOne(@Param('id') id: string) {
     return this.notificationsService.findOne(+id);
   }
 
   @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'pastor')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
     return this.notificationsService.remove(+id);
