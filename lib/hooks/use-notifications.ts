@@ -33,12 +33,18 @@ export function useCreateNotification() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       trackEvent('notification_created', { notification_id: notification.id })
     },
+    onError: () => {
+      console.error('Failed to create notification')
+    },
   })
 }
 
 export function useNotificationReach() {
   return useMutation({
     mutationFn: (data: NotificationReachRequest) => notificationsApi.getReach(data),
+    onError: () => {
+      console.error('Failed to fetch notification reach')
+    },
   })
 }
 
@@ -49,6 +55,9 @@ export function useDeleteNotification() {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       trackEvent('notification_deleted', { notification_id: id })
+    },
+    onError: () => {
+      console.error('Failed to delete notification')
     },
   })
 }

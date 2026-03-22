@@ -1,5 +1,7 @@
 // admin-ui/lib/api/types/notifications.ts
 
+export type NotificationChannel = 'push' | 'email' | 'sms' | 'whatsapp'
+
 export type NotificationCategory =
   | 'events'
   | 'announcements'
@@ -29,7 +31,7 @@ export interface Notification {
   title: string
   message: string
   category: NotificationCategory
-  channels: string[]
+  channels: NotificationChannel[]
   segment: NotificationSegment
   recipients_count: number
   status: NotificationStatus
@@ -43,13 +45,13 @@ export interface CreateNotificationRequest {
   title: string
   message: string
   category: NotificationCategory
-  channels: string[]
+  channels: NotificationChannel[]
   segment: NotificationSegment
   scheduled_at?: string | null
 }
 
 export interface NotificationReachRequest {
-  channels: string[]
+  channels: NotificationChannel[]
   segment: NotificationSegment
   category: NotificationCategory
 }

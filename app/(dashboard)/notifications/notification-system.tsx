@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Bell, Mail, Phone, MessageSquare, Plus, Trash2, Copy, Send, Clock } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -25,7 +25,9 @@ import { lifeGroupsApi } from '@/lib/api/endpoints/life-groups'
 import type {
   CreateNotificationRequest,
   NotificationCategory,
+  NotificationChannel,
   NotificationSegment,
+  NotificationStatus,
   Notification,
 } from '@/lib/api/types'
 
@@ -53,7 +55,7 @@ const ROLES = [
   { value: 'admin', label: 'Admin' },
 ]
 
-const STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+const STATUS_LABELS: Record<NotificationStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   pending: { label: 'Pendente', variant: 'secondary' },
   processing: { label: 'Enviando', variant: 'default' },
   scheduled: { label: 'Agendado', variant: 'outline' },
@@ -78,6 +80,8 @@ export function NotificationSystem() {
   const [filters, setFilters] = useState<Array<{ type: string; value: string }>>([])
   const [newFilterType, setNewFilterType] = useState('')
   const [newFilterValue, setNewFilterValue] = useState('')
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const isDirty = useRef(false)
 
   const { data: notifications = [], isLoading: notificationsLoading } = useNotifications()
   const { data: sectors = [] } = useQuery({ queryKey: ['sectors'], queryFn: () => sectorsApi.getAll() })
@@ -89,6 +93,7 @@ export function NotificationSystem() {
 
   // Rebuild segment when filters change
   useEffect(() => {
+    isDirty.current = true
     if (filters.length === 0) {
       setForm(f => ({ ...f, segment: { type: 'all' } }))
       return
@@ -112,14 +117,16 @@ export function NotificationSystem() {
       segment: form.segment,
       category: form.category,
     })
-  }, [form.channels, form.segment, form.category]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [form.channels, form.segment, form.category, reachMutation.mutate])
 
   useEffect(() => {
+    if (!isDirty.current) return
     const timer = setTimeout(fetchReach, 500)
     return () => clearTimeout(timer)
   }, [fetchReach])
 
-  const toggleChannel = (ch: string) => {
+  const toggleChannel = (ch: NotificationChannel) => {
+    isDirty.current = true
     setForm(f => ({
       ...f,
       channels: f.channels.includes(ch)
@@ -156,11 +163,16 @@ export function NotificationSystem() {
       toast.error('Selecione pelo menos um canal')
       return
     }
-    const payload: CreateNotificationRequest = {
-      ...form,
-      scheduled_at: scheduleEnabled && scheduleDate && scheduleTime
-        ? new Date(`${scheduleDate}T${scheduleTime}`).toISOString()
-        : null,
+    const payload: CreateNotificationRequest = { ...form }
+    if (scheduleEnabled && scheduleDate && scheduleTime) {
+      const scheduledAt = new Date(`${scheduleDate}T${scheduleTime}`)
+      if (scheduledAt <= new Date()) {
+        toast.error('A data de agendamento deve ser no futuro')
+        return
+      }
+      payload.scheduled_at = scheduledAt.toISOString()
+    } else {
+      payload.scheduled_at = null
     }
     try {
       await createMutation.mutateAsync(payload)
@@ -197,11 +209,14 @@ export function NotificationSystem() {
   }
 
   const handleDelete = async (id: number) => {
+    setDeletingId(id)
     try {
       await deleteMutation.mutateAsync(id)
       toast.success('Notificação removida')
     } catch {
       toast.error('Erro ao remover notificação')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -237,7 +252,10 @@ export function NotificationSystem() {
                         <button
                           key={cat.value}
                           type="button"
-                          onClick={() => setForm(f => ({ ...f, category: cat.value }))}
+                          onClick={() => {
+                            isDirty.current = true
+                            setForm(f => ({ ...f, category: cat.value }))
+                          }}
                           className="focus:outline-none"
                         >
                           <Badge
@@ -316,9 +334,13 @@ export function NotificationSystem() {
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {filters.map((f, i) => (
-                        <Badge key={i} variant="secondary" className="gap-1">
+                        <Badge key={`${f.type}-${f.value}`} variant="secondary" className="gap-1">
                           {f.type}: {f.value}
-                          <button onClick={() => removeFilter(i)} className="ml-1 hover:text-destructive">×</button>
+                          <button
+                            onClick={() => removeFilter(i)}
+                            className="ml-1 hover:text-destructive"
+                            aria-label={`Remover filtro ${f.type}: ${f.value}`}
+                          >×</button>
                         </Badge>
                       ))}
                     </div>
@@ -400,12 +422,12 @@ export function NotificationSystem() {
                   <CardContent>
                     <div className="flex gap-3">
                       <div className="space-y-2 flex-1">
-                        <Label>Data</Label>
-                        <Input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} />
+                        <Label htmlFor="schedule-date">Data</Label>
+                        <Input id="schedule-date" type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} />
                       </div>
                       <div className="space-y-2 flex-1">
-                        <Label>Hora</Label>
-                        <Input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} />
+                        <Label htmlFor="schedule-time">Hora</Label>
+                        <Input id="schedule-time" type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} />
                       </div>
                     </div>
                   </CardContent>
@@ -463,7 +485,7 @@ export function NotificationSystem() {
                 onClick={handleSubmit}
                 disabled={createMutation.isPending}
               >
-                {scheduleEnabled ? <><Clock size={16} className="mr-2" />Agendar</> : <><Send size={16} className="mr-2" />Enviar</>}
+                {scheduleEnabled ? <><Clock size={16} className="mr-2" aria-hidden="true" />Agendar</> : <><Send size={16} className="mr-2" aria-hidden="true" />Enviar</>}
               </Button>
 
               <Button variant="outline" className="w-full" onClick={resetForm}>
@@ -512,7 +534,7 @@ export function NotificationSystem() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDelete(n.id)}
-                              disabled={deleteMutation.isPending}
+                              disabled={deletingId === n.id}
                               title="Remover"
                               className="text-destructive hover:text-destructive"
                             >
