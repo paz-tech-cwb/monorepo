@@ -1,11 +1,14 @@
-"use client"
+'use client'
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { notificationsApi } from "@/lib/api/endpoints/notifications"
-import type { SendNotificationRequest } from "@/lib/api/types"
-import { trackEvent } from "@/lib/firebase/analytics"
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { notificationsApi } from '@/lib/api/endpoints/notifications'
+import type {
+  CreateNotificationRequest,
+  NotificationReachRequest,
+} from '@/lib/api/types'
+import { trackEvent } from '@/lib/firebase/analytics'
 
-const QUERY_KEY = ["notifications"]
+const QUERY_KEY = ['notifications']
 
 export function useNotifications() {
   return useQuery({
@@ -22,29 +25,30 @@ export function useNotification(id: number) {
   })
 }
 
-export function useSendNotification() {
+export function useCreateNotification() {
   const queryClient = useQueryClient()
-
   return useMutation({
-    mutationFn: (data: SendNotificationRequest) =>
-      notificationsApi.send(data),
-    onSuccess: (newNotification) => {
+    mutationFn: (data: CreateNotificationRequest) => notificationsApi.create(data),
+    onSuccess: (notification) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
-      trackEvent("notification_sent", {
-        notification_id: newNotification.id,
-      })
+      trackEvent('notification_created', { notification_id: notification.id })
     },
+  })
+}
+
+export function useNotificationReach() {
+  return useMutation({
+    mutationFn: (data: NotificationReachRequest) => notificationsApi.getReach(data),
   })
 }
 
 export function useDeleteNotification() {
   const queryClient = useQueryClient()
-
   return useMutation({
     mutationFn: (id: number) => notificationsApi.delete(id),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
-      trackEvent("notification_deleted", { notification_id: id })
+      trackEvent('notification_deleted', { notification_id: id })
     },
   })
 }
