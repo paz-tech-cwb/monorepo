@@ -10,7 +10,7 @@ import {
   ArrayMinSize,
 } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
-import { NotificationCategory } from '../entities/notification.entity';
+import type { NotificationCategory } from '../entities/notification.entity';
 
 export class SegmentFiltersDto {
   @IsOptional() @IsArray() roles?: string[];

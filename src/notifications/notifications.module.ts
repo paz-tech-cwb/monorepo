@@ -6,20 +6,11 @@ import { FcmService } from './providers/fcm.service';
 import { EmailService } from './providers/email.service';
 import { SmsService } from './providers/sms.service';
 import { WhatsAppService } from './providers/whatsapp.service';
-import { UserDeviceTokensService } from '../users/user-device-tokens.service';
-import { UserNotificationPreferencesService } from '../users/user-notification-preferences.service';
+import { UsersModule } from '../users/users.module';
 
 @Module({
+  imports: [UsersModule],
   controllers: [NotificationsController],
-  providers: [
-    NotificationsService,
-    NotificationDispatchService,
-    FcmService,
-    EmailService,
-    SmsService,
-    WhatsAppService,
-    UserDeviceTokensService,
-    UserNotificationPreferencesService,
-  ],
+  providers: [NotificationsService, NotificationDispatchService, FcmService, EmailService, SmsService, WhatsAppService],
 })
 export class NotificationsModule {}
