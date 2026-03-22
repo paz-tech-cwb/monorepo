@@ -28,7 +28,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Bell, X, ArrowRight, Users } from "lucide-react"
 import { useMemberJourneyFeed, useMemberJourneyStats } from "@/lib/hooks/use-member-journey"
-import { useSendNotification } from "@/lib/hooks/use-notifications"
+import { useCreateNotification } from "@/lib/hooks/use-notifications"
 import { JOURNEY_STAGES } from "@/lib/api/types/member-journey"
 import type { JourneyStageId, JourneyActivity } from "@/lib/api/types"
 
@@ -63,7 +63,7 @@ interface NotificationDialogProps {
 }
 
 function NotificationDialog({ open, onOpenChange, stageLabel, memberCount }: NotificationDialogProps) {
-  const sendMutation = useSendNotification()
+  const sendMutation = useCreateNotification()
   const [title, setTitle] = useState(`Mensagem para membros em: ${stageLabel}`)
   const [message, setMessage] = useState("")
 
@@ -76,8 +76,9 @@ function NotificationDialog({ open, onOpenChange, stageLabel, memberCount }: Not
       await sendMutation.mutateAsync({
         title,
         message,
+        category: "announcements",
         channels: ["push"],
-        target_audience: "all",
+        segment: { type: "all" },
       })
       toast.success("Notificação enviada!")
       onOpenChange(false)

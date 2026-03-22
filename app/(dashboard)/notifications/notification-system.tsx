@@ -1,406 +1,523 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { toast } from "sonner"
-import { format } from "date-fns"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useState, useEffect, useCallback } from 'react'
+import { Bell, Mail, Phone, MessageSquare, Plus, Trash2, Copy, Send, Clock } from 'lucide-react'
+import { toast } from 'sonner'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { Label } from '@/components/ui/label'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Mail, MessageSquare, Phone, Bell, Send, Clock, CheckCircle, XCircle, Trash2 } from "lucide-react"
-import { useNotifications, useSendNotification, useDeleteNotification } from "@/lib/hooks/use-notifications"
-import { StatsCardSkeleton, TableSkeleton } from "@/components/ui/skeleton-components"
-import type { Notification as NotificationItem } from "@/lib/api/types"
+  useNotifications,
+  useCreateNotification,
+  useNotificationReach,
+  useDeleteNotification,
+} from '@/lib/hooks/use-notifications'
+import { useQuery } from '@tanstack/react-query'
+import { sectorsApi } from '@/lib/api/endpoints/sectors'
+import { lifeGroupsApi } from '@/lib/api/endpoints/life-groups'
+import type {
+  CreateNotificationRequest,
+  NotificationCategory,
+  NotificationSegment,
+  Notification,
+} from '@/lib/api/types'
+
+const CATEGORIES: { value: NotificationCategory; label: string }[] = [
+  { value: 'announcements', label: 'Anúncios' },
+  { value: 'events', label: 'Eventos' },
+  { value: 'life_group', label: 'Célula' },
+  { value: 'academy', label: 'Academia' },
+  { value: 'admin_alerts', label: 'Alertas Admin' },
+]
+
+const CHANNELS = [
+  { value: 'push', label: 'Push', sub: 'Android & iOS', icon: Bell },
+  { value: 'email', label: 'Email', sub: 'via Resend', icon: Mail },
+  { value: 'sms', label: 'SMS', sub: 'via Twilio', icon: Phone },
+  { value: 'whatsapp', label: 'WhatsApp', sub: 'via Meta API', icon: MessageSquare },
+] as const
+
+const ROLES = [
+  { value: 'member', label: 'Membro' },
+  { value: 'life_group_leader', label: 'Líder de Célula' },
+  { value: 'sector_leader', label: 'Líder de Setor' },
+  { value: 'area_leader', label: 'Líder de Área' },
+  { value: 'pastor', label: 'Pastor' },
+  { value: 'admin', label: 'Admin' },
+]
+
+const STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+  pending: { label: 'Pendente', variant: 'secondary' },
+  processing: { label: 'Enviando', variant: 'default' },
+  scheduled: { label: 'Agendado', variant: 'outline' },
+  sent: { label: 'Enviado', variant: 'default' },
+  failed: { label: 'Falhou', variant: 'destructive' },
+}
+
+const EMPTY_FORM: CreateNotificationRequest = {
+  title: '',
+  message: '',
+  category: 'announcements',
+  channels: ['push'],
+  segment: { type: 'all' },
+}
 
 export function NotificationSystem() {
-  const { data: notifications = [], isLoading, error } = useNotifications()
-  const sendMutation = useSendNotification()
+  const [activeTab, setActiveTab] = useState<'compose' | 'history'>('compose')
+  const [form, setForm] = useState<CreateNotificationRequest>(EMPTY_FORM)
+  const [scheduleEnabled, setScheduleEnabled] = useState(false)
+  const [scheduleDate, setScheduleDate] = useState('')
+  const [scheduleTime, setScheduleTime] = useState('')
+  const [filters, setFilters] = useState<Array<{ type: string; value: string }>>([])
+  const [newFilterType, setNewFilterType] = useState('')
+  const [newFilterValue, setNewFilterValue] = useState('')
+
+  const { data: notifications = [], isLoading: notificationsLoading } = useNotifications()
+  const { data: sectors = [] } = useQuery({ queryKey: ['sectors'], queryFn: () => sectorsApi.getAll() })
+  const { data: lifeGroups = [] } = useQuery({ queryKey: ['life-groups'], queryFn: () => lifeGroupsApi.getAll() })
+
+  const createMutation = useCreateNotification()
+  const reachMutation = useNotificationReach()
   const deleteMutation = useDeleteNotification()
 
-  const [notification, setNotification] = useState({
-    title: "",
-    message: "",
-    channels: [] as string[],
-    target_audience: "all",
-  })
-  const [deletingNotificationId, setDeletingNotificationId] = useState<number | null>(null)
-
-  const handleChannelChange = (channel: string, checked: boolean) => {
-    if (checked) {
-      setNotification({ ...notification, channels: [...notification.channels, channel] })
-    } else {
-      setNotification({ ...notification, channels: notification.channels.filter((c) => c !== channel) })
+  // Rebuild segment when filters change
+  useEffect(() => {
+    if (filters.length === 0) {
+      setForm(f => ({ ...f, segment: { type: 'all' } }))
+      return
     }
+    const built: NotificationSegment = { type: 'filtered', filters: {} }
+    filters.forEach(filter => {
+      if (!built.filters) built.filters = {}
+      if (filter.type === 'role') built.filters.roles = [...(built.filters.roles ?? []), filter.value]
+      if (filter.type === 'sector') built.filters.sector_ids = [...(built.filters.sector_ids ?? []), +filter.value]
+      if (filter.type === 'life_group') built.filters.life_group_ids = [...(built.filters.life_group_ids ?? []), +filter.value]
+      if (filter.type === 'status') built.filters.status = filter.value as 'active' | 'inactive'
+    })
+    setForm(f => ({ ...f, segment: built }))
+  }, [filters])
+
+  // Debounced reach preview
+  const fetchReach = useCallback(() => {
+    if (form.channels.length === 0) return
+    reachMutation.mutate({
+      channels: form.channels,
+      segment: form.segment,
+      category: form.category,
+    })
+  }, [form.channels, form.segment, form.category]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const timer = setTimeout(fetchReach, 500)
+    return () => clearTimeout(timer)
+  }, [fetchReach])
+
+  const toggleChannel = (ch: string) => {
+    setForm(f => ({
+      ...f,
+      channels: f.channels.includes(ch)
+        ? f.channels.filter(c => c !== ch)
+        : [...f.channels, ch],
+    }))
+  }
+
+  const addFilter = () => {
+    if (!newFilterType || !newFilterValue) return
+    setFilters(prev => [...prev, { type: newFilterType, value: newFilterValue }])
+    setNewFilterType('')
+    setNewFilterValue('')
+  }
+
+  const removeFilter = (index: number) => {
+    setFilters(prev => prev.filter((_, i) => i !== index))
   }
 
   const resetForm = () => {
-    setNotification({ title: "", message: "", channels: [], target_audience: "all" })
+    setForm(EMPTY_FORM)
+    setScheduleEnabled(false)
+    setScheduleDate('')
+    setScheduleTime('')
+    setFilters([])
   }
 
-  const handleSendNotification = async () => {
+  const handleSubmit = async () => {
+    if (!form.title || !form.message) {
+      toast.error('Título e mensagem são obrigatórios')
+      return
+    }
+    if (form.channels.length === 0) {
+      toast.error('Selecione pelo menos um canal')
+      return
+    }
+    const payload: CreateNotificationRequest = {
+      ...form,
+      scheduled_at: scheduleEnabled && scheduleDate && scheduleTime
+        ? new Date(`${scheduleDate}T${scheduleTime}`).toISOString()
+        : null,
+    }
     try {
-      await sendMutation.mutateAsync({
-        title: notification.title,
-        message: notification.message,
-        channels: notification.channels,
-        target_audience: notification.target_audience,
-      })
-      toast.success("Notificacao enviada com sucesso!")
+      await createMutation.mutateAsync(payload)
+      toast.success(scheduleEnabled ? 'Notificação agendada!' : 'Notificação enviada!')
       resetForm()
     } catch {
-      toast.error("Erro ao enviar notificacao. Tente novamente.")
+      toast.error('Erro ao enviar notificação')
     }
   }
 
-  const handleDeleteNotification = async (id: number) => {
+  const handleDuplicate = (item: Notification) => {
+    setForm({
+      title: item.title,
+      message: item.message,
+      category: item.category,
+      channels: item.channels,
+      segment: item.segment,
+    })
+    setScheduleEnabled(false)
+    setFilters([])
+    setActiveTab('compose')
+    toast.info('Notificação duplicada para edição')
+  }
+
+  const handleDelete = async (id: number) => {
     try {
       await deleteMutation.mutateAsync(id)
-      toast.success("Notificacao excluida com sucesso!")
+      toast.success('Notificação removida')
     } catch {
-      toast.error("Erro ao excluir notificacao. Tente novamente.")
-    } finally {
-      setDeletingNotificationId(null)
+      toast.error('Erro ao remover notificação')
     }
   }
 
-  const getChannelIcon = (channel: string) => {
-    const icons = {
-      email: <Mail className="h-4 w-4" />,
-      sms: <Phone className="h-4 w-4" />,
-      whatsapp: <MessageSquare className="h-4 w-4" />,
-      push: <Bell className="h-4 w-4" />,
-    }
-    return icons[channel as keyof typeof icons]
-  }
-
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      sent: { variant: "default" as const, icon: <CheckCircle className="h-3 w-3" />, text: "Enviado" },
-      pending: { variant: "secondary" as const, icon: <Clock className="h-3 w-3" />, text: "Pendente" },
-      failed: { variant: "destructive" as const, icon: <XCircle className="h-3 w-3" />, text: "Falhou" },
-    }
-
-    const config = variants[status as keyof typeof variants]
-    if (!config) return null
-    return (
-      <Badge variant={config.variant} className="flex items-center gap-1">
-        {config.icon}
-        {config.text}
-      </Badge>
-    )
-  }
-
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "dd/MM/yyyy HH:mm")
-    } catch {
-      return dateString
-    }
-  }
-
-  const sentCount = notifications.filter((n: NotificationItem) => n.status === "sent").length
-  const pendingCount = notifications.filter((n: NotificationItem) => n.status === "pending").length
+  const reach = reachMutation.data
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Enviar Notificacao</h1>
-        <p className="text-muted-foreground">Envie notificacoes para os membros da igreja</p>
+        <h1 className="text-2xl font-bold">Notificações</h1>
+        <p className="text-muted-foreground">Envie notificações segmentadas para membros</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {isLoading ? (
-          <>
-            <StatsCardSkeleton />
-            <StatsCardSkeleton />
-            <StatsCardSkeleton />
-          </>
-        ) : (
-          <>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total de Notificacoes</CardTitle>
-                <Bell className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{notifications.length}</div>
-                <p className="text-xs text-muted-foreground">Notificacoes registradas</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Enviadas</CardTitle>
-                <CheckCircle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{sentCount}</div>
-                <p className="text-xs text-muted-foreground">Notificacoes enviadas</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{pendingCount}</div>
-                <p className="text-xs text-muted-foreground">Notificacoes pendentes</p>
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </div>
-
-      <Tabs defaultValue="send" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'compose' | 'history')}>
         <TabsList>
-          <TabsTrigger value="send">Enviar Notificacao</TabsTrigger>
-          <TabsTrigger value="history">Historico</TabsTrigger>
+          <TabsTrigger value="compose">Compor</TabsTrigger>
+          <TabsTrigger value="history">Histórico</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="send" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Criar Notificacao</CardTitle>
-                <CardDescription>Preencha os dados da notificacao</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="title">Titulo</Label>
-                  <Input
-                    id="title"
-                    value={notification.title}
-                    onChange={(e) => setNotification({ ...notification, title: e.target.value })}
-                    placeholder="Titulo da notificacao"
-                  />
-                </div>
+        {/* COMPOSE TAB */}
+        <TabsContent value="compose">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left: Form */}
+            <div className="lg:col-span-2 space-y-6">
 
-                <div>
-                  <Label htmlFor="message">Mensagem</Label>
-                  <Textarea
-                    id="message"
-                    value={notification.message}
-                    onChange={(e) => setNotification({ ...notification, message: e.target.value })}
-                    placeholder="Digite sua mensagem aqui..."
-                    rows={4}
-                  />
-                </div>
-
-                <div>
-                  <Label>Publico Alvo</Label>
-                  <select
-                    value={notification.target_audience}
-                    onChange={(e) => setNotification({ ...notification, target_audience: e.target.value })}
-                    className="w-full p-2 border border-input rounded-md bg-background mt-1"
-                  >
-                    <option value="all">Todos os membros</option>
-                    <option value="active">Membros ativos</option>
-                    <option value="youth">Jovens</option>
-                    <option value="adults">Adultos</option>
-                    <option value="leaders">Lideres</option>
-                  </select>
-                </div>
-
-                <Button
-                  onClick={handleSendNotification}
-                  disabled={
-                    !notification.title || !notification.message || notification.channels.length === 0 || sendMutation.isPending
-                  }
-                  className="w-full"
-                >
-                  <Send className="mr-2 h-4 w-4" />
-                  {sendMutation.isPending ? "Enviando..." : "Enviar Notificacao"}
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Canais de Envio</CardTitle>
-                <CardDescription>Selecione os canais para enviar a notificacao</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="email"
-                      checked={notification.channels.includes("email")}
-                      onCheckedChange={(checked) => handleChannelChange("email", checked as boolean)}
-                    />
-                    <Label htmlFor="email" className="flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      Email
-                    </Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="sms"
-                      checked={notification.channels.includes("sms")}
-                      onCheckedChange={(checked) => handleChannelChange("sms", checked as boolean)}
-                    />
-                    <Label htmlFor="sms" className="flex items-center gap-2">
-                      <Phone className="h-4 w-4" />
-                      SMS
-                    </Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="whatsapp"
-                      checked={notification.channels.includes("whatsapp")}
-                      onCheckedChange={(checked) => handleChannelChange("whatsapp", checked as boolean)}
-                    />
-                    <Label htmlFor="whatsapp" className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      WhatsApp
-                    </Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="push"
-                      checked={notification.channels.includes("push")}
-                      onCheckedChange={(checked) => handleChannelChange("push", checked as boolean)}
-                    />
-                    <Label htmlFor="push" className="flex items-center gap-2">
-                      <Bell className="h-4 w-4" />
-                      Push Notification
-                    </Label>
-                  </div>
-                </div>
-
-                {notification.channels.length > 0 && (
-                  <div className="mt-4 p-3 bg-muted rounded-lg">
-                    <p className="text-sm font-medium mb-2">Canais selecionados:</p>
+              {/* Content */}
+              <Card>
+                <CardHeader><CardTitle>Conteúdo</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Categoria</Label>
                     <div className="flex flex-wrap gap-2">
-                      {notification.channels.map((channel) => (
-                        <Badge key={channel} variant="secondary" className="flex items-center gap-1">
-                          {getChannelIcon(channel)}
-                          {channel.toUpperCase()}
-                        </Badge>
+                      {CATEGORIES.map(cat => (
+                        <button
+                          key={cat.value}
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, category: cat.value }))}
+                          className="focus:outline-none"
+                        >
+                          <Badge
+                            variant={form.category === cat.value ? 'default' : 'outline'}
+                            className="cursor-pointer"
+                          >
+                            {cat.label}
+                          </Badge>
+                        </button>
                       ))}
                     </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Título</Label>
+                    <Input
+                      id="title"
+                      placeholder="Ex: Culto de domingo"
+                      value={form.title}
+                      onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="message">Mensagem</Label>
+                    <Textarea
+                      id="message"
+                      placeholder="Escreva a mensagem..."
+                      rows={4}
+                      value={form.message}
+                      onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Channels */}
+              <Card>
+                <CardHeader><CardTitle>Canais</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    {CHANNELS.map(ch => {
+                      const Icon = ch.icon
+                      const selected = form.channels.includes(ch.value)
+                      return (
+                        <button
+                          key={ch.value}
+                          type="button"
+                          onClick={() => toggleChannel(ch.value)}
+                          className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-colors text-left ${
+                            selected
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border hover:border-muted-foreground/50'
+                          }`}
+                        >
+                          <div className={`p-2 rounded-md ${selected ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                            <Icon size={16} />
+                          </div>
+                          <div>
+                            <div className="font-medium text-sm">{ch.label}</div>
+                            <div className="text-xs text-muted-foreground">{ch.sub}</div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Segment */}
+              <Card>
+                <CardHeader><CardTitle>Segmento</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  {filters.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Todos os membros ativos</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {filters.map((f, i) => (
+                        <Badge key={i} variant="secondary" className="gap-1">
+                          {f.type}: {f.value}
+                          <button onClick={() => removeFilter(i)} className="ml-1 hover:text-destructive">×</button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  <Separator />
+
+                  <div className="flex gap-2">
+                    <Select value={newFilterType} onValueChange={setNewFilterType}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Filtro" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="role">Cargo</SelectItem>
+                        <SelectItem value="sector">Setor</SelectItem>
+                        <SelectItem value="life_group">Célula</SelectItem>
+                        <SelectItem value="status">Status</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {newFilterType === 'role' && (
+                      <Select value={newFilterValue} onValueChange={setNewFilterValue}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Cargo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ROLES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {newFilterType === 'sector' && (
+                      <Select value={newFilterValue} onValueChange={setNewFilterValue}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Setor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sectors.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {newFilterType === 'life_group' && (
+                      <Select value={newFilterValue} onValueChange={setNewFilterValue}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Célula" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {lifeGroups.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {newFilterType === 'status' && (
+                      <Select value={newFilterValue} onValueChange={setNewFilterValue}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Ativo</SelectItem>
+                          <SelectItem value="inactive">Inativo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    <Button type="button" variant="outline" size="icon" onClick={addFilter} disabled={!newFilterType || !newFilterValue}>
+                      <Plus size={16} />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Schedule */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Agendamento</CardTitle>
+                    <Switch checked={scheduleEnabled} onCheckedChange={setScheduleEnabled} />
+                  </div>
+                </CardHeader>
+                {scheduleEnabled && (
+                  <CardContent>
+                    <div className="flex gap-3">
+                      <div className="space-y-2 flex-1">
+                        <Label>Data</Label>
+                        <Input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} />
+                      </div>
+                      <div className="space-y-2 flex-1">
+                        <Label>Hora</Label>
+                        <Input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} />
+                      </div>
+                    </div>
+                  </CardContent>
                 )}
-              </CardContent>
-            </Card>
+              </Card>
+            </div>
+
+            {/* Right: Reach Preview + Send */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader><CardTitle>Alcance Estimado</CardTitle></CardHeader>
+                <CardContent>
+                  {reachMutation.isPending ? (
+                    <p className="text-sm text-muted-foreground">Calculando...</p>
+                  ) : reach ? (
+                    <div className="space-y-3">
+                      <div className="text-center">
+                        <div className="text-4xl font-bold">{reach.total}</div>
+                        <div className="text-sm text-muted-foreground">membros atingidos</div>
+                      </div>
+                      <Separator />
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Por canal</p>
+                        {Object.entries(reach.by_channel).map(([ch, count]) => (
+                          <div key={ch} className="flex justify-between text-sm">
+                            <span className="capitalize">{ch}</span>
+                            <span className="font-medium">{count}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {Object.values(reach.excluded).some(v => v > 0) && (
+                        <>
+                          <Separator />
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Excluídos por preferência</p>
+                            {Object.entries(reach.excluded).filter(([, v]) => v > 0).map(([ch, count]) => (
+                              <div key={ch} className="flex justify-between text-sm text-muted-foreground">
+                                <span className="capitalize">{ch}</span>
+                                <span>{count}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Selecione canais e segmento</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={handleSubmit}
+                disabled={createMutation.isPending}
+              >
+                {scheduleEnabled ? <><Clock size={16} className="mr-2" />Agendar</> : <><Send size={16} className="mr-2" />Enviar</>}
+              </Button>
+
+              <Button variant="outline" className="w-full" onClick={resetForm}>
+                Limpar
+              </Button>
+            </div>
           </div>
         </TabsContent>
 
+        {/* HISTORY TAB */}
         <TabsContent value="history">
           <Card>
-            <CardHeader>
-              <CardTitle>Historico de Notificacoes</CardTitle>
-              <CardDescription>Ultimas notificacoes enviadas</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <TableSkeleton rows={5} columns={6} />
-              ) : error ? (
-                <p className="text-destructive">Erro ao carregar historico. Tente novamente mais tarde.</p>
+            <CardContent className="pt-6">
+              {notificationsLoading ? (
+                <p className="text-center text-muted-foreground">Carregando...</p>
               ) : notifications.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">Nenhuma notificacao encontrada.</p>
+                <p className="text-center text-muted-foreground">Nenhuma notificação encontrada</p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Titulo</TableHead>
-                      <TableHead>Canais</TableHead>
-                      <TableHead>Destinatarios</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Enviado em</TableHead>
-                      <TableHead className="w-[70px]">Acoes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {notifications.map((item: NotificationItem) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{item.title}</p>
-                            <p className="text-sm text-muted-foreground truncate max-w-xs">{item.message}</p>
+                <div className="space-y-3">
+                  {notifications.map(n => {
+                    const statusInfo = STATUS_LABELS[n.status] ?? { label: n.status, variant: 'secondary' as const }
+                    return (
+                      <div key={n.id} className="flex items-start justify-between p-4 border rounded-lg">
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium truncate">{n.title}</span>
+                            <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+                            <Badge variant="outline">{CATEGORIES.find(c => c.value === n.category)?.label ?? n.category}</Badge>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            {item.channels.map((channel) => (
-                              <Badge key={channel} variant="outline" className="flex items-center gap-1">
-                                {getChannelIcon(channel)}
-                              </Badge>
+                          <p className="text-sm text-muted-foreground line-clamp-2">{n.message}</p>
+                          <div className="flex gap-2 flex-wrap">
+                            {n.channels.map(ch => (
+                              <Badge key={ch} variant="secondary" className="text-xs">{ch}</Badge>
                             ))}
                           </div>
-                        </TableCell>
-                        <TableCell>{item.recipients}</TableCell>
-                        <TableCell>{getStatusBadge(item.status)}</TableCell>
-                        <TableCell>{formatDate(item.sent_at)}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                            onClick={() => setDeletingNotificationId(item.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
+                          <p className="text-xs text-muted-foreground">
+                            {n.recipients_count} destinatários · {new Date(n.created_at).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                        <div className="flex gap-2 ml-4 shrink-0">
+                          <Button variant="ghost" size="icon" onClick={() => handleDuplicate(n)} title="Duplicar">
+                            <Copy size={16} />
                           </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                          {(n.status === 'pending' || n.status === 'scheduled') && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(n.id)}
+                              disabled={deleteMutation.isPending}
+                              title="Remover"
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        open={deletingNotificationId !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeletingNotificationId(null)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza que deseja excluir esta notificacao?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acao nao pode ser desfeita. A notificacao sera removida permanentemente do historico.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (deletingNotificationId !== null) {
-                  handleDeleteNotification(deletingNotificationId)
-                }
-              }}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   )
 }

@@ -17,6 +17,7 @@ export type AnalyticsEventName =
   | "course_created"
   | "course_updated"
   | "course_deleted"
+  | "notification_created"
   | "notification_sent"
   | "notification_deleted"
   | "user_created"
@@ -51,6 +52,7 @@ export interface AnalyticsEventParams {
   course_created: { course_id?: string }
   course_updated: { course_id: string }
   course_deleted: { course_id: string }
+  notification_created: { notification_id?: number }
   notification_sent: { notification_id?: number }
   notification_deleted: { notification_id: number }
   user_created: { user_id?: number }
