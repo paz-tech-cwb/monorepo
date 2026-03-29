@@ -267,6 +267,7 @@ export class UsersService {
       return this.toResponse(reloaded!);
     } catch (error: unknown) {
       if (error instanceof NotFoundException) throw error;
+      if (error instanceof BadRequestException) throw error;
       throw new BadRequestException(
         'An error occurred while updating the profile.',
       );
