@@ -12,6 +12,7 @@ import { Course } from '../courses/entities/course.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class UsersService {
@@ -37,7 +38,8 @@ export class UsersService {
           }
         : null,
       life_group_ids: user.lifeGroups?.map((lg) => lg.id) ?? [],
-      life_groups: user.lifeGroups?.map((lg) => ({ id: lg.id, name: lg.name })) ?? [],
+      life_groups:
+        user.lifeGroups?.map((lg) => ({ id: lg.id, name: lg.name })) ?? [],
       completed_courses: user.completedCourses
         ? user.completedCourses.map((course) => ({
             id: course.id,
@@ -244,6 +246,29 @@ export class UsersService {
       if (error instanceof BadRequestException) throw error;
       throw new BadRequestException(
         'An error occurred while updating the user role.',
+      );
+    }
+  }
+
+  async updateProfile(userId: number, dto: UpdateProfileDto) {
+    try {
+      const user = await this.findOneEntity(userId);
+
+      if (dto.name !== undefined) user.name = dto.name;
+      if (dto.phone !== undefined) user.phoneNumber = dto.phone ?? null;
+      if (dto.birth_date !== undefined)
+        user.birthDate = dto.birth_date ? new Date(dto.birth_date) : null;
+
+      const saved = await this.entityManager.save(User, user);
+      const reloaded = await this.entityManager.findOne(User, {
+        where: { id: saved.id },
+        relations: ['sector', 'lifeGroups', 'completedCourses'],
+      });
+      return this.toResponse(reloaded!);
+    } catch (error: unknown) {
+      if (error instanceof NotFoundException) throw error;
+      throw new BadRequestException(
+        'An error occurred while updating the profile.',
       );
     }
   }
