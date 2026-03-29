@@ -18,6 +18,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserDeviceTokensService } from './user-device-tokens.service';
@@ -81,6 +82,20 @@ export class UsersController {
   ) {
     const prefs = await this.preferencesService.update(req.user.id, dto);
     return this.preferencesService.toResponse(prefs);
+  }
+
+  // Self-profile endpoints — MUST be before /:id routes
+  @Get('me')
+  async getMe(@Request() req: { user: { id: number } }) {
+    return this.usersService.findOne(req.user.id);
+  }
+
+  @Put('me')
+  async updateMe(
+    @Request() req: { user: { id: number } },
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.usersService.updateProfile(req.user.id, dto);
   }
 
   @Get(':id')
