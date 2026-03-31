@@ -11,6 +11,13 @@ import { UsersModule } from '../users/users.module';
 @Module({
   imports: [UsersModule],
   controllers: [NotificationsController],
-  providers: [NotificationsService, NotificationDispatchService, FcmService, EmailService, SmsService, WhatsAppService],
+  providers: [
+    NotificationsService,
+    NotificationDispatchService,
+    FcmService,
+    EmailService,
+    SmsService,
+    WhatsAppService,
+  ],
 })
 export class NotificationsModule {}

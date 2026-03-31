@@ -47,7 +47,6 @@ describe('AuthService', () => {
           ACCESS_TOKEN_SECRET: ACCESS_SECRET,
           REFRESH_TOKEN_SECRET: REFRESH_SECRET,
           GOOGLE_CLIENT_ID: GOOGLE_CLIENT_ID,
-          FIREBASE_PROJECT_ID: 'test-firebase-project',
         };
         if (!map[key]) throw new Error(`Missing config key: ${key}`);
         return map[key];

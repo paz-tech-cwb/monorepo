@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
+import { OAuth2Client } from 'google-auth-library';
 import { JwksClient } from 'jwks-rsa';
 import { UserAccount } from 'src/users/entities/account.entity';
 import { User } from 'src/users/entities/user.entity';
@@ -23,19 +24,16 @@ const JWT_ALGORITHM: jwt.Algorithm = 'HS256';
 const APPLE_JWKS_URI = 'https://appleid.apple.com/auth/keys';
 const APPLE_ISSUER = 'https://appleid.apple.com';
 
-const FIREBASE_JWKS_URI =
-  'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
-
 @Injectable()
 export class AuthService implements OnModuleInit {
   private readonly logger = new Logger(AuthService.name);
 
-  private firebaseJwksClient: JwksClient;
+  private googleOAuth2Client: OAuth2Client;
   private appleJwksClient: JwksClient;
 
   private accessTokenSecret: string;
   private refreshTokenSecret: string;
-  private firebaseProjectId: string;
+  private googleClientId: string;
   private appleBundleId: string;
 
   constructor(
@@ -53,16 +51,11 @@ export class AuthService implements OnModuleInit {
     this.refreshTokenSecret = this.configService.getOrThrow<string>(
       'REFRESH_TOKEN_SECRET',
     );
-    this.firebaseProjectId = this.configService.getOrThrow<string>(
-      'FIREBASE_PROJECT_ID',
-    );
+    this.googleClientId =
+      this.configService.getOrThrow<string>('GOOGLE_CLIENT_ID');
     this.appleBundleId = this.configService.get<string>('APPLE_BUNDLE_ID', '');
 
-    this.firebaseJwksClient = new JwksClient({
-      jwksUri: FIREBASE_JWKS_URI,
-      cache: true,
-      cacheMaxAge: 86400000, // 24 hours
-    });
+    this.googleOAuth2Client = new OAuth2Client(this.googleClientId);
     this.appleJwksClient = new JwksClient({
       jwksUri: APPLE_JWKS_URI,
       cache: true,
@@ -239,31 +232,14 @@ export class AuthService implements OnModuleInit {
 
   private async verifyGoogleToken(idToken: string) {
     try {
-      // Decode the JWT header to retrieve the key ID (kid)
-      const decodedHeader = jwt.decode(idToken, { complete: true });
-      if (!decodedHeader || !decodedHeader.header?.kid) {
-        throw new Error('Unable to decode Firebase token header');
-      }
+      const ticket = await this.googleOAuth2Client.verifyIdToken({
+        idToken,
+        audience: this.googleClientId,
+      });
+      const payload = ticket.getPayload();
 
-      // Fetch Firebase's public key for this kid
-      const signingKey = await this.firebaseJwksClient.getSigningKey(
-        decodedHeader.header.kid,
-      );
-      const publicKey = signingKey.getPublicKey();
-
-      // Verify signature, issuer, audience, and expiration
-      const payload = jwt.verify(idToken, publicKey, {
-        algorithms: ['RS256'],
-        issuer: `https://securetoken.google.com/${this.firebaseProjectId}`,
-        audience: this.firebaseProjectId,
-      }) as jwt.JwtPayload & {
-        email?: string;
-        name?: string;
-        picture?: string;
-      };
-
-      if (!payload.email) {
-        throw new Error('Missing email in Firebase token payload');
+      if (!payload?.email) {
+        throw new Error('Missing email in Google token payload');
       }
 
       return {
@@ -275,7 +251,7 @@ export class AuthService implements OnModuleInit {
       };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.debug(`Firebase token verification failed: ${message}`);
+      this.logger.debug(`Google token verification failed: ${message}`);
       throw new UnauthorizedException('Invalid Google token');
     }
   }

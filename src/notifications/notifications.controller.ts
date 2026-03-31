@@ -27,7 +27,10 @@ export class NotificationsController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles('admin', 'pastor')
-  create(@Body() dto: CreateNotificationDto, @Request() req: { user: { id: number } }) {
+  create(
+    @Body() dto: CreateNotificationDto,
+    @Request() req: { user: { id: number } },
+  ) {
     return this.notificationsService.create(dto, req.user.id);
   }
 
@@ -36,7 +39,11 @@ export class NotificationsController {
   @UseGuards(RolesGuard)
   @Roles('admin', 'pastor')
   getReach(@Body() dto: ReachDto) {
-    return this.notificationsService.getReach(dto.segment, dto.channels, dto.category);
+    return this.notificationsService.getReach(
+      dto.segment,
+      dto.channels,
+      dto.category,
+    );
   }
 
   @Get()

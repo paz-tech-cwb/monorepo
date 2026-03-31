@@ -23,7 +23,11 @@ export class UserDeviceToken {
   @Column({ type: 'varchar', unique: true })
   token: string;
 
-  @Column({ type: 'enum', enum: ['android', 'ios'], enumName: 'device_platform_enum' })
+  @Column({
+    type: 'enum',
+    enum: ['android', 'ios'],
+    enumName: 'device_platform_enum',
+  })
   platform: DevicePlatform;
 
   @Column({ name: 'last_used_at', type: 'timestamp', nullable: true })

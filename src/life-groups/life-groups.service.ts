@@ -27,11 +27,12 @@ export class LifeGroupsService {
       meeting_day: lifeGroup.meetingDay ?? null,
       meeting_time: lifeGroup.meetingTime ?? null,
       member_count: lifeGroup.users?.length ?? 0,
-      members: lifeGroup.users?.map((u) => ({
-        id: u.id,
-        name: u.name,
-        email: u.email ?? '',
-      })) ?? [],
+      members:
+        lifeGroup.users?.map((u) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email ?? '',
+        })) ?? [],
       created_at: lifeGroup.createdAt,
       updated_at: lifeGroup.updatedAt,
     };

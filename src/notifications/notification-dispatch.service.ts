@@ -1,7 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
-import { Notification, NotificationCategory } from './entities/notification.entity';
+import {
+  Notification,
+  NotificationCategory,
+} from './entities/notification.entity';
 import { UserNotificationPreferences } from '../users/entities/user-notification-preferences.entity';
 import { User } from '../users/entities/user.entity';
 import { FcmService } from './providers/fcm.service';
@@ -49,9 +52,12 @@ export class NotificationDispatchService {
     let successCount = 0;
 
     for (const user of users) {
-      const prefs = await this.entityManager.findOne(UserNotificationPreferences, {
-        where: { user: { id: user.id } },
-      });
+      const prefs = await this.entityManager.findOne(
+        UserNotificationPreferences,
+        {
+          where: { user: { id: user.id } },
+        },
+      );
 
       // If no prefs row, treat as all-enabled (default)
       if (prefs && !prefs.allNotificationsEnabled) continue;

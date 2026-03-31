@@ -72,7 +72,8 @@ export class MemberJourneyService {
       member_id: user.id,
       member_name: user.name,
       member_email: user.email,
-      life_groups: user.lifeGroups?.map((lg) => ({ id: lg.id, name: lg.name })) ?? [],
+      life_groups:
+        user.lifeGroups?.map((lg) => ({ id: lg.id, name: lg.name })) ?? [],
       current_stage_id: currentStageId,
       stages: orderedStages,
       last_updated_at: lastUpdated,

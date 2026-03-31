@@ -24,7 +24,9 @@ export class EmailService {
       });
       return true;
     } catch (err: unknown) {
-      this.logger.error(`Email send failed to ${userEmail}: ${(err as Error).message}`);
+      this.logger.error(
+        `Email send failed to ${userEmail}: ${(err as Error).message}`,
+      );
       return false;
     }
   }

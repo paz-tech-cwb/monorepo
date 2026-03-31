@@ -1,6 +1,12 @@
 // backend/src/users/dto/update-profile.dto.ts
 import { Expose } from 'class-transformer';
-import { IsString, IsOptional, IsDateString, MaxLength, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsDateString,
+  MaxLength,
+  IsNotEmpty,
+} from 'class-validator';
 
 export class UpdateProfileDto {
   @Expose()

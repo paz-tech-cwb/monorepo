@@ -25,9 +25,12 @@ export class UserNotificationPreferencesService {
   ) {}
 
   async getOrCreate(userId: number): Promise<UserNotificationPreferences> {
-    const existing = await this.entityManager.findOne(UserNotificationPreferences, {
-      where: { user: { id: userId } },
-    });
+    const existing = await this.entityManager.findOne(
+      UserNotificationPreferences,
+      {
+        where: { user: { id: userId } },
+      },
+    );
     if (existing) return existing;
 
     const created = this.entityManager.create(UserNotificationPreferences, {
@@ -45,21 +48,28 @@ export class UserNotificationPreferencesService {
     if (dto.all_notifications_enabled !== undefined)
       updates.allNotificationsEnabled = dto.all_notifications_enabled;
     if (dto.push_enabled !== undefined) updates.pushEnabled = dto.push_enabled;
-    if (dto.email_enabled !== undefined) updates.emailEnabled = dto.email_enabled;
+    if (dto.email_enabled !== undefined)
+      updates.emailEnabled = dto.email_enabled;
     if (dto.sms_enabled !== undefined) updates.smsEnabled = dto.sms_enabled;
-    if (dto.whatsapp_enabled !== undefined) updates.whatsappEnabled = dto.whatsapp_enabled;
-    if (dto.events_enabled !== undefined) updates.eventsEnabled = dto.events_enabled;
+    if (dto.whatsapp_enabled !== undefined)
+      updates.whatsappEnabled = dto.whatsapp_enabled;
+    if (dto.events_enabled !== undefined)
+      updates.eventsEnabled = dto.events_enabled;
     if (dto.announcements_enabled !== undefined)
       updates.announcementsEnabled = dto.announcements_enabled;
-    if (dto.life_group_enabled !== undefined) updates.lifeGroupEnabled = dto.life_group_enabled;
-    if (dto.academy_enabled !== undefined) updates.academyEnabled = dto.academy_enabled;
+    if (dto.life_group_enabled !== undefined)
+      updates.lifeGroupEnabled = dto.life_group_enabled;
+    if (dto.academy_enabled !== undefined)
+      updates.academyEnabled = dto.academy_enabled;
     if (dto.admin_alerts_enabled !== undefined)
       updates.adminAlertsEnabled = dto.admin_alerts_enabled;
     Object.assign(prefs, updates);
     return this.entityManager.save(prefs);
   }
 
-  toResponse(prefs: UserNotificationPreferences): NotificationPreferencesResponse {
+  toResponse(
+    prefs: UserNotificationPreferences,
+  ): NotificationPreferencesResponse {
     return {
       all_notifications_enabled: prefs.allNotificationsEnabled,
       push_enabled: prefs.pushEnabled,

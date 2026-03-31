@@ -48,6 +48,10 @@ export class UserDeviceTokensService {
   }
 
   async markUsed(token: string): Promise<void> {
-    await this.entityManager.update(UserDeviceToken, { token }, { lastUsedAt: new Date() });
+    await this.entityManager.update(
+      UserDeviceToken,
+      { token },
+      { lastUsedAt: new Date() },
+    );
   }
 }

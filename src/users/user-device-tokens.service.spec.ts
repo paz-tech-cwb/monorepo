@@ -41,7 +41,12 @@ describe('UserDeviceTokensService', () => {
   });
 
   it('register() upserts token — updates when token already exists', async () => {
-    const existing = { id: 5, token: 'fcm-token-abc', platform: 'ios', user: { id: 2 } };
+    const existing = {
+      id: 5,
+      token: 'fcm-token-abc',
+      platform: 'ios',
+      user: { id: 2 },
+    };
     mockEntityManager.findOne.mockResolvedValue(existing);
     mockEntityManager.update.mockResolvedValue({ affected: 1 });
 

@@ -1,6 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getEntityManagerToken } from '@nestjs/typeorm';
-import { ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { NotificationDispatchService } from './notification-dispatch.service';
 
@@ -50,7 +54,9 @@ describe('NotificationsService', () => {
       segment: { type: 'all' as const },
       scheduled_at: '2020-01-01T00:00:00Z',
     };
-    await expect(service.create(dto, 1)).rejects.toThrow(UnprocessableEntityException);
+    await expect(service.create(dto, 1)).rejects.toThrow(
+      UnprocessableEntityException,
+    );
   });
 
   it('create() saves notification with status pending for immediate send', async () => {
@@ -93,7 +99,11 @@ describe('NotificationsService', () => {
     };
     mockEntityManager.createQueryBuilder.mockReturnValue(mockQb);
 
-    const result = await service.getReach({ type: 'all' }, ['push', 'email'], 'announcements');
+    const result = await service.getReach(
+      { type: 'all' },
+      ['push', 'email'],
+      'announcements',
+    );
     expect(result.total).toBe(0);
     expect(result.by_channel.push).toBe(0);
     expect(result.by_channel.email).toBe(0);

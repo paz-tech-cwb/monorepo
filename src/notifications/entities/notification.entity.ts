@@ -44,7 +44,11 @@ export class Notification {
   @Column({ type: 'text' })
   message: string;
 
-  @Column({ type: 'enum', enum: ['events', 'announcements', 'life_group', 'academy', 'admin_alerts'], enumName: 'notification_category_enum' })
+  @Column({
+    type: 'enum',
+    enum: ['events', 'announcements', 'life_group', 'academy', 'admin_alerts'],
+    enumName: 'notification_category_enum',
+  })
   category: NotificationCategory;
 
   @Column({ type: 'jsonb' })

@@ -26,7 +26,9 @@ export class SmsService {
       });
       return true;
     } catch (err: unknown) {
-      this.logger.error(`SMS send failed to ${phoneNumber}: ${(err as Error).message}`);
+      this.logger.error(
+        `SMS send failed to ${phoneNumber}: ${(err as Error).message}`,
+      );
       return false;
     }
   }

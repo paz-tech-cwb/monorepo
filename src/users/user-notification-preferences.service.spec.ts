@@ -18,7 +18,9 @@ describe('UserNotificationPreferencesService', () => {
         { provide: getEntityManagerToken(), useValue: mockEntityManager },
       ],
     }).compile();
-    service = module.get<UserNotificationPreferencesService>(UserNotificationPreferencesService);
+    service = module.get<UserNotificationPreferencesService>(
+      UserNotificationPreferencesService,
+    );
     jest.clearAllMocks();
   });
 

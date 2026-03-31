@@ -6,7 +6,11 @@ import { UserNotificationPreferencesService } from './user-notification-preferen
 
 @Module({
   controllers: [UsersController],
-  providers: [UsersService, UserDeviceTokensService, UserNotificationPreferencesService],
+  providers: [
+    UsersService,
+    UserDeviceTokensService,
+    UserNotificationPreferencesService,
+  ],
   exports: [UserDeviceTokensService, UserNotificationPreferencesService],
 })
 export class UsersModule {}

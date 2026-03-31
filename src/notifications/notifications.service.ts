@@ -7,7 +7,10 @@ import {
 } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, SelectQueryBuilder } from 'typeorm';
-import { Notification, NotificationSegment } from './entities/notification.entity';
+import {
+  Notification,
+  NotificationSegment,
+} from './entities/notification.entity';
 import { NotificationDispatchService } from './notification-dispatch.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { User } from '../users/entities/user.entity';
@@ -52,7 +55,9 @@ export class NotificationsService implements OnApplicationBootstrap {
     if (isScheduled) {
       const scheduledAt = new Date(dto.scheduled_at!);
       if (scheduledAt <= new Date()) {
-        throw new UnprocessableEntityException('scheduled_at must be in the future');
+        throw new UnprocessableEntityException(
+          'scheduled_at must be in the future',
+        );
       }
     }
 
@@ -101,7 +106,9 @@ export class NotificationsService implements OnApplicationBootstrap {
     const n = await this.entityManager.findOne(Notification, { where: { id } });
     if (!n) throw new NotFoundException(`Notification #${id} not found`);
     if (!['pending', 'scheduled'].includes(n.status)) {
-      throw new ConflictException('Only pending or scheduled notifications can be deleted');
+      throw new ConflictException(
+        'Only pending or scheduled notifications can be deleted',
+      );
     }
     await this.entityManager.remove(n);
   }
@@ -122,36 +129,47 @@ export class NotificationsService implements OnApplicationBootstrap {
     if (userIds.length === 0) {
       const by_channel: Record<string, number> = {};
       const excluded: Record<string, number> = {};
-      for (const ch of channels) { by_channel[ch] = 0; excluded[ch] = 0; }
+      for (const ch of channels) {
+        by_channel[ch] = 0;
+        excluded[ch] = 0;
+      }
       return { total: 0, by_channel, excluded };
     }
 
     // Load preferences for all users at once
-    const allPrefs = await this.entityManager.find(UserNotificationPreferences, {
-      where: userIds.map((id) => ({ user: { id } })),
-      relations: ['user'],
-    });
+    const allPrefs = await this.entityManager.find(
+      UserNotificationPreferences,
+      {
+        where: userIds.map((id) => ({ user: { id } })),
+        relations: ['user'],
+      },
+    );
     const prefsMap = new Map(allPrefs.map((p) => [p.user.id, p]));
 
-    const CATEGORY_PREF_MAP: Record<string, keyof UserNotificationPreferences> = {
-      events: 'eventsEnabled',
-      announcements: 'announcementsEnabled',
-      life_group: 'lifeGroupEnabled',
-      academy: 'academyEnabled',
-      admin_alerts: 'adminAlertsEnabled',
-    };
+    const CATEGORY_PREF_MAP: Record<string, keyof UserNotificationPreferences> =
+      {
+        events: 'eventsEnabled',
+        announcements: 'announcementsEnabled',
+        life_group: 'lifeGroupEnabled',
+        academy: 'academyEnabled',
+        admin_alerts: 'adminAlertsEnabled',
+      };
     const categoryPrefKey = CATEGORY_PREF_MAP[category];
 
-    const CHANNEL_PREF_MAP: Record<string, keyof UserNotificationPreferences> = {
-      push: 'pushEnabled',
-      email: 'emailEnabled',
-      sms: 'smsEnabled',
-      whatsapp: 'whatsappEnabled',
-    };
+    const CHANNEL_PREF_MAP: Record<string, keyof UserNotificationPreferences> =
+      {
+        push: 'pushEnabled',
+        email: 'emailEnabled',
+        sms: 'smsEnabled',
+        whatsapp: 'whatsappEnabled',
+      };
 
     const by_channel: Record<string, number> = {};
     const excluded: Record<string, number> = {};
-    for (const ch of channels) { by_channel[ch] = 0; excluded[ch] = 0; }
+    for (const ch of channels) {
+      by_channel[ch] = 0;
+      excluded[ch] = 0;
+    }
 
     const totalReached = new Set<number>();
 
