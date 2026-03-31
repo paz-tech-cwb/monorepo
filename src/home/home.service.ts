@@ -3,12 +3,15 @@ import { AnnouncementsService } from 'src/announcements/announcements.service';
 import { Announcement } from 'src/announcements/entities/announcement.entity';
 import { Contribution } from 'src/contributions/entities/contribution.entity';
 import { ContributionsService } from 'src/contributions/contributions.service';
+import { EventsService } from 'src/events/events.service';
+import { Event } from 'src/events/entities/event.entity';
 
 @Injectable()
 export class HomeService {
   constructor(
     private readonly announcementsService: AnnouncementsService,
     private readonly contributionsService: ContributionsService,
+    private readonly eventsService: EventsService,
   ) {}
 
   async getHomeContent() {
@@ -18,9 +21,9 @@ export class HomeService {
     const contributionsList: Contribution[] =
       await this.contributionsService.findAll();
 
-    // announcementsList.forEach((element) => console.log(element.id));
+    const eventsList: Event[] = await this.eventsService.findAll();
 
-    const sectionsReturn = {
+    return {
       sections: [
         {
           type: 'announcements',
@@ -34,11 +37,10 @@ export class HomeService {
         },
         {
           type: 'agenda',
-          items: '',
+          items: eventsList,
           order: 3,
         },
       ],
     };
-    return sectionsReturn;
   }
 }

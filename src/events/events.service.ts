@@ -16,8 +16,8 @@ export class EventsService {
     return 'This action adds a new event';
   }
 
-  findAll() {
-    return `This action returns all events`;
+  findAll(): Promise<Event[]> {
+    return this.eventsRepository.find({ order: { date: 'ASC' } });
   }
 
   findOne(id: number) {
