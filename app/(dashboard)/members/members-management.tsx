@@ -33,6 +33,7 @@ import { useUsers, useCreateUser, useUpdateUser, useUpdateUserRole, useDeleteUse
 import { TableSkeleton } from "@/components/ui/skeleton-components"
 import { JourneySheet } from "./journey-sheet"
 import type { AdminUser, UserRole } from "@/lib/api/types"
+import { WipOverlay } from "@/components/ui/wip-overlay"
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "member", label: "Membro" },
@@ -225,16 +226,18 @@ export function MembersManagement() {
                   </div>
                   <div>
                     <Label htmlFor="role">Funcao</Label>
-                    <select
-                      id="role"
-                      value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                      className="w-full p-2 border border-input rounded-md bg-background"
-                    >
-                      {ROLE_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
+                    <WipOverlay>
+                      <select
+                        id="role"
+                        value={formData.role}
+                        onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+                        className="w-full p-2 border border-input rounded-md bg-background"
+                      >
+                        {ROLE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </WipOverlay>
                   </div>
                   <div className="col-span-2">
                     <Label htmlFor="address">Endereco</Label>
@@ -377,16 +380,18 @@ export function MembersManagement() {
             </div>
             <div>
               <Label htmlFor="edit-role">Funcao</Label>
-              <select
-                id="edit-role"
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                className="w-full p-2 border border-input rounded-md bg-background"
-              >
-                {ROLE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+              <WipOverlay>
+                <select
+                  id="edit-role"
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+                  className="w-full p-2 border border-input rounded-md bg-background"
+                >
+                  {ROLE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </WipOverlay>
             </div>
             <div className="col-span-2">
               <Label htmlFor="edit-address">Endereco</Label>

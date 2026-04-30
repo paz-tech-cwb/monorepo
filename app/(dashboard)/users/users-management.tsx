@@ -32,6 +32,7 @@ import { Search, Plus, MoreHorizontal, Edit, Trash2 } from "lucide-react"
 import { useUsers, useCreateUser, useUpdateUser, useUpdateUserRole, useDeleteUser } from "@/lib/hooks/use-users"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
 import type { AdminUser, UserRole } from "@/lib/api/types"
+import { WipOverlay } from "@/components/ui/wip-overlay"
 
 const ROLE_OPTIONS: { value: UserRole; label: string; badgeVariant: "destructive" | "default" | "outline" | "secondary" }[] = [
   { value: "member",            label: "Membro",              badgeVariant: "secondary" },
@@ -194,16 +195,18 @@ export function UsersManagement() {
                   </div>
                   <div>
                     <Label htmlFor="role">Funcao</Label>
-                    <select
-                      id="role"
-                      value={newUser.role}
-                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
-                      className="w-full p-2 border border-input rounded-md bg-background"
-                    >
-                      {ROLE_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
+                    <WipOverlay>
+                      <select
+                        id="role"
+                        value={newUser.role}
+                        onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
+                        className="w-full p-2 border border-input rounded-md bg-background"
+                      >
+                        {ROLE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </WipOverlay>
                   </div>
                 </div>
                 <DialogFooter>
@@ -311,16 +314,18 @@ export function UsersManagement() {
             </div>
             <div>
               <Label htmlFor="edit-role">Funcao</Label>
-              <select
-                id="edit-role"
-                value={newUser.role}
-                onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
-                className="w-full p-2 border border-input rounded-md bg-background"
-              >
-                {ROLE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
+              <WipOverlay>
+                <select
+                  id="edit-role"
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
+                  className="w-full p-2 border border-input rounded-md bg-background"
+                >
+                  {ROLE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </WipOverlay>
             </div>
           </div>
           <DialogFooter>
