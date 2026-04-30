@@ -30,6 +30,7 @@ import type {
   NotificationStatus,
   Notification,
 } from '@/lib/api/types'
+import { WipOverlay } from '@/components/ui/wip-overlay'
 
 const CATEGORIES: { value: NotificationCategory; label: string }[] = [
   { value: 'announcements', label: 'Anúncios' },
@@ -117,7 +118,8 @@ export function NotificationSystem() {
       segment: form.segment,
       category: form.category,
     })
-  }, [form.channels, form.segment, form.category, reachMutation.mutate])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.channels, form.segment, form.category])
 
   useEffect(() => {
     if (!isDirty.current) return
@@ -247,26 +249,28 @@ export function NotificationSystem() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label>Categoria</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {CATEGORIES.map(cat => (
-                        <button
-                          key={cat.value}
-                          type="button"
-                          onClick={() => {
-                            isDirty.current = true
-                            setForm(f => ({ ...f, category: cat.value }))
-                          }}
-                          className="focus:outline-none"
-                        >
-                          <Badge
-                            variant={form.category === cat.value ? 'default' : 'outline'}
-                            className="cursor-pointer"
+                    <WipOverlay>
+                      <div className="flex flex-wrap gap-2">
+                        {CATEGORIES.map(cat => (
+                          <button
+                            key={cat.value}
+                            type="button"
+                            onClick={() => {
+                              isDirty.current = true
+                              setForm(f => ({ ...f, category: cat.value }))
+                            }}
+                            className="focus:outline-none"
                           >
-                            {cat.label}
-                          </Badge>
-                        </button>
-                      ))}
-                    </div>
+                            <Badge
+                              variant={form.category === cat.value ? 'default' : 'outline'}
+                              className="cursor-pointer"
+                            >
+                              {cat.label}
+                            </Badge>
+                          </button>
+                        ))}
+                      </div>
+                    </WipOverlay>
                   </div>
 
                   <div className="space-y-2">
@@ -296,7 +300,8 @@ export function NotificationSystem() {
               <Card>
                 <CardHeader><CardTitle>Canais</CardTitle></CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
+                  <WipOverlay>
+                    <div className="grid grid-cols-2 gap-3">
                     {CHANNELS.map(ch => {
                       const Icon = ch.icon
                       const selected = form.channels.includes(ch.value)
@@ -321,7 +326,8 @@ export function NotificationSystem() {
                         </button>
                       )
                     })}
-                  </div>
+                    </div>
+                  </WipOverlay>
                 </CardContent>
               </Card>
 
@@ -362,14 +368,16 @@ export function NotificationSystem() {
                     </Select>
 
                     {newFilterType === 'role' && (
-                      <Select value={newFilterValue} onValueChange={setNewFilterValue}>
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Cargo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ROLES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <WipOverlay>
+                        <Select value={newFilterValue} onValueChange={setNewFilterValue}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Cargo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ROLES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </WipOverlay>
                     )}
                     {newFilterType === 'sector' && (
                       <Select value={newFilterValue} onValueChange={setNewFilterValue}>
