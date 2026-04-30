@@ -28,6 +28,7 @@ import { useMemberJourney, useUpdateMemberStage } from "@/lib/hooks/use-member-j
 import { JOURNEY_STAGES } from "@/lib/api/types/member-journey"
 import type { AdminUser } from "@/lib/api/types"
 import type { JourneyStageId, JourneyStageKey } from "@/lib/api/types"
+import { WipOverlay } from "@/components/ui/wip-overlay"
 
 const STAGE_MESSAGES: Record<JourneyStageKey, { title: string; message: string }> = {
   salvation:      { title: "Bem-vindo!",                    message: "Estamos felizes em ter você conosco. Deus tem um plano lindo para sua vida!" },
@@ -119,20 +120,22 @@ function StepperItem({
         )}
         {/* Message suggestion for current incomplete stage */}
         {isCurrent && !completed && (
-          <div className="mt-2 rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-            <p className="font-medium text-foreground mb-0.5">{STAGE_MESSAGES[stageKey].title}</p>
-            <p className="leading-relaxed">{STAGE_MESSAGES[stageKey].message}</p>
-            <button
-              className="mt-1.5 inline-flex items-center gap-1 text-primary hover:underline"
-              onClick={() => {
-                navigator.clipboard.writeText(STAGE_MESSAGES[stageKey].message)
-                toast.success("Mensagem copiada!")
-              }}
-            >
-              <Copy className="h-3 w-3" />
-              Copiar mensagem
-            </button>
-          </div>
+          <WipOverlay>
+            <div className="mt-2 rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground mb-0.5">{STAGE_MESSAGES[stageKey].title}</p>
+              <p className="leading-relaxed">{STAGE_MESSAGES[stageKey].message}</p>
+              <button
+                className="mt-1.5 inline-flex items-center gap-1 text-primary hover:underline"
+                onClick={() => {
+                  navigator.clipboard.writeText(STAGE_MESSAGES[stageKey].message)
+                  toast.success("Mensagem copiada!")
+                }}
+              >
+                <Copy className="h-3 w-3" />
+                Copiar mensagem
+              </button>
+            </div>
+          </WipOverlay>
         )}
       </div>
     </div>
