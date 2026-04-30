@@ -71,6 +71,7 @@ import { useUsers } from "@/lib/hooks/use-users"
 import { useSectors } from "@/lib/hooks/use-sectors"
 import type { LifeGroup, CreateLifeGroupRequest } from "@/lib/api/types"
 import type { AdminUser } from "@/lib/api/types"
+import { WipOverlay } from "@/components/ui/wip-overlay"
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -543,19 +544,21 @@ export function LifeGroupsManagement() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label>Dia da Reunião</Label>
-                <Select
-                  value={form.meeting_day}
-                  onValueChange={(v) => setForm((f) => ({ ...f, meeting_day: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MEETING_DAYS.map((day) => (
-                      <SelectItem key={day} value={day}>{day}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <WipOverlay>
+                  <Select
+                    value={form.meeting_day}
+                    onValueChange={(v) => setForm((f) => ({ ...f, meeting_day: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MEETING_DAYS.map((day) => (
+                        <SelectItem key={day} value={day}>{day}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </WipOverlay>
               </div>
 
               <div className="space-y-1">
