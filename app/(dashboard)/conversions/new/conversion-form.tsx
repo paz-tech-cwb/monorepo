@@ -27,6 +27,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useCreateConversion } from "@/lib/hooks/use-conversions"
 import { formatPhoneBR, validatePhoneBR } from "@/lib/utils/phone"
+import { WipOverlay } from "@/components/ui/wip-overlay"
 import type {
   ConversionType,
   HowMetChurch,
@@ -181,15 +182,17 @@ export function ConversionForm() {
                 name="type"
                 control={control}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="primeira_vez">Primeira Vez</SelectItem>
-                      <SelectItem value="reconciliacao">Reconciliacao</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <WipOverlay>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="primeira_vez">Primeira Vez</SelectItem>
+                        <SelectItem value="reconciliacao">Reconciliacao</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </WipOverlay>
                 )}
               />
               {errors.type && (
@@ -205,47 +208,49 @@ export function ConversionForm() {
                 name="how_met_church"
                 control={control}
                 render={({ field }) => (
-                  <RadioGroup
-                    onValueChange={(value) => {
-                      field.onChange(value)
-                      setShowOtherField(value === "outro")
-                    }}
-                    value={field.value}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="convite_amigo" id="convite_amigo" />
-                      <Label htmlFor="convite_amigo" className="font-normal">
-                        Convite de amigo
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem
-                        value="convite_parente"
-                        id="convite_parente"
-                      />
-                      <Label htmlFor="convite_parente" className="font-normal">
-                        Convite de parente
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="redes_sociais" id="redes_sociais" />
-                      <Label htmlFor="redes_sociais" className="font-normal">
-                        Redes sociais
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="passou_frente" id="passou_frente" />
-                      <Label htmlFor="passou_frente" className="font-normal">
-                        Passou em frente
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="outro" id="outro" />
-                      <Label htmlFor="outro" className="font-normal">
-                        Outro
-                      </Label>
-                    </div>
-                  </RadioGroup>
+                  <WipOverlay>
+                    <RadioGroup
+                      onValueChange={(value) => {
+                        field.onChange(value)
+                        setShowOtherField(value === "outro")
+                      }}
+                      value={field.value}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="convite_amigo" id="convite_amigo" />
+                        <Label htmlFor="convite_amigo" className="font-normal">
+                          Convite de amigo
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem
+                          value="convite_parente"
+                          id="convite_parente"
+                        />
+                        <Label htmlFor="convite_parente" className="font-normal">
+                          Convite de parente
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="redes_sociais" id="redes_sociais" />
+                        <Label htmlFor="redes_sociais" className="font-normal">
+                          Redes sociais
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="passou_frente" id="passou_frente" />
+                        <Label htmlFor="passou_frente" className="font-normal">
+                          Passou em frente
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="outro" id="outro" />
+                        <Label htmlFor="outro" className="font-normal">
+                          Outro
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </WipOverlay>
                 )}
               />
               {errors.how_met_church && (
@@ -275,20 +280,22 @@ export function ConversionForm() {
                   name="sex"
                   control={control}
                   render={({ field }) => (
-                    <RadioGroup onValueChange={field.onChange} value={field.value}>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="feminino" id="feminino" />
-                        <Label htmlFor="feminino" className="font-normal">
-                          Feminino
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="masculino" id="masculino" />
-                        <Label htmlFor="masculino" className="font-normal">
-                          Masculino
-                        </Label>
-                      </div>
-                    </RadioGroup>
+                    <WipOverlay>
+                      <RadioGroup onValueChange={field.onChange} value={field.value}>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="feminino" id="feminino" />
+                          <Label htmlFor="feminino" className="font-normal">
+                            Feminino
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="masculino" id="masculino" />
+                          <Label htmlFor="masculino" className="font-normal">
+                            Masculino
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </WipOverlay>
                   )}
                 />
                 {errors.sex && (
@@ -321,17 +328,19 @@ export function ConversionForm() {
                   name="civil_status"
                   control={control}
                   render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="solteiro">Solteiro</SelectItem>
-                        <SelectItem value="casado">Casado</SelectItem>
-                        <SelectItem value="divorciado">Divorciado</SelectItem>
-                        <SelectItem value="viuvo">Viuvo</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <WipOverlay>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="solteiro">Solteiro</SelectItem>
+                          <SelectItem value="casado">Casado</SelectItem>
+                          <SelectItem value="divorciado">Divorciado</SelectItem>
+                          <SelectItem value="viuvo">Viuvo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </WipOverlay>
                   )}
                 />
                 {errors.civil_status && (
