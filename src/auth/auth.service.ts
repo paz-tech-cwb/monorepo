@@ -34,6 +34,7 @@ export class AuthService implements OnModuleInit {
   private accessTokenSecret: string;
   private refreshTokenSecret: string;
   private googleClientId: string;
+  private googleAudiences: string[];
   private appleBundleId: string;
 
   constructor(
@@ -53,6 +54,13 @@ export class AuthService implements OnModuleInit {
     );
     this.googleClientId =
       this.configService.getOrThrow<string>('GOOGLE_CLIENT_ID');
+    this.googleAudiences = [this.googleClientId];
+    const androidClientId = this.configService.get<string>(
+      'GOOGLE_ANDROID_CLIENT_ID',
+    );
+    const iosClientId = this.configService.get<string>('GOOGLE_IOS_CLIENT_ID');
+    if (androidClientId) this.googleAudiences.push(androidClientId);
+    if (iosClientId) this.googleAudiences.push(iosClientId);
     this.appleBundleId = this.configService.get<string>('APPLE_BUNDLE_ID', '');
 
     this.googleOAuth2Client = new OAuth2Client(this.googleClientId);
@@ -234,7 +242,7 @@ export class AuthService implements OnModuleInit {
     try {
       const ticket = await this.googleOAuth2Client.verifyIdToken({
         idToken,
-        audience: this.googleClientId,
+        audience: this.googleAudiences,
       });
       const payload = ticket.getPayload();
 

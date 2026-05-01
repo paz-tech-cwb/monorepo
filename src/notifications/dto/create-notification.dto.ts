@@ -13,16 +13,18 @@ import { Expose, Type } from 'class-transformer';
 import type { NotificationCategory } from '../entities/notification.entity';
 
 export class SegmentFiltersDto {
-  @IsOptional() @IsArray() roles?: string[];
-  @IsOptional() @IsArray() sector_ids?: number[];
-  @IsOptional() @IsArray() life_group_ids?: number[];
-  @IsOptional() @IsIn(['active', 'inactive']) status?: 'active' | 'inactive';
+  @Expose() @IsOptional() @IsArray() roles?: string[];
+  @Expose() @IsOptional() @IsArray() sector_ids?: number[];
+  @Expose() @IsOptional() @IsArray() life_group_ids?: number[];
+  @Expose() @IsOptional() @IsIn(['active', 'inactive']) status?: 'active' | 'inactive';
 }
 
 export class SegmentDto {
+  @Expose()
   @IsIn(['all', 'filtered'])
   type: 'all' | 'filtered';
 
+  @Expose()
   @IsOptional()
   @IsObject()
   @Type(() => SegmentFiltersDto)

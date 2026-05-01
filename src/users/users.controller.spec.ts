@@ -35,8 +35,18 @@ describe('UsersController', () => {
             remove: jest.fn(),
           },
         },
-        { provide: UserDeviceTokensService, useValue: { register: jest.fn(), remove: jest.fn() } },
-        { provide: UserNotificationPreferencesService, useValue: { getOrCreate: jest.fn(), update: jest.fn(), toResponse: jest.fn() } },
+        {
+          provide: UserDeviceTokensService,
+          useValue: { register: jest.fn(), remove: jest.fn() },
+        },
+        {
+          provide: UserNotificationPreferencesService,
+          useValue: {
+            getOrCreate: jest.fn(),
+            update: jest.fn(),
+            toResponse: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -59,7 +69,10 @@ describe('UsersController', () => {
   describe('PUT /users/me', () => {
     it('calls usersService.updateProfile with user id and dto', async () => {
       const dto = { name: 'João Atualizado' };
-      usersService.updateProfile.mockResolvedValue({ ...mockUserResponse, name: 'João Atualizado' } as any);
+      usersService.updateProfile.mockResolvedValue({
+        ...mockUserResponse,
+        name: 'João Atualizado',
+      } as any);
       const req = { user: { id: 1 } };
 
       const result = await controller.updateMe(req, dto);
@@ -69,7 +82,11 @@ describe('UsersController', () => {
     });
 
     it('does not allow updating role or status via updateMe', async () => {
-      const dto = { name: 'Test', phone: '(41) 99999-0000', birth_date: '1990-01-01' };
+      const dto = {
+        name: 'Test',
+        phone: '(41) 99999-0000',
+        birth_date: '1990-01-01',
+      };
       usersService.updateProfile.mockResolvedValue(mockUserResponse as any);
 
       await controller.updateMe({ user: { id: 1 } }, dto);

@@ -37,7 +37,7 @@ export class NotificationsController {
   // NOTE: 'reach' must be declared before ':id' to prevent route collision
   @Post('reach')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'pastor')
+  @Roles('admin', 'pastor', 'area_leader', 'sector_leader')
   getReach(@Body() dto: ReachDto) {
     return this.notificationsService.getReach(
       dto.segment,
@@ -48,14 +48,14 @@ export class NotificationsController {
 
   @Get()
   @UseGuards(RolesGuard)
-  @Roles('admin', 'pastor')
+  @Roles('admin', 'pastor', 'area_leader', 'sector_leader')
   findAll() {
     return this.notificationsService.findAll();
   }
 
   @Get(':id')
   @UseGuards(RolesGuard)
-  @Roles('admin', 'pastor')
+  @Roles('admin', 'pastor', 'area_leader', 'sector_leader')
   findOne(@Param('id') id: string) {
     return this.notificationsService.findOne(+id);
   }
