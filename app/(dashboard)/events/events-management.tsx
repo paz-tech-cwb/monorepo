@@ -78,8 +78,9 @@ export function EventsManagement() {
 
   const filteredEvents = events.filter(
     (event) =>
-      event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (event.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+      event != null &&
+      (event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (event.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false))
   )
 
   const resetForm = () => {
@@ -185,6 +186,7 @@ export function EventsManagement() {
 
   const getEventsForDate = (dateString: string) => {
     return events.filter((event) => {
+      if (event == null) return false
       const eventDate = event.initial_date.split("T")[0]
       return eventDate === dateString
     })

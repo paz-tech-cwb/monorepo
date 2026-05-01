@@ -9,7 +9,7 @@ export default function HomePage() {
           <h1 className="text-3xl font-bold text-foreground mb-2">Painel Administrativo</h1>
           <p className="text-muted-foreground">Faça login para acessar o sistema de gerenciamento da igreja</p>
         </div>
-        <Suspense>
+        <Suspense fallback={null}>
           <LoginForm />
         </Suspense>
       </div>

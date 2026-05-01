@@ -1,8 +1,16 @@
+export type AdminRole =
+  | "admin"
+  | "pastor"
+  | "area_leader"
+  | "sector_leader"
+  | "life_group_leader"
+
 export interface User {
   id: number
   email: string
   name: string
   picture: string
+  role: AdminRole | "member" | null
 }
 
 export interface AuthResponse {

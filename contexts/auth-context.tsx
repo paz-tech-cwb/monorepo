@@ -155,6 +155,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           provider,
         })
 
+        if (response.user.role === "member" || !response.user.role) {
+          throw new Error("Acesso negado. Esta área é exclusiva para líderes e pastores.")
+        }
+
         setUser(response.user)
         persistUser(response.user)
         setAccessToken(response.access_token)

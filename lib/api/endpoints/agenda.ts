@@ -16,7 +16,7 @@ function flattenAgendaResponse(response: AgendaApiResponse): AgendaEvent[] {
 export function calculateAgendaStats(events: AgendaEvent[]): AgendaStats {
   return {
     total_events: events.length,
-    recurring_events: events.filter((e) => e.recurrence_type !== null && e.recurrence_type !== undefined).length,
+    recurring_events: events.filter((e) => e != null && e.recurrence_type != null).length,
   }
 }
 

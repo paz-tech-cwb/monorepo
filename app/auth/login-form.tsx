@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
@@ -17,11 +17,13 @@ export function LoginForm() {
 
   const redirectTo = searchParams.get("redirect") || "/dashboard"
 
-  // Redirect if already authenticated
-  if (isAuthenticated) {
-    router.push(redirectTo)
-    return null
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push(redirectTo)
+    }
+  }, [isAuthenticated, redirectTo, router])
+
+  if (isAuthenticated) return null
 
   const handleGoogleLogin = async () => {
     try {
@@ -30,7 +32,7 @@ export function LoginForm() {
       router.push(redirectTo)
     } catch (err) {
       console.error("Google login error:", err)
-      setError("Falha ao fazer login com Google. Tente novamente.")
+      setError(err instanceof Error ? err.message : "Falha ao fazer login com Google. Tente novamente.")
     }
   }
 
@@ -41,7 +43,7 @@ export function LoginForm() {
       router.push(redirectTo)
     } catch (err) {
       console.error("Apple login error:", err)
-      setError("Falha ao fazer login com Apple. Tente novamente.")
+      setError(err instanceof Error ? err.message : "Falha ao fazer login com Apple. Tente novamente.")
     }
   }
 

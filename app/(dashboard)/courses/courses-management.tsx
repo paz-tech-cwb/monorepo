@@ -134,6 +134,7 @@ export function CoursesManagement() {
     }
 
     const config = variants[category as keyof typeof variants]
+    if (!config) return <Badge variant="outline">{category}</Badge>
     return <Badge variant={config.variant}>{config.text}</Badge>
   }
 
@@ -145,6 +146,7 @@ export function CoursesManagement() {
     }
 
     const config = variants[status as keyof typeof variants]
+    if (!config) return <Badge variant="outline">{status}</Badge>
     return <Badge variant={config.variant}>{config.text}</Badge>
   }
 

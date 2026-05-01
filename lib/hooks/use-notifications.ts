@@ -42,8 +42,9 @@ export function useCreateNotification() {
 export function useNotificationReach() {
   return useMutation({
     mutationFn: (data: NotificationReachRequest) => notificationsApi.getReach(data),
-    onError: () => {
-      console.error('Failed to fetch notification reach')
+    onError: (error: unknown) => {
+      const apiError = error as { data?: unknown }
+      console.error('Failed to fetch notification reach', error, apiError?.data)
     },
   })
 }
