@@ -1,0 +1,1140 @@
+# Formulários — Admin UI Implementation Plan (Plan 2 of 3)
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** Build the admin web interface for the Formulários module: a hub of cards, per-form list views with filters, detail views with audit log, and (for Cadastro do Membro) an inline courses manager visible only to admins.
+
+**Architecture:** Follow the existing admin-ui three-tier pattern (`lib/api/types` → `lib/api/endpoints` → `lib/hooks` → page component). Add a new `(dashboard)/formularios` route group with `[slug]` and `[slug]/[id]` dynamic routes. Reuse shadcn/ui table, card, dialog primitives. TanStack Query for data, React Hook Form + Zod for the courses manager.
+
+**Tech Stack:** Next.js 15 (App Router), React 19, TypeScript, TanStack Query, shadcn/ui, Tailwind 4, react-hook-form, zod.
+
+**Spec:** `docs/formularios.md` · **Backend prerequisite:** Plan 1 deployed.
+
+---
+
+## File Structure
+
+```
+admin-ui/
+├── app/(dashboard)/formularios/
+│   ├── page.tsx                                    # hub — server component
+│   ├── formularios-hub.tsx                         # hub client component (cards)
+│   ├── [slug]/
+│   │   ├── page.tsx                                # form list — server
+│   │   ├── form-list-view.tsx                      # list client component
+│   │   ├── courses-manager.tsx                     # admin-only panel for member-registrations
+│   │   └── [id]/
+│   │       ├── page.tsx                            # detail — server
+│   │       └── submission-detail.tsx               # detail client component
+│   └── _components/
+│       ├── form-icon.tsx                           # icon-by-slug helper
+│       ├── submission-filters.tsx                  # date/area/sector/life filter chips
+│       └── audit-log.tsx                           # audit log timeline
+├── lib/api/types/
+│   └── formularios.ts                              # all form types + catalog
+├── lib/api/endpoints/
+│   └── formularios.ts                              # api wrappers
+├── lib/hooks/
+│   ├── use-forms-catalog.ts
+│   ├── use-form-submissions.ts
+│   └── use-form-courses.ts
+└── components/sidebar.tsx                          # MODIFY — add Formulários entry
+```
+
+---
+
+## Task 1: Sidebar entry + route shell
+
+**Files:**
+- Modify: `components/sidebar.tsx`
+- Create: `app/(dashboard)/formularios/page.tsx`
+- Create: `app/(dashboard)/formularios/formularios-hub.tsx`
+
+- [ ] **Step 1: Add sidebar item**
+
+In `components/sidebar.tsx`, locate the `sidebarSections` array and add a new item to the appropriate section (likely "Principal"):
+
+```typescript
+import { ClipboardList } from "lucide-react"
+// ...existing imports
+
+const sidebarSections = [
+  {
+    title: "Principal",
+    items: [
+      // ...existing items
+      { name: "Formulários", href: "/formularios", icon: ClipboardList },
+    ],
+  },
+  // ...rest unchanged
+]
+```
+
+- [ ] **Step 2: Stub server page**
+
+```typescript
+// app/(dashboard)/formularios/page.tsx
+import { FormulariosHub } from "./formularios-hub"
+export default function FormulariosPage() {
+  return <FormulariosHub />
+}
+```
+
+- [ ] **Step 3: Stub client hub**
+
+```typescript
+// app/(dashboard)/formularios/formularios-hub.tsx
+"use client"
+export function FormulariosHub() {
+  return <div className="p-6">Formulários (em construção)</div>
+}
+```
+
+- [ ] **Step 4: Verify nav works**
+
+```bash
+cd admin-ui && npm run dev
+# Open http://localhost:3000/formularios — should render the placeholder and the sidebar item should highlight.
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add components/sidebar.tsx app/\(dashboard\)/formularios
+git commit -m "feat(formularios): add sidebar entry and route shell"
+```
+
+---
+
+## Task 2: API types + endpoints
+
+**Files:**
+- Create: `lib/api/types/formularios.ts`
+- Create: `lib/api/endpoints/formularios.ts`
+
+- [ ] **Step 1: Catalog + audit types**
+
+```typescript
+// lib/api/types/formularios.ts
+export type FormSlug =
+  | 'member-registrations'
+  | 'conversions'
+  | 'life-group-reports'
+  | 'sector-supervisor-reports'
+  | 'area-supervisor-reports'
+  | 'multiplications'
+  | 'service-reports'
+  | 'guests'
+
+export interface FormCatalogEntry {
+  slug: FormSlug
+  name: string
+  description: string
+  can_write: boolean
+  can_read: boolean
+}
+
+export interface FormSubmissionMeta {
+  id: string
+  submitted_by: { id: number; name: string }
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
+
+export interface AuditLogEntry {
+  id: string
+  form_slug: FormSlug
+  submission_id: string
+  actor: { id: number; name: string }
+  action: 'create' | 'update' | 'delete'
+  diff: Record<string, unknown> | null
+  created_at: string
+}
+
+// ---------- Course types ----------
+export interface Course {
+  id: string
+  name: string
+  description: string | null
+  is_active: boolean
+  display_order?: number
+  created_at: string
+  updated_at: string
+}
+export interface CreateCourseRequest { name: string; description?: string }
+export interface UpdateCourseRequest { name?: string; description?: string; is_active?: boolean }
+
+// ---------- Form 1: Member Registration ----------
+export interface MemberRegistration extends FormSubmissionMeta {
+  email: string
+  full_name: string
+  birthday: string
+  phone: string
+  address: string
+  sector_id: string
+  life_group_id: string
+  leader_id: number
+  completed_courses: string[]
+}
+export interface CreateMemberRegistrationRequest {
+  email: string; full_name: string; birthday: string; phone: string; address: string;
+  sector_id: string; life_group_id: string; leader_id: number; completed_courses?: string[]
+}
+
+// ---------- Form 2: Conversion ----------
+export interface Conversion extends FormSubmissionMeta {
+  full_name: string; email: string; phone: string;
+  decision_type: 'first_time' | 'reconciliation';
+  how_met_church: string; how_met_church_other: string | null;
+  gender: 'm' | 'f'; birth_date: string; civil_state: string;
+  address: string; attendance_count: string;
+  life_group_status: string; life_group_leader_or_name: string | null;
+  invited_by: string | null; notes: string | null;
+}
+// (Create types follow same shape; omit meta fields)
+
+// ---------- Form 3: Life Group Report ----------
+export interface LifeGroupReport extends FormSubmissionMeta {
+  date: string;
+  area_id: string; sector_id: string; life_group_id: string;
+  committed_members: number; committed_members_present: number;
+  kids_0_to_11: number; guests: number; mdas: number;
+  offering: string; // numeric serialized as string by pg
+  committed_at_tadel: number; committed_at_culto: number;
+  leader_attended: string[];
+  disciples_count: number; disciples_discipled_this_week: number;
+  pastoring_activity_type: string; pastoring_activity_other: string | null;
+  pastoring_activity_objective: string | null;
+  training_activity_type: string; training_activity_other: string | null;
+}
+
+// ---------- Forms 4–8: ----------
+// Define interfaces for SectorSupervisorReport, AreaSupervisorReport,
+// Multiplication, ServiceReport, Guest — fields per spec §3.4–§3.8.
+// (Same pattern: snake_case keys mirroring backend DTOs.)
+
+export interface FormSubmissionFilters {
+  start_date?: string
+  end_date?: string
+  area_id?: string
+  sector_id?: string
+  life_group_id?: string
+  leader_id?: number
+}
+```
+
+> **Note:** Add the remaining 5 form interfaces (`SectorSupervisorReport`, `AreaSupervisorReport`, `Multiplication`, `ServiceReport`, `Guest`) following the spec's field tables exactly. Keep all keys snake_case to match API JSON.
+
+- [ ] **Step 2: Endpoints wrapper**
+
+```typescript
+// lib/api/endpoints/formularios.ts
+import { api } from "../client"
+import type {
+  FormCatalogEntry, FormSlug, FormSubmissionFilters,
+  Course, CreateCourseRequest, UpdateCourseRequest, AuditLogEntry,
+} from "../types/formularios"
+
+export const formulariosApi = {
+  catalog: () => api.get<FormCatalogEntry[]>("/forms"),
+
+  list: <T>(slug: FormSlug, filters?: FormSubmissionFilters) => {
+    const qs = filters ? "?" + new URLSearchParams(
+      Object.entries(filters).filter(([, v]) => v != null) as [string, string][]
+    ).toString() : ""
+    return api.get<T[]>(`/forms/${slug}${qs}`)
+  },
+
+  get: <T>(slug: FormSlug, id: string) => api.get<T>(`/forms/${slug}/${id}`),
+
+  create: <T, P>(slug: FormSlug, payload: P) => api.post<T>(`/forms/${slug}`, payload),
+
+  update: <T, P>(slug: FormSlug, id: string, payload: P) =>
+    api.patch<T>(`/forms/${slug}/${id}`, payload),
+
+  remove: (slug: FormSlug, id: string) => api.delete<void>(`/forms/${slug}/${id}`),
+
+  audit: (slug: FormSlug, id: string) =>
+    api.get<AuditLogEntry[]>(`/forms/${slug}/${id}/audit`),
+
+  // Courses (admin only)
+  listCourses: () => api.get<Course[]>(`/forms/member-registrations/courses`),
+  createCourse: (payload: CreateCourseRequest) =>
+    api.post<Course>(`/forms/member-registrations/courses`, payload),
+  updateCourse: (id: string, payload: UpdateCourseRequest) =>
+    api.patch<Course>(`/courses/${id}`, payload),
+  unlinkCourse: (id: string) =>
+    api.delete<void>(`/forms/member-registrations/courses/${id}`),
+}
+```
+
+> **Backend gap to verify:** Plan 1 doesn't expose `GET /forms/:slug/:id/audit`. Add this endpoint to each form controller (delegate to `FormSubmissionAuditService.listForSubmission`) — small addition. If you skip it, gate the audit log UI behind a feature flag.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add lib/api
+git commit -m "feat(formularios): add API types and endpoint wrappers"
+```
+
+---
+
+## Task 3: TanStack Query hooks
+
+**Files:**
+- Create: `lib/hooks/use-forms-catalog.ts`
+- Create: `lib/hooks/use-form-submissions.ts`
+- Create: `lib/hooks/use-form-courses.ts`
+
+- [ ] **Step 1: Catalog hook**
+
+```typescript
+// lib/hooks/use-forms-catalog.ts
+import { useQuery } from "@tanstack/react-query"
+import { formulariosApi } from "@/lib/api/endpoints/formularios"
+
+export function useFormsCatalog() {
+  return useQuery({
+    queryKey: ["forms-catalog"],
+    queryFn: () => formulariosApi.catalog(),
+    staleTime: 5 * 60_000,
+  })
+}
+```
+
+- [ ] **Step 2: Submissions hooks**
+
+```typescript
+// lib/hooks/use-form-submissions.ts
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { formulariosApi } from "@/lib/api/endpoints/formularios"
+import type { FormSlug, FormSubmissionFilters } from "@/lib/api/types/formularios"
+
+export function useFormSubmissions<T>(slug: FormSlug, filters?: FormSubmissionFilters) {
+  return useQuery({
+    queryKey: ["form-submissions", slug, filters],
+    queryFn: () => formulariosApi.list<T>(slug, filters),
+  })
+}
+
+export function useFormSubmission<T>(slug: FormSlug, id: string) {
+  return useQuery({
+    queryKey: ["form-submission", slug, id],
+    queryFn: () => formulariosApi.get<T>(slug, id),
+    enabled: !!id,
+  })
+}
+
+export function useCreateFormSubmission<T, P>(slug: FormSlug) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: P) => formulariosApi.create<T, P>(slug, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["form-submissions", slug] }),
+  })
+}
+
+export function useUpdateFormSubmission<T, P>(slug: FormSlug) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: P }) =>
+      formulariosApi.update<T, P>(slug, id, payload),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["form-submissions", slug] })
+      qc.invalidateQueries({ queryKey: ["form-submission", slug, id] })
+    },
+  })
+}
+
+export function useDeleteFormSubmission(slug: FormSlug) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => formulariosApi.remove(slug, id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["form-submissions", slug] }),
+  })
+}
+
+export function useFormAudit(slug: FormSlug, id: string) {
+  return useQuery({
+    queryKey: ["form-audit", slug, id],
+    queryFn: () => formulariosApi.audit(slug, id),
+    enabled: !!id,
+  })
+}
+```
+
+- [ ] **Step 3: Courses hook**
+
+```typescript
+// lib/hooks/use-form-courses.ts
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { formulariosApi } from "@/lib/api/endpoints/formularios"
+import type { CreateCourseRequest, UpdateCourseRequest } from "@/lib/api/types/formularios"
+import { toast } from "sonner"
+
+const KEY = ["form-courses", "member-registrations"]
+
+export function useFormCourses() {
+  return useQuery({ queryKey: KEY, queryFn: () => formulariosApi.listCourses() })
+}
+
+export function useCreateCourse() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: CreateCourseRequest) => formulariosApi.createCourse(payload),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: KEY }); toast.success("Curso adicionado") },
+  })
+}
+
+export function useUpdateCourse() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateCourseRequest }) =>
+      formulariosApi.updateCourse(id, payload),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: KEY }); toast.success("Curso atualizado") },
+  })
+}
+
+export function useUnlinkCourse() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => formulariosApi.unlinkCourse(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: KEY }); toast.success("Curso removido") },
+  })
+}
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add lib/hooks
+git commit -m "feat(formularios): add TanStack Query hooks for catalog, submissions, courses"
+```
+
+---
+
+## Task 4: Hub page (cards)
+
+**Files:**
+- Modify: `app/(dashboard)/formularios/formularios-hub.tsx`
+- Create: `app/(dashboard)/formularios/_components/form-icon.tsx`
+
+- [ ] **Step 1: Form icon helper**
+
+```typescript
+// app/(dashboard)/formularios/_components/form-icon.tsx
+import {
+  UserPlus, HeartHandshake, Users2, ClipboardCheck, BarChart3,
+  GitBranch, Church, UserPlus2,
+} from "lucide-react"
+import type { FormSlug } from "@/lib/api/types/formularios"
+
+const ICONS: Record<FormSlug, React.ComponentType<{ className?: string }>> = {
+  "member-registrations": UserPlus,
+  "conversions": HeartHandshake,
+  "life-group-reports": Users2,
+  "sector-supervisor-reports": ClipboardCheck,
+  "area-supervisor-reports": BarChart3,
+  "multiplications": GitBranch,
+  "service-reports": Church,
+  "guests": UserPlus2,
+}
+export function FormIcon({ slug, className }: { slug: FormSlug; className?: string }) {
+  const Icon = ICONS[slug]
+  return <Icon className={className} />
+}
+```
+
+- [ ] **Step 2: Hub component**
+
+```typescript
+// app/(dashboard)/formularios/formularios-hub.tsx
+"use client"
+import Link from "next/link"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useFormsCatalog } from "@/lib/hooks/use-forms-catalog"
+import { FormIcon } from "./_components/form-icon"
+import { Skeleton } from "@/components/ui/skeleton"
+
+export function FormulariosHub() {
+  const { data: forms = [], isLoading } = useFormsCatalog()
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+        {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-32" />)}
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-semibold mb-6">Formulários</h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {forms.map((f) => (
+          <Link key={f.slug} href={`/formularios/${f.slug}`}>
+            <Card className="hover:shadow-md transition cursor-pointer h-full">
+              <CardHeader className="flex flex-row items-center gap-3">
+                <FormIcon slug={f.slug} className="size-6 text-primary" />
+                <CardTitle className="text-lg">{f.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">{f.description}</p>
+                {!f.can_write && f.can_read && (
+                  <p className="mt-2 text-xs text-muted-foreground">Apenas leitura</p>
+                )}
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+        {forms.length === 0 && (
+          <p className="text-muted-foreground">Nenhum formulário disponível para você.</p>
+        )}
+      </div>
+    </div>
+  )
+}
+```
+
+- [ ] **Step 3: Verify in browser**
+
+`npm run dev` — visit `/formularios`. Cards render filtered by role.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git commit -am "feat(formularios): add hub page with role-filtered form cards"
+```
+
+---
+
+## Task 5: Submission filters component
+
+**Files:**
+- Create: `app/(dashboard)/formularios/_components/submission-filters.tsx`
+
+- [ ] **Step 1: Component**
+
+```typescript
+// app/(dashboard)/formularios/_components/submission-filters.tsx
+"use client"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import { X } from "lucide-react"
+import type { FormSubmissionFilters } from "@/lib/api/types/formularios"
+
+interface Props {
+  value: FormSubmissionFilters
+  onChange: (next: FormSubmissionFilters) => void
+  // Inject area/sector/life options from parent (use existing useAreas/useSectors/useLifeGroups hooks if available)
+  areas?: { id: string; name: string }[]
+  sectors?: { id: string; name: string }[]
+  lifeGroups?: { id: string; name: string }[]
+}
+
+export function SubmissionFilters({ value, onChange, areas = [], sectors = [], lifeGroups = [] }: Props) {
+  const set = (k: keyof FormSubmissionFilters, v: string | undefined) =>
+    onChange({ ...value, [k]: v || undefined })
+  const clear = () => onChange({})
+  const hasAny = Object.values(value).some(Boolean)
+
+  return (
+    <div className="flex flex-wrap items-end gap-2 p-4 border-b">
+      <div>
+        <label className="text-xs text-muted-foreground">De</label>
+        <Input type="date" value={value.start_date ?? ""} onChange={(e) => set("start_date", e.target.value)} />
+      </div>
+      <div>
+        <label className="text-xs text-muted-foreground">Até</label>
+        <Input type="date" value={value.end_date ?? ""} onChange={(e) => set("end_date", e.target.value)} />
+      </div>
+      {areas.length > 0 && (
+        <Select value={value.area_id ?? ""} onValueChange={(v) => set("area_id", v)}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Área" /></SelectTrigger>
+          <SelectContent>{areas.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}</SelectContent>
+        </Select>
+      )}
+      {sectors.length > 0 && (
+        <Select value={value.sector_id ?? ""} onValueChange={(v) => set("sector_id", v)}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Setor" /></SelectTrigger>
+          <SelectContent>{sectors.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+        </Select>
+      )}
+      {lifeGroups.length > 0 && (
+        <Select value={value.life_group_id ?? ""} onValueChange={(v) => set("life_group_id", v)}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Life Group" /></SelectTrigger>
+          <SelectContent>{lifeGroups.map(l => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}</SelectContent>
+        </Select>
+      )}
+      {hasAny && (
+        <Button variant="ghost" size="sm" onClick={clear}>
+          <X className="size-4 mr-1" /> Limpar
+        </Button>
+      )}
+    </div>
+  )
+}
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add app/\(dashboard\)/formularios/_components/submission-filters.tsx
+git commit -m "feat(formularios): add submission filters component"
+```
+
+---
+
+## Task 6: Per-form list view (generic + per-slug column config)
+
+**Files:**
+- Create: `app/(dashboard)/formularios/[slug]/page.tsx`
+- Create: `app/(dashboard)/formularios/[slug]/form-list-view.tsx`
+- Create: `app/(dashboard)/formularios/[slug]/_columns.tsx`
+
+The list view itself is generic — pass per-form column configs by slug.
+
+- [ ] **Step 1: Server page**
+
+```typescript
+// app/(dashboard)/formularios/[slug]/page.tsx
+import { FormListView } from "./form-list-view"
+import type { FormSlug } from "@/lib/api/types/formularios"
+
+const VALID: FormSlug[] = [
+  "member-registrations","conversions","life-group-reports","sector-supervisor-reports",
+  "area-supervisor-reports","multiplications","service-reports","guests",
+]
+
+export default async function FormPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  if (!VALID.includes(slug as FormSlug)) return <div className="p-6">Formulário não encontrado.</div>
+  return <FormListView slug={slug as FormSlug} />
+}
+```
+
+- [ ] **Step 2: Column configs**
+
+```typescript
+// app/(dashboard)/formularios/[slug]/_columns.tsx
+import type { FormSlug } from "@/lib/api/types/formularios"
+
+export interface ColumnDef {
+  key: string
+  label: string
+  format?: (v: unknown, row: Record<string, unknown>) => string
+}
+
+const fmt = {
+  date: (v: unknown) => v ? new Date(v as string).toLocaleDateString("pt-BR") : "—",
+  money: (v: unknown) => v ? `R$ ${Number(v).toFixed(2).replace(".", ",")}` : "R$ 0,00",
+  by: (_: unknown, row: any) => row.submitted_by?.name ?? "—",
+}
+
+export const COLUMNS: Record<FormSlug, ColumnDef[]> = {
+  "member-registrations": [
+    { key: "full_name", label: "Nome" },
+    { key: "email", label: "E-mail" },
+    { key: "phone", label: "Telefone" },
+    { key: "created_at", label: "Cadastrado em", format: fmt.date },
+    { key: "submitted_by", label: "Por", format: fmt.by },
+  ],
+  "conversions": [
+    { key: "full_name", label: "Nome" },
+    { key: "decision_type", label: "Tipo" },
+    { key: "created_at", label: "Data", format: fmt.date },
+  ],
+  "life-group-reports": [
+    { key: "date", label: "Data", format: fmt.date },
+    { key: "committed_members_present", label: "Presentes" },
+    { key: "guests", label: "Convidados" },
+    { key: "offering", label: "Oferta", format: fmt.money },
+    { key: "submitted_by", label: "Líder", format: fmt.by },
+  ],
+  "sector-supervisor-reports": [
+    { key: "date", label: "Data", format: fmt.date },
+    { key: "meetings_held", label: "Reuniões" },
+    { key: "trainings_conducted", label: "Treinamentos" },
+    { key: "submitted_by", label: "Supervisor", format: fmt.by },
+  ],
+  "area-supervisor-reports": [
+    { key: "date", label: "Data", format: fmt.date },
+    { key: "meetings_held", label: "Reuniões" },
+    { key: "submitted_by", label: "Supervisor", format: fmt.by },
+  ],
+  "multiplications": [
+    { key: "date", label: "Data", format: fmt.date },
+    { key: "new_life_group_name", label: "Nova LG" },
+    { key: "submitted_by", label: "Supervisor", format: fmt.by },
+  ],
+  "service-reports": [
+    { key: "date", label: "Data", format: fmt.date },
+    { key: "service_type", label: "Tipo" },
+    { key: "total_attendance", label: "Presentes" },
+    { key: "offering", label: "Oferta", format: fmt.money },
+  ],
+  "guests": [
+    { key: "full_name", label: "Nome" },
+    { key: "phone", label: "Telefone" },
+    { key: "invited_by", label: "Convidado por" },
+    { key: "created_at", label: "Data", format: fmt.date },
+  ],
+}
+```
+
+- [ ] **Step 3: List view**
+
+```typescript
+// app/(dashboard)/formularios/[slug]/form-list-view.tsx
+"use client"
+import Link from "next/link"
+import { useState } from "react"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Plus } from "lucide-react"
+import type { FormSlug, FormSubmissionFilters } from "@/lib/api/types/formularios"
+import { useFormsCatalog } from "@/lib/hooks/use-forms-catalog"
+import { useFormSubmissions } from "@/lib/hooks/use-form-submissions"
+import { SubmissionFilters } from "../_components/submission-filters"
+import { COLUMNS } from "./_columns"
+import { CoursesManager } from "./courses-manager"
+
+export function FormListView({ slug }: { slug: FormSlug }) {
+  const { data: catalog = [] } = useFormsCatalog()
+  const meta = catalog.find(f => f.slug === slug)
+  const [filters, setFilters] = useState<FormSubmissionFilters>({})
+  const { data: rows = [], isLoading } = useFormSubmissions<Record<string, unknown> & { id: string }>(slug, filters)
+  const cols = COLUMNS[slug] ?? []
+
+  return (
+    <div className="p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">{meta?.name ?? slug}</h1>
+          <p className="text-muted-foreground">{meta?.description}</p>
+        </div>
+        {meta?.can_write && (
+          <Button asChild><Link href={`/formularios/${slug}/new`}><Plus className="size-4 mr-1" /> Novo registro</Link></Button>
+        )}
+      </div>
+
+      {slug === "member-registrations" && <CoursesManager />}
+
+      <Card>
+        <SubmissionFilters value={filters} onChange={setFilters} />
+        {isLoading ? (
+          <div className="p-4 space-y-2">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-10" />)}</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>{cols.map(c => <TableHead key={c.key}>{c.label}</TableHead>)}</TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.length === 0 && (
+                <TableRow><TableCell colSpan={cols.length} className="text-center py-8 text-muted-foreground">
+                  Nenhum registro encontrado.
+                </TableCell></TableRow>
+              )}
+              {rows.map(r => (
+                <TableRow
+                  key={r.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => window.location.assign(`/formularios/${slug}/${r.id}`)}
+                >
+                  {cols.map(c => (
+                    <TableCell key={c.key}>
+                      {c.format ? c.format(r[c.key], r) : (r[c.key] as string ?? "—")}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Card>
+    </div>
+  )
+}
+```
+
+- [ ] **Step 4: Verify in browser** — visit `/formularios/guests`, see the table with no data state.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -am "feat(formularios): generic per-form list view with column configs"
+```
+
+---
+
+## Task 7: Courses manager (admin only, inline on Cadastro do Membro)
+
+**Files:**
+- Create: `app/(dashboard)/formularios/[slug]/courses-manager.tsx`
+
+- [ ] **Step 1: Detect role**
+
+Check the existing admin-ui auth context — there's typically a `useAuth()` or `useCurrentUser()` hook. If it returns `user.role === 'admin'`, gate the panel; otherwise return `null`.
+
+```typescript
+// app/(dashboard)/formularios/[slug]/courses-manager.tsx
+"use client"
+import { useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Pencil, Trash2, Plus, Check, X } from "lucide-react"
+import { useCurrentUser } from "@/lib/hooks/use-current-user"   // adjust to actual hook
+import {
+  useFormCourses, useCreateCourse, useUpdateCourse, useUnlinkCourse,
+} from "@/lib/hooks/use-form-courses"
+import type { Course } from "@/lib/api/types/formularios"
+
+export function CoursesManager() {
+  const { user } = useCurrentUser()
+  const isAdmin = user?.role === "admin"
+  const { data: courses = [] } = useFormCourses()
+  const create = useCreateCourse()
+  const update = useUpdateCourse()
+  const unlink = useUnlinkCourse()
+  const [draftName, setDraftName] = useState("")
+  const [editing, setEditing] = useState<{ id: string; name: string } | null>(null)
+
+  if (!isAdmin) return null
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>Cursos disponíveis neste formulário</CardTitle></CardHeader>
+      <CardContent className="space-y-2">
+        {courses.map((c: Course) => (
+          <div key={c.id} className="flex items-center gap-2">
+            {editing?.id === c.id ? (
+              <>
+                <Input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} className="flex-1" />
+                <Button size="sm" variant="ghost"
+                  onClick={async () => { await update.mutateAsync({ id: c.id, payload: { name: editing.name } }); setEditing(null) }}>
+                  <Check className="size-4" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditing(null)}><X className="size-4" /></Button>
+              </>
+            ) : (
+              <>
+                <span className="flex-1">{c.name}</span>
+                <Button size="sm" variant="ghost" onClick={() => setEditing({ id: c.id, name: c.name })}>
+                  <Pencil className="size-4" />
+                </Button>
+                <Button size="sm" variant="ghost"
+                  onClick={() => { if (confirm(`Remover "${c.name}" deste formulário?`)) unlink.mutate(c.id) }}>
+                  <Trash2 className="size-4" />
+                </Button>
+              </>
+            )}
+          </div>
+        ))}
+        <div className="flex items-center gap-2 pt-2 border-t">
+          <Input
+            placeholder="Nome do novo curso"
+            value={draftName}
+            onChange={(e) => setDraftName(e.target.value)}
+          />
+          <Button
+            disabled={!draftName.trim() || create.isPending}
+            onClick={async () => {
+              await create.mutateAsync({ name: draftName.trim() })
+              setDraftName("")
+            }}
+          >
+            <Plus className="size-4 mr-1" /> Adicionar
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+> **Note:** if the codebase uses a different "current user" hook name, find it (`grep -r useCurrentUser admin-ui/lib/hooks` or check the auth provider). Replace the import accordingly.
+
+- [ ] **Step 2: Verify in browser** — log in as admin, visit `/formularios/member-registrations`. See the courses list, edit one, add a new one. Log in as a non-admin role — panel should be hidden.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add app/\(dashboard\)/formularios/\[slug\]/courses-manager.tsx
+git commit -m "feat(formularios): admin-only courses manager on Cadastro do Membro page"
+```
+
+---
+
+## Task 8: Detail view + audit log
+
+**Files:**
+- Create: `app/(dashboard)/formularios/[slug]/[id]/page.tsx`
+- Create: `app/(dashboard)/formularios/[slug]/[id]/submission-detail.tsx`
+- Create: `app/(dashboard)/formularios/_components/audit-log.tsx`
+
+- [ ] **Step 1: Audit log component**
+
+```typescript
+// app/(dashboard)/formularios/_components/audit-log.tsx
+"use client"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { useFormAudit } from "@/lib/hooks/use-form-submissions"
+import type { FormSlug } from "@/lib/api/types/formularios"
+
+export function AuditLog({ slug, id }: { slug: FormSlug; id: string }) {
+  const { data: entries = [], isLoading } = useFormAudit(slug, id)
+  if (isLoading) return null
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>Histórico</CardTitle></CardHeader>
+      <CardContent>
+        <ul className="space-y-2">
+          {entries.map(e => (
+            <li key={e.id} className="flex items-center gap-3 text-sm">
+              <Badge variant={e.action === "delete" ? "destructive" : "secondary"}>
+                {e.action === "create" ? "Criado" : e.action === "update" ? "Editado" : "Removido"}
+              </Badge>
+              <span>{e.actor.name}</span>
+              <span className="text-muted-foreground">{new Date(e.created_at).toLocaleString("pt-BR")}</span>
+            </li>
+          ))}
+          {entries.length === 0 && <li className="text-muted-foreground">Sem alterações registradas.</li>}
+        </ul>
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+- [ ] **Step 2: Server page**
+
+```typescript
+// app/(dashboard)/formularios/[slug]/[id]/page.tsx
+import { SubmissionDetail } from "./submission-detail"
+import type { FormSlug } from "@/lib/api/types/formularios"
+export default async function Page({ params }: { params: Promise<{ slug: string; id: string }> }) {
+  const { slug, id } = await params
+  return <SubmissionDetail slug={slug as FormSlug} id={id} />
+}
+```
+
+- [ ] **Step 3: Detail client component**
+
+```typescript
+// app/(dashboard)/formularios/[slug]/[id]/submission-detail.tsx
+"use client"
+import Link from "next/link"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { ArrowLeft, Trash2 } from "lucide-react"
+import { useFormSubmission, useDeleteFormSubmission } from "@/lib/hooks/use-form-submissions"
+import { useCurrentUser } from "@/lib/hooks/use-current-user"
+import type { FormSlug } from "@/lib/api/types/formularios"
+import { AuditLog } from "../../_components/audit-log"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+
+export function SubmissionDetail({ slug, id }: { slug: FormSlug; id: string }) {
+  const { user } = useCurrentUser()
+  const router = useRouter()
+  const { data: submission, isLoading } = useFormSubmission<Record<string, unknown> & {
+    id: string; created_at: string; submitted_by: { id: number }
+  }>(slug, id)
+  const del = useDeleteFormSubmission(slug)
+
+  if (isLoading) return <div className="p-6">Carregando…</div>
+  if (!submission) return <div className="p-6">Não encontrado.</div>
+
+  const isAdmin = user?.role === "admin"
+  const canEdit = isAdmin || (
+    submission.submitted_by.id === user?.id &&
+    Date.now() - new Date(submission.created_at).getTime() < 24 * 3600_000
+  )
+
+  return (
+    <div className="p-6 space-y-4 max-w-4xl">
+      <Button variant="ghost" asChild><Link href={`/formularios/${slug}`}><ArrowLeft className="size-4 mr-1" /> Voltar</Link></Button>
+
+      <div className="flex justify-between items-start">
+        <h1 className="text-2xl font-semibold">Detalhe da submissão</h1>
+        <div className="flex gap-2">
+          {canEdit && <Button asChild><Link href={`/formularios/${slug}/${id}/edit`}>Editar</Link></Button>}
+          {isAdmin && (
+            <Button variant="destructive"
+              onClick={async () => {
+                if (!confirm("Excluir esta submissão?")) return
+                await del.mutateAsync(id)
+                toast.success("Excluído")
+                router.push(`/formularios/${slug}`)
+              }}>
+              <Trash2 className="size-4 mr-1" /> Excluir
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle>Campos</CardTitle></CardHeader>
+        <CardContent>
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {Object.entries(submission)
+              .filter(([k]) => !["id","submitted_by","created_at","updated_at","deleted_at"].includes(k))
+              .map(([k, v]) => (
+                <div key={k}>
+                  <dt className="text-xs uppercase text-muted-foreground">{k.replace(/_/g, " ")}</dt>
+                  <dd className="break-words">{Array.isArray(v) ? v.join(", ") : String(v ?? "—")}</dd>
+                </div>
+              ))}
+          </dl>
+        </CardContent>
+      </Card>
+
+      <AuditLog slug={slug} id={id} />
+    </div>
+  )
+}
+```
+
+- [ ] **Step 4: Verify in browser** — click a row in any list, see the detail page render, confirm Edit/Delete visibility per role.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -am "feat(formularios): submission detail view with audit log and edit/delete gating"
+```
+
+---
+
+## Task 9: Per-form create/edit pages (forms)
+
+This task is the most repetitive in the plan: 8 forms, each with their own React Hook Form + Zod schema mirroring the backend DTO. Approach: create one form per slug with the field markup it needs. Don't try to abstract — keep them independent so validation errors are precise.
+
+**Files (per slug):**
+- Create: `app/(dashboard)/formularios/[slug]/new/page.tsx`
+- Create: `app/(dashboard)/formularios/[slug]/new/<slug>-form.tsx`
+- Create: `app/(dashboard)/formularios/[slug]/[id]/edit/page.tsx`
+
+- [ ] **Step 1: One template — Convidado (simplest, do first)**
+
+```typescript
+// app/(dashboard)/formularios/guests/new/guests-form.tsx
+"use client"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { useCreateFormSubmission } from "@/lib/hooks/use-form-submissions"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+
+const schema = z.object({
+  full_name: z.string().min(2),
+  email: z.string().email().optional().or(z.literal("")),
+  phone: z.string().regex(/^\+?[0-9]{8,15}$/),
+  address: z.string().optional(),
+  invited_by: z.string().min(1),
+  how_met_church: z.enum(["convite_amigo","convite_parente","redes_sociais","passou_em_frente","outro"]).optional(),
+  notes: z.string().optional(),
+})
+type Form = z.infer<typeof schema>
+
+export function GuestsForm() {
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Form>({ resolver: zodResolver(schema) })
+  const create = useCreateFormSubmission<unknown, Form>("guests")
+  const router = useRouter()
+
+  const onSubmit = async (data: Form) => {
+    await create.mutateAsync(data)
+    toast.success("Convidado registrado")
+    router.push("/formularios/guests")
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-2xl">
+      <div><label>Nome completo *</label><Input {...register("full_name")} />{errors.full_name && <p className="text-sm text-destructive">{errors.full_name.message}</p>}</div>
+      <div><label>E-mail</label><Input {...register("email")} /></div>
+      <div><label>Telefone (WhatsApp) *</label><Input {...register("phone")} placeholder="+5511999999999" />{errors.phone && <p className="text-sm text-destructive">Use formato internacional</p>}</div>
+      <div><label>Endereço</label><Input {...register("address")} /></div>
+      <div><label>Convidado por *</label><Input {...register("invited_by")} />{errors.invited_by && <p className="text-sm text-destructive">Obrigatório</p>}</div>
+      <div><label>Observações</label><Textarea {...register("notes")} /></div>
+      <Button type="submit" disabled={isSubmitting}>Salvar</Button>
+    </form>
+  )
+}
+```
+
+- [ ] **Step 2: Repeat for each remaining form** — `member-registrations` (with completed_courses multi-select pulling from `useFormCourses`), `conversions`, `life-group-reports`, `sector-supervisor-reports`, `area-supervisor-reports`, `multiplications`, `service-reports`. Each form's Zod schema must mirror the backend DTO validation rules from Plan 1 exactly.
+
+For each: write one server `page.tsx`, one client `<slug>-form.tsx`, define Zod schema matching DTO. For supervisor reports use the `useUsers` hook (existing) for life groups/leaders multi-selects.
+
+- [ ] **Step 3: Edit pages**
+
+For each slug, an edit page that fetches the existing submission, pre-fills the same form, and calls `useUpdateFormSubmission` instead of `useCreateFormSubmission`. Reuse the form component:
+
+```typescript
+// app/(dashboard)/formularios/guests/[id]/edit/page.tsx
+"use client"
+import { use } from "react"
+import { useFormSubmission, useUpdateFormSubmission } from "@/lib/hooks/use-form-submissions"
+import { GuestsForm } from "../../new/guests-form"   // refactor to accept defaults + onSubmit
+```
+
+> **Refactor note**: parametrize each form component to accept `{ defaultValues, mode: "create" | "edit", id? }`. Avoid duplicating the markup.
+
+- [ ] **Step 4: Commit per form**
+
+```bash
+git commit -am "feat(formularios): add Convidado create/edit form"
+git commit -am "feat(formularios): add Cadastro do Membro create/edit form"
+# ... 8 commits total
+```
+
+---
+
+## Task 10: End-to-end verification
+
+- [ ] **Step 1: With backend (Plan 1) running, exercise each form in the browser**
+
+For each slug:
+1. Click "+ Novo registro" from the list
+2. Fill in valid data, submit, confirm toast + redirect
+3. Verify the new row appears in the list
+4. Click the row, see detail
+5. (As admin) edit a field, save, verify change + audit log entry
+6. (As admin) delete, verify it disappears from list
+
+- [ ] **Step 2: Role-based verification**
+
+- Log in as a `member` → `/formularios` shows empty state.
+- Log in as a `life_group_leader` → only see 6 forms; can write Convidado, Relatório de Life Group, etc.; courses panel hidden.
+- Log in as `admin` → see all 8 forms, courses panel visible on Cadastro do Membro page.
+
+- [ ] **Step 3: Lint + typecheck**
+
+```bash
+cd admin-ui
+npm run lint
+npx tsc --noEmit
+```
+
+- [ ] **Step 4: Final commit**
+
+```bash
+git commit --allow-empty -m "chore(formularios): admin-ui Plan 2 complete"
+```
+
+---
+
+## Out of scope for this plan
+- Backend work (Plan 1)
+- Mobile app work (Plan 3)
+- Charts/analytics over submissions (future)
+- Bulk operations (export, multi-delete)

@@ -1,0 +1,1051 @@
+# Formulários — Mobile App Implementation Plan (Plan 3 of 3)
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** Add Formulários to the mobile app under **Conta → Formulários**: a list of forms the user can write, with a per-form drilldown screen offering `Novo` (filling) and `Histórico` (own submissions) tabs. Edit allowed within 24h.
+
+**Architecture:** Follow the existing GetX/Dio pattern. New `FormulariosService` (GetxService) wraps the API. New `features/formularios/` directory with the list page, drilldown page, and one form widget per slug. Models mirror the backend JSON exactly (snake_case keys → fromJson constructors). Per-form Flutter forms (no generic renderer) keep validation strong and predictable.
+
+**Tech Stack:** Flutter 3.7+, Dart, GetX 4.7, Dio 5.8, intl 0.20.
+
+**Spec:** `docs/formularios.md` · **Backend prerequisite:** Plan 1 deployed.
+
+---
+
+## File Structure
+
+```
+mobile-app/lib/
+├── features/account/
+│   └── account_page.dart                              # MODIFY — add Formulários tile
+├── features/formularios/
+│   ├── formularios_list_page.dart
+│   ├── formularios_list_controller.dart
+│   ├── form_drilldown_page.dart                       # tabs: Novo | Histórico
+│   ├── form_drilldown_controller.dart
+│   ├── widgets/
+│   │   ├── form_card.dart
+│   │   ├── history_list.dart
+│   │   ├── history_item_tile.dart
+│   │   └── submission_detail_page.dart
+│   └── forms/                                         # one widget per slug
+│       ├── guests_form.dart
+│       ├── member_registration_form.dart
+│       ├── conversion_form.dart
+│       ├── life_group_report_form.dart
+│       ├── sector_supervisor_report_form.dart
+│       ├── area_supervisor_report_form.dart
+│       ├── multiplication_form.dart
+│       └── service_report_form.dart
+├── services/formularios/
+│   ├── formularios_service.dart
+│   └── models/
+│       ├── form_catalog_entry.dart
+│       ├── audit_log_entry.dart
+│       ├── member_registration.dart
+│       ├── conversion.dart
+│       ├── life_group_report.dart
+│       ├── sector_supervisor_report.dart
+│       ├── area_supervisor_report.dart
+│       ├── multiplication.dart
+│       ├── service_report.dart
+│       └── guest.dart
+├── network/api/
+│   └── api_endpoint.dart                              # MODIFY — add formulários endpoints
+└── main.dart                                          # MODIFY — register FormulariosService
+```
+
+---
+
+## Task 1: API endpoints + service registration
+
+**Files:**
+- Modify: `lib/network/api/api_endpoint.dart`
+- Modify: `lib/main.dart`
+
+- [ ] **Step 1: Inspect current endpoint enum**
+
+```bash
+cat mobile-app/lib/network/api/api_endpoint.dart
+```
+
+- [ ] **Step 2: Add formulários endpoints**
+
+Append entries (adjust the format to match the existing enum style — likely `path` getter):
+
+```dart
+// lib/network/api/api_endpoint.dart
+enum ApiEndpoint {
+  // ...existing
+  formsCatalog('/forms'),
+  formMemberRegistrations('/forms/member-registrations'),
+  formConversions('/forms/conversions'),
+  formLifeGroupReports('/forms/life-group-reports'),
+  formSectorSupervisorReports('/forms/sector-supervisor-reports'),
+  formAreaSupervisorReports('/forms/area-supervisor-reports'),
+  formMultiplications('/forms/multiplications'),
+  formServiceReports('/forms/service-reports'),
+  formGuests('/forms/guests'),
+  formCourses('/forms/member-registrations/courses');
+
+  final String path;
+  const ApiEndpoint(this.path);
+}
+```
+
+- [ ] **Step 3: Register service in main.dart (after NetworkService)**
+
+```dart
+// lib/main.dart, inside registerDependecies()
+Get.put(FormulariosService());
+```
+
+Add the import at top.
+
+- [ ] **Step 4: Commit**
+
+```bash
+cd mobile-app
+git add lib/network/api/api_endpoint.dart lib/main.dart
+git commit -m "feat(formularios): register endpoints and service stub"
+```
+
+---
+
+## Task 2: Model classes
+
+**Files:** all under `lib/services/formularios/models/`
+
+Models must use `fromJson(Map<String, dynamic>)` and `toJson()` matching backend snake_case keys exactly.
+
+- [ ] **Step 1: Catalog entry**
+
+```dart
+// lib/services/formularios/models/form_catalog_entry.dart
+class FormCatalogEntry {
+  final String slug;
+  final String name;
+  final String description;
+  final bool canWrite;
+  final bool canRead;
+
+  FormCatalogEntry({
+    required this.slug, required this.name, required this.description,
+    required this.canWrite, required this.canRead,
+  });
+
+  factory FormCatalogEntry.fromJson(Map<String, dynamic> j) => FormCatalogEntry(
+    slug: j['slug'], name: j['name'], description: j['description'],
+    canWrite: j['can_write'] ?? false, canRead: j['can_read'] ?? false,
+  );
+}
+```
+
+- [ ] **Step 2: Submission base + audit**
+
+```dart
+// lib/services/formularios/models/form_submission.dart
+class FormSubmissionMeta {
+  final String id;
+  final SubmissionActor submittedBy;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+
+  FormSubmissionMeta({
+    required this.id, required this.submittedBy,
+    required this.createdAt, required this.updatedAt, this.deletedAt,
+  });
+
+  static Map<String, dynamic> readMeta(Map<String, dynamic> j) => {
+    'id': j['id'],
+    'submitted_by': j['submitted_by'],
+    'created_at': j['created_at'],
+    'updated_at': j['updated_at'],
+    'deleted_at': j['deleted_at'],
+  };
+}
+
+class SubmissionActor {
+  final int id;
+  final String name;
+  SubmissionActor({required this.id, required this.name});
+  factory SubmissionActor.fromJson(Map<String, dynamic> j) =>
+    SubmissionActor(id: j['id'], name: j['name'] ?? '');
+}
+```
+
+```dart
+// lib/services/formularios/models/audit_log_entry.dart
+class AuditLogEntry {
+  final String id;
+  final String action;        // 'create' | 'update' | 'delete'
+  final String actorName;
+  final DateTime createdAt;
+
+  AuditLogEntry({required this.id, required this.action, required this.actorName, required this.createdAt});
+
+  factory AuditLogEntry.fromJson(Map<String, dynamic> j) => AuditLogEntry(
+    id: j['id'], action: j['action'],
+    actorName: (j['actor']?['name']) ?? '',
+    createdAt: DateTime.parse(j['created_at']),
+  );
+}
+```
+
+- [ ] **Step 3: One model per form**
+
+Repeat the pattern for each slug. Example — Guest:
+
+```dart
+// lib/services/formularios/models/guest.dart
+class Guest {
+  final String id;
+  final String fullName;
+  final String? email;
+  final String phone;
+  final String? address;
+  final String invitedBy;
+  final String? howMetChurch;
+  final String? notes;
+  final DateTime createdAt;
+
+  Guest({
+    required this.id, required this.fullName, this.email, required this.phone,
+    this.address, required this.invitedBy, this.howMetChurch, this.notes,
+    required this.createdAt,
+  });
+
+  factory Guest.fromJson(Map<String, dynamic> j) => Guest(
+    id: j['id'], fullName: j['full_name'], email: j['email'], phone: j['phone'],
+    address: j['address'], invitedBy: j['invited_by'], howMetChurch: j['how_met_church'],
+    notes: j['notes'], createdAt: DateTime.parse(j['created_at']),
+  );
+
+  static Map<String, dynamic> toCreateJson({
+    required String fullName, String? email, required String phone, String? address,
+    required String invitedBy, String? howMetChurch, String? notes,
+  }) => {
+    'full_name': fullName, if (email?.isNotEmpty == true) 'email': email,
+    'phone': phone, if (address?.isNotEmpty == true) 'address': address,
+    'invited_by': invitedBy,
+    if (howMetChurch != null) 'how_met_church': howMetChurch,
+    if (notes?.isNotEmpty == true) 'notes': notes,
+  };
+}
+```
+
+> Build the same shape for: `MemberRegistration`, `Conversion`, `LifeGroupReport`, `SectorSupervisorReport`, `AreaSupervisorReport`, `Multiplication`, `ServiceReport`. Field lists are in spec §3.1–§3.7 and match the backend entities/DTOs from Plan 1.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git commit -am "feat(formularios): add model classes for all 8 forms"
+```
+
+---
+
+## Task 3: FormulariosService (Dio wrapper)
+
+**Files:**
+- Create: `lib/services/formularios/formularios_service.dart`
+
+- [ ] **Step 1: Service class**
+
+```dart
+// lib/services/formularios/formularios_service.dart
+import 'package:get/get.dart';
+import 'package:logger/logger.dart';
+import '../../network/api/api_endpoint.dart';
+import '../../network/api/api_methods.dart';
+import '../../network/network_service.dart';
+import 'models/form_catalog_entry.dart';
+import 'models/audit_log_entry.dart';
+import 'models/guest.dart';
+// ... import other models
+
+class FormulariosService extends GetxService {
+  final NetworkService _net = Get.find<NetworkService>();
+  final Logger _logger = Get.find<Logger>();
+
+  final RxList<FormCatalogEntry> catalog = <FormCatalogEntry>[].obs;
+  final RxBool catalogLoading = false.obs;
+
+  Future<void> loadCatalog() async {
+    catalogLoading.value = true;
+    try {
+      final result = await _net.requestList<FormCatalogEntry>(
+        ApiEndpoint.formsCatalog, method: ApiMethod.get,
+        fromJson: FormCatalogEntry.fromJson,
+      );
+      catalog.assignAll(result ?? []);
+    } catch (e) {
+      _logger.e('loadCatalog error: $e');
+    } finally {
+      catalogLoading.value = false;
+    }
+  }
+
+  Future<List<T>?> listSubmissions<T>(
+    ApiEndpoint endpoint, T Function(Map<String, dynamic>) fromJson,
+  ) async {
+    return _net.requestList<T>(endpoint, method: ApiMethod.get, fromJson: fromJson);
+  }
+
+  Future<T?> createSubmission<T>(
+    ApiEndpoint endpoint, Map<String, dynamic> body, T Function(Map<String, dynamic>) fromJson,
+  ) async {
+    return _net.request<T>(endpoint, method: ApiMethod.post, data: body, fromJson: fromJson);
+  }
+
+  Future<T?> updateSubmission<T>(
+    ApiEndpoint endpoint, String id, Map<String, dynamic> body, T Function(Map<String, dynamic>) fromJson,
+  ) async {
+    return _net.request<T>(endpoint, method: ApiMethod.patch, id: id, data: body, fromJson: fromJson);
+  }
+
+  Future<List<AuditLogEntry>?> auditFor(ApiEndpoint endpoint, String submissionId) async {
+    // Backend route: /forms/:slug/:id/audit — append to endpoint.path
+    return _net.requestListRaw<AuditLogEntry>(
+      '${endpoint.path}/$submissionId/audit',
+      fromJson: AuditLogEntry.fromJson,
+    );
+  }
+
+  // Helper convenience: getter for endpoint by slug
+  static ApiEndpoint endpointFor(String slug) => switch (slug) {
+    'member-registrations' => ApiEndpoint.formMemberRegistrations,
+    'conversions' => ApiEndpoint.formConversions,
+    'life-group-reports' => ApiEndpoint.formLifeGroupReports,
+    'sector-supervisor-reports' => ApiEndpoint.formSectorSupervisorReports,
+    'area-supervisor-reports' => ApiEndpoint.formAreaSupervisorReports,
+    'multiplications' => ApiEndpoint.formMultiplications,
+    'service-reports' => ApiEndpoint.formServiceReports,
+    'guests' => ApiEndpoint.formGuests,
+    _ => throw ArgumentError('Unknown form slug: $slug'),
+  };
+}
+```
+
+> **Note:** The current `NetworkService.request` likely returns single objects. `requestList` and `requestListRaw` may need to be added. Inspect `NetworkService` and add list helpers:
+
+```dart
+// Add to NetworkService
+Future<List<T>?> requestList<T>(
+  ApiEndpoint endpoint, {
+  ApiMethod method = ApiMethod.get,
+  Map<String, dynamic>? params,
+  required T Function(Map<String, dynamic>) fromJson,
+}) async {
+  try {
+    final res = await _dio.get(endpoint.path, queryParameters: params);
+    if ((res.statusCode ?? 500) >= 300) return null;
+    final List<dynamic> data = res.data is List ? res.data : (res.data['data'] ?? []);
+    return data.map((e) => fromJson(e as Map<String, dynamic>)).toList();
+  } catch (e) {
+    _logger.e('Error: $e');
+    return null;
+  }
+}
+
+Future<List<T>?> requestListRaw<T>(String path, { required T Function(Map<String, dynamic>) fromJson }) async {
+  try {
+    final res = await _dio.get(path);
+    if ((res.statusCode ?? 500) >= 300) return null;
+    final List<dynamic> data = res.data is List ? res.data : [];
+    return data.map((e) => fromJson(e as Map<String, dynamic>)).toList();
+  } catch (e) { return null; }
+}
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git commit -am "feat(formularios): add FormulariosService and list helpers in NetworkService"
+```
+
+---
+
+## Task 4: Add Formulários tile to Conta page
+
+**Files:**
+- Modify: `lib/features/account/account_page.dart`
+
+- [ ] **Step 1: Inspect current Conta page structure**
+
+```bash
+cat mobile-app/lib/features/account/account_page.dart
+```
+
+Identify the section ("MINHA IGREJA" or similar) where leadership-related options live.
+
+- [ ] **Step 2: Add the tile**
+
+```dart
+// In the appropriate _SectionCard rows
+import '../formularios/formularios_list_page.dart';
+
+AppMenuRow(
+  iconData: Icons.assignment_outlined,
+  title: 'Formulários',
+  onTap: () => Get.to(() => const FormulariosListPage()),
+),
+```
+
+> **Visibility note:** Per spec, members see no forms (catalog returns empty). Per UX, still show the tile to all roles — the empty state on the list page communicates "no forms available." Or hide the tile if `!AccountController.isLeaderFor(user)`. Pick the latter to reduce confusion for plain members.
+
+```dart
+if (AccountController.isLeaderFor(user))
+  AppMenuRow(
+    iconData: Icons.assignment_outlined,
+    title: 'Formulários',
+    onTap: () => Get.to(() => const FormulariosListPage()),
+  ),
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git commit -am "feat(formularios): add Formulários tile to Conta page (leaders only)"
+```
+
+---
+
+## Task 5: Formulários list page + controller
+
+**Files:**
+- Create: `lib/features/formularios/formularios_list_page.dart`
+- Create: `lib/features/formularios/formularios_list_controller.dart`
+- Create: `lib/features/formularios/widgets/form_card.dart`
+
+- [ ] **Step 1: Controller**
+
+```dart
+// lib/features/formularios/formularios_list_controller.dart
+import 'package:get/get.dart';
+import '../../services/formularios/formularios_service.dart';
+
+class FormulariosListController extends GetxController {
+  final FormulariosService _service = Get.find<FormulariosService>();
+
+  @override
+  void onInit() {
+    super.onInit();
+    _service.loadCatalog();
+  }
+
+  RxList get catalog => _service.catalog;
+  RxBool get loading => _service.catalogLoading;
+
+  Future<void> refresh() => _service.loadCatalog();
+}
+```
+
+- [ ] **Step 2: Form card widget**
+
+```dart
+// lib/features/formularios/widgets/form_card.dart
+import 'package:flutter/material.dart';
+import '../../../services/formularios/models/form_catalog_entry.dart';
+
+class FormCard extends StatelessWidget {
+  final FormCatalogEntry entry;
+  final VoidCallback onTap;
+  const FormCard({super.key, required this.entry, required this.onTap});
+
+  IconData _iconFor(String slug) => switch (slug) {
+    'member-registrations' => Icons.person_add_alt_outlined,
+    'conversions' => Icons.favorite_outline,
+    'life-group-reports' => Icons.groups_outlined,
+    'sector-supervisor-reports' => Icons.assignment_turned_in_outlined,
+    'area-supervisor-reports' => Icons.bar_chart_outlined,
+    'multiplications' => Icons.alt_route_outlined,
+    'service-reports' => Icons.church_outlined,
+    'guests' => Icons.person_outline,
+    _ => Icons.description_outlined,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: Icon(_iconFor(entry.slug), size: 32, color: Theme.of(context).colorScheme.primary),
+        title: Text(entry.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(entry.description),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+```
+
+- [ ] **Step 3: List page**
+
+```dart
+// lib/features/formularios/formularios_list_page.dart
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'formularios_list_controller.dart';
+import 'form_drilldown_page.dart';
+import 'widgets/form_card.dart';
+
+class FormulariosListPage extends StatefulWidget {
+  const FormulariosListPage({super.key});
+  @override
+  State<FormulariosListPage> createState() => _FormulariosListPageState();
+}
+
+class _FormulariosListPageState extends State<FormulariosListPage> {
+  late final FormulariosListController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    Get.delete<FormulariosListController>(force: true);
+    controller = Get.put(FormulariosListController());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Formulários')),
+      body: RefreshIndicator(
+        onRefresh: controller.refresh,
+        child: Obx(() {
+          if (controller.loading.value && controller.catalog.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (controller.catalog.isEmpty) {
+            return ListView(
+              children: const [
+                SizedBox(height: 80),
+                Center(child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'Nenhum formulário disponível para você no momento.',
+                    textAlign: TextAlign.center,
+                  ),
+                )),
+              ],
+            );
+          }
+          final writeable = controller.catalog.where((f) => f.canWrite).toList();
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: writeable.length,
+            itemBuilder: (_, i) {
+              final entry = writeable[i];
+              return FormCard(
+                entry: entry,
+                onTap: () => Get.to(() => FormDrilldownPage(entry: entry)),
+              );
+            },
+          );
+        }),
+      ),
+    );
+  }
+}
+```
+
+- [ ] **Step 4: Verify in app**
+
+```bash
+cd mobile-app && flutter run
+# Navigate Conta → Formulários, confirm cards render filtered by role
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -am "feat(formularios): add list page with role-filtered form cards"
+```
+
+---
+
+## Task 6: Form drilldown page (tabs: Novo | Histórico)
+
+**Files:**
+- Create: `lib/features/formularios/form_drilldown_page.dart`
+- Create: `lib/features/formularios/form_drilldown_controller.dart`
+- Create: `lib/features/formularios/widgets/history_list.dart`
+
+The drilldown page is a `DefaultTabController` with two tabs. Tab 1 ("Novo") renders the form widget for that slug. Tab 2 ("Histórico") renders a list of the user's own submissions.
+
+- [ ] **Step 1: Controller**
+
+```dart
+// lib/features/formularios/form_drilldown_controller.dart
+import 'package:get/get.dart';
+import '../../services/formularios/formularios_service.dart';
+import '../../services/formularios/models/form_catalog_entry.dart';
+
+class FormDrilldownController extends GetxController {
+  final FormulariosService _service = Get.find<FormulariosService>();
+  final FormCatalogEntry entry;
+  final RxList history = [].obs;
+  final RxBool loading = false.obs;
+
+  FormDrilldownController(this.entry);
+
+  @override
+  void onInit() {
+    super.onInit();
+    refreshHistory();
+  }
+
+  Future<void> refreshHistory() async {
+    loading.value = true;
+    try {
+      // The list endpoint returns submissions visible to the user; per spec mobile shows only their own.
+      // Backend returns submitter info; filter client-side OR add ?mine=true (small backend extension).
+      // For v1 we trust the backend list and rely on the user only seeing their own anyway.
+      final endpoint = FormulariosService.endpointFor(entry.slug);
+      final result = await _service.listSubmissions<Map<String, dynamic>>(
+        endpoint, (j) => j,
+      );
+      history.assignAll(result ?? []);
+    } finally {
+      loading.value = false;
+    }
+  }
+}
+```
+
+- [ ] **Step 2: History list widget**
+
+```dart
+// lib/features/formularios/widgets/history_list.dart
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import '../form_drilldown_controller.dart';
+
+class HistoryList extends StatelessWidget {
+  final FormDrilldownController controller;
+  final String Function(Map<String, dynamic>) titleFor;
+  final String Function(Map<String, dynamic>) subtitleFor;
+  final void Function(Map<String, dynamic>) onTap;
+
+  const HistoryList({
+    super.key, required this.controller,
+    required this.titleFor, required this.subtitleFor, required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      if (controller.loading.value && controller.history.isEmpty) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (controller.history.isEmpty) {
+        return const Center(child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text('Nenhum envio ainda.'),
+        ));
+      }
+      final df = DateFormat('dd/MM/yyyy');
+      return RefreshIndicator(
+        onRefresh: controller.refreshHistory,
+        child: ListView.builder(
+          itemCount: controller.history.length,
+          itemBuilder: (_, i) {
+            final row = controller.history[i] as Map<String, dynamic>;
+            final created = DateTime.tryParse(row['created_at'] ?? '');
+            return ListTile(
+              title: Text(titleFor(row)),
+              subtitle: Text('${subtitleFor(row)}  ·  ${created != null ? df.format(created) : ''}'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => onTap(row),
+            );
+          },
+        ),
+      );
+    });
+  }
+}
+```
+
+- [ ] **Step 3: Drilldown page with form switcher**
+
+```dart
+// lib/features/formularios/form_drilldown_page.dart
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../../services/formularios/models/form_catalog_entry.dart';
+import 'form_drilldown_controller.dart';
+import 'forms/guests_form.dart';
+import 'forms/member_registration_form.dart';
+import 'forms/conversion_form.dart';
+import 'forms/life_group_report_form.dart';
+import 'forms/sector_supervisor_report_form.dart';
+import 'forms/area_supervisor_report_form.dart';
+import 'forms/multiplication_form.dart';
+import 'forms/service_report_form.dart';
+import 'widgets/history_list.dart';
+import 'widgets/submission_detail_page.dart';
+
+class FormDrilldownPage extends StatefulWidget {
+  final FormCatalogEntry entry;
+  const FormDrilldownPage({super.key, required this.entry});
+  @override
+  State<FormDrilldownPage> createState() => _FormDrilldownPageState();
+}
+
+class _FormDrilldownPageState extends State<FormDrilldownPage> {
+  late final FormDrilldownController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    Get.delete<FormDrilldownController>(force: true);
+    controller = Get.put(FormDrilldownController(widget.entry));
+  }
+
+  Widget _formFor(String slug) => switch (slug) {
+    'guests' => GuestsForm(onSubmitted: controller.refreshHistory),
+    'member-registrations' => MemberRegistrationForm(onSubmitted: controller.refreshHistory),
+    'conversions' => ConversionForm(onSubmitted: controller.refreshHistory),
+    'life-group-reports' => LifeGroupReportForm(onSubmitted: controller.refreshHistory),
+    'sector-supervisor-reports' => SectorSupervisorReportForm(onSubmitted: controller.refreshHistory),
+    'area-supervisor-reports' => AreaSupervisorReportForm(onSubmitted: controller.refreshHistory),
+    'multiplications' => MultiplicationForm(onSubmitted: controller.refreshHistory),
+    'service-reports' => ServiceReportForm(onSubmitted: controller.refreshHistory),
+    _ => const Center(child: Text('Formulário não suportado')),
+  };
+
+  String _titleFor(String slug, Map<String, dynamic> row) => switch (slug) {
+    'guests' => row['full_name'] ?? '—',
+    'member-registrations' => row['full_name'] ?? '—',
+    'conversions' => row['full_name'] ?? '—',
+    'life-group-reports' || 'sector-supervisor-reports' || 'area-supervisor-reports' || 'service-reports'
+      => 'Relatório',
+    'multiplications' => row['new_life_group_name'] ?? 'Multiplicação',
+    _ => '—',
+  };
+
+  String _subtitleFor(String slug, Map<String, dynamic> row) => switch (slug) {
+    'guests' => row['phone'] ?? '',
+    'conversions' => row['decision_type'] == 'first_time' ? 'Primeira decisão' : 'Reconciliação',
+    _ => '',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.entry.name),
+          bottom: const TabBar(tabs: [Tab(text: 'Novo'), Tab(text: 'Histórico')]),
+        ),
+        body: TabBarView(children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: _formFor(widget.entry.slug),
+          ),
+          HistoryList(
+            controller: controller,
+            titleFor: (row) => _titleFor(widget.entry.slug, row),
+            subtitleFor: (row) => _subtitleFor(widget.entry.slug, row),
+            onTap: (row) => Get.to(() => SubmissionDetailPage(slug: widget.entry.slug, submission: row)),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+```
+
+- [ ] **Step 4: Submission detail page (read-only render + edit if within 24h)**
+
+```dart
+// lib/features/formularios/widgets/submission_detail_page.dart
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+
+class SubmissionDetailPage extends StatelessWidget {
+  final String slug;
+  final Map<String, dynamic> submission;
+  const SubmissionDetailPage({super.key, required this.slug, required this.submission});
+
+  bool get _withinEditWindow {
+    final created = DateTime.tryParse(submission['created_at'] ?? '');
+    if (created == null) return false;
+    return DateTime.now().difference(created).inHours < 24;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final df = DateFormat('dd/MM/yyyy HH:mm');
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Detalhe'),
+        actions: [
+          if (_withinEditWindow)
+            TextButton(onPressed: () {
+              // Get.to(() => <Slug>EditPage(submission: submission));
+              Get.snackbar('Editar', 'Tela de edição pendente para v1.1');
+            }, child: const Text('Editar', style: TextStyle(color: Colors.white))),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: submission.entries
+          .where((e) => !['id','submitted_by','updated_at','deleted_at'].contains(e.key))
+          .map((e) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(e.key.replaceAll('_', ' ').toUpperCase(),
+                style: const TextStyle(fontSize: 11, color: Colors.grey)),
+              Text(_format(e.key, e.value, df)),
+            ]),
+          )).toList(),
+      ),
+    );
+  }
+
+  String _format(String k, dynamic v, DateFormat df) {
+    if (v == null) return '—';
+    if (k == 'created_at' || k.endsWith('_at')) {
+      final dt = DateTime.tryParse(v.toString());
+      return dt != null ? df.format(dt) : v.toString();
+    }
+    if (v is List) return v.join(', ');
+    return v.toString();
+  }
+}
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -am "feat(formularios): add form drilldown page with Novo/Histórico tabs"
+```
+
+---
+
+## Task 7: Form widgets — Convidado (template, simplest)
+
+**Files:**
+- Create: `lib/features/formularios/forms/guests_form.dart`
+
+- [ ] **Step 1: Form widget**
+
+```dart
+// lib/features/formularios/forms/guests_form.dart
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../../../network/api/api_endpoint.dart';
+import '../../../services/formularios/formularios_service.dart';
+import '../../../services/formularios/models/guest.dart';
+
+class GuestsForm extends StatefulWidget {
+  final VoidCallback? onSubmitted;
+  const GuestsForm({super.key, this.onSubmitted});
+  @override
+  State<GuestsForm> createState() => _GuestsFormState();
+}
+
+class _GuestsFormState extends State<GuestsForm> {
+  final _formKey = GlobalKey<FormState>();
+  final _fullName = TextEditingController();
+  final _email = TextEditingController();
+  final _phone = TextEditingController();
+  final _address = TextEditingController();
+  final _invitedBy = TextEditingController();
+  final _notes = TextEditingController();
+  String? _howMet;
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    for (final c in [_fullName,_email,_phone,_address,_invitedBy,_notes]) { c.dispose(); }
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _submitting = true);
+    final svc = Get.find<FormulariosService>();
+    final payload = Guest.toCreateJson(
+      fullName: _fullName.text.trim(),
+      email: _email.text.trim(),
+      phone: _phone.text.trim(),
+      address: _address.text.trim(),
+      invitedBy: _invitedBy.text.trim(),
+      howMetChurch: _howMet,
+      notes: _notes.text.trim(),
+    );
+    final result = await svc.createSubmission<Guest>(
+      ApiEndpoint.formGuests, payload, Guest.fromJson,
+    );
+    setState(() => _submitting = false);
+    if (result != null) {
+      Get.snackbar('Pronto', 'Convidado registrado com sucesso',
+        snackPosition: SnackPosition.BOTTOM);
+      _formKey.currentState!.reset();
+      for (final c in [_fullName,_email,_phone,_address,_invitedBy,_notes]) { c.clear(); }
+      setState(() => _howMet = null);
+      widget.onSubmitted?.call();
+    } else {
+      Get.snackbar('Erro', 'Não foi possível registrar', snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: _formKey,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        TextFormField(controller: _fullName,
+          decoration: const InputDecoration(labelText: 'Nome completo *'),
+          validator: (v) => (v == null || v.trim().length < 2) ? 'Obrigatório' : null),
+        const SizedBox(height: 12),
+        TextFormField(controller: _email,
+          decoration: const InputDecoration(labelText: 'E-mail'),
+          validator: (v) => (v != null && v.isNotEmpty && !v.contains('@')) ? 'E-mail inválido' : null),
+        const SizedBox(height: 12),
+        TextFormField(controller: _phone,
+          decoration: const InputDecoration(labelText: 'WhatsApp *', hintText: '+5511999999999'),
+          validator: (v) => (v == null || !RegExp(r'^\+?[0-9]{8,15}$').hasMatch(v)) ? 'Formato internacional' : null),
+        const SizedBox(height: 12),
+        TextFormField(controller: _address, decoration: const InputDecoration(labelText: 'Endereço')),
+        const SizedBox(height: 12),
+        TextFormField(controller: _invitedBy,
+          decoration: const InputDecoration(labelText: 'Convidado por *'),
+          validator: (v) => (v == null || v.isEmpty) ? 'Obrigatório' : null),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          value: _howMet,
+          decoration: const InputDecoration(labelText: 'Como conheceu a igreja'),
+          items: const [
+            DropdownMenuItem(value: 'convite_amigo', child: Text('Convite de amigo')),
+            DropdownMenuItem(value: 'convite_parente', child: Text('Convite de parente')),
+            DropdownMenuItem(value: 'redes_sociais', child: Text('Redes sociais')),
+            DropdownMenuItem(value: 'passou_em_frente', child: Text('Passou em frente')),
+            DropdownMenuItem(value: 'outro', child: Text('Outro')),
+          ],
+          onChanged: (v) => setState(() => _howMet = v),
+        ),
+        const SizedBox(height: 12),
+        TextFormField(controller: _notes,
+          decoration: const InputDecoration(labelText: 'Observações'),
+          maxLines: 3),
+        const SizedBox(height: 24),
+        ElevatedButton(
+          onPressed: _submitting ? null : _submit,
+          child: _submitting
+            ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+            : const Text('Salvar'),
+        ),
+      ]),
+    );
+  }
+}
+```
+
+- [ ] **Step 2: Smoke test in simulator**
+
+`flutter run` → Conta → Formulários → Convidado → fill form, submit. Verify "Pronto" toast and the new entry appears in Histórico tab on refresh.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git commit -am "feat(formularios): add Convidado form widget"
+```
+
+---
+
+## Task 8: Remaining 7 form widgets
+
+Build each form widget following the Convidado template. Each task = one form, one commit.
+
+Field reference per form is in `docs/formularios.md` §3.1–§3.7. Validation rules mirror the backend DTOs from Plan 1 (same enums, same conditional fields, same regex for phone).
+
+- [ ] **Task 8a: Cadastro do Membro form**
+  - Pull dropdown options for `sector_id` / `life_group_id` from existing services (`Get.find<SectorService>()` etc. — verify existing service names).
+  - `completed_courses`: load from `GET /api/forms/member-registrations/courses` (add a method `loadCourses()` to `FormulariosService`); render as multi-select chips.
+  - Commit: `feat(formularios): add Cadastro do Membro form widget`
+
+- [ ] **Task 8b: Conversão e Reconciliação form**
+  - Conditional `how_met_church_other` field (visible only when "outro" selected).
+  - Conditional `life_group_leader_or_name` (visible when "sim" selected).
+  - Commit: `feat(formularios): add Conversão form widget`
+
+- [ ] **Task 8c: Relatório de Life Group form**
+  - Auto-populated `area_id`/`sector_id`/`life_group_id` from leader's profile (read via `Get.find<AuthController>().authenticatedUser.value`); display as read-only chips at top.
+  - Numeric inputs with validation (`>= 0`).
+  - `offering` as `decimal` — accept comma or dot.
+  - `leader_attended` as multi-select chip group.
+  - `pastoring_activity_objective` — sanitize commas client-side too: `text.replaceAll(',', '')` before submit.
+  - Commit: `feat(formularios): add Relatório de Life Group form widget`
+
+- [ ] **Task 8d: Atividades Supervisor de Setor form**
+  - Multi-select for `life_groups_visited` (load life groups in user's sector).
+  - Commit: `feat(formularios): add Atividades Supervisor de Setor form widget`
+
+- [ ] **Task 8e: Atividades Supervisor de Área form**
+  - Multi-select for `sectors_visited`.
+  - Commit: `feat(formularios): add Atividades Supervisor de Área form widget`
+
+- [ ] **Task 8f: Multiplicação form**
+  - Pre-step: select `source_life_group_id` first; only after selection show the rest of the form.
+  - All boolean checklist fields rendered as `CheckboxListTile`.
+  - `meeting_day_time` uses `showDatePicker` + `showTimePicker`.
+  - `members_to_move` and `new_members` are multi-select user pickers.
+  - Commit: `feat(formularios): add Multiplicação form widget`
+
+- [ ] **Task 8g: Relatório do Culto form**
+  - `service_type_other` shown only when `service_type === 'outro'`.
+  - All numeric fields with `>= 0` validation.
+  - Commit: `feat(formularios): add Relatório do Culto form widget`
+
+---
+
+## Task 9: End-to-end verification on device
+
+- [ ] **Step 1: Run app against staging or local backend**
+
+```bash
+cd mobile-app
+flutter run --dart-define=BASE_URL=http://localhost:3001/api
+```
+
+- [ ] **Step 2: Walk through each form as different roles**
+
+- Log in as a `life_group_leader` → verify only writeable forms appear (Cadastro, Conversão, Relatório de LG, Convidado, Relatório do Culto).
+- Submit each form with valid data. Verify toast + appearance in Histórico tab.
+- Open one entry — confirm detail page renders fields. If within 24h, "Editar" appears.
+- Pull-to-refresh works.
+
+- [ ] **Step 3: Edge cases**
+
+- Submit with invalid phone → form validation error.
+- Toggle conditional fields (Conversão's "outro", Multiplicação's "solteiro") and confirm visibility.
+- Force a network error (disable wifi) → graceful failure toast.
+
+- [ ] **Step 4: `flutter analyze`**
+
+```bash
+flutter analyze
+```
+
+Fix any warnings.
+
+- [ ] **Step 5: Final commit**
+
+```bash
+git commit --allow-empty -m "chore(formularios): mobile Plan 3 complete"
+```
+
+---
+
+## Out of scope for this plan
+- Backend (Plan 1)
+- Admin UI (Plan 2)
+- Edit screen on mobile — display only the "Editar" button for v1.1 (currently shows a "pendente" snackbar). Add per-form edit pages in a follow-up.
+- Offline drafts.
+- Push notifications about new submissions visible to leaders.
