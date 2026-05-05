@@ -1,0 +1,26 @@
+---
+description: Use Superpowers — invoke skills before responding when any skill might apply
+alwaysApply: true
+---
+
+# Superpowers
+
+This project uses **Superpowers**: the agent must check and use relevant skills before answering or acting.
+
+## Rule
+
+- If there is **any chance** a skill applies to the task, **invoke the skill first** (via the Skill tool).
+- Do not skip this for "simple" questions or to "gather context first" — skill check comes before clarifications or exploration.
+- When multiple skills apply: use **process skills first** (e.g. brainstorming, debugging), then **implementation skills**.
+
+## Skill priority
+
+1. **Process** (how to approach): brainstorming, debugging, TDD, writing-plans, verification-before-completion.
+2. **Implementation** (how to build): executor, react-engineer, documentation, etc.
+
+Example: "Let's build X" → use brainstorming (or writing-plans), then implementation skills. "Fix this bug" → use systematic-debugging first.
+
+## In this repo
+
+- Read submodule-specific `CLAUDE.md` when working inside `admin-ui/`, `backend/`, or `mobile-app/`.
+- Follow the skill’s instructions; if a skill gives a checklist, create TodoWrite items and follow them.
