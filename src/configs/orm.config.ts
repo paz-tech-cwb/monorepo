@@ -19,6 +19,7 @@ import { Conversion } from '../conversions/entities/conversion.entity';
 import { UserDeviceToken } from '../users/entities/user-device-token.entity';
 import { UserNotificationPreferences } from '../users/entities/user-notification-preferences.entity';
 import { FormSubmissionAuditLog } from '../forms-core/entities/form-submission-audit-log.entity';
+import { ChurchSetting } from '../forms-core/entities/church-setting.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -50,6 +51,7 @@ const config: DataSourceOptions = {
     UserDeviceToken,
     UserNotificationPreferences,
     FormSubmissionAuditLog,
+    ChurchSetting,
   ],
   migrations: ['dist/migrations/*.js'],
   synchronize: process.env.DB_SYNCHRONIZE === 'true',
