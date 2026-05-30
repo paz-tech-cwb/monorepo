@@ -3,6 +3,11 @@ import { MigrationInterface, QueryRunner } from "typeorm";
 export class CreateFormulariosSchema1780164488347 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // 0. Add area_id to sectors (needed for area_leader scope resolution)
+    await queryRunner.query(`
+      ALTER TABLE sectors ADD COLUMN IF NOT EXISTS area_id int REFERENCES areas(id) ON DELETE SET NULL;
+    `);
+
     // 1. Audit log
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS form_submission_audit_log (
