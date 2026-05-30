@@ -25,6 +25,13 @@ import { ConversionsModule } from './conversions/conversions.module';
 import { FormCoursesModule } from './form-courses/form-courses.module';
 import { FormsCatalogModule } from './forms-catalog/forms-catalog.module';
 import { MemberRegistrationsModule } from './member-registrations/member-registrations.module';
+import { FormConversionsModule } from './form-conversions/form-conversions.module';
+import { LifeGroupReportsModule } from './life-group-reports/life-group-reports.module';
+import { SectorSupervisorReportsModule } from './sector-supervisor-reports/sector-supervisor-reports.module';
+import { AreaSupervisorReportsModule } from './area-supervisor-reports/area-supervisor-reports.module';
+import { MultiplicationsModule } from './multiplications/multiplications.module';
+import { ServiceReportsModule } from './service-reports/service-reports.module';
+import { FormGuestsModule } from './form-guests/form-guests.module';
 
 import ormconfig from './configs/orm.config';
 
@@ -70,6 +77,13 @@ import ormconfig from './configs/orm.config';
     FormCoursesModule,
     FormsCatalogModule,
     MemberRegistrationsModule,
+    FormConversionsModule,
+    LifeGroupReportsModule,
+    SectorSupervisorReportsModule,
+    AreaSupervisorReportsModule,
+    MultiplicationsModule,
+    ServiceReportsModule,
+    FormGuestsModule,
   ],
   providers: [
     {

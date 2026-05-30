@@ -23,6 +23,13 @@ import { ChurchSetting } from '../forms-core/entities/church-setting.entity';
 import { FormCourse } from '../form-courses/entities/form-course.entity';
 import { FormCourseLink } from '../form-courses/entities/form-course-link.entity';
 import { MemberRegistration } from '../member-registrations/entities/member-registration.entity';
+import { FormConversion } from '../form-conversions/entities/form-conversion.entity';
+import { LifeGroupReport } from '../life-group-reports/entities/life-group-report.entity';
+import { SectorSupervisorReport } from '../sector-supervisor-reports/entities/sector-supervisor-report.entity';
+import { AreaSupervisorReport } from '../area-supervisor-reports/entities/area-supervisor-report.entity';
+import { Multiplication } from '../multiplications/entities/multiplication.entity';
+import { ServiceReport } from '../service-reports/entities/service-report.entity';
+import { FormGuest } from '../form-guests/entities/form-guest.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -58,6 +65,13 @@ export const AppDataSource = new DataSource({
     FormCourse,
     FormCourseLink,
     MemberRegistration,
+    FormConversion,
+    LifeGroupReport,
+    SectorSupervisorReport,
+    AreaSupervisorReport,
+    Multiplication,
+    ServiceReport,
+    FormGuest,
   ],
   migrations: ['dist/database/migrations/*.js'],
   synchronize: process.env.DB_SYNCHRONIZE === 'true',
