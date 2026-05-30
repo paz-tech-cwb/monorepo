@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MemberRegistration } from './entities/member-registration.entity';
@@ -68,18 +68,27 @@ export class MemberRegistrationsService {
     return qb.orderBy('m.created_at', 'DESC').getMany();
   }
 
-  async findOne(id: string): Promise<MemberRegistration> {
+  async findOne(id: string, scope?: ResolvedScope): Promise<MemberRegistration> {
     const m = await this.repo.findOne({ where: { id }, relations: ['submittedBy'] });
     if (!m) throw new NotFoundException();
+    if (scope && !scope.unrestricted && m.lifeGroupId !== null && !scope.lifeGroupIds.includes(m.lifeGroupId)) {
+      throw new ForbiddenException();
+    }
     return m;
+  }
+
+  async auditLog(id: string, scope: ResolvedScope) {
+    await this.findOne(id, scope);
+    return this.audit.listForSubmission(SLUG, id);
   }
 
   async update(
     id: string,
     dto: UpdateMemberRegistrationDto,
     actor: { id: number; roleSlug: string },
+    scope: ResolvedScope,
   ): Promise<MemberRegistration> {
-    const m = await this.findOne(id);
+    const m = await this.findOne(id, scope);
     this.policy.assertCanEdit(actor, { submittedById: m.submittedBy.id, createdAt: m.createdAt, deletedAt: m.deletedAt });
     Object.assign(m, dto);
     const saved = await this.repo.save(m);
@@ -87,13 +96,10 @@ export class MemberRegistrationsService {
     return saved;
   }
 
-  async softDelete(id: string, actor: { id: number; roleSlug: string }): Promise<void> {
+  async softDelete(id: string, actor: { id: number; roleSlug: string }, scope: ResolvedScope): Promise<void> {
+    await this.findOne(id, scope);
     this.policy.assertCanDelete(actor);
     await this.repo.softDelete(id);
     await this.audit.record({ formSlug: SLUG, submissionId: id, actorId: actor.id, action: 'delete' });
-  }
-
-  async auditLog(id: string) {
-    return this.audit.listForSubmission(SLUG, id);
   }
 }

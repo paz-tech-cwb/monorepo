@@ -27,10 +27,11 @@ export class OnboardingService {
       user.phoneNumber = reg.phone;
     }
     await this.users.save(user);
+    const escHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c] ?? c));
     void this.notifications.sendEmail({
       to: reg.email,
       subject: 'Bem-vindo à Igreja Paz Curitiba',
-      html: `<h1>Olá, ${reg.fullName}!</h1><p>Seu cadastro foi recebido. Baixe o app Paz Curitiba.</p>`,
+      html: `<h1>Olá, ${escHtml(reg.fullName)}!</h1><p>Seu cadastro foi recebido. Baixe o app Paz Curitiba.</p>`,
     });
   }
 }

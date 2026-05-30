@@ -18,13 +18,13 @@ export class MemberRegistrationsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.svc.findOne(id);
+  findOne(@Param('id') id: string, @Req() req: any) {
+    return this.svc.findOne(id, req.formScope);
   }
 
   @Get(':id/audit')
-  audit(@Param('id') id: string) {
-    return this.svc.auditLog(id);
+  audit(@Param('id') id: string, @Req() req: any) {
+    return this.svc.auditLog(id, req.formScope);
   }
 
   @Post()
@@ -36,11 +36,11 @@ export class MemberRegistrationsController {
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateMemberRegistrationDto, @Req() req: any) {
-    return this.svc.update(id, dto, { id: req.user.id, roleSlug: req.user.role?.slug ?? 'member' });
+    return this.svc.update(id, dto, { id: req.user.id, roleSlug: req.user.role?.slug ?? 'member' }, req.formScope);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: any) {
-    return this.svc.softDelete(id, { id: req.user.id, roleSlug: req.user.role?.slug ?? 'member' });
+    return this.svc.softDelete(id, { id: req.user.id, roleSlug: req.user.role?.slug ?? 'member' }, req.formScope);
   }
 }
