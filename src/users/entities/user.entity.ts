@@ -5,7 +5,9 @@ import {
   ManyToOne,
   ManyToMany,
   OneToMany,
+  OneToOne,
   JoinTable,
+  JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -15,6 +17,7 @@ import { UserAccount } from './account.entity';
 import { Sector } from '../../sectors/entities/sector.entity';
 import { LifeGroup } from '../../life-groups/entities/life-group.entity';
 import { Course } from '../../courses/entities/course.entity';
+import { Area } from '../../areas/entities/area.entity';
 
 @Entity('users')
 export class User {
@@ -71,6 +74,18 @@ export class User {
     nullable: true,
   })
   accounts: UserAccount[];
+
+  @OneToOne(() => Area, { nullable: true, eager: false })
+  @JoinColumn()
+  leadingArea: Area | null;
+
+  @OneToOne(() => Sector, { nullable: true, eager: false })
+  @JoinColumn()
+  leadingSector: Sector | null;
+
+  @OneToOne(() => LifeGroup, { nullable: true, eager: false })
+  @JoinColumn()
+  leadingLifeGroup: LifeGroup | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
