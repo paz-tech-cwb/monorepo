@@ -274,6 +274,33 @@ export class UsersService {
     }
   }
 
+  async lookupForForms(filters: { email?: string; phone?: string }) {
+    const where: any[] = [];
+    if (filters.email?.trim())
+      where.push({ email: filters.email.trim().toLowerCase() });
+    if (filters.phone?.trim())
+      where.push({ phoneNumber: filters.phone.trim() });
+    if (where.length === 0) return null;
+
+    const user = await this.entityManager.findOne(User, {
+      where,
+      relations: ['lifeGroups', 'lifeGroups.leader', 'sector', 'address'],
+    });
+    if (!user) return null;
+
+    const primaryLifeGroup = user.lifeGroups?.[0] ?? null;
+    return {
+      id: user.id,
+      full_name: user.name,
+      email: user.email,
+      phone: user.phoneNumber,
+      birth_date: user.birthDate,
+      sector_id: user.sector?.id ?? null,
+      life_group_id: primaryLifeGroup?.id ?? null,
+      leader_id: primaryLifeGroup?.leader?.id ?? null,
+    };
+  }
+
   async remove(id: number): Promise<void> {
     const user = await this.findOneEntity(id);
     await this.entityManager.remove(User, user);

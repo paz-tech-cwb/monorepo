@@ -7,6 +7,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -96,6 +97,16 @@ export class UsersController {
     @Body() dto: UpdateProfileDto,
   ) {
     return this.usersService.updateProfile(req.user.id, dto);
+  }
+
+  @Get('lookup')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'pastor', 'area_leader', 'sector_leader', 'life_group_leader')
+  lookupForForms(
+    @Query('email') email?: string,
+    @Query('phone') phone?: string,
+  ) {
+    return this.usersService.lookupForForms({ email, phone });
   }
 
   @Get(':id')
