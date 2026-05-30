@@ -18,6 +18,8 @@ import { MeetingReport } from '../meeting-reports/entities/meeting-report.entity
 import { Conversion } from '../conversions/entities/conversion.entity';
 import { UserDeviceToken } from '../users/entities/user-device-token.entity';
 import { UserNotificationPreferences } from '../users/entities/user-notification-preferences.entity';
+import { FormSubmissionAuditLog } from '../forms-core/entities/form-submission-audit-log.entity';
+import { ChurchSetting } from '../forms-core/entities/church-setting.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -48,6 +50,8 @@ export const AppDataSource = new DataSource({
     Conversion,
     UserDeviceToken,
     UserNotificationPreferences,
+    FormSubmissionAuditLog,
+    ChurchSetting,
   ],
   migrations: ['dist/database/migrations/*.js'],
   synchronize: process.env.DB_SYNCHRONIZE === 'true',

@@ -31,10 +31,11 @@ export class ScopeResolverService {
     }
 
     if (slug === 'area_leader' && user.leadingArea) {
-      const lifes = await this.lifeGroups.find({
-        where: { sector: { area: { id: user.leadingArea.id } } },
-        relations: ['sector', 'sector.area'],
-      });
+      const lifes = await this.lifeGroups
+        .createQueryBuilder('lg')
+        .innerJoinAndSelect('lg.sector', 'sector')
+        .where('sector.area_id = :areaId', { areaId: user.leadingArea.id })
+        .getMany();
       const sectorIds = [...new Set(lifes.map((l) => l.sector!.id))];
       return {
         unrestricted: false,

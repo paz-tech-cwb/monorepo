@@ -22,7 +22,8 @@ export class FormSubmissionAuditService {
       submissionId: params.submissionId,
       actor: { id: params.actorId } as any,
       action: params.action,
-      diff: params.diff ?? null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      diff: (params.diff ?? null) as any,
     });
   }
 
