@@ -16,6 +16,7 @@ import {
   LogOut,
   Megaphone,
   GitMerge,
+  ClipboardList,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -48,6 +49,12 @@ const sidebarSections = [
     items: [
       { name: "Trilhos", href: "/course-tracks", icon: Route },
       { name: "Cursos", href: "/courses", icon: BookOpen }
+    ],
+  },
+  {
+    title: "Formularios",
+    items: [
+      { name: "Formulários", href: "/formularios", icon: ClipboardList },
     ],
   },
   {
