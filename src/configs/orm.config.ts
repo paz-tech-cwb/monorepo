@@ -18,6 +18,7 @@ import { MeetingReport } from '../meeting-reports/entities/meeting-report.entity
 import { Conversion } from '../conversions/entities/conversion.entity';
 import { UserDeviceToken } from '../users/entities/user-device-token.entity';
 import { UserNotificationPreferences } from '../users/entities/user-notification-preferences.entity';
+import { FormSubmissionAuditLog } from '../forms-core/entities/form-submission-audit-log.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -48,6 +49,7 @@ const config: DataSourceOptions = {
     Conversion,
     UserDeviceToken,
     UserNotificationPreferences,
+    FormSubmissionAuditLog,
   ],
   migrations: ['dist/migrations/*.js'],
   synchronize: process.env.DB_SYNCHRONIZE === 'true',
