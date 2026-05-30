@@ -22,6 +22,7 @@ import { SectorsModule } from './sectors/sectors.module';
 import { LifeGroupsModule } from './life-groups/life-groups.module';
 import { MeetingReportsModule } from './meeting-reports/meeting-reports.module';
 import { ConversionsModule } from './conversions/conversions.module';
+import { FormCoursesModule } from './form-courses/form-courses.module';
 
 import ormconfig from './configs/orm.config';
 
@@ -64,6 +65,7 @@ import ormconfig from './configs/orm.config';
     LifeGroupsModule,
     MeetingReportsModule,
     ConversionsModule,
+    FormCoursesModule,
   ],
   providers: [
     {
