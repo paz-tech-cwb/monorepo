@@ -22,6 +22,7 @@ import { FormSubmissionAuditLog } from '../forms-core/entities/form-submission-a
 import { ChurchSetting } from '../forms-core/entities/church-setting.entity';
 import { FormCourse } from '../form-courses/entities/form-course.entity';
 import { FormCourseLink } from '../form-courses/entities/form-course-link.entity';
+import { MemberRegistration } from '../member-registrations/entities/member-registration.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -56,6 +57,7 @@ const config: DataSourceOptions = {
     ChurchSetting,
     FormCourse,
     FormCourseLink,
+    MemberRegistration,
   ],
   migrations: ['dist/migrations/*.js'],
   synchronize: process.env.DB_SYNCHRONIZE === 'true',

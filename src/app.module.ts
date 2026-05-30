@@ -24,6 +24,7 @@ import { MeetingReportsModule } from './meeting-reports/meeting-reports.module';
 import { ConversionsModule } from './conversions/conversions.module';
 import { FormCoursesModule } from './form-courses/form-courses.module';
 import { FormsCatalogModule } from './forms-catalog/forms-catalog.module';
+import { MemberRegistrationsModule } from './member-registrations/member-registrations.module';
 
 import ormconfig from './configs/orm.config';
 
@@ -68,6 +69,7 @@ import ormconfig from './configs/orm.config';
     ConversionsModule,
     FormCoursesModule,
     FormsCatalogModule,
+    MemberRegistrationsModule,
   ],
   providers: [
     {
