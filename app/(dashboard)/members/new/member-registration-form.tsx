@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -29,7 +29,6 @@ import { useSectors } from "@/lib/hooks/use-sectors"
 import { useCourses } from "@/lib/hooks/use-courses"
 import { useLifeGroups } from "@/lib/hooks/use-life-groups"
 import { formatPhoneBR, validatePhoneBR } from "@/lib/utils/phone"
-import { format } from "date-fns"
 
 const memberSchema = z.object({
   full_name: z.string().min(3, "Nome completo e obrigatorio"),
@@ -57,6 +56,9 @@ export function MemberRegistrationForm() {
 
   const [phoneValue, setPhoneValue] = useState("")
   const [selectedCourses, setSelectedCourses] = useState<number[]>([])
+  const [selectedSectorId, setSelectedSectorId] = useState<number | null>(null)
+  const [selectedLifeGroupId, setSelectedLifeGroupId] = useState<number | null>(null)
+  const [selectedLeaderName, setSelectedLeaderName] = useState<string | null>(null)
 
   const {
     register,
@@ -67,6 +69,62 @@ export function MemberRegistrationForm() {
     resolver: zodResolver(memberSchema),
   })
 
+  const sortedSectors = useMemo(
+    () => [...sectors].sort((a, b) => a.name.localeCompare(b.name)),
+    [sectors]
+  )
+
+  const filteredLifeGroups = useMemo(
+    () =>
+      lifeGroups
+        .filter((lg) => lg.sector_id === selectedSectorId)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [lifeGroups, selectedSectorId]
+  )
+
+  const allLeaders = useMemo(() => {
+    const seen = new Map<string, string>()
+    for (const lg of lifeGroups) {
+      if (lg.leader_name && !seen.has(lg.leader_name)) {
+        seen.set(lg.leader_name, lg.leader_name)
+      }
+    }
+    return Array.from(seen.values()).sort((a, b) => a.localeCompare(b))
+  }, [lifeGroups])
+
+  const handleSectorChange = (value: string) => {
+    const id = parseInt(value)
+    setSelectedSectorId(id)
+    setSelectedLifeGroupId(null)
+    setSelectedLeaderName(null)
+    setValue("sector_id", id)
+    setValue("life_group_ids", [])
+    setValue("leader_name", undefined)
+  }
+
+  const handleLifeGroupChange = (value: string) => {
+    const id = parseInt(value)
+    const lg = lifeGroups.find((g) => g.id === id)
+    if (!lg) return
+
+    setSelectedLifeGroupId(id)
+    setValue("life_group_ids", [id])
+
+    if (!selectedSectorId && lg.sector_id) {
+      setSelectedSectorId(lg.sector_id)
+      setValue("sector_id", lg.sector_id)
+    }
+
+    const leaderName = lg.leader_name ?? null
+    setSelectedLeaderName(leaderName)
+    setValue("leader_name", leaderName ?? undefined)
+  }
+
+  const handleLeaderChange = (value: string) => {
+    setSelectedLeaderName(value)
+    setValue("leader_name", value)
+  }
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhoneBR(e.target.value)
     setPhoneValue(formatted)
@@ -75,12 +133,12 @@ export function MemberRegistrationForm() {
 
   const handleCourseToggle = (courseId: number) => {
     setSelectedCourses((prev) => {
-      if (prev.includes(courseId)) {
-        return prev.filter((id) => id !== courseId)
-      }
-      return [...prev, courseId]
+      const next = prev.includes(courseId)
+        ? prev.filter((id) => id !== courseId)
+        : [...prev, courseId]
+      setValue("completed_courses", next)
+      return next
     })
-    setValue("completed_courses", selectedCourses)
   }
 
   const onSubmit = async (data: MemberFormData) => {
@@ -179,21 +237,20 @@ export function MemberRegistrationForm() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="sector_id">
+                <Label>
                   Setor <span className="text-destructive">*</span>
                 </Label>
                 <Select
-                  onValueChange={(value) =>
-                    setValue("sector_id", parseInt(value))
-                  }
+                  value={selectedSectorId?.toString() ?? ""}
+                  onValueChange={handleSectorChange}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um setor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {sectors.map((sector) => (
+                    {sortedSectors.map((sector) => (
                       <SelectItem key={sector.id} value={sector.id.toString()}>
                         {sector.name}
                       </SelectItem>
@@ -208,19 +265,25 @@ export function MemberRegistrationForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="life_group_ids">
+                <Label>
                   Life Group <span className="text-destructive">*</span>
                 </Label>
                 <Select
-                  onValueChange={(value) =>
-                    setValue("life_group_ids", [parseInt(value)])
-                  }
+                  value={selectedLifeGroupId?.toString() ?? ""}
+                  onValueChange={handleLifeGroupChange}
+                  disabled={selectedSectorId === null}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um Life Group" />
+                    <SelectValue
+                      placeholder={
+                        selectedSectorId === null
+                          ? "Selecione um setor primeiro"
+                          : "Selecione um Life Group"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {lifeGroups.map((group) => (
+                    {filteredLifeGroups.map((group) => (
                       <SelectItem key={group.id} value={String(group.id)}>
                         {group.name}
                       </SelectItem>
@@ -233,15 +296,25 @@ export function MemberRegistrationForm() {
                   </p>
                 )}
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="leader_name">Nome do Lider</Label>
-              <Input
-                id="leader_name"
-                {...register("leader_name")}
-                placeholder="Nome do lider (opcional)"
-              />
+              <div className="space-y-2">
+                <Label>Lider</Label>
+                <Select
+                  value={selectedLeaderName ?? ""}
+                  onValueChange={handleLeaderChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um lider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allLeaders.map((name) => (
+                      <SelectItem key={name} value={name}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="space-y-2">
