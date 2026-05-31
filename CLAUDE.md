@@ -61,13 +61,18 @@ Full spec: `docs/superpowers/plans/2026-05-31-flutter-to-kmp-migration.md` §3�
 
 ## Environment
 
-### android/local.properties (not committed)
+### android/local.properties (not committed — copy from local.properties.example)
 ```
 sdk.dir=/Users/<you>/Library/Android/sdk
 ```
 
-### android/google-services.json (not committed)
+### android/google-services.json (not committed — copy from google-services.json.example)
 Download from Firebase Console → Project Settings → Android app.
 
 ### iOS GoogleService-Info.plist (not committed)
 Download from Firebase Console → Project Settings → iOS app. Place at `ios/PazChurch/`.
+
+## GitHub Actions secrets
+
+This repo needs no secrets — CI only runs Gradle and xcodebuild.
+`ANTHROPIC_API_KEY` lives in the root `church` monorepo (for the Claude PR workflows there).
