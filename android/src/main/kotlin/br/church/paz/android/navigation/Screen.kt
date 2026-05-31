@@ -1,0 +1,18 @@
+package br.church.paz.android.navigation
+
+sealed class Screen(val route: String) {
+    data object Splash   : Screen("splash")
+    data object Login    : Screen("login")
+    data object Shell    : Screen("shell")
+    data object Home     : Screen("home")
+    data object Academy  : Screen("academy")
+    data object Account  : Screen("account")
+    data object Profile  : Screen("profile")
+    data object Agenda   : Screen("agenda")
+    data object MemberJourney    : Screen("member_journey")
+    data object MeetingReport    : Screen("meeting_report")
+    data object Ministries       : Screen("ministries")
+    data object FormulariosList  : Screen("formularios")
+    data object NotificationPrefs: Screen("notification_prefs")
+    data object EditProfile      : Screen("edit_profile")
+}

@@ -1,0 +1,32 @@
+package br.church.paz.shared.di
+
+import br.church.paz.shared.auth.TokenStorage
+import br.church.paz.shared.auth.createTokenStorage
+import br.church.paz.shared.data.remote.createPazHttpClient
+import br.church.paz.shared.data.repository.AuthRepositoryImpl
+import br.church.paz.shared.data.repository.UserStore
+import br.church.paz.shared.data.repository.createUserStore
+import br.church.paz.shared.domain.repository.AuthRepository
+import io.ktor.client.engine.HttpClientEngineFactory
+import org.koin.dsl.module
+
+val sharedAuthModule = module {
+    single<TokenStorage> { createTokenStorage() }
+    single<UserStore>    { createUserStore() }
+}
+
+val sharedNetworkModule = module {
+    single {
+        createPazHttpClient(
+            tokenStorage = get(),
+            baseUrl      = getProperty("BASE_URL", "http://10.0.2.2:3001/api"),
+            engine       = get<HttpClientEngineFactory<*>>().create(),
+        )
+    }
+}
+
+val sharedRepositoryModule = module {
+    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get()) }
+}
+
+val sharedModules = listOf(sharedAuthModule, sharedNetworkModule, sharedRepositoryModule)
