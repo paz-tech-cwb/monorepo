@@ -8,7 +8,6 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
-import io.ktor.client.plugins.auth.providers.RefreshTokensParams
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
@@ -77,10 +76,11 @@ private data class RefreshResponse(
 private suspend fun refreshAccessToken(storage: TokenStorage, client: HttpClient): TokenPair? {
     return try {
         val current = storage.read() ?: run { storage.clear(); return null }
+        // In Ktor 3.x the bearer plugin prevents re-entry automatically;
+        // markAsRefreshTokenRequest() no longer exists.
         val response = client.post("/auth/refresh") {
             contentType(ContentType.Application.Json)
             setBody(RefreshRequest(current.refresh))
-            markAsRefreshTokenRequest()
         }
         if (!response.status.isSuccess()) { storage.clear(); return null }
         val body = response.body<RefreshResponse>()

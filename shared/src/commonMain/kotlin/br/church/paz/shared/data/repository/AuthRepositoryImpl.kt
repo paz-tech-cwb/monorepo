@@ -4,6 +4,7 @@ import br.church.paz.shared.auth.TokenPair
 import br.church.paz.shared.auth.TokenStorage
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.repository.AuthRepository
+import br.church.paz.shared.util.safeRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
@@ -20,7 +21,7 @@ class AuthRepositoryImpl(
 ) : AuthRepository {
 
     override suspend fun socialLogin(idToken: String, provider: String): Result<User> {
-        return runCatching {
+        return safeRunCatching {
             val response = httpClient.post("/auth/social-login") {
                 contentType(ContentType.Application.Json)
                 setBody(SocialLoginRequest(idToken = idToken, provider = provider))
@@ -33,7 +34,7 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun logout(): Result<Unit> {
-        return runCatching {
+        return safeRunCatching {
             runCatching { httpClient.post("/auth/logout") }
             tokenStorage.clear()
             userStore.clear()
