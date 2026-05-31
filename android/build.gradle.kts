@@ -6,6 +6,14 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// Make Google Services processing optional so unit tests work without
+// a real google-services.json (placeholder or CI secrets both work).
+afterEvaluate {
+    tasks.matching { it.name.startsWith("process") && it.name.contains("GoogleServices") }.configureEach {
+        enabled = file("google-services.json").exists()
+    }
+}
+
 android {
     namespace = "br.church.paz.android"
     compileSdk = 35
@@ -22,12 +30,16 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3001/api\"")
+            // Replace with your actual OAuth 2.0 web client ID from Firebase Console
+            buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"\"")
         }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("String", "BASE_URL", "\"https://api.paz.church/api\"")
+            // Replace with your actual OAuth 2.0 web client ID from Firebase Console
+            buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"\"")
         }
     }
 
@@ -68,8 +80,17 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network)
 
+    implementation(libs.datastore.android)
+    implementation(libs.ktor.client.cio.jvm)
+    implementation(libs.compose.icons.extended)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services)
+    implementation(libs.googleid)
+
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.turbine)
+    testImplementation(libs.mockk)
+    testImplementation(libs.arch.core.testing)
 }
