@@ -1,6 +1,9 @@
 package br.church.paz.android
 
 import android.app.Application
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import br.church.paz.android.di.androidModule
 import br.church.paz.shared.di.sharedModules
@@ -9,10 +12,10 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
 
+// Must be top-level: the delegate is an extension property on Context
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "paz_prefs")
+
 class PazApplication : Application() {
-
-    private val dataStore by preferencesDataStore(name = "paz_prefs")
-
     override fun onCreate() {
         super.onCreate()
         startKoin {
@@ -23,7 +26,10 @@ class PazApplication : Application() {
             ))
             modules(
                 sharedModules +
-                module { single { dataStore }; single { CIO } } +
+                module {
+                    single { androidContext().dataStore }
+                    single<io.ktor.client.engine.HttpClientEngineFactory<*>> { CIO }
+                } +
                 androidModule
             )
         }

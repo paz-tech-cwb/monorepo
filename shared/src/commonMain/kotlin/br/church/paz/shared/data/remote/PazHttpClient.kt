@@ -3,20 +3,21 @@ package br.church.paz.shared.data.remote
 import br.church.paz.shared.auth.TokenPair
 import br.church.paz.shared.auth.TokenStorage
 import io.ktor.client.HttpClient
-import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
+import io.ktor.client.plugins.auth.providers.RefreshTokensParams
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.body
+import io.ktor.client.call.body
 import io.ktor.http.ContentType
-import io.ktor.http.HttpTimeout
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
@@ -41,8 +42,9 @@ fun createPazHttpClient(
     }
 
     install(HttpTimeout) {
-        requestTimeoutMillis = 30_000
-        connectTimeoutMillis = 10_000
+        requestTimeoutMillis  = 30_000
+        connectTimeoutMillis  = 10_000
+        socketTimeoutMillis   = 30_000
     }
 
     install(Logging) {
