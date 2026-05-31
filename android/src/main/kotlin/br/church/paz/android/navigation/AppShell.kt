@@ -53,11 +53,11 @@ fun AppShell(rootNavController: NavController) {
         NavHost(
             navController    = tabNavController,
             startDestination = Screen.Home.route,
-            modifier         = Modifier.padding(innerPadding),
+            modifier         = Modifier,
         ) {
-            composable(Screen.Home.route)    { HomeScreen(rootNavController) }
-            composable(Screen.Academy.route) { AcademyScreen() }
-            composable(Screen.Account.route) { AccountScreen(rootNavController) }
+            composable(Screen.Home.route)    { HomeScreen(rootNavController, contentPadding = innerPadding) }
+            composable(Screen.Academy.route) { AcademyScreen(contentPadding = innerPadding) }
+            composable(Screen.Account.route) { AccountScreen(rootNavController, contentPadding = innerPadding) }
         }
     }
 }
