@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Paz Church — UI Redesign v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --p:       #043A6F;
+  --p-mid:   #0B4D8C;
+  --p-lit:   #1565C0;
+  --p-sky:   #1E88E5;
+  --accent:  #5B9BD5;
+  --sky:     #90CAF9;
+  --gold:    #FFB300;
+  --gold-lt: #FFD54F;
+
+  --bg:      #EEF3FB;
+  --surface: #FFFFFF;
+  --s2:      #F4F7FD;
+  --text:    #0A1929;
+  --text2:   #37526D;
+  --muted:   #7FA3C4;
+  --border:  rgba(4,58,111,.08);
+
+  --dk-bg:   #070E1A;
+  --dk-s:    #0D1826;
+  --dk-s2:   #142035;
+  --dk-text: #E3EEFF;
+  --dk-t2:   #6EA0C8;
+  --dk-mut:  #2D4A65;
+  --dk-bdr:  rgba(91,155,213,.13);
+
+  --r-sm:4px;--r-md:10px;--r-lg:16px;--r-xl:22px;--r-2xl:30px;--r-pill:999px;
+  --sh-sm:0 1px 6px rgba(4,58,111,.07);
+  --sh-md:0 4px 20px rgba(4,58,111,.11);
+  --sh-lg:0 8px 36px rgba(4,58,111,.15);
+  --sh-fl:0 20px 56px rgba(4,58,111,.20);
+}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:linear-gradient(140deg,#B8C9E0 0%,#8EA8CC 100%);
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;
+  padding:48px 20px 100px;gap:64px;
+}
+
+/* ── label ───────────────────────────────────────── */
+.badge{
+  font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;
+  color:#fff;background:rgba(4,58,111,.45);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.2);
+  padding:6px 18px;border-radius:999px;margin-bottom:6px;display:inline-block;
+}
+.row-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.55);text-align:center;margin-bottom:18px}
+
+/* ── phone shell ─────────────────────────────────── */
+.row{display:flex;gap:36px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.phone{
+  width:393px;
+  border-radius:52px;
+  overflow:hidden;
+  box-shadow:0 0 0 10px #1C1C1E,0 0 0 12px #38383A,0 40px 80px rgba(0,0,0,.5);
+  position:relative;flex-shrink:0;
+}
+.phone-lbl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.45);text-align:center;margin-top:14px}
+
+/* ── status bar ──────────────────────────────────── */
+.sb{display:flex;justify-content:space-between;align-items:center;padding:14px 28px 0;font-size:12px;font-weight:600}
+.sb.w{color:#fff}.sb.d{color:var(--dk-text)}
+
+/* ══════════════════════════════════════════════════
+   SCREEN 1 — HOME  (Light)
+══════════════════════════════════════════════════ */
+.h-hero{
+  background:linear-gradient(158deg,#032E58 0%,#0A4A8A 50%,#1565C0 100%);
+  padding:10px 24px 52px;position:relative;overflow:hidden;
+}
+/* orbs */
+.h-hero::before{content:'';position:absolute;width:320px;height:320px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.07) 0%,transparent 70%);
+  top:-100px;right:-70px;pointer-events:none}
+.h-hero::after{content:'';position:absolute;width:160px;height:160px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,185,0,.09) 0%,transparent 70%);
+  bottom:30px;left:20px;pointer-events:none}
+/* shimmer stripe */
+.hero-shimmer{
+  position:absolute;width:200%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);
+  top:48%;left:-50%;pointer-events:none;
+}
+
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;position:relative;z-index:1}
+.hero-greet{font-size:12px;font-weight:500;color:rgba(255,255,255,.55);letter-spacing:.4px;margin-bottom:3px}
+.hero-name{font-family:'Playfair Display',serif;font-size:28px;font-weight:800;color:#fff;line-height:1.1}
+
+.notif-btn{
+  width:40px;height:40px;border-radius:50%;
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;font-size:17px;
+  position:relative;
+}
+.notif-dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--gold);border:2px solid transparent}
+
+/* next-service pill */
+.next-service{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.2);
+  border-radius:var(--r-pill);padding:9px 16px;
+  position:relative;z-index:1;
+}
+.ns-dot{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px rgba(255,185,0,.25);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(255,185,0,.25)}50%{box-shadow:0 0 0 6px rgba(255,185,0,.08)}}
+.ns-text{font-size:12px;font-weight:600;color:rgba(255,255,255,.85)}
+.ns-time{font-size:12px;font-weight:800;color:#fff}
+
+/* body lift */
+.h-body{
+  background:var(--bg);
+  margin-top:-28px;border-radius:28px 28px 0 0;
+  padding:24px 18px 110px;
+  min-height:500px;
+}
+
+/* section header */
+.sh{display:flex;justify-content:space-between;align-items:baseline;margin:4px 2px 12px}
+.sh-title{font-family:'Playfair Display',serif;font-size:19px;font-weight:700;color:var(--text)}
+.sh-action{font-size:12px;font-weight:600;color:var(--p-sky);cursor:pointer}
+
+/* carousel */
+.reel{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;margin:0 -18px;padding:0 18px 4px}
+.reel::-webkit-scrollbar{display:none}
+
+.c-card{
+  flex-shrink:0;width:260px;height:152px;border-radius:var(--r-xl);overflow:hidden;
+  position:relative;box-shadow:var(--sh-md);
+}
+.c-card-bg{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:72px;opacity:.12;
+}
+.c-card-grad{position:absolute;inset:0;background:linear-gradient(0deg,rgba(3,20,45,.8) 0%,rgba(3,20,45,.1) 55%)}
+.c-card-body{position:absolute;inset:0;padding:16px;display:flex;flex-direction:column;justify-content:flex-end}
+.c-tag{
+  display:inline-block;
+  background:var(--gold);color:#1A1000;
+  font-size:9px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;
+  padding:3px 8px;border-radius:var(--r-pill);margin-bottom:6px;align-self:flex-start;
+}
+.c-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:800;color:#fff;line-height:1.2}
+.c-sub{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px}
+
+/* dots */
+.dots{display:flex;gap:5px;justify-content:center;margin-top:12px}
+.dot{width:6px;height:6px;border-radius:3px;background:var(--sky);transition:all .2s}
+.dot.on{width:18px;background:var(--p)}
+
+/* ── CONTRIBUTION CARD ───────────────────────────── */
+.contrib-card{
+  margin:20px 0;
+  border-radius:var(--r-xl);
+  background:linear-gradient(135deg,#032E58 0%,#0B4D8C 45%,#1565C0 100%);
+  padding:20px;
+  position:relative;overflow:hidden;
+  box-shadow:0 12px 40px rgba(4,58,111,.30);
+}
+.contrib-card::before{
+  content:'';position:absolute;
+  width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.07) 0%,transparent 65%);
+  top:-60px;right:-40px;
+}
+.contrib-card::after{
+  content:'';position:absolute;
+  width:120px;height:120px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,185,0,.12) 0%,transparent 70%);
+  bottom:-20px;left:20px;
+}
+.cc-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:6px;position:relative;z-index:1}
+.cc-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:800;color:#fff;margin-bottom:4px;position:relative;z-index:1}
+.cc-sub{font-size:12px;color:rgba(255,255,255,.55);margin-bottom:16px;position:relative;z-index:1}
+.cc-btns{display:flex;gap:10px;position:relative;z-index:1}
+.cc-btn-primary{
+  flex:1;background:#fff;color:var(--p);
+  border:none;border-radius:var(--r-pill);
+  padding:11px 0;font-family:'DM Sans',sans-serif;
+  font-size:13px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.cc-btn-secondary{
+  flex:1;background:rgba(255,255,255,.14);color:#fff;
+  border:1px solid rgba(255,255,255,.25);border-radius:var(--r-pill);
+  padding:11px 0;font-family:'DM Sans',sans-serif;
+  font-size:13px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  backdrop-filter:blur(8px);
+}
+.cc-logos{display:flex;gap:8px;margin-top:14px;position:relative;z-index:1;align-items:center}
+.cc-logo{
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
+  border-radius:6px;padding:4px 8px;
+  font-size:10px;font-weight:700;color:rgba(255,255,255,.7);
+  letter-spacing:.5px;
+}
+
+/* agenda section */
+.date-strip{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:0 2px 4px}
+.date-strip::-webkit-scrollbar{display:none}
+.di{
+  flex-shrink:0;width:48px;padding:9px 0;
+  border-radius:var(--r-md);background:var(--surface);
+  border:1.5px solid transparent;
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  cursor:pointer;box-shadow:var(--sh-sm);
+}
+.di.on{background:var(--p);border-color:var(--p)}
+.di-dow{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+.di.on .di-dow{color:rgba(255,255,255,.65)}
+.di-num{font-size:17px;font-weight:700;color:var(--text)}
+.di.on .di-num{color:#fff}
+.di-pip{width:4px;height:4px;border-radius:50%;background:var(--p)}
+.di.on .di-pip{background:rgba(255,255,255,.6)}
+
+/* event card */
+.ev{
+  display:flex;gap:12px;align-items:center;
+  background:var(--surface);border-radius:var(--r-lg);
+  padding:13px 14px;margin-top:10px;
+  box-shadow:var(--sh-sm);border:1px solid var(--border);
+}
+.ev-t{flex-shrink:0;width:38px;text-align:center}
+.ev-time{font-size:13px;font-weight:700;color:var(--p-sky);line-height:1}
+.ev-ap{font-size:9px;color:var(--muted);font-weight:600}
+.ev-line{display:flex;flex-direction:column;align-items:center;gap:0}
+.ev-dot{width:8px;height:8px;border-radius:50%;background:var(--p)}
+.ev-vl{width:2px;height:18px;background:linear-gradient(var(--sky),transparent)}
+.ev-body{flex:1}
+.ev-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:1px}
+.ev-loc{font-size:11px;color:var(--muted)}
+.ev-icon{
+  width:44px;height:44px;border-radius:var(--r-md);flex-shrink:0;
+  background:linear-gradient(135deg,var(--p-mid),var(--p-sky));
+  display:flex;align-items:center;justify-content:center;font-size:19px;
+}
+
+/* bottom nav */
+.bnav{
+  background:rgba(255,255,255,.92);backdrop-filter:blur(24px);
+  border-top:1px solid rgba(4,58,111,.07);
+  display:flex;justify-content:space-around;align-items:center;
+  padding:10px 0 26px;
+}
+.ni{display:flex;flex-direction:column;align-items:center;cursor:pointer}
+.np{display:flex;align-items:center;gap:5px;padding:8px 14px;border-radius:var(--r-pill);transition:all .2s}
+.np.on{background:var(--p)}
+.ni-ic{font-size:20px;color:var(--muted)}
+.np.on .ni-ic{color:#fff}
+.ni-lb{font-size:10px;font-weight:700;color:var(--muted)}
+.np.on .ni-lb{color:#fff}
+
+/* ══════════════════════════════════════════════════
+   SCREEN 2 — EVENT DETAIL
+══════════════════════════════════════════════════ */
+.det-hero{height:256px;position:relative;overflow:hidden}
+.det-bg{position:absolute;inset:0;background:linear-gradient(158deg,#032E58,#0B4D8C 50%,#1565C0);display:flex;align-items:center;justify-content:center;font-size:100px;opacity:.1}
+.det-vign{position:absolute;inset:0;background:linear-gradient(0deg,rgba(2,15,35,.75) 0%,rgba(2,15,35,.05) 50%)}
+.det-back{position:absolute;top:52px;left:20px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;cursor:pointer}
+.det-share{position:absolute;top:52px;right:20px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;cursor:pointer}
+.det-content{position:absolute;bottom:18px;left:20px;right:20px}
+.det-tag{display:inline-block;background:var(--gold);color:#140E00;font-size:9px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;padding:4px 10px;border-radius:var(--r-pill);margin-bottom:8px}
+.det-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:800;color:#fff;line-height:1.1}
+
+.det-body{background:var(--bg);padding:18px 18px 100px;min-height:440px}
+.det-chips{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-pill);padding:7px 12px;font-size:12px;font-weight:600;color:var(--text2);box-shadow:var(--sh-sm)}
+.chip .ic{color:var(--p-sky)}
+
+.tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:16px}
+.tab{flex:1;text-align:center;padding:10px 0;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2.5px solid transparent;margin-bottom:-2px;cursor:pointer}
+.tab.on{color:var(--p);border-color:var(--p)}
+
+.det-desc{font-size:14px;line-height:1.7;color:var(--text2);margin-bottom:16px}
+
+.avstack{display:flex;align-items:center;margin-bottom:16px}
+.av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--p-mid),var(--p-sky));border:2.5px solid var(--surface);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;margin-left:-8px}
+.av:first-child{margin-left:0}
+.av-ct{font-size:12px;font-weight:600;color:var(--text2);margin-left:8px}
+
+.cta-btn{
+  width:100%;background:linear-gradient(135deg,#032E58,#1565C0);
+  color:#fff;border:none;border-radius:var(--r-pill);padding:16px;
+  font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 10px 28px rgba(4,58,111,.30);
+}
+
+/* ══════════════════════════════════════════════════
+   SCREEN 3 — ACCOUNT  (Dark)
+══════════════════════════════════════════════════ */
+.dk{background:var(--dk-bg)}
+.ak-hero{
+  background:linear-gradient(158deg,#040D1A 0%,#081929 55%,#0D2A45 100%);
+  padding:10px 24px 52px;position:relative;overflow:hidden;
+}
+.ak-hero::before{content:'';position:absolute;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle,rgba(91,155,213,.1) 0%,transparent 70%);top:-80px;right:-50px}
+.ak-hero-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;position:relative;z-index:1}
+.ak-title{font-family:'Playfair Display',serif;font-size:30px;font-weight:800;color:#fff}
+.settings-ic{width:40px;height:40px;border-radius:50%;background:rgba(91,155,213,.13);border:1px solid rgba(91,155,213,.22);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer}
+
+.pk-card{
+  background:rgba(255,255,255,.06);border:1px solid rgba(91,155,213,.2);
+  border-radius:var(--r-xl);padding:16px;
+  display:flex;gap:14px;align-items:center;
+  backdrop-filter:blur(12px);position:relative;z-index:1;
+}
+.pk-av{
+  width:58px;height:58px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--p-mid),var(--p-sky));
+  border:2px solid rgba(91,155,213,.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:800;color:#fff;
+}
+.pk-name{font-size:17px;font-weight:700;color:var(--dk-text);margin-bottom:2px}
+.pk-email{font-size:12px;color:rgba(255,255,255,.4);margin-bottom:7px}
+.pk-badge{display:inline-block;background:rgba(91,155,213,.17);border:1px solid rgba(91,155,213,.3);border-radius:var(--r-pill);padding:3px 10px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--sky)}
+
+.ak-body{background:var(--dk-bg);margin-top:-28px;border-radius:28px 28px 0 0;padding:24px 18px 110px}
+.ak-sec{font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--dk-mut);margin:18px 0 8px;padding-left:4px}
+
+.mk-card{background:var(--dk-s);border-radius:var(--r-lg);border:1px solid var(--dk-bdr);overflow:hidden;margin-bottom:8px}
+.mr{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(91,155,213,.06);cursor:pointer}
+.mr:last-child{border-bottom:none}
+.mr-ic{width:36px;height:36px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.mr-ic.b{background:rgba(21,101,192,.18)}
+.mr-ic.g{background:rgba(30,138,76,.15)}
+.mr-ic.y{background:rgba(255,179,0,.12)}
+.mr-ic.p{background:rgba(156,39,176,.14)}
+.mr-ic.r{background:rgba(198,40,40,.12)}
+.mr-tx{flex:1;font-size:14px;font-weight:500;color:var(--dk-text)}
+.mr-ar{color:var(--dk-mut);font-size:16px;font-weight:300}
+
+.dk-toggle{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.tgl{width:46px;height:26px;border-radius:13px;background:var(--p-sky);position:relative;flex-shrink:0}
+.tgl-th{position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+
+.dk-bnav{background:rgba(7,14,26,.92);backdrop-filter:blur(24px);border-top:1px solid rgba(91,155,213,.1);display:flex;justify-content:space-around;align-items:center;padding:10px 0 26px}
+.dnp{display:flex;align-items:center;gap:5px;padding:8px 14px;border-radius:var(--r-pill)}
+.dnp.on{background:var(--p)}
+.dni-ic{font-size:20px;color:var(--dk-mut)}
+.dnp.on .dni-ic{color:#fff}
+.dni-lb{font-size:10px;font-weight:700;color:var(--dk-mut)}
+.dnp.on .dni-lb{color:#fff}
+
+/* ══════════════════════════════════════════════════
+   SCREEN 4 — FORMULÁRIOS  (Dark)
+══════════════════════════════════════════════════ */
+.fm-top{background:var(--dk-s);padding:52px 20px 16px;border-bottom:1px solid rgba(91,155,213,.08);display:flex;align-items:center;gap:14px}
+.fm-back{width:36px;height:36px;border-radius:50%;background:rgba(91,155,213,.1);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--dk-text);cursor:pointer}
+.fm-ttl{font-family:'Playfair Display',serif;font-size:23px;font-weight:800;color:var(--dk-text)}
+.fm-body{background:var(--dk-bg);padding:18px 18px 110px;min-height:600px}
+.fm-sec{font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--dk-mut);margin:16px 0 8px;padding-left:2px}
+.fc{display:flex;align-items:center;gap:13px;background:var(--dk-s);border:1px solid var(--dk-bdr);border-radius:var(--r-lg);padding:13px 15px;margin-bottom:8px;cursor:pointer}
+.fc-ico{width:44px;height:44px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+.fc-ico.b{background:rgba(21,101,192,.16)}.fc-ico.g{background:rgba(30,138,76,.14)}.fc-ico.y{background:rgba(255,179,0,.11)}.fc-ico.v{background:rgba(156,39,176,.13)}
+.fc-body{flex:1}
+.fc-name{font-size:14px;font-weight:600;color:var(--dk-text);margin-bottom:2px}
+.fc-sub{font-size:11px;color:var(--dk-mut)}
+.fc-ar{color:var(--dk-mut);font-size:16px}
+
+/* ══════════════════════════════════════════════════
+   SCREEN 5 — SPLASH / LOGIN
+══════════════════════════════════════════════════ */
+.sp-screen{
+  background:linear-gradient(158deg,#020B18 0%,#032E58 40%,#0B4D8C 70%,#1565C0 100%);
+  min-height:780px;display:flex;flex-direction:column;position:relative;overflow:hidden;
+}
+.sp-orb1{position:absolute;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,rgba(91,155,213,.15) 0%,transparent 68%);top:-120px;right:-80px}
+.sp-orb2{position:absolute;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,185,0,.08) 0%,transparent 65%);bottom:220px;left:-50px}
+.sp-orb3{position:absolute;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.05) 0%,transparent 65%);bottom:320px;right:20px}
+.sp-cross{position:absolute;top:100px;left:50%;transform:translateX(-50%);font-size:200px;color:rgba(255,255,255,.03);user-select:none;line-height:1;pointer-events:none}
+.sp-stars{position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.4) 1px,transparent 1px);background-size:40px 40px;opacity:.06;pointer-events:none}
+
+.sp-center{display:flex;flex-direction:column;align-items:center;padding-top:110px;flex:1;position:relative;z-index:1}
+.sp-icon{width:72px;height:72px;border-radius:22px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:20px;backdrop-filter:blur(8px)}
+.sp-wm{font-family:'Playfair Display',serif;font-size:38px;font-weight:900;color:#fff;letter-spacing:-.5px;line-height:1;margin-bottom:4px}
+.sp-city{font-size:11px;font-weight:700;letter-spacing:3.5px;text-transform:uppercase;color:rgba(255,255,255,.4)}
+.sp-rule{width:36px;height:1.5px;background:rgba(255,255,255,.2);border-radius:1px;margin:20px auto}
+.sp-tag{font-size:14px;color:rgba(255,255,255,.55);text-align:center;max-width:230px;line-height:1.65;font-weight:400}
+
+.sp-bottom{padding:0 24px 44px;position:relative;z-index:1}
+.sp-g{width:100%;background:#fff;border:none;border-radius:var(--r-pill);padding:16px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;color:var(--p);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 10px 36px rgba(0,0,0,.28);margin-bottom:12px}
+.sp-a{width:100%;background:rgba(255,255,255,.11);border:1.5px solid rgba(255,255,255,.22);border-radius:var(--r-pill);padding:15px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;backdrop-filter:blur(8px)}
+.sp-guest{text-align:center;margin-top:16px;font-size:12px;color:rgba(255,255,255,.38);cursor:pointer}
+.sp-guest span{color:rgba(255,255,255,.62);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+
+/* ── token swatches ───────────────────────────── */
+.tokens{max-width:840px;width:100%}
+.token-grid{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.tk{min-width:120px;padding:12px 16px;border-radius:14px;font-size:11px;font-weight:700;text-align:center}
+.tk span{display:block;opacity:.65;font-size:10px;margin-top:2px;letter-spacing:.3px}
+</style>
+</head>
+<body>
+
+<div style="text-align:center">
+  <div class="badge">Paz Church · UI Redesign v2</div>
+  <p style="color:rgba(255,255,255,.4);font-size:11px;margin-top:6px">5 screens · Light &amp; Dark · http://localhost:7654</p>
+</div>
+
+<!-- ══ ROW 1: Home + Splash ══ -->
+<div>
+<p class="row-title">Core Screens</p>
+<div class="row">
+
+<!-- HOME -->
+<div>
+<div class="phone">
+  <div style="background:linear-gradient(158deg,#032E58,#0A4A8A)">
+    <div class="sb w"><span>9:41</span><div style="display:flex;gap:5px;align-items:center"><span style="font-size:11px">●●●</span><span>WiFi</span><span>100%</span></div></div>
+  </div>
+  <div class="h-hero">
+    <div class="hero-shimmer"></div>
+    <div class="hero-top">
+      <div>
+        <div class="hero-greet">Bom dia, bem-vindo 👋</div>
+        <div class="hero-name">João<br/>Silva</div>
+      </div>
+      <div class="notif-btn">
+        🔔
+        <div class="notif-dot"></div>
+      </div>
+    </div>
+    <div class="next-service">
+      <div class="ns-dot"></div>
+      <span class="ns-text">Próximo culto</span>
+      <span class="ns-time">Dom · 10:00</span>
+    </div>
+  </div>
+
+  <div class="h-body">
+    <!-- Carousel -->
+    <div class="sh">
+      <div class="sh-title">Em Destaque</div>
+      <div class="sh-action">Ver todos →</div>
+    </div>
+    <div class="reel">
+      <div class="c-card" style="background:linear-gradient(135deg,#032E58 0%,#0B4D8C 60%,#1565C0 100%)">
+        <div class="c-card-bg">⛪</div>
+        <div class="c-card-grad"></div>
+        <div class="c-card-body">
+          <div class="c-tag">Domingo · 10h</div>
+          <div class="c-title">Culto da Família</div>
+          <div class="c-sub">Auditório Principal</div>
+        </div>
+      </div>
+      <div class="c-card" style="background:linear-gradient(135deg,#0A3D6E 0%,#155FA0 100%)">
+        <div class="c-card-bg">🎓</div>
+        <div class="c-card-grad"></div>
+        <div class="c-card-body">
+          <div class="c-tag">Academia</div>
+          <div class="c-title">Escola de Líderes — Módulo 3</div>
+          <div class="c-sub">Inscrições abertas</div>
+        </div>
+      </div>
+      <div class="c-card" style="background:linear-gradient(135deg,#073356 0%,#0E5BA0 100%)">
+        <div class="c-card-bg">🙏</div>
+        <div class="c-card-grad"></div>
+        <div class="c-card-body">
+          <div class="c-tag">Oração</div>
+          <div class="c-title">Vigília — Sexta às 22h</div>
+          <div class="c-sub">Online e presencial</div>
+        </div>
+      </div>
+    </div>
+    <div class="dots">
+      <div class="dot on"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+
+    <!-- CONTRIBUTION CARD -->
+    <div class="contrib-card">
+      <div class="cc-label">Dízimos &amp; Ofertas</div>
+      <div class="cc-title">Contribua com a visão</div>
+      <div class="cc-sub">Sua oferta transforma vidas na comunidade</div>
+      <div class="cc-btns">
+        <button class="cc-btn-primary">💙 Pagar com PIX</button>
+        <button class="cc-btn-secondary">🏦 Transferência</button>
+      </div>
+      <div class="cc-logos">
+        <div class="cc-logo">PIX</div>
+        <div class="cc-logo">TED</div>
+        <div class="cc-logo">BOLETO</div>
+        <span style="font-size:10px;color:rgba(255,255,255,.3);margin-left:4px">Pagamento seguro</span>
+      </div>
+    </div>
+
+    <!-- Agenda -->
+    <div class="sh">
+      <div class="sh-title">Agenda</div>
+      <div class="sh-action">Mês completo →</div>
+    </div>
+    <div class="date-strip">
+      <div class="di"><div class="di-dow">Seg</div><div class="di-num">2</div></div>
+      <div class="di"><div class="di-dow">Ter</div><div class="di-num">3</div></div>
+      <div class="di on"><div class="di-dow">Qua</div><div class="di-num">4</div><div class="di-pip"></div></div>
+      <div class="di"><div class="di-dow">Qui</div><div class="di-num">5</div></div>
+      <div class="di"><div class="di-dow">Sex</div><div class="di-num">6</div></div>
+      <div class="di"><div class="di-dow">Sáb</div><div class="di-num">7</div></div>
+      <div class="di"><div class="di-dow">Dom</div><div class="di-num">8</div></div>
+    </div>
+    <div class="ev">
+      <div class="ev-t"><div class="ev-time">10:00</div><div class="ev-ap">AM</div></div>
+      <div class="ev-line"><div class="ev-dot"></div><div class="ev-vl"></div></div>
+      <div class="ev-body"><div class="ev-name">Culto da Família</div><div class="ev-loc">📍 Auditório Principal</div></div>
+      <div class="ev-icon">⛪</div>
+    </div>
+    <div class="ev">
+      <div class="ev-t"><div class="ev-time">19:30</div><div class="ev-ap">PM</div></div>
+      <div class="ev-line"><div class="ev-dot" style="background:var(--accent)"></div></div>
+      <div class="ev-body"><div class="ev-name">Grupo de Vida</div><div class="ev-loc">📍 Sala 3 — Bloco B</div></div>
+      <div class="ev-icon">🤝</div>
+    </div>
+  </div>
+
+  <div class="bnav">
+    <div class="ni"><div class="np on"><span class="ni-ic">🏠</span><span class="ni-lb">Início</span></div></div>
+    <div class="ni"><div class="np"><span class="ni-ic">🎓</span></div></div>
+    <div class="ni"><div class="np"><span class="ni-ic">👤</span></div></div>
+  </div>
+</div>
+<p class="phone-lbl">Home · Light</p>
+</div>
+
+<!-- SPLASH -->
+<div>
+<div class="phone">
+  <div class="sp-screen">
+    <div style="position:relative;z-index:2">
+      <div class="sb w"><span>9:41</span><div style="display:flex;gap:5px"><span>●●●</span><span>100%</span></div></div>
+    </div>
+    <div class="sp-orb1"></div><div class="sp-orb2"></div><div class="sp-orb3"></div>
+    <div class="sp-stars"></div>
+    <div class="sp-cross">✝</div>
+    <div class="sp-center">
+      <div class="sp-icon">✝</div>
+      <div class="sp-wm">Paz Church</div>
+      <div class="sp-city">Curitiba</div>
+      <div class="sp-rule"></div>
+      <div class="sp-tag">Uma comunidade de fé, amor e propósito.</div>
+    </div>
+    <div class="sp-bottom">
+      <button class="sp-g"><span style="font-weight:800;font-size:16px">G</span> Continuar com Google</button>
+      <button class="sp-a">🍎 Continuar com Apple</button>
+      <div class="sp-guest">Explorar como <span>visitante</span></div>
+    </div>
+  </div>
+</div>
+<p class="phone-lbl">Splash / Login</p>
+</div>
+
+</div><!-- end row -->
+</div>
+
+<!-- ══ ROW 2: Detail + Account + Formulários ══ -->
+<div>
+<p class="row-title">Detail · Account · Formulários</p>
+<div class="row">
+
+<!-- EVENT DETAIL -->
+<div>
+<div class="phone">
+  <div style="background:var(--p)"><div class="sb w"><span>9:41</span><div style="display:flex;gap:5px"><span>100%</span></div></div></div>
+  <div class="det-hero">
+    <div class="det-bg">✝</div>
+    <div class="det-vign"></div>
+    <div class="det-back">←</div>
+    <div class="det-share">⤴</div>
+    <div class="det-content">
+      <div class="det-tag">Domingo · 10h</div>
+      <div class="det-title">Culto da Família</div>
+    </div>
+  </div>
+  <div class="det-body">
+    <div class="det-chips">
+      <div class="chip"><span class="ic">📅</span>4 Jun, 10:00</div>
+      <div class="chip"><span class="ic">📍</span>Auditório Principal</div>
+    </div>
+    <div class="tabs">
+      <div class="tab on">Visão Geral</div>
+      <div class="tab">Local</div>
+      <div class="tab">Fotos</div>
+    </div>
+    <div class="det-desc">Venha fazer parte do nosso culto semanal de adoração e comunhão. Um momento especial para toda a família crescer na fé juntos.</div>
+    <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;letter-spacing:.3px">CONFIRMADOS</div>
+    <div class="avstack">
+      <div class="av">JS</div><div class="av">AM</div><div class="av">PL</div><div class="av">+</div>
+      <div class="av-ct">+1.2k pessoas</div>
+    </div>
+    <button class="cta-btn">💙 Contribuir Online</button>
+  </div>
+  <div class="bnav">
+    <div class="ni"><div class="np"><span class="ni-ic">🏠</span></div></div>
+    <div class="ni"><div class="np on"><span class="ni-ic">📅</span><span class="ni-lb">Agenda</span></div></div>
+    <div class="ni"><div class="np"><span class="ni-ic">👤</span></div></div>
+  </div>
+</div>
+<p class="phone-lbl">Event Detail · Light</p>
+</div>
+
+<!-- ACCOUNT DARK -->
+<div>
+<div class="phone dk">
+  <div style="background:var(--dk-s)"><div class="sb d"><span>9:41</span><div style="display:flex;gap:5px"><span>●●●</span><span>100%</span></div></div></div>
+  <div class="ak-hero">
+    <div class="ak-hero-top">
+      <div class="ak-title">Conta</div>
+      <div class="settings-ic">⚙️</div>
+    </div>
+    <div class="pk-card">
+      <div class="pk-av">JS</div>
+      <div>
+        <div class="pk-name">João Silva</div>
+        <div class="pk-email">joao@paz.church</div>
+        <div class="pk-badge">Líder de GV</div>
+      </div>
+    </div>
+  </div>
+  <div class="ak-body">
+    <div class="ak-sec">Minha Igreja</div>
+    <div class="mk-card">
+      <div class="mr"><div class="mr-ic b">🛤️</div><div class="mr-tx">Jornada do Membro</div><div class="mr-ar">›</div></div>
+      <div class="mr"><div class="mr-ic g">📋</div><div class="mr-tx">Relatar Reunião</div><div class="mr-ar">›</div></div>
+      <div class="mr"><div class="mr-ic b">📝</div><div class="mr-tx">Formulários</div><div class="mr-ar">›</div></div>
+      <div class="mr"><div class="mr-ic y">🎶</div><div class="mr-tx">Ministérios</div><div class="mr-ar">›</div></div>
+    </div>
+    <div class="ak-sec">Preferências</div>
+    <div class="mk-card">
+      <div class="mr"><div class="mr-ic b">🔔</div><div class="mr-tx">Notificações</div><div class="mr-ar">›</div></div>
+      <div class="dk-toggle">
+        <div class="mr-ic b">🌙</div>
+        <div class="mr-tx">Modo Escuro</div>
+        <div class="tgl" style="margin-left:auto"><div class="tgl-th"></div></div>
+      </div>
+    </div>
+    <div class="ak-sec">Conta</div>
+    <div class="mk-card">
+      <div class="mr"><div class="mr-ic r">🚪</div><div class="mr-tx" style="color:#FF6B6B;font-weight:600">Sair da conta</div></div>
+    </div>
+  </div>
+  <div class="dk-bnav">
+    <div class="ni"><div class="dnp"><span class="dni-ic">🏠</span></div></div>
+    <div class="ni"><div class="dnp"><span class="dni-ic">🎓</span></div></div>
+    <div class="ni"><div class="dnp on"><span class="dni-ic">👤</span><span class="dni-lb">Conta</span></div></div>
+  </div>
+</div>
+<p class="phone-lbl">Account · Dark</p>
+</div>
+
+<!-- FORMULÁRIOS DARK -->
+<div>
+<div class="phone dk">
+  <div style="background:var(--dk-s)"><div class="sb d"><span>9:41</span><div style="display:flex;gap:5px"><span>100%</span></div></div></div>
+  <div class="fm-top">
+    <div class="fm-back">←</div>
+    <div class="fm-ttl">Formulários</div>
+  </div>
+  <div class="fm-body">
+    <div class="fm-sec">Evangelismo</div>
+    <div class="fc"><div class="fc-ico b">📥</div><div class="fc-body"><div class="fc-name">Cadastro de Membros</div><div class="fc-sub">Registrar novos membros</div></div><div class="fc-ar">›</div></div>
+    <div class="fc"><div class="fc-ico g">✝️</div><div class="fc-body"><div class="fc-name">Conversões</div><div class="fc-sub">Decisões de fé</div></div><div class="fc-ar">›</div></div>
+    <div class="fc"><div class="fc-ico y">👥</div><div class="fc-body"><div class="fc-name">Visitantes</div><div class="fc-sub">Registrar visitantes</div></div><div class="fc-ar">›</div></div>
+
+    <div class="fm-sec">Grupos de Vida</div>
+    <div class="fc"><div class="fc-ico b">📊</div><div class="fc-body"><div class="fc-name">Relatório de GV</div><div class="fc-sub">Semanais e especiais</div></div><div class="fc-ar">›</div></div>
+    <div class="fc"><div class="fc-ico v">🌱</div><div class="fc-body"><div class="fc-name">Multiplicações</div><div class="fc-sub">Novos grupos formados</div></div><div class="fc-ar">›</div></div>
+    <div class="fc"><div class="fc-ico g">📝</div><div class="fc-body"><div class="fc-name">Relatório de Culto</div><div class="fc-sub">Serviço de domingo</div></div><div class="fc-ar">›</div></div>
+
+    <div class="fm-sec">Supervisão</div>
+    <div class="fc"><div class="fc-ico y">📋</div><div class="fc-body"><div class="fc-name">Relatório de Setor</div><div class="fc-sub">Supervisor de setor</div></div><div class="fc-ar">›</div></div>
+    <div class="fc"><div class="fc-ico b">🏢</div><div class="fc-body"><div class="fc-name">Relatório de Área</div><div class="fc-sub">Supervisor de área</div></div><div class="fc-ar">›</div></div>
+    <div class="fc"><div class="fc-ico v">🎓</div><div class="fc-body"><div class="fc-name">Cursos</div><div class="fc-sub">Matrículas e frequência</div></div><div class="fc-ar">›</div></div>
+  </div>
+</div>
+<p class="phone-lbl">Formulários · Dark</p>
+</div>
+
+</div><!-- end row -->
+</div>
+
+<!-- ══ ROW 3: Academy logged-in + logged-out ══ -->
+<div>
+<p class="row-title">Academia — Logged In &amp; Logged Out</p>
+<div class="row">
+
+<!-- ACADEMY LOGGED IN (Light) -->
+<div>
+<div class="phone">
+  <div style="background:linear-gradient(158deg,#032E58,#0A4A8A)">
+    <div class="sb w"><span>9:41</span><div style="display:flex;gap:5px;align-items:center"><span style="font-size:11px">●●●</span><span>100%</span></div></div>
+  </div>
+
+  <!-- hero -->
+  <div style="background:linear-gradient(158deg,#032E58 0%,#0B4D8C 55%,#1565C0 100%);padding:10px 24px 52px;position:relative;overflow:hidden">
+    <div style="position:absolute;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.06) 0%,transparent 70%);top:-80px;right:-50px"></div>
+    <div style="margin-bottom:20px;position:relative;z-index:1">
+      <div style="font-size:12px;font-weight:500;color:rgba(255,255,255,.5);margin-bottom:3px">Conteúdo exclusivo</div>
+      <div style="font-family:'Playfair Display',serif;font-size:27px;font-weight:800;color:#fff;line-height:1.1">Academia<br/>Paz Church</div>
+    </div>
+    <!-- featured video card -->
+    <div style="background:rgba(0,0,0,.35);border-radius:20px;overflow:hidden;position:relative;z-index:1;border:1px solid rgba(255,255,255,.12)">
+      <div style="height:148px;background:linear-gradient(135deg,#021A30 0%,#0A3D6E 100%);display:flex;align-items:center;justify-content:center;position:relative">
+        <div style="font-size:64px;opacity:.15;position:absolute">🎬</div>
+        <!-- play button -->
+        <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.95);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.4);position:relative;z-index:1">
+          <div style="font-size:20px;margin-left:3px">▶</div>
+        </div>
+        <div style="position:absolute;top:10px;right:10px;background:var(--gold);color:#140E00;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;padding:3px 8px;border-radius:999px">Em destaque</div>
+        <div style="position:absolute;bottom:8px;right:10px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px">45:22</div>
+      </div>
+      <div style="padding:12px 14px 14px">
+        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.45);letter-spacing:1px;margin-bottom:4px">SERMÃO · DOM 1 JUN</div>
+        <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:6px">O poder da fé que move montanhas</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--p-mid),var(--p-sky));display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff">P</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5)">Pr. Carlos — <span style="color:rgba(255,255,255,.3)">2.4k visualizações</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- body -->
+  <div style="background:var(--bg);margin-top:-24px;border-radius:24px 24px 0 0;padding:20px 18px 110px;min-height:440px">
+    <!-- continue watching -->
+    <div class="sh">
+      <div class="sh-title">Continuar assistindo</div>
+    </div>
+    <!-- progress card -->
+    <div style="background:var(--surface);border-radius:var(--r-lg);padding:14px;margin-bottom:10px;box-shadow:var(--sh-sm);border:1px solid var(--border);display:flex;gap:12px;align-items:center">
+      <div style="width:68px;height:50px;border-radius:10px;background:linear-gradient(135deg,#032E58,#1565C0);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;position:relative">
+        <div style="position:absolute;inset:0;border-radius:10px;display:flex;align-items:center;justify-content:center">▶</div>
+        <div style="font-size:9px;color:rgba(255,255,255,.0)">x</div>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 10px 10px;background:rgba(255,255,255,.2)">
+          <div style="width:60%;height:100%;background:var(--gold);border-radius:inherit"></div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;line-height:1.2">Escola de Líderes · Módulo 2</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Aula 3 de 8 · 18 min restantes</div>
+        <div style="height:3px;background:var(--border);border-radius:2px">
+          <div style="width:38%;height:100%;background:linear-gradient(90deg,var(--p),var(--p-sky));border-radius:2px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- category pills -->
+    <div class="sh" style="margin-top:16px">
+      <div class="sh-title">Séries</div>
+    </div>
+    <div style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -18px;padding:0 18px 4px">
+      <div style="flex-shrink:0;background:var(--p);color:#fff;border-radius:999px;padding:7px 16px;font-size:12px;font-weight:700">Todos</div>
+      <div style="flex-shrink:0;background:var(--surface);color:var(--text2);border:1px solid var(--border);border-radius:999px;padding:7px 16px;font-size:12px;font-weight:600">Sermões</div>
+      <div style="flex-shrink:0;background:var(--surface);color:var(--text2);border:1px solid var(--border);border-radius:999px;padding:7px 16px;font-size:12px;font-weight:600">Liderança</div>
+      <div style="flex-shrink:0;background:var(--surface);color:var(--text2);border:1px solid var(--border);border-radius:999px;padding:7px 16px;font-size:12px;font-weight:600">Devocionais</div>
+    </div>
+
+    <!-- video list -->
+    <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px">
+      <!-- video item 1 -->
+      <div style="display:flex;gap:12px;background:var(--surface);border-radius:var(--r-lg);padding:12px;box-shadow:var(--sh-sm);border:1px solid var(--border)">
+        <div style="width:80px;height:56px;border-radius:10px;background:linear-gradient(135deg,#032E58,#0B4D8C);flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative">
+          <div style="color:rgba(255,255,255,.8);font-size:18px">▶</div>
+          <div style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,.55);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px">32:10</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:var(--text);line-height:1.2;margin-bottom:3px">Fé e Propósito — Parte 1</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Pr. Carlos · 1.1k views</div>
+          <div style="display:inline-block;background:var(--s2);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:600;color:var(--text2)">Sermão</div>
+        </div>
+      </div>
+      <!-- video item 2 -->
+      <div style="display:flex;gap:12px;background:var(--surface);border-radius:var(--r-lg);padding:12px;box-shadow:var(--sh-sm);border:1px solid var(--border)">
+        <div style="width:80px;height:56px;border-radius:10px;background:linear-gradient(135deg,#0A3D6E,#1565C0);flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative">
+          <div style="color:rgba(255,255,255,.8);font-size:18px">▶</div>
+          <div style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,.55);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px">22:45</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:var(--text);line-height:1.2;margin-bottom:3px">Como orar com autoridade</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Pr. Ana · 876 views</div>
+          <div style="display:inline-block;background:rgba(30,138,76,.1);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:600;color:#1E8A4C">Devocional</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bnav">
+    <div class="ni"><div class="np"><span class="ni-ic">🏠</span></div></div>
+    <div class="ni"><div class="np on"><span class="ni-ic">🎓</span><span class="ni-lb">Academia</span></div></div>
+    <div class="ni"><div class="np"><span class="ni-ic">👤</span></div></div>
+  </div>
+</div>
+<p class="phone-lbl">Academia · Logged In · Light</p>
+</div>
+
+<!-- ACADEMY LOGGED OUT (Dark) -->
+<div>
+<div class="phone dk">
+  <div style="background:var(--dk-s)"><div class="sb d"><span>9:41</span><div style="display:flex;gap:5px"><span>100%</span></div></div></div>
+
+  <!-- hero same gradient, dark -->
+  <div style="background:linear-gradient(158deg,#040D1A 0%,#081929 55%,#0D2A45 100%);padding:10px 24px 52px;position:relative;overflow:hidden">
+    <div style="position:absolute;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(91,155,213,.1) 0%,transparent 70%);top:-70px;right:-40px"></div>
+    <div style="margin-bottom:20px;position:relative;z-index:1">
+      <div style="font-size:12px;font-weight:500;color:rgba(255,255,255,.4);margin-bottom:3px">Conteúdo exclusivo</div>
+      <div style="font-family:'Playfair Display',serif;font-size:27px;font-weight:800;color:#fff;line-height:1.1">Academia<br/>Paz Church</div>
+    </div>
+    <!-- blurred locked card -->
+    <div style="border-radius:20px;overflow:hidden;position:relative;z-index:1;border:1px solid rgba(255,255,255,.08)">
+      <div style="height:148px;background:linear-gradient(135deg,#021A30 0%,#0A3D6E 100%);display:flex;align-items:center;justify-content:center;position:relative;filter:blur(2px)">
+        <div style="font-size:64px;opacity:.15">🎬</div>
+      </div>
+      <!-- lock overlay -->
+      <div style="position:absolute;inset:0;background:rgba(7,14,26,.72);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:20px">
+        <div style="width:44px;height:44px;border-radius:50%;background:rgba(91,155,213,.15);border:1px solid rgba(91,155,213,.3);display:flex;align-items:center;justify-content:center;font-size:20px">🔒</div>
+        <div style="font-size:13px;font-weight:700;color:var(--dk-text);text-align:center">Faça login para assistir</div>
+        <div style="font-size:11px;color:var(--dk-t2);text-align:center">Acesse todo o conteúdo exclusivo</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- body -->
+  <div style="background:var(--dk-bg);margin-top:-24px;border-radius:24px 24px 0 0;padding:20px 18px 110px;min-height:440px">
+
+    <!-- login CTA card -->
+    <div style="background:linear-gradient(135deg,#07243F 0%,#0D3A60 60%,#0A2E50 100%);border-radius:var(--r-xl);padding:20px;margin-bottom:20px;border:1px solid rgba(91,155,213,.2);box-shadow:0 12px 36px rgba(4,58,111,.25);position:relative;overflow:hidden">
+      <div style="position:absolute;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(91,155,213,.1) 0%,transparent 70%);top:-40px;right:-30px"></div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:6px;position:relative;z-index:1">Academia Paz</div>
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:800;color:#fff;margin-bottom:4px;position:relative;z-index:1">Desbloqueie todo o conteúdo</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:16px;position:relative;z-index:1">Sermões, escola de líderes e devocionais</div>
+      <!-- perks -->
+      <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:16px;position:relative;z-index:1">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(255,255,255,.7)"><span style="color:var(--gold)">✦</span>Sermões em vídeo semanais</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(255,255,255,.7)"><span style="color:var(--gold)">✦</span>Escola de líderes — 8 módulos</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:rgba(255,255,255,.7)"><span style="color:var(--gold)">✦</span>Devocionais diários</div>
+      </div>
+      <button style="width:100%;background:#fff;color:var(--p);border:none;border-radius:999px;padding:13px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;position:relative;z-index:1">Fazer login</button>
+    </div>
+
+    <!-- teaser section: free content -->
+    <div class="sh"><div class="sh-title" style="color:var(--dk-text)">Acesso gratuito</div></div>
+    <!-- free item -->
+    <div style="display:flex;gap:12px;background:var(--dk-s);border-radius:var(--r-lg);padding:12px;border:1px solid var(--dk-bdr);margin-bottom:10px">
+      <div style="width:80px;height:56px;border-radius:10px;background:linear-gradient(135deg,#032E58,#0B4D8C);flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative">
+        <div style="color:rgba(255,255,255,.8);font-size:18px">▶</div>
+        <div style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,.55);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px">12:00</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:var(--dk-text);line-height:1.2;margin-bottom:3px">Bem-vindo à Paz Church</div>
+        <div style="font-size:11px;color:var(--dk-mut);margin-bottom:4px">Pr. Carlos · Gratuito</div>
+        <div style="display:inline-block;background:rgba(255,179,0,.12);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:600;color:var(--gold)">Gratuito</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;background:var(--dk-s);border-radius:var(--r-lg);padding:12px;border:1px solid var(--dk-bdr)">
+      <div style="width:80px;height:56px;border-radius:10px;background:linear-gradient(135deg,#0A3D6E,#1565C0);flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative">
+        <div style="color:rgba(255,255,255,.8);font-size:18px">▶</div>
+        <div style="position:absolute;bottom:4px;right:5px;background:rgba(0,0,0,.55);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px">08:30</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:var(--dk-text);line-height:1.2;margin-bottom:3px">Devocional — Salmos 23</div>
+        <div style="font-size:11px;color:var(--dk-mut);margin-bottom:4px">Pr. Ana · Gratuito</div>
+        <div style="display:inline-block;background:rgba(255,179,0,.12);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:600;color:var(--gold)">Gratuito</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dk-bnav">
+    <div class="ni"><div class="dnp"><span class="dni-ic">🏠</span></div></div>
+    <div class="ni"><div class="dnp on"><span class="dni-ic">🎓</span><span class="dni-lb">Academia</span></div></div>
+    <div class="ni"><div class="dnp"><span class="dni-ic">👤</span></div></div>
+  </div>
+</div>
+<p class="phone-lbl">Academia · Logged Out · Dark</p>
+</div>
+
+</div>
+</div>
+
+<!-- ══ ROW 4: Profile logged-in (improved) + logged-out ══ -->
+<div>
+<p class="row-title">Perfil — Logged In &amp; Logged Out</p>
+<div class="row">
+
+<!-- PROFILE LOGGED IN — improved light -->
+<div>
+<div class="phone">
+  <div style="background:linear-gradient(158deg,#032E58,#0A4A8A)">
+    <div class="sb w"><span>9:41</span><div style="display:flex;gap:5px"><span>100%</span></div></div>
+  </div>
+  <!-- hero -->
+  <div style="background:linear-gradient(158deg,#032E58 0%,#0B4D8C 55%,#1565C0 100%);padding:10px 24px 56px;position:relative;overflow:hidden">
+    <div style="position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.06) 0%,transparent 70%);top:-90px;right:-60px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;position:relative;z-index:1">
+      <div>
+        <div style="font-size:12px;font-weight:500;color:rgba(255,255,255,.5);margin-bottom:3px">Meu Perfil</div>
+        <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:800;color:#fff;line-height:1.1">João<br/>Silva</div>
+      </div>
+      <!-- avatar with edit ring -->
+      <div style="position:relative">
+        <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--p-mid),var(--p-sky));border:3px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff">JS</div>
+        <div style="position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:var(--gold);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:10px">✏️</div>
+      </div>
+    </div>
+    <!-- stats row -->
+    <div style="display:flex;gap:10px;position:relative;z-index:1">
+      <div style="flex:1;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:10px;text-align:center;backdrop-filter:blur(8px)">
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:800;color:#fff;line-height:1">24</div>
+        <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.5);margin-top:2px;letter-spacing:.3px">Cultos</div>
+      </div>
+      <div style="flex:1;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:10px;text-align:center;backdrop-filter:blur(8px)">
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:800;color:#fff;line-height:1">3</div>
+        <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.5);margin-top:2px;letter-spacing:.3px">GVs</div>
+      </div>
+      <div style="flex:1;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:10px;text-align:center;backdrop-filter:blur(8px)">
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:800;color:#fff;line-height:1">12</div>
+        <div style="font-size:10px;font-weight:600;color:rgba(255,255,255,.5);margin-top:2px;letter-spacing:.3px">Aulas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- body -->
+  <div style="background:var(--bg);margin-top:-28px;border-radius:28px 28px 0 0;padding:20px 18px 110px">
+    <!-- journey progress card -->
+    <div style="background:var(--surface);border-radius:var(--r-xl);padding:16px;margin-bottom:18px;box-shadow:var(--sh-md);border:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700;color:var(--text)">Jornada do Membro</div>
+        <div style="font-size:11px;font-weight:600;color:var(--p-sky)">Ver tudo →</div>
+      </div>
+      <!-- steps -->
+      <div style="display:flex;align-items:center;gap:0;margin-bottom:10px">
+        <!-- step 1 done -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--p);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:700;margin-bottom:4px">✓</div>
+          <div style="font-size:9px;font-weight:600;color:var(--p);text-align:center">Batismo</div>
+        </div>
+        <div style="flex:1;height:2px;background:var(--p);margin-bottom:18px"></div>
+        <!-- step 2 done -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--p);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:700;margin-bottom:4px">✓</div>
+          <div style="font-size:9px;font-weight:600;color:var(--p);text-align:center">Escola</div>
+        </div>
+        <div style="flex:1;height:2px;background:linear-gradient(90deg,var(--p),var(--border));margin-bottom:18px"></div>
+        <!-- step 3 active -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1">
+          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--p-mid),var(--p-sky));border:3px solid var(--p);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:800;margin-bottom:4px;box-shadow:0 0 0 3px rgba(4,58,111,.15)">3</div>
+          <div style="font-size:9px;font-weight:700;color:var(--p);text-align:center">Liderança</div>
+        </div>
+        <div style="flex:1;height:2px;background:var(--border);margin-bottom:18px"></div>
+        <!-- step 4 future -->
+        <div style="display:flex;flex-direction:column;align-items:center;flex:1">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--s2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px">4</div>
+          <div style="font-size:9px;font-weight:600;color:var(--muted);text-align:center">Missões</div>
+        </div>
+      </div>
+      <div style="background:var(--s2);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px">📚</span>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--text)">Em andamento: Escola de Liderança</div>
+          <div style="font-size:11px;color:var(--muted)">Módulo 2 de 4 · 60% concluído</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- menu sections -->
+    <div style="font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding-left:4px">Minha Igreja</div>
+    <div style="background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh-sm);border:1px solid var(--border);overflow:hidden;margin-bottom:16px">
+      <div class="mr" style="border-bottom:1px solid var(--border)"><div class="mr-ic b" style="background:rgba(21,101,192,.1)">📋</div><div class="mr-tx" style="color:var(--text)">Relatar Reunião</div><div class="mr-ar" style="color:var(--muted)">›</div></div>
+      <div class="mr" style="border-bottom:1px solid var(--border)"><div class="mr-ic b" style="background:rgba(21,101,192,.1)">📝</div><div class="mr-tx" style="color:var(--text)">Formulários</div><div class="mr-ar" style="color:var(--muted)">›</div></div>
+      <div class="mr"><div class="mr-ic y" style="background:rgba(255,179,0,.1)">🎶</div><div class="mr-tx" style="color:var(--text)">Ministérios</div><div class="mr-ar" style="color:var(--muted)">›</div></div>
+    </div>
+
+    <div style="font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;padding-left:4px">Conta</div>
+    <div style="background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh-sm);border:1px solid var(--border);overflow:hidden">
+      <div class="mr" style="border-bottom:1px solid var(--border)"><div class="mr-ic b" style="background:rgba(21,101,192,.1)">🔔</div><div class="mr-tx" style="color:var(--text)">Notificações</div><div class="mr-ar" style="color:var(--muted)">›</div></div>
+      <div class="mr"><div class="mr-ic r" style="background:rgba(198,40,40,.08)">🚪</div><div class="mr-tx" style="color:#C62828;font-weight:600">Sair da conta</div></div>
+    </div>
+  </div>
+
+  <div class="bnav">
+    <div class="ni"><div class="np"><span class="ni-ic">🏠</span></div></div>
+    <div class="ni"><div class="np"><span class="ni-ic">🎓</span></div></div>
+    <div class="ni"><div class="np on"><span class="ni-ic">👤</span><span class="ni-lb">Perfil</span></div></div>
+  </div>
+</div>
+<p class="phone-lbl">Perfil · Logged In · Light</p>
+</div>
+
+<!-- PROFILE LOGGED OUT (Dark) -->
+<div>
+<div class="phone dk">
+  <div style="background:var(--dk-s)"><div class="sb d"><span>9:41</span><div style="display:flex;gap:5px"><span>100%</span></div></div></div>
+
+  <!-- hero empty state gradient -->
+  <div style="background:linear-gradient(158deg,#040D1A 0%,#081929 55%,#0D2A45 100%);padding:10px 24px 56px;position:relative;overflow:hidden">
+    <div style="position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(91,155,213,.08) 0%,transparent 70%);top:-80px;right:-50px"></div>
+    <div style="position:absolute;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(255,179,0,.07) 0%,transparent 70%);bottom:20px;left:20px"></div>
+    <!-- ghost avatar -->
+    <div style="display:flex;flex-direction:column;align-items:center;padding-top:16px;padding-bottom:4px;position:relative;z-index:1">
+      <div style="width:72px;height:72px;border-radius:50%;background:rgba(91,155,213,.1);border:2px dashed rgba(91,155,213,.3);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:14px">👤</div>
+      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:800;color:rgba(255,255,255,.55);margin-bottom:4px">Visitante</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.28);text-align:center;max-width:200px;line-height:1.5">Entre na sua conta para acessar seu perfil completo</div>
+    </div>
+  </div>
+
+  <!-- body -->
+  <div style="background:var(--dk-bg);margin-top:-28px;border-radius:28px 28px 0 0;padding:20px 18px 110px">
+
+    <!-- login card -->
+    <div style="background:linear-gradient(135deg,#07243F 0%,#0D3A60 60%,#0A2E50 100%);border-radius:var(--r-xl);padding:20px;margin-bottom:20px;border:1px solid rgba(91,155,213,.2);box-shadow:0 12px 36px rgba(4,58,111,.25);position:relative;overflow:hidden">
+      <div style="position:absolute;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(91,155,213,.1) 0%,transparent 70%);top:-40px;right:-30px"></div>
+      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:800;color:#fff;margin-bottom:4px;position:relative;z-index:1">Faça parte da comunidade</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.45);margin-bottom:16px;position:relative;z-index:1">Acesse seu perfil, jornada e conteúdo exclusivo</div>
+      <button style="width:100%;background:#fff;color:var(--p);border:none;border-radius:999px;padding:13px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;position:relative;z-index:1"><span style="font-weight:800">G</span> Entrar com Google</button>
+      <button style="width:100%;background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.2);border-radius:999px;padding:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;position:relative;z-index:1">🍎 Entrar com Apple</button>
+    </div>
+
+    <!-- what you get -->
+    <div style="font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--dk-mut);margin-bottom:10px;padding-left:4px">O que você acessa</div>
+    <div style="background:var(--dk-s);border-radius:var(--r-lg);border:1px solid var(--dk-bdr);overflow:hidden">
+      <div style="display:flex;align-items:center;gap:12px;padding:13px 15px;border-bottom:1px solid rgba(91,155,213,.06)">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(21,101,192,.16);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🛤️</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--dk-text)">Jornada do Membro</div>
+          <div style="font-size:11px;color:var(--dk-mut)">Acompanhe seu crescimento</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:13px 15px;border-bottom:1px solid rgba(91,155,213,.06)">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(30,138,76,.14);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🎓</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--dk-text)">Academia completa</div>
+          <div style="font-size:11px;color:var(--dk-mut)">Todos os vídeos e cursos</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:13px 15px;border-bottom:1px solid rgba(91,155,213,.06)">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,179,0,.11);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🔔</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--dk-text)">Notificações personalizadas</div>
+          <div style="font-size:11px;color:var(--dk-mut)">Avisos de cultos e grupos</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:13px 15px">
+        <div style="width:36px;height:36px;border-radius:10px;background:rgba(156,39,176,.13);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🤝</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--dk-text)">Grupo de Vida</div>
+          <div style="font-size:11px;color:var(--dk-mut)">Encontre ou gerencie seu GV</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dk-bnav">
+    <div class="ni"><div class="dnp"><span class="dni-ic">🏠</span></div></div>
+    <div class="ni"><div class="dnp"><span class="dni-ic">🎓</span></div></div>
+    <div class="ni"><div class="dnp on"><span class="dni-ic">👤</span><span class="dni-lb">Perfil</span></div></div>
+  </div>
+</div>
+<p class="phone-lbl">Perfil · Logged Out · Dark</p>
+</div>
+
+</div>
+</div>
+
+<!-- token reference -->
+<div class="tokens">
+  <p class="row-title">Color Tokens</p>
+  <div class="token-grid">
+    <div class="tk" style="background:#032E58;color:#fff">Primary<span>#032E58</span></div>
+    <div class="tk" style="background:#0B4D8C;color:#fff">Primary Mid<span>#0B4D8C</span></div>
+    <div class="tk" style="background:#1565C0;color:#fff">Primary Light<span>#1565C0</span></div>
+    <div class="tk" style="background:#5B9BD5;color:#fff">Accent<span>#5B9BD5</span></div>
+    <div class="tk" style="background:#90CAF9;color:#032E58">Sky<span>#90CAF9</span></div>
+    <div class="tk" style="background:#FFB300;color:#140E00">Gold<span>#FFB300</span></div>
+    <div class="tk" style="background:#EEF3FB;color:#032E58;border:1px solid #D0DCF0">Background<span>#EEF3FB</span></div>
+    <div class="tk" style="background:#070E1A;color:#6EA0C8">Dark BG<span>#070E1A</span></div>
+    <div class="tk" style="background:#0D1826;color:#6EA0C8">Dark Surface<span>#0D1826</span></div>
+  </div>
+</div>
+
+</body>
+</html>
