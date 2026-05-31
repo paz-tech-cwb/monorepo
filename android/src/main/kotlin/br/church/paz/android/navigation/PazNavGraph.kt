@@ -7,6 +7,7 @@ import androidx.navigation.compose.rememberNavController
 import br.church.paz.android.ui.features.agenda.AgendaDetailScreen
 import br.church.paz.android.ui.features.auth.LoginScreen
 import br.church.paz.android.ui.features.formularios.FormulariosScreen
+import br.church.paz.android.ui.features.meetingreport.MeetingReportScreen
 import br.church.paz.android.ui.features.memberjourney.MemberJourneyScreen
 import br.church.paz.android.ui.features.profile.EditProfileScreen
 import br.church.paz.android.ui.features.profile.ProfileScreen
@@ -52,6 +53,9 @@ fun PazNavGraph() {
         }
         composable(Screen.MemberJourney.route) {
             MemberJourneyScreen(navController = navController)
+        }
+        composable(Screen.MeetingReport.route) {
+            MeetingReportScreen(navController = navController)
         }
     }
 }
