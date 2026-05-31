@@ -4,6 +4,7 @@ import br.church.paz.android.ui.features.account.AccountViewModel
 import br.church.paz.android.ui.features.academy.AcademyViewModel
 import br.church.paz.android.ui.features.auth.LoginViewModel
 import br.church.paz.android.ui.features.home.HomeViewModel
+import br.church.paz.android.ui.features.profile.ProfileViewModel
 import br.church.paz.android.ui.features.splash.SplashViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -14,4 +15,5 @@ val androidModule = module {
     viewModel { HomeViewModel(get(), get()) }
     viewModel { AcademyViewModel(get()) }
     viewModel { AccountViewModel(get()) }
+    viewModel { ProfileViewModel(get()) }
 }
