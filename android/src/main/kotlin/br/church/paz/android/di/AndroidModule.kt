@@ -8,6 +8,7 @@ import br.church.paz.android.ui.features.formularios.FormulariosViewModel
 import br.church.paz.android.ui.features.home.HomeViewModel
 import br.church.paz.android.ui.features.meetingreport.MeetingReportViewModel
 import br.church.paz.android.ui.features.memberjourney.MemberJourneyViewModel
+import br.church.paz.android.ui.features.notifications.NotificationPrefsViewModel
 import br.church.paz.android.ui.features.profile.EditProfileViewModel
 import br.church.paz.android.ui.features.profile.ProfileViewModel
 import br.church.paz.android.ui.features.splash.SplashViewModel
@@ -26,4 +27,5 @@ val androidModule = module {
     viewModel { FormulariosViewModel(get()) }
     viewModel { MemberJourneyViewModel(get()) }
     viewModel { MeetingReportViewModel(get(), get()) }
+    viewModel { NotificationPrefsViewModel() }
 }
