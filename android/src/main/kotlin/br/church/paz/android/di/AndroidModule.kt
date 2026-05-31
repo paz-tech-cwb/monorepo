@@ -2,6 +2,7 @@ package br.church.paz.android.di
 
 import br.church.paz.android.ui.features.account.AccountViewModel
 import br.church.paz.android.ui.features.academy.AcademyViewModel
+import br.church.paz.android.ui.features.agenda.AgendaDetailViewModel
 import br.church.paz.android.ui.features.auth.LoginViewModel
 import br.church.paz.android.ui.features.home.HomeViewModel
 import br.church.paz.android.ui.features.profile.EditProfileViewModel
@@ -18,4 +19,5 @@ val androidModule = module {
     viewModel { AccountViewModel(get()) }
     viewModel { ProfileViewModel(get()) }
     viewModel { EditProfileViewModel(get(), get()) }
+    viewModel { (eventId: String) -> AgendaDetailViewModel(get(), eventId) }
 }
