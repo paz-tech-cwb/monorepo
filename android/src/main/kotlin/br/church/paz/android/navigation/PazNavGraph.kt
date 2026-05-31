@@ -5,6 +5,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import br.church.paz.android.ui.features.auth.LoginScreen
+import br.church.paz.android.ui.features.profile.EditProfileScreen
+import br.church.paz.android.ui.features.profile.ProfileScreen
 import br.church.paz.android.ui.features.splash.SplashScreen
 
 @Composable
@@ -28,6 +30,12 @@ fun PazNavGraph() {
         }
         composable(Screen.Shell.route) {
             AppShell(rootNavController = navController)
+        }
+        composable(Screen.Profile.route) {
+            ProfileScreen(navController = navController)
+        }
+        composable(Screen.EditProfile.route) {
+            EditProfileScreen(navController = navController)
         }
     }
 }
