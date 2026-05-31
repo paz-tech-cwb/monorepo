@@ -6,6 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import br.church.paz.android.ui.features.agenda.AgendaDetailScreen
 import br.church.paz.android.ui.features.auth.LoginScreen
+import br.church.paz.android.ui.features.formularios.FormulariosScreen
 import br.church.paz.android.ui.features.profile.EditProfileScreen
 import br.church.paz.android.ui.features.profile.ProfileScreen
 import br.church.paz.android.ui.features.splash.SplashScreen
@@ -44,6 +45,9 @@ fun PazNavGraph() {
         ) { backStackEntry ->
             val eventId = backStackEntry.arguments?.getString("eventId") ?: return@composable
             AgendaDetailScreen(navController = navController, eventId = eventId)
+        }
+        composable(Screen.FormulariosList.route) {
+            FormulariosScreen(navController = navController)
         }
     }
 }

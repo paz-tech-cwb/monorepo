@@ -17,5 +17,8 @@ sealed class Screen(val route: String) {
     data object MeetingReport    : Screen("meeting_report")
     data object Ministries       : Screen("ministries")
     data object FormulariosList  : Screen("formularios")
+    data object FormDetail : Screen("form_detail/{formId}") {
+        fun createRoute(formId: String) = "form_detail/$formId"
+    }
     data object NotificationPrefs: Screen("notification_prefs")
 }
