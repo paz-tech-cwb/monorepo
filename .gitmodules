@@ -10,3 +10,6 @@
 [submodule "postman-files"]
 	path = postman-files
 	url = https://github.com/paz-tech-cwb/postman-files
+[submodule "kmp-mobile"]
+	path = kmp-mobile
+	url = https://github.com/paz-tech-cwb/kmp-mobile.git
