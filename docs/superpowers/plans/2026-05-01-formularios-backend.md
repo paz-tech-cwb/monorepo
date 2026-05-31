@@ -12,6 +12,29 @@
 
 ---
 
+## Implementation Preflight
+
+Before Task 1, inspect the current entities and keep the plan aligned with the repository, not the older UUID examples:
+
+```bash
+cd backend
+sed -n '1,120p' src/areas/entities/area.entity.ts
+sed -n '1,120p' src/sectors/entities/sector.entity.ts
+sed -n '1,140p' src/life-groups/entities/life-group.entity.ts
+sed -n '1,160p' src/users/entities/user.entity.ts
+```
+
+As of this branch, `areas.id`, `sectors.id`, `life_groups.id`, and `users.id` are numeric `int` primary keys. Therefore, when implementing the forms schema:
+
+- Use `int` columns and `@IsInt()` DTO validation for `area_id`, `sector_id`, `life_group_id`, `leader_id`, `submitted_by_id`, `source_life_group_id`, `new_life_group_id`, `new_leader_id`, `members_to_move`, and `new_members`.
+- Keep form submission IDs and course IDs as UUIDs (`id uuid`, `completed_courses uuid[]`, `form_course_links.course_id uuid`) unless the course entity is changed in a separate migration.
+- If any future copied snippet shows `area_id uuid`, `sector_id uuid`, or `life_group_id uuid`, treat it as stale pseudocode and convert those scope columns to `int` during implementation.
+- Keep JSON keys snake_case on the wire; only the TypeScript entity properties use camelCase.
+
+Do not start implementation until this preflight is reflected in the migration and DTOs. This prevents backend/admin/mobile contract drift.
+
+---
+
 ## File Structure
 
 ```
@@ -677,7 +700,7 @@ public async up(qr: QueryRunner): Promise<void> {
 
   // 4. Common form columns helper note: each form table ends with these columns
   //    submitted_by_id int NOT NULL REFERENCES users(id),
-  //    area_id uuid, sector_id uuid, life_group_id uuid,
+  //    area_id int, sector_id int, life_group_id int,
   //    created_at, updated_at, deleted_at
 
   // 5. member_registrations
@@ -686,15 +709,24 @@ public async up(qr: QueryRunner): Promise<void> {
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       email varchar(180) NOT NULL,
       full_name varchar(180) NOT NULL,
-      birthday date NOT NULL,
+      birth_date date NOT NULL,
       phone varchar(32) NOT NULL,
-      address text NOT NULL,
-      sector_id uuid NOT NULL,
-      life_group_id uuid NOT NULL,
-      leader_id int NOT NULL REFERENCES users(id),
+      gender varchar(2) NOT NULL,
+      civil_state varchar(20) NOT NULL,
+      cep varchar(9),
+      street varchar(180),
+      address_number varchar(30),
+      complement varchar(120),
+      neighborhood varchar(120),
+      city varchar(120),
+      state varchar(2),
+      address text,
+      sector_id int NOT NULL REFERENCES sectors(id),
+      life_group_id int REFERENCES life_groups(id),
+      leader_id int REFERENCES users(id),
       completed_courses uuid[] NOT NULL DEFAULT '{}',
       "submittedById" int NOT NULL REFERENCES users(id),
-      area_id uuid,
+      area_id int,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now(),
       deleted_at timestamptz
@@ -715,6 +747,13 @@ public async up(qr: QueryRunner): Promise<void> {
       gender varchar(2) NOT NULL,
       birth_date date NOT NULL,
       civil_state varchar(20) NOT NULL,
+      cep varchar(9),
+      street varchar(180),
+      address_number varchar(30),
+      complement varchar(120),
+      neighborhood varchar(120),
+      city varchar(120),
+      state varchar(2),
       address text NOT NULL,
       attendance_count varchar(40) NOT NULL,
       life_group_status varchar(40) NOT NULL,
@@ -722,7 +761,7 @@ public async up(qr: QueryRunner): Promise<void> {
       invited_by varchar(180),
       notes text,
       "submittedById" int NOT NULL REFERENCES users(id),
-      area_id uuid, sector_id uuid, life_group_id uuid,
+      area_id int, sector_id int, life_group_id int,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now(),
       deleted_at timestamptz
@@ -735,9 +774,9 @@ public async up(qr: QueryRunner): Promise<void> {
     CREATE TABLE life_group_reports (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       date date NOT NULL,
-      area_id uuid NOT NULL,
-      sector_id uuid NOT NULL,
-      life_group_id uuid NOT NULL,
+      area_id int NOT NULL,
+      sector_id int NOT NULL,
+      life_group_id int NOT NULL,
       committed_members int NOT NULL,
       committed_members_present int NOT NULL,
       kids_0_to_11 int NOT NULL,
@@ -768,13 +807,13 @@ public async up(qr: QueryRunner): Promise<void> {
     CREATE TABLE sector_supervisor_reports (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       date date NOT NULL,
-      sector_id uuid NOT NULL,
-      area_id uuid,
-      life_groups_visited uuid[] NOT NULL DEFAULT '{}',
-      leaders_pastored uuid[] NOT NULL DEFAULT '{}',
+      sector_id int NOT NULL,
+      area_id int,
+      life_groups_visited int[] NOT NULL DEFAULT '{}',
+      leaders_pastored int[] NOT NULL DEFAULT '{}',
       meetings_held int NOT NULL,
       trainings_conducted int NOT NULL,
-      multiplication_candidates uuid[] NOT NULL DEFAULT '{}',
+      multiplication_candidates int[] NOT NULL DEFAULT '{}',
       notes text,
       "submittedById" int NOT NULL REFERENCES users(id),
       created_at timestamptz NOT NULL DEFAULT now(),
@@ -789,9 +828,9 @@ public async up(qr: QueryRunner): Promise<void> {
     CREATE TABLE area_supervisor_reports (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       date date NOT NULL,
-      area_id uuid NOT NULL,
-      sectors_visited uuid[] NOT NULL DEFAULT '{}',
-      sector_leaders_pastored uuid[] NOT NULL DEFAULT '{}',
+      area_id int NOT NULL,
+      sectors_visited int[] NOT NULL DEFAULT '{}',
+      sector_leaders_pastored int[] NOT NULL DEFAULT '{}',
       meetings_held int NOT NULL,
       trainings_conducted int NOT NULL,
       multiplications_in_progress int,
@@ -809,16 +848,16 @@ public async up(qr: QueryRunner): Promise<void> {
     CREATE TABLE multiplications (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       date date NOT NULL,
-      source_life_group_id uuid NOT NULL,
-      area_id uuid NOT NULL,
-      sector_id uuid NOT NULL,
+      source_life_group_id int NOT NULL,
+      area_id int NOT NULL,
+      sector_id int NOT NULL,
       completed_leadership_track boolean NOT NULL,
       legally_married boolean NOT NULL,
       faithful_tither boolean NOT NULL,
       evangelizing_and_consolidating boolean NOT NULL,
       good_testimony boolean NOT NULL,
       single_living_in_purity boolean,
-      new_life_group_id uuid,
+      new_life_group_id int,
       new_life_group_name varchar(180) NOT NULL,
       new_leader_id int NOT NULL REFERENCES users(id),
       host_id int NOT NULL REFERENCES users(id),
@@ -852,7 +891,7 @@ public async up(qr: QueryRunner): Promise<void> {
       offering numeric(10,2) NOT NULL,
       notes text,
       "submittedById" int NOT NULL REFERENCES users(id),
-      area_id uuid, sector_id uuid, life_group_id uuid,
+      area_id int, sector_id int, life_group_id int,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now(),
       deleted_at timestamptz
@@ -872,7 +911,7 @@ public async up(qr: QueryRunner): Promise<void> {
       how_met_church varchar(40),
       notes text,
       "submittedById" int NOT NULL REFERENCES users(id),
-      area_id uuid, sector_id uuid, life_group_id uuid,
+      area_id int, sector_id int, life_group_id int,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now(),
       deleted_at timestamptz
@@ -1274,9 +1313,131 @@ git commit -m "feat(forms-catalog): add GET /api/forms with role-resolved permis
 
 ---
 
+## Task 7b: Safe user lookup for form prefill
+
+Build a small authenticated lookup endpoint for form UIs. It is used by Conversão e Reconciliação when the operator enters email or phone, and can also be reused by Cadastro do Membro to avoid duplicates.
+
+**Files:**
+- Modify: `src/users/users.controller.ts`
+- Modify: `src/users/users.service.ts`
+- Test: `src/users/users.service.spec.ts`
+
+> **Route ordering:** add `@Get('lookup')` before the existing `@Get(':id')` route in `UsersController`, otherwise `/users/lookup` will be captured as an `id` route. Add `Query` to the Nest imports.
+
+- [ ] **Step 1: Write failing tests**
+
+```typescript
+describe('UsersService.lookupForForms', () => {
+  it('finds an existing user by email', async () => {
+    entityManager.findOne.mockResolvedValue(userWithLifeGroupAndLeader);
+    await expect(service.lookupForForms({ email: 'ana@example.com' })).resolves.toMatchObject({
+      id: 10,
+      email: 'ana@example.com',
+      full_name: 'Ana Souza',
+      life_group_id: 3,
+      leader_id: 7,
+    });
+  });
+
+  it('finds an existing user by phone', async () => {
+    entityManager.findOne.mockResolvedValue(userWithLifeGroupAndLeader);
+    await service.lookupForForms({ phone: '+5541999999999' });
+    expect(entityManager.findOne).toHaveBeenCalledWith(User, expect.objectContaining({
+      where: [{ phoneNumber: '+5541999999999' }],
+    }));
+  });
+
+  it('returns null when neither email nor phone matches', async () => {
+    entityManager.findOne.mockResolvedValue(null);
+    await expect(service.lookupForForms({ email: 'none@example.com' })).resolves.toBeNull();
+  });
+});
+```
+
+- [ ] **Step 2: Run tests to verify RED**
+
+```bash
+cd backend
+npx jest src/users/users.service.spec.ts -t lookupForForms
+```
+
+Expected: FAIL because `lookupForForms` does not exist.
+
+- [ ] **Step 3: Implement the lookup**
+
+```typescript
+// src/users/users.service.ts
+async lookupForForms(filters: { email?: string; phone?: string }) {
+  const where = [
+    filters.email ? { email: filters.email.trim().toLowerCase() } : null,
+    filters.phone ? { phoneNumber: filters.phone.trim() } : null,
+  ].filter(Boolean);
+  if (where.length === 0) return null;
+
+  const user = await this.entityManager.findOne(User, {
+    where,
+    relations: ['lifeGroups', 'lifeGroups.leader', 'sector', 'address'],
+  });
+  if (!user) return null;
+
+  const primaryLifeGroup = user.lifeGroups?.[0] ?? null;
+  return {
+    id: user.id,
+    full_name: user.name,
+    email: user.email,
+    phone: user.phoneNumber,
+    birth_date: user.birthDate,
+    gender: (user as any).gender ?? null,
+    civil_state: (user as any).civilState ?? null,
+    address: user.address ? formatAddress(user.address) : null,
+    sector_id: user.sector?.id ?? null,
+    life_group_id: primaryLifeGroup?.id ?? null,
+    leader_id: primaryLifeGroup?.leader?.id ?? null,
+  };
+}
+```
+
+If the current `User` entity does not yet have `gender` and `civilState`, add nullable columns and a migration in this task so form submissions can prefill and persist those fields.
+
+- [ ] **Step 4: Add controller route**
+
+```typescript
+// src/users/users.controller.ts
+@Get('lookup')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles('admin','pastor','area_leader','sector_leader','life_group_leader')
+lookupForForms(@Query('email') email?: string, @Query('phone') phone?: string) {
+  return this.usersService.lookupForForms({ email, phone });
+}
+```
+
+Mounted path: `GET /api/users/lookup?email=...&phone=...`. Return `200 null` when no match is found; do not return sensitive auth/account fields.
+
+- [ ] **Step 5: Run tests + commit**
+
+```bash
+cd backend
+npx jest src/users/users.service.spec.ts -t lookupForForms
+git add src/users database/migrations
+git commit -m "feat(forms): add safe user lookup for form prefill"
+```
+
+---
+
 ## Task 8: Form 1 — Cadastro do Membro (template form, full TDD)
 
 This is the most involved form: side effects (pending user, onboarding email, member path). All subsequent forms follow this same pattern (entity + DTO + service + controller + tests + AppModule registration).
+
+**May 2026 requirements update:** Cadastro do Membro must capture full address fields and demographic fields. `life_group_id` and `leader_id` are optional. If a life group is present, resolve its leader and persist `leader_id`; if only `leader_id` is present and that user leads exactly one life group, resolve and persist `life_group_id`. If neither is present, allow the submission.
+
+Use these field names in the API payload:
+
+- Required: `email`, `full_name`, `birth_date`, `phone`, `gender`, `civil_state`, `sector_id`
+- Optional address fields: `cep`, `street`, `address_number`, `complement`, `neighborhood`, `city`, `state`, `address`
+- Optional relationship fields: `life_group_id`, `leader_id`
+- Optional courses: `completed_courses`
+
+Keep `address` as a compatibility/display field composed from the structured address when the client does not send it. CEP lookup is a client concern; backend only validates and persists the returned address fields.
 
 **Files:**
 - Create: `src/member-registrations/member-registrations.module.ts`
@@ -1288,6 +1449,8 @@ This is the most involved form: side effects (pending user, onboarding email, me
 - Create: `src/member-registrations/services/onboarding.service.ts`
 - Test: `src/member-registrations/member-registrations.service.spec.ts`
 - Test: `src/member-registrations/services/onboarding.service.spec.ts`
+
+> **ID type reminder:** In the current repo, `sectorId`, `lifeGroupId`, and `leaderId` are `number`/`int`, not UUID strings. The snippets below show the intended field names and behavior; use the preflight ID rules when writing the actual entity and DTO.
 
 - [ ] **Step 1: Entity**
 
@@ -1303,15 +1466,24 @@ export class MemberRegistration {
   @PrimaryGeneratedColumn('uuid') id: string;
   @Column({ type: 'varchar', length: 180 }) email: string;
   @Column({ name: 'full_name', type: 'varchar', length: 180 }) fullName: string;
-  @Column({ type: 'date' }) birthday: string;
+  @Column({ name: 'birth_date', type: 'date' }) birthDate: string;
   @Column({ type: 'varchar', length: 32 }) phone: string;
-  @Column({ type: 'text' }) address: string;
-  @Column({ name: 'sector_id', type: 'uuid' }) sectorId: string;
-  @Column({ name: 'life_group_id', type: 'uuid' }) lifeGroupId: string;
-  @Column({ name: 'leader_id', type: 'int' }) leaderId: number;
+  @Column({ type: 'varchar', length: 2 }) gender: 'm' | 'f';
+  @Column({ name: 'civil_state', type: 'varchar', length: 20 }) civilState: string;
+  @Column({ type: 'varchar', length: 9, nullable: true }) cep: string | null;
+  @Column({ type: 'varchar', length: 180, nullable: true }) street: string | null;
+  @Column({ name: 'address_number', type: 'varchar', length: 30, nullable: true }) addressNumber: string | null;
+  @Column({ type: 'varchar', length: 120, nullable: true }) complement: string | null;
+  @Column({ type: 'varchar', length: 120, nullable: true }) neighborhood: string | null;
+  @Column({ type: 'varchar', length: 120, nullable: true }) city: string | null;
+  @Column({ type: 'varchar', length: 2, nullable: true }) state: string | null;
+  @Column({ type: 'text', nullable: true }) address: string | null;
+  @Column({ name: 'sector_id', type: 'int' }) sectorId: number;
+  @Column({ name: 'life_group_id', type: 'int', nullable: true }) lifeGroupId: number | null;
+  @Column({ name: 'leader_id', type: 'int', nullable: true }) leaderId: number | null;
   @Column({ name: 'completed_courses', type: 'uuid', array: true, default: () => "'{}'" })
   completedCourses: string[];
-  @Column({ name: 'area_id', type: 'uuid', nullable: true }) areaId: string | null;
+  @Column({ name: 'area_id', type: 'int', nullable: true }) areaId: number | null;
 
   @ManyToOne(() => User, { nullable: false }) submittedBy: User;
 
@@ -1326,17 +1498,26 @@ export class MemberRegistration {
 ```typescript
 // src/member-registrations/dto/create-member-registration.dto.ts
 import { Expose } from 'class-transformer';
-import { ArrayUnique, IsArray, IsDateString, IsEmail, IsInt, IsOptional, IsString, IsUUID, Length, Matches } from 'class-validator';
+import { ArrayUnique, IsArray, IsDateString, IsEmail, IsIn, IsInt, IsOptional, IsString, IsUUID, Length, Matches } from 'class-validator';
 
 export class CreateMemberRegistrationDto {
   @Expose() @IsEmail() email: string;
   @Expose({ name: 'full_name' }) @IsString() @Length(2, 180) fullName: string;
-  @Expose() @IsDateString() birthday: string;
+  @Expose({ name: 'birth_date' }) @IsDateString() birthDate: string;
   @Expose() @IsString() @Matches(/^\+?[0-9]{8,15}$/) phone: string;
-  @Expose() @IsString() address: string;
-  @Expose({ name: 'sector_id' }) @IsUUID() sectorId: string;
-  @Expose({ name: 'life_group_id' }) @IsUUID() lifeGroupId: string;
-  @Expose({ name: 'leader_id' }) @IsInt() leaderId: number;
+  @Expose() @IsIn(['m','f']) gender: 'm' | 'f';
+  @Expose({ name: 'civil_state' }) @IsIn(['solteiro','casado','divorciado','viuvo']) civilState: string;
+  @Expose() @IsOptional() @IsString() cep?: string;
+  @Expose() @IsOptional() @IsString() street?: string;
+  @Expose({ name: 'address_number' }) @IsOptional() @IsString() addressNumber?: string;
+  @Expose() @IsOptional() @IsString() complement?: string;
+  @Expose() @IsOptional() @IsString() neighborhood?: string;
+  @Expose() @IsOptional() @IsString() city?: string;
+  @Expose() @IsOptional() @IsString() state?: string;
+  @Expose() @IsOptional() @IsString() address?: string;
+  @Expose({ name: 'sector_id' }) @IsInt() sectorId: number;
+  @Expose({ name: 'life_group_id' }) @IsOptional() @IsInt() lifeGroupId?: number;
+  @Expose({ name: 'leader_id' }) @IsOptional() @IsInt() leaderId?: number;
   @Expose({ name: 'completed_courses' }) @IsOptional() @IsArray() @ArrayUnique() @IsUUID('all', { each: true })
   completedCourses?: string[];
 }
@@ -1368,14 +1549,15 @@ export class OnboardingService {
   ) {}
 
   async onSubmit(reg: MemberRegistration): Promise<void> {
-    let user = await this.users.findOne({ where: { email: reg.email } });
+    let user = await this.users.findOne({ where: [{ email: reg.email }, { phoneNumber: reg.phone }] });
     if (!user) {
       user = this.users.create({
         email: reg.email, name: reg.fullName, phoneNumber: reg.phone,
+        birthDate: reg.birthDate as any,
         status: 'pending_first_login' as any,
       });
     } else {
-      user.name = reg.fullName; user.phoneNumber = reg.phone;
+      user.name = reg.fullName; user.phoneNumber = reg.phone; user.birthDate = reg.birthDate as any;
     }
     await this.users.save(user);
     void this.notifications.sendEmail({
@@ -1399,6 +1581,13 @@ export class OnboardingService {
 ```
 
 - [ ] **Step 4: Service**
+
+Before saving, normalize relationship fields:
+
+- Load `LifeGroup` when `dto.lifeGroupId` exists. If the group has a `leader` relation, set `leaderId` from it.
+- Load `User` when `dto.leaderId` exists. If no life group was selected and this leader owns exactly one life group, set `lifeGroupId` from that group.
+- Do not throw when both are missing. Do throw `BadRequestException` when the provided life group or leader ID does not exist.
+- Build `address` from `street`, `address_number`, `complement`, `neighborhood`, `city`, `state`, and `cep` when `dto.address` is empty.
 
 ```typescript
 // src/member-registrations/member-registrations.service.ts
@@ -1425,13 +1614,23 @@ export class MemberRegistrationsService {
   ) {}
 
   async create(dto: CreateMemberRegistrationDto, actorId: number): Promise<MemberRegistration> {
+    const normalized = await this.normalizeMemberRegistration(dto);
     const reg = await this.repo.save(this.repo.create({
-      ...dto,
+      ...normalized,
       submittedBy: { id: actorId } as any,
     }));
     await this.audit.record({ formSlug: SLUG, submissionId: reg.id, actorId, action: 'create' });
     await this.onboarding.onSubmit(reg);
     return reg;
+  }
+
+  private async normalizeMemberRegistration(dto: CreateMemberRegistrationDto): Promise<Partial<MemberRegistration>> {
+    // Implement with LifeGroup + User repositories injected into this service.
+    // The persisted result must include optional lifeGroupId/leaderId inference and composed address fallback.
+    return {
+      ...dto,
+      address: dto.address?.trim() || composeAddress(dto),
+    } as Partial<MemberRegistration>;
   }
 
   async list(scope: ResolvedScope) {
@@ -1463,6 +1662,14 @@ export class MemberRegistrationsService {
     await this.repo.softDelete(id);
     await this.audit.record({ formSlug: SLUG, submissionId: id, actorId: actor.id, action: 'delete' });
   }
+}
+
+function composeAddress(dto: CreateMemberRegistrationDto): string | null {
+  const line1 = [dto.street, dto.addressNumber].filter(Boolean).join(', ');
+  const line2 = [dto.complement, dto.neighborhood].filter(Boolean).join(' - ');
+  const city = [dto.city, dto.state].filter(Boolean).join('/');
+  const cep = dto.cep ? `CEP ${dto.cep}` : '';
+  return [line1, line2, city, cep].filter(Boolean).join(', ') || null;
 }
 ```
 
@@ -1571,6 +1778,13 @@ describe('OnboardingService', () => {
     expect(users.save).toHaveBeenCalledWith(expect.objectContaining({ id: 5, name: 'New Name' }));
   });
 
+  it('matches existing user by phone when email differs or is absent', async () => {
+    users.findOne.mockResolvedValue({ id: 6, phoneNumber: '+5541999999999' });
+    await service.onSubmit({ email: 'new@y', fullName: 'Phone Match', phone: '+5541999999999' } as any);
+    expect(users.create).not.toHaveBeenCalled();
+    expect(users.save).toHaveBeenCalledWith(expect.objectContaining({ id: 6, name: 'Phone Match' }));
+  });
+
   it('sends onboarding email after persisting', async () => {
     users.findOne.mockResolvedValue(null);
     await service.onSubmit({ email: 'x@y', fullName: 'X Y', phone: '+5511' } as any);
@@ -1588,7 +1802,7 @@ npm run start:dev &
 # in another shell, after auth token obtained:
 curl -X POST http://localhost:3001/api/forms/member-registrations \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"email":"a@b.com","full_name":"Ana","birthday":"1990-01-01","phone":"+5511999999999","address":"R X","sector_id":"<uuid>","life_group_id":"<uuid>","leader_id":1}'
+  -d '{"email":"a@b.com","full_name":"Ana","birth_date":"1990-01-01","phone":"+5541999999999","gender":"f","civil_state":"solteiro","cep":"80010000","street":"Rua X","address_number":"123","neighborhood":"Centro","city":"Curitiba","state":"PR","sector_id":1}'
 ```
 
 - [ ] **Step 9: Commit**
@@ -1603,6 +1817,8 @@ git commit -m "feat(forms): add Cadastro do Membro form (POST/GET/PATCH/DELETE) 
 ## Task 9: Form 2 — Conversões
 
 **Files:** mirror Task 8 under `src/conversions/`. Side-effect: `ConversionMatchService` matches/creates user and updates member path (Trilho).
+
+**May 2026 requirements update:** The UI will prefill this form through `GET /api/users/lookup` as soon as email or phone identifies an existing user. Backend still performs the same match on submit to prevent duplicates. When an existing user is found, preserve existing canonical data and fill missing fields only; when no user exists, create a pending user from the conversion payload.
 
 - [ ] **Step 1: Entity** (fields per spec §3.2)
 
@@ -1623,15 +1839,22 @@ export class Conversion {
   @Column() gender: 'm' | 'f';
   @Column({ name: 'birth_date', type: 'date' }) birthDate: string;
   @Column({ name: 'civil_state' }) civilState: string;
+  @Column({ type: 'varchar', length: 9, nullable: true }) cep: string | null;
+  @Column({ type: 'varchar', length: 180, nullable: true }) street: string | null;
+  @Column({ name: 'address_number', type: 'varchar', length: 30, nullable: true }) addressNumber: string | null;
+  @Column({ type: 'varchar', length: 120, nullable: true }) complement: string | null;
+  @Column({ type: 'varchar', length: 120, nullable: true }) neighborhood: string | null;
+  @Column({ type: 'varchar', length: 120, nullable: true }) city: string | null;
+  @Column({ type: 'varchar', length: 2, nullable: true }) state: string | null;
   @Column({ type: 'text' }) address: string;
   @Column({ name: 'attendance_count' }) attendanceCount: string;
   @Column({ name: 'life_group_status' }) lifeGroupStatus: string;
   @Column({ name: 'life_group_leader_or_name', nullable: true }) lifeGroupLeaderOrName: string | null;
   @Column({ name: 'invited_by', nullable: true }) invitedBy: string | null;
   @Column({ type: 'text', nullable: true }) notes: string | null;
-  @Column({ name: 'area_id', type: 'uuid', nullable: true }) areaId: string | null;
-  @Column({ name: 'sector_id', type: 'uuid', nullable: true }) sectorId: string | null;
-  @Column({ name: 'life_group_id', type: 'uuid', nullable: true }) lifeGroupId: string | null;
+  @Column({ name: 'area_id', type: 'int', nullable: true }) areaId: number | null;
+  @Column({ name: 'sector_id', type: 'int', nullable: true }) sectorId: number | null;
+  @Column({ name: 'life_group_id', type: 'int', nullable: true }) lifeGroupId: number | null;
   @ManyToOne(() => User, { nullable: false }) submittedBy: User;
   @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
   @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
@@ -1657,6 +1880,13 @@ export class CreateConversionDto {
   @Expose() @IsIn(['m','f']) gender: string;
   @Expose({ name: 'birth_date' }) @IsDateString() birthDate: string;
   @Expose({ name: 'civil_state' }) @IsIn(['solteiro','casado','divorciado','viuvo']) civilState: string;
+  @Expose() @IsOptional() @IsString() cep?: string;
+  @Expose() @IsOptional() @IsString() street?: string;
+  @Expose({ name: 'address_number' }) @IsOptional() @IsString() addressNumber?: string;
+  @Expose() @IsOptional() @IsString() complement?: string;
+  @Expose() @IsOptional() @IsString() neighborhood?: string;
+  @Expose() @IsOptional() @IsString() city?: string;
+  @Expose() @IsOptional() @IsString() state?: string;
   @Expose() @IsString() address: string;
   @Expose({ name: 'attendance_count' }) @IsIn(['primeira_vez','segunda_vez','terceira_vez','mais_de_um_mes']) attendanceCount: string;
   @Expose({ name: 'life_group_status' }) @IsIn(['sim','nao','ja_foi_convidado']) lifeGroupStatus: string;
@@ -1686,8 +1916,15 @@ export class ConversionMatchService {
     if (!user) {
       user = this.users.create({
         email: c.email, name: c.fullName, phoneNumber: c.phone,
+        birthDate: c.birthDate as any,
         status: 'pending_first_login' as any,
       });
+      await this.users.save(user);
+    } else {
+      user.name ||= c.fullName;
+      user.email ||= c.email;
+      user.phoneNumber ||= c.phone;
+      user.birthDate ||= c.birthDate as any;
       await this.users.save(user);
     }
     // TODO: MemberPathService.advance(user, c.decisionType)
