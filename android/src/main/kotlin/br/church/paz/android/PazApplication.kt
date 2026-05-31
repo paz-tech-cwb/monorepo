@@ -17,7 +17,10 @@ class PazApplication : Application() {
         super.onCreate()
         startKoin {
             androidContext(this@PazApplication)
-            properties(mapOf("BASE_URL" to BuildConfig.BASE_URL))
+            properties(mapOf(
+                "BASE_URL" to BuildConfig.BASE_URL,
+                "DEBUG"    to BuildConfig.DEBUG.toString(),
+            ))
             modules(
                 sharedModules +
                 module { single { dataStore }; single { CIO } } +

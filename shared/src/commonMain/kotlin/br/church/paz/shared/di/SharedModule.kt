@@ -21,6 +21,7 @@ val sharedNetworkModule = module {
             tokenStorage = get(),
             baseUrl      = getProperty("BASE_URL", "http://10.0.2.2:3001/api"),
             engine       = get<HttpClientEngineFactory<*>>().create(),
+            debug        = getProperty("DEBUG", "false") == "true",
         )
     }
 }

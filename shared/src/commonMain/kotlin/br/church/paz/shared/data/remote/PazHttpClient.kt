@@ -28,6 +28,7 @@ fun createPazHttpClient(
     tokenStorage: TokenStorage,
     baseUrl: String,
     engine: HttpClientEngine,
+    debug: Boolean = false,
 ): HttpClient = HttpClient(engine) {
     defaultRequest { url(baseUrl) }
 
@@ -44,7 +45,10 @@ fun createPazHttpClient(
         connectTimeoutMillis = 10_000
     }
 
-    install(Logging) { level = LogLevel.HEADERS }
+    install(Logging) {
+        level = if (debug) LogLevel.INFO else LogLevel.NONE
+        sanitizeHeader { header -> header == io.ktor.http.HttpHeaders.Authorization }
+    }
 
     install(Auth) {
         bearer {
