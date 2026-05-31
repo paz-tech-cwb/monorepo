@@ -1,26 +1,31 @@
 import SwiftUI
+import Shared
 
 struct MainTabView: View {
     var body: some View {
         TabView {
-            // Home tab
-            Text("Home Tab")
-                .tabItem {
-                    Label("Início", systemImage: "house.fill")
-                }
+            HomeView(
+                homeRepository: HomeRepositoryImpl(),
+                authRepository: AuthRepositoryImpl()
+            )
+            .tabItem {
+                Label("Início", systemImage: "house.fill")
+            }
 
-            // Academy tab
-            Text("Academy Tab")
+            AcademyView(academyRepository: AcademyRepositoryImpl())
                 .tabItem {
                     Label("Academia", systemImage: "book.fill")
                 }
 
-            // Account tab
-            Text("Account Tab")
-                .tabItem {
-                    Label("Conta", systemImage: "person.fill")
-                }
+            AccountView(
+                userRepository: UserRepositoryImpl(),
+                authRepository: AuthRepositoryImpl()
+            )
+            .tabItem {
+                Label("Conta", systemImage: "person.fill")
+            }
         }
+        .accentColor(Color(red: 0.31, green: 0.16, blue: 0.78))
     }
 }
 
