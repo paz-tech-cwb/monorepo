@@ -1,0 +1,176 @@
+import SwiftUI
+import Shared
+
+struct MeetingReportView: View {
+    @StateObject private var viewModel: MeetingReportViewModel
+    @Environment(\.dismiss) var dismiss
+
+    init(formsRepository: FormsRepository, authRepository: AuthRepository) {
+        _viewModel = StateObject(wrappedValue: MeetingReportViewModel(
+            formsRepository: formsRepository,
+            authRepository: authRepository
+        ))
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                VStack(spacing: 0) {
+                    // Hero header
+                    VStack(alignment: .leading) {
+                        HStack(spacing: PazSpacing.lg) {
+                            Button(action: { dismiss() }) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                            Text("Relatório da Reunião")
+                                .font(PazTypography.headlineMedium)
+                                .foregroundColor(.white)
+                            Spacer()
+                        }
+                        .padding(.horizontal, PazSpacing.lg)
+                        .padding(.vertical, PazSpacing.md)
+                    }
+                    .background(PazColors.heroGradient)
+
+                    // Form
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: PazSpacing.lg) {
+                            Spacer().frame(height: PazSpacing.lg)
+
+                            FormField(label: "Data da Reunião", placeholder: "DD/MM/YYYY", text: $viewModel.date)
+                            FormField(label: "Participantes", placeholder: "0", text: $viewModel.attendees)
+                            FormField(label: "Visitantes", placeholder: "0", text: $viewModel.visitors)
+                            FormField(label: "Ofertas (R$)", placeholder: "0,00", text: $viewModel.offerings)
+                            FormField(label: "Observações", placeholder: "Algo importante?", text: $viewModel.observations, multiline: true)
+
+                            if let error = viewModel.error {
+                                Text(error)
+                                    .font(PazTypography.bodySmall)
+                                    .foregroundColor(.red)
+                                    .padding(PazSpacing.lg)
+                                    .background(Color.red.opacity(0.1))
+                                    .cornerRadius(12)
+                            }
+
+                            Button(action: { viewModel.onSubmit() }) {
+                                Text(viewModel.isSubmitting ? "Enviando..." : "Enviar Relatório")
+                                    .font(PazTypography.titleMedium)
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, PazSpacing.md)
+                                    .background(viewModel.isSubmitting ? Color.gray : PazColors.primary)
+                                    .cornerRadius(12)
+                                    .disabled(viewModel.isSubmitting || viewModel.date.isEmpty || viewModel.attendees.isEmpty)
+                            }
+
+                            Spacer().frame(height: PazSpacing.xl)
+                        }
+                        .padding(.horizontal, PazSpacing.lg)
+                    }
+                    .background(PazColors.background)
+                }
+                .background(PazColors.background)
+            }
+        }
+        .navigationBarBackButtonHidden()
+    }
+}
+
+private struct FormField: View {
+    let label: String
+    let placeholder: String
+    @Binding var text: String
+    var multiline = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: PazSpacing.sm) {
+            Text(label)
+                .font(PazTypography.labelMedium)
+                .foregroundColor(PazColors.onSurface)
+
+            if multiline {
+                TextEditor(text: $text)
+                    .font(PazTypography.bodyMedium)
+                    .frame(height: 120)
+                    .padding(PazSpacing.sm)
+                    .background(PazColors.surface)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+            } else {
+                TextField(placeholder, text: $text)
+                    .font(PazTypography.bodyMedium)
+                    .padding(.horizontal, PazSpacing.md)
+                    .padding(.vertical, PazSpacing.sm)
+                    .background(PazColors.surface)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+            }
+        }
+    }
+}
+
+@MainActor
+class MeetingReportViewModel: ObservableObject {
+    @Published var date = ""
+    @Published var attendees = ""
+    @Published var visitors = ""
+    @Published var offerings = ""
+    @Published var observations = ""
+    @Published var isSubmitting = false
+    @Published var error: String?
+
+    private let formsRepository: FormsRepository
+    private let authRepository: AuthRepository
+
+    init(formsRepository: FormsRepository, authRepository: AuthRepository) {
+        self.formsRepository = formsRepository
+        self.authRepository = authRepository
+    }
+
+    func onSubmit() {
+        if date.isEmpty {
+            error = "Data é obrigatória"
+            return
+        }
+        if attendees.isEmpty {
+            error = "Número de participantes é obrigatório"
+            return
+        }
+
+        isSubmitting = true
+        error = nil
+
+        Task {
+            do {
+                let user = try await authRepository.currentUser()
+                let report = MeetingReportRequest(
+                    lifeGroupId: user?.id ?? "",
+                    date: date,
+                    attendees: Int32(attendees) ?? 0,
+                    visitors: Int32(visitors) ?? 0,
+                    offerings: Double(offerings),
+                    observations: observations.isEmpty ? nil : observations
+                )
+
+                try await formsRepository.submitLifeGroupReport(report: report)
+                isSubmitting = false
+                // Navigate back
+            } catch {
+                self.error = error.localizedDescription
+                isSubmitting = false
+            }
+        }
+    }
+}
+
+#Preview {
+    MeetingReportView(formsRepository: FormsRepositoryImpl(), authRepository: AuthRepositoryImpl())
+}
