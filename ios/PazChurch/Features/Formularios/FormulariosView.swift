@@ -55,6 +55,7 @@ struct FormulariosView: View {
                 ForEach(viewModel.forms, id: \.id) { form in
                     NavigationLink(destination: FormDetailView(form: form)) {
                         FormCard(form: form)
+                            .buttonStyle(.plain)
                     }
                 }
 
