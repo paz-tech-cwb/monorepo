@@ -6,20 +6,13 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-// Make Google Services processing optional so unit tests work without
-// a real google-services.json (placeholder or CI secrets both work).
-afterEvaluate {
-    tasks.matching { it.name.startsWith("process") && it.name.contains("GoogleServices") }.configureEach {
-        enabled = file("google-services.json").exists()
-    }
-}
-
 android {
-    namespace = "br.church.paz.android"
+    // Package name must match Firebase project: com.cwb.pazchurch.app
+    namespace = "com.cwb.pazchurch.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "br.church.paz.android"
+        applicationId = "com.cwb.pazchurch.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
@@ -28,18 +21,16 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix = ".debug"
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3001/api\"")
-            // Replace with your actual OAuth 2.0 web client ID from Firebase Console
-            buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"\"")
+            // Web client ID from google-services.json → oauth_client[type=3]
+            buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"139667803306-l99mi58j9d2ovncd4frvh4j2tpjaq2ei.apps.googleusercontent.com\"")
         }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("String", "BASE_URL", "\"https://api.paz.church/api\"")
-            // Replace with your actual OAuth 2.0 web client ID from Firebase Console
-            buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"\"")
+            buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"139667803306-l99mi58j9d2ovncd4frvh4j2tpjaq2ei.apps.googleusercontent.com\"")
         }
     }
 

@@ -55,8 +55,10 @@ targets:
     settings:
       base:
         INFOPLIST_FILE: PazChurch/Info.plist
-        PRODUCT_BUNDLE_IDENTIFIER: br.church.paz.mobile
+        PRODUCT_BUNDLE_IDENTIFIER: com.cwb.pazchurch.app
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Google Sign-In callback URL scheme from GoogleService-Info.plist REVERSED_CLIENT_ID
+        GOOGLE_REVERSED_CLIENT_ID: com.googleusercontent.apps.139667803306-vbo7nbgufjpr464k2ko91gnbvodjo9v7
     capabilities:
       - pushNotifications
       - signInWithApple

@@ -6,6 +6,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import br.church.paz.android.di.androidModule
+import com.cwb.pazchurch.app.BuildConfig
 import br.church.paz.shared.di.sharedModules
 import io.ktor.client.engine.cio.CIO
 import org.koin.android.ext.koin.androidContext

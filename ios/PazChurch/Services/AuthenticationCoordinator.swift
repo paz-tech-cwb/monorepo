@@ -91,12 +91,10 @@ class AuthenticationCoordinator: ObservableObject {
 // MARK: - Firebase Integration Helpers
 
 struct GoogleSignInHelper {
-    static func getIdToken(completion: @escaping (String?, Error?) -> Void) {
-        guard let clientID = FirebaseApp.app()?.options.clientID else {
-            completion(nil, AuthError.missingGoogleClientID)
-            return
-        }
+    // CLIENT_ID from GoogleService-Info.plist (not the web client ID — this is the iOS client)
+    private static let clientID = "139667803306-vbo7nbgufjpr464k2ko91gnbvodjo9v7.apps.googleusercontent.com"
 
+    static func getIdToken(completion: @escaping (String?, Error?) -> Void) {
         let config = GIDConfiguration(clientID: clientID)
         GIDSignIn.sharedInstance.configuration = config
 
@@ -117,8 +115,14 @@ struct GoogleSignInHelper {
                 return
             }
 
-            let idToken = result.user.idToken?.tokenString
-            completion(idToken, nil)
+            // Get a fresh Firebase-compatible ID token
+            result.user.refreshTokensIfNeeded { user, error in
+                guard let user = user, error == nil else {
+                    completion(nil, error ?? AuthError.invalidGoogleResult)
+                    return
+                }
+                completion(user.idToken?.tokenString, nil)
+            }
         }
     }
 }
