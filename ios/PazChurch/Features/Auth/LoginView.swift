@@ -1,10 +1,15 @@
 import SwiftUI
 import AuthenticationServices
+import CryptoKit
 
 struct LoginView: View {
     @ObservedObject var authCoordinator: AuthenticationCoordinator
     @State private var isLoading = false
-    @State private var showError = false
+    // The raw nonce must be generated before the Apple request is submitted.
+    // Apple embeds SHA256(rawNonce) in the ID token; we pass rawNonce to the
+    // backend so it can verify the claim. A nonce generated after completion
+    // is unverifiable and lets attackers replay stolen tokens.
+    @State private var currentNonce: String?
 
     var body: some View {
         NavigationStack {
@@ -60,11 +65,18 @@ struct LoginView: View {
                             .background(Color(red: 0.2, green: 0.2, blue: 0.2))
                             .cornerRadius(12)
 
-                            // Apple Sign-In
+                            // Apple Sign-In — nonce lifecycle:
+                            // 1. Generate raw nonce here (before request)
+                            // 2. Send SHA256(nonce) on the request so Apple embeds it in the token
+                            // 3. Pass the raw nonce to the backend in onCompletion
+                            // 4. Backend verifies SHA256(rawNonce) == nonce claim in Apple ID token
                             SignInWithAppleButton(.signIn) { request in
+                                let nonce = randomNonceString()
+                                currentNonce = nonce
                                 request.requestedScopes = [.fullName, .email]
+                                request.nonce = sha256(nonce)
                             } onCompletion: { result in
-                                handleAppleSignIn(result)
+                                handleAppleSignIn(result, rawNonce: currentNonce)
                             }
                             .frame(height: 48)
                             .cornerRadius(12)
@@ -100,6 +112,8 @@ struct LoginView: View {
         .navigationBarBackButtonHidden()
     }
 
+    // MARK: - Google Sign-In
+
     private func signInWithGoogle() {
         isLoading = true
 
@@ -123,7 +137,9 @@ struct LoginView: View {
         }
     }
 
-    private func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) {
+    // MARK: - Apple Sign-In
+
+    private func handleAppleSignIn(_ result: Result<ASAuthorization, Error>, rawNonce: String?) {
         switch result {
         case .success(let authorization):
             guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
@@ -137,19 +153,44 @@ struct LoginView: View {
                 return
             }
 
-            let nonce = UUID().uuidString
+            guard let rawNonce = rawNonce else {
+                // This should never happen if SignInWithAppleButton is wired correctly.
+                // If currentNonce is nil the nonce was never set on the request, so we
+                // cannot verify the token — refuse the login.
+                authCoordinator.error = "Apple Sign-In state error: missing nonce"
+                return
+            }
 
             Task {
-                await authCoordinator.signInWithApple(idToken: idToken, nonce: nonce)
+                await authCoordinator.signInWithApple(idToken: idToken, nonce: rawNonce)
             }
 
         case .failure(let error):
             if let authError = error as? ASAuthorizationError, authError.code == .canceled {
-                // User cancelled, don't show error
                 return
             }
             authCoordinator.error = error.localizedDescription
         }
+    }
+
+    // MARK: - Nonce Helpers
+
+    /// Generates a cryptographically random nonce string using SecRandomCopyBytes.
+    private func randomNonceString(length: Int = 32) -> String {
+        precondition(length > 0)
+        var randomBytes = [UInt8](repeating: 0, count: length)
+        let errorCode = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
+        precondition(errorCode == errSecSuccess, "SecRandomCopyBytes failed: \(errorCode)")
+
+        let charset = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        return String(randomBytes.map { charset[Int($0) % charset.count] })
+    }
+
+    /// Returns the hex-encoded SHA256 of the input string.
+    private func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+        return hashedData.compactMap { String(format: "%02x", $0) }.joined()
     }
 }
 
