@@ -18,5 +18,5 @@ data class AcademyUiState(
 }
 
 sealed class AcademyEffect {
-    data class OpenYouTube(val url: String) : AcademyEffect()
+    data class NavigateToPlayer(val videoId: String) : AcademyEffect()
 }

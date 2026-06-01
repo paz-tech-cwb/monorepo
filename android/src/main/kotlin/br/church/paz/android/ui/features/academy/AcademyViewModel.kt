@@ -44,7 +44,7 @@ class AcademyViewModel(private val academyRepository: AcademyRepository) : ViewM
         _uiState.update { it.copy(selectedCategory = category) }
     }
 
-    fun onVideoTapped(youtubeUrl: String) {
-        viewModelScope.launch { _effect.send(AcademyEffect.OpenYouTube(youtubeUrl)) }
+    fun onVideoTapped(videoId: String) {
+        viewModelScope.launch { _effect.send(AcademyEffect.NavigateToPlayer(videoId)) }
     }
 }

@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import br.church.paz.android.ui.features.academy.VideoPlayerScreen
 import br.church.paz.android.ui.features.agenda.AgendaDetailScreen
 import br.church.paz.android.ui.features.auth.LoginScreen
 import br.church.paz.android.ui.features.formularios.FormDetailScreen
@@ -62,6 +63,13 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         ) { backStackEntry ->
             val eventId = backStackEntry.arguments?.getString("eventId") ?: return@composable
             AgendaDetailScreen(navController = navController, eventId = eventId)
+        }
+        composable(
+            route = Screen.VideoPlayer.route,
+            arguments = listOf(androidx.navigation.navArgument("videoId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val videoId = backStackEntry.arguments?.getString("videoId") ?: return@composable
+            VideoPlayerScreen(navController = navController, videoId = videoId)
         }
         composable(Screen.FormulariosList.route) {
             FormulariosScreen(navController = navController)

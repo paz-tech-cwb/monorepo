@@ -45,7 +45,10 @@ struct AcademyView: View {
 
                 // Featured video
                 if let featured = viewModel.academyContent?.videos.first {
-                    FeaturedVideoCard(video: featured)
+                    NavigationLink(destination: VideoPlayerView(video: featured)) {
+                        FeaturedVideoCard(video: featured)
+                    }
+                    .buttonStyle(.plain)
                         .padding(.horizontal, PazSpacing.lg)
                 }
 
@@ -80,7 +83,10 @@ struct AcademyView: View {
                 // Video list
                 VStack(spacing: PazSpacing.md) {
                     ForEach(viewModel.filteredVideos, id: \.id) { video in
-                        VideoCard(video: video)
+                        NavigationLink(destination: VideoPlayerView(video: video)) {
+                            VideoCard(video: video)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, PazSpacing.lg)

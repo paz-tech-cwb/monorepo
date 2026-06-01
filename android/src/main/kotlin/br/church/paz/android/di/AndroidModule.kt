@@ -2,6 +2,7 @@ package br.church.paz.android.di
 
 import br.church.paz.android.ui.features.account.AccountViewModel
 import br.church.paz.android.ui.features.academy.AcademyViewModel
+import br.church.paz.android.ui.features.academy.VideoPlayerViewModel
 import br.church.paz.android.ui.features.agenda.AgendaDetailViewModel
 import br.church.paz.android.ui.features.auth.LoginViewModel
 import br.church.paz.android.ui.features.formularios.FormDetailViewModel
@@ -25,6 +26,7 @@ val androidModule = module {
     viewModel { LoginViewModel(get()) }
     viewModel { HomeViewModel(get(), get()) }
     viewModel { AcademyViewModel(get()) }
+    viewModel { (videoId: String) -> VideoPlayerViewModel(videoId, get()) }
     viewModel { AccountViewModel(get()) }
     viewModel { ProfileViewModel(get()) }
     viewModel { EditProfileViewModel(get(), get()) }

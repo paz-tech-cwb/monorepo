@@ -1,7 +1,5 @@
 package br.church.paz.android.ui.features.academy
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,10 +33,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
+import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazCardSkeleton
 import br.church.paz.android.ui.components.PazSectionHeader
 import br.church.paz.android.ui.components.PazSkeleton
@@ -53,18 +52,17 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun AcademyScreen(
+    navController: NavController,
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: AcademyViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is AcademyEffect.OpenYouTube -> {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(effect.url)))
-                }
+                is AcademyEffect.NavigateToPlayer ->
+                    navController.navigate(Screen.VideoPlayer.createRoute(effect.videoId))
             }
         }
     }
@@ -106,7 +104,7 @@ fun AcademyScreen(
                 }
                 else -> AcademyContent(
                     uiState        = uiState,
-                    onVideoTap     = { viewModel.onVideoTapped(it.youtubeUrl) },
+                    onVideoTap     = { viewModel.onVideoTapped(it.id) },
                     onCategorySelect = viewModel::onCategorySelected,
                     contentPadding = contentPadding,
                 )

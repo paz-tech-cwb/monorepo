@@ -64,7 +64,7 @@ fun AppShell(rootNavController: NavController) {
             modifier         = Modifier,
         ) {
             composable(Screen.Home.route)    { HomeScreen(rootNavController, contentPadding = innerPadding) }
-            composable(Screen.Academy.route) { AcademyScreen(contentPadding = innerPadding) }
+            composable(Screen.Academy.route) { AcademyScreen(navController = rootNavController, contentPadding = innerPadding) }
             composable(Screen.Search.route)  { SearchScreen(navController = rootNavController) }
             composable(Screen.Account.route) { AccountScreen(rootNavController, contentPadding = innerPadding) }
         }
