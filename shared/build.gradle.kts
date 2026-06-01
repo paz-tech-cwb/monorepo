@@ -12,9 +12,21 @@ kotlin {
             }
         }
     }
-    iosArm64()
-    iosSimulatorArm64()
+    val iosArm64 = iosArm64()
+    val iosSimulatorArm64 = iosSimulatorArm64()
     applyDefaultHierarchyTemplate()
+
+    // Export a fat XCFramework so Xcode can link the shared module
+    val xcframeworkName = "Shared"
+    val xcf = org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFrameworkConfig(project, xcframeworkName)
+
+    listOf(iosArm64, iosSimulatorArm64).forEach { target ->
+        target.binaries.framework {
+            baseName = xcframeworkName
+            xcf.add(this)
+            isStatic = true
+        }
+    }
 
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")

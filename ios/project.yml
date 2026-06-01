@@ -1,0 +1,45 @@
+name: PazChurch
+options:
+  bundleIdPrefix: com.cwb.pazchurch
+  deploymentTarget:
+    iOS: "16.0"
+  xcodeVersion: "15.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    DEVELOPMENT_TEAM: ""          # Set to your Apple Developer Team ID
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  PazChurch:
+    type: application
+    platform: iOS
+    sources:
+      - path: PazChurch
+        excludes:
+          - "**/*.md"
+    dependencies:
+      # KMP shared framework — built by ./gradlew :shared:assembleSharedXCFramework
+      - framework: ../shared/build/XCFrameworks/debug/Shared.xcframework
+        embed: true
+    settings:
+      base:
+        INFOPLIST_FILE: PazChurch/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.cwb.pazchurch.app
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Google Sign-In redirect URL scheme (REVERSED_CLIENT_ID from GoogleService-Info.plist)
+        GOOGLE_REVERSED_CLIENT_ID: com.googleusercontent.apps.139667803306-vbo7nbgufjpr464k2ko91gnbvodjo9v7
+    capabilities:
+      - pushNotifications
+      - signInWithApple
+    prebuildScripts:
+      - name: Build KMP Shared Framework
+        script: |
+          cd "$SRCROOT/.."
+          ./gradlew :shared:assembleSharedXCFramework
+        basedOnDependencyAnalysis: false
+

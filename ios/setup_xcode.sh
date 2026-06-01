@@ -44,8 +44,8 @@ targets:
         excludes:
           - "**/*.md"
     dependencies:
-      # KMP shared framework (built by ./gradlew :shared:assembleXCFramework)
-      - framework: ../build/XCFrameworks/debug/Shared.xcframework
+      # KMP shared framework (built by ./gradlew :shared:assembleSharedXCFramework)
+      - framework: ../shared/build/XCFrameworks/debug/Shared.xcframework
         embed: true
       # Firebase (via CocoaPods - see Podfile)
       - sdk: FirebaseCore.framework
@@ -66,7 +66,7 @@ targets:
       - name: Build KMP Shared Framework
         script: |
           cd "$SRCROOT/.."
-          ./gradlew :shared:assembleXCFramework --configuration debug
+          ./gradlew :shared:assembleSharedXCFramework
         basedOnDependencyAnalysis: false
 
 YAML
