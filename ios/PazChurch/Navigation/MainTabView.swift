@@ -9,31 +9,31 @@ struct MainTabView: View {
         // Listen for notification deep links resolved while app is running
         TabView {
             HomeView(
-                homeRepository: HomeRepositoryImpl(),
-                authRepository: AuthRepositoryImpl()
+                homeRepository: IosAppContainer.shared.homeRepository,
+                authRepository: IosAppContainer.shared.authRepository
             )
             .tabItem {
                 Label("Início", systemImage: "house.fill")
             }
 
-            AcademyView(academyRepository: AcademyRepositoryImpl())
+            AcademyView(academyRepository: IosAppContainer.shared.academyRepository)
                 .tabItem {
                     Label("Academia", systemImage: "book.fill")
                 }
 
             SearchView(
-                homeRepository: HomeRepositoryImpl(),
-                academyRepository: AcademyRepositoryImpl(),
-                formsRepository: FormsRepositoryImpl(),
-                churchRepository: ChurchRepositoryImpl()
+                homeRepository: IosAppContainer.shared.homeRepository,
+                academyRepository: IosAppContainer.shared.academyRepository,
+                formsRepository: IosAppContainer.shared.formsRepository,
+                churchRepository: IosAppContainer.shared.churchRepository
             )
             .tabItem {
                 Label("Buscar", systemImage: "magnifyingglass")
             }
 
             AccountView(
-                userRepository: UserRepositoryImpl(),
-                authRepository: AuthRepositoryImpl()
+                userRepository: IosAppContainer.shared.userRepository,
+                authRepository: IosAppContainer.shared.authRepository
             )
             .tabItem {
                 Label("Conta", systemImage: "person.fill")

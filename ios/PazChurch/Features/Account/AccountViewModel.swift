@@ -20,7 +20,7 @@ class AccountViewModel: ObservableObject {
     private func loadUser() {
         Task {
             do {
-                let user = try await authRepository.currentUser()
+                let user = try await authRepository.currentUser() as? Shared.User
                 self.user = user
                 self.isLoading = false
             } catch {

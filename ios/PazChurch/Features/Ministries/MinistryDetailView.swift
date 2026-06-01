@@ -29,7 +29,7 @@ struct MinistryDetailView: View {
                         Text(ministry.name)
                             .font(PazTypography.headlineSmall)
 
-                        if let description = ministry.description {
+                        if let description = ministry.description_ {
                             VStack(alignment: .leading, spacing: PazSpacing.sm) {
                                 Text("Sobre")
                                     .font(PazTypography.titleSmall)
@@ -117,8 +117,8 @@ struct LifeGroupDetailView: View {
 
                         // Action button
                         NavigationLink(destination: MeetingReportView(
-                            formsRepository: FormsRepositoryImpl(),
-                            authRepository: AuthRepositoryImpl()
+                            formsRepository: IosAppContainer.shared.formsRepository,
+                            authRepository: IosAppContainer.shared.authRepository
                         )) {
                             Text("Relatório de Reunião")
                                 .font(PazTypography.titleMedium)

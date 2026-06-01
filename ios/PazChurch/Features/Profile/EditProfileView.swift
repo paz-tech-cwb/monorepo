@@ -7,8 +7,8 @@ struct EditProfileView: View {
 
     init() {
         _viewModel = StateObject(wrappedValue: EditProfileViewModel(
-            userRepository: UserRepositoryImpl(),
-            authRepository: AuthRepositoryImpl()
+            userRepository: IosAppContainer.shared.userRepository,
+            authRepository: IosAppContainer.shared.authRepository
         ))
     }
 
@@ -90,14 +90,12 @@ struct EditProfileView: View {
                 .background(PazColors.background)
 
                 if viewModel.saveSuccess {
-                    VStack {
-                        dismiss()
-                    }
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            dismiss()
+                    Color.clear
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                dismiss()
+                            }
                         }
-                    }
                 }
             }
         }

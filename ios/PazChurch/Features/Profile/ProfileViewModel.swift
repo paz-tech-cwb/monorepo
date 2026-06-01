@@ -17,7 +17,7 @@ class ProfileViewModel: ObservableObject {
     private func loadProfile() {
         Task {
             do {
-                let user = try await authRepository.currentUser()
+                let user = try await authRepository.currentUser() as? Shared.User
                 self.user = user
                 self.isLoading = false
 

@@ -21,7 +21,7 @@ class EditProfileViewModel: ObservableObject {
     private func loadProfile() {
         Task {
             do {
-                let user = try await authRepository.currentUser()
+                let user = try await authRepository.currentUser() as? Shared.User
                 self.name = user?.name ?? ""
             } catch {
                 // Handle error
@@ -41,7 +41,7 @@ class EditProfileViewModel: ObservableObject {
 
         Task {
             do {
-                let request = UpdateProfileRequest(name: trimmedName)
+                let request = UpdateProfileRequest(name: trimmedName, picture: nil)
                 _ = try await userRepository.updateProfile(request: request)
                 saveSuccess = true
                 isSaving = false

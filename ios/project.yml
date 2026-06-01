@@ -21,6 +21,7 @@ settings:
     TARGETED_DEVICE_FAMILY: "1,2"
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
+    EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
 
 targets:
   PazChurch:

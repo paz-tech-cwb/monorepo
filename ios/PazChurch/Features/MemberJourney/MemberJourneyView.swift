@@ -92,16 +92,15 @@ private struct JourneyStepRow: View {
                     .fill(statusColor.opacity(0.12))
                     .frame(width: 40, height: 40)
 
-                switch step.status {
-                case .completed:
+                if step.status == .completed {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 24))
                         .foregroundColor(PazColors.primary)
-                case .in_progress:
+                } else if step.status == .inProgress {
                     Circle()
                         .fill(PazColors.primary)
                         .frame(width: 20, height: 20)
-                case .pending:
+                } else {
                     Image(systemName: "circle")
                         .font(.system(size: 24))
                         .foregroundColor(.gray.opacity(0.5))
@@ -119,7 +118,7 @@ private struct JourneyStepRow: View {
                         .foregroundColor(statusLabelColor)
                 }
 
-                if let description = step.description {
+                if let description = step.description_ {
                     Text(description)
                         .font(PazTypography.bodySmall)
                         .foregroundColor(.gray)
@@ -140,32 +139,17 @@ private struct JourneyStepRow: View {
     }
 
     private var statusColor: Color {
-        switch step.status {
-        case .completed, .in_progress:
-            return PazColors.primary
-        case .pending:
-            return .gray
-        }
+        step.status == .pending ? .gray : PazColors.primary
     }
 
     private var statusLabel: String {
-        switch step.status {
-        case .completed:
-            return "Concluído"
-        case .in_progress:
-            return "Em andamento"
-        case .pending:
-            return "Pendente"
-        }
+        if step.status == .completed { return "Concluído" }
+        if step.status == .inProgress { return "Em andamento" }
+        return "Pendente"
     }
 
     private var statusLabelColor: Color {
-        switch step.status {
-        case .completed, .in_progress:
-            return PazColors.primary
-        case .pending:
-            return .gray.opacity(0.5)
-        }
+        step.status == .pending ? .gray.opacity(0.5) : PazColors.primary
     }
 }
 
@@ -184,8 +168,9 @@ class MemberJourneyViewModel: ObservableObject {
     private func loadJourney() {
         Task {
             do {
-                let journey = try await repository.getMemberJourney()
-                self.steps = journey.steps.sorted { $0.order < $1.order }
+                let journeyRaw = try await repository.getMemberJourney()
+                let journey = journeyRaw as? MemberJourney
+                self.steps = ((journey?.steps as? [JourneyStep]) ?? []).sorted { $0.order < $1.order }
                 self.isLoading = false
             } catch {
                 self.isLoading = false
@@ -195,5 +180,5 @@ class MemberJourneyViewModel: ObservableObject {
 }
 
 #Preview {
-    MemberJourneyView(memberJourneyRepository: MemberJourneyRepositoryImpl())
+    MemberJourneyView(memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository)
 }

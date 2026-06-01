@@ -115,7 +115,7 @@ private struct FormCard: View {
                     .cornerRadius(12)
             }
 
-            if let description = form.description {
+            if let description = form.description_ {
                 Text(description)
                     .font(PazTypography.bodySmall)
                     .foregroundColor(.gray)
@@ -156,8 +156,8 @@ class FormulariosViewModel: ObservableObject {
     private func loadForms() {
         Task {
             do {
-                let catalog = try await formsRepository.getCatalog()
-                self.forms = catalog
+                let catalogRaw = try await formsRepository.getCatalog()
+                self.forms = (catalogRaw as? [FormCatalogItem]) ?? []
                 self.isLoading = false
             } catch {
                 self.isLoading = false
@@ -168,5 +168,5 @@ class FormulariosViewModel: ObservableObject {
 }
 
 #Preview {
-    FormulariosView(formsRepository: FormsRepositoryImpl())
+    FormulariosView(formsRepository: IosAppContainer.shared.formsRepository)
 }

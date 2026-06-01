@@ -150,13 +150,13 @@ class MeetingReportViewModel: ObservableObject {
 
         Task {
             do {
-                let user = try await authRepository.currentUser()
+                let user = try await authRepository.currentUser() as? Shared.User
                 let report = MeetingReportRequest(
                     lifeGroupId: user?.id ?? "",
                     date: date,
                     attendees: Int32(attendees) ?? 0,
                     visitors: Int32(visitors) ?? 0,
-                    offerings: Double(offerings),
+                    offerings: Double(offerings).map { KotlinDouble(value: $0) },
                     observations: observations.isEmpty ? nil : observations
                 )
 
@@ -172,5 +172,5 @@ class MeetingReportViewModel: ObservableObject {
 }
 
 #Preview {
-    MeetingReportView(formsRepository: FormsRepositoryImpl(), authRepository: AuthRepositoryImpl())
+    MeetingReportView(formsRepository: IosAppContainer.shared.formsRepository, authRepository: IosAppContainer.shared.authRepository)
 }

@@ -1,6 +1,7 @@
 import SwiftUI
 import AuthenticationServices
 import CryptoKit
+import Shared
 
 struct LoginView: View {
     @ObservedObject var authCoordinator: AuthenticationCoordinator
@@ -195,5 +196,5 @@ struct LoginView: View {
 }
 
 #Preview {
-    LoginView(authCoordinator: AuthenticationCoordinator(authRepository: AuthRepositoryImpl()))
+    LoginView(authCoordinator: AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
 }

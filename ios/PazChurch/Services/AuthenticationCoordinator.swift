@@ -3,17 +3,17 @@ import Combine
 import Shared
 import FirebaseAuth
 import FirebaseCore
+import GoogleSignIn
 
 @MainActor
 class AuthenticationCoordinator: ObservableObject {
     @Published var isAuthenticated = false
-    @Published var currentUser: User?
+    @Published var currentUser: Shared.User?
     @Published var isLoading = true
     @Published var error: String?
 
     private let authRepository: AuthRepository
     private let keychain = KeychainService.shared
-    private var cancellables = Set<AnyCancellable>()
 
     init(authRepository: AuthRepository) {
         self.authRepository = authRepository
@@ -23,9 +23,7 @@ class AuthenticationCoordinator: ObservableObject {
     private func checkAuthState() {
         Task {
             do {
-                // Try to load stored tokens first
-                if let accessToken = try keychain.retrieve(key: "accessToken") {
-                    // Validate token is still fresh (or refresh if needed)
+                if let _ = try keychain.retrieve(key: "accessToken") {
                     let user = try await authRepository.currentUser()
                     if user != nil {
                         self.currentUser = user
@@ -35,10 +33,9 @@ class AuthenticationCoordinator: ObservableObject {
                     }
                 }
             } catch {
-                // Keychain error, try to refresh
+                // Token lookup failed; treat as logged out
             }
 
-            // No valid token, mark as logged out
             self.isAuthenticated = false
             self.currentUser = nil
             self.isLoading = false
@@ -50,7 +47,7 @@ class AuthenticationCoordinator: ObservableObject {
         error = nil
 
         do {
-            let user = try await authRepository.signInWithGoogle(idToken: idToken)
+            let user = try await IosAppContainer.shared.socialLogin(idToken: idToken, provider: "google")
             self.currentUser = user
             self.isAuthenticated = true
             isLoading = false
@@ -65,7 +62,7 @@ class AuthenticationCoordinator: ObservableObject {
         error = nil
 
         do {
-            let user = try await authRepository.signInWithApple(idToken: idToken, nonce: nonce)
+            let user = try await IosAppContainer.shared.socialLogin(idToken: idToken, provider: "apple")
             self.currentUser = user
             self.isAuthenticated = true
             isLoading = false
@@ -76,14 +73,16 @@ class AuthenticationCoordinator: ObservableObject {
     }
 
     func logout() {
-        do {
-            try authRepository.logout()
-            try keychain.delete(key: "accessToken")
-            try keychain.delete(key: "refreshToken")
+        Task {
+            do {
+                try await IosAppContainer.shared.logout()
+                try? keychain.delete(key: "accessToken")
+                try? keychain.delete(key: "refreshToken")
+            } catch {
+                self.error = "Erro ao fazer logout: \(error.localizedDescription)"
+            }
             self.currentUser = nil
             self.isAuthenticated = false
-        } catch {
-            self.error = "Erro ao fazer logout: \(error.localizedDescription)"
         }
     }
 }
@@ -91,7 +90,7 @@ class AuthenticationCoordinator: ObservableObject {
 // MARK: - Firebase Integration Helpers
 
 struct GoogleSignInHelper {
-    // CLIENT_ID from GoogleService-Info.plist (not the web client ID — this is the iOS client)
+    // CLIENT_ID from GoogleService-Info.plist (iOS client ID, not the web client ID)
     private static let clientID = "139667803306-vbo7nbgufjpr464k2ko91gnbvodjo9v7.apps.googleusercontent.com"
 
     static func getIdToken(completion: @escaping (String?, Error?) -> Void) {
@@ -115,7 +114,6 @@ struct GoogleSignInHelper {
                 return
             }
 
-            // Get a fresh Firebase-compatible ID token
             result.user.refreshTokensIfNeeded { user, error in
                 guard let user = user, error == nil else {
                     completion(nil, error ?? AuthError.invalidGoogleResult)
@@ -129,8 +127,6 @@ struct GoogleSignInHelper {
 
 struct AppleSignInHelper {
     static func signIn(completion: @escaping (String?, String?, Error?) -> Void) {
-        // Placeholder - requires ASAuthorizationController integration
-        // This would be implemented with ASAuthorizationAppleIDProvider
         completion(nil, nil, AuthError.notImplemented)
     }
 }
@@ -143,14 +139,10 @@ enum AuthError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .missingGoogleClientID:
-            return "Google Client ID not configured"
-        case .missingViewController:
-            return "No view controller available for sign-in"
-        case .invalidGoogleResult:
-            return "Invalid Google sign-in result"
-        case .notImplemented:
-            return "Feature not yet implemented"
+        case .missingGoogleClientID:    return "Google Client ID not configured"
+        case .missingViewController:    return "No view controller available for sign-in"
+        case .invalidGoogleResult:      return "Invalid Google sign-in result"
+        case .notImplemented:           return "Feature not yet implemented"
         }
     }
 }

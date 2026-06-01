@@ -62,13 +62,14 @@ class VideoPlayerViewModel: ObservableObject {
 
     private func load(videoId: String) {
         Task {
-            guard let content = try? await academyRepository.getAcademyContent() else {
+            guard let content = try? await academyRepository.getAcademyContent() as? AcademyContent else {
                 isLoading = false
                 return
             }
 
-            let found = content.videos.first { $0.id == videoId }
-            let others = content.videos.filter { $0.id != videoId }
+            let videos = (content.videos as? [AcademyVideo]) ?? []
+            let found = videos.first { $0.id == videoId }
+            let others = videos.filter { $0.id != videoId }
             let sameCategory = others.filter { $0.category == found?.category }
             let related = Array((sameCategory + others.filter { $0.category != found?.category }).prefix(6))
 
@@ -96,7 +97,7 @@ struct VideoPlayerView: View {
         self.initialVideoId = video.id
         _viewModel = StateObject(wrappedValue: VideoPlayerViewModel(
             videoId: video.id,
-            academyRepository: AcademyRepositoryImpl()
+            academyRepository: IosAppContainer.shared.academyRepository
         ))
     }
 
@@ -174,7 +175,7 @@ struct VideoPlayerView: View {
                             }
                         }
 
-                        if let description = video.description, !description.isEmpty {
+                        if let description = video.description_, !description.isEmpty {
                             Text(description)
                                 .font(PazTypography.bodySmall)
                                 .foregroundColor(.gray)
@@ -240,9 +241,13 @@ private struct RelatedVideoRow: View {
     VideoPlayerView(video: AcademyVideo(
         id: "1",
         title: "Série Identidade — Ep. 1",
+        description: nil,
         youtubeId: "dQw4w9WgXcQ",
+        thumbnailUrl: nil,
+        durationSeconds: 2700,
+        viewCount: nil,
         category: "Série",
         author: "Pr. Carlos Lima",
-        durationSeconds: 2700
+        publishedAt: nil
     ))
 }

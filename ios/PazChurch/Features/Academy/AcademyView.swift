@@ -144,7 +144,7 @@ struct AcademyView: View {
 }
 
 private struct FeaturedVideoCard: View {
-    let video: AcademyContent.Video
+    let video: AcademyVideo
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -163,9 +163,11 @@ private struct FeaturedVideoCard: View {
                 Image(systemName: "play.circle.fill")
                     .font(.system(size: 32))
                     .foregroundColor(.white)
-                Text("\(video.duration)min")
-                    .font(PazTypography.labelSmall)
-                    .foregroundColor(.white)
+                if let dur = video.durationFormatted {
+                    Text(dur)
+                        .font(PazTypography.labelSmall)
+                        .foregroundColor(.white)
+                }
             }
             .padding(PazSpacing.lg)
         }
@@ -175,7 +177,7 @@ private struct FeaturedVideoCard: View {
 }
 
 private struct VideoCard: View {
-    let video: AcademyContent.Video
+    let video: AcademyVideo
 
     var body: some View {
         HStack(spacing: PazSpacing.md) {
@@ -193,17 +195,21 @@ private struct VideoCard: View {
                     .font(PazTypography.titleSmall)
                     .lineLimit(2)
 
-                Text(video.category)
-                    .font(PazTypography.labelSmall)
-                    .foregroundColor(.gray)
-
-                HStack(spacing: PazSpacing.sm) {
-                    Image(systemName: "clock")
-                        .font(.system(size: 12))
-                    Text("\(video.duration) min")
+                if let category = video.category {
+                    Text(category)
                         .font(PazTypography.labelSmall)
+                        .foregroundColor(.gray)
                 }
-                .foregroundColor(.gray)
+
+                if let dur = video.durationFormatted {
+                    HStack(spacing: PazSpacing.sm) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 12))
+                        Text(dur)
+                            .font(PazTypography.labelSmall)
+                    }
+                    .foregroundColor(.gray)
+                }
             }
             Spacer()
         }
@@ -214,5 +220,5 @@ private struct VideoCard: View {
 }
 
 #Preview {
-    AcademyView(academyRepository: AcademyRepositoryImpl())
+    AcademyView(academyRepository: IosAppContainer.shared.academyRepository)
 }

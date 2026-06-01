@@ -16,9 +16,7 @@ class PushNotificationService: NSObject, ObservableObject {
     private let userRepository: UserRepository
 
     override init() {
-        // UserRepositoryImpl is safe to construct here; it uses the same
-        // Koin-provided HttpClient and TokenStorage as the rest of the app.
-        self.userRepository = UserRepositoryImpl()
+        self.userRepository = IosAppContainer.shared.userRepository
         super.init()
     }
 

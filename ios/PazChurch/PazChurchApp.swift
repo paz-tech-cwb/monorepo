@@ -13,7 +13,7 @@ struct PazChurchApp: App {
     init() {
         FirebaseApp.configure()
         _authCoordinator = StateObject(wrappedValue: AuthenticationCoordinator(
-            authRepository: AuthRepositoryImpl()
+            authRepository: IosAppContainer.shared.authRepository
         ))
     }
 

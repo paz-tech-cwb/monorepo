@@ -21,10 +21,10 @@ class HomeViewModel: ObservableObject {
     private func loadHome() {
         Task {
             do {
-                let content = try await homeRepository.getHomeContent()
+                let content = try await homeRepository.getHomeContent() as? HomeContent
                 self.homeContent = content
 
-                let user = try await authRepository.currentUser()
+                let user = try await authRepository.currentUser() as? Shared.User
                 self.userName = user?.name.split(separator: " ").first.map(String.init) ?? "Membro"
 
                 self.isLoading = false

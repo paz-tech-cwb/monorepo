@@ -77,7 +77,7 @@ struct AgendaDetailView: View {
                             .cornerRadius(16)
                             .padding(.horizontal, PazSpacing.lg)
 
-                            if let description = event.description, !description.isEmpty {
+                            if let description = event.description_, !description.isEmpty {
                                 VStack(alignment: .leading, spacing: PazSpacing.sm) {
                                     Text("Descrição")
                                         .font(PazTypography.titleSmall)
@@ -107,6 +107,7 @@ struct AgendaDetailView: View {
         description: "Reunião semanal do grupo de vida",
         startDate: "2024-06-01",
         endDate: "2024-06-01",
-        location: "Rua Principal, 123"
+        location: "Rua Principal, 123",
+        imageUrl: nil
     ))
 }

@@ -19,7 +19,7 @@ class AcademyViewModel: ObservableObject {
     private func loadAcademy() {
         Task {
             do {
-                let content = try await academyRepository.getAcademyContent()
+                let content = try await academyRepository.getAcademyContent() as? AcademyContent
                 self.academyContent = content
                 self.isLoading = false
             } catch {
@@ -31,12 +31,12 @@ class AcademyViewModel: ObservableObject {
 
     var categories: [String] {
         (academyContent?.videos ?? [])
-            .map { $0.category }
+            .compactMap { $0.category }
             .removingDuplicates()
     }
 
-    var filteredVideos: [AcademyContent.Video] {
-        guard let videos = academyContent?.videos else { return [] }
+    var filteredVideos: [AcademyVideo] {
+        let videos = academyContent?.videos ?? []
         if let selected = selectedCategory {
             return videos.filter { $0.category == selected }
         }

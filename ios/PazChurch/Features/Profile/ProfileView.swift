@@ -4,6 +4,7 @@ import Shared
 struct ProfileView: View {
     @StateObject private var viewModel: ProfileViewModel
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject private var authCoordinator: AuthenticationCoordinator
 
     init(authRepository: AuthRepository) {
         _viewModel = StateObject(wrappedValue: ProfileViewModel(authRepository: authRepository))
@@ -123,7 +124,7 @@ struct ProfileView: View {
                 .font(PazTypography.bodySmall)
                 .foregroundColor(.gray)
             Spacer().frame(height: PazSpacing.lg)
-            NavigationLink(destination: LoginView()) {
+            NavigationLink(destination: LoginView(authCoordinator: authCoordinator)) {
                 Text("Entrar")
                     .font(PazTypography.titleMedium)
                     .foregroundColor(.white)
@@ -161,5 +162,6 @@ struct ProfileView: View {
 }
 
 #Preview {
-    ProfileView(authRepository: AuthRepositoryImpl())
+    ProfileView(authRepository: IosAppContainer.shared.authRepository)
+        .environmentObject(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
 }

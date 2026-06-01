@@ -165,7 +165,7 @@ private struct MinistryCard: View {
             VStack(alignment: .leading, spacing: PazSpacing.xs) {
                 Text(ministry.name)
                     .font(PazTypography.titleSmall)
-                if let description = ministry.description {
+                if let description = ministry.description_ {
                     Text(description)
                         .font(PazTypography.bodySmall)
                         .foregroundColor(.gray)
@@ -265,14 +265,14 @@ class MinistriesViewModel: ObservableObject {
             async let lifeGroupsResult = churchRepository.getAllLifeGroups()
 
             do {
-                let church = try await churchResult
-                self.ministries = church.ministries
+                let church = try await churchResult as? Church
+                self.ministries = (church?.ministries as? [Ministry]) ?? []
             } catch {
                 // partial failure — lifeGroups may still load
             }
 
             do {
-                self.lifeGroups = try await lifeGroupsResult
+                self.lifeGroups = (try await lifeGroupsResult as? [LifeGroup]) ?? []
             } catch {
                 // partial failure — ministries may still have loaded
             }
@@ -293,5 +293,5 @@ class MinistriesViewModel: ObservableObject {
 }
 
 #Preview {
-    MinistriesView(churchRepository: ChurchRepositoryImpl())
+    MinistriesView(churchRepository: IosAppContainer.shared.churchRepository)
 }

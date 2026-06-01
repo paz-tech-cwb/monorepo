@@ -79,22 +79,22 @@ struct AccountView: View {
 
                     // Navigation menu
                     VStack(spacing: 0) {
-                        NavigationLink(destination: MemberJourneyView(memberJourneyRepository: MemberJourneyRepositoryImpl())) {
+                        NavigationLink(destination: MemberJourneyView(memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository)) {
                             MenuRow(title: "Minha Jornada", icon: "figure.walk")
                         }
                         Divider().padding(.horizontal, PazSpacing.lg)
                         NavigationLink(destination: MeetingReportView(
-                            formsRepository: FormsRepositoryImpl(),
-                            authRepository: AuthRepositoryImpl()
+                            formsRepository: IosAppContainer.shared.formsRepository,
+                            authRepository: IosAppContainer.shared.authRepository
                         )) {
                             MenuRow(title: "Relatório de Reunião", icon: "doc.text")
                         }
                         Divider().padding(.horizontal, PazSpacing.lg)
-                        NavigationLink(destination: FormulariosView(formsRepository: FormsRepositoryImpl())) {
+                        NavigationLink(destination: FormulariosView(formsRepository: IosAppContainer.shared.formsRepository)) {
                             MenuRow(title: "Formulários", icon: "list.clipboard")
                         }
                         Divider().padding(.horizontal, PazSpacing.lg)
-                        NavigationLink(destination: MinistriesView(churchRepository: ChurchRepositoryImpl())) {
+                        NavigationLink(destination: MinistriesView(churchRepository: IosAppContainer.shared.churchRepository)) {
                             MenuRow(title: "Ministérios & Grupos", icon: "person.3.fill")
                         }
                         Divider().padding(.horizontal, PazSpacing.lg)
@@ -126,7 +126,7 @@ struct AccountView: View {
                     .cornerRadius(16)
                     .padding(.horizontal, PazSpacing.lg)
 
-                    NavigationLink(destination: ProfileView(authRepository: AuthRepositoryImpl())) {
+                    NavigationLink(destination: ProfileView(authRepository: IosAppContainer.shared.authRepository)) {
                         Text("Ver Perfil Completo")
                             .font(PazTypography.titleMedium)
                             .foregroundColor(.white)
@@ -184,7 +184,7 @@ private struct MenuRow: View {
 
 #Preview {
     AccountView(
-        userRepository: UserRepositoryImpl(),
-        authRepository: AuthRepositoryImpl()
+        userRepository: IosAppContainer.shared.userRepository,
+        authRepository: IosAppContainer.shared.authRepository
     )
 }

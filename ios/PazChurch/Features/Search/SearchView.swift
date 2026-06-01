@@ -58,30 +58,36 @@ class SearchViewModel: ObservableObject {
         async let churchResult = churchRepository.getChurch()
         async let lifeGroupsResult = churchRepository.getAllLifeGroups()
 
-        let events = (try? await homeResult)?.agenda.filter {
-            $0.title.lowercased().contains(lowered) ||
-            ($0.description?.lowercased().contains(lowered) == true)
-        } ?? []
+        let home = (try? await homeResult) as? HomeContent
+        let academy = (try? await academyResult) as? AcademyContent
+        let catalogRaw = try? await formsResult
+        let church = (try? await churchResult) as? Church
+        let lgRaw = try? await lifeGroupsResult
 
-        let videos = (try? await academyResult)?.videos.filter {
+        let events = ((home?.agenda as? [AgendaEvent]) ?? []).filter {
+            $0.title.lowercased().contains(lowered) ||
+            ($0.description_?.lowercased().contains(lowered) == true)
+        }
+
+        let videos = ((academy?.videos as? [AcademyVideo]) ?? []).filter {
             $0.title.lowercased().contains(lowered) ||
             ($0.category?.lowercased().contains(lowered) == true)
-        } ?? []
+        }
 
-        let forms = (try? await formsResult)?.filter {
+        let forms = ((catalogRaw as? [FormCatalogItem]) ?? []).filter {
             $0.title.lowercased().contains(lowered) ||
-            ($0.description?.lowercased().contains(lowered) == true)
-        } ?? []
+            ($0.description_?.lowercased().contains(lowered) == true)
+        }
 
-        let ministries = (try? await churchResult)?.ministries.filter {
+        let ministries = ((church?.ministries as? [Ministry]) ?? []).filter {
             $0.name.lowercased().contains(lowered) ||
-            ($0.description?.lowercased().contains(lowered) == true)
-        } ?? []
+            ($0.description_?.lowercased().contains(lowered) == true)
+        }
 
-        let lifeGroups = (try? await lifeGroupsResult)?.filter {
+        let lifeGroups = ((lgRaw as? [LifeGroup]) ?? []).filter {
             $0.name.lowercased().contains(lowered) ||
             ($0.leader?.lowercased().contains(lowered) == true)
-        } ?? []
+        }
 
         results = SearchResults(events: events, videos: videos, forms: forms, ministries: ministries, lifeGroups: lifeGroups)
         hasSearched = true
@@ -335,9 +341,9 @@ private struct SearchResultRow: View {
 
 #Preview {
     SearchView(
-        homeRepository: HomeRepositoryImpl(),
-        academyRepository: AcademyRepositoryImpl(),
-        formsRepository: FormsRepositoryImpl(),
-        churchRepository: ChurchRepositoryImpl()
+        homeRepository: IosAppContainer.shared.homeRepository,
+        academyRepository: IosAppContainer.shared.academyRepository,
+        formsRepository: IosAppContainer.shared.formsRepository,
+        churchRepository: IosAppContainer.shared.churchRepository
     )
 }

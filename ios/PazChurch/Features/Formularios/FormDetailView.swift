@@ -23,33 +23,32 @@ struct FormFieldDef {
 
 extension FormType {
     var fieldDefs: [FormFieldDef] {
-        switch self {
-        case .member_registration:
+        if self == .memberRegistration {
             return [
                 FormFieldDef("name",  "Nome Completo",       placeholder: "Digite o nome", required: true),
                 FormFieldDef("phone", "Telefone",             placeholder: "(41) 9 9999-9999"),
                 FormFieldDef("email", "E-mail",               placeholder: "email@exemplo.com"),
             ]
-        case .conversion:
+        } else if self == .conversion {
             return [
                 FormFieldDef("name",         "Nome",                 required: true),
                 FormFieldDef("phone",        "Telefone",             placeholder: "(41) 9 9999-9999"),
                 FormFieldDef("date",         "Data da Conversão",    placeholder: "DD/MM/YYYY", required: true),
                 FormFieldDef("observations", "Observações",          isMultiline: true),
             ]
-        case .guest:
+        } else if self == .guest {
             return [
                 FormFieldDef("name",       "Nome do Visitante", required: true),
                 FormFieldDef("phone",      "Telefone",          placeholder: "(41) 9 9999-9999"),
                 FormFieldDef("invited_by", "Convidado por"),
                 FormFieldDef("date",       "Data da Visita",    placeholder: "DD/MM/YYYY", required: true),
             ]
-        case .multiplication:
+        } else if self == .multiplication {
             return [
                 FormFieldDef("new_life_group_name", "Nome do Novo Grupo",       required: true),
                 FormFieldDef("date",                "Data da Multiplicação",    placeholder: "DD/MM/YYYY", required: true),
             ]
-        case .service_report:
+        } else if self == .serviceReport {
             return [
                 FormFieldDef("date",         "Data do Culto",    placeholder: "DD/MM/YYYY", required: true),
                 FormFieldDef("attendees",    "Participantes",    placeholder: "0",           required: true, isNumeric: true),
@@ -57,12 +56,12 @@ extension FormType {
                 FormFieldDef("offerings",    "Ofertas (R$)",     placeholder: "0,00",        isNumeric: true),
                 FormFieldDef("observations", "Observações",                                  isMultiline: true),
             ]
-        case .course:
+        } else if self == .course {
             return [
                 FormFieldDef("course_name", "Nome do Curso",       required: true),
                 FormFieldDef("enrolled_at", "Data de Inscrição",   placeholder: "DD/MM/YYYY", required: true),
             ]
-        case .life_group_report, .sector_supervisor_report, .area_supervisor_report:
+        } else {
             return [
                 FormFieldDef("date",         "Data da Reunião",  placeholder: "DD/MM/YYYY", required: true),
                 FormFieldDef("attendees",    "Participantes",    placeholder: "0",           required: true, isNumeric: true),
@@ -74,17 +73,15 @@ extension FormType {
     }
 
     var displayName: String {
-        switch self {
-        case .member_registration:      return "Registro de Membro"
-        case .conversion:               return "Conversão"
-        case .guest:                    return "Visitante"
-        case .multiplication:           return "Multiplicação"
-        case .service_report:           return "Relatório de Culto"
-        case .course:                   return "Curso"
-        case .life_group_report:        return "Relatório de Grupo"
-        case .sector_supervisor_report: return "Rel. Supervisor de Setor"
-        case .area_supervisor_report:   return "Rel. Supervisor de Área"
-        }
+        if self == .memberRegistration      { return "Registro de Membro" }
+        if self == .conversion              { return "Conversão" }
+        if self == .guest                   { return "Visitante" }
+        if self == .multiplication          { return "Multiplicação" }
+        if self == .serviceReport           { return "Relatório de Culto" }
+        if self == .course                  { return "Curso" }
+        if self == .lifeGroupReport         { return "Relatório de Grupo" }
+        if self == .sectorSupervisorReport  { return "Rel. Supervisor de Setor" }
+        return "Rel. Supervisor de Área"
     }
 }
 
@@ -113,7 +110,8 @@ class FormDetailViewModelIOS: ObservableObject {
     private func loadForm() {
         Task {
             do {
-                let catalog = try await formsRepository.getCatalog()
+                let catalogRaw = try await formsRepository.getCatalog()
+                let catalog = (catalogRaw as? [FormCatalogItem]) ?? []
                 guard let found = catalog.first(where: { $0.id == formId }) else {
                     self.error = "Formulário não encontrado"
                     self.isLoading = false
@@ -156,7 +154,7 @@ class FormDetailViewModelIOS: ObservableObject {
 
         Task {
             do {
-                let userId = try await authRepository.currentUser()?.id ?? ""
+                let userId = (try await authRepository.currentUser() as? Shared.User)?.id ?? ""
                 try await submit(type: form.type, userId: userId)
                 submitSuccess = true
                 isSubmitting = false
@@ -172,51 +170,50 @@ class FormDetailViewModelIOS: ObservableObject {
         func req(_ k: String) -> String { f[k]?.trimmingCharacters(in: .whitespaces) ?? "" }
         func opt(_ k: String) -> String? { let v = f[k]?.trimmingCharacters(in: .whitespaces); return v?.isEmpty == false ? v : nil }
         func int32(_ k: String) -> Int32 { Int32(f[k]?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0 }
-        func dbl(_ k: String) -> Double? { Double(f[k]?.trimmingCharacters(in: .whitespaces) ?? "") }
+        func kdbl(_ k: String) -> KotlinDouble? { Double(f[k]?.trimmingCharacters(in: .whitespaces) ?? "").map { KotlinDouble(value: $0) } }
 
-        switch type {
-        case .member_registration:
+        if type == .memberRegistration {
             _ = try await formsRepository.submitMemberRegistration(form: MemberRegistrationForm(
                 name: req("name"), phone: opt("phone"), email: opt("email"),
                 lifeGroupId: nil, sectorId: nil, areaId: nil, leaderId: nil
             ))
-        case .conversion:
+        } else if type == .conversion {
             _ = try await formsRepository.submitConversion(form: ConversionForm(
                 name: req("name"), phone: opt("phone"), date: req("date"),
                 lifeGroupId: nil, observations: opt("observations")
             ))
-        case .guest:
+        } else if type == .guest {
             _ = try await formsRepository.submitGuest(form: GuestForm(
                 name: req("name"), phone: opt("phone"), invitedBy: opt("invited_by"), date: req("date")
             ))
-        case .multiplication:
+        } else if type == .multiplication {
             _ = try await formsRepository.submitMultiplication(form: MultiplicationForm(
                 originalLifeGroupId: userId, newLifeGroupName: req("new_life_group_name"),
                 newLeaderId: userId, date: req("date")
             ))
-        case .service_report:
+        } else if type == .serviceReport {
             _ = try await formsRepository.submitServiceReport(form: ServiceReportForm(
                 date: req("date"), attendees: int32("attendees"), visitors: int32("visitors"),
-                offerings: dbl("offerings"), observations: opt("observations")
+                offerings: kdbl("offerings"), observations: opt("observations")
             ))
-        case .course:
+        } else if type == .course {
             _ = try await formsRepository.submitCourse(form: CourseForm(
                 courseName: req("course_name"), memberId: userId, enrolledAt: req("enrolled_at")
             ))
-        case .life_group_report:
+        } else if type == .lifeGroupReport {
             _ = try await formsRepository.submitLifeGroupReport(report: MeetingReportRequest(
                 lifeGroupId: userId, date: req("date"), attendees: int32("attendees"),
-                visitors: int32("visitors"), offerings: dbl("offerings"), observations: opt("observations")
+                visitors: int32("visitors"), offerings: kdbl("offerings"), observations: opt("observations")
             ))
-        case .sector_supervisor_report:
+        } else if type == .sectorSupervisorReport {
             _ = try await formsRepository.submitSectorReport(report: MeetingReportRequest(
                 lifeGroupId: userId, date: req("date"), attendees: int32("attendees"),
-                visitors: int32("visitors"), offerings: dbl("offerings"), observations: opt("observations")
+                visitors: int32("visitors"), offerings: kdbl("offerings"), observations: opt("observations")
             ))
-        case .area_supervisor_report:
+        } else {
             _ = try await formsRepository.submitAreaReport(report: MeetingReportRequest(
                 lifeGroupId: userId, date: req("date"), attendees: int32("attendees"),
-                visitors: int32("visitors"), offerings: dbl("offerings"), observations: opt("observations")
+                visitors: int32("visitors"), offerings: kdbl("offerings"), observations: opt("observations")
             ))
         }
     }
@@ -233,8 +230,8 @@ struct FormDetailView: View {
         self.form = form
         _viewModel = StateObject(wrappedValue: FormDetailViewModelIOS(
             formId: form.id,
-            formsRepository: FormsRepositoryImpl(),
-            authRepository: AuthRepositoryImpl()
+            formsRepository: IosAppContainer.shared.formsRepository,
+            authRepository: IosAppContainer.shared.authRepository
         ))
     }
 
@@ -278,7 +275,7 @@ struct FormDetailView: View {
             VStack(alignment: .leading, spacing: PazSpacing.lg) {
                 Spacer().frame(height: PazSpacing.sm)
 
-                if let description = form.description {
+                if let description = form.description_ {
                     Text(description)
                         .font(PazTypography.bodySmall)
                         .foregroundColor(.gray)
@@ -390,6 +387,6 @@ private struct FieldRow: View {
         id: "1",
         title: "Registro de Membro",
         description: "Formulário para registrar um novo membro",
-        type: .member_registration
+        type: .memberRegistration
     ))
 }

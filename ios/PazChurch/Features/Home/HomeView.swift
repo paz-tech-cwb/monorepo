@@ -47,7 +47,7 @@ struct HomeView: View {
                 .padding(.top, PazSpacing.lg)
 
                 // Banners carousel
-                if !viewModel.homeContent?.banners.isEmpty ?? false {
+                if !(viewModel.homeContent?.banners.isEmpty ?? true) {
                     BannersCarousel(banners: viewModel.homeContent?.banners ?? [])
                         .padding(.horizontal, PazSpacing.lg)
                 }
@@ -59,7 +59,7 @@ struct HomeView: View {
                 }
 
                 // Agenda events
-                if !viewModel.homeContent?.agenda.isEmpty ?? false {
+                if !(viewModel.homeContent?.agenda.isEmpty ?? true) {
                     VStack(alignment: .leading, spacing: PazSpacing.md) {
                         Text("Próximos Eventos")
                             .font(PazTypography.titleMedium)
@@ -241,5 +241,5 @@ private struct EventRow: View {
 }
 
 #Preview {
-    HomeView(homeRepository: HomeRepositoryImpl(), authRepository: AuthRepositoryImpl())
+    HomeView(homeRepository: IosAppContainer.shared.homeRepository, authRepository: IosAppContainer.shared.authRepository)
 }
