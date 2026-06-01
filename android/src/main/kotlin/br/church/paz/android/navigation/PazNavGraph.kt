@@ -10,6 +10,8 @@ import br.church.paz.android.ui.features.formularios.FormDetailScreen
 import br.church.paz.android.ui.features.formularios.FormulariosScreen
 import br.church.paz.android.ui.features.meetingreport.MeetingReportScreen
 import br.church.paz.android.ui.features.memberjourney.MemberJourneyScreen
+import br.church.paz.android.ui.features.ministries.LifeGroupDetailScreen
+import br.church.paz.android.ui.features.ministries.MinistryDetailScreen
 import br.church.paz.android.ui.features.ministries.MinistriesScreen
 import br.church.paz.android.ui.features.notifications.NotificationPrefsScreen
 import br.church.paz.android.ui.features.profile.EditProfileScreen
@@ -72,6 +74,20 @@ fun PazNavGraph() {
         }
         composable(Screen.Ministries.route) {
             MinistriesScreen(navController = navController)
+        }
+        composable(
+            route = Screen.MinistryDetail.route,
+            arguments = listOf(androidx.navigation.navArgument("ministryId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val ministryId = backStackEntry.arguments?.getString("ministryId") ?: return@composable
+            MinistryDetailScreen(navController = navController, ministryId = ministryId)
+        }
+        composable(
+            route = Screen.LifeGroupDetail.route,
+            arguments = listOf(androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
+            LifeGroupDetailScreen(navController = navController, lifeGroupId = lifeGroupId)
         }
     }
 }

@@ -16,6 +16,12 @@ sealed class Screen(val route: String) {
     data object MemberJourney    : Screen("member_journey")
     data object MeetingReport    : Screen("meeting_report")
     data object Ministries       : Screen("ministries")
+    data object MinistryDetail   : Screen("ministry_detail/{ministryId}") {
+        fun createRoute(ministryId: String) = "ministry_detail/$ministryId"
+    }
+    data object LifeGroupDetail  : Screen("life_group_detail/{lifeGroupId}") {
+        fun createRoute(lifeGroupId: String) = "life_group_detail/$lifeGroupId"
+    }
     data object FormulariosList  : Screen("formularios")
     data object FormDetail : Screen("form_detail/{formId}") {
         fun createRoute(formId: String) = "form_detail/$formId"

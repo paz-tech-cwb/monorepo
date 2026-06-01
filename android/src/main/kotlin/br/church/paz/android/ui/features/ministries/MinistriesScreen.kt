@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
@@ -55,8 +56,10 @@ fun MinistriesScreen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 MinistriesEffect.NavigateBack -> navController.popBackStack()
-                is MinistriesEffect.NavigateToMinistryDetail -> { /* TODO: detail screen */ }
-                is MinistriesEffect.NavigateToLifeGroupDetail -> { /* TODO: detail screen */ }
+                is MinistriesEffect.NavigateToMinistryDetail ->
+                    navController.navigate(Screen.MinistryDetail.createRoute(effect.ministryId))
+                is MinistriesEffect.NavigateToLifeGroupDetail ->
+                    navController.navigate(Screen.LifeGroupDetail.createRoute(effect.lifeGroupId))
             }
         }
     }
