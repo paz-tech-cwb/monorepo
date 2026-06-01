@@ -17,6 +17,16 @@ struct MainTabView: View {
                     Label("Academia", systemImage: "book.fill")
                 }
 
+            SearchView(
+                homeRepository: HomeRepositoryImpl(),
+                academyRepository: AcademyRepositoryImpl(),
+                formsRepository: FormsRepositoryImpl(),
+                churchRepository: ChurchRepositoryImpl()
+            )
+            .tabItem {
+                Label("Buscar", systemImage: "magnifyingglass")
+            }
+
             AccountView(
                 userRepository: UserRepositoryImpl(),
                 authRepository: AuthRepositoryImpl()

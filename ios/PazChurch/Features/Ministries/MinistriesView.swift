@@ -66,7 +66,10 @@ struct MinistriesView: View {
                 VStack(spacing: PazSpacing.md) {
                     Spacer().frame(height: PazSpacing.sm)
                     ForEach(viewModel.ministries, id: \.id) { ministry in
-                        MinistryCard(ministry: ministry)
+                        NavigationLink(destination: MinistryDetailView(ministry: ministry)) {
+                            MinistryCard(ministry: ministry)
+                        }
+                        .buttonStyle(.plain)
                     }
                     Spacer().frame(height: PazSpacing.xl)
                 }
@@ -85,7 +88,10 @@ struct MinistriesView: View {
                 VStack(spacing: PazSpacing.md) {
                     Spacer().frame(height: PazSpacing.sm)
                     ForEach(viewModel.lifeGroups, id: \.id) { lifeGroup in
-                        LifeGroupCard(lifeGroup: lifeGroup)
+                        NavigationLink(destination: LifeGroupDetailView(lifeGroup: lifeGroup)) {
+                            LifeGroupCard(lifeGroup: lifeGroup)
+                        }
+                        .buttonStyle(.plain)
                     }
                     Spacer().frame(height: PazSpacing.xl)
                 }

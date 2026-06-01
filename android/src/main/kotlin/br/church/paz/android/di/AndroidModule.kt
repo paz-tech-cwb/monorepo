@@ -13,6 +13,7 @@ import br.church.paz.android.ui.features.ministries.LifeGroupDetailViewModel
 import br.church.paz.android.ui.features.ministries.MinistryDetailViewModel
 import br.church.paz.android.ui.features.ministries.MinistriesViewModel
 import br.church.paz.android.ui.features.notifications.NotificationPrefsViewModel
+import br.church.paz.android.ui.features.search.SearchViewModel
 import br.church.paz.android.ui.features.profile.EditProfileViewModel
 import br.church.paz.android.ui.features.profile.ProfileViewModel
 import br.church.paz.android.ui.features.splash.SplashViewModel
@@ -33,6 +34,7 @@ val androidModule = module {
     viewModel { MemberJourneyViewModel(get()) }
     viewModel { MeetingReportViewModel(get(), get()) }
     viewModel { NotificationPrefsViewModel() }
+    viewModel { SearchViewModel(get(), get(), get(), get()) }
     viewModel { MinistriesViewModel(get()) }
     viewModel { (ministryId: String) -> MinistryDetailViewModel(ministryId, get()) }
     viewModel { (lifeGroupId: String) -> LifeGroupDetailViewModel(lifeGroupId, get()) }
