@@ -49,9 +49,8 @@ fun FormulariosScreen(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is FormulariosEffect.NavigateToForm -> {
+                is FormulariosEffect.NavigateToForm ->
                     navController.navigate(Screen.FormDetail.createRoute(effect.formId))
-                }
                 FormulariosEffect.NavigateBack -> navController.popBackStack()
             }
         }

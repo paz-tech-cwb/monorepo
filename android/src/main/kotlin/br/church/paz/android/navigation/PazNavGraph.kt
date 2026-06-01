@@ -6,6 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import br.church.paz.android.ui.features.agenda.AgendaDetailScreen
 import br.church.paz.android.ui.features.auth.LoginScreen
+import br.church.paz.android.ui.features.formularios.FormDetailScreen
 import br.church.paz.android.ui.features.formularios.FormulariosScreen
 import br.church.paz.android.ui.features.meetingreport.MeetingReportScreen
 import br.church.paz.android.ui.features.memberjourney.MemberJourneyScreen
@@ -52,6 +53,13 @@ fun PazNavGraph() {
         }
         composable(Screen.FormulariosList.route) {
             FormulariosScreen(navController = navController)
+        }
+        composable(
+            route = Screen.FormDetail.route,
+            arguments = listOf(androidx.navigation.navArgument("formId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val formId = backStackEntry.arguments?.getString("formId") ?: return@composable
+            FormDetailScreen(navController = navController, formId = formId)
         }
         composable(Screen.MemberJourney.route) {
             MemberJourneyScreen(navController = navController)
