@@ -22,6 +22,7 @@ settings:
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
     EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
 
 targets:
   PazChurch:
