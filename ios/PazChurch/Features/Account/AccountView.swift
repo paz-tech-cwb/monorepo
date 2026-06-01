@@ -94,6 +94,10 @@ struct AccountView: View {
                             MenuRow(title: "Formulários", icon: "list.clipboard")
                         }
                         Divider().padding(.horizontal, PazSpacing.lg)
+                        NavigationLink(destination: MinistriesView(churchRepository: ChurchRepositoryImpl())) {
+                            MenuRow(title: "Ministérios & Grupos", icon: "person.3.fill")
+                        }
+                        Divider().padding(.horizontal, PazSpacing.lg)
                         NavigationLink(destination: NotificationPrefsView()) {
                             MenuRow(title: "Notificações", icon: "bell.fill")
                         }
