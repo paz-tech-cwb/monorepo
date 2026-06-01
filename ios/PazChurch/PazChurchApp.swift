@@ -4,13 +4,14 @@ import FirebaseCore
 
 @main
 struct PazChurchApp: App {
+    // Bridge to UIApplicationDelegate for APNs token callbacks
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     @StateObject private var authCoordinator: AuthenticationCoordinator
+    @StateObject private var pushService = PushNotificationService.shared
 
     init() {
-        // Initialize Firebase
         FirebaseApp.configure()
-
-        // Initialize auth coordinator
         _authCoordinator = StateObject(wrappedValue: AuthenticationCoordinator(
             authRepository: AuthRepositoryImpl()
         ))
@@ -18,14 +19,23 @@ struct PazChurchApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if authCoordinator.isLoading {
-                SplashView()
-            } else if authCoordinator.isAuthenticated {
-                MainTabView()
-                    .environmentObject(authCoordinator)
-            } else {
-                LoginView(authCoordinator: authCoordinator)
+            Group {
+                if authCoordinator.isLoading {
+                    SplashView()
+                } else if authCoordinator.isAuthenticated {
+                    MainTabView()
+                        .environmentObject(authCoordinator)
+                        .onAppear {
+                            // Request push permission once the user is authenticated
+                            pushService.requestPermissionAndRegister()
+                        }
+                } else {
+                    LoginView(authCoordinator: authCoordinator)
+                }
             }
+            // When the user taps a notification and the app is already running,
+            // pendingDeepLink is set; views can observe this to navigate.
+            .environmentObject(pushService)
         }
     }
 }

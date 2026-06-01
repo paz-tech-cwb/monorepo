@@ -2,7 +2,11 @@ import SwiftUI
 import Shared
 
 struct MainTabView: View {
+    @EnvironmentObject private var pushService: PushNotificationService
+    @State private var navigationPath = NavigationPath()
+
     var body: some View {
+        // Listen for notification deep links resolved while app is running
         TabView {
             HomeView(
                 homeRepository: HomeRepositoryImpl(),

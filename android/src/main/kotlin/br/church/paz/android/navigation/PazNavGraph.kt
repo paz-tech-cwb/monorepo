@@ -1,6 +1,7 @@
 package br.church.paz.android.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -19,8 +20,17 @@ import br.church.paz.android.ui.features.profile.ProfileScreen
 import br.church.paz.android.ui.features.splash.SplashScreen
 
 @Composable
-fun PazNavGraph() {
+fun PazNavGraph(startDeepLinkRoute: String? = null) {
     val navController = rememberNavController()
+
+    // When the app is opened from a notification tap, navigate to the target
+    // screen after the graph is ready. We still start at Splash so auth state
+    // is checked first; the navigation only fires after the graph is composed.
+    LaunchedEffect(startDeepLinkRoute) {
+        if (startDeepLinkRoute != null) {
+            navController.navigate(startDeepLinkRoute)
+        }
+    }
 
     NavHost(
         navController  = navController,

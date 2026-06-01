@@ -33,7 +33,7 @@ val androidModule = module {
     viewModel { (formId: String) -> FormDetailViewModel(formId, get(), get()) }
     viewModel { MemberJourneyViewModel(get()) }
     viewModel { MeetingReportViewModel(get(), get()) }
-    viewModel { NotificationPrefsViewModel() }
+    viewModel { NotificationPrefsViewModel(get()) }
     viewModel { SearchViewModel(get(), get(), get(), get()) }
     viewModel { MinistriesViewModel(get()) }
     viewModel { (ministryId: String) -> MinistryDetailViewModel(ministryId, get()) }

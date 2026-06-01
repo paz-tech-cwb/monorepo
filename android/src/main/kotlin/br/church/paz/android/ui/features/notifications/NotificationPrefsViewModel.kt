@@ -2,6 +2,8 @@ package br.church.paz.android.ui.features.notifications
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import br.church.paz.shared.domain.model.NotificationPreferences
+import br.church.paz.shared.domain.repository.UserRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,7 +12,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class NotificationPrefsViewModel : ViewModel() {
+class NotificationPrefsViewModel(
+    private val userRepository: UserRepository,
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotificationPrefsUiState())
     val uiState: StateFlow<NotificationPrefsUiState> = _uiState.asStateFlow()
@@ -18,30 +22,48 @@ class NotificationPrefsViewModel : ViewModel() {
     private val _effect = Channel<NotificationPrefsEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
-    fun toggleEvents() {
-        _uiState.update { it.copy(eventsNotifications = !it.eventsNotifications) }
+    init { loadPreferences() }
+
+    private fun loadPreferences() {
+        viewModelScope.launch {
+            userRepository.getNotificationPreferences()
+                .onSuccess { prefs ->
+                    _uiState.update {
+                        it.copy(
+                            eventsNotifications       = prefs.events,
+                            announcementsNotifications = prefs.announcements,
+                            lifeGroupNotifications    = prefs.lifeGroup,
+                        )
+                    }
+                }
+            // On failure: keep defaults — non-critical
+        }
     }
 
-    fun toggleAnnouncements() {
-        _uiState.update { it.copy(announcementsNotifications = !it.announcementsNotifications) }
-    }
-
-    fun toggleLifeGroup() {
-        _uiState.update { it.copy(lifeGroupNotifications = !it.lifeGroupNotifications) }
-    }
+    fun toggleEvents()        { _uiState.update { it.copy(eventsNotifications       = !it.eventsNotifications) } }
+    fun toggleAnnouncements() { _uiState.update { it.copy(announcementsNotifications = !it.announcementsNotifications) } }
+    fun toggleLifeGroup()     { _uiState.update { it.copy(lifeGroupNotifications    = !it.lifeGroupNotifications) } }
 
     fun onSave() {
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
-            try {
-                // TODO: persist to backend via API call
-                _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
-                _effect.send(NotificationPrefsEffect.SaveSuccess)
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(isSaving = false, error = e.message ?: "Erro ao salvar preferências")
+            val state = _uiState.value
+            userRepository.updateNotificationPreferences(
+                NotificationPreferences(
+                    events        = state.eventsNotifications,
+                    announcements = state.announcementsNotifications,
+                    lifeGroup     = state.lifeGroupNotifications,
+                )
+            )
+                .onSuccess {
+                    _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
+                    _effect.send(NotificationPrefsEffect.SaveSuccess)
                 }
-            }
+                .onFailure { e ->
+                    _uiState.update {
+                        it.copy(isSaving = false, error = e.message ?: "Erro ao salvar preferências")
+                    }
+                }
         }
     }
 
