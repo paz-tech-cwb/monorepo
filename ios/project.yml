@@ -6,12 +6,20 @@ options:
   xcodeVersion: "15.0"
   generateEmptyDirectories: true
 
+packages:
+  FirebaseAuth:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: "10.0.0"
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: "7.0.0"
+
 settings:
   base:
     SWIFT_VERSION: "5.9"
     IPHONEOS_DEPLOYMENT_TARGET: "16.0"
     TARGETED_DEVICE_FAMILY: "1,2"
-    DEVELOPMENT_TEAM: ""          # Set to your Apple Developer Team ID
+    DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
 
 targets:
@@ -26,12 +34,19 @@ targets:
       # KMP shared framework — built by ./gradlew :shared:assembleSharedXCFramework
       - framework: ../shared/build/XCFrameworks/debug/Shared.xcframework
         embed: true
+      # Firebase via SPM
+      - package: FirebaseAuth
+        product: FirebaseAuth
+      - package: FirebaseAuth
+        product: FirebaseMessaging
+      # Google Sign-In via SPM
+      - package: GoogleSignIn
+        product: GoogleSignIn
     settings:
       base:
         INFOPLIST_FILE: PazChurch/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.cwb.pazchurch.app
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        # Google Sign-In redirect URL scheme (REVERSED_CLIENT_ID from GoogleService-Info.plist)
         GOOGLE_REVERSED_CLIENT_ID: com.googleusercontent.apps.139667803306-vbo7nbgufjpr464k2ko91gnbvodjo9v7
     capabilities:
       - pushNotifications
