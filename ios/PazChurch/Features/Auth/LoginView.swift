@@ -6,6 +6,8 @@ import Shared
 struct LoginView: View {
     var authCoordinator: AuthenticationCoordinator
     var onDismiss: (() -> Void)? = nil
+    /// When true: no hero zone, card centered in a scroll view (for embedding inside another tab).
+    var isEmbedded: Bool = false
 
     @State private var isLoading = false
     @State private var currentNonce: String?
@@ -14,18 +16,37 @@ struct LoginView: View {
     private var isDark: Bool { colorScheme == .dark }
 
     var body: some View {
+        if isEmbedded {
+            embeddedLayout
+        } else {
+            fullscreenLayout
+        }
+    }
+
+    // ── Embedded (inside Account tab — tab bar stays visible) ─────────────
+    private var embeddedLayout: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                Spacer().frame(height: 40)
+                loginCard
+                    .padding(.horizontal, 16)
+                Spacer().frame(height: 40)
+            }
+        }
+        .background(PazColors.background)
+    }
+
+    // ── Full-screen (standalone route or sheet) ───────────────────────────
+    private var fullscreenLayout: some View {
         ZStack(alignment: .top) {
-            // Page background below the card
             (isDark ? Color(hex: "070E1A") : Color(hex: "EDF1F7"))
                 .ignoresSafeArea()
 
-            // ── Hero ──────────────────────────────────────────────────────
             heroZone
                 .frame(maxWidth: .infinity)
                 .frame(height: 380)
                 .ignoresSafeArea(edges: .top)
 
-            // ── Card (overlaps hero by 48pt) ──────────────────────────────
             VStack(spacing: 0) {
                 Spacer().frame(height: 332)   // 380 - 48
                 loginCard

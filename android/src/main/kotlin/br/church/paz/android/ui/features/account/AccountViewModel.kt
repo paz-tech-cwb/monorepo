@@ -21,7 +21,7 @@ class AccountViewModel(private val authRepository: AuthRepository) : ViewModel()
 
     init { loadUser() }
 
-    private fun loadUser() {
+    fun loadUser() {
         viewModelScope.launch {
             val user = authRepository.currentUser()
             _uiState.update { it.copy(user = user, isLoading = false) }

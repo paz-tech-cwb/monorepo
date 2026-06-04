@@ -4,7 +4,6 @@ import Shared
 struct AccountView: View {
     @State private var viewModel: AccountViewModel
     @Environment(AuthenticationCoordinator.self) private var authCoordinator
-    @State private var showLogin = false
 
     init(userRepository: UserRepository, authRepository: AuthRepository) {
         _viewModel = State(initialValue: AccountViewModel(
@@ -15,36 +14,19 @@ struct AccountView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
+            Group {
                 if viewModel.isLoading {
                     loadingState
+                } else if !authCoordinator.isAuthenticated {
+                    LoginView(authCoordinator: authCoordinator, isEmbedded: true)
                 } else {
                     contentState
                 }
             }
             .navigationTitle("Conta")
         }
-        .onAppear {
-            if !viewModel.isLoading {
-                showLogin = !authCoordinator.isAuthenticated
-            }
-        }
-        .onChange(of: viewModel.isLoading) { _, isLoading in
-            if !isLoading { showLogin = !authCoordinator.isAuthenticated }
-        }
         .onChange(of: authCoordinator.isAuthenticated) { _, isAuthenticated in
-            if isAuthenticated {
-                showLogin = false
-                viewModel.reload()
-            } else {
-                showLogin = true
-            }
-        }
-        .fullScreenCover(isPresented: $showLogin) {
-            LoginView(
-                authCoordinator: authCoordinator,
-                onDismiss: { showLogin = false }
-            )
+            if isAuthenticated { viewModel.reload() }
         }
     }
 

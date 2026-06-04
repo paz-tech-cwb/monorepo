@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
+import br.church.paz.android.ui.features.auth.LoginScreen
 import br.church.paz.android.ui.components.PazAvatar
 import br.church.paz.android.ui.components.PazMenuRow
 import br.church.paz.android.ui.components.PazSectionHeader
@@ -69,16 +70,26 @@ fun AccountScreen(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                AccountEffect.NavigateToEditProfile     -> navController.navigate(Screen.EditProfile.route)
-                AccountEffect.NavigateToMemberJourney   -> navController.navigate(Screen.MemberJourney.route)
-                AccountEffect.NavigateToMeetingReport   -> navController.navigate(Screen.MeetingReport.route)
-                AccountEffect.NavigateToFormularios     -> navController.navigate(Screen.FormulariosList.route)
-                AccountEffect.NavigateToMinistries      -> navController.navigate(Screen.Ministries.route)
+                AccountEffect.NavigateToEditProfile       -> navController.navigate(Screen.EditProfile.route)
+                AccountEffect.NavigateToMemberJourney     -> navController.navigate(Screen.MemberJourney.route)
+                AccountEffect.NavigateToMeetingReport     -> navController.navigate(Screen.MeetingReport.route)
+                AccountEffect.NavigateToFormularios       -> navController.navigate(Screen.FormulariosList.route)
+                AccountEffect.NavigateToMinistries        -> navController.navigate(Screen.Ministries.route)
                 AccountEffect.NavigateToNotificationPrefs -> navController.navigate(Screen.NotificationPrefs.route)
+                // NavigateToLogin and LoggedOut: no nav needed — the screen recomposes to show LoginScreen inline
                 AccountEffect.NavigateToLogin,
-                AccountEffect.LoggedOut -> navController.navigate(Screen.Login.route)
+                AccountEffect.LoggedOut -> Unit
             }
         }
+    }
+
+    // When unauthenticated, show login embedded (tab bar stays visible)
+    if (!uiState.isLoading && uiState.user == null) {
+        LoginScreen(
+            onLoginSuccess = { viewModel.loadUser() },
+            isEmbedded     = true,
+        )
+        return
     }
 
     if (showLogoutDialog) {

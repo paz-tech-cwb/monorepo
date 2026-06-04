@@ -61,10 +61,15 @@ import org.koin.androidx.compose.koinViewModel
 
 private val CardShape = RoundedCornerShape(26.dp)
 
+/**
+ * Full-screen login (standalone route or bottom sheet).
+ * For embedding inside another tab (tab bar stays visible), use [isEmbedded] = true.
+ */
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onDismiss: (() -> Unit)? = null,
+    isEmbedded: Boolean = false,
     viewModel: LoginViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -82,115 +87,132 @@ fun LoginScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-    ) {
-        // ── Hero zone ──────────────────────────────────────────────────────
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(380.dp)
-                .background(PazGradients.Hero),
-        ) {
-            // Top scrim
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color(0x8C081428), Color.Transparent),
-                        ),
-                    )
-            )
-            // Ghost cross watermark
-            Text(
-                text  = "✝",
-                style = MaterialTheme.typography.displayLarge.copy(
-                    fontSize = 200.sp,
-                    color    = Color.White.copy(alpha = 0.07f),
-                ),
-                modifier = Modifier.align(Alignment.Center),
-            )
-            // Close button (modal only)
-            if (onDismiss != null) {
-                IconButton(
-                    onClick  = onDismiss,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .statusBarsPadding()
-                        .padding(end = 12.dp, top = 4.dp),
-                ) {
-                    Icon(
-                        imageVector        = Icons.Outlined.Close,
-                        contentDescription = "Fechar",
-                        tint               = Color.White.copy(alpha = 0.85f),
-                    )
+    val onGoogleClick: () -> Unit = {
+        scope.launch {
+            val helper = GoogleSignInHelper(context)
+            helper.getIdToken(BuildConfig.GOOGLE_WEB_CLIENT_ID)
+                .onSuccess { viewModel.onGoogleSignIn(it) }
+                .onFailure { e ->
+                    if (e.message?.contains("cancel", ignoreCase = true) == false) {
+                        snackbarHostState.showSnackbar(e.message ?: "Erro ao entrar com Google.")
+                    }
+                }
+        }
+    }
+
+    val onAppleClick: () -> Unit = {
+        val provider = OAuthProvider.newBuilder("apple.com")
+            .setScopes(listOf("email", "name"))
+            .build()
+        val activity = context as? Activity ?: return@run
+        FirebaseAuth.getInstance()
+            .startActivityForSignInWithProvider(activity, provider)
+            .addOnSuccessListener { result ->
+                scope.launch {
+                    result.user?.getIdToken(false)?.await()?.token?.let { viewModel.onAppleSignIn(it) }
                 }
             }
-        }
+            .addOnFailureListener { e ->
+                if (e.message?.contains("cancel", ignoreCase = true) == false) {
+                    scope.launch { snackbarHostState.showSnackbar(e.message ?: "Erro ao entrar com Apple.") }
+                }
+            }
+    }
 
-        // ── Sheet: card overlaps hero by 48dp ──────────────────────────────
-        Column(Modifier.fillMaxSize()) {
-            Spacer(Modifier.height(332.dp))   // 380 - 48
-            LoginCard(
-                isLoading = uiState.isLoading,
-                isDark    = isDark,
-                onGoogle  = {
-                    scope.launch {
-                        val helper = GoogleSignInHelper(context)
-                        helper.getIdToken(BuildConfig.GOOGLE_WEB_CLIENT_ID)
-                            .onSuccess { viewModel.onGoogleSignIn(it) }
-                            .onFailure { e ->
-                                if (e.message?.contains("cancel", ignoreCase = true) == false) {
-                                    snackbarHostState.showSnackbar(
-                                        e.message ?: "Erro ao entrar com Google."
-                                    )
-                                }
-                            }
+    if (isEmbedded) {
+        // ── Embedded: card only, tab bar stays visible ─────────────────────
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            Column(
+                modifier              = Modifier.fillMaxSize().padding(vertical = 32.dp),
+                horizontalAlignment   = Alignment.CenterHorizontally,
+                verticalArrangement   = Arrangement.Center,
+            ) {
+                LoginCard(
+                    isLoading = uiState.isLoading,
+                    isDark    = isDark,
+                    onGoogle  = onGoogleClick,
+                    onApple   = onAppleClick,
+                    onVisitor = { onLoginSuccess() },
+                )
+            }
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier  = Modifier.align(Alignment.BottomCenter),
+            ) { data ->
+                Snackbar(snackbarData = data,
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor   = MaterialTheme.colorScheme.onErrorContainer)
+            }
+        }
+    } else {
+        // ── Full-screen: hero + overlapping card ────────────────────────────
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(380.dp)
+                    .background(PazGradients.Hero),
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color(0x8C081428), Color.Transparent),
+                            ),
+                        )
+                )
+                Text(
+                    text  = "✝",
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontSize = 200.sp,
+                        color    = Color.White.copy(alpha = 0.07f),
+                    ),
+                    modifier = Modifier.align(Alignment.Center),
+                )
+                if (onDismiss != null) {
+                    IconButton(
+                        onClick  = onDismiss,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .statusBarsPadding()
+                            .padding(end = 12.dp, top = 4.dp),
+                    ) {
+                        Icon(
+                            imageVector        = Icons.Outlined.Close,
+                            contentDescription = "Fechar",
+                            tint               = Color.White.copy(alpha = 0.85f),
+                        )
                     }
-                },
-                onApple   = {
-                    val provider = OAuthProvider.newBuilder("apple.com")
-                        .setScopes(listOf("email", "name"))
-                        .build()
-                    val activity = context as? Activity ?: return@LoginCard
-                    FirebaseAuth.getInstance()
-                        .startActivityForSignInWithProvider(activity, provider)
-                        .addOnSuccessListener { result ->
-                            scope.launch {
-                                result.user?.getIdToken(false)?.await()?.token?.let { idToken ->
-                                    viewModel.onAppleSignIn(idToken)
-                                }
-                            }
-                        }
-                        .addOnFailureListener { e ->
-                            if (e.message?.contains("cancel", ignoreCase = true) == false) {
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        e.message ?: "Erro ao entrar com Apple."
-                                    )
-                                }
-                            }
-                        }
-                },
-                onVisitor = { onLoginSuccess() },
-            )
-            Spacer(Modifier.weight(1f))
-            Spacer(Modifier.navigationBarsPadding())
-        }
+                }
+            }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier  = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
-        ) { data ->
-            Snackbar(
-                snackbarData   = data,
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor   = MaterialTheme.colorScheme.onErrorContainer,
-            )
+            Column(Modifier.fillMaxSize()) {
+                Spacer(Modifier.height(332.dp))
+                LoginCard(
+                    isLoading = uiState.isLoading,
+                    isDark    = isDark,
+                    onGoogle  = onGoogleClick,
+                    onApple   = onAppleClick,
+                    onVisitor = { onLoginSuccess() },
+                )
+                Spacer(Modifier.weight(1f))
+                Spacer(Modifier.navigationBarsPadding())
+            }
+
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier  = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
+            ) { data ->
+                Snackbar(snackbarData = data,
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor   = MaterialTheme.colorScheme.onErrorContainer)
+            }
         }
     }
 }
