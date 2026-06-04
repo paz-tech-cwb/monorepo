@@ -1,17 +1,10 @@
 import SwiftUI
 import Shared
 
-// MARK: - Scroll offset preference key
-private struct ScrollOffsetKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-
 // MARK: - HomeView
 struct HomeView: View {
     @State private var viewModel: HomeViewModel
-    @State private var scrollOffset: CGFloat = 0
-    @State private var selectedDayIndex: Int = 2     // Wednesday
+    @State private var selectedDayIndex: Int = 2
     @State private var currentFeatureIndex: Int = 0
     @Environment(\.colorScheme) private var colorScheme
 
@@ -22,51 +15,30 @@ struct HomeView: View {
         ))
     }
 
-    private var isCollapsed: Bool { scrollOffset > 64 }
     private var isDark: Bool { colorScheme == .dark }
-
     private var banners: [Banner] { viewModel.homeContent?.banners ?? [] }
     private var bank: BankInfo? { viewModel.homeContent?.contribution?.bank }
     private var agendaEvents: [AgendaEvent] { Array((viewModel.homeContent?.agenda ?? []).prefix(3)) }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            mainScroll
-            compactNavOverlay
-        }
-        .ignoresSafeArea(edges: .top)
-        .task { await viewModel.load() }
-    }
-
-    // MARK: - Main scroll
-
-    private var mainScroll: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                GeometryReader { geo in
-                    Color.clear.preference(
-                        key: ScrollOffsetKey.self,
-                        value: -geo.frame(in: .named("homeScroll")).minY
-                    )
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 0) {
+                    if viewModel.isLoading {
+                        loadingState
+                    } else if viewModel.error != nil {
+                        errorState
+                    } else {
+                        contentSections
+                    }
+                    Spacer().frame(height: 40)
                 }
-                .frame(height: 0)
-
-                largeHeader
-
-                if viewModel.isLoading {
-                    loadingState
-                } else if viewModel.error != nil {
-                    errorState
-                } else {
-                    contentSections
-                }
-
-                Spacer().frame(height: 40)
             }
+            .background(PazColors.background)
+            .navigationTitle("Início")
+            .navigationBarTitleDisplayMode(.large)
         }
-        .coordinateSpace(name: "homeScroll")
-        .onPreferenceChange(ScrollOffsetKey.self) { scrollOffset = $0 }
-        .background(PazColors.background)
+        .task { await viewModel.load() }
     }
 
     // MARK: - Content sections
@@ -93,84 +65,6 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Compact nav overlay
-
-    private var compactNavOverlay: some View {
-        HStack {
-            if isCollapsed {
-                Spacer()
-                Text("Início")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(PazColors.ink)
-                Spacer()
-            } else {
-                Spacer()
-            }
-            bellButton
-                .opacity(isCollapsed ? 1 : 0)
-        }
-        .padding(.horizontal, 16)
-        .frame(height: 46)
-        .background(
-            Group {
-                if isCollapsed {
-                    Rectangle()
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            Rectangle().fill(PazColors.line).frame(height: 0.5),
-                            alignment: .bottom
-                        )
-                } else {
-                    Color.clear
-                }
-            }
-        )
-        .padding(.top, safeAreaTop)
-        .animation(.easeInOut(duration: 0.2), value: isCollapsed)
-    }
-
-    private var bellButton: some View {
-        Button(action: {}) {
-            ZStack(alignment: .topTrailing) {
-                Image(systemName: "bell")
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundColor(PazColors.ink)
-                Circle()
-                    .fill(PazColors.pazGold)
-                    .frame(width: 8, height: 8)
-                    .offset(x: 2, y: -2)
-            }
-            .frame(width: 23, height: 23)
-        }
-    }
-
-    // MARK: - Large header
-
-    private var largeHeader: some View {
-        ZStack(alignment: .bottom) {
-            PazColors.heroGradient
-                .frame(maxWidth: .infinity)
-
-            HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Bem-vindo à")
-                        .font(PazTypography.bodySmall)
-                        .foregroundStyle(.white.opacity(0.7))
-                    Text("Paz Church")
-                        .font(.custom("PlayfairDisplay-ExtraBold", size: 34))
-                        .foregroundStyle(.white)
-                }
-                Spacer()
-                bellButton
-                    .opacity(isCollapsed ? 0 : 1)
-                    .animation(.easeInOut(duration: 0.2), value: isCollapsed)
-            }
-            .padding(.horizontal, 18)
-            .padding(.top, safeAreaTop + 16)
-            .padding(.bottom, 22)
-        }
-    }
-
     // MARK: - Featured section
 
     private var featuredSection: some View {
@@ -178,14 +72,14 @@ struct HomeView: View {
             HStack {
                 Text("Eventos")
                     .font(.custom("PlayfairDisplay-ExtraBold", size: 23))
-                    .foregroundColor(PazColors.ink)
+                    .foregroundStyle(PazColors.ink)
                 Spacer()
                 Button(action: {}) {
                     HStack(spacing: 5) {
                         Text("Ver todos").font(PazTypography.labelSmall)
                         Image(systemName: "arrow.right").font(.system(size: 12, weight: .semibold))
                     }
-                    .foregroundColor(PazColors.pazPrimaryLight)
+                    .foregroundStyle(PazColors.pazPrimaryLight)
                 }
             }
             .padding(.horizontal, 18)
@@ -194,17 +88,16 @@ struct HomeView: View {
             TabView(selection: $currentFeatureIndex) {
                 ForEach(Array(banners.enumerated()), id: \.offset) { index, banner in
                     FeaturedCardView(
-                        title:    banner.title,
-                        subtitle: banner.imageUrl,
-                        isAlt:    index % 2 == 1
+                        title:   banner.title,
+                        isAlt:   index % 2 == 1
                     )
                     .padding(.horizontal, 18)
-                    .padding(.bottom, 24)   // room for drop shadow
+                    .padding(.bottom, 24)
                     .tag(index)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 200)             // 176 card + 24 shadow clearance
+            .frame(height: 200)
 
             HStack(spacing: 6) {
                 ForEach(0..<banners.count, id: \.self) { i in
@@ -234,16 +127,16 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text("DÍZIMOS & OFERTAS")
                     .font(PazTypography.labelSmall)
-                    .foregroundColor(.white.opacity(0.6))
+                    .foregroundStyle(.white.opacity(0.6))
 
                 Text("Contribua com a visão")
                     .font(.custom("PlayfairDisplay-ExtraBold", size: 27))
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .padding(.top, 9)
 
                 Text("Sua oferta transforma vidas na comunidade")
                     .font(PazTypography.bodyMedium)
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundStyle(.white.opacity(0.7))
                     .lineSpacing(4)
                     .padding(.top, 7)
 
@@ -269,14 +162,14 @@ struct HomeView: View {
             HStack {
                 Text("Agenda")
                     .font(.custom("PlayfairDisplay-ExtraBold", size: 23))
-                    .foregroundColor(PazColors.ink)
+                    .foregroundStyle(PazColors.ink)
                 Spacer()
                 Button(action: {}) {
                     HStack(spacing: 5) {
                         Text("Mês completo").font(PazTypography.labelSmall)
                         Image(systemName: "arrow.right").font(.system(size: 12, weight: .semibold))
                     }
-                    .foregroundColor(PazColors.pazPrimaryLight)
+                    .foregroundStyle(PazColors.pazPrimaryLight)
                 }
             }
             .padding(.horizontal, 18)
@@ -326,27 +219,19 @@ struct HomeView: View {
             Spacer().frame(height: 60)
             Image(systemName: "exclamationmark.circle")
                 .font(.system(size: 48))
-                .foregroundColor(PazColors.error)
+                .foregroundStyle(PazColors.error)
             Text("Erro ao carregar").font(PazTypography.titleMedium)
             Text(viewModel.error ?? "Algo deu errado")
-                .font(PazTypography.bodySmall).foregroundColor(.gray)
+                .font(PazTypography.bodySmall).foregroundStyle(.secondary)
             Button(action: { viewModel.onRetry() }) {
                 Text("Tentar Novamente")
-                    .font(PazTypography.titleMedium).foregroundColor(.white)
+                    .font(PazTypography.titleMedium).foregroundStyle(.white)
                     .frame(maxWidth: .infinity).padding(.vertical, PazSpacing.md)
-                    .background(PazColors.primary).cornerRadius(12)
+                    .background(PazColors.primary).clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .padding(.top, PazSpacing.md)
         }
         .padding(PazSpacing.lg)
-    }
-
-    // MARK: - Safe area helper
-
-    private var safeAreaTop: CGFloat {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .first?.windows.first?.safeAreaInsets.top ?? 47
     }
 }
 
@@ -362,7 +247,6 @@ private let agendaDayItems: [AgendaDayItem] = [
 
 private struct FeaturedCardView: View {
     let title: String
-    let subtitle: String
     let isAlt: Bool
 
     private var gradient: LinearGradient {
@@ -393,12 +277,6 @@ private struct FeaturedCardView: View {
                     .font(.custom("PlayfairDisplay-ExtraBold", size: 23))
                     .foregroundStyle(.white)
                     .lineLimit(2)
-                if !subtitle.isEmpty && !subtitle.hasPrefix("http") {
-                    Text(subtitle)
-                        .font(PazTypography.bodySmall)
-                        .foregroundStyle(.white.opacity(0.72))
-                        .padding(.top, 5)
-                }
             }
             .padding(18)
         }
@@ -444,7 +322,7 @@ private struct DizimosButtonView: View {
     var body: some View {
         Text(label)
             .font(PazTypography.titleMedium)
-            .foregroundColor(primary ? Color(hex: "0B3A6B") : .white)
+            .foregroundStyle(primary ? Color(hex: "0B3A6B") : .white)
             .frame(maxWidth: .infinity)
             .frame(height: 52)
             .background(
@@ -457,13 +335,6 @@ private struct DizimosButtonView: View {
                             .overlay(Capsule().strokeBorder(.white.opacity(0.24), lineWidth: 1))
                     }
                 }
-            )
-            .scaleEffect(pressed ? 0.97 : 1.0)
-            .animation(.easeInOut(duration: 0.12), value: pressed)
-            .simultaneousGesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { _ in pressed = true }
-                    .onEnded   { _ in pressed = false }
             )
     }
 }
@@ -479,10 +350,10 @@ private struct DayPillView: View {
         VStack(spacing: 3) {
             Text(dow)
                 .font(PazTypography.labelSmall)
-                .foregroundColor(isSelected ? .white.opacity(0.72) : PazColors.slateLight)
+                .foregroundStyle(isSelected ? .white.opacity(0.72) : PazColors.slateLight)
             Text("\(day)")
                 .font(.system(size: 21, weight: .bold))
-                .foregroundColor(isSelected ? .white : PazColors.ink)
+                .foregroundStyle(isSelected ? .white : PazColors.ink)
             Circle()
                 .fill(isSelected ? PazColors.pazGold : .clear)
                 .frame(width: 4, height: 4)
@@ -524,7 +395,7 @@ private struct EventCardView: View {
             HStack(spacing: 13) {
                 Text(time)
                     .font(.system(size: 15.5, weight: .bold))
-                    .foregroundColor(PazColors.pazPrimaryLight)
+                    .foregroundStyle(PazColors.pazPrimaryLight)
                     .frame(width: 50, alignment: .leading)
 
                 ZStack {
@@ -535,17 +406,17 @@ private struct EventCardView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(event.title)
                         .font(.system(size: 15.5, weight: .bold))
-                        .foregroundColor(PazColors.ink)
+                        .foregroundStyle(PazColors.ink)
                         .lineLimit(1)
 
                     if let loc = event.location, !loc.isEmpty {
                         HStack(spacing: 5) {
                             Image(systemName: "mappin.fill")
                                 .font(.system(size: 10))
-                                .foregroundColor(Color(hex: "E0533D"))
+                                .foregroundStyle(Color(hex: "E0533D"))
                             Text(loc)
                                 .font(PazTypography.bodySmall)
-                                .foregroundColor(PazColors.slate)
+                                .foregroundStyle(PazColors.slate)
                         }
                     }
                 }
