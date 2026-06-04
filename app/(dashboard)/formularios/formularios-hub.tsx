@@ -23,7 +23,8 @@ export function FormulariosHub() {
       <h1 className="text-2xl font-semibold mb-6">Formulários</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {forms.map((f) => (
-          <Link key={f.slug} href={`/formularios/${f.slug}`}>
+          <div key={f.slug}>
+            <Link href={`/formularios/${f.slug}`} className="block h-full">
             <Card className="hover:shadow-md transition cursor-pointer h-full">
               <CardHeader className="flex flex-row items-center gap-3">
                 <FormIcon slug={f.slug} className="size-6 text-primary" />
@@ -36,7 +37,8 @@ export function FormulariosHub() {
                 )}
               </CardContent>
             </Card>
-          </Link>
+            </Link>
+          </div>
         ))}
         {forms.length === 0 && (
           <p className="text-muted-foreground">Nenhum formulário disponível para você.</p>

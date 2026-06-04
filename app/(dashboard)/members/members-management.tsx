@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PhoneInput } from "@/components/ui/phone-input"
+import { DateInput } from "@/components/ui/date-input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   Dialog,
@@ -208,20 +210,18 @@ export function MembersManagement() {
                   </div>
                   <div>
                     <Label htmlFor="phone_number">Telefone</Label>
-                    <Input
+                    <PhoneInput
                       id="phone_number"
                       value={formData.phone_number}
-                      onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
-                      placeholder="(11) 99999-9999"
+                      onChange={(v) => setFormData({ ...formData, phone_number: v })}
                     />
                   </div>
                   <div>
                     <Label htmlFor="birth_date">Data de Nascimento</Label>
-                    <Input
+                    <DateInput
                       id="birth_date"
-                      type="date"
                       value={formData.birth_date}
-                      onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                      onChange={(v) => setFormData({ ...formData, birth_date: v })}
                     />
                   </div>
                   <div>
@@ -362,20 +362,18 @@ export function MembersManagement() {
             </div>
             <div>
               <Label htmlFor="edit-phone_number">Telefone</Label>
-              <Input
+              <PhoneInput
                 id="edit-phone_number"
                 value={formData.phone_number}
-                onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
-                placeholder="(11) 99999-9999"
+                onChange={(v) => setFormData({ ...formData, phone_number: v })}
               />
             </div>
             <div>
               <Label htmlFor="edit-birth_date">Data de Nascimento</Label>
-              <Input
+              <DateInput
                 id="edit-birth_date"
-                type="date"
                 value={formData.birth_date}
-                onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                onChange={(v) => setFormData({ ...formData, birth_date: v })}
               />
             </div>
             <div>

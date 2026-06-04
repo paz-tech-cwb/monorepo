@@ -4,6 +4,8 @@ import { memo } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import {
   Home,
   Users,
@@ -20,6 +22,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
+import type { AdminRole } from "@/lib/api/types"
 
 const sidebarSections = [
   {
@@ -122,6 +125,48 @@ const NavSection = memo(function NavSection({
   )
 })
 
+const ROLE_LABELS: Record<AdminRole | "member", string> = {
+  admin: "Admin",
+  pastor: "Pastor",
+  area_leader: "Líder de Área",
+  sector_leader: "Líder de Setor",
+  life_group_leader: "Líder de GV",
+  member: "Membro",
+}
+
+function UserProfile() {
+  const { user } = useAuth()
+  if (!user) return null
+
+  const initials = user.name
+    .split(" ")
+    .filter(Boolean)
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase()
+
+  const role = user.role ?? "member"
+  const roleLabel = ROLE_LABELS[role as AdminRole | "member"] ?? role
+
+  return (
+    <div className="flex items-center gap-3 px-1 py-2">
+      <Avatar className="h-9 w-9 shrink-0">
+        <AvatarImage src={user.picture} alt={user.name} />
+        <AvatarFallback className="bg-sidebar-primary/20 text-sidebar-foreground text-xs font-semibold">
+          {initials}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-sidebar-foreground">{user.name}</p>
+        <Badge variant="outline" className="mt-0.5 px-1.5 py-0 text-[10px] leading-4 text-sidebar-foreground/70 border-sidebar-foreground/20">
+          {roleLabel}
+        </Badge>
+      </div>
+    </div>
+  )
+}
+
 function LogoutButton() {
   const { logout } = useAuth()
 
@@ -161,7 +206,8 @@ export const SidebarContent = memo(function SidebarContent() {
           ))}
         </nav>
       </div>
-      <div className="border-t border-sidebar-border p-4">
+      <div className="border-t border-sidebar-border p-4 space-y-2">
+        <UserProfile />
         <LogoutButton />
       </div>
     </div>

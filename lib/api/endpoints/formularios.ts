@@ -37,7 +37,9 @@ export const formulariosApi = {
     return api.get<FormUserLookupResult | null>(`/users/lookup?${qs}`)
   },
 
+  listAllCourses: () => api.get<FormCourse[]>(`/form-courses`),
   listCourses: () => api.get<FormCourse[]>(`/forms/member-registrations/courses`),
+  linkCourse: (courseId: string) => api.post<FormCourse>(`/forms/member-registrations/courses/${courseId}/link`, {}),
   createCourse: (payload: CreateCourseRequest) => api.post<FormCourse>(`/forms/member-registrations/courses`, payload),
   updateCourse: (id: string, payload: UpdateCourseRequest) => api.patch<FormCourse>(`/form-courses/${id}`, payload),
   unlinkCourse: (id: string) => api.delete<void>(`/forms/member-registrations/courses/${id}`),

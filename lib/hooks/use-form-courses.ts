@@ -4,9 +4,25 @@ import type { CreateCourseRequest, UpdateCourseRequest } from "@/lib/api/types/f
 import { toast } from "sonner"
 
 const KEY = ["form-courses", "member-registrations"]
+const ALL_KEY = ["form-courses"]
+
+export function useAllFormCourses() {
+  return useQuery({ queryKey: ALL_KEY, queryFn: () => formulariosApi.listAllCourses() })
+}
 
 export function useFormCourses() {
   return useQuery({ queryKey: KEY, queryFn: () => formulariosApi.listCourses() })
+}
+
+export function useLinkCourse() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (courseId: string) => formulariosApi.linkCourse(courseId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY })
+      toast.success("Curso vinculado")
+    },
+  })
 }
 
 export function useCreateCourse() {

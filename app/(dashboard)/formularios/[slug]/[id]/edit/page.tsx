@@ -50,17 +50,18 @@ export default function EditPage() {
 }
 
 // Inline edit shell for form-guests to avoid cross-dynamic-segment imports
-import { useForm } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { PhoneInput } from "@/components/ui/phone-input"
 
 const guestSchema = z.object({
   full_name: z.string().min(2, "Obrigatório"),
   email: z.string().email("E-mail inválido").optional().or(z.literal("")),
-  phone: z.string().regex(/^\+?[0-9]{8,15}$/, "Formato: +5511999999999"),
+  phone: z.string().regex(/^\+55[0-9]{10,11}$/, "Telefone inválido"),
   address: z.string().optional(),
   invited_by: z.string().min(1, "Obrigatório"),
   how_met_church: z.string().optional(),
@@ -82,6 +83,7 @@ function FormGuestsEditShell({
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<GuestValues>({
     resolver: zodResolver(guestSchema),
@@ -108,7 +110,11 @@ function FormGuestsEditShell({
         </div>
         <div>
           <Label>WhatsApp *</Label>
-          <Input {...register("phone")} placeholder="+5511999999999" />
+          <Controller
+            control={control}
+            name="phone"
+            render={({ field }) => <PhoneInput value={field.value} onChange={field.onChange} />}
+          />
           {errors.phone && <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>}
         </div>
         <div>

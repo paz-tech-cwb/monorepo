@@ -1,11 +1,12 @@
 "use client"
-import { useForm } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { PhoneInput } from "@/components/ui/phone-input"
 import { useCreateFormSubmission } from "@/lib/hooks/use-form-submissions"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -13,7 +14,7 @@ import { toast } from "sonner"
 const schema = z.object({
   full_name: z.string().min(2, "Obrigatório"),
   email: z.string().email("E-mail inválido").optional().or(z.literal("")),
-  phone: z.string().regex(/^\+?[0-9]{8,15}$/, "Formato: +5511999999999"),
+  phone: z.string().regex(/^\+55[0-9]{10,11}$/, "Telefone inválido"),
   address: z.string().optional(),
   invited_by: z.string().min(1, "Obrigatório"),
   how_met_church: z.string().optional(),
@@ -30,6 +31,7 @@ export function FormGuestsForm({ defaultValues, onSubmit: onSubmitProp }: Props)
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -67,7 +69,11 @@ export function FormGuestsForm({ defaultValues, onSubmit: onSubmitProp }: Props)
       </div>
       <div>
         <Label>WhatsApp *</Label>
-        <Input {...register("phone")} placeholder="+5511999999999" />
+        <Controller
+          control={control}
+          name="phone"
+          render={({ field }) => <PhoneInput value={field.value} onChange={field.onChange} />}
+        />
         {errors.phone && (
           <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>
         )}

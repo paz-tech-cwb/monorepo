@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { PhoneInput } from "@/components/ui/phone-input"
+import { DateInput } from "@/components/ui/date-input"
 import {
   Select,
   SelectContent,
@@ -20,7 +22,7 @@ import { toast } from "sonner"
 const schema = z.object({
   full_name: z.string().min(2, "Obrigatório"),
   email: z.string().email("E-mail inválido").optional().or(z.literal("")),
-  phone: z.string().regex(/^\+?[0-9]{8,15}$/, "Formato: +5511999999999"),
+  phone: z.string().regex(/^\+55[0-9]{10,11}$/, "Telefone inválido"),
   decision_type: z.enum(["first_time", "reconciliation"], { required_error: "Obrigatório" }),
   how_met_church: z.string().min(1, "Obrigatório"),
   how_met_church_other: z.string().optional(),
@@ -67,7 +69,11 @@ export function FormConversionsForm({ defaultValues }: { defaultValues?: Partial
         </div>
         <div>
           <Label>WhatsApp *</Label>
-          <Input {...register("phone")} placeholder="+5511999999999" />
+          <Controller
+            control={control}
+            name="phone"
+            render={({ field }) => <PhoneInput value={field.value} onChange={field.onChange} />}
+          />
           {errors.phone && <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>}
         </div>
         <div>
@@ -111,7 +117,11 @@ export function FormConversionsForm({ defaultValues }: { defaultValues?: Partial
         </div>
         <div>
           <Label>Data de nascimento *</Label>
-          <Input {...register("birth_date")} type="date" />
+          <Controller
+            control={control}
+            name="birth_date"
+            render={({ field }) => <DateInput value={field.value} onChange={field.onChange} />}
+          />
           {errors.birth_date && <p className="text-sm text-destructive mt-1">{errors.birth_date.message}</p>}
         </div>
         <div>

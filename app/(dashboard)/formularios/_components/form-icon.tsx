@@ -7,10 +7,11 @@ import {
   GitBranch,
   Church,
   UserPlus2,
+  FileText,
 } from "lucide-react"
 import type { FormSlug } from "@/lib/api/types/formularios"
 
-const ICONS: Record<FormSlug, React.ComponentType<{ className?: string }>> = {
+const ICONS: Partial<Record<FormSlug, React.ComponentType<{ className?: string }>>> = {
   "member-registrations": UserPlus,
   "form-conversions": HeartHandshake,
   "life-group-reports": Users2,
@@ -22,6 +23,6 @@ const ICONS: Record<FormSlug, React.ComponentType<{ className?: string }>> = {
 }
 
 export function FormIcon({ slug, className }: { slug: FormSlug; className?: string }) {
-  const Icon = ICONS[slug]
+  const Icon = ICONS[slug] ?? FileText
   return <Icon className={className} />
 }

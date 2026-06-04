@@ -3,32 +3,48 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Pencil, Trash2, Plus, Check, X } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Pencil, Trash2, Plus, Check, X, ChevronDown, ChevronRight } from "lucide-react"
 import {
   useFormCourses,
-  useCreateCourse,
+  useAllFormCourses,
+  useLinkCourse,
   useUpdateCourse,
   useUnlinkCourse,
 } from "@/lib/hooks/use-form-courses"
 import type { FormCourse } from "@/lib/api/types/formularios"
 
 export function CoursesManager() {
-  const { data: courses = [] } = useFormCourses()
-  const create = useCreateCourse()
+  const { data: linked = [] } = useFormCourses()
+  const { data: all = [] } = useAllFormCourses()
+  const link = useLinkCourse()
   const update = useUpdateCourse()
   const unlink = useUnlinkCourse()
-  const [draftName, setDraftName] = useState("")
+  const [selectedId, setSelectedId] = useState("")
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null)
+  const [open, setOpen] = useState(false)
+
+  const linkedIds = new Set(linked.map((c) => c.id))
+  const available = all.filter((c) => !linkedIds.has(c.id))
 
   return (
+    <Collapsible open={open} onOpenChange={setOpen}>
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Cursos disponíveis neste formulário</CardTitle>
+      <CardHeader className="cursor-pointer" onClick={() => setOpen((v) => !v)}>
+        <CollapsibleTrigger asChild>
+          <CardTitle className="text-base flex items-center gap-2 select-none">
+            {open ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+            Cursos disponíveis neste formulário
+            <span className="text-muted-foreground font-normal text-sm">({linked.length})</span>
+          </CardTitle>
+        </CollapsibleTrigger>
       </CardHeader>
+      <CollapsibleContent>
       <CardContent className="space-y-2">
-        {courses.map((c: FormCourse) => (
+        {linked.map((c: FormCourse) => (
           <div key={c.id} className="flex items-center gap-2">
-            {editing?.id === c.id ? (
+            {editing !== null && editing.id === c.id ? (
               <>
                 <Input
                   value={editing.name}
@@ -73,24 +89,34 @@ export function CoursesManager() {
           </div>
         ))}
         <div className="flex items-center gap-2 pt-2 border-t">
-          <Input
-            placeholder="Nome do novo curso"
-            value={draftName}
-            onChange={(e) => setDraftName(e.target.value)}
-            className="h-8"
-          />
+          <Select value={selectedId} onValueChange={setSelectedId}>
+            <SelectTrigger className="h-8 flex-1">
+              <SelectValue placeholder="Selecionar curso..." />
+            </SelectTrigger>
+            <SelectContent>
+              {available.length === 0 ? (
+                <SelectItem value="__none__" disabled>Nenhum curso disponível</SelectItem>
+              ) : (
+                available.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
           <Button
             size="sm"
-            disabled={!draftName.trim() || create.isPending}
+            disabled={!selectedId || selectedId === "__none__" || link.isPending}
             onClick={async () => {
-              await create.mutateAsync({ name: draftName.trim() })
-              setDraftName("")
+              await link.mutateAsync(selectedId)
+              setSelectedId("")
             }}
           >
             <Plus className="size-4 mr-1" /> Adicionar
           </Button>
         </div>
       </CardContent>
+      </CollapsibleContent>
     </Card>
+    </Collapsible>
   )
 }

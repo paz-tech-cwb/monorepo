@@ -5,6 +5,8 @@ import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { DateInput } from "@/components/ui/date-input"
+import { Controller } from "react-hook-form"
 import { Textarea } from "@/components/ui/textarea"
 import { useCreateFormSubmission } from "@/lib/hooks/use-form-submissions"
 import { useRouter } from "next/navigation"
@@ -29,6 +31,7 @@ type FormValues = z.infer<typeof schema>
 export function ServiceReportsForm({ defaultValues }: { defaultValues?: Partial<FormValues> }) {
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues })
@@ -47,7 +50,11 @@ export function ServiceReportsForm({ defaultValues }: { defaultValues?: Partial<
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label>Data *</Label>
-          <Input {...register("date")} type="date" />
+          <Controller
+            control={control}
+            name="date"
+            render={({ field }) => <DateInput value={field.value} onChange={field.onChange} />}
+          />
           {errors.date && <p className="text-sm text-destructive mt-1">{errors.date.message}</p>}
         </div>
         <div>
