@@ -1,0 +1,8 @@
+{
+  "name": "kmp-mobile",
+  "private": true,
+  "scripts": {
+    "android": "~/Library/Android/sdk/emulator/emulator -avd Medium_Phone_API_36.1 -no-snapshot-save & ~/Library/Android/sdk/platform-tools/adb wait-for-device && ./gradlew :android:installDebug && ~/Library/Android/sdk/platform-tools/adb shell monkey -p com.cwb.pazchurch.app 1",
+    "android:logcat": "~/Library/Android/sdk/platform-tools/adb logcat -s HomeVM:D *:S"
+  }
+}
