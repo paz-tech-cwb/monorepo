@@ -66,6 +66,7 @@ struct HomeView: View {
         .coordinateSpace(name: "homeScroll")
         .onPreferenceChange(ScrollOffsetKey.self) { scrollOffset = $0 }
         .background(PazColors.background)
+        .task { await viewModel.load() }
     }
 
     // MARK: - Content sections
