@@ -1,27 +1,85 @@
 import SwiftUI
+import UIKit
 
 struct PazColors {
-    // Primary brand colors
-    static let primary = Color(red: 0.31, green: 0.16, blue: 0.78) // #4F28C7
-    static let secondary = Color(red: 0.98, green: 0.82, blue: 0.25) // #FBD140
+    // MARK: - Brand (non-adaptive — always these values)
+    static let pazPrimary      = Color(hex: "032E58")
+    static let pazPrimaryMid   = Color(hex: "0B4D8C")
+    static let pazPrimaryLight = Color(hex: "1565C0")
+    static let pazSky          = Color(hex: "5B9BD5")
+    static let pazGold         = Color(hex: "FFB300")
 
-    // Status colors
-    static let success = Color(red: 0.13, green: 0.71, blue: 0.58) // #22B582
-    static let error = Color(red: 0.91, green: 0.30, blue: 0.24) // #E84D3D
-    static let warning = Color(red: 0.98, green: 0.68, blue: 0.25) // #FBAD41
+    // MARK: - Adaptive surfaces (dark / light)
+    static let background = Color(UIColor {
+        $0.userInterfaceStyle == .dark
+            ? UIColor(hex: "070E1A") : UIColor(hex: "EDF1F7")
+    })
+    static let surface = Color(UIColor {
+        $0.userInterfaceStyle == .dark
+            ? UIColor(hex: "0D1826") : .white
+    })
+    static let surface2 = Color(UIColor {
+        $0.userInterfaceStyle == .dark
+            ? UIColor(hex: "101F31") : UIColor(hex: "F4F7FC")
+    })
+    static let ink = Color(UIColor {
+        $0.userInterfaceStyle == .dark
+            ? UIColor(hex: "EAEFF7") : UIColor(hex: "16243A")
+    })
+    static let slate = Color(UIColor {
+        $0.userInterfaceStyle == .dark
+            ? UIColor(hex: "97A6BC") : UIColor(hex: "5A6B82")
+    })
+    static let slateLight = Color(UIColor {
+        $0.userInterfaceStyle == .dark
+            ? UIColor(hex: "6B7C93") : UIColor(hex: "8A94A6")
+    })
+    static let line = Color(UIColor {
+        $0.userInterfaceStyle == .dark
+            ? UIColor(hex: "1C2A3D") : UIColor(hex: "E7ECF3")
+    })
+    static let tint = Color(UIColor {
+        $0.userInterfaceStyle == .dark
+            ? UIColor(hex: "0C274A") : UIColor(hex: "E8F0FB")
+    })
 
-    // Neutral colors
-    static let background = Color(UIColor.systemBackground)
-    static let surface = Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor(white: 0.11, alpha: 1) : .white })
-    static let surfaceVariant = Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor(white: 0.15, alpha: 1) : UIColor(white: 0.96, alpha: 1) })
+    // MARK: - Semantic / legacy aliases
+    static let primary   = pazPrimary
+    static let onSurface = ink
+    static let error     = Color(red: 0.78, green: 0.16, blue: 0.16)
 
-    static let onSurface = Color(UIColor.label)
-    static let onBackground = Color(UIColor.label)
-
-    // Gradients
+    // MARK: - Gradient
     static let heroGradient = LinearGradient(
-        gradient: Gradient(colors: [Color(red: 0.25, green: 0.12, blue: 0.62), Color(red: 0.31, green: 0.16, blue: 0.78)]),
+        colors: [Color(hex: "032E58"), Color(hex: "0B4D8C"), Color(hex: "1565C0")],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
+}
+
+// MARK: - Hex initializers
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: .alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        self.init(
+            red:   Double((int >> 16) & 0xFF) / 255,
+            green: Double((int >>  8) & 0xFF) / 255,
+            blue:  Double( int        & 0xFF) / 255
+        )
+    }
+}
+
+extension UIColor {
+    convenience init(hex: String) {
+        let hex = hex.trimmingCharacters(in: .alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        self.init(
+            red:   CGFloat((int >> 16) & 0xFF) / 255,
+            green: CGFloat((int >>  8) & 0xFF) / 255,
+            blue:  CGFloat( int        & 0xFF) / 255,
+            alpha: 1
+        )
+    }
 }
