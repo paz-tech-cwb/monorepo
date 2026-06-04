@@ -19,18 +19,24 @@ class HomeViewModel: ObservableObject {
     }
 
     private func loadHome() {
-        Task {
+        // KMP suspend functions must be called from a detached task so the
+        // Kotlin coroutine can resume without competing for the MainActor.
+        let repo = homeRepository
+        let auth = authRepository
+        Task.detached(priority: .userInitiated) { [weak self] in
             do {
-                let content = try await homeRepository.getHomeContent() as? HomeContent
-                self.homeContent = content
-
-                let user = try await authRepository.currentUser() as? Shared.User
-                self.userName = user?.name.split(separator: " ").first.map(String.init) ?? "Membro"
-
-                self.isLoading = false
+                let content = try await repo.getHomeContent()
+                let user    = try await auth.currentUser() as? Shared.User
+                await MainActor.run {
+                    self?.homeContent = content
+                    self?.userName = user?.name.split(separator: " ").first.map(String.init) ?? "Membro"
+                    self?.isLoading = false
+                }
             } catch {
-                self.isLoading = false
-                self.error = error.localizedDescription
+                await MainActor.run {
+                    self?.isLoading = false
+                    self?.error = error.localizedDescription
+                }
             }
         }
     }
