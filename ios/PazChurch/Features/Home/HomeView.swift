@@ -9,14 +9,14 @@ private struct ScrollOffsetKey: PreferenceKey {
 
 // MARK: - HomeView
 struct HomeView: View {
-    @StateObject private var viewModel: HomeViewModel
+    @State private var viewModel: HomeViewModel
     @State private var scrollOffset: CGFloat = 0
     @State private var selectedDayIndex: Int = 2     // Wednesday
     @State private var currentFeatureIndex: Int = 0
     @Environment(\.colorScheme) private var colorScheme
 
     init(homeRepository: HomeRepository, authRepository: AuthRepository) {
-        _viewModel = StateObject(wrappedValue: HomeViewModel(
+        _viewModel = State(initialValue: HomeViewModel(
             homeRepository: homeRepository,
             authRepository: authRepository
         ))
@@ -147,25 +147,28 @@ struct HomeView: View {
     // MARK: - Large header
 
     private var largeHeader: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("QUARTA, 4 DE JUNHO")
-                    .font(PazTypography.labelSmall)
-                    .foregroundColor(PazColors.pazPrimaryLight)
-                    .padding(.bottom, 7)
-                Text("Olá, \(viewModel.userName.isEmpty ? "Lucas" : viewModel.userName)")
-                    .font(.custom("PlayfairDisplay-ExtraBold", size: 34))
-                    .foregroundColor(isDark ? PazColors.ink : PazColors.pazPrimary)
-                    .lineSpacing(2)
+        ZStack(alignment: .bottom) {
+            PazColors.heroGradient
+                .frame(maxWidth: .infinity)
+
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Bem-vindo à")
+                        .font(PazTypography.bodySmall)
+                        .foregroundStyle(.white.opacity(0.7))
+                    Text("Paz Church")
+                        .font(.custom("PlayfairDisplay-ExtraBold", size: 34))
+                        .foregroundStyle(.white)
+                }
+                Spacer()
+                bellButton
+                    .opacity(isCollapsed ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.2), value: isCollapsed)
             }
-            Spacer()
-            bellButton
-                .opacity(isCollapsed ? 0 : 1)
-                .animation(.easeInOut(duration: 0.2), value: isCollapsed)
+            .padding(.horizontal, 18)
+            .padding(.top, safeAreaTop + 16)
+            .padding(.bottom, 22)
         }
-        .padding(.horizontal, 18)
-        .padding(.top, safeAreaTop + 52 + 6)
-        .padding(.bottom, 2)
     }
 
     // MARK: - Featured section
@@ -191,17 +194,17 @@ struct HomeView: View {
             TabView(selection: $currentFeatureIndex) {
                 ForEach(Array(banners.enumerated()), id: \.offset) { index, banner in
                     FeaturedCardView(
-                        badge:    banner.actionUrl ?? "",
                         title:    banner.title,
                         subtitle: banner.imageUrl,
                         isAlt:    index % 2 == 1
                     )
                     .padding(.horizontal, 18)
+                    .padding(.bottom, 24)   // room for drop shadow
                     .tag(index)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 176)
+            .frame(height: 200)             // 176 card + 24 shadow clearance
 
             HStack(spacing: 6) {
                 ForEach(0..<banners.count, id: \.self) { i in
@@ -358,12 +361,9 @@ private let agendaDayItems: [AgendaDayItem] = [
 // MARK: - FeaturedCardView
 
 private struct FeaturedCardView: View {
-    let badge: String
     let title: String
     let subtitle: String
     let isAlt: Bool
-
-    @State private var pressed = false
 
     private var gradient: LinearGradient {
         isAlt
@@ -388,37 +388,23 @@ private struct FeaturedCardView: View {
                 .clipped()
 
             VStack(alignment: .leading, spacing: 0) {
-                Text(badge)
-                    .font(PazTypography.labelSmall)
-                    .foregroundColor(Color(hex: "3A2600"))
-                    .padding(.horizontal, 13).padding(.vertical, 6)
-                    .background(Color(hex: "FFB300"))
-                    .clipShape(Capsule())
-
                 Spacer()
-
                 Text(title)
                     .font(.custom("PlayfairDisplay-ExtraBold", size: 23))
-                    .foregroundColor(.white)
+                    .foregroundStyle(.white)
                     .lineLimit(2)
-
-                Text(subtitle)
-                    .font(PazTypography.bodySmall)
-                    .foregroundColor(.white.opacity(0.72))
-                    .padding(.top, 5)
+                if !subtitle.isEmpty && !subtitle.hasPrefix("http") {
+                    Text(subtitle)
+                        .font(PazTypography.bodySmall)
+                        .foregroundStyle(.white.opacity(0.72))
+                        .padding(.top, 5)
+                }
             }
             .padding(18)
         }
         .frame(height: 176)
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .shadow(color: Color(hex: "07295E").opacity(0.6), radius: 15, x: 0, y: 16)
-        .scaleEffect(pressed ? 0.97 : 1.0)
-        .animation(.easeInOut(duration: 0.12), value: pressed)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in pressed = true }
-                .onEnded   { _ in pressed = false }
-        )
     }
 }
 
