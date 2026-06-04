@@ -20,15 +20,14 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun SplashScreen(
-    onNavigateToLogin: () -> Unit,
     onNavigateToHome: () -> Unit,
     viewModel: SplashViewModel = koinViewModel(),
 ) {
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                SplashEffect.NavigateToLogin -> onNavigateToLogin()
-                SplashEffect.NavigateToHome  -> onNavigateToHome()
+                SplashEffect.NavigateToHome -> onNavigateToHome()
+                else -> Unit
             }
         }
     }

@@ -22,11 +22,11 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val androidModule = module {
-    viewModel { SplashViewModel(get()) }
+    viewModel { SplashViewModel() }
     viewModel { LoginViewModel(get()) }
     viewModel { HomeViewModel(get(), get()) }
-    viewModel { AcademyViewModel(get()) }
-    viewModel { (videoId: String) -> VideoPlayerViewModel(videoId, get()) }
+    viewModel { AcademyViewModel(get(), get()) }
+    viewModel { (videoId: String) -> VideoPlayerViewModel(videoId) }
     viewModel { AccountViewModel(get()) }
     viewModel { ProfileViewModel(get()) }
     viewModel { EditProfileViewModel(get(), get()) }

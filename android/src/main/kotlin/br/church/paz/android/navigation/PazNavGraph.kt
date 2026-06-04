@@ -39,13 +39,12 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
     ) {
         composable(Screen.Splash.route) {
             SplashScreen(
-                onNavigateToLogin = { navController.navigate(Screen.Login.route) { popUpTo(Screen.Splash.route) { inclusive = true } } },
-                onNavigateToHome  = { navController.navigate(Screen.Shell.route)  { popUpTo(Screen.Splash.route) { inclusive = true } } },
+                onNavigateToHome = { navController.navigate(Screen.Shell.route) { popUpTo(Screen.Splash.route) { inclusive = true } } },
             )
         }
         composable(Screen.Login.route) {
             LoginScreen(
-                onLoginSuccess = { navController.navigate(Screen.Shell.route) { popUpTo(Screen.Login.route) { inclusive = true } } },
+                onLoginSuccess = { navController.popBackStack() },
             )
         }
         composable(Screen.Shell.route) {
