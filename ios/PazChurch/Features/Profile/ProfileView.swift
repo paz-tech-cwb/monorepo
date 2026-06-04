@@ -2,12 +2,12 @@ import SwiftUI
 import Shared
 
 struct ProfileView: View {
-    @StateObject private var viewModel: ProfileViewModel
+    @State private var viewModel: ProfileViewModel
     @Environment(\.dismiss) var dismiss
-    @EnvironmentObject private var authCoordinator: AuthenticationCoordinator
+    @Environment(AuthenticationCoordinator.self) private var authCoordinator
 
     init(authRepository: AuthRepository) {
-        _viewModel = StateObject(wrappedValue: ProfileViewModel(authRepository: authRepository))
+        _viewModel = State(initialValue: ProfileViewModel(authRepository: authRepository))
     }
 
     var body: some View {
@@ -163,5 +163,5 @@ struct ProfileView: View {
 
 #Preview {
     ProfileView(authRepository: IosAppContainer.shared.authRepository)
-        .environmentObject(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
+        .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
 }
