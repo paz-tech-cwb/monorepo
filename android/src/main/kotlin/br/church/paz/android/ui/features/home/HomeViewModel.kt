@@ -1,5 +1,6 @@
 package br.church.paz.android.ui.features.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.shared.domain.repository.AuthRepository
@@ -29,11 +30,12 @@ class HomeViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            val user = authRepository.currentUser()
+            val user = runCatching { authRepository.currentUser() }.getOrNull()
             val firstName = user?.name?.trim()?.split(Regex("\\s+"))?.firstOrNull() ?: ""
 
-            homeRepository.getHomeContent()
+            runCatching { homeRepository.getHomeContent() }
                 .onSuccess { content ->
+                    Log.d("HomeVM", "banners=${content.banners.size} agenda=${content.agenda.size} bank=${content.contribution?.bank?.name}")
                     _uiState.update {
                         it.copy(
                             isLoading    = false,
@@ -45,7 +47,8 @@ class HomeViewModel(
                     }
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(isLoading = false, error = e.message) }
+                    Log.e("HomeVM", "load failed", e)
+                    _uiState.update { it.copy(isLoading = false, error = e.message ?: e::class.simpleName ?: "Erro desconhecido") }
                 }
         }
     }
