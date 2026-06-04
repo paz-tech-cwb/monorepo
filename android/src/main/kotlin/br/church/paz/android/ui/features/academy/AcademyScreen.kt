@@ -1,7 +1,6 @@
 package br.church.paz.android.ui.features.academy
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,17 +16,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Icon
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,15 +42,17 @@ import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazCardSkeleton
 import br.church.paz.android.ui.components.PazSectionHeader
 import br.church.paz.android.ui.components.PazSkeleton
+import br.church.paz.android.ui.features.auth.LoginScreen
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
-import br.church.paz.android.ui.theme.PazShapePill
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
-import br.church.paz.shared.domain.model.AcademyVideo
+import br.church.paz.shared.domain.model.Course
+import br.church.paz.shared.domain.model.CourseTrack
 import coil3.compose.AsyncImage
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AcademyScreen(
     navController: NavController,
@@ -57,6 +60,8 @@ fun AcademyScreen(
     viewModel: AcademyViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var showLoginSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -67,8 +72,22 @@ fun AcademyScreen(
         }
     }
 
+    if (showLoginSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showLoginSheet = false },
+            sheetState       = sheetState,
+        ) {
+            LoginScreen(
+                onLoginSuccess = {
+                    showLoginSheet = false
+                    viewModel.refreshAuthState()
+                },
+                onDismiss = { showLoginSheet = false },
+            )
+        }
+    }
+
     Column(Modifier.fillMaxSize()) {
-        // Header
         Box(
             Modifier
                 .fillMaxWidth()
@@ -102,11 +121,27 @@ fun AcademyScreen(
                 ) {
                     Text(uiState.error!!, style = MaterialTheme.typography.bodyMedium)
                 }
+                uiState.tracks.isEmpty() -> Box(
+                    Modifier.fillMaxSize().padding(contentPadding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        "Nenhum conteúdo disponível",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        ),
+                    )
+                }
                 else -> AcademyContent(
-                    uiState        = uiState,
-                    onVideoTap     = { viewModel.onVideoTapped(it.id) },
-                    onCategorySelect = viewModel::onCategorySelected,
-                    contentPadding = contentPadding,
+                    tracks          = uiState.tracks,
+                    contentPadding  = contentPadding,
+                    onCourseTap     = { course ->
+                        if (uiState.isAuthenticated) {
+                            viewModel.onVideoTapped(course.id)
+                        } else {
+                            showLoginSheet = true
+                        }
+                    },
                 )
             }
         }
@@ -115,173 +150,60 @@ fun AcademyScreen(
 
 @Composable
 private fun AcademyContent(
-    uiState: AcademyUiState,
-    onVideoTap: (AcademyVideo) -> Unit,
-    onCategorySelect: (String) -> Unit,
+    tracks: List<CourseTrack>,
     contentPadding: PaddingValues,
+    onCourseTap: (Course) -> Unit,
 ) {
     LazyColumn(
         contentPadding      = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
+        verticalArrangement = Arrangement.spacedBy(PazSpacing.Xl),
         modifier            = Modifier.fillMaxSize(),
     ) {
-        // Featured video
-        uiState.featured?.let { video ->
+        for (track in tracks) {
             item {
-                FeaturedVideoCard(
-                    video    = video,
-                    onClick  = { onVideoTap(video) },
-                    modifier = Modifier.padding(top = PazSpacing.Xl, start = PazSpacing.Lg, end = PazSpacing.Lg),
-                )
-            }
-        }
-
-        // Category chips
-        item {
-            LazyRow(
-                contentPadding        = PaddingValues(horizontal = PazSpacing.Lg),
-                horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
-            ) {
-                items(uiState.categories) { category ->
-                    val selected = category == uiState.selectedCategory
-                    Box(
-                        modifier = Modifier
-                            .clip(PazShapePill)
-                            .background(if (selected) PazColors.Primary else MaterialTheme.colorScheme.surface)
-                            .border(1.dp, if (selected) Color.Transparent else MaterialTheme.colorScheme.outline, PazShapePill)
-                            .clickable { onCategorySelect(category) }
-                            .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Sm),
-                    ) {
+                Column(Modifier.padding(top = PazSpacing.Xl)) {
+                    PazSectionHeader(
+                        title    = track.title,
+                        modifier = Modifier.padding(horizontal = PazSpacing.Lg),
+                    )
+                    if (!track.description.isNullOrBlank()) {
+                        Spacer(Modifier.height(PazSpacing.Xs))
                         Text(
-                            text  = category,
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                color      = if (selected) Color.White else MaterialTheme.colorScheme.onSurface,
+                            text     = track.description!!,
+                            style    = MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
                             ),
+                            modifier = Modifier.padding(horizontal = PazSpacing.Lg),
                         )
                     }
                 }
             }
-        }
-
-        // Video list
-        if (uiState.filteredVideos.isNotEmpty()) {
-            item {
-                PazSectionHeader(
-                    title    = "Séries",
+            items(track.courses, key = { "${track.id}_${it.id}" }) { course ->
+                CourseListItem(
+                    course   = course,
                     modifier = Modifier.padding(horizontal = PazSpacing.Lg),
-                )
-            }
-            items(uiState.filteredVideos, key = { it.id }) { video ->
-                VideoListItem(
-                    video    = video,
-                    onClick  = { onVideoTap(video) },
-                    modifier = Modifier.padding(horizontal = PazSpacing.Lg),
+                    onClick  = { onCourseTap(course) },
                 )
             }
         }
-
         item { Spacer(Modifier.height(PazSpacing.Lg)) }
     }
 }
 
 @Composable
-private fun FeaturedVideoCard(
-    video: AcademyVideo,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(180.dp)
-            .clip(PazShapes.large)
-            .clickable(onClick = onClick),
-    ) {
-        AsyncImage(
-            model              = video.thumbnailUrl,
-            contentDescription = video.title,
-            contentScale       = ContentScale.Crop,
-            modifier           = Modifier.fillMaxSize(),
-        )
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(PazGradients.Card)
-        )
-        Box(Modifier.fillMaxSize().background(Color(0x55000000)))
-
-        // Play button
-        Box(
-            Modifier
-                .size(52.dp)
-                .align(Alignment.Center)
-                .clip(RoundedCornerShape(50))
-                .background(Color.White.copy(alpha = 0.9f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = PazColors.Primary, modifier = Modifier.size(28.dp))
-        }
-
-        // Info overlay
-        Column(
-            Modifier
-                .align(Alignment.BottomStart)
-                .padding(PazSpacing.Md),
-        ) {
-            if (video.category != null) {
-                Box(
-                    Modifier
-                        .clip(PazShapePill)
-                        .background(PazColors.Gold)
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
-                ) {
-                    Text(
-                        video.category!!.uppercase(),
-                        style = MaterialTheme.typography.labelSmall.copy(color = Color(0xFF140E00)),
-                    )
-                }
-                Spacer(Modifier.height(4.dp))
-            }
-            Text(video.title, style = MaterialTheme.typography.titleMedium.copy(color = Color.White))
-            if (video.author != null) {
-                Text(
-                    "${video.author} · ${video.viewCount ?: 0} visualizações",
-                    style = MaterialTheme.typography.bodySmall.copy(color = Color.White.copy(.6f)),
-                )
-            }
-        }
-
-        // Duration badge
-        if (video.durationFormatted != null) {
-            Box(
-                Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(PazSpacing.Sm)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color.Black.copy(alpha = 0.6f))
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
-            ) {
-                Text(video.durationFormatted!!, style = MaterialTheme.typography.labelSmall.copy(color = Color.White))
-            }
-        }
-    }
-}
-
-@Composable
-private fun VideoListItem(
-    video: AcademyVideo,
+private fun CourseListItem(
+    course: Course,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier          = modifier
+        modifier              = modifier
             .fillMaxWidth()
             .clip(PazShapes.large)
             .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(PazSpacing.Md),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
     ) {
         Box(
@@ -291,43 +213,35 @@ private fun VideoListItem(
                 .background(PazGradients.Card),
             contentAlignment = Alignment.Center,
         ) {
-            if (video.thumbnailUrl != null) {
+            if (course.thumbnailUrl != null) {
                 AsyncImage(
-                    model              = video.thumbnailUrl,
+                    model              = course.thumbnailUrl,
                     contentDescription = null,
                     contentScale       = ContentScale.Crop,
                     modifier           = Modifier.fillMaxSize(),
                 )
-            }
-            Icon(Icons.Default.PlayArrow, null, tint = Color.White.copy(.8f), modifier = Modifier.size(24.dp))
-            if (video.durationFormatted != null) {
-                Box(
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(3.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(Color.Black.copy(.6f))
-                        .padding(horizontal = 4.dp, vertical = 1.dp),
-                ) {
-                    Text(video.durationFormatted!!, style = MaterialTheme.typography.labelSmall.copy(color = Color.White, fontSize = 9.sp))
-                }
+            } else {
+                Text(
+                    text  = course.title.take(1),
+                    style = MaterialTheme.typography.titleLarge.copy(color = Color.White),
+                )
             }
         }
         Column(Modifier.weight(1f)) {
-            Text(video.title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), maxLines = 2)
-            if (video.author != null) {
-                Text(video.author!!, style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.5f)))
-            }
-            if (video.category != null) {
-                Spacer(Modifier.height(3.dp))
-                Box(
-                    Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
-                ) {
-                    Text(video.category!!, style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
-                }
+            Text(
+                text     = course.title,
+                style    = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                maxLines = 2,
+            )
+            if (!course.description.isNullOrBlank()) {
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text     = course.description!!,
+                    style    = MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    ),
+                    maxLines = 2,
+                )
             }
         }
     }
@@ -340,12 +254,9 @@ private fun AcademySkeleton(contentPadding: PaddingValues) {
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
         modifier            = Modifier.fillMaxSize().padding(top = PazSpacing.Xl, start = PazSpacing.Lg, end = PazSpacing.Lg),
     ) {
-        item { PazSkeleton(height = 180.dp) }
-        item { PazSkeleton(height = 40.dp, width = 200.dp) }
-        repeat(4) { item { PazCardSkeleton() } }
+        item { PazSkeleton(height = 24.dp, width = 160.dp) }
+        repeat(3) { item { PazCardSkeleton() } }
+        item { PazSkeleton(height = 24.dp, width = 120.dp) }
+        repeat(2) { item { PazCardSkeleton() } }
     }
 }
-
-// Extension for fontSize parameter
-private val Int.sp: androidx.compose.ui.unit.TextUnit
-    get() = androidx.compose.ui.unit.TextUnit(this.toFloat(), androidx.compose.ui.unit.TextUnitType.Sp)
