@@ -1,11 +1,11 @@
-import SwiftUI
 import AuthenticationServices
 import CryptoKit
 import Shared
+import SwiftUI
 
 struct LoginView: View {
     var authCoordinator: AuthenticationCoordinator
-    var onDismiss: (() -> Void)? = nil
+    var onDismiss: (() -> Void)?
     /// When true: no hero zone, card centered in a scroll view (for embedding inside another tab).
     var isEmbedded: Bool = false
 
@@ -13,7 +13,9 @@ struct LoginView: View {
     @State private var currentNonce: String?
 
     @Environment(\.colorScheme) private var colorScheme
-    private var isDark: Bool { colorScheme == .dark }
+    private var isDark: Bool {
+        colorScheme == .dark
+    }
 
     var body: some View {
         if isEmbedded {
@@ -23,23 +25,31 @@ struct LoginView: View {
         }
     }
 
-    // ── Embedded (inside Account tab — tab bar stays visible) ─────────────
+    /// ── Embedded (inside Account tab — tab bar stays visible) ─────────────
     private var embeddedLayout: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                Spacer().frame(height: 40)
-                loginCard
-                    .padding(.horizontal, 16)
-                Spacer().frame(height: 40)
+        GeometryReader { geo in
+            ZStack(alignment: .top) {
+                PazColors.background.ignoresSafeArea()
+
+                heroZone
+                    .frame(height: geo.size.height * 0.50)
+                    .frame(maxWidth: .infinity)
+                    .ignoresSafeArea(edges: .top)
+
+                VStack(spacing: 0) {
+                    Spacer().frame(height: geo.size.height * 0.50 - 48)
+                    loginCard
+                        .padding(.horizontal, 16)
+                    Spacer()
+                }
             }
         }
-        .background(PazColors.background)
     }
 
-    // ── Full-screen (standalone route or sheet) ───────────────────────────
+    /// ── Full-screen (standalone route or sheet) ───────────────────────────
     private var fullscreenLayout: some View {
         ZStack(alignment: .top) {
-            (isDark ? Color(hex: "070E1A") : Color(hex: "EDF1F7"))
+            PazColors.background
                 .ignoresSafeArea()
 
             heroZone
@@ -48,7 +58,7 @@ struct LoginView: View {
                 .ignoresSafeArea(edges: .top)
 
             VStack(spacing: 0) {
-                Spacer().frame(height: 332)   // 380 - 48
+                Spacer().frame(height: 332) // 380 - 48
                 loginCard
                     .padding(.horizontal, 16)
                 Spacer()
@@ -59,7 +69,6 @@ struct LoginView: View {
 
     // MARK: - Hero
 
-    @ViewBuilder
     private var heroZone: some View {
         ZStack {
             PazColors.heroGradient
@@ -98,9 +107,9 @@ struct LoginView: View {
 
     @ViewBuilder
     private var loginCard: some View {
-        let cardBg     = isDark ? Color(hex: "0D1826") : Color.white
-        let titleColor = isDark ? PazColors.pazSky     : PazColors.pazPrimary
-        let slateColor = isDark ? PazColors.slate      : Color(hex: "5A6B82")
+        let cardBg = PazColors.surface
+        let titleColor = isDark ? PazColors.pazSky : PazColors.pazPrimary
+        let slateColor = PazColors.slate
 
         VStack(spacing: 0) {
             Text("Paz Church")
@@ -125,11 +134,11 @@ struct LoginView: View {
 
             // Google
             authButton(
-                text:      "Continuar com Google",
-                sfSymbol:  "g.circle.fill",
-                isApple:   false,
+                text: "Continuar com Google",
+                imageName: "google_logo",
+                isApple: false,
                 isLoading: isLoading,
-                action:    { signInWithGoogle() }
+                action: { signInWithGoogle() }
             )
 
             Spacer().frame(height: 11)
@@ -146,6 +155,7 @@ struct LoginView: View {
             } onCompletion: { result in
                 handleAppleSignIn(result, rawNonce: currentNonce)
             }
+            .frame(maxWidth: .infinity)
             .frame(height: 54)
             .clipShape(Capsule())
 
@@ -156,56 +166,53 @@ struct LoginView: View {
                     .foregroundStyle(.red)
                     .multilineTextAlignment(.center)
             }
-
-            Spacer().frame(height: 15)
-
-            Button {
-                onDismiss?()
-            } label: {
-                Text("Explorar como visitante")
-                    .font(PazTypography.bodySmall)
-                    .foregroundStyle(slateColor)
-                    .underline()
-            }
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 26)
         .background(cardBg, in: RoundedRectangle(cornerRadius: 26))
         .overlay(
             RoundedRectangle(cornerRadius: 26)
-                .stroke(Color(hex: "032E58").opacity(0.06), lineWidth: 1)
+                .stroke(PazColors.pazPrimary.opacity(0.06), lineWidth: 1)
         )
-        .shadow(color: Color(hex: "032E58").opacity(0.40), radius: 22, x: 0, y: 20)
-        .shadow(color: Color(hex: "032E58").opacity(0.06), radius: 4,  x: 0, y: 2)
+        .shadow(color: PazColors.pazPrimary.opacity(0.40), radius: 22, x: 0, y: 20)
+        .shadow(color: PazColors.pazPrimary.opacity(0.06), radius: 4, x: 0, y: 2)
     }
 
     @ViewBuilder
     private func authButton(
         text: String,
-        sfSymbol: String,
+        sfSymbol: String? = nil,
+        imageName: String? = nil,
         isApple: Bool,
         isLoading: Bool,
         action: @escaping () -> Void
     ) -> some View {
         let bg = isApple
             ? (isDark ? Color.white.opacity(0.10) : .black)
-            : (isDark ? Color(hex: "101F31")      : .white)
+            : PazColors.surface2
         let fg: Color = isApple
             ? .white
-            : (isDark ? Color(hex: "EAEFF7") : Color(hex: "16243A"))
+            : PazColors.ink
         let border = isApple
             ? (isDark ? Color.white.opacity(0.20) : .clear)
-            : (isDark ? Color(hex: "1C2A3D")      : Color(hex: "E7ECF3"))
+            : PazColors.line
 
         Button(action: action) {
             HStack(spacing: 10) {
                 if isLoading {
                     ProgressView().tint(fg)
                 } else {
-                    Image(systemName: sfSymbol)
-                        .font(.system(size: 18, weight: .medium))
+                    if let imageName {
+                        Image(imageName)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 20, height: 20)
+                    } else if let sfSymbol {
+                        Image(systemName: sfSymbol)
+                            .font(.system(size: 19, weight: .medium))
+                    }
                     Text(text)
-                        .font(.custom("DMSans-SemiBold", size: 15.5))
+                        .font(.system(size: 19, weight: .semibold))
                 }
             }
             .foregroundStyle(fg)
@@ -242,7 +249,7 @@ struct LoginView: View {
 
     private func handleAppleSignIn(_ result: Result<ASAuthorization, Error>, rawNonce: String?) {
         switch result {
-        case .success(let authorization):
+        case let .success(authorization):
             guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
                   let idTokenData = appleIDCredential.identityToken,
                   let idToken = String(data: idTokenData, encoding: .utf8),
@@ -254,7 +261,8 @@ struct LoginView: View {
                 await authCoordinator.signInWithApple(idToken: idToken, nonce: rawNonce)
                 if authCoordinator.isAuthenticated { onDismiss?() }
             }
-        case .failure(let error):
+
+        case let .failure(error):
             if let authError = error as? ASAuthorizationError, authError.code == .canceled { return }
             authCoordinator.error = error.localizedDescription
         }

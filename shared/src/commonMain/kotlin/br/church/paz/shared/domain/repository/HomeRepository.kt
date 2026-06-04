@@ -3,5 +3,6 @@ package br.church.paz.shared.domain.repository
 import br.church.paz.shared.domain.model.HomeContent
 
 interface HomeRepository {
-    suspend fun getHomeContent(): Result<HomeContent>
+    @Throws(Exception::class)
+    suspend fun getHomeContent(): HomeContent
 }

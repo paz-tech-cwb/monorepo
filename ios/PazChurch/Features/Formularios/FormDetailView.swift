@@ -1,5 +1,6 @@
-import SwiftUI
+import Observation
 import Shared
+import SwiftUI
 
 // MARK: - Field Definitions
 
@@ -11,7 +12,14 @@ struct FormFieldDef {
     let isNumeric: Bool
     let isMultiline: Bool
 
-    init(_ key: String, _ label: String, placeholder: String = "", required: Bool = false, isNumeric: Bool = false, isMultiline: Bool = false) {
+    init(
+        _ key: String,
+        _ label: String,
+        placeholder: String = "",
+        required: Bool = false,
+        isNumeric: Bool = false,
+        isMultiline: Bool = false
+    ) {
         self.key = key
         self.label = label
         self.placeholder = placeholder
@@ -24,63 +32,63 @@ struct FormFieldDef {
 extension FormType {
     var fieldDefs: [FormFieldDef] {
         if self == .memberRegistration {
-            return [
-                FormFieldDef("name",  "Nome Completo",       placeholder: "Digite o nome", required: true),
-                FormFieldDef("phone", "Telefone",             placeholder: "(41) 9 9999-9999"),
-                FormFieldDef("email", "E-mail",               placeholder: "email@exemplo.com"),
+            [
+                FormFieldDef("name", "Nome Completo", placeholder: "Digite o nome", required: true),
+                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999"),
+                FormFieldDef("email", "E-mail", placeholder: "email@exemplo.com"),
             ]
         } else if self == .conversion {
-            return [
-                FormFieldDef("name",         "Nome",                 required: true),
-                FormFieldDef("phone",        "Telefone",             placeholder: "(41) 9 9999-9999"),
-                FormFieldDef("date",         "Data da Conversão",    placeholder: "DD/MM/YYYY", required: true),
-                FormFieldDef("observations", "Observações",          isMultiline: true),
+            [
+                FormFieldDef("name", "Nome", required: true),
+                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999"),
+                FormFieldDef("date", "Data da Conversão", placeholder: "DD/MM/YYYY", required: true),
+                FormFieldDef("observations", "Observações", isMultiline: true),
             ]
         } else if self == .guest {
-            return [
-                FormFieldDef("name",       "Nome do Visitante", required: true),
-                FormFieldDef("phone",      "Telefone",          placeholder: "(41) 9 9999-9999"),
+            [
+                FormFieldDef("name", "Nome do Visitante", required: true),
+                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999"),
                 FormFieldDef("invited_by", "Convidado por"),
-                FormFieldDef("date",       "Data da Visita",    placeholder: "DD/MM/YYYY", required: true),
+                FormFieldDef("date", "Data da Visita", placeholder: "DD/MM/YYYY", required: true),
             ]
         } else if self == .multiplication {
-            return [
-                FormFieldDef("new_life_group_name", "Nome do Novo Grupo",       required: true),
-                FormFieldDef("date",                "Data da Multiplicação",    placeholder: "DD/MM/YYYY", required: true),
+            [
+                FormFieldDef("new_life_group_name", "Nome do Novo Grupo", required: true),
+                FormFieldDef("date", "Data da Multiplicação", placeholder: "DD/MM/YYYY", required: true),
             ]
         } else if self == .serviceReport {
-            return [
-                FormFieldDef("date",         "Data do Culto",    placeholder: "DD/MM/YYYY", required: true),
-                FormFieldDef("attendees",    "Participantes",    placeholder: "0",           required: true, isNumeric: true),
-                FormFieldDef("visitors",     "Visitantes",       placeholder: "0",           isNumeric: true),
-                FormFieldDef("offerings",    "Ofertas (R$)",     placeholder: "0,00",        isNumeric: true),
-                FormFieldDef("observations", "Observações",                                  isMultiline: true),
+            [
+                FormFieldDef("date", "Data do Culto", placeholder: "DD/MM/YYYY", required: true),
+                FormFieldDef("attendees", "Participantes", placeholder: "0", required: true, isNumeric: true),
+                FormFieldDef("visitors", "Visitantes", placeholder: "0", isNumeric: true),
+                FormFieldDef("offerings", "Ofertas (R$)", placeholder: "0,00", isNumeric: true),
+                FormFieldDef("observations", "Observações", isMultiline: true),
             ]
         } else if self == .course {
-            return [
-                FormFieldDef("course_name", "Nome do Curso",       required: true),
-                FormFieldDef("enrolled_at", "Data de Inscrição",   placeholder: "DD/MM/YYYY", required: true),
+            [
+                FormFieldDef("course_name", "Nome do Curso", required: true),
+                FormFieldDef("enrolled_at", "Data de Inscrição", placeholder: "DD/MM/YYYY", required: true),
             ]
         } else {
-            return [
-                FormFieldDef("date",         "Data da Reunião",  placeholder: "DD/MM/YYYY", required: true),
-                FormFieldDef("attendees",    "Participantes",    placeholder: "0",           required: true, isNumeric: true),
-                FormFieldDef("visitors",     "Visitantes",       placeholder: "0",           isNumeric: true),
-                FormFieldDef("offerings",    "Ofertas (R$)",     placeholder: "0,00",        isNumeric: true),
-                FormFieldDef("observations", "Observações",                                  isMultiline: true),
+            [
+                FormFieldDef("date", "Data da Reunião", placeholder: "DD/MM/YYYY", required: true),
+                FormFieldDef("attendees", "Participantes", placeholder: "0", required: true, isNumeric: true),
+                FormFieldDef("visitors", "Visitantes", placeholder: "0", isNumeric: true),
+                FormFieldDef("offerings", "Ofertas (R$)", placeholder: "0,00", isNumeric: true),
+                FormFieldDef("observations", "Observações", isMultiline: true),
             ]
         }
     }
 
     var displayName: String {
-        if self == .memberRegistration      { return "Registro de Membro" }
-        if self == .conversion              { return "Conversão" }
-        if self == .guest                   { return "Visitante" }
-        if self == .multiplication          { return "Multiplicação" }
-        if self == .serviceReport           { return "Relatório de Culto" }
-        if self == .course                  { return "Curso" }
-        if self == .lifeGroupReport         { return "Relatório de Grupo" }
-        if self == .sectorSupervisorReport  { return "Rel. Supervisor de Setor" }
+        if self == .memberRegistration { return "Registro de Membro" }
+        if self == .conversion { return "Conversão" }
+        if self == .guest { return "Visitante" }
+        if self == .multiplication { return "Multiplicação" }
+        if self == .serviceReport { return "Relatório de Culto" }
+        if self == .course { return "Curso" }
+        if self == .lifeGroupReport { return "Relatório de Grupo" }
+        if self == .sectorSupervisorReport { return "Rel. Supervisor de Setor" }
         return "Rel. Supervisor de Área"
     }
 }
@@ -88,13 +96,14 @@ extension FormType {
 // MARK: - ViewModel
 
 @MainActor
-class FormDetailViewModelIOS: ObservableObject {
-    @Published var form: FormCatalogItem?
-    @Published var fields: [String: String] = [:]
-    @Published var isLoading = true
-    @Published var isSubmitting = false
-    @Published var error: String?
-    @Published var submitSuccess = false
+@Observable
+class FormDetailViewModelIOS {
+    var form: FormCatalogItem?
+    var fields: [String: String] = [:]
+    var isLoading = true
+    var isSubmitting = false
+    var error: String?
+    var submitSuccess = false
 
     private let formsRepository: FormsRepository
     private let authRepository: AuthRepository
@@ -133,14 +142,14 @@ class FormDetailViewModelIOS: ObservableObject {
     }
 
     var canSubmit: Bool {
-        guard let form = form else { return false }
+        guard let form else { return false }
         return !isSubmitting && form.type.fieldDefs
-            .filter { $0.required }
+            .filter(\.required)
             .allSatisfy { !(fields[$0.key] ?? "").trimmingCharacters(in: .whitespaces).isEmpty }
     }
 
     func onSubmit() {
-        guard let form = form else { return }
+        guard let form else { return }
 
         let missingLabel = form.type.fieldDefs
             .first { $0.required && (fields[$0.key] ?? "").trimmingCharacters(in: .whitespaces).isEmpty }?.label
@@ -154,7 +163,7 @@ class FormDetailViewModelIOS: ObservableObject {
 
         Task {
             do {
-                let userId = (try await authRepository.currentUser() as? Shared.User)?.id ?? ""
+                let userId = try await (authRepository.currentUser() as? Shared.User)?.id ?? ""
                 try await submit(type: form.type, userId: userId)
                 submitSuccess = true
                 isSubmitting = false
@@ -166,11 +175,21 @@ class FormDetailViewModelIOS: ObservableObject {
     }
 
     private func submit(type: FormType, userId: String) async throws {
-        let f = fields
-        func req(_ k: String) -> String { f[k]?.trimmingCharacters(in: .whitespaces) ?? "" }
-        func opt(_ k: String) -> String? { let v = f[k]?.trimmingCharacters(in: .whitespaces); return v?.isEmpty == false ? v : nil }
-        func int32(_ k: String) -> Int32 { Int32(f[k]?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0 }
-        func kdbl(_ k: String) -> KotlinDouble? { Double(f[k]?.trimmingCharacters(in: .whitespaces) ?? "").map { KotlinDouble(value: $0) } }
+        let snapshot = fields
+        func req(_ key: String) -> String {
+            snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? ""
+        }
+        func opt(_ key: String) -> String? {
+            let value = snapshot[key]?.trimmingCharacters(in: .whitespaces)
+            return value?.isEmpty == false ? value : nil
+        }
+        func int32(_ key: String) -> Int32 {
+            Int32(snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0
+        }
+        func kdbl(_ key: String) -> KotlinDouble? {
+            Double(snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? "")
+                .map { KotlinDouble(value: $0) }
+        }
 
         if type == .memberRegistration {
             _ = try await formsRepository.submitMemberRegistration(form: MemberRegistrationForm(
@@ -223,12 +242,12 @@ class FormDetailViewModelIOS: ObservableObject {
 
 struct FormDetailView: View {
     let form: FormCatalogItem
-    @StateObject private var viewModel: FormDetailViewModelIOS
+    @State private var viewModel: FormDetailViewModelIOS
     @Environment(\.dismiss) var dismiss
 
     init(form: FormCatalogItem) {
         self.form = form
-        _viewModel = StateObject(wrappedValue: FormDetailViewModelIOS(
+        _viewModel = State(initialValue: FormDetailViewModelIOS(
             formId: form.id,
             formsRepository: IosAppContainer.shared.formsRepository,
             authRepository: IosAppContainer.shared.authRepository
@@ -269,7 +288,6 @@ struct FormDetailView: View {
         }
     }
 
-    @ViewBuilder
     private var formContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PazSpacing.lg) {
@@ -282,7 +300,11 @@ struct FormDetailView: View {
                 }
 
                 ForEach(form.type.fieldDefs, id: \.key) { def in
-                    FieldRow(def: def, value: viewModel.fields[def.key] ?? "", isSubmitting: viewModel.isSubmitting) { newValue in
+                    FieldRow(
+                        def: def,
+                        value: viewModel.fields[def.key] ?? "",
+                        isSubmitting: viewModel.isSubmitting
+                    ) { newValue in
                         viewModel.update(key: def.key, value: newValue)
                     }
                 }
@@ -317,7 +339,6 @@ struct FormDetailView: View {
         .background(PazColors.background)
     }
 
-    @ViewBuilder
     private var loadingState: some View {
         VStack(spacing: PazSpacing.lg) {
             Spacer().frame(height: PazSpacing.sm)

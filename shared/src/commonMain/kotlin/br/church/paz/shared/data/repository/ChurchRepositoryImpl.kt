@@ -6,7 +6,6 @@ import br.church.paz.shared.domain.model.LifeGroup
 import br.church.paz.shared.domain.model.MeetingReportRequest
 import br.church.paz.shared.domain.model.Sector
 import br.church.paz.shared.domain.repository.ChurchRepository
-import br.church.paz.shared.util.safeRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -17,31 +16,31 @@ import io.ktor.http.contentType
 
 class ChurchRepositoryImpl(private val client: HttpClient) : ChurchRepository {
 
-    override suspend fun getChurch(): Result<Church> = safeRunCatching {
-        client.get("/church").body()
-    }
+    @Throws(Exception::class)
+    override suspend fun getChurch(): Church =
+        client.get("api/church").body()
 
-    override suspend fun getMyLifeGroups(): Result<List<LifeGroup>> = safeRunCatching {
-        client.get("/life-groups/me").body()
-    }
+    @Throws(Exception::class)
+    override suspend fun getMyLifeGroups(): List<LifeGroup> =
+        client.get("api/life-groups/me").body()
 
-    override suspend fun getAllLifeGroups(): Result<List<LifeGroup>> = safeRunCatching {
-        client.get("/life-groups/my-groups").body()
-    }
+    @Throws(Exception::class)
+    override suspend fun getAllLifeGroups(): List<LifeGroup> =
+        client.get("api/life-groups/my-groups").body()
 
-    override suspend fun getAreas(): Result<List<Area>> = safeRunCatching {
-        client.get("/areas").body()
-    }
+    @Throws(Exception::class)
+    override suspend fun getAreas(): List<Area> =
+        client.get("api/areas").body()
 
-    override suspend fun getSectors(): Result<List<Sector>> = safeRunCatching {
-        client.get("/sectors").body()
-    }
+    @Throws(Exception::class)
+    override suspend fun getSectors(): List<Sector> =
+        client.get("api/sectors").body()
 
-    override suspend fun submitMeetingReport(report: MeetingReportRequest): Result<Unit> = safeRunCatching {
-        client.post("/meeting-reports") {
+    @Throws(Exception::class)
+    override suspend fun submitMeetingReport(report: MeetingReportRequest) {
+        client.post("api/meeting-reports") {
             contentType(ContentType.Application.Json)
             setBody(report)
         }
-        Unit
     }
 }

@@ -1,7 +1,8 @@
+import Observation
 import SwiftUI
 
 struct NotificationPrefsView: View {
-    @StateObject private var viewModel = NotificationPrefsViewModel()
+    @State private var viewModel = NotificationPrefsViewModel()
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -115,12 +116,13 @@ private struct PreferenceToggle: View {
 }
 
 @MainActor
-class NotificationPrefsViewModel: ObservableObject {
-    @Published var eventsNotifications = true
-    @Published var announcementsNotifications = true
-    @Published var lifeGroupNotifications = true
-    @Published var isSaving = false
-    @Published var error: String?
+@Observable
+class NotificationPrefsViewModel {
+    var eventsNotifications = true
+    var announcementsNotifications = true
+    var lifeGroupNotifications = true
+    var isSaving = false
+    var error: String?
 
     func onSave() {
         isSaving = true

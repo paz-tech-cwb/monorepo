@@ -17,7 +17,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
@@ -163,7 +163,7 @@ private fun ResultsList(uiState: SearchUiState, viewModel: SearchViewModel) {
             items(uiState.results.forms.size) { i ->
                 val form = uiState.results.forms[i]
                 ResultRow(
-                    icon = Icons.Default.List,
+                    icon = Icons.AutoMirrored.Default.List,
                     title = form.title,
                     subtitle = form.description ?: form.type.name.replace("_", " "),
                     onClick = { viewModel.onFormTap(form.id) },

@@ -10,16 +10,26 @@ import br.church.paz.shared.domain.model.ServiceReportForm
 import br.church.paz.shared.domain.model.User
 
 interface FormsRepository {
-    suspend fun getCatalog(): Result<List<FormCatalogItem>>
-    suspend fun lookupUsers(query: String): Result<List<User>>
-    suspend fun submitMemberRegistration(form: MemberRegistrationForm): Result<Unit>
-    suspend fun submitConversion(form: ConversionForm): Result<Unit>
-    suspend fun submitGuest(form: GuestForm): Result<Unit>
-    suspend fun submitMultiplication(form: MultiplicationForm): Result<Unit>
-    suspend fun submitServiceReport(form: ServiceReportForm): Result<Unit>
-    suspend fun submitCourse(form: CourseForm): Result<Unit>
-    // Life-group / sector / area supervisor reports use MeetingReportRequest shape
-    suspend fun submitLifeGroupReport(report: br.church.paz.shared.domain.model.MeetingReportRequest): Result<Unit>
-    suspend fun submitSectorReport(report: br.church.paz.shared.domain.model.MeetingReportRequest): Result<Unit>
-    suspend fun submitAreaReport(report: br.church.paz.shared.domain.model.MeetingReportRequest): Result<Unit>
+    @Throws(Exception::class)
+    suspend fun getCatalog(): List<FormCatalogItem>
+    @Throws(Exception::class)
+    suspend fun lookupUsers(query: String): List<User>
+    @Throws(Exception::class)
+    suspend fun submitMemberRegistration(form: MemberRegistrationForm)
+    @Throws(Exception::class)
+    suspend fun submitConversion(form: ConversionForm)
+    @Throws(Exception::class)
+    suspend fun submitGuest(form: GuestForm)
+    @Throws(Exception::class)
+    suspend fun submitMultiplication(form: MultiplicationForm)
+    @Throws(Exception::class)
+    suspend fun submitServiceReport(form: ServiceReportForm)
+    @Throws(Exception::class)
+    suspend fun submitCourse(form: CourseForm)
+    @Throws(Exception::class)
+    suspend fun submitLifeGroupReport(report: br.church.paz.shared.domain.model.MeetingReportRequest)
+    @Throws(Exception::class)
+    suspend fun submitSectorReport(report: br.church.paz.shared.domain.model.MeetingReportRequest)
+    @Throws(Exception::class)
+    suspend fun submitAreaReport(report: br.church.paz.shared.domain.model.MeetingReportRequest)
 }

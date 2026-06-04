@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.credentials)
     implementation(libs.credentials.play.services)
     implementation(libs.googleid)
+    implementation(libs.coroutines.play.services)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test.junit)

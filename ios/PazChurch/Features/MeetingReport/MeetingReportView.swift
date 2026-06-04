@@ -1,12 +1,13 @@
-import SwiftUI
+import Observation
 import Shared
+import SwiftUI
 
 struct MeetingReportView: View {
-    @StateObject private var viewModel: MeetingReportViewModel
+    @State private var viewModel: MeetingReportViewModel
     @Environment(\.dismiss) var dismiss
 
     init(formsRepository: FormsRepository, authRepository: AuthRepository) {
-        _viewModel = StateObject(wrappedValue: MeetingReportViewModel(
+        _viewModel = State(initialValue: MeetingReportViewModel(
             formsRepository: formsRepository,
             authRepository: authRepository
         ))
@@ -43,7 +44,12 @@ struct MeetingReportView: View {
                             FormField(label: "Participantes", placeholder: "0", text: $viewModel.attendees)
                             FormField(label: "Visitantes", placeholder: "0", text: $viewModel.visitors)
                             FormField(label: "Ofertas (R$)", placeholder: "0,00", text: $viewModel.offerings)
-                            FormField(label: "Observações", placeholder: "Algo importante?", text: $viewModel.observations, multiline: true)
+                            FormField(
+                                label: "Observações",
+                                placeholder: "Algo importante?",
+                                text: $viewModel.observations,
+                                multiline: true
+                            )
 
                             if let error = viewModel.error {
                                 Text(error)
@@ -62,7 +68,8 @@ struct MeetingReportView: View {
                                     .padding(.vertical, PazSpacing.md)
                                     .background(viewModel.isSubmitting ? Color.gray : PazColors.primary)
                                     .cornerRadius(12)
-                                    .disabled(viewModel.isSubmitting || viewModel.date.isEmpty || viewModel.attendees.isEmpty)
+                                    .disabled(viewModel.isSubmitting || viewModel.date.isEmpty || viewModel.attendees
+                                        .isEmpty)
                             }
 
                             Spacer().frame(height: PazSpacing.xl)
@@ -118,14 +125,15 @@ private struct FormField: View {
 }
 
 @MainActor
-class MeetingReportViewModel: ObservableObject {
-    @Published var date = ""
-    @Published var attendees = ""
-    @Published var visitors = ""
-    @Published var offerings = ""
-    @Published var observations = ""
-    @Published var isSubmitting = false
-    @Published var error: String?
+@Observable
+class MeetingReportViewModel {
+    var date = ""
+    var attendees = ""
+    var visitors = ""
+    var offerings = ""
+    var observations = ""
+    var isSubmitting = false
+    var error: String?
 
     private let formsRepository: FormsRepository
     private let authRepository: AuthRepository
@@ -172,5 +180,8 @@ class MeetingReportViewModel: ObservableObject {
 }
 
 #Preview {
-    MeetingReportView(formsRepository: IosAppContainer.shared.formsRepository, authRepository: IosAppContainer.shared.authRepository)
+    MeetingReportView(
+        formsRepository: IosAppContainer.shared.formsRepository,
+        authRepository: IosAppContainer.shared.authRepository
+    )
 }

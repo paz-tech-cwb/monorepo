@@ -7,10 +7,16 @@ import br.church.paz.shared.domain.model.MeetingReportRequest
 import br.church.paz.shared.domain.model.Sector
 
 interface ChurchRepository {
-    suspend fun getChurch(): Result<Church>
-    suspend fun getMyLifeGroups(): Result<List<LifeGroup>>
-    suspend fun getAllLifeGroups(): Result<List<LifeGroup>>
-    suspend fun getAreas(): Result<List<Area>>
-    suspend fun getSectors(): Result<List<Sector>>
-    suspend fun submitMeetingReport(report: MeetingReportRequest): Result<Unit>
+    @Throws(Exception::class)
+    suspend fun getChurch(): Church
+    @Throws(Exception::class)
+    suspend fun getMyLifeGroups(): List<LifeGroup>
+    @Throws(Exception::class)
+    suspend fun getAllLifeGroups(): List<LifeGroup>
+    @Throws(Exception::class)
+    suspend fun getAreas(): List<Area>
+    @Throws(Exception::class)
+    suspend fun getSectors(): List<Sector>
+    @Throws(Exception::class)
+    suspend fun submitMeetingReport(report: MeetingReportRequest)
 }

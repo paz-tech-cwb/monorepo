@@ -5,7 +5,23 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AcademyContent(
-    val videos: List<AcademyVideo> = emptyList(),
+    val tracks: List<CourseTrack> = emptyList(),
+)
+
+@Serializable
+data class CourseTrack(
+    val id: String,
+    val title: String,
+    val description: String? = null,
+    val courses: List<Course> = emptyList(),
+)
+
+@Serializable
+data class Course(
+    val id: String,
+    val title: String,
+    val description: String? = null,
+    @SerialName("thumbnail_url") val thumbnailUrl: String? = null,
 )
 
 @Serializable

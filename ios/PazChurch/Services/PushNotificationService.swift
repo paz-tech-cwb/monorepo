@@ -1,17 +1,18 @@
 import Foundation
-import UserNotifications
-import UIKit
+import Observation
 import Shared
+import UIKit
+import UserNotifications
 
 // Handles APNs permission, FCM token registration, and notification routing.
 // Integrates with Firebase Messaging via AppDelegate UIApplicationDelegate methods.
 
 @MainActor
-class PushNotificationService: NSObject, ObservableObject {
-
+@Observable
+class PushNotificationService: NSObject {
     static let shared = PushNotificationService()
 
-    @Published var pendingDeepLink: String?
+    var pendingDeepLink: String?
 
     private let userRepository: UserRepository
 
@@ -34,7 +35,7 @@ class PushNotificationService: NSObject, ObservableObject {
         UNUserNotificationCenter.current().delegate = self
     }
 
-    // Called by AppDelegate.application(_:didRegisterForRemoteNotificationsWithDeviceToken:)
+    /// Called by AppDelegate.application(_:didRegisterForRemoteNotificationsWithDeviceToken:)
     func didRegisterForRemoteNotifications(deviceToken: Data) {
         // Convert APNs token to hex string for direct APNs usage.
         let tokenString = deviceToken.map { String(format: "%02x", $0) }.joined()
@@ -53,12 +54,12 @@ class PushNotificationService: NSObject, ObservableObject {
         }
     }
 
-    // Called when a notification is delivered while the app is in foreground
+    /// Called when a notification is delivered while the app is in foreground
     func handleForegroundNotification(_ notification: UNNotification) -> UNNotificationPresentationOptions {
-        return [.banner, .badge, .sound]
+        [.banner, .badge, .sound]
     }
 
-    // Called when user taps a notification
+    /// Called when user taps a notification
     func handleNotificationTap(_ response: UNNotificationResponse) {
         let userInfo = response.notification.request.content.userInfo
         if let deepLink = userInfo["deep_link"] as? String {
@@ -72,21 +73,28 @@ class PushNotificationService: NSObject, ObservableObject {
         // Returns the screen identifier that the app's navigation can act on
         switch true {
         case deepLink.hasPrefix("paz://agenda/"):
-            return "agenda/\(deepLink.dropFirst("paz://agenda/".count))"
+            "agenda/\(deepLink.dropFirst("paz://agenda/".count))"
+
         case deepLink.hasPrefix("paz://form/"):
-            return "form/\(deepLink.dropFirst("paz://form/".count))"
+            "form/\(deepLink.dropFirst("paz://form/".count))"
+
         case deepLink.hasPrefix("paz://ministry/"):
-            return "ministry/\(deepLink.dropFirst("paz://ministry/".count))"
+            "ministry/\(deepLink.dropFirst("paz://ministry/".count))"
+
         case deepLink.hasPrefix("paz://lifegroup/"):
-            return "lifegroup/\(deepLink.dropFirst("paz://lifegroup/".count))"
+            "lifegroup/\(deepLink.dropFirst("paz://lifegroup/".count))"
+
         case deepLink == "paz://formularios":
-            return "formularios"
+            "formularios"
+
         case deepLink == "paz://journey":
-            return "journey"
+            "journey"
+
         case deepLink == "paz://account":
-            return "account"
+            "account"
+
         default:
-            return nil
+            nil
         }
     }
 }

@@ -22,7 +22,7 @@ import io.ktor.client.engine.darwin.Darwin
 
 object IosAppContainer {
 
-    var baseUrl: String = "http://localhost:3001/api"
+    var baseUrl: String = "http://192.168.15.4:3001"
 
     private val tokenStorage by lazy { createTokenStorage() }
     private val userStore by lazy { createUserStore() }

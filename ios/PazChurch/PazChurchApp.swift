@@ -1,10 +1,10 @@
-import SwiftUI
-import Shared
 import FirebaseCore
+import Shared
+import SwiftUI
 
 @main
 struct PazChurchApp: App {
-    // Bridge to UIApplicationDelegate for APNs token callbacks
+    /// Bridge to UIApplicationDelegate for APNs token callbacks
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     @State private var authCoordinator: AuthenticationCoordinator
@@ -40,26 +40,17 @@ struct PazChurchApp: App {
 struct SplashView: View {
     var body: some View {
         ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 0.25, green: 0.12, blue: 0.62),
-                    Color(red: 0.31, green: 0.16, blue: 0.78),
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            PazColors.background
+                .ignoresSafeArea()
 
-            VStack(spacing: 24) {
-                Spacer()
-                Text("Paz Church")
-                    .font(.system(size: 32, weight: .semibold))
-                    .foregroundColor(.white)
-                Spacer()
-                ProgressView()
-                    .tint(.white)
-                Spacer().frame(height: 60)
-            }
+            Image("PazLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 140)
         }
-        .ignoresSafeArea()
     }
+}
+
+#Preview {
+    SplashView()
 }

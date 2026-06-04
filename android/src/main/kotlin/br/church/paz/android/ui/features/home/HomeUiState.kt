@@ -9,6 +9,7 @@ data class HomeUiState(
     val banners: List<Banner> = emptyList(),
     val agendaEvents: List<AgendaEvent> = emptyList(),
     val bank: BankInfo? = null,
+    val sectionOrder: List<String> = listOf("announcements", "contribution", "agenda"),
     val userName: String = "",
     val error: String? = null,
 )

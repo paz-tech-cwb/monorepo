@@ -44,4 +44,32 @@ object PazColors {
     val DarkSecondaryContainer= Color(0xFF0D3A60)
     val DarkCard2  = Color(0xFF101F31)
     val DarkSlate  = Color(0xFF97A6BC)
+
+    // ── UI component tokens ───────────────────────────────────────────────────
+    /** Text color on gold badge (dark gold-brown) */
+    val GoldOnBadge           = Color(0xFF3A2600)
+    /** Inactive pager dot — translucent navy */
+    val DotInactive           = Color(0x2914243A)
+    /** Shadow tint — dark navy translucent (ambient) */
+    val ShadowNavy            = Color(0x1414243A)
+    /** Contribution card gradient highlight */
+    val ContributionHighlight = Color(0xFF1257A0)
+    /** Contribution card gradient deep */
+    val ContributionDeep      = Color(0xFF07315E)
+    /** Navy text on white surfaces (e.g. dízimos primary button label) */
+    val NavyText              = Color(0xFF0B3A6B)
+    /** Day pill gradient start */
+    val DayPillStart          = Color(0xFF0A3360)
+    /** Day pill gradient end */
+    val DayPillEnd            = Color(0xFF06294C)
+    /** Location / map pin icon */
+    val LocationRed           = Color(0xFFE0533D)
+    /** Slate text — light mode body copy */
+    val Slate                 = Color(0xFF5A6B82)
+    /** Content color on dark auth button */
+    val OnDarkButton          = Color(0xFFEAEFF7)
+    /** Border for dark-mode auth button */
+    val DarkButtonBorder      = Color(0xFF1C2A3D)
+    /** Border for light-mode auth button */
+    val LightButtonBorder     = Color(0xFFE7ECF3)
 }

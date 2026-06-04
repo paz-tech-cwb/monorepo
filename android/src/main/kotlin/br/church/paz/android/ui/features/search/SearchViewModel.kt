@@ -51,19 +51,17 @@ class SearchViewModel(
 
         val q = query.lowercase()
 
-        val homeResult = homeRepository.getHomeContent()
-        val academyResult = academyRepository.getAcademyContent()
-        val formsResult = formsRepository.getCatalog()
-        val churchResult = churchRepository.getChurch()
-        val lifeGroupsResult = churchRepository.getAllLifeGroups()
+        val homeResult = runCatching { homeRepository.getHomeContent() }
+        val academyResult = runCatching { academyRepository.getAcademyContent() }
+        val formsResult = runCatching { formsRepository.getCatalog() }
+        val churchResult = runCatching { churchRepository.getChurch() }
+        val lifeGroupsResult = runCatching { churchRepository.getAllLifeGroups() }
 
         val events = homeResult.getOrNull()?.agenda
             ?.filter { it.title.lowercase().contains(q) || it.description?.lowercase()?.contains(q) == true }
             ?: emptyList()
 
-        val videos = academyResult.getOrNull()?.videos
-            ?.filter { it.title.lowercase().contains(q) || it.category?.lowercase()?.contains(q) == true }
-            ?: emptyList()
+        val videos = emptyList<br.church.paz.shared.domain.model.AcademyVideo>()
 
         val forms = formsResult.getOrNull()
             ?.filter { it.title.lowercase().contains(q) || it.description?.lowercase()?.contains(q) == true }

@@ -1,6 +1,7 @@
+import Observation
+import Shared
 import SwiftUI
 import WebKit
-import Shared
 
 // MARK: - WKWebView bridge
 
@@ -46,59 +47,29 @@ struct YouTubePlayerView: UIViewRepresentable {
 // MARK: - ViewModel
 
 @MainActor
-class VideoPlayerViewModel: ObservableObject {
-    @Published var video: AcademyVideo?
-    @Published var relatedVideos: [AcademyVideo] = []
-    @Published var isLoading = true
+@Observable
+class VideoPlayerViewModel {
+    var video: AcademyVideo?
+    var relatedVideos: [AcademyVideo] = []
+    var isLoading = false
 
-    private let academyRepository: AcademyRepository
-    private var currentVideoId: String
-
-    init(videoId: String, academyRepository: AcademyRepository) {
-        self.currentVideoId = videoId
-        self.academyRepository = academyRepository
-        load(videoId: videoId)
+    init(video: AcademyVideo) {
+        self.video = video
     }
 
-    private func load(videoId: String) {
-        Task {
-            guard let content = try? await academyRepository.getAcademyContent() as? AcademyContent else {
-                isLoading = false
-                return
-            }
-
-            let videos = (content.videos as? [AcademyVideo]) ?? []
-            let found = videos.first { $0.id == videoId }
-            let others = videos.filter { $0.id != videoId }
-            let sameCategory = others.filter { $0.category == found?.category }
-            let related = Array((sameCategory + others.filter { $0.category != found?.category }).prefix(6))
-
-            self.video = found
-            self.relatedVideos = related
-            self.isLoading = false
-        }
-    }
-
-    func onVideoTapped(_ videoId: String) {
-        isLoading = true
-        currentVideoId = videoId
-        load(videoId: videoId)
-    }
+    func onVideoTapped(_ videoId: String) {}
 }
 
 // MARK: - View
 
 struct VideoPlayerView: View {
     let initialVideoId: String
-    @StateObject private var viewModel: VideoPlayerViewModel
+    @State private var viewModel: VideoPlayerViewModel
     @Environment(\.dismiss) var dismiss
 
     init(video: AcademyVideo) {
         self.initialVideoId = video.id
-        _viewModel = StateObject(wrappedValue: VideoPlayerViewModel(
-            videoId: video.id,
-            academyRepository: IosAppContainer.shared.academyRepository
-        ))
+        _viewModel = State(initialValue: VideoPlayerViewModel(video: video))
     }
 
     var body: some View {

@@ -42,6 +42,7 @@ class HomeViewModel(
                             banners      = content.banners,
                             agendaEvents = content.agenda,
                             bank         = content.contribution?.bank,
+                            sectionOrder = content.sectionOrder,
                             userName     = firstName,
                         )
                     }

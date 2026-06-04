@@ -1,5 +1,5 @@
-import SwiftUI
 import Shared
+import SwiftUI
 
 struct AgendaDetailView: View {
     let event: AgendaEvent

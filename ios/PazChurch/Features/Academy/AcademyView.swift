@@ -1,5 +1,5 @@
-import SwiftUI
 import Shared
+import SwiftUI
 
 struct AcademyView: View {
     @State private var viewModel: AcademyViewModel
@@ -13,6 +13,7 @@ struct AcademyView: View {
     var body: some View {
         NavigationStack {
             ZStack {
+                PazColors.background.ignoresSafeArea()
                 if viewModel.isLoading {
                     loadingState
                 } else if viewModel.error != nil {
@@ -36,7 +37,6 @@ struct AcademyView: View {
         }
     }
 
-    @ViewBuilder
     private var contentState: some View {
         ScrollView {
             VStack(spacing: PazSpacing.lg) {
@@ -73,7 +73,6 @@ struct AcademyView: View {
         }
     }
 
-    @ViewBuilder
     private var emptyState: some View {
         VStack(spacing: PazSpacing.md) {
             Spacer()
@@ -84,7 +83,6 @@ struct AcademyView: View {
         }
     }
 
-    @ViewBuilder
     private var loadingState: some View {
         ScrollView {
             VStack(spacing: PazSpacing.lg) {
@@ -97,7 +95,6 @@ struct AcademyView: View {
         }
     }
 
-    @ViewBuilder
     private var errorState: some View {
         VStack(spacing: PazSpacing.lg) {
             Spacer()

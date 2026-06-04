@@ -1,15 +1,17 @@
 import SwiftUI
 import UIKit
 
-struct PazColors {
+enum PazColors {
     // MARK: - Brand (non-adaptive — always these values)
-    static let pazPrimary      = Color(hex: "032E58")
-    static let pazPrimaryMid   = Color(hex: "0B4D8C")
+
+    static let pazPrimary = Color(hex: "032E58")
+    static let pazPrimaryMid = Color(hex: "0B4D8C")
     static let pazPrimaryLight = Color(hex: "1565C0")
-    static let pazSky          = Color(hex: "5B9BD5")
-    static let pazGold         = Color(hex: "FFB300")
+    static let pazSky = Color(hex: "5B9BD5")
+    static let pazGold = Color(hex: "FFB300")
 
     // MARK: - Adaptive surfaces (dark / light)
+
     static let background = Color(UIColor {
         $0.userInterfaceStyle == .dark
             ? UIColor(hex: "070E1A") : UIColor(hex: "EDF1F7")
@@ -44,28 +46,53 @@ struct PazColors {
     })
 
     // MARK: - Semantic / legacy aliases
-    static let primary   = pazPrimary
-    static let onSurface = ink
-    static let error     = Color(red: 0.78, green: 0.16, blue: 0.16)
 
-    // MARK: - Gradient
+    static let primary = pazPrimary
+    static let onSurface = ink
+    static let error = Color(red: 0.78, green: 0.16, blue: 0.16)
+
+    // MARK: - Semantic
+
+    static let pazCoral = Color(hex: "E0533D")
+
+    // MARK: - Gradients
+
     static let heroGradient = LinearGradient(
         colors: [Color(hex: "032E58"), Color(hex: "0B4D8C"), Color(hex: "1565C0")],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
+    static let featuredCardGradient = LinearGradient(
+        colors: [Color(hex: "0E4683"), Color(hex: "0B3A6B"), Color(hex: "072E58")],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+    static let featuredCardGradientAlt = LinearGradient(
+        colors: [Color(hex: "0A335F"), Color(hex: "072E5A"), Color(hex: "06243F")],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+    static let dizimosCardGradientColors: [Color] = [
+        Color(hex: "1257A0"), Color(hex: "0B4D8C"), Color(hex: "07315E"),
+    ]
+    static let dayPillSelectedGradient = LinearGradient(
+        colors: [Color(hex: "0A3360"), Color(hex: "06294C")],
+        startPoint: .top,
+        endPoint: .bottom
+    )
 }
 
 // MARK: - Hex initializers
+
 extension Color {
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: .alphanumerics.inverted)
         var int: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&int)
         self.init(
-            red:   Double((int >> 16) & 0xFF) / 255,
-            green: Double((int >>  8) & 0xFF) / 255,
-            blue:  Double( int        & 0xFF) / 255
+            red: Double((int >> 16) & 0xFF) / 255,
+            green: Double((int >> 8) & 0xFF) / 255,
+            blue: Double(int & 0xFF) / 255
         )
     }
 }
@@ -76,9 +103,9 @@ extension UIColor {
         var int: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&int)
         self.init(
-            red:   CGFloat((int >> 16) & 0xFF) / 255,
-            green: CGFloat((int >>  8) & 0xFF) / 255,
-            blue:  CGFloat( int        & 0xFF) / 255,
+            red: CGFloat((int >> 16) & 0xFF) / 255,
+            green: CGFloat((int >> 8) & 0xFF) / 255,
+            blue: CGFloat(int & 0xFF) / 255,
             alpha: 1
         )
     }

@@ -1,15 +1,16 @@
-import SwiftUI
-import Combine
+import Observation
 import Shared
+import SwiftUI
 
 // MARK: - ViewModel
 
 @MainActor
-class SearchViewModel: ObservableObject {
-    @Published var query = ""
-    @Published var results = SearchResults()
-    @Published var isSearching = false
-    @Published var hasSearched = false
+@Observable
+class SearchViewModel {
+    var query = ""
+    var results = SearchResults()
+    var isSearching = false
+    var hasSearched = false
 
     private let homeRepository: HomeRepository
     private let academyRepository: AcademyRepository
@@ -48,9 +49,9 @@ class SearchViewModel: ObservableObject {
         }
     }
 
-    private func search(_ q: String) async {
+    private func search(_ query: String) async {
         isSearching = true
-        let lowered = q.lowercased()
+        let lowered = query.lowercased()
 
         async let homeResult = homeRepository.getHomeContent()
         async let academyResult = academyRepository.getAcademyContent()
@@ -58,38 +59,41 @@ class SearchViewModel: ObservableObject {
         async let churchResult = churchRepository.getChurch()
         async let lifeGroupsResult = churchRepository.getAllLifeGroups()
 
-        let home = (try? await homeResult) as? HomeContent
-        let academy = (try? await academyResult) as? AcademyContent
+        let home = try? await homeResult
+        let academy = try? await academyResult
         let catalogRaw = try? await formsResult
-        let church = (try? await churchResult) as? Church
+        let church = try? await churchResult
         let lgRaw = try? await lifeGroupsResult
 
         let events = ((home?.agenda as? [AgendaEvent]) ?? []).filter {
             $0.title.lowercased().contains(lowered) ||
-            ($0.description_?.lowercased().contains(lowered) == true)
+                ($0.description_?.lowercased().contains(lowered) == true)
         }
 
-        let videos = ((academy?.videos as? [AcademyVideo]) ?? []).filter {
-            $0.title.lowercased().contains(lowered) ||
-            ($0.category?.lowercased().contains(lowered) == true)
-        }
+        let videos: [AcademyVideo] = []
 
         let forms = ((catalogRaw as? [FormCatalogItem]) ?? []).filter {
             $0.title.lowercased().contains(lowered) ||
-            ($0.description_?.lowercased().contains(lowered) == true)
+                ($0.description_?.lowercased().contains(lowered) == true)
         }
 
         let ministries = ((church?.ministries as? [Ministry]) ?? []).filter {
             $0.name.lowercased().contains(lowered) ||
-            ($0.description_?.lowercased().contains(lowered) == true)
+                ($0.description_?.lowercased().contains(lowered) == true)
         }
 
         let lifeGroups = ((lgRaw as? [LifeGroup]) ?? []).filter {
             $0.name.lowercased().contains(lowered) ||
-            ($0.leader?.lowercased().contains(lowered) == true)
+                ($0.leader?.lowercased().contains(lowered) == true)
         }
 
-        results = SearchResults(events: events, videos: videos, forms: forms, ministries: ministries, lifeGroups: lifeGroups)
+        results = SearchResults(
+            events: events,
+            videos: videos,
+            forms: forms,
+            ministries: ministries,
+            lifeGroups: lifeGroups
+        )
         hasSearched = true
         isSearching = false
     }
@@ -110,7 +114,7 @@ struct SearchResults {
 // MARK: - View
 
 struct SearchView: View {
-    @StateObject private var viewModel: SearchViewModel
+    @State private var viewModel: SearchViewModel
 
     init(
         homeRepository: HomeRepository,
@@ -118,7 +122,7 @@ struct SearchView: View {
         formsRepository: FormsRepository,
         churchRepository: ChurchRepository
     ) {
-        _viewModel = StateObject(wrappedValue: SearchViewModel(
+        _viewModel = State(initialValue: SearchViewModel(
             homeRepository: homeRepository,
             academyRepository: academyRepository,
             formsRepository: formsRepository,
@@ -168,9 +172,9 @@ struct SearchView: View {
                 .background(PazColors.heroGradient)
 
                 // Results
-                if !viewModel.hasSearched && viewModel.query.isEmpty {
+                if !viewModel.hasSearched, viewModel.query.isEmpty {
                     emptyQueryState
-                } else if viewModel.hasSearched && viewModel.results.isEmpty {
+                } else if viewModel.hasSearched, viewModel.results.isEmpty {
                     noResultsState
                 } else {
                     resultsList
@@ -180,7 +184,6 @@ struct SearchView: View {
         }
     }
 
-    @ViewBuilder
     private var resultsList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PazSpacing.sm) {
@@ -220,7 +223,11 @@ struct SearchView: View {
                     SectionHeaderView(title: "Ministérios", count: viewModel.results.ministries.count)
                     ForEach(viewModel.results.ministries, id: \.id) { ministry in
                         NavigationLink(destination: MinistryDetailView(ministry: ministry)) {
-                            SearchResultRow(icon: "person.3.fill", title: ministry.name, subtitle: ministry.description ?? "")
+                            SearchResultRow(
+                                icon: "person.3.fill",
+                                title: ministry.name,
+                                subtitle: ministry.description ?? ""
+                            )
                         }
                         .buttonStyle(.plain)
                     }
@@ -248,7 +255,6 @@ struct SearchView: View {
         .background(PazColors.background)
     }
 
-    @ViewBuilder
     private var emptyQueryState: some View {
         VStack {
             Spacer()
@@ -267,7 +273,6 @@ struct SearchView: View {
         .background(PazColors.background)
     }
 
-    @ViewBuilder
     private var noResultsState: some View {
         VStack {
             Spacer()

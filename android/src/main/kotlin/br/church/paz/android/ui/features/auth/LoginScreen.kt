@@ -47,7 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import br.church.paz.android.auth.GoogleSignInHelper
-import br.church.paz.android.ui.theme.DmSans
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapePill
@@ -100,7 +99,7 @@ fun LoginScreen(
         }
     }
 
-    val onAppleClick: () -> Unit = {
+    val onAppleClick: () -> Unit = run@{
         val provider = OAuthProvider.newBuilder("apple.com")
             .setScopes(listOf("email", "name"))
             .build()
@@ -163,7 +162,7 @@ fun LoginScreen(
                         .height(120.dp)
                         .background(
                             Brush.verticalGradient(
-                                colors = listOf(Color(0x8C081428), Color.Transparent),
+                                colors = listOf(PazColors.DarkBackground.copy(alpha = 0.55f), Color.Transparent),
                             ),
                         )
                 )
@@ -227,7 +226,7 @@ private fun LoginCard(
 ) {
     val cardBg     = if (isDark) PazColors.DarkSurface else Color.White
     val titleColor = if (isDark) PazColors.Accent      else PazColors.Primary
-    val slateColor = if (isDark) PazColors.DarkSlate   else Color(0xFF5A6B82)
+    val slateColor = if (isDark) PazColors.DarkSlate   else PazColors.Slate
 
     Box(
         modifier = Modifier
@@ -318,14 +317,14 @@ private fun AuthButton(
     }
     val contentColor = when {
         isApple -> Color.White
-        isDark  -> Color(0xFFEAEFF7)
+        isDark  -> PazColors.OnDarkButton
         else    -> PazColors.OnSurface
     }
     val borderColor = when {
         isApple && isDark -> Color.White.copy(alpha = 0.20f)
         isApple           -> Color.Transparent
-        isDark            -> Color(0xFF1C2A3D)
-        else              -> Color(0xFFE7ECF3)
+        isDark            -> PazColors.DarkButtonBorder
+        else              -> PazColors.LightButtonBorder
     }
 
     Row(
@@ -349,10 +348,7 @@ private fun AuthButton(
         } else {
             Text(
                 text  = icon,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    color      = contentColor,
-                    fontFamily = DmSans,
-                ),
+                style = MaterialTheme.typography.titleMedium.copy(color = contentColor),
             )
             Spacer(Modifier.width(PazSpacing.Sm))
             Text(

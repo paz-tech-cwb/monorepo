@@ -1,12 +1,13 @@
-import SwiftUI
+import Observation
 import Shared
+import SwiftUI
 
 struct MemberJourneyView: View {
-    @StateObject private var viewModel: MemberJourneyViewModel
+    @State private var viewModel: MemberJourneyViewModel
     @Environment(\.dismiss) var dismiss
 
     init(memberJourneyRepository: MemberJourneyRepository) {
-        _viewModel = StateObject(wrappedValue: MemberJourneyViewModel(repository: memberJourneyRepository))
+        _viewModel = State(initialValue: MemberJourneyViewModel(repository: memberJourneyRepository))
     }
 
     var body: some View {
@@ -44,7 +45,6 @@ struct MemberJourneyView: View {
         .navigationBarBackButtonHidden()
     }
 
-    @ViewBuilder
     private var contentState: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PazSpacing.lg) {
@@ -61,7 +61,6 @@ struct MemberJourneyView: View {
         .background(PazColors.background)
     }
 
-    @ViewBuilder
     private var loadingState: some View {
         VStack(spacing: PazSpacing.lg) {
             Spacer().frame(height: PazSpacing.lg)
@@ -154,9 +153,10 @@ private struct JourneyStepRow: View {
 }
 
 @MainActor
-class MemberJourneyViewModel: ObservableObject {
-    @Published var steps: [JourneyStep] = []
-    @Published var isLoading = true
+@Observable
+class MemberJourneyViewModel {
+    var steps: [JourneyStep] = []
+    var isLoading = true
 
     private let repository: MemberJourneyRepository
 
@@ -168,9 +168,8 @@ class MemberJourneyViewModel: ObservableObject {
     private func loadJourney() {
         Task {
             do {
-                let journeyRaw = try await repository.getMemberJourney()
-                let journey = journeyRaw as? MemberJourney
-                self.steps = ((journey?.steps as? [JourneyStep]) ?? []).sorted { $0.order < $1.order }
+                let journey = try await repository.getMemberJourney()
+                self.steps = ((journey.steps as? [JourneyStep]) ?? []).sorted { $0.order < $1.order }
                 self.isLoading = false
             } catch {
                 self.isLoading = false

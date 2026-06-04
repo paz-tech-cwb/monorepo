@@ -10,7 +10,6 @@ import br.church.paz.shared.domain.model.MultiplicationForm
 import br.church.paz.shared.domain.model.ServiceReportForm
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.repository.FormsRepository
-import br.church.paz.shared.util.safeRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -22,47 +21,54 @@ import io.ktor.http.contentType
 
 class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
 
-    override suspend fun getCatalog(): Result<List<FormCatalogItem>> = safeRunCatching {
-        client.get("/forms").body()
-    }
+    @Throws(Exception::class)
+    override suspend fun getCatalog(): List<FormCatalogItem> =
+        client.get("api/forms").body()
 
-    override suspend fun lookupUsers(query: String): Result<List<User>> = safeRunCatching {
-        client.get("/users/lookup") { parameter("q", query) }.body()
-    }
+    @Throws(Exception::class)
+    override suspend fun lookupUsers(query: String): List<User> =
+        client.get("api/users/lookup") { parameter("q", query) }.body()
 
-    override suspend fun submitMemberRegistration(form: MemberRegistrationForm): Result<Unit> =
-        post("/forms/member-registrations", form)
+    @Throws(Exception::class)
+    override suspend fun submitMemberRegistration(form: MemberRegistrationForm) =
+        post("api/forms/member-registrations", form)
 
-    override suspend fun submitConversion(form: ConversionForm): Result<Unit> =
-        post("/forms/form-conversions", form)
+    @Throws(Exception::class)
+    override suspend fun submitConversion(form: ConversionForm) =
+        post("api/forms/form-conversions", form)
 
-    override suspend fun submitGuest(form: GuestForm): Result<Unit> =
-        post("/forms/form-guests", form)
+    @Throws(Exception::class)
+    override suspend fun submitGuest(form: GuestForm) =
+        post("api/forms/form-guests", form)
 
-    override suspend fun submitMultiplication(form: MultiplicationForm): Result<Unit> =
-        post("/forms/multiplications", form)
+    @Throws(Exception::class)
+    override suspend fun submitMultiplication(form: MultiplicationForm) =
+        post("api/forms/multiplications", form)
 
-    override suspend fun submitServiceReport(form: ServiceReportForm): Result<Unit> =
-        post("/forms/service-reports", form)
+    @Throws(Exception::class)
+    override suspend fun submitServiceReport(form: ServiceReportForm) =
+        post("api/forms/service-reports", form)
 
-    override suspend fun submitCourse(form: CourseForm): Result<Unit> =
-        post("/forms/member-registrations/courses", form)
+    @Throws(Exception::class)
+    override suspend fun submitCourse(form: CourseForm) =
+        post("api/forms/member-registrations/courses", form)
 
-    override suspend fun submitLifeGroupReport(report: MeetingReportRequest): Result<Unit> =
-        post("/forms/life-group-reports", report)
+    @Throws(Exception::class)
+    override suspend fun submitLifeGroupReport(report: MeetingReportRequest) =
+        post("api/forms/life-group-reports", report)
 
-    override suspend fun submitSectorReport(report: MeetingReportRequest): Result<Unit> =
-        post("/forms/sector-supervisor-reports", report)
+    @Throws(Exception::class)
+    override suspend fun submitSectorReport(report: MeetingReportRequest) =
+        post("api/forms/sector-supervisor-reports", report)
 
-    override suspend fun submitAreaReport(report: MeetingReportRequest): Result<Unit> =
-        post("/forms/area-supervisor-reports", report)
+    @Throws(Exception::class)
+    override suspend fun submitAreaReport(report: MeetingReportRequest) =
+        post("api/forms/area-supervisor-reports", report)
 
-    private suspend inline fun <reified T : Any> post(path: String, body: T): Result<Unit> =
-        safeRunCatching {
-            client.post(path) {
-                contentType(ContentType.Application.Json)
-                setBody(body)
-            }
-            Unit
+    private suspend inline fun <reified T : Any> post(path: String, body: T) {
+        client.post(path) {
+            contentType(ContentType.Application.Json)
+            setBody(body)
         }
+    }
 }

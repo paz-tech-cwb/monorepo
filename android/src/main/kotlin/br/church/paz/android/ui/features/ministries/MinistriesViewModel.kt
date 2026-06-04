@@ -26,8 +26,8 @@ class MinistriesViewModel(
 
     private fun load() {
         viewModelScope.launch {
-            val churchDeferred = async { churchRepository.getChurch() }
-            val lifeGroupsDeferred = async { churchRepository.getAllLifeGroups() }
+            val churchDeferred = async { runCatching { churchRepository.getChurch() } }
+            val lifeGroupsDeferred = async { runCatching { churchRepository.getAllLifeGroups() } }
 
             val churchResult = churchDeferred.await()
             val lifeGroupsResult = lifeGroupsDeferred.await()

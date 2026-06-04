@@ -26,7 +26,7 @@ class NotificationPrefsViewModel(
 
     private fun loadPreferences() {
         viewModelScope.launch {
-            userRepository.getNotificationPreferences()
+            runCatching { userRepository.getNotificationPreferences() }
                 .onSuccess { prefs ->
                     _uiState.update {
                         it.copy(
@@ -48,13 +48,15 @@ class NotificationPrefsViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
             val state = _uiState.value
-            userRepository.updateNotificationPreferences(
-                NotificationPreferences(
-                    events        = state.eventsNotifications,
-                    announcements = state.announcementsNotifications,
-                    lifeGroup     = state.lifeGroupNotifications,
+            runCatching {
+                userRepository.updateNotificationPreferences(
+                    NotificationPreferences(
+                        events        = state.eventsNotifications,
+                        announcements = state.announcementsNotifications,
+                        lifeGroup     = state.lifeGroupNotifications,
+                    )
                 )
-            )
+            }
                 .onSuccess {
                     _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
                     _effect.send(NotificationPrefsEffect.SaveSuccess)

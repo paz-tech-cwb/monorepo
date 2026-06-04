@@ -40,9 +40,10 @@ datastore-preferences-core  = { module = "androidx.datastore:datastore-preferenc
 datastore-preferences       = { module = "androidx.datastore:datastore-preferences",    version.ref = "datastore" }
 
 # Coroutines
-coroutines-core             = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core",    version.ref = "coroutines" }
-coroutines-android          = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
-coroutines-test             = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test",    version.ref = "coroutines" }
+coroutines-core             = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core",         version.ref = "coroutines" }
+coroutines-android          = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android",      version.ref = "coroutines" }
+coroutines-play-services    = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "coroutines" }
+coroutines-test             = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test",          version.ref = "coroutines" }
 
 # Serialization / DateTime
 serialization-json          = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }

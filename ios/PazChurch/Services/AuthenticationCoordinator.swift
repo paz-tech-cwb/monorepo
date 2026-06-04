@@ -1,16 +1,17 @@
-import SwiftUI
-import Combine
-import Shared
 import FirebaseAuth
 import FirebaseCore
 import GoogleSignIn
+import Observation
+import Shared
+import SwiftUI
 
 @MainActor
-class AuthenticationCoordinator: ObservableObject {
-    @Published var isAuthenticated = false
-    @Published var currentUser: Shared.User?
-    @Published var isLoading = true
-    @Published var error: String?
+@Observable
+class AuthenticationCoordinator {
+    var isAuthenticated = false
+    var currentUser: Shared.User?
+    var isLoading = true
+    var error: String?
 
     private let authRepository: AuthRepository
     private let keychain = KeychainService.shared
@@ -23,7 +24,7 @@ class AuthenticationCoordinator: ObservableObject {
     private func checkAuthState() {
         Task {
             do {
-                if let _ = try keychain.retrieve(key: "accessToken") {
+                if try keychain.retrieve(key: "accessToken") != nil {
                     let user = try await authRepository.currentUser()
                     if user != nil {
                         self.currentUser = user
@@ -89,8 +90,8 @@ class AuthenticationCoordinator: ObservableObject {
 
 // MARK: - Firebase Integration Helpers
 
-struct GoogleSignInHelper {
-    // CLIENT_ID from GoogleService-Info.plist (iOS client ID, not the web client ID)
+enum GoogleSignInHelper {
+    /// CLIENT_ID from GoogleService-Info.plist (iOS client ID, not the web client ID)
     private static let clientID = "139667803306-vbo7nbgufjpr464k2ko91gnbvodjo9v7.apps.googleusercontent.com"
 
     static func getIdToken(completion: @escaping (String?, Error?) -> Void) {
@@ -109,23 +110,36 @@ struct GoogleSignInHelper {
                 return
             }
 
-            guard let result = result else {
+            guard let result else {
                 completion(nil, AuthError.invalidGoogleResult)
                 return
             }
 
             result.user.refreshTokensIfNeeded { user, error in
-                guard let user = user, error == nil else {
+                guard let user, error == nil,
+                      let googleIdToken = user.idToken?.tokenString else {
                     completion(nil, error ?? AuthError.invalidGoogleResult)
                     return
                 }
-                completion(user.idToken?.tokenString, nil)
+                let credential = GoogleAuthProvider.credential(
+                    withIDToken: googleIdToken,
+                    accessToken: user.accessToken.tokenString
+                )
+                Auth.auth().signIn(with: credential) { authResult, firebaseError in
+                    guard let firebaseUser = authResult?.user, firebaseError == nil else {
+                        completion(nil, firebaseError ?? AuthError.invalidGoogleResult)
+                        return
+                    }
+                    firebaseUser.getIDToken { firebaseIdToken, tokenError in
+                        completion(firebaseIdToken, tokenError)
+                    }
+                }
             }
         }
     }
 }
 
-struct AppleSignInHelper {
+enum AppleSignInHelper {
     static func signIn(completion: @escaping (String?, String?, Error?) -> Void) {
         completion(nil, nil, AuthError.notImplemented)
     }
@@ -139,10 +153,10 @@ enum AuthError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .missingGoogleClientID:    return "Google Client ID not configured"
-        case .missingViewController:    return "No view controller available for sign-in"
-        case .invalidGoogleResult:      return "Invalid Google sign-in result"
-        case .notImplemented:           return "Feature not yet implemented"
+        case .missingGoogleClientID: "Google Client ID not configured"
+        case .missingViewController: "No view controller available for sign-in"
+        case .invalidGoogleResult: "Invalid Google sign-in result"
+        case .notImplemented: "Feature not yet implemented"
         }
     }
 }

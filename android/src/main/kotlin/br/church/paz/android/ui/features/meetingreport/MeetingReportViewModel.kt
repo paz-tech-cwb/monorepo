@@ -79,7 +79,7 @@ class MeetingReportViewModel(
                 observations = state.observations.takeIf { it.isNotEmpty() },
             )
 
-            formsRepository.submitLifeGroupReport(report)
+            runCatching { formsRepository.submitLifeGroupReport(report) }
                 .onSuccess {
                     _uiState.update { it.copy(isSubmitting = false, success = true) }
                     _effect.send(MeetingReportEffect.SubmitSuccess)

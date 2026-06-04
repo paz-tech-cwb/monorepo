@@ -1,12 +1,13 @@
-import SwiftUI
+import Observation
 import Shared
+import SwiftUI
 
 struct FormulariosView: View {
-    @StateObject private var viewModel: FormulariosViewModel
+    @State private var viewModel: FormulariosViewModel
     @Environment(\.dismiss) var dismiss
 
     init(formsRepository: FormsRepository) {
-        _viewModel = StateObject(wrappedValue: FormulariosViewModel(formsRepository: formsRepository))
+        _viewModel = State(initialValue: FormulariosViewModel(formsRepository: formsRepository))
     }
 
     var body: some View {
@@ -46,7 +47,6 @@ struct FormulariosView: View {
         .navigationBarBackButtonHidden()
     }
 
-    @ViewBuilder
     private var contentState: some View {
         ScrollView {
             VStack(spacing: PazSpacing.md) {
@@ -66,7 +66,6 @@ struct FormulariosView: View {
         .background(PazColors.background)
     }
 
-    @ViewBuilder
     private var emptyState: some View {
         VStack(spacing: PazSpacing.md) {
             Spacer()
@@ -82,7 +81,6 @@ struct FormulariosView: View {
         .background(PazColors.background)
     }
 
-    @ViewBuilder
     private var loadingState: some View {
         VStack(spacing: PazSpacing.lg) {
             Spacer().frame(height: PazSpacing.lg)
@@ -141,10 +139,11 @@ private struct FormCard: View {
 }
 
 @MainActor
-class FormulariosViewModel: ObservableObject {
-    @Published var forms: [FormCatalogItem] = []
-    @Published var isLoading = true
-    @Published var error: String?
+@Observable
+class FormulariosViewModel {
+    var forms: [FormCatalogItem] = []
+    var isLoading = true
+    var error: String?
 
     private let formsRepository: FormsRepository
 
@@ -156,8 +155,7 @@ class FormulariosViewModel: ObservableObject {
     private func loadForms() {
         Task {
             do {
-                let catalogRaw = try await formsRepository.getCatalog()
-                self.forms = (catalogRaw as? [FormCatalogItem]) ?? []
+                self.forms = try await (formsRepository.getCatalog() as? [FormCatalogItem]) ?? []
                 self.isLoading = false
             } catch {
                 self.isLoading = false

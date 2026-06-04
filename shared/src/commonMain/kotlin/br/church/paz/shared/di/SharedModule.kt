@@ -31,7 +31,7 @@ val sharedNetworkModule = module {
     single {
         createPazHttpClient(
             tokenStorage = get(),
-            baseUrl      = getProperty("BASE_URL", "http://10.0.2.2:3001/api"),
+            baseUrl      = getProperty("BASE_URL", "http://10.0.2.2:3001"),
             engine       = get<HttpClientEngineFactory<*>>().create(),
             debug        = getProperty("DEBUG", "false") == "true",
         )

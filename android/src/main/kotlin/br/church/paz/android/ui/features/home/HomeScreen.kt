@@ -83,7 +83,6 @@ import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapePill
 import br.church.paz.android.ui.theme.PazSpacing
-import br.church.paz.android.ui.theme.PlayfairDisplay
 import br.church.paz.shared.domain.model.AgendaEvent
 import br.church.paz.shared.domain.model.BankInfo
 import br.church.paz.shared.domain.model.Banner
@@ -131,6 +130,7 @@ fun HomeScreen(
                 banners        = uiState.banners,
                 agendaEvents   = uiState.agendaEvents,
                 bank           = uiState.bank,
+                sectionOrder   = uiState.sectionOrder,
                 onBannerTap    = viewModel::onBannerTapped,
                 onEventTap     = viewModel::onEventTapped,
                 contentPadding = adjustedPadding,
@@ -206,6 +206,7 @@ private fun HomeContent(
     banners: List<Banner>,
     agendaEvents: List<AgendaEvent>,
     bank: BankInfo?,
+    sectionOrder: List<String>,
     onBannerTap: (String?) -> Unit,
     onEventTap: (String) -> Unit,
     contentPadding: PaddingValues,
@@ -216,32 +217,36 @@ private fun HomeContent(
         contentPadding = contentPadding,
         modifier       = Modifier.fillMaxSize(),
     ) {
-        if (banners.isNotEmpty()) {
-            item(key = "featured") {
-                AnimatedSection(index = 0) {
-                    FeaturedSection(banners = banners, onBannerTap = onBannerTap)
+        sectionOrder.forEachIndexed { index, type ->
+            when (type) {
+                "announcements" -> if (banners.isNotEmpty()) {
+                    item(key = "featured") {
+                        AnimatedSection(index = index) {
+                            FeaturedSection(banners = banners, onBannerTap = onBannerTap)
+                        }
+                    }
                 }
-            }
-        }
-        if (bank != null) {
-            item(key = "dizimos") {
-                AnimatedSection(index = 1) {
-                    DizimosCard(
-                        bank     = bank,
-                        modifier = Modifier.padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Xl),
-                    )
+                "contribution" -> if (bank != null) {
+                    item(key = "dizimos") {
+                        AnimatedSection(index = index) {
+                            DizimosCard(
+                                bank     = bank,
+                                modifier = Modifier.padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Xl),
+                            )
+                        }
+                    }
                 }
-            }
-        }
-        if (agendaEvents.isNotEmpty()) {
-            item(key = "agenda") {
-                AnimatedSection(index = 2) {
-                    AgendaSection(
-                        events        = agendaEvents,
-                        selectedDay   = selectedDay,
-                        onDaySelected = { selectedDay = it },
-                        onEventTap    = onEventTap,
-                    )
+                "agenda" -> if (agendaEvents.isNotEmpty()) {
+                    item(key = "agenda") {
+                        AnimatedSection(index = index) {
+                            AgendaSection(
+                                events        = agendaEvents,
+                                selectedDay   = selectedDay,
+                                onDaySelected = { selectedDay = it },
+                                onEventTap    = onEventTap,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -331,7 +336,7 @@ private fun FeaturedSection(banners: List<Banner>, onBannerTap: (String?) -> Uni
                         .background(
                             color = if (isActive) {
                                 if (isDark) PazColors.PrimaryLight else PazColors.Primary
-                            } else Color(0x2914243A),
+                            } else PazColors.DotInactive,
                             shape = RoundedCornerShape(4.dp),
                         )
                 )
@@ -351,8 +356,8 @@ private fun FeaturedCard(banner: Banner, isAlt: Boolean, onClick: () -> Unit) {
             .shadow(
                 elevation    = 12.dp,
                 shape        = RoundedCornerShape(22.dp),
-                spotColor    = Color(0xB307295E),
-                ambientColor = Color(0x1A07295E),
+                spotColor    = PazColors.Primary.copy(alpha = 0.70f),
+                ambientColor = PazColors.Primary.copy(alpha = 0.10f),
             )
             .clip(RoundedCornerShape(22.dp))
             .background(if (isAlt) PazGradients.FeaturedCardAlt else PazGradients.FeaturedCard)
@@ -370,7 +375,7 @@ private fun FeaturedCard(banner: Banner, isAlt: Boolean, onClick: () -> Unit) {
         // Gold pill badge (top-left)
         Text(
             text     = banner.actionUrl ?: "",
-            style    = MaterialTheme.typography.labelSmall.copy(color = Color(0xFF3A2600)),
+            style    = MaterialTheme.typography.labelSmall.copy(color = PazColors.GoldOnBadge),
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .background(PazColors.Gold, RoundedCornerShape(100.dp))
@@ -429,17 +434,17 @@ private fun DizimosCard(bank: BankInfo, modifier: Modifier = Modifier) {
             .shadow(
                 elevation    = 12.dp,
                 shape        = RoundedCornerShape(24.dp),
-                spotColor    = Color(0xB307315E),
-                ambientColor = Color(0x1A07315E),
+                spotColor    = PazColors.ContributionDeep.copy(alpha = 0.70f),
+                ambientColor = PazColors.ContributionDeep.copy(alpha = 0.10f),
             )
             .clip(RoundedCornerShape(24.dp))
             .drawBehind {
                 drawRect(
                     brush = Brush.radialGradient(
                         colorStops = arrayOf(
-                            0f    to Color(0xFF1257A0),
-                            0.40f to Color(0xFF0B4D8C),
-                            1f    to Color(0xFF07315E),
+                            0f    to PazColors.ContributionHighlight,
+                            0.40f to PazColors.PrimaryMid,
+                            1f    to PazColors.ContributionDeep,
                         ),
                         center = Offset(size.width * 0.82f, -size.height * 0.08f),
                         radius = size.width * 1.30f,
@@ -503,7 +508,7 @@ private fun DizimosButton(
             .shadow(
                 elevation = if (primary) 8.dp else 0.dp,
                 shape     = PazShapePill,
-                spotColor = Color(0x55000000),
+                spotColor = Color.Black.copy(alpha = 0.33f),
             )
             .clip(PazShapePill)
             .background(if (primary) Color.White else Color.White.copy(alpha = 0.13f))
@@ -521,7 +526,7 @@ private fun DizimosButton(
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = FontWeight.Bold,
                 fontSize   = 14.5.sp,
-                color      = if (primary) Color(0xFF0B3A6B) else Color.White,
+                color      = if (primary) PazColors.NavyText else Color.White,
             ),
         )
     }
@@ -598,7 +603,7 @@ private fun AgendaSection(
 private fun DayPill(item: DayItem, isSelected: Boolean, onClick: () -> Unit) {
     val activeGradient = remember {
         Brush.linearGradient(
-            colors = listOf(Color(0xFF0A3360), Color(0xFF06294C)),
+            colors = listOf(PazColors.DayPillStart, PazColors.DayPillEnd),
             start  = Offset(0f, 0f),
             end    = Offset(0f, Float.POSITIVE_INFINITY),
         )
@@ -609,8 +614,8 @@ private fun DayPill(item: DayItem, isSelected: Boolean, onClick: () -> Unit) {
             .shadow(
                 elevation    = if (isSelected) 8.dp else 2.dp,
                 shape        = RoundedCornerShape(18.dp),
-                spotColor    = if (isSelected) Color(0xB307295E) else Color(0x1414243A),
-                ambientColor = Color(0x0A14243A),
+                spotColor    = if (isSelected) PazColors.Primary.copy(alpha = 0.70f) else PazColors.ShadowNavy,
+                ambientColor = PazColors.ShadowNavy.copy(alpha = 0.04f),
             )
             .clip(RoundedCornerShape(18.dp))
             .then(
@@ -666,8 +671,8 @@ private fun EventCard(event: AgendaEvent, onClick: () -> Unit) {
             .shadow(
                 elevation    = 4.dp,
                 shape        = RoundedCornerShape(18.dp),
-                spotColor    = Color(0x3514243A),
-                ambientColor = Color(0x0A14243A),
+                spotColor    = PazColors.ShadowNavy.copy(alpha = 0.21f),
+                ambientColor = PazColors.ShadowNavy.copy(alpha = 0.04f),
             )
             .clip(RoundedCornerShape(18.dp))
             .background(MaterialTheme.colorScheme.surface)
@@ -708,7 +713,7 @@ private fun EventCard(event: AgendaEvent, onClick: () -> Unit) {
                     Icon(
                         imageVector        = Icons.Filled.LocationOn,
                         contentDescription = null,
-                        tint               = Color(0xFFE0533D),
+                        tint               = PazColors.LocationRed,
                         modifier           = Modifier.size(12.dp),
                     )
                     Spacer(Modifier.width(4.dp))

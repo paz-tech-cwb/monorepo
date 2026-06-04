@@ -1,13 +1,14 @@
-import SwiftUI
-import Combine
+import Observation
 import Shared
+import SwiftUI
 
 @MainActor
-class EditProfileViewModel: ObservableObject {
-    @Published var name = ""
-    @Published var isSaving = false
-    @Published var error: String?
-    @Published var saveSuccess = false
+@Observable
+class EditProfileViewModel {
+    var name = ""
+    var isSaving = false
+    var error: String?
+    var saveSuccess = false
 
     private let userRepository: UserRepository
     private let authRepository: AuthRepository

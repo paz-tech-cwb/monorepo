@@ -48,6 +48,7 @@ targets:
       base:
         INFOPLIST_FILE: PazChurch/Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.cwb.pazchurch.app
+        CODE_SIGN_ENTITLEMENTS: PazChurch/PazChurch.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GOOGLE_REVERSED_CLIENT_ID: com.googleusercontent.apps.139667803306-vbo7nbgufjpr464k2ko91gnbvodjo9v7
     capabilities:
@@ -59,4 +60,3 @@ targets:
           cd "$SRCROOT/.."
           ./gradlew :shared:assembleSharedXCFramework
         basedOnDependencyAnalysis: false
-

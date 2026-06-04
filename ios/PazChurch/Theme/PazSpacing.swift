@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct PazSpacing {
+enum PazSpacing {
     static let xs: CGFloat = 4
     static let sm: CGFloat = 8
     static let md: CGFloat = 12
@@ -10,7 +10,7 @@ struct PazSpacing {
     static let xxxl: CGFloat = 48
 }
 
-struct PazShapes {
+enum PazShapes {
     static let small = RoundedRectangle(cornerRadius: 8)
     static let medium = RoundedRectangle(cornerRadius: 12)
     static let large = RoundedRectangle(cornerRadius: 16)

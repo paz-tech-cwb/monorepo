@@ -46,7 +46,7 @@ class EditProfileViewModel(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
-            userRepository.updateProfile(UpdateProfileRequest(name = name))
+            runCatching { userRepository.updateProfile(UpdateProfileRequest(name = name)) }
                 .onSuccess {
                     _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
                     _effect.send(EditProfileEffect.SaveSuccess)

@@ -25,7 +25,7 @@ class FormulariosViewModel(
 
     private fun loadForms() {
         viewModelScope.launch {
-            formsRepository.getCatalog()
+            runCatching { formsRepository.getCatalog() }
                 .onSuccess { forms ->
                     _uiState.update { it.copy(forms = forms, isLoading = false) }
                 }

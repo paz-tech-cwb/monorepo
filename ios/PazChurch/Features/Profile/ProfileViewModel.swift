@@ -1,11 +1,12 @@
-import SwiftUI
-import Combine
+import Observation
 import Shared
+import SwiftUI
 
 @MainActor
-class ProfileViewModel: ObservableObject {
-    @Published var user: User?
-    @Published var isLoading = true
+@Observable
+class ProfileViewModel {
+    var user: User?
+    var isLoading = true
 
     private let authRepository: AuthRepository
 

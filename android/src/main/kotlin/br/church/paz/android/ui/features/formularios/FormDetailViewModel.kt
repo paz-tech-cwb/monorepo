@@ -36,7 +36,7 @@ class FormDetailViewModel(
 
     private fun loadForm() {
         viewModelScope.launch {
-            formsRepository.getCatalog()
+            runCatching { formsRepository.getCatalog() }
                 .onSuccess { catalog ->
                     val form = catalog.find { it.id == formId }
                     val initialFields = form?.type?.fieldDefs()
@@ -90,34 +90,36 @@ class FormDetailViewModel(
 
     private suspend fun submitForm(type: FormType, f: Map<String, String>): Result<Unit> {
         val userId = authRepository.currentUser()?.id ?: ""
-        return when (type) {
-            FormType.member_registration -> formsRepository.submitMemberRegistration(
-                MemberRegistrationForm(name = f.req("name"), phone = f.opt("phone"), email = f.opt("email"))
-            )
-            FormType.conversion -> formsRepository.submitConversion(
-                ConversionForm(name = f.req("name"), phone = f.opt("phone"), date = f.req("date"), observations = f.opt("observations"))
-            )
-            FormType.guest -> formsRepository.submitGuest(
-                GuestForm(name = f.req("name"), phone = f.opt("phone"), invitedBy = f.opt("invited_by"), date = f.req("date"))
-            )
-            FormType.multiplication -> formsRepository.submitMultiplication(
-                MultiplicationForm(originalLifeGroupId = userId, newLifeGroupName = f.req("new_life_group_name"), newLeaderId = userId, date = f.req("date"))
-            )
-            FormType.service_report -> formsRepository.submitServiceReport(
-                ServiceReportForm(date = f.req("date"), attendees = f.int("attendees"), visitors = f.int("visitors"), offerings = f.double("offerings"))
-            )
-            FormType.course -> formsRepository.submitCourse(
-                CourseForm(courseName = f.req("course_name"), memberId = userId, enrolledAt = f.req("enrolled_at"))
-            )
-            FormType.life_group_report -> formsRepository.submitLifeGroupReport(
-                MeetingReportRequest(lifeGroupId = userId, date = f.req("date"), attendees = f.int("attendees"), visitors = f.int("visitors"), offerings = f.doubleOrNull("offerings"), observations = f.opt("observations"))
-            )
-            FormType.sector_supervisor_report -> formsRepository.submitSectorReport(
-                MeetingReportRequest(lifeGroupId = userId, date = f.req("date"), attendees = f.int("attendees"), visitors = f.int("visitors"), offerings = f.doubleOrNull("offerings"), observations = f.opt("observations"))
-            )
-            FormType.area_supervisor_report -> formsRepository.submitAreaReport(
-                MeetingReportRequest(lifeGroupId = userId, date = f.req("date"), attendees = f.int("attendees"), visitors = f.int("visitors"), offerings = f.doubleOrNull("offerings"), observations = f.opt("observations"))
-            )
+        return runCatching {
+            when (type) {
+                FormType.member_registration -> formsRepository.submitMemberRegistration(
+                    MemberRegistrationForm(name = f.req("name"), phone = f.opt("phone"), email = f.opt("email"))
+                )
+                FormType.conversion -> formsRepository.submitConversion(
+                    ConversionForm(name = f.req("name"), phone = f.opt("phone"), date = f.req("date"), observations = f.opt("observations"))
+                )
+                FormType.guest -> formsRepository.submitGuest(
+                    GuestForm(name = f.req("name"), phone = f.opt("phone"), invitedBy = f.opt("invited_by"), date = f.req("date"))
+                )
+                FormType.multiplication -> formsRepository.submitMultiplication(
+                    MultiplicationForm(originalLifeGroupId = userId, newLifeGroupName = f.req("new_life_group_name"), newLeaderId = userId, date = f.req("date"))
+                )
+                FormType.service_report -> formsRepository.submitServiceReport(
+                    ServiceReportForm(date = f.req("date"), attendees = f.int("attendees"), visitors = f.int("visitors"), offerings = f.double("offerings"))
+                )
+                FormType.course -> formsRepository.submitCourse(
+                    CourseForm(courseName = f.req("course_name"), memberId = userId, enrolledAt = f.req("enrolled_at"))
+                )
+                FormType.life_group_report -> formsRepository.submitLifeGroupReport(
+                    MeetingReportRequest(lifeGroupId = userId, date = f.req("date"), attendees = f.int("attendees"), visitors = f.int("visitors"), offerings = f.doubleOrNull("offerings"), observations = f.opt("observations"))
+                )
+                FormType.sector_supervisor_report -> formsRepository.submitSectorReport(
+                    MeetingReportRequest(lifeGroupId = userId, date = f.req("date"), attendees = f.int("attendees"), visitors = f.int("visitors"), offerings = f.doubleOrNull("offerings"), observations = f.opt("observations"))
+                )
+                FormType.area_supervisor_report -> formsRepository.submitAreaReport(
+                    MeetingReportRequest(lifeGroupId = userId, date = f.req("date"), attendees = f.int("attendees"), visitors = f.int("visitors"), offerings = f.doubleOrNull("offerings"), observations = f.opt("observations"))
+                )
+            }
         }
     }
 

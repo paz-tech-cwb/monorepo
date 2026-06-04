@@ -46,14 +46,20 @@ private data class HomeResponse(val sections: List<SectionDto> = emptyList()) {
         var banners = emptyList<Banner>()
         var agenda = emptyList<AgendaEvent>()
         var contribution: ContributionSection? = null
-        for (section in sections) {
+        val sorted = sections.sortedBy { it.order }
+        for (section in sorted) {
             when (section.type) {
                 "announcements" -> banners = section.items.mapNotNull { it.toBanner() }
                 "contribution"  -> contribution = section.items.firstOrNull()?.toContribution()
                 "agenda"        -> agenda = section.items.mapNotNull { it.toEvent() }
             }
         }
-        return HomeContent(banners = banners, agenda = agenda, contribution = contribution)
+        return HomeContent(
+            banners = banners,
+            agenda = agenda,
+            contribution = contribution,
+            sectionOrder = sorted.map { it.type },
+        )
     }
 }
 

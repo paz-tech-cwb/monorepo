@@ -26,7 +26,7 @@ class AgendaDetailViewModel(
 
     private fun loadEvent() {
         viewModelScope.launch {
-            homeRepository.getHomeContent()
+            runCatching { homeRepository.getHomeContent() }
                 .onSuccess { homeContent ->
                     val event = homeContent.agenda.find { it.id == eventId }
                     _uiState.update {

@@ -28,7 +28,7 @@ class MinistryDetailViewModel(
 
     private fun load() {
         viewModelScope.launch {
-            churchRepository.getChurch()
+            runCatching { churchRepository.getChurch() }
                 .onSuccess { church ->
                     val ministry = church.ministries.find { it.id == ministryId }
                     _uiState.update {
@@ -67,7 +67,7 @@ class LifeGroupDetailViewModel(
 
     private fun load() {
         viewModelScope.launch {
-            churchRepository.getAllLifeGroups()
+            runCatching { churchRepository.getAllLifeGroups() }
                 .onSuccess { lifeGroups ->
                     val group = lifeGroups.find { it.id == lifeGroupId }
                     _uiState.update {

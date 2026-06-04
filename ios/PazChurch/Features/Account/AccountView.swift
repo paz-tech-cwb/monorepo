@@ -1,5 +1,5 @@
-import SwiftUI
 import Shared
+import SwiftUI
 
 struct AccountView: View {
     @State private var viewModel: AccountViewModel
@@ -23,14 +23,14 @@ struct AccountView: View {
                     contentState
                 }
             }
-            .navigationTitle("Conta")
+            .navigationTitle(authCoordinator.isAuthenticated ? "Conta" : "")
+            .background(PazColors.background)
         }
         .onChange(of: authCoordinator.isAuthenticated) { _, isAuthenticated in
             if isAuthenticated { viewModel.reload() }
         }
     }
 
-    @ViewBuilder
     private var contentState: some View {
         ScrollView {
             VStack(spacing: PazSpacing.lg) {
@@ -85,7 +85,8 @@ struct AccountView: View {
 
                     // Navigation menu
                     VStack(spacing: 0) {
-                        NavigationLink(destination: MemberJourneyView(memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository)) {
+                        NavigationLink(destination: MemberJourneyView(memberJourneyRepository: IosAppContainer.shared
+                                .memberJourneyRepository)) {
                             MenuRow(title: "Minha Jornada", icon: "figure.walk")
                         }
                         Divider().padding(.horizontal, PazSpacing.lg)
@@ -96,11 +97,13 @@ struct AccountView: View {
                             MenuRow(title: "Relatório de Reunião", icon: "doc.text")
                         }
                         Divider().padding(.horizontal, PazSpacing.lg)
-                        NavigationLink(destination: FormulariosView(formsRepository: IosAppContainer.shared.formsRepository)) {
+                        NavigationLink(destination: FormulariosView(formsRepository: IosAppContainer.shared
+                                .formsRepository)) {
                             MenuRow(title: "Formulários", icon: "list.clipboard")
                         }
                         Divider().padding(.horizontal, PazSpacing.lg)
-                        NavigationLink(destination: MinistriesView(churchRepository: IosAppContainer.shared.churchRepository)) {
+                        NavigationLink(destination: MinistriesView(churchRepository: IosAppContainer.shared
+                                .churchRepository)) {
                             MenuRow(title: "Ministérios & Grupos", icon: "person.3.fill")
                         }
                         Divider().padding(.horizontal, PazSpacing.lg)
@@ -150,7 +153,6 @@ struct AccountView: View {
         }
     }
 
-    @ViewBuilder
     private var loadingState: some View {
         ScrollView {
             VStack(spacing: PazSpacing.lg) {

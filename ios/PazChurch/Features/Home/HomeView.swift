@@ -1,7 +1,8 @@
-import SwiftUI
 import Shared
+import SwiftUI
 
 // MARK: - HomeView
+
 struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var selectedDayIndex: Int = 2
@@ -15,10 +16,29 @@ struct HomeView: View {
         ))
     }
 
-    private var isDark: Bool { colorScheme == .dark }
-    private var banners: [Banner] { viewModel.homeContent?.banners ?? [] }
-    private var bank: BankInfo? { viewModel.homeContent?.contribution?.bank }
-    private var agendaEvents: [AgendaEvent] { Array((viewModel.homeContent?.agenda ?? []).prefix(3)) }
+    private var isDark: Bool {
+        colorScheme == .dark
+    }
+
+    private var banners: [Banner] {
+        viewModel.homeContent?.banners ?? []
+    }
+
+    private var bank: BankInfo? {
+        viewModel.homeContent?.contribution?.bank
+    }
+
+    private var agendaEvents: [AgendaEvent] {
+        Array((viewModel.homeContent?.agenda ?? []).prefix(3))
+    }
+
+    private var sectionOrder: [String] {
+        viewModel.homeContent?.sectionOrder ?? [
+            "announcements",
+            "contribution",
+            "agenda",
+        ]
+    }
 
     var body: some View {
         NavigationStack {
@@ -31,7 +51,9 @@ struct HomeView: View {
                     } else {
                         contentSections
                     }
-                    Spacer().frame(height: 40)
+
+                    Spacer()
+                        .frame(height: 40)
                 }
             }
             .background(PazColors.background)
@@ -43,74 +65,54 @@ struct HomeView: View {
 
     // MARK: - Content sections
 
-    @ViewBuilder
     private var contentSections: some View {
-        if !banners.isEmpty {
-            featuredSection
-                .padding(.top, 26)
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
-                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: banners.count)
-        }
-        if let b = bank {
-            dizimosCard(bank: b)
-                .padding(.top, 26)
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
-                .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.065), value: banners.count)
-        }
-        if !agendaEvents.isEmpty {
-            agendaSection
-                .padding(.top, 26)
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
-                .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.13), value: agendaEvents.count)
+        VStack(spacing: .zero) {
+            ForEach(Array(sectionOrder.enumerated()), id: \.offset) { index, type in
+                let delay = Double(index) * 0.065
+                switch type {
+                case "announcements" where !banners.isEmpty:
+                    featuredSection
+                        .padding(.top, 8)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(delay), value: banners.count)
+
+                case "agenda" where !agendaEvents.isEmpty:
+                    agendaSection
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(delay), value: agendaEvents.count)
+
+                case "contribution":
+                    if let bank {
+                        dizimosCard(bank: bank)
+                            .padding(.top, 32)
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                            .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(delay), value: banners.count)
+                    }
+
+                default:
+                    EmptyView()
+                }
+            }
         }
     }
 
     // MARK: - Featured section
 
     private var featuredSection: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Eventos")
-                    .font(.custom("PlayfairDisplay-ExtraBold", size: 23))
-                    .foregroundStyle(PazColors.ink)
-                Spacer()
-                Button(action: {}) {
-                    HStack(spacing: 5) {
-                        Text("Ver todos").font(PazTypography.labelSmall)
-                        Image(systemName: "arrow.right").font(.system(size: 12, weight: .semibold))
-                    }
-                    .foregroundStyle(PazColors.pazPrimaryLight)
-                }
+        TabView(selection: $currentFeatureIndex) {
+            ForEach(Array(banners.enumerated()), id: \.offset) { index, banner in
+                FeaturedCardView(
+                    title: banner.title,
+                    isAlt: index % 2 == 1
+                )
+                .padding(.horizontal, 18)
+                .padding(.bottom, 60)
+                .tag(index)
             }
-            .padding(.horizontal, 18)
-            .padding(.bottom, 13)
-
-            TabView(selection: $currentFeatureIndex) {
-                ForEach(Array(banners.enumerated()), id: \.offset) { index, banner in
-                    FeaturedCardView(
-                        title:   banner.title,
-                        isAlt:   index % 2 == 1
-                    )
-                    .padding(.horizontal, 18)
-                    .padding(.bottom, 24)
-                    .tag(index)
-                }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 200)
-
-            HStack(spacing: 6) {
-                ForEach(0..<banners.count, id: \.self) { i in
-                    Capsule()
-                        .fill(i == currentFeatureIndex
-                              ? (isDark ? PazColors.pazPrimaryLight : PazColors.pazPrimary)
-                              : Color(white: 0, opacity: 0.16))
-                        .frame(width: i == currentFeatureIndex ? 20 : 7, height: 7)
-                        .animation(.easeInOut(duration: 0.25), value: currentFeatureIndex)
-                }
-            }
-            .padding(.top, 13)
         }
+        .frame(height: 240)
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .tint(.primary)
     }
 
     // MARK: - Dízimos card
@@ -118,7 +120,7 @@ struct HomeView: View {
     private func dizimosCard(bank: BankInfo) -> some View {
         ZStack(alignment: .topLeading) {
             RadialGradient(
-                colors: [Color(hex: "1257A0"), Color(hex: "0B4D8C"), Color(hex: "07315E")],
+                colors: PazColors.dizimosCardGradientColors,
                 center: UnitPoint(x: 0.82, y: -0.08),
                 startRadius: 0,
                 endRadius: 400
@@ -130,7 +132,7 @@ struct HomeView: View {
                     .foregroundStyle(.white.opacity(0.6))
 
                 Text("Contribua com a visão")
-                    .font(.custom("PlayfairDisplay-ExtraBold", size: 27))
+                    .font(.system(size: 27, weight: .heavy))
                     .foregroundStyle(.white)
                     .padding(.top, 9)
 
@@ -151,7 +153,7 @@ struct HomeView: View {
             .padding(22)
         }
         .clipShape(RoundedRectangle(cornerRadius: 24))
-        .shadow(color: Color(hex: "07315E").opacity(0.65), radius: 21, x: 0, y: 22)
+        .shadow(color: PazColors.pazPrimary.opacity(0.65), radius: 21, x: 0, y: 22)
         .padding(.horizontal, 16)
     }
 
@@ -161,7 +163,7 @@ struct HomeView: View {
         VStack(spacing: 0) {
             HStack {
                 Text("Agenda")
-                    .font(.custom("PlayfairDisplay-ExtraBold", size: 23))
+                    .font(.system(size: 23, weight: .heavy))
                     .foregroundStyle(PazColors.ink)
                 Spacer()
                 Button(action: {}) {
@@ -197,7 +199,6 @@ struct HomeView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.top, 4)
         }
     }
 
@@ -236,6 +237,7 @@ struct HomeView: View {
 }
 
 // MARK: - Agenda mock data
+
 private struct AgendaDayItem { let dow: String; let day: Int }
 private let agendaDayItems: [AgendaDayItem] = [
     .init(dow: "SEG", day: 2), .init(dow: "TER", day: 3), .init(dow: "QUA", day: 4),
@@ -250,13 +252,7 @@ private struct FeaturedCardView: View {
     let isAlt: Bool
 
     private var gradient: LinearGradient {
-        isAlt
-            ? LinearGradient(
-                colors: [Color(hex: "0E4683"), Color(hex: "0B3A6B"), Color(hex: "072E58")],
-                startPoint: .topLeading, endPoint: .bottomTrailing)
-            : LinearGradient(
-                colors: [Color(hex: "0A335F"), Color(hex: "072E5A"), Color(hex: "06243F")],
-                startPoint: .topLeading, endPoint: .bottomTrailing)
+        isAlt ? PazColors.featuredCardGradient : PazColors.featuredCardGradientAlt
     }
 
     var body: some View {
@@ -274,15 +270,14 @@ private struct FeaturedCardView: View {
             VStack(alignment: .leading, spacing: 0) {
                 Spacer()
                 Text(title)
-                    .font(.custom("PlayfairDisplay-ExtraBold", size: 23))
+                    .font(.system(size: 23, weight: .heavy))
                     .foregroundStyle(.white)
                     .lineLimit(2)
             }
             .padding(18)
         }
-        .frame(height: 176)
         .clipShape(RoundedRectangle(cornerRadius: 22))
-        .shadow(color: Color(hex: "07295E").opacity(0.6), radius: 15, x: 0, y: 16)
+        .shadow(color: PazColors.pazPrimary.opacity(0.6), radius: 15, x: 0, y: 16)
     }
 }
 
@@ -291,23 +286,23 @@ private struct FeaturedCardView: View {
 private struct CrossWatermarkView: View {
     var body: some View {
         Canvas { ctx, size in
-            let sx = size.width  / 24
+            let sx = size.width / 24
             let sy = size.height / 24
-            var p = Path()
-            p.move(to:    .init(x: 10.6 * sx, y:  2.5 * sy))
-            p.addLine(to: .init(x: 13.4 * sx, y:  2.5 * sy))
-            p.addLine(to: .init(x: 13.4 * sx, y:  6.7 * sy))
-            p.addLine(to: .init(x: 18   * sx, y:  6.7 * sy))
-            p.addLine(to: .init(x: 18   * sx, y:  9.5 * sy))
-            p.addLine(to: .init(x: 13.4 * sx, y:  9.5 * sy))
-            p.addLine(to: .init(x: 13.4 * sx, y: 21.5 * sy))
-            p.addLine(to: .init(x: 10.6 * sx, y: 21.5 * sy))
-            p.addLine(to: .init(x: 10.6 * sx, y:  9.5 * sy))
-            p.addLine(to: .init(x:  6   * sx, y:  9.5 * sy))
-            p.addLine(to: .init(x:  6   * sx, y:  6.7 * sy))
-            p.addLine(to: .init(x: 10.6 * sx, y:  6.7 * sy))
-            p.closeSubpath()
-            ctx.fill(p, with: .color(.white))
+            var path = Path()
+            path.move(to: .init(x: 10.6 * sx, y: 2.5 * sy))
+            path.addLine(to: .init(x: 13.4 * sx, y: 2.5 * sy))
+            path.addLine(to: .init(x: 13.4 * sx, y: 6.7 * sy))
+            path.addLine(to: .init(x: 18 * sx, y: 6.7 * sy))
+            path.addLine(to: .init(x: 18 * sx, y: 9.5 * sy))
+            path.addLine(to: .init(x: 13.4 * sx, y: 9.5 * sy))
+            path.addLine(to: .init(x: 13.4 * sx, y: 21.5 * sy))
+            path.addLine(to: .init(x: 10.6 * sx, y: 21.5 * sy))
+            path.addLine(to: .init(x: 10.6 * sx, y: 9.5 * sy))
+            path.addLine(to: .init(x: 6 * sx, y: 9.5 * sy))
+            path.addLine(to: .init(x: 6 * sx, y: 6.7 * sy))
+            path.addLine(to: .init(x: 10.6 * sx, y: 6.7 * sy))
+            path.closeSubpath()
+            ctx.fill(path, with: .color(.white))
         }
     }
 }
@@ -322,7 +317,7 @@ private struct DizimosButtonView: View {
     var body: some View {
         Text(label)
             .font(PazTypography.titleMedium)
-            .foregroundStyle(primary ? Color(hex: "0B3A6B") : .white)
+            .foregroundStyle(primary ? PazColors.pazPrimary : .white)
             .frame(maxWidth: .infinity)
             .frame(height: 52)
             .background(
@@ -363,11 +358,8 @@ private struct DayPillView: View {
             Group {
                 if isSelected {
                     RoundedRectangle(cornerRadius: 18)
-                        .fill(LinearGradient(
-                            colors: [Color(hex: "0A3360"), Color(hex: "06294C")],
-                            startPoint: .top, endPoint: .bottom
-                        ))
-                        .shadow(color: Color(hex: "07295E").opacity(0.6), radius: 11, x: 0, y: 12)
+                        .fill(PazColors.dayPillSelectedGradient)
+                        .shadow(color: PazColors.pazPrimary.opacity(0.6), radius: 11, x: 0, y: 12)
                 } else {
                     RoundedRectangle(cornerRadius: 18)
                         .fill(PazColors.surface)
@@ -413,7 +405,7 @@ private struct EventCardView: View {
                         HStack(spacing: 5) {
                             Image(systemName: "mappin.fill")
                                 .font(.system(size: 10))
-                                .foregroundStyle(Color(hex: "E0533D"))
+                                .foregroundStyle(PazColors.pazCoral)
                             Text(loc)
                                 .font(PazTypography.bodySmall)
                                 .foregroundStyle(PazColors.slate)
@@ -445,7 +437,7 @@ private struct HomeSkeletonView: View {
                 LinearGradient(
                     colors: [Color.gray.opacity(0.15), Color.gray.opacity(0.25), Color.gray.opacity(0.15)],
                     startPoint: animating ? .leading : .trailing,
-                    endPoint:   animating ? .trailing : .leading
+                    endPoint: animating ? .trailing : .leading
                 )
             )
             .onAppear {

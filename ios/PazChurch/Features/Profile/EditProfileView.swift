@@ -1,12 +1,12 @@
-import SwiftUI
 import Shared
+import SwiftUI
 
 struct EditProfileView: View {
-    @StateObject private var viewModel: EditProfileViewModel
+    @State private var viewModel: EditProfileViewModel
     @Environment(\.dismiss) var dismiss
 
     init() {
-        _viewModel = StateObject(wrappedValue: EditProfileViewModel(
+        _viewModel = State(initialValue: EditProfileViewModel(
             userRepository: IosAppContainer.shared.userRepository,
             authRepository: IosAppContainer.shared.authRepository
         ))
@@ -78,7 +78,8 @@ struct EditProfileView: View {
                                     .padding(.vertical, PazSpacing.md)
                                     .background(viewModel.isSaving ? Color.gray : PazColors.primary)
                                     .cornerRadius(12)
-                                    .disabled(viewModel.isSaving || viewModel.name.trimmingCharacters(in: .whitespaces).isEmpty)
+                                    .disabled(viewModel.isSaving || viewModel.name.trimmingCharacters(in: .whitespaces)
+                                        .isEmpty)
                             }
                             .padding(.horizontal, PazSpacing.lg)
 

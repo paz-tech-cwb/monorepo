@@ -34,6 +34,9 @@ class AuthRepositoryTest {
     private fun successResponse(user: User, access: String = "acc", refresh: String = "ref") =
         """{"access_token":"$access","refresh_token":"$refresh","user":${Json.encodeToString(user)}}"""
 
+    private fun wrappedSuccessResponse(user: User, access: String = "acc", refresh: String = "ref") =
+        """{"data":${successResponse(user, access, refresh)}}"""
+
     private fun buildRepo(
         engineBlock: MockEngine.() -> Unit = {},
         response: String = successResponse(fakeUser),
@@ -47,7 +50,7 @@ class AuthRepositoryTest {
     }
 
     @Test
-    fun `socialLogin success saves tokens and user, returns user`() = runTest {
+    fun `socialLogin success saves tokens and user then returns user`() = runTest {
         val (repo, tokenStorage, userStore) = buildRepo()
 
         val result = repo.socialLogin("google-id-token", "google")
@@ -57,6 +60,33 @@ class AuthRepositoryTest {
         assertEquals("acc", tokenStorage.read()?.access)
         assertEquals("ref", tokenStorage.read()?.refresh)
         assertEquals(fakeUser, userStore.read())
+    }
+
+    @Test
+    fun `socialLogin success accepts wrapped response payload`() = runTest {
+        val (repo, tokenStorage, userStore) = buildRepo(response = wrappedSuccessResponse(fakeUser))
+
+        val result = repo.socialLogin("google-id-token", "google")
+
+        assertTrue(result.isSuccess)
+        assertEquals(fakeUser, result.getOrNull())
+        assertEquals("acc", tokenStorage.read()?.access)
+        assertEquals("ref", tokenStorage.read()?.refresh)
+        assertEquals(fakeUser, userStore.read())
+    }
+
+    @Test
+    fun `socialLogin failure surfaces backend message instead of response shape error`() = runTest {
+        val (repo, tokenStorage, _) = buildRepo(
+            response = """{"statusCode":401,"message":"Invalid Firebase ID token"}""",
+            status   = HttpStatusCode.Unauthorized,
+        )
+
+        val result = repo.socialLogin("bad-token", "google")
+
+        assertTrue(result.isFailure)
+        assertEquals("Invalid Firebase ID token", result.exceptionOrNull()?.message)
+        assertNull(tokenStorage.read())
     }
 
     @Test

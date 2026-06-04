@@ -15,12 +15,12 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Assignment
+import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DynamicForm
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.LightMode
-import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Route
@@ -172,7 +172,7 @@ fun AccountScreen(
                         if (uiState.user?.role?.isLeader == true) {
                             PazMenuRow(
                                 title   = "Relatar Reunião",
-                                icon    = Icons.Outlined.Assignment,
+                                icon    = Icons.AutoMirrored.Outlined.Assignment,
                                 onClick = viewModel::onMeetingReport,
                             )
                             PazMenuRow(
@@ -230,7 +230,7 @@ fun AccountScreen(
                     MenuCard(Modifier.padding(horizontal = PazSpacing.Lg)) {
                         PazMenuRow(
                             title       = "Sair da conta",
-                            icon        = Icons.Outlined.Logout,
+                            icon        = Icons.AutoMirrored.Outlined.Logout,
                             onClick     = { showLogoutDialog = true },
                             showDivider = false,
                             tintIcon    = false,

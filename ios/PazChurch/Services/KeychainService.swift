@@ -70,14 +70,17 @@ enum KeychainError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .saveFailed(let status):
-            return "Failed to save to Keychain: \(status)"
-        case .retrieveFailed(let status):
-            return "Failed to retrieve from Keychain: \(status)"
+        case let .saveFailed(status):
+            "Failed to save to Keychain: \(status)"
+
+        case let .retrieveFailed(status):
+            "Failed to retrieve from Keychain: \(status)"
+
         case .decodeFailed:
-            return "Failed to decode token from Keychain"
-        case .deleteFailed(let status):
-            return "Failed to delete from Keychain: \(status)"
+            "Failed to decode token from Keychain"
+
+        case let .deleteFailed(status):
+            "Failed to delete from Keychain: \(status)"
         }
     }
 }

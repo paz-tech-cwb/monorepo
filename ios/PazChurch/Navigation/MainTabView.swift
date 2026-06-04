@@ -1,5 +1,5 @@
-import SwiftUI
 import Shared
+import SwiftUI
 
 struct MainTabView: View {
     @Environment(PushNotificationService.self) private var pushService
@@ -19,16 +19,6 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Academia", systemImage: "book.fill")
                 }
-
-            SearchView(
-                homeRepository: IosAppContainer.shared.homeRepository,
-                academyRepository: IosAppContainer.shared.academyRepository,
-                formsRepository: IosAppContainer.shared.formsRepository,
-                churchRepository: IosAppContainer.shared.churchRepository
-            )
-            .tabItem {
-                Label("Buscar", systemImage: "magnifyingglass")
-            }
 
             AccountView(
                 userRepository: IosAppContainer.shared.userRepository,

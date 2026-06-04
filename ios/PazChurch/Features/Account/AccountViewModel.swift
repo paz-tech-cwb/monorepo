@@ -1,6 +1,6 @@
-import SwiftUI
 import Observation
 import Shared
+import SwiftUI
 
 @MainActor
 @Observable

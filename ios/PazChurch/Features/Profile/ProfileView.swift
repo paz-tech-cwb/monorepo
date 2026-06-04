@@ -1,5 +1,5 @@
-import SwiftUI
 import Shared
+import SwiftUI
 
 struct ProfileView: View {
     @State private var viewModel: ProfileViewModel
@@ -41,7 +41,6 @@ struct ProfileView: View {
         }
     }
 
-    @ViewBuilder
     private var loggedInState: some View {
         ScrollView {
             VStack(spacing: PazSpacing.xl) {
@@ -114,7 +113,6 @@ struct ProfileView: View {
         }
     }
 
-    @ViewBuilder
     private var loggedOutState: some View {
         VStack(spacing: PazSpacing.md) {
             Spacer()
@@ -140,7 +138,6 @@ struct ProfileView: View {
         .background(PazColors.background)
     }
 
-    @ViewBuilder
     private var loadingState: some View {
         VStack(spacing: PazSpacing.lg) {
             Spacer().frame(height: PazSpacing.xl)

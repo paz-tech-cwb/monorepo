@@ -1,13 +1,14 @@
-import SwiftUI
+import Observation
 import Shared
+import SwiftUI
 
 struct MinistriesView: View {
-    @StateObject private var viewModel: MinistriesViewModel
+    @State private var viewModel: MinistriesViewModel
     @Environment(\.dismiss) var dismiss
     @State private var selectedTab = 0
 
     init(churchRepository: ChurchRepository) {
-        _viewModel = StateObject(wrappedValue: MinistriesViewModel(churchRepository: churchRepository))
+        _viewModel = State(initialValue: MinistriesViewModel(churchRepository: churchRepository))
     }
 
     var body: some View {
@@ -101,7 +102,6 @@ struct MinistriesView: View {
         }
     }
 
-    @ViewBuilder
     private var loadingState: some View {
         ScrollView {
             VStack(spacing: PazSpacing.md) {
@@ -115,7 +115,6 @@ struct MinistriesView: View {
         }
     }
 
-    @ViewBuilder
     private func errorState(error: String) -> some View {
         VStack(spacing: PazSpacing.md) {
             Spacer()
@@ -136,7 +135,6 @@ struct MinistriesView: View {
         }
     }
 
-    @ViewBuilder
     private func emptyState(_ message: String) -> some View {
         VStack {
             Spacer()
@@ -246,11 +244,12 @@ private struct LifeGroupCard: View {
 }
 
 @MainActor
-class MinistriesViewModel: ObservableObject {
-    @Published var ministries: [Ministry] = []
-    @Published var lifeGroups: [LifeGroup] = []
-    @Published var isLoading = true
-    @Published var error: String?
+@Observable
+class MinistriesViewModel {
+    var ministries: [Ministry] = []
+    var lifeGroups: [LifeGroup] = []
+    var isLoading = true
+    var error: String?
 
     private let churchRepository: ChurchRepository
 
@@ -265,19 +264,19 @@ class MinistriesViewModel: ObservableObject {
             async let lifeGroupsResult = churchRepository.getAllLifeGroups()
 
             do {
-                let church = try await churchResult as? Church
-                self.ministries = (church?.ministries as? [Ministry]) ?? []
+                let church = try await churchResult
+                self.ministries = (church.ministries as? [Ministry]) ?? []
             } catch {
                 // partial failure — lifeGroups may still load
             }
 
             do {
-                self.lifeGroups = (try await lifeGroupsResult as? [LifeGroup]) ?? []
+                self.lifeGroups = try await (lifeGroupsResult as? [LifeGroup]) ?? []
             } catch {
                 // partial failure — ministries may still have loaded
             }
 
-            if ministries.isEmpty && lifeGroups.isEmpty {
+            if ministries.isEmpty, lifeGroups.isEmpty {
                 error = "Erro ao carregar dados"
             }
 

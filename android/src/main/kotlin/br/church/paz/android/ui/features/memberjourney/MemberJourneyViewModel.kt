@@ -25,7 +25,7 @@ class MemberJourneyViewModel(
 
     private fun loadJourney() {
         viewModelScope.launch {
-            memberJourneyRepository.getMemberJourney()
+            runCatching { memberJourneyRepository.getMemberJourney() }
                 .onSuccess { journey ->
                     _uiState.update { it.copy(journey = journey, isLoading = false) }
                 }

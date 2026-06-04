@@ -78,7 +78,7 @@ private suspend fun refreshAccessToken(storage: TokenStorage, client: HttpClient
         val current = storage.read() ?: run { storage.clear(); return null }
         // In Ktor 3.x the bearer plugin prevents re-entry automatically;
         // markAsRefreshTokenRequest() no longer exists.
-        val response = client.post("/auth/refresh") {
+        val response = client.post("api/auth/refresh") {
             contentType(ContentType.Application.Json)
             setBody(RefreshRequest(current.refresh))
         }
