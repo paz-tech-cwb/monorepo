@@ -3,6 +3,7 @@ package br.church.paz.android.ui.features.academy
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.shared.domain.repository.AcademyRepository
+import br.church.paz.shared.domain.repository.AuthRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,7 +12,10 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class AcademyViewModel(private val academyRepository: AcademyRepository) : ViewModel() {
+class AcademyViewModel(
+    private val academyRepository: AcademyRepository,
+    private val authRepository: AuthRepository,
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AcademyUiState())
     val uiState: StateFlow<AcademyUiState> = _uiState.asStateFlow()
@@ -24,15 +28,11 @@ class AcademyViewModel(private val academyRepository: AcademyRepository) : ViewM
     fun load() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            academyRepository.getAcademyContent()
+            val user = runCatching { authRepository.currentUser() }.getOrNull()
+            _uiState.update { it.copy(isAuthenticated = user != null) }
+            runCatching { academyRepository.getAcademyContent() }
                 .onSuccess { content ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            featured  = content.videos.firstOrNull(),
-                            videos    = content.videos.drop(1),
-                        )
-                    }
+                    _uiState.update { it.copy(isLoading = false, tracks = content.tracks) }
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isLoading = false, error = e.message) }
@@ -40,8 +40,11 @@ class AcademyViewModel(private val academyRepository: AcademyRepository) : ViewM
         }
     }
 
-    fun onCategorySelected(category: String) {
-        _uiState.update { it.copy(selectedCategory = category) }
+    fun refreshAuthState() {
+        viewModelScope.launch {
+            val user = runCatching { authRepository.currentUser() }.getOrNull()
+            _uiState.update { it.copy(isAuthenticated = user != null) }
+        }
     }
 
     fun onVideoTapped(videoId: String) {
