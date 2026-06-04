@@ -16,10 +16,8 @@ class HomeRepositoryImpl(private val client: HttpClient) : HomeRepository {
 
     @Throws(Exception::class)
     override suspend fun getHomeContent(): HomeContent {
-        // TODO(backend): restore when API is ready
-        // val response: HomeResponse = client.get("api/home").body()
-        // return response.toDomain()
-        return mockHomeContent()
+        val response: HomeResponse = client.get("api/home").body()
+        return response.toDomain()
     }
 
     private fun mockHomeContent() = HomeContent(
