@@ -25,6 +25,7 @@ class AccountViewModel(private val authRepository: AuthRepository) : ViewModel()
         viewModelScope.launch {
             val user = authRepository.currentUser()
             _uiState.update { it.copy(user = user, isLoading = false) }
+            if (user == null) _effect.send(AccountEffect.NavigateToLogin)
         }
     }
 

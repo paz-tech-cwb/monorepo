@@ -75,9 +75,8 @@ fun AccountScreen(
                 AccountEffect.NavigateToFormularios     -> navController.navigate(Screen.FormulariosList.route)
                 AccountEffect.NavigateToMinistries      -> navController.navigate(Screen.Ministries.route)
                 AccountEffect.NavigateToNotificationPrefs -> navController.navigate(Screen.NotificationPrefs.route)
-                AccountEffect.LoggedOut -> navController.navigate(Screen.Login.route) {
-                    popUpTo(0) { inclusive = true }
-                }
+                AccountEffect.NavigateToLogin,
+                AccountEffect.LoggedOut -> navController.navigate(Screen.Login.route)
             }
         }
     }

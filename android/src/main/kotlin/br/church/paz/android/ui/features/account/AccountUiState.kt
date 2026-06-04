@@ -9,7 +9,8 @@ data class AccountUiState(
 )
 
 sealed class AccountEffect {
-    data object NavigateToEditProfile    : AccountEffect()
+    data object NavigateToLogin              : AccountEffect()
+    data object NavigateToEditProfile        : AccountEffect()
     data object NavigateToMemberJourney  : AccountEffect()
     data object NavigateToMeetingReport  : AccountEffect()
     data object NavigateToFormularios    : AccountEffect()
