@@ -12,6 +12,8 @@ export class ChurchSettingsService {
 
   async getContactEmail(): Promise<string> {
     const row = await this.repo.findOne({ where: { key: 'contact_email' } });
-    return row?.value || process.env.DEFAULT_FROM_EMAIL || 'contato@igrejapaz.com.br';
+    return (
+      row?.value || process.env.DEFAULT_FROM_EMAIL || 'contato@igrejapaz.com.br'
+    );
   }
 }

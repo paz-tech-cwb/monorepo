@@ -31,13 +31,13 @@ export class HomeService {
           order: 1,
         },
         {
-          type: 'contribution',
-          items: contributionsList,
+          type: 'agenda',
+          items: eventsList,
           order: 2,
         },
         {
-          type: 'agenda',
-          items: eventsList,
+          type: 'contribution',
+          items: contributionsList,
           order: 3,
         },
       ],

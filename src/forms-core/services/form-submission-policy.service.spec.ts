@@ -3,7 +3,11 @@ import { FormSubmissionPolicyService } from './form-submission-policy.service';
 describe('FormSubmissionPolicyService', () => {
   const policy = new FormSubmissionPolicyService();
   const fresh = { submittedById: 1, createdAt: new Date(), deletedAt: null };
-  const stale = { submittedById: 1, createdAt: new Date(Date.now() - 25 * 3600_000), deletedAt: null };
+  const stale = {
+    submittedById: 1,
+    createdAt: new Date(Date.now() - 25 * 3600_000),
+    deletedAt: null,
+  };
 
   it('admin can edit anything', () => {
     expect(policy.canEdit({ id: 99, roleSlug: 'admin' }, stale)).toBe(true);

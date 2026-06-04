@@ -15,7 +15,14 @@ describe('ResendNotificationSender', () => {
     const m = await Test.createTestingModule({
       providers: [
         ResendNotificationSender,
-        { provide: ChurchSettingsService, useValue: { getContactEmail: jest.fn().mockResolvedValue('contato@igrejapaz.com.br') } },
+        {
+          provide: ChurchSettingsService,
+          useValue: {
+            getContactEmail: jest
+              .fn()
+              .mockResolvedValue('contato@igrejapaz.com.br'),
+          },
+        },
       ],
     }).compile();
     sender = m.get(ResendNotificationSender);
@@ -23,13 +30,18 @@ describe('ResendNotificationSender', () => {
 
   it('sends email using the church contact email as from', async () => {
     await sender.sendEmail({ to: 'a@b.com', subject: 'Hi', html: '<p>x</p>' });
-    expect(sendMock).toHaveBeenCalledWith(expect.objectContaining({
-      from: 'contato@igrejapaz.com.br', to: 'a@b.com',
-    }));
+    expect(sendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: 'contato@igrejapaz.com.br',
+        to: 'a@b.com',
+      }),
+    );
   });
 
   it('does not throw when send fails', async () => {
     sendMock.mockRejectedValueOnce(new Error('boom'));
-    await expect(sender.sendEmail({ to: 'a@b.com', subject: 's', html: 'h' })).resolves.toBeUndefined();
+    await expect(
+      sender.sendEmail({ to: 'a@b.com', subject: 's', html: 'h' }),
+    ).resolves.toBeUndefined();
   });
 });

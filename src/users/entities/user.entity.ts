@@ -76,15 +76,15 @@ export class User {
   accounts: UserAccount[];
 
   @OneToOne(() => Area, { nullable: true, eager: false })
-  @JoinColumn()
+  @JoinColumn({ name: 'leading_area_id' })
   leadingArea: Area | null;
 
   @OneToOne(() => Sector, { nullable: true, eager: false })
-  @JoinColumn()
+  @JoinColumn({ name: 'leading_sector_id' })
   leadingSector: Sector | null;
 
   @OneToOne(() => LifeGroup, { nullable: true, eager: false })
-  @JoinColumn()
+  @JoinColumn({ name: 'leading_life_group_id' })
   leadingLifeGroup: LifeGroup | null;
 
   @CreateDateColumn({ name: 'created_at' })

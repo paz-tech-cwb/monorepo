@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { FormSubmissionAuditLog, FormAuditAction } from '../entities/form-submission-audit-log.entity';
+import {
+  FormSubmissionAuditLog,
+  FormAuditAction,
+} from '../entities/form-submission-audit-log.entity';
 
 @Injectable()
 export class FormSubmissionAuditService {
@@ -22,7 +25,7 @@ export class FormSubmissionAuditService {
       submissionId: params.submissionId,
       actor: { id: params.actorId } as any,
       action: params.action,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       diff: (params.diff ?? null) as any,
     });
   }

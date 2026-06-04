@@ -6,7 +6,10 @@ import { SectorSupervisorReportsService } from './sector-supervisor-reports.serv
 import { SectorSupervisorReportsController } from './sector-supervisor-reports.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([SectorSupervisorReport]), FormsCoreModule],
+  imports: [
+    TypeOrmModule.forFeature([SectorSupervisorReport]),
+    FormsCoreModule,
+  ],
   controllers: [SectorSupervisorReportsController],
   providers: [SectorSupervisorReportsService],
 })

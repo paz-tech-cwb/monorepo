@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
+import * as admin from 'firebase-admin';
 import { JwksClient } from 'jwks-rsa';
 import { UserAccount } from 'src/users/entities/account.entity';
 import { User } from 'src/users/entities/user.entity';
@@ -72,6 +73,16 @@ export class AuthService implements OnModuleInit {
   }
 
   onModuleInit() {
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        }),
+      });
+    }
+
     if (this.accessTokenSecret.length < 32) {
       this.logger.warn(
         'ACCESS_TOKEN_SECRET is shorter than 32 characters. Use a stronger secret in production.',
@@ -240,22 +251,21 @@ export class AuthService implements OnModuleInit {
 
   private async verifyGoogleToken(idToken: string) {
     try {
-      const ticket = await this.googleOAuth2Client.verifyIdToken({
-        idToken,
-        audience: this.googleAudiences,
-      });
-      const payload = ticket.getPayload();
+      // Firebase ID tokens (issued by Firebase Auth, not raw Google OAuth tokens)
+      // must be verified with Firebase Admin SDK — not google-auth-library, which
+      // only knows googleapis.com/oauth2/v3/certs (a different key set).
+      const decoded = await admin.auth().verifyIdToken(idToken);
 
-      if (!payload?.email) {
-        throw new Error('Missing email in Google token payload');
+      if (!decoded.email) {
+        throw new Error('Missing email in Firebase token payload');
       }
 
       return {
-        username: payload.sub || '',
+        username: decoded.uid,
         name:
-          payload.name || this.getUsernameFromEmail(payload.email) || 'User',
-        email: payload.email,
-        photo: payload.picture || null,
+          decoded.name || this.getUsernameFromEmail(decoded.email) || 'User',
+        email: decoded.email,
+        photo: decoded.picture || null,
       };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';

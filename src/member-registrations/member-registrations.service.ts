@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MemberRegistration } from './entities/member-registration.entity';
@@ -23,13 +27,17 @@ function composeAddress(dto: CreateMemberRegistrationDto): string | null {
 @Injectable()
 export class MemberRegistrationsService {
   constructor(
-    @InjectRepository(MemberRegistration) private readonly repo: Repository<MemberRegistration>,
+    @InjectRepository(MemberRegistration)
+    private readonly repo: Repository<MemberRegistration>,
     private readonly policy: FormSubmissionPolicyService,
     private readonly audit: FormSubmissionAuditService,
     private readonly onboarding: OnboardingService,
   ) {}
 
-  async create(dto: CreateMemberRegistrationDto, actorId: number): Promise<MemberRegistration> {
+  async create(
+    dto: CreateMemberRegistrationDto,
+    actorId: number,
+  ): Promise<MemberRegistration> {
     const reg = await this.repo.save(
       this.repo.create({
         email: dto.email,
@@ -53,7 +61,12 @@ export class MemberRegistrationsService {
         submittedBy: { id: actorId } as User,
       }),
     );
-    await this.audit.record({ formSlug: SLUG, submissionId: reg.id, actorId, action: 'create' });
+    await this.audit.record({
+      formSlug: SLUG,
+      submissionId: reg.id,
+      actorId,
+      action: 'create',
+    });
     void this.onboarding.onSubmit(reg);
     return reg;
   }
@@ -68,10 +81,21 @@ export class MemberRegistrationsService {
     return qb.orderBy('m.created_at', 'DESC').getMany();
   }
 
-  async findOne(id: string, scope?: ResolvedScope): Promise<MemberRegistration> {
-    const m = await this.repo.findOne({ where: { id }, relations: ['submittedBy'] });
+  async findOne(
+    id: string,
+    scope?: ResolvedScope,
+  ): Promise<MemberRegistration> {
+    const m = await this.repo.findOne({
+      where: { id },
+      relations: ['submittedBy'],
+    });
     if (!m) throw new NotFoundException();
-    if (scope && !scope.unrestricted && m.lifeGroupId !== null && !scope.lifeGroupIds.includes(m.lifeGroupId)) {
+    if (
+      scope &&
+      !scope.unrestricted &&
+      m.lifeGroupId !== null &&
+      !scope.lifeGroupIds.includes(m.lifeGroupId)
+    ) {
       throw new ForbiddenException();
     }
     return m;
@@ -89,17 +113,36 @@ export class MemberRegistrationsService {
     scope: ResolvedScope,
   ): Promise<MemberRegistration> {
     const m = await this.findOne(id, scope);
-    this.policy.assertCanEdit(actor, { submittedById: m.submittedBy.id, createdAt: m.createdAt, deletedAt: m.deletedAt });
+    this.policy.assertCanEdit(actor, {
+      submittedById: m.submittedBy.id,
+      createdAt: m.createdAt,
+      deletedAt: m.deletedAt,
+    });
     Object.assign(m, dto);
     const saved = await this.repo.save(m);
-    await this.audit.record({ formSlug: SLUG, submissionId: id, actorId: actor.id, action: 'update', diff: dto as Record<string, unknown> });
+    await this.audit.record({
+      formSlug: SLUG,
+      submissionId: id,
+      actorId: actor.id,
+      action: 'update',
+      diff: dto as Record<string, unknown>,
+    });
     return saved;
   }
 
-  async softDelete(id: string, actor: { id: number; roleSlug: string }, scope: ResolvedScope): Promise<void> {
+  async softDelete(
+    id: string,
+    actor: { id: number; roleSlug: string },
+    scope: ResolvedScope,
+  ): Promise<void> {
     await this.findOne(id, scope);
     this.policy.assertCanDelete(actor);
     await this.repo.softDelete(id);
-    await this.audit.record({ formSlug: SLUG, submissionId: id, actorId: actor.id, action: 'delete' });
+    await this.audit.record({
+      formSlug: SLUG,
+      submissionId: id,
+      actorId: actor.id,
+      action: 'delete',
+    });
   }
 }

@@ -1,5 +1,10 @@
 import {
-  Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, Index,
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 

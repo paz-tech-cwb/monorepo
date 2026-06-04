@@ -15,7 +15,8 @@ export interface ResolvedScope {
 export class ScopeResolverService {
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
-    @InjectRepository(LifeGroup) private readonly lifeGroups: Repository<LifeGroup>,
+    @InjectRepository(LifeGroup)
+    private readonly lifeGroups: Repository<LifeGroup>,
   ) {}
 
   async resolve(userId: number): Promise<ResolvedScope> {
@@ -27,7 +28,12 @@ export class ScopeResolverService {
 
     const slug = user.role?.slug;
     if (slug === 'admin' || slug === 'pastor') {
-      return { unrestricted: true, areaIds: [], sectorIds: [], lifeGroupIds: [] };
+      return {
+        unrestricted: true,
+        areaIds: [],
+        sectorIds: [],
+        lifeGroupIds: [],
+      };
     }
 
     if (slug === 'area_leader' && user.leadingArea) {
@@ -66,6 +72,11 @@ export class ScopeResolverService {
       };
     }
 
-    return { unrestricted: false, areaIds: [], sectorIds: [], lifeGroupIds: [] };
+    return {
+      unrestricted: false,
+      areaIds: [],
+      sectorIds: [],
+      lifeGroupIds: [],
+    };
   }
 }

@@ -14,12 +14,16 @@ const SLUG = 'life-group-reports';
 @Injectable()
 export class LifeGroupReportsService {
   constructor(
-    @InjectRepository(LifeGroupReport) private readonly repo: Repository<LifeGroupReport>,
+    @InjectRepository(LifeGroupReport)
+    private readonly repo: Repository<LifeGroupReport>,
     private readonly policy: FormSubmissionPolicyService,
     private readonly audit: FormSubmissionAuditService,
   ) {}
 
-  async create(dto: CreateLifeGroupReportDto, actorId: number): Promise<LifeGroupReport> {
+  async create(
+    dto: CreateLifeGroupReportDto,
+    actorId: number,
+  ): Promise<LifeGroupReport> {
     const entity = await this.repo.save(
       this.repo.create({
         date: dto.date,
@@ -45,7 +49,12 @@ export class LifeGroupReportsService {
         submittedBy: { id: actorId } as User,
       }),
     );
-    await this.audit.record({ formSlug: SLUG, submissionId: entity.id, actorId, action: 'create' });
+    await this.audit.record({
+      formSlug: SLUG,
+      submissionId: entity.id,
+      actorId,
+      action: 'create',
+    });
     return entity;
   }
 
@@ -60,24 +69,49 @@ export class LifeGroupReportsService {
   }
 
   async findOne(id: string): Promise<LifeGroupReport> {
-    const m = await this.repo.findOne({ where: { id }, relations: ['submittedBy'] });
+    const m = await this.repo.findOne({
+      where: { id },
+      relations: ['submittedBy'],
+    });
     if (!m) throw new NotFoundException();
     return m;
   }
 
-  async update(id: string, dto: UpdateLifeGroupReportDto, actor: { id: number; roleSlug: string }): Promise<LifeGroupReport> {
+  async update(
+    id: string,
+    dto: UpdateLifeGroupReportDto,
+    actor: { id: number; roleSlug: string },
+  ): Promise<LifeGroupReport> {
     const m = await this.findOne(id);
-    this.policy.assertCanEdit(actor, { submittedById: m.submittedBy.id, createdAt: m.createdAt, deletedAt: m.deletedAt });
+    this.policy.assertCanEdit(actor, {
+      submittedById: m.submittedBy.id,
+      createdAt: m.createdAt,
+      deletedAt: m.deletedAt,
+    });
     Object.assign(m, dto);
     const saved = await this.repo.save(m);
-    await this.audit.record({ formSlug: SLUG, submissionId: id, actorId: actor.id, action: 'update', diff: dto as Record<string, unknown> });
+    await this.audit.record({
+      formSlug: SLUG,
+      submissionId: id,
+      actorId: actor.id,
+      action: 'update',
+      diff: dto as Record<string, unknown>,
+    });
     return saved;
   }
 
-  async softDelete(id: string, actor: { id: number; roleSlug: string }): Promise<void> {
+  async softDelete(
+    id: string,
+    actor: { id: number; roleSlug: string },
+  ): Promise<void> {
     this.policy.assertCanDelete(actor);
     await this.repo.softDelete(id);
-    await this.audit.record({ formSlug: SLUG, submissionId: id, actorId: actor.id, action: 'delete' });
+    await this.audit.record({
+      formSlug: SLUG,
+      submissionId: id,
+      actorId: actor.id,
+      action: 'delete',
+    });
   }
 
   async auditLog(id: string) {

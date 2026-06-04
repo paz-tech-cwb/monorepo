@@ -27,10 +27,12 @@ export class FormSubmissionPolicyService {
   }
 
   assertCanEdit(actor: ActorLike, s: SubmissionLike) {
-    if (!this.canEdit(actor, s)) throw new ForbiddenException('Edit not allowed');
+    if (!this.canEdit(actor, s))
+      throw new ForbiddenException('Edit not allowed');
   }
 
   assertCanDelete(actor: ActorLike) {
-    if (!this.canDelete(actor)) throw new ForbiddenException('Delete not allowed (admin only)');
+    if (!this.canDelete(actor))
+      throw new ForbiddenException('Delete not allowed (admin only)');
   }
 }

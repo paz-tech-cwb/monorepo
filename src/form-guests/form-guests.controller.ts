@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ScopeGuard } from '../forms-core/guards/scope.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -35,12 +45,22 @@ export class FormGuestsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateFormGuestDto, @Req() req: any) {
-    return this.svc.update(id, dto, { id: req.user.id, roleSlug: req.user.role?.slug ?? 'member' });
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateFormGuestDto,
+    @Req() req: any,
+  ) {
+    return this.svc.update(id, dto, {
+      id: req.user.id,
+      roleSlug: req.user.role?.slug ?? 'member',
+    });
   }
 
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: any) {
-    return this.svc.softDelete(id, { id: req.user.id, roleSlug: req.user.role?.slug ?? 'member' });
+    return this.svc.softDelete(id, {
+      id: req.user.id,
+      roleSlug: req.user.role?.slug ?? 'member',
+    });
   }
 }

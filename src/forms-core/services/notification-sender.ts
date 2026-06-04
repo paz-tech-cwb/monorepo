@@ -18,7 +18,9 @@ export class ResendNotificationSender extends NotificationSender {
   private readonly logger = new Logger(ResendNotificationSender.name);
   private readonly resend = new Resend(process.env.RESEND_API_KEY);
 
-  constructor(private readonly settings: ChurchSettingsService) { super(); }
+  constructor(private readonly settings: ChurchSettingsService) {
+    super();
+  }
 
   async sendEmail({ to, subject, html }: EmailPayload): Promise<void> {
     const from = await this.settings.getContactEmail();

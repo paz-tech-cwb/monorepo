@@ -20,6 +20,7 @@ export class SectorsService {
     return {
       id: sector.id,
       name: sector.name,
+      area_id: sector.area?.id ?? null,
       created_at: sector.createdAt,
       updated_at: sector.updatedAt,
     };
@@ -42,6 +43,7 @@ export class SectorsService {
   async findAll() {
     try {
       const sectors = await this.entityManager.find(Sector, {
+        relations: ['area'],
         order: { name: 'ASC' },
       });
       return sectors.map((s) => this.toResponse(s));
@@ -53,7 +55,10 @@ export class SectorsService {
   }
 
   async findOne(id: number) {
-    const sector = await this.entityManager.findOne(Sector, { where: { id } });
+    const sector = await this.entityManager.findOne(Sector, {
+      where: { id },
+      relations: ['area'],
+    });
     if (!sector) {
       throw new NotFoundException(`Sector with ID ${id} not found`);
     }

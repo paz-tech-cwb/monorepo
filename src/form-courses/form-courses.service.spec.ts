@@ -10,8 +10,18 @@ describe('FormCoursesService', () => {
   let linksRepo: any;
 
   beforeEach(async () => {
-    coursesRepo = { save: jest.fn(), create: jest.fn(x => x), findBy: jest.fn(), findOneBy: jest.fn() };
-    linksRepo = { find: jest.fn().mockResolvedValue([]), insert: jest.fn(), delete: jest.fn(), maximum: jest.fn().mockResolvedValue(0) };
+    coursesRepo = {
+      save: jest.fn(),
+      create: jest.fn((x) => x),
+      findBy: jest.fn(),
+      findOneBy: jest.fn(),
+    };
+    linksRepo = {
+      find: jest.fn().mockResolvedValue([]),
+      insert: jest.fn(),
+      delete: jest.fn(),
+      maximum: jest.fn().mockResolvedValue(0),
+    };
     const m = await Test.createTestingModule({
       providers: [
         FormCoursesService,
@@ -23,10 +33,19 @@ describe('FormCoursesService', () => {
   });
 
   it('createAndLink saves a course and links it to the form', async () => {
-    coursesRepo.save.mockResolvedValue({ id: 'c1', name: 'Nova Criatura', isActive: true });
-    await service.createAndLink('member-registrations', { name: 'Nova Criatura' } as any);
-    expect(linksRepo.insert).toHaveBeenCalledWith(expect.objectContaining({
-      formSlug: 'member-registrations', courseId: 'c1',
-    }));
+    coursesRepo.save.mockResolvedValue({
+      id: 'c1',
+      name: 'Nova Criatura',
+      isActive: true,
+    });
+    await service.createAndLink('member-registrations', {
+      name: 'Nova Criatura',
+    } as any);
+    expect(linksRepo.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        formSlug: 'member-registrations',
+        courseId: 'c1',
+      }),
+    );
   });
 });

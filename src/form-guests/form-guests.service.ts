@@ -35,7 +35,12 @@ export class FormGuestsService {
         submittedBy: { id: actorId } as User,
       }),
     );
-    await this.audit.record({ formSlug: SLUG, submissionId: entity.id, actorId, action: 'create' });
+    await this.audit.record({
+      formSlug: SLUG,
+      submissionId: entity.id,
+      actorId,
+      action: 'create',
+    });
     return entity;
   }
 
@@ -50,24 +55,49 @@ export class FormGuestsService {
   }
 
   async findOne(id: string): Promise<FormGuest> {
-    const m = await this.repo.findOne({ where: { id }, relations: ['submittedBy'] });
+    const m = await this.repo.findOne({
+      where: { id },
+      relations: ['submittedBy'],
+    });
     if (!m) throw new NotFoundException();
     return m;
   }
 
-  async update(id: string, dto: UpdateFormGuestDto, actor: { id: number; roleSlug: string }): Promise<FormGuest> {
+  async update(
+    id: string,
+    dto: UpdateFormGuestDto,
+    actor: { id: number; roleSlug: string },
+  ): Promise<FormGuest> {
     const m = await this.findOne(id);
-    this.policy.assertCanEdit(actor, { submittedById: m.submittedBy.id, createdAt: m.createdAt, deletedAt: m.deletedAt });
+    this.policy.assertCanEdit(actor, {
+      submittedById: m.submittedBy.id,
+      createdAt: m.createdAt,
+      deletedAt: m.deletedAt,
+    });
     Object.assign(m, dto);
     const saved = await this.repo.save(m);
-    await this.audit.record({ formSlug: SLUG, submissionId: id, actorId: actor.id, action: 'update', diff: dto as Record<string, unknown> });
+    await this.audit.record({
+      formSlug: SLUG,
+      submissionId: id,
+      actorId: actor.id,
+      action: 'update',
+      diff: dto as Record<string, unknown>,
+    });
     return saved;
   }
 
-  async softDelete(id: string, actor: { id: number; roleSlug: string }): Promise<void> {
+  async softDelete(
+    id: string,
+    actor: { id: number; roleSlug: string },
+  ): Promise<void> {
     this.policy.assertCanDelete(actor);
     await this.repo.softDelete(id);
-    await this.audit.record({ formSlug: SLUG, submissionId: id, actorId: actor.id, action: 'delete' });
+    await this.audit.record({
+      formSlug: SLUG,
+      submissionId: id,
+      actorId: actor.id,
+      action: 'delete',
+    });
   }
 
   async auditLog(id: string) {

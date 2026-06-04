@@ -16,7 +16,9 @@ export class SegmentFiltersDto {
   @Expose() @IsOptional() @IsArray() roles?: string[];
   @Expose() @IsOptional() @IsArray() sector_ids?: number[];
   @Expose() @IsOptional() @IsArray() life_group_ids?: number[];
-  @Expose() @IsOptional() @IsIn(['active', 'inactive']) status?: 'active' | 'inactive';
+  @Expose() @IsOptional() @IsIn(['active', 'inactive']) status?:
+    | 'active'
+    | 'inactive';
 }
 
 export class SegmentDto {
