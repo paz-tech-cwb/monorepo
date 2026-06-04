@@ -5,34 +5,28 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import com.cwb.pazchurch.app.R
 import androidx.compose.ui.unit.sp
 
-// TODO: add font .ttf files to android/src/main/res/font/ then uncomment.
-// Download from Google Fonts: Playfair_Display (Bold, ExtraBold), DM_Sans (Regular, Medium, SemiBold, Bold)
-//
-// val PlayfairDisplay = FontFamily(
-//     Font(R.font.playfair_display_bold,      FontWeight.Bold),
-//     Font(R.font.playfair_display_extrabold, FontWeight.ExtraBold),
-// )
-// val DmSans = FontFamily(
-//     Font(R.font.dm_sans_regular,   FontWeight.Normal),
-//     Font(R.font.dm_sans_medium,    FontWeight.Medium),
-//     Font(R.font.dm_sans_semibold,  FontWeight.SemiBold),
-//     Font(R.font.dm_sans_bold,      FontWeight.Bold),
-// )
-
-// Temporary: system serif + default sans until font files are added
-val PlayfairDisplay = FontFamily.Serif
-val DmSans          = FontFamily.Default
+val PlayfairDisplay = FontFamily(
+    Font(R.font.playfair_display_bold,      FontWeight.Bold),
+    Font(R.font.playfair_display_extrabold, FontWeight.ExtraBold),
+)
+val DmSans = FontFamily(
+    Font(R.font.dm_sans_regular,   FontWeight.Normal),
+    Font(R.font.dm_sans_medium,    FontWeight.Medium),
+    Font(R.font.dm_sans_semibold,  FontWeight.SemiBold),
+    Font(R.font.dm_sans_bold,      FontWeight.Bold),
+)
 
 val PazTypography = Typography(
     displayLarge = TextStyle(
-        fontFamily = PlayfairDisplay, fontSize = 42.sp,
-        fontWeight = FontWeight.ExtraBold, lineHeight = 50.sp,
+        fontFamily = PlayfairDisplay, fontSize = 34.sp,
+        fontWeight = FontWeight.ExtraBold, lineHeight = 36.sp,
     ),
     headlineMedium = TextStyle(
-        fontFamily = PlayfairDisplay, fontSize = 28.sp,
-        fontWeight = FontWeight.Bold, lineHeight = 34.sp,
+        fontFamily = PlayfairDisplay, fontSize = 23.sp,
+        fontWeight = FontWeight.ExtraBold, lineHeight = 26.sp,
     ),
     titleLarge = TextStyle(
         fontFamily = PlayfairDisplay, fontSize = 22.sp,

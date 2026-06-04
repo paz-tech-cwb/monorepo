@@ -42,4 +42,6 @@ object PazColors {
     val DarkError       = Color(0xFFFF6B6B)
     val DarkPrimaryContainer  = Color(0xFF07243F)
     val DarkSecondaryContainer= Color(0xFF0D3A60)
+    val DarkCard2  = Color(0xFF101F31)
+    val DarkSlate  = Color(0xFF97A6BC)
 }

@@ -37,4 +37,26 @@ object PazGradients {
         start  = Offset.Zero,
         end    = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
     )
+
+    /** Primary featured card — dark navy */
+    val FeaturedCard = Brush.linearGradient(
+        colorStops = arrayOf(
+            0f    to Color(0xFF0A335F),
+            0.52f to Color(0xFF072E5A),
+            1f    to Color(0xFF06243F),
+        ),
+        start = Offset(0f, 0f),
+        end   = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
+    )
+
+    /** Alternate featured card — slightly lighter navy */
+    val FeaturedCardAlt = Brush.linearGradient(
+        colorStops = arrayOf(
+            0f    to Color(0xFF0E4683),
+            0.55f to Color(0xFF0B3A6B),
+            1f    to Color(0xFF072E58),
+        ),
+        start = Offset(0f, 0f),
+        end   = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
+    )
 }
