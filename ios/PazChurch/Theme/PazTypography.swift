@@ -1,23 +1,24 @@
 import SwiftUI
 
 struct PazTypography {
-    // Display fonts (Playfair Display - should be added to Xcode project)
-    static let headlineLarge = Font.system(size: 32, weight: .semibold, design: .default)
-    static let headlineMedium = Font.system(size: 28, weight: .semibold, design: .default)
-    static let headlineSmall = Font.system(size: 24, weight: .semibold, design: .default)
+    // Display / Headline — Playfair Display
+    static let displayLarge   = Font.custom("PlayfairDisplay-ExtraBold", size: 34)
+    static let headlineLarge  = Font.custom("PlayfairDisplay-Bold",      size: 32)
+    static let headlineMedium = Font.custom("PlayfairDisplay-Bold",      size: 28)
+    static let headlineSmall  = Font.custom("PlayfairDisplay-Bold",      size: 24)
 
-    // Title fonts
-    static let titleLarge = Font.system(size: 22, weight: .semibold, design: .default)
-    static let titleMedium = Font.system(size: 16, weight: .semibold, design: .default)
-    static let titleSmall = Font.system(size: 14, weight: .semibold, design: .default)
+    // Title — Playfair Display (large) / DM Sans (medium/small)
+    static let titleLarge  = Font.custom("PlayfairDisplay-Bold",    size: 22)
+    static let titleMedium = Font.custom("DMSans-SemiBold",         size: 16)
+    static let titleSmall  = Font.custom("DMSans-SemiBold",         size: 14)
 
-    // Body fonts (DM Sans - should be added to Xcode project)
-    static let bodyLarge = Font.system(size: 16, weight: .regular, design: .default)
-    static let bodyMedium = Font.system(size: 14, weight: .regular, design: .default)
-    static let bodySmall = Font.system(size: 12, weight: .regular, design: .default)
+    // Body — DM Sans
+    static let bodyLarge  = Font.custom("DMSans-Regular", size: 16)
+    static let bodyMedium = Font.custom("DMSans-Regular", size: 14)
+    static let bodySmall  = Font.custom("DMSans-Regular", size: 12)
 
-    // Label fonts
-    static let labelLarge = Font.system(size: 14, weight: .medium, design: .default)
-    static let labelMedium = Font.system(size: 12, weight: .medium, design: .default)
-    static let labelSmall = Font.system(size: 11, weight: .medium, design: .default)
+    // Label — DM Sans
+    static let labelLarge  = Font.custom("DMSans-Medium", size: 14)
+    static let labelMedium = Font.custom("DMSans-Medium", size: 12)
+    static let labelSmall  = Font.custom("DMSans-Bold",   size: 11)
 }

@@ -1,13 +1,13 @@
 import SwiftUI
-import Combine
+import Observation
 import Shared
 
 @MainActor
-class AcademyViewModel: ObservableObject {
-    @Published var academyContent: AcademyContent?
-    @Published var selectedCategory: String?
-    @Published var isLoading = true
-    @Published var error: String?
+@Observable
+class AcademyViewModel {
+    var tracks: [CourseTrack] = []
+    var isLoading = true
+    var error: String?
 
     private let academyRepository: AcademyRepository
 
@@ -19,8 +19,8 @@ class AcademyViewModel: ObservableObject {
     private func loadAcademy() {
         Task {
             do {
-                let content = try await academyRepository.getAcademyContent() as? AcademyContent
-                self.academyContent = content
+                let content = try await academyRepository.getAcademyContent()
+                self.tracks = content.tracks
                 self.isLoading = false
             } catch {
                 self.isLoading = false
@@ -29,35 +29,13 @@ class AcademyViewModel: ObservableObject {
         }
     }
 
-    var categories: [String] {
-        (academyContent?.videos ?? [])
-            .compactMap { $0.category }
-            .removingDuplicates()
-    }
-
-    var filteredVideos: [AcademyVideo] {
-        let videos = academyContent?.videos ?? []
-        if let selected = selectedCategory {
-            return videos.filter { $0.category == selected }
-        }
-        return videos
-    }
-
     func onRetry() {
         isLoading = true
         error = nil
         loadAcademy()
     }
-}
 
-extension Array where Element: Equatable {
-    func removingDuplicates() -> [Element] {
-        var result: [Element] = []
-        for value in self {
-            if !result.contains(value) {
-                result.append(value)
-            }
-        }
-        return result
+    func onCourseTapped(_ course: Course) {
+        // TODO: navigate to video player
     }
 }

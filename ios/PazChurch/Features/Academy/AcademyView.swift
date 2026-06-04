@@ -2,10 +2,12 @@ import SwiftUI
 import Shared
 
 struct AcademyView: View {
-    @StateObject private var viewModel: AcademyViewModel
+    @State private var viewModel: AcademyViewModel
+    @Environment(AuthenticationCoordinator.self) private var authCoordinator
+    @State private var showLoginSheet = false
 
     init(academyRepository: AcademyRepository) {
-        _viewModel = StateObject(wrappedValue: AcademyViewModel(academyRepository: academyRepository))
+        _viewModel = State(initialValue: AcademyViewModel(academyRepository: academyRepository))
     }
 
     var body: some View {
@@ -15,11 +17,22 @@ struct AcademyView: View {
                     loadingState
                 } else if viewModel.error != nil {
                     errorState
+                } else if viewModel.tracks.isEmpty {
+                    emptyState
                 } else {
                     contentState
                 }
             }
             .navigationTitle("Academia")
+        }
+        .sheet(isPresented: $showLoginSheet) {
+            LoginView(
+                authCoordinator: authCoordinator,
+                onDismiss: { showLoginSheet = false }
+            )
+        }
+        .onChange(of: authCoordinator.isAuthenticated) { _, isAuthenticated in
+            if isAuthenticated { showLoginSheet = false }
         }
     }
 
@@ -31,65 +44,28 @@ struct AcademyView: View {
                 VStack(alignment: .leading, spacing: PazSpacing.sm) {
                     Text("Aprenda com a Paz")
                         .font(PazTypography.headlineSmall)
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                     Text("Conteúdo educacional exclusivo")
                         .font(PazTypography.bodySmall)
-                        .foregroundColor(.white.opacity(0.8))
+                        .foregroundStyle(.white.opacity(0.8))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(PazSpacing.lg)
                 .background(PazColors.heroGradient)
-                .cornerRadius(16)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
                 .padding(.horizontal, PazSpacing.lg)
                 .padding(.top, PazSpacing.lg)
 
-                // Featured video
-                if let featured = viewModel.academyContent?.videos.first {
-                    NavigationLink(destination: VideoPlayerView(video: featured)) {
-                        FeaturedVideoCard(video: featured)
-                    }
-                    .buttonStyle(.plain)
-                        .padding(.horizontal, PazSpacing.lg)
-                }
-
-                // Category filter
-                if !viewModel.categories.isEmpty {
-                    VStack(alignment: .leading, spacing: PazSpacing.md) {
-                        Text("Categorias")
-                            .font(PazTypography.labelMedium)
-                            .padding(.horizontal, PazSpacing.lg)
-
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: PazSpacing.sm) {
-                                ForEach(viewModel.categories, id: \.self) { category in
-                                    Button(action: {
-                                        viewModel.selectedCategory = viewModel.selectedCategory == category ? nil : category
-                                    }) {
-                                        Text(category)
-                                            .font(PazTypography.labelSmall)
-                                            .padding(.horizontal, PazSpacing.md)
-                                            .padding(.vertical, PazSpacing.sm)
-                                            .background(viewModel.selectedCategory == category ? PazColors.primary : PazColors.surface)
-                                            .foregroundColor(viewModel.selectedCategory == category ? .white : PazColors.onSurface)
-                                            .cornerRadius(20)
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, PazSpacing.lg)
+                // Tracks with courses
+                ForEach(viewModel.tracks, id: \.id) { track in
+                    TrackSection(track: track, onCourseTap: { course in
+                        if authCoordinator.isAuthenticated {
+                            viewModel.onCourseTapped(course)
+                        } else {
+                            showLoginSheet = true
                         }
-                    }
+                    })
                 }
-
-                // Video list
-                VStack(spacing: PazSpacing.md) {
-                    ForEach(viewModel.filteredVideos, id: \.id) { video in
-                        NavigationLink(destination: VideoPlayerView(video: video)) {
-                            VideoCard(video: video)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, PazSpacing.lg)
 
                 Spacer().frame(height: PazSpacing.xl)
             }
@@ -98,13 +74,23 @@ struct AcademyView: View {
     }
 
     @ViewBuilder
+    private var emptyState: some View {
+        VStack(spacing: PazSpacing.md) {
+            Spacer()
+            Text("Nenhum conteúdo disponível")
+                .font(PazTypography.bodyMedium)
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+    }
+
+    @ViewBuilder
     private var loadingState: some View {
         ScrollView {
             VStack(spacing: PazSpacing.lg) {
                 SkeletonView().frame(height: 100).padding(.horizontal, PazSpacing.lg).padding(.top, PazSpacing.lg)
-                SkeletonView().frame(height: 200).padding(.horizontal, PazSpacing.lg)
-                ForEach(0..<3, id: \.self) { _ in
-                    SkeletonView().frame(height: 100).padding(.horizontal, PazSpacing.lg)
+                ForEach(0..<4, id: \.self) { _ in
+                    SkeletonView().frame(height: 80).padding(.horizontal, PazSpacing.lg)
                 }
                 Spacer()
             }
@@ -118,21 +104,21 @@ struct AcademyView: View {
             VStack(spacing: PazSpacing.md) {
                 Image(systemName: "exclamationmark.circle")
                     .font(.system(size: 48))
-                    .foregroundColor(PazColors.error)
+                    .foregroundStyle(PazColors.error)
                 Text("Erro ao carregar")
                     .font(PazTypography.titleMedium)
                 Text(viewModel.error ?? "Algo deu errado")
                     .font(PazTypography.bodySmall)
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.secondary)
                 Spacer().frame(height: PazSpacing.md)
                 Button(action: { viewModel.onRetry() }) {
                     Text("Tentar Novamente")
                         .font(PazTypography.titleMedium)
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, PazSpacing.md)
                         .background(PazColors.primary)
-                        .cornerRadius(12)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
             .padding(PazSpacing.lg)
@@ -143,79 +129,75 @@ struct AcademyView: View {
     }
 }
 
-private struct FeaturedVideoCard: View {
-    let video: AcademyVideo
+private struct TrackSection: View {
+    let track: CourseTrack
+    let onCourseTap: (Course) -> Void
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            Color.blue.opacity(0.2)
+        VStack(alignment: .leading, spacing: PazSpacing.sm) {
+            Text(track.title)
+                .font(PazTypography.titleMedium)
+                .padding(.horizontal, PazSpacing.lg)
 
-            VStack(alignment: .leading) {
-                Text(video.title)
-                    .font(PazTypography.titleSmall)
-                    .foregroundColor(.white)
-                Spacer()
+            if let desc = track.description_, !desc.isEmpty {
+                Text(desc)
+                    .font(PazTypography.bodySmall)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, PazSpacing.lg)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .padding(PazSpacing.lg)
 
-            VStack(spacing: PazSpacing.sm) {
-                Image(systemName: "play.circle.fill")
-                    .font(.system(size: 32))
-                    .foregroundColor(.white)
-                if let dur = video.durationFormatted {
-                    Text(dur)
-                        .font(PazTypography.labelSmall)
-                        .foregroundColor(.white)
+            ForEach(track.courses, id: \.id) { course in
+                Button { onCourseTap(course) } label: {
+                    CourseCard(course: course)
                 }
+                .buttonStyle(.plain)
+                .padding(.horizontal, PazSpacing.lg)
             }
-            .padding(PazSpacing.lg)
         }
-        .frame(height: 180)
-        .cornerRadius(16)
     }
 }
 
-private struct VideoCard: View {
-    let video: AcademyVideo
+private struct CourseCard: View {
+    let course: Course
 
     var body: some View {
         HStack(spacing: PazSpacing.md) {
             ZStack {
                 Color.blue.opacity(0.15)
-                Image(systemName: "play.circle.fill")
-                    .font(.system(size: 24))
-                    .foregroundColor(PazColors.primary)
+                if let url = course.thumbnailUrl, !url.isEmpty {
+                    AsyncImage(url: URL(string: url)) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        Color.blue.opacity(0.15)
+                    }
+                    .clipped()
+                } else {
+                    Text(String(course.title.prefix(1)))
+                        .font(PazTypography.titleMedium)
+                        .foregroundStyle(PazColors.primary)
+                }
             }
-            .frame(width: 80, height: 80)
-            .cornerRadius(12)
+            .frame(width: 80, height: 60)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
 
             VStack(alignment: .leading, spacing: PazSpacing.xs) {
-                Text(video.title)
+                Text(course.title)
                     .font(PazTypography.titleSmall)
                     .lineLimit(2)
+                    .foregroundStyle(PazColors.onSurface)
 
-                if let category = video.category {
-                    Text(category)
+                if let desc = course.description_, !desc.isEmpty {
+                    Text(desc)
                         .font(PazTypography.labelSmall)
-                        .foregroundColor(.gray)
-                }
-
-                if let dur = video.durationFormatted {
-                    HStack(spacing: PazSpacing.sm) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 12))
-                        Text(dur)
-                            .font(PazTypography.labelSmall)
-                    }
-                    .foregroundColor(.gray)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
                 }
             }
             Spacer()
         }
         .padding(PazSpacing.md)
         .background(PazColors.surface)
-        .cornerRadius(12)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 

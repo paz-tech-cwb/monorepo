@@ -2,10 +2,12 @@ import SwiftUI
 import Shared
 
 struct AccountView: View {
-    @StateObject private var viewModel: AccountViewModel
+    @State private var viewModel: AccountViewModel
+    @Environment(AuthenticationCoordinator.self) private var authCoordinator
+    @State private var showLogin = false
 
     init(userRepository: UserRepository, authRepository: AuthRepository) {
-        _viewModel = StateObject(wrappedValue: AccountViewModel(
+        _viewModel = State(initialValue: AccountViewModel(
             userRepository: userRepository,
             authRepository: authRepository
         ))
@@ -21,6 +23,28 @@ struct AccountView: View {
                 }
             }
             .navigationTitle("Conta")
+        }
+        .onAppear {
+            if !viewModel.isLoading {
+                showLogin = !authCoordinator.isAuthenticated
+            }
+        }
+        .onChange(of: viewModel.isLoading) { _, isLoading in
+            if !isLoading { showLogin = !authCoordinator.isAuthenticated }
+        }
+        .onChange(of: authCoordinator.isAuthenticated) { _, isAuthenticated in
+            if isAuthenticated {
+                showLogin = false
+                viewModel.reload()
+            } else {
+                showLogin = true
+            }
+        }
+        .fullScreenCover(isPresented: $showLogin) {
+            LoginView(
+                authCoordinator: authCoordinator,
+                onDismiss: { showLogin = false }
+            )
         }
     }
 

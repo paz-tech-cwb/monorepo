@@ -1,12 +1,13 @@
 import SwiftUI
-import Combine
+import Observation
 import Shared
 
 @MainActor
-class AccountViewModel: ObservableObject {
-    @Published var user: User?
-    @Published var isDarkMode = false
-    @Published var isLoading = true
+@Observable
+class AccountViewModel {
+    var user: User?
+    var isDarkMode = false
+    var isLoading = true
 
     private let userRepository: UserRepository
     private let authRepository: AuthRepository
@@ -32,6 +33,11 @@ class AccountViewModel: ObservableObject {
     func onToggleDarkMode() {
         isDarkMode.toggle()
         // TODO: persist preference
+    }
+
+    func reload() {
+        isLoading = true
+        loadUser()
     }
 
     func onLogout() {

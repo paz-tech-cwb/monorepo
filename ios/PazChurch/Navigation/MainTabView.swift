@@ -2,11 +2,10 @@ import SwiftUI
 import Shared
 
 struct MainTabView: View {
-    @EnvironmentObject private var pushService: PushNotificationService
-    @State private var navigationPath = NavigationPath()
+    @Environment(PushNotificationService.self) private var pushService
+    @Environment(AuthenticationCoordinator.self) private var authCoordinator
 
     var body: some View {
-        // Listen for notification deep links resolved while app is running
         TabView {
             HomeView(
                 homeRepository: IosAppContainer.shared.homeRepository,
@@ -39,10 +38,12 @@ struct MainTabView: View {
                 Label("Conta", systemImage: "person.fill")
             }
         }
-        .accentColor(Color(red: 0.31, green: 0.16, blue: 0.78))
+        .tint(PazColors.pazPrimaryLight)
     }
 }
 
 #Preview {
     MainTabView()
+        .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
+        .environment(PushNotificationService.shared)
 }
