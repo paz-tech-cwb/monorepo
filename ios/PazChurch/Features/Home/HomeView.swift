@@ -35,6 +35,7 @@ struct HomeView: View {
             compactNavOverlay
         }
         .ignoresSafeArea(edges: .top)
+        .task { await viewModel.load() }
     }
 
     // MARK: - Main scroll
@@ -66,7 +67,6 @@ struct HomeView: View {
         .coordinateSpace(name: "homeScroll")
         .onPreferenceChange(ScrollOffsetKey.self) { scrollOffset = $0 }
         .background(PazColors.background)
-        .task { await viewModel.load() }
     }
 
     // MARK: - Content sections
