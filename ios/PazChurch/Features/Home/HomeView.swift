@@ -63,6 +63,9 @@ struct HomeView: View {
             .background(PazColors.background)
             .navigationTitle("Início")
             .navigationBarTitleDisplayMode(.large)
+            .navigationDestination(for: AgendaEvent.self) { event in
+                AgendaDetailView(event: event)
+            }
         }
         .task { await viewModel.load() }
         .sheet(isPresented: $showAgendaList) {
@@ -237,7 +240,7 @@ struct HomeView: View {
 
             VStack(spacing: 12) {
                 ForEach(agendaEvents, id: \.id) { event in
-                    EventCardView(event: event, onTap: {})
+                    EventCardView(event: event)
                 }
             }
             .padding(.horizontal, 16)
@@ -433,7 +436,6 @@ private struct DayPillView: View {
 
 private struct EventCardView: View {
     let event: AgendaEvent
-    let onTap: () -> Void
 
     private var time: String {
         guard let part = event.startDate.split(separator: "T").last else { return "--:--" }
@@ -441,7 +443,7 @@ private struct EventCardView: View {
     }
 
     var body: some View {
-        Button(action: onTap) {
+        NavigationLink(value: event) {
             HStack(spacing: 13) {
                 Text(time)
                     .font(.system(size: 15.5, weight: .bold))
