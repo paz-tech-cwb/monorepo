@@ -8,7 +8,7 @@ data class HomeContent(
     val banners: List<Banner> = emptyList(),
     val agenda: List<AgendaEvent> = emptyList(),
     val contribution: ContributionSection? = null,
-    val sectionOrder: List<String> = listOf("announcements", "contribution", "agenda"),
+    val sectionOrder: List<String> = listOf("agenda", "announcements", "contribution"),
 )
 
 @Serializable

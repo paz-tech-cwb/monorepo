@@ -35,6 +35,7 @@ class HomeRepositoryImpl(private val client: HttpClient) : HomeRepository {
             AgendaEvent(id = "2", title = "Grupo de Vida",    startDate = "2026-06-04T19:30", location = "Sala 3 — Bloco B"),
             AgendaEvent(id = "3", title = "Ensaio do Louvor", startDate = "2026-06-04T20:00", location = "Sala de Música"),
         ),
+        sectionOrder = listOf("agenda", "announcements", "contribution"),
     )
 }
 

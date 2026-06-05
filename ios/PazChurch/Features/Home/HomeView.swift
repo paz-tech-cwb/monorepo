@@ -236,7 +236,7 @@ struct HomeView: View {
                 .padding(.horizontal, 18)
                 .padding(.vertical, 4)
             }
-            .padding(.bottom, 6)
+            .padding(.bottom, 16)
 
             VStack(spacing: 12) {
                 ForEach(agendaEvents, id: \.id) { event in
@@ -244,6 +244,7 @@ struct HomeView: View {
                 }
             }
             .padding(.horizontal, 16)
+            .padding(.top, 8)
         }
     }
 
