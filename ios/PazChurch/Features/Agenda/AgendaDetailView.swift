@@ -1,3 +1,4 @@
+import Kingfisher
 import Shared
 import SwiftUI
 
@@ -36,12 +37,23 @@ struct AgendaDetailView: View {
 
     private var heroArea: some View {
         ZStack(alignment: .bottom) {
-            PazColors.heroGradient.frame(height: 300)
-                .overlay(
-                    Image(systemName: "plus")
-                        .font(.system(size: 180, weight: .ultraLight))
-                        .foregroundStyle(.white.opacity(0.08))
-                )
+            if let imageUrl = event.imageUrl, !imageUrl.isEmpty, let url = URL(string: imageUrl) {
+                KFImage(url)
+                    .resizable()
+                    .placeholder { PazColors.heroGradient }
+                    .fade(duration: 0.2)
+                    .scaledToFill()
+                    .frame(height: 300)
+                    .clipped()
+                    .overlay(LinearGradient(colors: [.black.opacity(0.3), .black.opacity(0.7)], startPoint: .top, endPoint: .bottom))
+            } else {
+                PazColors.heroGradient.frame(height: 300)
+                    .overlay(
+                        Image(systemName: "plus")
+                            .font(.system(size: 180, weight: .ultraLight))
+                            .foregroundStyle(.white.opacity(0.08))
+                    )
+            }
             VStack(alignment: .leading, spacing: 8) {
                 PazGoldBadge(text: String(event.startDate.prefix(8)).uppercased())
                 Text(event.title)

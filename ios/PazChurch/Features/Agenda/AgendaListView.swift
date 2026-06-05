@@ -1,3 +1,4 @@
+import Kingfisher
 import Shared
 import SwiftUI
 
@@ -92,13 +93,25 @@ private struct AgendaEventRow: View {
 
     private var dateBox: some View {
         let parts = event.startDate.split(separator: "-").map(String.init)
-        return VStack(spacing: 0) {
-            Text(parts[safe: 2] ?? "--").font(PazTypography.titleMedium).foregroundStyle(PazColors.pazPrimary)
-            Text(monthAbbrev(parts[safe: 1])).font(PazTypography.labelSmall).foregroundStyle(PazColors.pazSky)
+        return Group {
+            if let imageUrl = event.imageUrl, !imageUrl.isEmpty, let url = URL(string: imageUrl) {
+                KFImage(url)
+                    .resizable()
+                    .placeholder { PazColors.pazPrimary.opacity(0.08) }
+                    .fade(duration: 0.2)
+                    .scaledToFill()
+                    .frame(width: 52, height: 52)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else {
+                VStack(spacing: 0) {
+                    Text(parts[safe: 2] ?? "--").font(PazTypography.titleMedium).foregroundStyle(PazColors.pazPrimary)
+                    Text(monthAbbrev(parts[safe: 1])).font(PazTypography.labelSmall).foregroundStyle(PazColors.pazSky)
+                }
+                .frame(width: 52, height: 52)
+                .background(PazColors.pazPrimary.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
         }
-        .frame(width: 52, height: 52)
-        .background(PazColors.pazPrimary.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private func monthAbbrev(_ m: String?) -> String {
