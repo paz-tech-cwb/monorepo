@@ -4,41 +4,20 @@ import SwiftUI
 
 struct AgendaListView: View {
     let events: [AgendaEvent]
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .top) {
-                PazColors.background.ignoresSafeArea()
-                VStack(spacing: 0) {
-                    headerBar
-                    if events.isEmpty {
-                        emptyState
-                    } else {
-                        eventList
-                    }
+            Group {
+                if events.isEmpty {
+                    emptyState
+                } else {
+                    eventList
                 }
             }
-            .navigationBarHidden(true)
+            .background(PazColors.background)
+            .navigationTitle("Agenda")
+            .navigationBarTitleDisplayMode(.large)
         }
-    }
-
-    private var headerBar: some View {
-        HStack(spacing: 14) {
-            Button(action: { dismiss() }) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 40, height: 40)
-                    .background(.white.opacity(0.15))
-                    .clipShape(Circle())
-            }
-            Text("Agenda").font(PazTypography.headlineMedium).foregroundStyle(.white)
-            Spacer()
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .background(PazColors.heroGradient)
     }
 
     private var eventList: some View {

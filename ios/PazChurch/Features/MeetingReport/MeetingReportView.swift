@@ -4,7 +4,6 @@ import SwiftUI
 
 struct MeetingReportView: View {
     @State private var viewModel: MeetingReportViewModel
-    @Environment(\.dismiss) var dismiss
 
     init(formsRepository: FormsRepository, authRepository: AuthRepository) {
         _viewModel = State(initialValue: MeetingReportViewModel(
@@ -15,73 +14,49 @@ struct MeetingReportView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                VStack(spacing: 0) {
-                    // Hero header
-                    VStack(alignment: .leading) {
-                        HStack(spacing: PazSpacing.lg) {
-                            Button(action: { dismiss() }) {
-                                Image(systemName: "chevron.left")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.white)
-                            }
-                            Text("Relatório da Reunião")
-                                .font(PazTypography.headlineMedium)
-                                .foregroundColor(.white)
-                            Spacer()
-                        }
-                        .padding(.horizontal, PazSpacing.lg)
-                        .padding(.vertical, PazSpacing.md)
+            ScrollView {
+                VStack(alignment: .leading, spacing: PazSpacing.lg) {
+                    Spacer().frame(height: PazSpacing.lg)
+
+                    FormField(label: "Data da Reunião", placeholder: "DD/MM/YYYY", text: $viewModel.date)
+                    FormField(label: "Participantes", placeholder: "0", text: $viewModel.attendees)
+                    FormField(label: "Visitantes", placeholder: "0", text: $viewModel.visitors)
+                    FormField(label: "Ofertas (R$)", placeholder: "0,00", text: $viewModel.offerings)
+                    FormField(
+                        label: "Observações",
+                        placeholder: "Algo importante?",
+                        text: $viewModel.observations,
+                        multiline: true
+                    )
+
+                    if let error = viewModel.error {
+                        Text(error)
+                            .font(PazTypography.bodySmall)
+                            .foregroundColor(.red)
+                            .padding(PazSpacing.lg)
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(12)
                     }
-                    .background(PazColors.heroGradient)
 
-                    // Form
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: PazSpacing.lg) {
-                            Spacer().frame(height: PazSpacing.lg)
-
-                            FormField(label: "Data da Reunião", placeholder: "DD/MM/YYYY", text: $viewModel.date)
-                            FormField(label: "Participantes", placeholder: "0", text: $viewModel.attendees)
-                            FormField(label: "Visitantes", placeholder: "0", text: $viewModel.visitors)
-                            FormField(label: "Ofertas (R$)", placeholder: "0,00", text: $viewModel.offerings)
-                            FormField(
-                                label: "Observações",
-                                placeholder: "Algo importante?",
-                                text: $viewModel.observations,
-                                multiline: true
-                            )
-
-                            if let error = viewModel.error {
-                                Text(error)
-                                    .font(PazTypography.bodySmall)
-                                    .foregroundColor(.red)
-                                    .padding(PazSpacing.lg)
-                                    .background(Color.red.opacity(0.1))
-                                    .cornerRadius(12)
-                            }
-
-                            Button(action: { viewModel.onSubmit() }) {
-                                Text(viewModel.isSubmitting ? "Enviando..." : "Enviar Relatório")
-                                    .font(PazTypography.titleMedium)
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, PazSpacing.md)
-                                    .background(viewModel.isSubmitting ? Color.gray : PazColors.primary)
-                                    .cornerRadius(12)
-                                    .disabled(viewModel.isSubmitting || viewModel.date.isEmpty || viewModel.attendees
-                                        .isEmpty)
-                            }
-
-                            Spacer().frame(height: PazSpacing.xl)
-                        }
-                        .padding(.horizontal, PazSpacing.lg)
+                    Button(action: { viewModel.onSubmit() }) {
+                        Text(viewModel.isSubmitting ? "Enviando..." : "Enviar Relatório")
+                            .font(PazTypography.titleMedium)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, PazSpacing.md)
+                            .background(viewModel.isSubmitting ? Color.gray : PazColors.primary)
+                            .cornerRadius(12)
                     }
-                    .background(PazColors.background)
+                    .disabled(viewModel.isSubmitting || viewModel.date.isEmpty || viewModel.attendees.isEmpty)
+
+                    Spacer().frame(height: PazSpacing.xl)
                 }
-                .background(PazColors.background)
+                .padding(.horizontal, PazSpacing.lg)
             }
+            .background(PazColors.background)
+            .navigationTitle("Relatar Reunião")
+            .navigationBarTitleDisplayMode(.large)
         }
-        .navigationBarBackButtonHidden()
     }
 }
 

@@ -4,7 +4,6 @@ import SwiftUI
 
 struct MemberJourneyView: View {
     @State private var viewModel: MemberJourneyViewModel
-    @Environment(\.dismiss) var dismiss
 
     init(memberJourneyRepository: MemberJourneyRepository) {
         _viewModel = State(initialValue: MemberJourneyViewModel(repository: memberJourneyRepository))
@@ -12,37 +11,17 @@ struct MemberJourneyView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                VStack(spacing: 0) {
-                    // Hero header
-                    VStack(alignment: .leading) {
-                        HStack(spacing: PazSpacing.lg) {
-                            Button(action: { dismiss() }) {
-                                Image(systemName: "chevron.left")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.white)
-                            }
-                            Text("Minha Jornada")
-                                .font(PazTypography.headlineMedium)
-                                .foregroundColor(.white)
-                            Spacer()
-                        }
-                        .padding(.horizontal, PazSpacing.lg)
-                        .padding(.vertical, PazSpacing.md)
-                    }
-                    .background(PazColors.heroGradient)
-
-                    // Content
-                    if viewModel.isLoading {
-                        loadingState
-                    } else {
-                        contentState
-                    }
+            Group {
+                if viewModel.isLoading {
+                    loadingState
+                } else {
+                    contentState
                 }
-                .background(PazColors.background)
             }
+            .background(PazColors.background)
+            .navigationTitle("Minha Jornada")
+            .navigationBarTitleDisplayMode(.large)
         }
-        .navigationBarBackButtonHidden()
     }
 
     private var contentState: some View {

@@ -4,7 +4,6 @@ import SwiftUI
 
 struct FormulariosView: View {
     @State private var viewModel: FormulariosViewModel
-    @Environment(\.dismiss) private var dismiss
 
     init(formsRepository: FormsRepository) {
         _viewModel = State(initialValue: FormulariosViewModel(formsRepository: formsRepository))
@@ -12,18 +11,10 @@ struct FormulariosView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .top) {
-                PazColors.background.ignoresSafeArea()
-                VStack(spacing: 0) {
-                    headerBar
-                    ZStack {
-                        PazColors.background.clipShape(RoundedRectangle(cornerRadius: 28))
-                            .ignoresSafeArea(edges: .bottom)
-                        screenContent
-                    }
-                }
-            }
-            .navigationBarHidden(true)
+            screenContent
+                .background(PazColors.background)
+                .navigationTitle("Formulários")
+                .navigationBarTitleDisplayMode(.large)
         }
         .task { await viewModel.load() }
     }
@@ -39,24 +30,6 @@ struct FormulariosView: View {
         } else {
             contentState
         }
-    }
-
-    private var headerBar: some View {
-        HStack(spacing: 14) {
-            Button(action: { dismiss() }) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 40, height: 40)
-                    .background(.white.opacity(0.15))
-                    .clipShape(Circle())
-            }
-            Text("Formulários").font(PazTypography.headlineMedium).foregroundStyle(.white)
-            Spacer()
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .background(PazColors.heroGradient)
     }
 
     private var contentState: some View {

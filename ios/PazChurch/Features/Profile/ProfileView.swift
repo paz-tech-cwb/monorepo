@@ -3,7 +3,6 @@ import SwiftUI
 
 struct ProfileView: View {
     @State private var viewModel: ProfileViewModel
-    @Environment(\.dismiss) private var dismiss
     @Environment(AuthenticationCoordinator.self) private var authCoordinator
 
     init(authRepository: AuthRepository) {
@@ -12,17 +11,10 @@ struct ProfileView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .top) {
-                PazColors.background.ignoresSafeArea()
-                VStack(spacing: 0) {
-                    heroHeader
-                    ZStack(alignment: .top) {
-                        PazColors.background.ignoresSafeArea(edges: .bottom)
-                        screenContent
-                    }
-                }
-            }
-            .navigationBarHidden(true)
+            screenContent
+                .background(PazColors.background)
+                .navigationTitle("Meu Perfil")
+                .navigationBarTitleDisplayMode(.large)
         }
         .task { await viewModel.loadUser() }
     }
@@ -32,18 +24,6 @@ struct ProfileView: View {
         if viewModel.isLoading { loadingState }
         else if viewModel.user == nil { loggedOutState }
         else { loggedInState }
-    }
-
-    private var heroHeader: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("Meu Perfil").font(PazTypography.bodySmall).foregroundStyle(.white.opacity(0.5))
-            Text(viewModel.user?.name ?? "Perfil").font(PazTypography.headlineMedium).foregroundStyle(.white)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 24)
-        .padding(.top, 16)
-        .padding(.bottom, 44)
-        .background(PazColors.heroGradient)
     }
 
     private var loggedInState: some View {
