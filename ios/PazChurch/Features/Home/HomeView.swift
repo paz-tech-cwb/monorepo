@@ -1,3 +1,4 @@
+import Kingfisher
 import Shared
 import SwiftUI
 
@@ -8,6 +9,8 @@ struct HomeView: View {
     @State private var selectedDayIndex: Int = 2
     @State private var currentFeatureIndex: Int = 0
     @State private var showAgendaList = false
+    @State private var autoScrollTimer: Timer?
+    @State private var isUserDragging = false
     @Environment(\.colorScheme) private var colorScheme
 
     init(homeRepository: HomeRepository, authRepository: AuthRepository) {
@@ -103,13 +106,16 @@ struct HomeView: View {
     // MARK: - Featured section
 
     private var featuredSection: some View {
-        TabView(selection: $currentFeatureIndex) {
+        let count = banners.count
+        return TabView(selection: $currentFeatureIndex) {
             ForEach(Array(banners.enumerated()), id: \.offset) { index, banner in
                 FeaturedCardView(
                     title: banner.title,
+                    imageUrl: banner.imageUrl,
                     isAlt: index % 2 == 1
                 )
                 .padding(.horizontal, 18)
+                .padding(.trailing, count > 1 ? 44 : 0)
                 .padding(.bottom, 60)
                 .tag(index)
             }
@@ -117,6 +123,38 @@ struct HomeView: View {
         .frame(height: 240)
         .tabViewStyle(.page(indexDisplayMode: .never))
         .tint(.primary)
+        .onAppear { startAutoScroll() }
+        .onDisappear { stopAutoScroll() }
+        .onChange(of: currentFeatureIndex) { _, _ in
+            if isUserDragging { resetAutoScroll() }
+        }
+        .simultaneousGesture(
+            DragGesture()
+                .onChanged { _ in isUserDragging = true }
+                .onEnded { _ in
+                    isUserDragging = false
+                    resetAutoScroll()
+                }
+        )
+    }
+
+    private func startAutoScroll() {
+        guard banners.count > 1 else { return }
+        autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { _ in
+            withAnimation(.easeInOut) {
+                currentFeatureIndex = (currentFeatureIndex + 1) % banners.count
+            }
+        }
+    }
+
+    private func stopAutoScroll() {
+        autoScrollTimer?.invalidate()
+        autoScrollTimer = nil
+    }
+
+    private func resetAutoScroll() {
+        stopAutoScroll()
+        startAutoScroll()
     }
 
     // MARK: - Dízimos card
@@ -253,6 +291,7 @@ private let agendaDayItems: [AgendaDayItem] = [
 
 private struct FeaturedCardView: View {
     let title: String
+    let imageUrl: String
     let isAlt: Bool
 
     private var gradient: LinearGradient {
@@ -261,15 +300,30 @@ private struct FeaturedCardView: View {
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
-            gradient
+            if !imageUrl.isEmpty, let url = URL(string: imageUrl) {
+                KFImage(url)
+                    .resizable()
+                    .placeholder { gradient }
+                    .fade(duration: 0.2)
+                    .scaledToFill()
+                    .overlay(
+                        LinearGradient(
+                            colors: [.clear, .black.opacity(0.6)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+            } else {
+                gradient
 
-            CrossWatermarkView()
-                .frame(width: 158, height: 158)
-                .opacity(0.08)
-                .rotationEffect(.degrees(-9))
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-                .offset(x: 14, y: 30)
-                .clipped()
+                CrossWatermarkView()
+                    .frame(width: 158, height: 158)
+                    .opacity(0.08)
+                    .rotationEffect(.degrees(-9))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                    .offset(x: 14, y: 30)
+                    .clipped()
+            }
 
             VStack(alignment: .leading, spacing: 0) {
                 Spacer()
