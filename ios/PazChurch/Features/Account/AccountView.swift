@@ -1,9 +1,11 @@
+import Observation
 import Shared
 import SwiftUI
 
 struct AccountView: View {
     @State private var viewModel: AccountViewModel
     @Environment(AuthenticationCoordinator.self) private var authCoordinator
+    @Environment(AppThemeManager.self) private var themeManager
 
     init(userRepository: UserRepository, authRepository: AuthRepository) {
         _viewModel = State(initialValue: AccountViewModel(
@@ -14,51 +16,21 @@ struct AccountView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .top) {
-                PazColors.background.ignoresSafeArea()
+            Group {
                 if viewModel.isLoading {
                     loadingState
                 } else if !authCoordinator.isAuthenticated {
                     LoginView(authCoordinator: authCoordinator, isEmbedded: true)
                 } else {
-                    VStack(spacing: 0) {
-                        heroHeader
-                        contentState
-                    }
+                    contentState
                 }
             }
-            .navigationBarHidden(true)
+            .navigationTitle("Conta")
+            .navigationBarTitleDisplayMode(.large)
         }
         .task { await viewModel.reload() }
         .onChange(of: authCoordinator.isAuthenticated) { _, isAuth in
             if isAuth { Task { await viewModel.reload() } }
-        }
-    }
-
-    // MARK: - Hero
-
-    private var heroHeader: some View {
-        ZStack(alignment: .trailing) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Meu Perfil").font(PazTypography.bodySmall).foregroundStyle(.white.opacity(0.5))
-                Text(viewModel.user?.name.components(separatedBy: " ").first ?? "Conta")
-                    .font(PazTypography.displayLarge)
-                    .foregroundStyle(.white)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 20)
-            .background(PazColors.heroGradient)
-
-            Button(action: {}) {
-                Image(systemName: "gear")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-                    .background(Color(hex: "101F31"))
-                    .clipShape(Circle())
-            }
-            .padding(.trailing, 24)
         }
     }
 
@@ -67,36 +39,56 @@ struct AccountView: View {
     private var contentState: some View {
         ScrollView {
             VStack(spacing: 0) {
-                Spacer().frame(height: 24)
+                Spacer().frame(height: 16)
 
                 if let user = viewModel.user {
-                    userCard(user: user).padding(.horizontal, 20).padding(.bottom, 24)
+                    NavigationLink(destination: EditProfileView()) {
+                        userCard(user: user)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 24)
 
                     sectionLabel("MINHA IGREJA")
                     menuCard {
-                        AccountRow(title: "Jornada do Membro", icon: "figure.walk", tint: PazColors.pazPrimaryLight) {}
+                        NavigationLink(destination: MemberJourneyView(memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository)) {
+                            AccountRow(title: "Jornada do Membro", icon: "figure.walk", tint: PazColors.pazPrimaryLight)
+                        }
+                        .buttonStyle(.plain)
                         rowDivider
-                        AccountRow(title: "Relatar Reunião", icon: "doc.text", tint: Color(hex: "2E7D32")) {}
+                        NavigationLink(destination: MeetingReportView(formsRepository: IosAppContainer.shared.formsRepository, authRepository: IosAppContainer.shared.authRepository)) {
+                            AccountRow(title: "Relatar Reunião", icon: "doc.text", tint: Color(hex: "2E7D32"))
+                        }
+                        .buttonStyle(.plain)
                         rowDivider
-                        AccountRow(title: "Formulários", icon: "list.clipboard", tint: Color(hex: "6A1B9A")) {}
+                        NavigationLink(destination: FormulariosView(formsRepository: IosAppContainer.shared.formsRepository)) {
+                            AccountRow(title: "Formulários", icon: "list.clipboard", tint: Color(hex: "6A1B9A"))
+                        }
+                        .buttonStyle(.plain)
                         rowDivider
-                        AccountRow(title: "Ministérios", icon: "music.note", tint: Color(hex: "E65100")) {}
+                        NavigationLink(destination: MinistriesView(churchRepository: IosAppContainer.shared.churchRepository)) {
+                            AccountRow(title: "Ministérios", icon: "music.note", tint: Color(hex: "E65100"))
+                        }
+                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)
 
                     sectionLabel("PREFERÊNCIAS")
                     menuCard {
-                        AccountRow(title: "Notificações", icon: "bell", tint: PazColors.pazPrimaryMid) {}
+                        NavigationLink(destination: NotificationPrefsView()) {
+                            AccountRow(title: "Notificações", icon: "bell", tint: PazColors.pazPrimaryMid)
+                        }
+                        .buttonStyle(.plain)
                         rowDivider
                         HStack(spacing: 16) {
                             PazIconContainer(
-                                icon: viewModel.isDarkMode ? "moon.fill" : "sun.max.fill",
+                                icon: themeManager.isDarkMode ? "moon.fill" : "sun.max.fill",
                                 tint: PazColors.pazPrimaryMid
                             )
                             Text("Modo Escuro").font(PazTypography.bodyMedium).foregroundStyle(PazColors.ink)
                             Spacer()
-                            Toggle("", isOn: $viewModel.isDarkMode).labelsHidden().tint(PazColors.pazPrimaryLight)
+                            Toggle("", isOn: Bindable(themeManager).isDarkMode).labelsHidden().tint(PazColors.pazPrimaryLight)
                         }
                         .padding(.horizontal, 16).padding(.vertical, 12)
                     }
@@ -127,28 +119,39 @@ struct AccountView: View {
     // MARK: - Helpers
 
     private func userCard(user: Shared.User) -> some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle().fill(PazColors.pazPrimary.opacity(0.15)).frame(width: 56, height: 56)
-                Text(user.name.prefix(1).uppercased()).font(PazTypography.headlineSmall).foregroundStyle(PazColors.pazPrimary)
+        ZStack(alignment: .topTrailing) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle().fill(PazColors.pazPrimary.opacity(0.15)).frame(width: 56, height: 56)
+                    Text(user.name.prefix(1).uppercased()).font(PazTypography.headlineSmall).foregroundStyle(PazColors.pazPrimary)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(user.name).font(PazTypography.titleMedium).foregroundStyle(PazColors.pazPrimary)
+                    Text(user.email).font(PazTypography.bodySmall).foregroundStyle(PazColors.pazSky).lineLimit(1)
+                    Spacer().frame(height: 2)
+                    Text(user.role.displayName)
+                        .font(PazTypography.labelSmall)
+                        .foregroundStyle(PazColors.pazPrimary)
+                        .padding(.horizontal, 8).padding(.vertical, 2)
+                        .background(PazColors.pazPrimary.opacity(0.12))
+                        .clipShape(Capsule())
+                }
+                Spacer()
             }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(user.name).font(PazTypography.titleMedium).foregroundStyle(PazColors.pazPrimary)
-                Text(user.email).font(PazTypography.bodySmall).foregroundStyle(PazColors.pazSky).lineLimit(1)
-                Spacer().frame(height: 2)
-                Text(user.role.displayName)
-                    .font(PazTypography.labelSmall)
-                    .foregroundStyle(PazColors.pazPrimary)
-                    .padding(.horizontal, 8).padding(.vertical, 2)
-                    .background(PazColors.pazPrimary.opacity(0.12))
-                    .clipShape(Capsule())
-            }
-            Spacer()
+            .padding(16)
+            .background(PazColors.tint)
+            .clipShape(RoundedRectangle(cornerRadius: 22))
+            .overlay(RoundedRectangle(cornerRadius: 22).stroke(PazColors.pazPrimary.opacity(0.13), lineWidth: 1))
+
+            Image(systemName: "pencil")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(PazColors.pazPrimary)
+                .padding(8)
+                .background(PazColors.surface)
+                .clipShape(Circle())
+                .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
+                .padding(10)
         }
-        .padding(16)
-        .background(PazColors.tint)
-        .clipShape(RoundedRectangle(cornerRadius: 22))
-        .overlay(RoundedRectangle(cornerRadius: 22).stroke(PazColors.pazPrimary.opacity(0.13), lineWidth: 1))
     }
 
     private func sectionLabel(_ text: String) -> some View {
@@ -188,19 +191,15 @@ private struct AccountRow: View {
     let title: String
     let icon: String
     let tint: Color
-    let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 16) {
-                PazIconContainer(icon: icon, tint: tint)
-                Text(title).font(PazTypography.bodyMedium).foregroundStyle(PazColors.ink)
-                Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 13)).foregroundStyle(PazColors.slateLight)
-            }
-            .padding(.horizontal, 16).padding(.vertical, 12)
+        HStack(spacing: 16) {
+            PazIconContainer(icon: icon, tint: tint)
+            Text(title).font(PazTypography.bodyMedium).foregroundStyle(PazColors.ink)
+            Spacer()
+            Image(systemName: "chevron.right").font(.system(size: 13)).foregroundStyle(PazColors.slateLight)
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 16).padding(.vertical, 12)
     }
 }
 
@@ -210,6 +209,7 @@ private struct AccountRow: View {
         authRepository: IosAppContainer.shared.authRepository
     )
     .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
+    .environment(AppThemeManager())
 }
 
 #Preview("Dark") {
@@ -218,5 +218,6 @@ private struct AccountRow: View {
         authRepository: IosAppContainer.shared.authRepository
     )
     .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
+    .environment(AppThemeManager())
     .preferredColorScheme(.dark)
 }
