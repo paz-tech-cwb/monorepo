@@ -14,185 +14,209 @@ struct AccountView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
+            ZStack(alignment: .top) {
+                PazColors.background.ignoresSafeArea()
                 if viewModel.isLoading {
                     loadingState
                 } else if !authCoordinator.isAuthenticated {
                     LoginView(authCoordinator: authCoordinator, isEmbedded: true)
                 } else {
-                    contentState
+                    VStack(spacing: 0) {
+                        heroHeader
+                        contentState
+                    }
                 }
             }
-            .navigationTitle(authCoordinator.isAuthenticated ? "Conta" : "")
-            .background(PazColors.background)
+            .navigationBarHidden(true)
         }
-        .onChange(of: authCoordinator.isAuthenticated) { _, isAuthenticated in
-            if isAuthenticated { viewModel.reload() }
+        .task { await viewModel.reload() }
+        .onChange(of: authCoordinator.isAuthenticated) { _, isAuth in
+            if isAuth { Task { await viewModel.reload() } }
         }
     }
 
+    // MARK: - Hero
+
+    private var heroHeader: some View {
+        ZStack(alignment: .trailing) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Meu Perfil").font(PazTypography.bodySmall).foregroundStyle(.white.opacity(0.5))
+                Text(viewModel.user?.name.components(separatedBy: " ").first ?? "Conta")
+                    .font(PazTypography.displayLarge)
+                    .foregroundStyle(.white)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .background(PazColors.heroGradient)
+
+            Button(action: {}) {
+                Image(systemName: "gear")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(Color(hex: "101F31"))
+                    .clipShape(Circle())
+            }
+            .padding(.trailing, 24)
+        }
+    }
+
+    // MARK: - Content
+
     private var contentState: some View {
         ScrollView {
-            VStack(spacing: PazSpacing.lg) {
-                // Hero header
-                VStack(alignment: .leading, spacing: PazSpacing.sm) {
-                    Text("Minha Conta")
-                        .font(PazTypography.headlineSmall)
-                        .foregroundColor(.white)
-                    Text("Gerencie suas informações")
-                        .font(PazTypography.bodySmall)
-                        .foregroundColor(.white.opacity(0.8))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(PazSpacing.lg)
-                .background(PazColors.heroGradient)
-                .cornerRadius(16)
-                .padding(.horizontal, PazSpacing.lg)
-                .padding(.top, PazSpacing.lg)
+            VStack(spacing: 0) {
+                Spacer().frame(height: 24)
 
-                // Profile card
                 if let user = viewModel.user {
-                    VStack(spacing: PazSpacing.md) {
-                        Circle()
-                            .fill(PazColors.primary.opacity(0.2))
-                            .frame(width: 80, height: 80)
-                            .overlay(
-                                Text(user.name.prefix(1).uppercased())
-                                    .font(PazTypography.headlineLarge)
-                                    .foregroundColor(PazColors.primary)
+                    userCard(user: user).padding(.horizontal, 20).padding(.bottom, 24)
+
+                    sectionLabel("MINHA IGREJA")
+                    menuCard {
+                        AccountRow(title: "Jornada do Membro", icon: "figure.walk", tint: PazColors.pazPrimaryLight) {}
+                        rowDivider
+                        AccountRow(title: "Relatar Reunião", icon: "doc.text", tint: Color(hex: "2E7D32")) {}
+                        rowDivider
+                        AccountRow(title: "Formulários", icon: "list.clipboard", tint: Color(hex: "6A1B9A")) {}
+                        rowDivider
+                        AccountRow(title: "Ministérios", icon: "music.note", tint: Color(hex: "E65100")) {}
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+
+                    sectionLabel("PREFERÊNCIAS")
+                    menuCard {
+                        AccountRow(title: "Notificações", icon: "bell", tint: PazColors.pazPrimaryMid) {}
+                        rowDivider
+                        HStack(spacing: 16) {
+                            PazIconContainer(
+                                icon: viewModel.isDarkMode ? "moon.fill" : "sun.max.fill",
+                                tint: PazColors.pazPrimaryMid
                             )
-
-                        Text(user.name)
-                            .font(PazTypography.titleMedium)
-
-                        Text(user.email)
-                            .font(PazTypography.bodySmall)
-                            .foregroundColor(.gray)
-
-                        Text(user.role.displayName)
-                            .font(PazTypography.labelSmall)
-                            .foregroundColor(PazColors.primary)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 4)
-                            .background(PazColors.primary.opacity(0.12))
-                            .cornerRadius(20)
+                            Text("Modo Escuro").font(PazTypography.bodyMedium).foregroundStyle(PazColors.ink)
+                            Spacer()
+                            Toggle("", isOn: $viewModel.isDarkMode).labelsHidden().tint(PazColors.pazPrimaryLight)
+                        }
+                        .padding(.horizontal, 16).padding(.vertical, 12)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(PazSpacing.lg)
-                    .background(PazColors.surface)
-                    .cornerRadius(16)
-                    .padding(.horizontal, PazSpacing.lg)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
 
-                    // Navigation menu
-                    VStack(spacing: 0) {
-                        NavigationLink(destination: MemberJourneyView(memberJourneyRepository: IosAppContainer.shared
-                                .memberJourneyRepository)) {
-                            MenuRow(title: "Minha Jornada", icon: "figure.walk")
-                        }
-                        Divider().padding(.horizontal, PazSpacing.lg)
-                        NavigationLink(destination: MeetingReportView(
-                            formsRepository: IosAppContainer.shared.formsRepository,
-                            authRepository: IosAppContainer.shared.authRepository
-                        )) {
-                            MenuRow(title: "Relatório de Reunião", icon: "doc.text")
-                        }
-                        Divider().padding(.horizontal, PazSpacing.lg)
-                        NavigationLink(destination: FormulariosView(formsRepository: IosAppContainer.shared
-                                .formsRepository)) {
-                            MenuRow(title: "Formulários", icon: "list.clipboard")
-                        }
-                        Divider().padding(.horizontal, PazSpacing.lg)
-                        NavigationLink(destination: MinistriesView(churchRepository: IosAppContainer.shared
-                                .churchRepository)) {
-                            MenuRow(title: "Ministérios & Grupos", icon: "person.3.fill")
-                        }
-                        Divider().padding(.horizontal, PazSpacing.lg)
-                        NavigationLink(destination: NotificationPrefsView()) {
-                            MenuRow(title: "Notificações", icon: "bell.fill")
-                        }
-                        Divider().padding(.horizontal, PazSpacing.lg)
-                        Button(action: { viewModel.onToggleDarkMode() }) {
-                            HStack(spacing: PazSpacing.md) {
-                                Image(systemName: "moon.fill")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(PazColors.primary)
-                                Text("Modo Escuro")
-                                    .font(PazTypography.bodyMedium)
-                                    .foregroundColor(PazColors.onSurface)
-                                Spacer()
-                                Toggle("", isOn: $viewModel.isDarkMode)
-                                    .labelsHidden()
-                            }
-                            .padding(.horizontal, PazSpacing.lg)
-                            .padding(.vertical, PazSpacing.md)
-                        }
-                        Divider().padding(.horizontal, PazSpacing.lg)
+                    menuCard {
                         Button(action: { viewModel.onLogout() }) {
-                            MenuRow(title: "Sair da Conta", icon: "door.left.hand.open", tintIcon: false)
+                            HStack(spacing: 16) {
+                                PazIconContainer(icon: "door.left.hand.open", tint: PazColors.error)
+                                Text("Sair da conta").font(PazTypography.bodyMedium).foregroundStyle(PazColors.error)
+                                Spacer()
+                                Image(systemName: "chevron.right").font(.system(size: 13)).foregroundStyle(PazColors.slateLight)
+                            }
+                            .padding(.horizontal, 16).padding(.vertical, 12)
                         }
+                        .buttonStyle(.plain)
                     }
-                    .background(PazColors.surface)
-                    .cornerRadius(16)
-                    .padding(.horizontal, PazSpacing.lg)
-
-                    NavigationLink(destination: ProfileView(authRepository: IosAppContainer.shared.authRepository)) {
-                        Text("Ver Perfil Completo")
-                            .font(PazTypography.titleMedium)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, PazSpacing.md)
-                            .background(PazColors.primary)
-                            .cornerRadius(12)
-                    }
-                    .padding(.horizontal, PazSpacing.lg)
+                    .padding(.horizontal, 20)
                 }
 
-                Spacer().frame(height: PazSpacing.xl)
+                Spacer().frame(height: 32)
             }
-            .background(PazColors.background)
         }
+        .background(PazColors.background)
+    }
+
+    // MARK: - Helpers
+
+    private func userCard(user: Shared.User) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle().fill(PazColors.pazPrimary.opacity(0.15)).frame(width: 56, height: 56)
+                Text(user.name.prefix(1).uppercased()).font(PazTypography.headlineSmall).foregroundStyle(PazColors.pazPrimary)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(user.name).font(PazTypography.titleMedium).foregroundStyle(PazColors.pazPrimary)
+                Text(user.email).font(PazTypography.bodySmall).foregroundStyle(PazColors.pazSky).lineLimit(1)
+                Spacer().frame(height: 2)
+                Text(user.role.displayName)
+                    .font(PazTypography.labelSmall)
+                    .foregroundStyle(PazColors.pazPrimary)
+                    .padding(.horizontal, 8).padding(.vertical, 2)
+                    .background(PazColors.pazPrimary.opacity(0.12))
+                    .clipShape(Capsule())
+            }
+            Spacer()
+        }
+        .padding(16)
+        .background(PazColors.tint)
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .overlay(RoundedRectangle(cornerRadius: 22).stroke(PazColors.pazPrimary.opacity(0.13), lineWidth: 1))
+    }
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(PazTypography.labelSmall)
+            .foregroundStyle(PazColors.slateLight)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 8)
+    }
+
+    private func menuCard<C: View>(@ViewBuilder content: () -> C) -> some View {
+        VStack(spacing: 0) { content() }
+            .background(PazColors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+
+    private var rowDivider: some View {
+        Divider().padding(.leading, 20)
     }
 
     private var loadingState: some View {
         ScrollView {
-            VStack(spacing: PazSpacing.lg) {
-                SkeletonView().frame(height: 100).padding(.horizontal, PazSpacing.lg).padding(.top, PazSpacing.lg)
-                SkeletonView().frame(height: 120).padding(.horizontal, PazSpacing.lg)
-                ForEach(0..<4, id: \.self) { _ in
-                    SkeletonView().frame(height: 50).padding(.horizontal, PazSpacing.lg)
-                }
+            VStack(spacing: 16) {
+                SkeletonView().frame(height: 100).padding(.horizontal, 20).padding(.top, 20)
+                SkeletonView().frame(height: 80).padding(.horizontal, 20)
+                ForEach(0 ..< 4, id: \.self) { _ in SkeletonView().frame(height: 52).padding(.horizontal, 20) }
                 Spacer()
             }
         }
     }
 }
 
-private struct MenuRow: View {
+// MARK: - Sub-views
+
+private struct AccountRow: View {
     let title: String
     let icon: String
-    var tintIcon = true
+    let tint: Color
+    let action: () -> Void
 
     var body: some View {
-        HStack(spacing: PazSpacing.md) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(tintIcon ? PazColors.primary : .gray)
-            Text(title)
-                .font(PazTypography.bodyMedium)
-                .foregroundColor(PazColors.onSurface)
-            Spacer()
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14))
-                .foregroundColor(.gray)
+        Button(action: action) {
+            HStack(spacing: 16) {
+                PazIconContainer(icon: icon, tint: tint)
+                Text(title).font(PazTypography.bodyMedium).foregroundStyle(PazColors.ink)
+                Spacer()
+                Image(systemName: "chevron.right").font(.system(size: 13)).foregroundStyle(PazColors.slateLight)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
         }
-        .padding(.horizontal, PazSpacing.lg)
-        .padding(.vertical, PazSpacing.md)
+        .buttonStyle(.plain)
     }
 }
 
-#Preview {
+#Preview("Light") {
     AccountView(
         userRepository: IosAppContainer.shared.userRepository,
         authRepository: IosAppContainer.shared.authRepository
     )
+    .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
+}
+
+#Preview("Dark") {
+    AccountView(
+        userRepository: IosAppContainer.shared.userRepository,
+        authRepository: IosAppContainer.shared.authRepository
+    )
+    .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
+    .preferredColorScheme(.dark)
 }

@@ -2,6 +2,8 @@ package br.church.paz.android.ui.features.account
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +26,7 @@ import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Route
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -74,7 +78,6 @@ fun AccountScreen(
                 AccountEffect.NavigateToFormularios -> navController.navigate(Screen.FormulariosList.route)
                 AccountEffect.NavigateToMinistries -> navController.navigate(Screen.Ministries.route)
                 AccountEffect.NavigateToNotificationPrefs -> navController.navigate(Screen.NotificationPrefs.route)
-                // NavigateToLogin and LoggedOut: no nav needed — the screen recomposes to show LoginScreen inline
                 AccountEffect.NavigateToLogin,
                 AccountEffect.LoggedOut,
                 -> Unit
@@ -82,12 +85,8 @@ fun AccountScreen(
         }
     }
 
-    // When unauthenticated, show login embedded (tab bar stays visible)
     if (!uiState.isLoading && uiState.user == null) {
-        LoginScreen(
-            onLoginSuccess = { viewModel.loadUser() },
-            isEmbedded = true,
-        )
+        LoginScreen(onLoginSuccess = { viewModel.loadUser() }, isEmbedded = true)
         return
     }
 
@@ -104,14 +103,12 @@ fun AccountScreen(
                     Text("Sair", color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) { Text("Cancelar") }
-            },
+            dismissButton = { TextButton(onClick = { showLogoutDialog = false }) { Text("Cancelar") } },
         )
     }
 
     Column(Modifier.fillMaxSize()) {
-        // Hero
+        // Hero with gear button
         Box(
             Modifier
                 .fillMaxWidth()
@@ -120,18 +117,25 @@ fun AccountScreen(
                 .padding(horizontal = PazSpacing.Xl, vertical = PazSpacing.Lg),
         ) {
             Column {
+                Text("Meu Perfil", style = MaterialTheme.typography.bodySmall.copy(color = Color.White.copy(.5f)))
                 Text(
-                    "Meu Perfil",
-                    style = MaterialTheme.typography.bodySmall.copy(color = Color.White.copy(.5f)),
+                    uiState.user
+                        ?.name
+                        ?.split(Regex("\\s+"))
+                        ?.firstOrNull() ?: "Conta",
+                    style = MaterialTheme.typography.headlineLarge.copy(color = Color.White),
                 )
-                Text(
-                    text =
-                        uiState.user
-                            ?.name
-                            ?.split(Regex("\\s+"))
-                            ?.firstOrNull() ?: "Conta",
-                    style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
-                )
+            }
+            Box(
+                Modifier
+                    .align(Alignment.CenterEnd)
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(PazColors.DarkCard2)
+                    .clickable { /* settings — future */ },
+                Alignment.Center,
+            ) {
+                androidx.compose.material3.Icon(Settings, "Configurações", tint = Color.White, modifier = Modifier.size(20.dp))
             }
         }
 
@@ -141,13 +145,9 @@ fun AccountScreen(
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(MaterialTheme.colorScheme.background),
         ) {
-            LazyColumn(
-                contentPadding = contentPadding,
-                modifier = Modifier.fillMaxSize(),
-            ) {
+            LazyColumn(contentPadding = contentPadding, modifier = Modifier.fillMaxSize()) {
                 item { Spacer(Modifier.height(PazSpacing.Xl)) }
 
-                // Profile card
                 uiState.user?.let { user ->
                     item {
                         ProfileCard(
@@ -156,96 +156,92 @@ fun AccountScreen(
                             modifier = Modifier.padding(horizontal = PazSpacing.Lg),
                         )
                     }
-                }
+                    item { Spacer(Modifier.height(PazSpacing.Xl)) }
 
-                item { Spacer(Modifier.height(PazSpacing.Xl)) }
-
-                // Minha Igreja section
-                item {
-                    PazSectionHeader(
-                        title = "Minha Igreja",
-                        modifier = Modifier.padding(horizontal = PazSpacing.Lg + 4.dp),
-                    )
-                    Spacer(Modifier.height(PazSpacing.Sm))
-                    MenuCard(
-                        modifier = Modifier.padding(horizontal = PazSpacing.Lg),
-                    ) {
-                        PazMenuRow(
-                            title = "Jornada do Membro",
-                            icon = Icons.Outlined.Route,
-                            onClick = viewModel::onMemberJourney,
-                        )
-                        if (uiState.user?.role?.isLeader == true) {
+                    item {
+                        PazSectionHeader(title = "Minha Igreja", modifier = Modifier.padding(horizontal = PazSpacing.Lg + 4.dp))
+                        Spacer(Modifier.height(PazSpacing.Sm))
+                        MenuCard(modifier = Modifier.padding(horizontal = PazSpacing.Lg)) {
                             PazMenuRow(
-                                title = "Relatar Reunião",
-                                icon = Icons.AutoMirrored.Outlined.Assignment,
-                                onClick = viewModel::onMeetingReport,
+                                title = "Jornada do Membro",
+                                icon = Icons.Outlined.Route,
+                                iconTint = PazColors.PrimaryLight,
+                                onClick = viewModel::onMemberJourney,
                             )
+                            if (user.role.isLeader) {
+                                PazMenuRow(
+                                    title = "Relatar Reunião",
+                                    icon = Icons.AutoMirrored.Outlined.Assignment,
+                                    iconTint = Color(0xFF2E7D32),
+                                    onClick = viewModel::onMeetingReport,
+                                )
+                                PazMenuRow(
+                                    title = "Formulários",
+                                    icon = Icons.Outlined.DynamicForm,
+                                    iconTint = Color(0xFF6A1B9A),
+                                    onClick = viewModel::onFormularios,
+                                )
+                            }
                             PazMenuRow(
-                                title = "Formulários",
-                                icon = Icons.Outlined.DynamicForm,
-                                onClick = viewModel::onFormularios,
+                                title = "Ministérios",
+                                icon = Icons.Outlined.MusicNote,
+                                iconTint = Color(0xFFE65100),
+                                onClick = viewModel::onMinistries,
+                                showDivider = false,
                             )
                         }
-                        PazMenuRow(
-                            title = "Ministérios",
-                            icon = Icons.Outlined.MusicNote,
-                            onClick = viewModel::onMinistries,
-                            showDivider = false,
-                        )
                     }
-                }
 
-                item { Spacer(Modifier.height(PazSpacing.Lg)) }
+                    item { Spacer(Modifier.height(PazSpacing.Lg)) }
 
-                // Preferências
-                item {
-                    PazSectionHeader(
-                        title = "Preferências",
-                        modifier = Modifier.padding(horizontal = PazSpacing.Lg + 4.dp),
-                    )
-                    Spacer(Modifier.height(PazSpacing.Sm))
-                    MenuCard(Modifier.padding(horizontal = PazSpacing.Lg)) {
-                        PazMenuRow(
-                            title = "Notificações",
-                            icon = Icons.Outlined.Notifications,
-                            onClick = viewModel::onNotificationPrefs,
-                        )
-                        PazMenuRow(
-                            title = "Modo escuro",
-                            icon = if (uiState.isDarkMode) Icons.Outlined.DarkMode else Icons.Outlined.LightMode,
-                            showDivider = false,
-                            trailing = {
-                                Switch(
-                                    checked = uiState.isDarkMode,
-                                    onCheckedChange = viewModel::onToggleDarkMode,
-                                    colors =
-                                        SwitchDefaults.colors(
-                                            checkedThumbColor = Color.White,
-                                            checkedTrackColor = PazColors.PrimaryLight,
-                                        ),
-                                )
-                            },
-                        )
+                    item {
+                        PazSectionHeader(title = "Preferências", modifier = Modifier.padding(horizontal = PazSpacing.Lg + 4.dp))
+                        Spacer(Modifier.height(PazSpacing.Sm))
+                        MenuCard(Modifier.padding(horizontal = PazSpacing.Lg)) {
+                            PazMenuRow(
+                                title = "Notificações",
+                                icon = Icons.Outlined.Notifications,
+                                iconTint = PazColors.PrimaryMid,
+                                onClick = viewModel::onNotificationPrefs,
+                            )
+                            PazMenuRow(
+                                title = "Modo escuro",
+                                icon = if (uiState.isDarkMode) Icons.Outlined.DarkMode else Icons.Outlined.LightMode,
+                                iconTint = PazColors.PrimaryMid,
+                                showDivider = false,
+                                trailing = {
+                                    Switch(
+                                        checked = uiState.isDarkMode,
+                                        onCheckedChange = viewModel::onToggleDarkMode,
+                                        colors =
+                                            SwitchDefaults.colors(
+                                                checkedThumbColor = Color.White,
+                                                checkedTrackColor = PazColors.PrimaryLight,
+                                            ),
+                                    )
+                                },
+                            )
+                        }
                     }
-                }
 
-                item { Spacer(Modifier.height(PazSpacing.Lg)) }
+                    item { Spacer(Modifier.height(PazSpacing.Lg)) }
 
-                // Logout
-                item {
-                    MenuCard(Modifier.padding(horizontal = PazSpacing.Lg)) {
-                        PazMenuRow(
-                            title = "Sair da conta",
-                            icon = Icons.AutoMirrored.Outlined.Logout,
-                            onClick = { showLogoutDialog = true },
-                            showDivider = false,
-                            tintIcon = false,
-                        )
+                    item {
+                        MenuCard(Modifier.padding(horizontal = PazSpacing.Lg)) {
+                            PazMenuRow(
+                                title = "Sair da conta",
+                                icon = Icons.AutoMirrored.Outlined.Logout,
+                                iconTint = PazColors.Error,
+                                titleColor = PazColors.Error,
+                                onClick = { showLogoutDialog = true },
+                                showDivider = false,
+                                tintIcon = false,
+                            )
+                        }
                     }
-                }
 
-                item { Spacer(Modifier.height(PazSpacing.Xl)) }
+                    item { Spacer(Modifier.height(PazSpacing.Xl)) }
+                }
             }
         }
     }
@@ -261,44 +257,36 @@ private fun ProfileCard(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(PazShapes.large)
+                .clip(RoundedCornerShape(22.dp))
                 .background(
-                    if (MaterialTheme.colorScheme.background == PazColors.Background) {
+                    if (MaterialTheme.colorScheme.background ==
+                        PazColors.Background
+                    ) {
                         PazColors.PrimaryTint
                     } else {
                         PazColors.DarkPrimaryContainer
                     },
-                ).border(1.dp, PazColors.Primary.copy(alpha = 0.13f), PazShapes.large)
+                ).border(1.dp, PazColors.Primary.copy(alpha = 0.13f), RoundedCornerShape(22.dp))
+                .clickable(onClick = onClick)
                 .padding(PazSpacing.Md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        PazAvatar(
-            name = user.name,
-            imageUrl = user.picture,
-            size = 52.dp,
-        )
+        PazAvatar(name = user.name, imageUrl = user.picture, size = 56.dp)
         Column(
-            Modifier
-                .weight(1f)
-                .padding(horizontal = PazSpacing.Md),
+            Modifier.weight(1f).padding(horizontal = PazSpacing.Md),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(user.name, style = MaterialTheme.typography.titleMedium.copy(color = PazColors.Primary))
-            Text(
-                user.email,
-                style = MaterialTheme.typography.bodySmall.copy(color = PazColors.Accent),
-                maxLines = 1,
-            )
+            Text(user.email, style = MaterialTheme.typography.bodySmall.copy(color = PazColors.Accent), maxLines = 1)
             Spacer(Modifier.height(4.dp))
             Box(
                 Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(PazColors.Primary.copy(alpha = 0.12f))
+                    .clip(
+                        RoundedCornerShape(20.dp),
+                    ).background(PazColors.Primary.copy(alpha = 0.12f))
                     .padding(horizontal = 8.dp, vertical = 2.dp),
             ) {
-                Text(
-                    user.role.displayName,
-                    style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Primary),
-                )
+                Text(user.role.displayName, style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Primary))
             }
         }
     }
@@ -317,3 +305,5 @@ private fun MenuCard(
                 .background(MaterialTheme.colorScheme.surface),
     ) { content() }
 }
+
+private val Settings = Icons.Outlined.Settings
