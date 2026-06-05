@@ -8,34 +8,32 @@ class AcademyViewModel {
     var tracks: [CourseTrack] = []
     var isLoading = true
     var error: String?
+    var resumeCourse: Course?
 
     private let academyRepository: AcademyRepository
 
     init(academyRepository: AcademyRepository) {
         self.academyRepository = academyRepository
-        loadAcademy()
     }
 
-    private func loadAcademy() {
-        Task {
-            do {
-                let content = try await academyRepository.getAcademyContent()
-                self.tracks = content.tracks
-                self.isLoading = false
-            } catch {
-                self.isLoading = false
-                self.error = error.localizedDescription
-            }
-        }
-    }
-
-    func onRetry() {
+    func load(isAuthenticated: Bool) async {
         isLoading = true
         error = nil
-        loadAcademy()
+        do {
+            let content = try await academyRepository.getAcademyContent()
+            tracks = content.tracks
+            // resumeCourse populated from last-watched logic when backend supports it
+        } catch {
+            self.error = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    func onRetry(isAuthenticated: Bool) {
+        Task { await load(isAuthenticated: isAuthenticated) }
     }
 
     func onCourseTapped(_ course: Course) {
-        // TODO: navigate to video player
+        // navigate to video player — handled by parent NavigationStack
     }
 }
