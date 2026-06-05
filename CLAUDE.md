@@ -44,6 +44,20 @@ Kotlin Multiplatform mobile app for Paz Church (Android + iOS).
   di/          ← androidModule (Koin)
 ```
 
+## Coding guidelines
+
+**Full rules:** `docs/CODING_GUIDELINES.md` — read before any code change.
+
+Quick summary:
+- **iOS ViewModels:** `@Observable @MainActor` only — never `ObservableObject`/`@Published`
+- **iOS async:** `.task {}` modifier on views, not `onAppear + Task { }`. Cancel stored Tasks in `deinit`.
+- **Android coroutines:** `viewModelScope.launch` only. `collectAsStateWithLifecycle()` everywhere.
+- **Fonts:** SF Pro system font (iOS), DM Sans (Android). No custom display fonts.
+- **Colors:** `PazColors.*` tokens only — no raw hex in screen/component files.
+- **Screen states:** every screen must implement loading, error, empty, loggedIn, loggedOut, dark, light.
+- **Format before commit:** `swiftformat + swiftlint --fix` (iOS) · `./gradlew ktlintFormat` (Android)
+- **Skills:** `swiftui-expert-skill` + `swift-concurrency` for iOS · `kotlin-project-feature-implementation` for Android
+
 ## Key conventions
 
 - **No business logic in Composables or ViewModels** — use cases / repositories live in `:shared`
@@ -56,7 +70,7 @@ Kotlin Multiplatform mobile app for Paz Church (Android + iOS).
 ## Design system
 
 Colors, typography, shapes: `android/src/main/kotlin/br/church/paz/android/ui/theme/`
-Design reference: `docs/superpowers/design-preview/index.html` (run `python3 -m http.server 7654` from that dir)
+Design reference HTML files: `~/Downloads/design_handoff_paz_church/*.html` (open in browser, use Tweaks panel bottom-right for dark/light/state variants)
 Full spec: `docs/superpowers/plans/2026-05-31-flutter-to-kmp-migration.md` §3–§4
 
 ## Environment
