@@ -7,6 +7,7 @@ struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var selectedDayIndex: Int = 2
     @State private var currentFeatureIndex: Int = 0
+    @State private var showAgendaList = false
     @Environment(\.colorScheme) private var colorScheme
 
     init(homeRepository: HomeRepository, authRepository: AuthRepository) {
@@ -61,6 +62,9 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.large)
         }
         .task { await viewModel.load() }
+        .sheet(isPresented: $showAgendaList) {
+            AgendaListView(events: viewModel.homeContent?.agenda ?? [])
+        }
     }
 
     // MARK: - Content sections
@@ -166,7 +170,7 @@ struct HomeView: View {
                     .font(.system(size: 23, weight: .heavy))
                     .foregroundStyle(PazColors.ink)
                 Spacer()
-                Button(action: {}) {
+                Button(action: { showAgendaList = true }) {
                     HStack(spacing: 5) {
                         Text("Mês completo").font(PazTypography.labelSmall)
                         Image(systemName: "arrow.right").font(.system(size: 12, weight: .semibold))

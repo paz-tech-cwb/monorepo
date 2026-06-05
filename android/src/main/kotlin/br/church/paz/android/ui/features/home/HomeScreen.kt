@@ -75,6 +75,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazCardSkeleton
 import br.church.paz.android.ui.components.PazSkeleton
@@ -109,7 +110,7 @@ fun HomeScreen(
                     context.startActivity(
                         Intent(Intent.ACTION_VIEW, Uri.parse(effect.url)),
                     )
-                is HomeEffect.NavigateToAgenda -> { /* TODO Phase 4 */ }
+                is HomeEffect.NavigateToAgenda -> navController.navigate(Screen.AgendaList.route)
             }
         }
     }

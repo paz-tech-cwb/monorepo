@@ -4,6 +4,7 @@ import br.church.paz.android.ui.features.academy.AcademyViewModel
 import br.church.paz.android.ui.features.academy.VideoPlayerViewModel
 import br.church.paz.android.ui.features.account.AccountViewModel
 import br.church.paz.android.ui.features.agenda.AgendaDetailViewModel
+import br.church.paz.android.ui.features.agenda.AgendaListViewModel
 import br.church.paz.android.ui.features.auth.LoginViewModel
 import br.church.paz.android.ui.features.formularios.FormDetailViewModel
 import br.church.paz.android.ui.features.formularios.FormulariosViewModel
@@ -32,6 +33,7 @@ val androidModule =
         viewModel { ProfileViewModel(get()) }
         viewModel { EditProfileViewModel(get(), get()) }
         viewModel { (eventId: String) -> AgendaDetailViewModel(get(), eventId) }
+        viewModel { AgendaListViewModel(get()) }
         viewModel { FormulariosViewModel(get()) }
         viewModel { (formId: String) -> FormDetailViewModel(formId, get(), get()) }
         viewModel { MemberJourneyViewModel(get()) }

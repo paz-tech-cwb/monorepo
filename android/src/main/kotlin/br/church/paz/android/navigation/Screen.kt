@@ -52,4 +52,6 @@ sealed class Screen(
     }
 
     data object NotificationPrefs : Screen("notification_prefs")
+
+    data object AgendaList : Screen("agenda_list")
 }
