@@ -36,6 +36,60 @@ struct HomeView: View {
         Array((viewModel.homeContent?.agenda ?? []).prefix(3))
     }
 
+    private struct WeekDay {
+        let date: Date
+        let dow: String
+        let day: Int
+        let isToday: Bool
+        var hasEvent: Bool = false
+    }
+
+    private var weekDays: [WeekDay] {
+        let cal = Calendar.current
+        let today = Date()
+        guard let weekInterval = cal.dateInterval(of: .weekOfYear, for: today) else { return [] }
+        let dowLabels = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"]
+        let allEvents = viewModel.homeContent?.agenda ?? []
+        return (0 ..< 7).compactMap { offset -> WeekDay? in
+            guard let date = cal.date(byAdding: .day, value: offset, to: weekInterval.start) else { return nil }
+            let comps = cal.dateComponents([.weekday, .day], from: date)
+            let isToday = cal.isDateInToday(date)
+            let hasEvent = allEvents.contains { event in
+                guard let eventDate = parseEventDate(event.startDate) else { return false }
+                return cal.isDate(eventDate, inSameDayAs: date)
+            }
+            return WeekDay(
+                date: date,
+                dow: dowLabels[(comps.weekday ?? 1) - 1],
+                day: comps.day ?? 0,
+                isToday: isToday,
+                hasEvent: hasEvent
+            )
+        }
+    }
+
+    private func parseEventDate(_ str: String) -> Date? {
+        let iso = ISO8601DateFormatter()
+        if let d = iso.date(from: str) { return d }
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: "en_US_POSIX")
+        for format in ["yyyy-MM-dd'T'HH:mm", "yyyy-MM-dd"] {
+            fmt.dateFormat = format
+            if let d = fmt.date(from: str) { return d }
+        }
+        return nil
+    }
+
+    private var selectedDayEvents: [AgendaEvent] {
+        guard weekDays.indices.contains(selectedDayIndex) else { return [] }
+        let selectedDate = weekDays[selectedDayIndex].date
+        let cal = Calendar.current
+        return (viewModel.homeContent?.agenda ?? []).filter { event in
+            guard let eventDate = parseEventDate(event.startDate) else { return false }
+            return cal.isDate(eventDate, inSameDayAs: selectedDate)
+        }
+    }
+
     private var sectionOrder: [String] {
         viewModel.homeContent?.sectionOrder ?? [
             "announcements",
@@ -67,7 +121,13 @@ struct HomeView: View {
                 AgendaDetailView(event: event)
             }
         }
-        .task { await viewModel.load() }
+        .task {
+            await viewModel.load()
+            let cal = Calendar.current
+            if let todayIndex = weekDays.firstIndex(where: { cal.isDateInToday($0.date) }) {
+                selectedDayIndex = todayIndex
+            }
+        }
         .sheet(isPresented: $showAgendaList) {
             AgendaListView(events: viewModel.homeContent?.agenda ?? [])
         }
@@ -86,7 +146,7 @@ struct HomeView: View {
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(delay), value: banners.count)
 
-                case "agenda" where !agendaEvents.isEmpty:
+                case "agenda" where !(viewModel.homeContent?.agenda ?? []).isEmpty:
                     agendaSection
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(delay), value: agendaEvents.count)
@@ -222,29 +282,44 @@ struct HomeView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 13)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 9) {
-                    ForEach(Array(agendaDayItems.enumerated()), id: \.offset) { index, item in
-                        DayPillView(dow: item.dow, day: item.day, isSelected: index == selectedDayIndex)
-                            .onTapGesture {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    selectedDayIndex = index
-                                }
-                            }
+            // Sticky week strip — full width, no horizontal scroll
+            HStack(spacing: 6) {
+                ForEach(Array(weekDays.enumerated()), id: \.offset) { index, item in
+                    DayPillView(
+                        dow: item.dow,
+                        day: item.day,
+                        isSelected: index == selectedDayIndex,
+                        isToday: item.isToday,
+                        hasEvent: item.hasEvent
+                    )
+                    .frame(maxWidth: .infinity)
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedDayIndex = index
+                        }
                     }
                 }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 4)
             }
+            .padding(.horizontal, 18)
             .padding(.bottom, 16)
 
-            VStack(spacing: 12) {
-                ForEach(agendaEvents, id: \.id) { event in
-                    EventCardView(event: event)
+            // Event list filtered to selected day
+            if selectedDayEvents.isEmpty {
+                Text("Nenhum evento")
+                    .font(PazTypography.bodySmall)
+                    .foregroundStyle(PazColors.slate)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(selectedDayEvents, id: \.id) { event in
+                        EventCardView(event: event)
+                    }
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
         }
     }
 
@@ -281,15 +356,6 @@ struct HomeView: View {
         .padding(PazSpacing.lg)
     }
 }
-
-// MARK: - Agenda mock data
-
-private struct AgendaDayItem { let dow: String; let day: Int }
-private let agendaDayItems: [AgendaDayItem] = [
-    .init(dow: "SEG", day: 2), .init(dow: "TER", day: 3), .init(dow: "QUA", day: 4),
-    .init(dow: "QUI", day: 5), .init(dow: "SEX", day: 6), .init(dow: "SÁB", day: 7),
-    .init(dow: "DOM", day: 8),
-]
 
 // MARK: - FeaturedCardView
 
@@ -402,6 +468,14 @@ private struct DayPillView: View {
     let dow: String
     let day: Int
     let isSelected: Bool
+    let isToday: Bool
+    let hasEvent: Bool
+
+    private var dotColor: Color {
+        if isToday { return PazColors.pazGold }
+        if hasEvent { return PazColors.pazPrimary }
+        return .clear
+    }
 
     var body: some View {
         VStack(spacing: 3) {
@@ -412,16 +486,25 @@ private struct DayPillView: View {
                 .font(.system(size: 21, weight: .bold))
                 .foregroundStyle(isSelected ? .white : PazColors.ink)
             Circle()
-                .fill(isSelected ? PazColors.pazGold : .clear)
+                .fill(dotColor)
                 .frame(width: 4, height: 4)
         }
-        .frame(width: 52, height: 74)
+        .frame(maxWidth: .infinity)
+        .frame(height: 74)
         .background(
             Group {
                 if isSelected {
                     RoundedRectangle(cornerRadius: 18)
                         .fill(PazColors.dayPillSelectedGradient)
                         .shadow(color: PazColors.pazPrimary.opacity(0.6), radius: 11, x: 0, y: 12)
+                } else if isToday {
+                    RoundedRectangle(cornerRadius: 18)
+                        .fill(PazColors.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18)
+                                .strokeBorder(PazColors.pazPrimary.opacity(0.5), lineWidth: 1.5)
+                        )
+                        .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 2)
                 } else {
                     RoundedRectangle(cornerRadius: 18)
                         .fill(PazColors.surface)
