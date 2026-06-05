@@ -11,5 +11,6 @@ data class NotificationPrefsUiState(
 
 sealed class NotificationPrefsEffect {
     data object SaveSuccess : NotificationPrefsEffect()
+
     data object NavigateBack : NotificationPrefsEffect()
 }

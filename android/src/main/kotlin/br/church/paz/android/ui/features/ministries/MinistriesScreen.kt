@@ -132,14 +132,19 @@ fun MinistriesScreen(
 }
 
 @Composable
-private fun MinistriesTab(ministries: List<Ministry>, onTap: (String) -> Unit) {
+private fun MinistriesTab(
+    ministries: List<Ministry>,
+    onTap: (String) -> Unit,
+) {
     if (ministries.isEmpty()) {
         EmptyState(message = "Nenhum ministério encontrado")
         return
     }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(PazSpacing.Lg),
+        contentPadding =
+            androidx.compose.foundation.layout
+                .PaddingValues(PazSpacing.Lg),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
     ) {
         item { Spacer(Modifier.height(PazSpacing.Sm)) }
@@ -151,14 +156,19 @@ private fun MinistriesTab(ministries: List<Ministry>, onTap: (String) -> Unit) {
 }
 
 @Composable
-private fun LifeGroupsTab(lifeGroups: List<LifeGroup>, onTap: (String) -> Unit) {
+private fun LifeGroupsTab(
+    lifeGroups: List<LifeGroup>,
+    onTap: (String) -> Unit,
+) {
     if (lifeGroups.isEmpty()) {
         EmptyState(message = "Nenhum grupo de vida encontrado")
         return
     }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(PazSpacing.Lg),
+        contentPadding =
+            androidx.compose.foundation.layout
+                .PaddingValues(PazSpacing.Lg),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
     ) {
         item { Spacer(Modifier.height(PazSpacing.Sm)) }
@@ -170,7 +180,10 @@ private fun LifeGroupsTab(lifeGroups: List<LifeGroup>, onTap: (String) -> Unit) 
 }
 
 @Composable
-private fun MinistryCard(ministry: Ministry, onClick: () -> Unit) {
+private fun MinistryCard(
+    ministry: Ministry,
+    onClick: () -> Unit,
+) {
     androidx.compose.material3.Surface(
         onClick = onClick,
         shape = PazShapes.large,
@@ -201,9 +214,10 @@ private fun MinistryCard(ministry: Ministry, onClick: () -> Unit) {
                     Spacer(Modifier.height(PazSpacing.Xs))
                     Text(
                         ministry.description!!,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        ),
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            ),
                         maxLines = 2,
                     )
                 }
@@ -213,7 +227,10 @@ private fun MinistryCard(ministry: Ministry, onClick: () -> Unit) {
 }
 
 @Composable
-private fun LifeGroupCard(lifeGroup: LifeGroup, onClick: () -> Unit) {
+private fun LifeGroupCard(
+    lifeGroup: LifeGroup,
+    onClick: () -> Unit,
+) {
     androidx.compose.material3.Surface(
         onClick = onClick,
         shape = PazShapes.large,
@@ -244,16 +261,19 @@ private fun LifeGroupCard(lifeGroup: LifeGroup, onClick: () -> Unit) {
                         Spacer(Modifier.height(PazSpacing.Xs))
                         Text(
                             "Líder: ${lifeGroup.leader}",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            ),
+                            style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                ),
                         )
                     }
                 }
                 Box(
                     Modifier
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
-                        .background(PazColors.Primary.copy(alpha = 0.12f))
+                        .clip(
+                            androidx.compose.foundation.shape
+                                .RoundedCornerShape(20.dp),
+                        ).background(PazColors.Primary.copy(alpha = 0.12f))
                         .padding(horizontal = 10.dp, vertical = 4.dp),
                 ) {
                     Text(
@@ -275,9 +295,10 @@ private fun LifeGroupCard(lifeGroup: LifeGroup, onClick: () -> Unit) {
                             if (!lifeGroup.meetingDay.isNullOrEmpty() && !lifeGroup.meetingTime.isNullOrEmpty()) append(" • ")
                             lifeGroup.meetingTime?.let { append(it) }
                         },
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                        ),
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            ),
                     )
                 }
             }
@@ -286,9 +307,10 @@ private fun LifeGroupCard(lifeGroup: LifeGroup, onClick: () -> Unit) {
                 Spacer(Modifier.height(PazSpacing.Xs))
                 Text(
                     lifeGroup.address!!,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    ),
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        ),
                     maxLines = 1,
                 )
             }
@@ -301,15 +323,19 @@ private fun EmptyState(message: String) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(
             message,
-            style = MaterialTheme.typography.bodySmall.copy(
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-            ),
+            style =
+                MaterialTheme.typography.bodySmall.copy(
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                ),
         )
     }
 }
 
 @Composable
-private fun ErrorState(error: String, onRetry: () -> Unit) {
+private fun ErrorState(
+    error: String,
+    onRetry: () -> Unit,
+) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             Modifier.padding(PazSpacing.Xl),
@@ -327,7 +353,9 @@ private fun ErrorState(error: String, onRetry: () -> Unit) {
 private fun LoadingState() {
     LazyColumn(
         Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(PazSpacing.Lg),
+        contentPadding =
+            androidx.compose.foundation.layout
+                .PaddingValues(PazSpacing.Lg),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
     ) {
         item { Spacer(Modifier.height(PazSpacing.Sm)) }

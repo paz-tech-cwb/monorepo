@@ -83,8 +83,10 @@ fun FormulariosScreen(
         Box(
             Modifier
                 .fillMaxSize()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(MaterialTheme.colorScheme.background),
+                .clip(
+                    androidx.compose.foundation.shape
+                        .RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                ).background(MaterialTheme.colorScheme.background),
         ) {
             when {
                 uiState.isLoading -> LoadingState()
@@ -97,11 +99,16 @@ fun FormulariosScreen(
 }
 
 @Composable
-private fun ContentState(forms: List<FormCatalogItem>, onFormTap: (String) -> Unit) {
+private fun ContentState(
+    forms: List<FormCatalogItem>,
+    onFormTap: (String) -> Unit,
+) {
     LazyColumn(
-        modifier            = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-        contentPadding      = androidx.compose.foundation.layout.PaddingValues(PazSpacing.Lg),
+        contentPadding =
+            androidx.compose.foundation.layout
+                .PaddingValues(PazSpacing.Lg),
     ) {
         item { Spacer(Modifier.height(PazSpacing.Sm)) }
 
@@ -114,35 +121,42 @@ private fun ContentState(forms: List<FormCatalogItem>, onFormTap: (String) -> Un
 }
 
 @Composable
-private fun FormCard(form: FormCatalogItem, onClick: () -> Unit) {
+private fun FormCard(
+    form: FormCatalogItem,
+    onClick: () -> Unit,
+) {
     Box(
         Modifier
             .fillMaxWidth()
             .clip(PazShapes.large)
             .background(MaterialTheme.colorScheme.surface)
             .then(
-                if (true) Modifier else Modifier // Keep Box clickable appearance
-            )
-            .padding(PazSpacing.Lg),
+                if (true) Modifier else Modifier, // Keep Box clickable appearance
+            ).padding(PazSpacing.Lg),
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
-            modifier            = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Row(
-                modifier            = Modifier.fillMaxWidth(),
-                verticalAlignment   = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
             ) {
                 Text(form.title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                 Box(
                     Modifier
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
-                        .background(PazColors.Primary.copy(alpha = 0.12f))
+                        .clip(
+                            androidx.compose.foundation.shape
+                                .RoundedCornerShape(12.dp),
+                        ).background(PazColors.Primary.copy(alpha = 0.12f))
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                 ) {
                     Text(
-                        form.type.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() },
+                        form.type.name
+                            .replace("_", " ")
+                            .lowercase()
+                            .replaceFirstChar { it.uppercase() },
                         style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Primary),
                     )
                 }
@@ -165,13 +179,13 @@ private fun FormCard(form: FormCatalogItem, onClick: () -> Unit) {
 @Composable
 private fun EmptyState() {
     Box(
-        modifier         = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-            modifier            = Modifier.padding(PazSpacing.Xl),
+            modifier = Modifier.padding(PazSpacing.Xl),
         ) {
             Text("Nenhum formulário disponível", style = MaterialTheme.typography.titleMedium)
             Text(
@@ -183,15 +197,18 @@ private fun EmptyState() {
 }
 
 @Composable
-private fun ErrorState(error: String, onRetry: () -> Unit) {
+private fun ErrorState(
+    error: String,
+    onRetry: () -> Unit,
+) {
     Box(
-        modifier         = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-            modifier            = Modifier.padding(PazSpacing.Xl),
+            modifier = Modifier.padding(PazSpacing.Xl),
         ) {
             Text(error, style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(PazSpacing.Lg))
@@ -203,9 +220,10 @@ private fun ErrorState(error: String, onRetry: () -> Unit) {
 @Composable
 private fun LoadingState() {
     Column(
-        modifier            = Modifier
-            .fillMaxSize()
-            .padding(PazSpacing.Lg),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(PazSpacing.Lg),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
     ) {
         Spacer(Modifier.height(PazSpacing.Lg))

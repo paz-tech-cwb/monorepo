@@ -9,6 +9,9 @@ data class FormulariosUiState(
 )
 
 sealed class FormulariosEffect {
-    data class NavigateToForm(val formId: String) : FormulariosEffect()
+    data class NavigateToForm(
+        val formId: String,
+    ) : FormulariosEffect()
+
     data object NavigateBack : FormulariosEffect()
 }

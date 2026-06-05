@@ -11,8 +11,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
-
+class LoginViewModel(
+    private val authRepository: AuthRepository,
+) : ViewModel() {
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
@@ -23,11 +24,15 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
 
     fun onAppleSignIn(idToken: String) = signIn(idToken, provider = "apple")
 
-    private fun signIn(idToken: String, provider: String) {
-        if (_uiState.value.isLoading) return          // prevent duplicate submissions
+    private fun signIn(
+        idToken: String,
+        provider: String,
+    ) {
+        if (_uiState.value.isLoading) return // prevent duplicate submissions
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            authRepository.socialLogin(idToken = idToken, provider = provider)
+            authRepository
+                .socialLogin(idToken = idToken, provider = provider)
                 .onSuccess { _effect.send(LoginEffect.NavigateToHome) }
                 .onFailure { e ->
                     _effect.send(LoginEffect.ShowError(e.message ?: "Erro ao entrar. Tente novamente."))

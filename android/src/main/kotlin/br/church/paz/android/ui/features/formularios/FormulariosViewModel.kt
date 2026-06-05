@@ -14,22 +14,22 @@ import kotlinx.coroutines.launch
 class FormulariosViewModel(
     private val formsRepository: FormsRepository,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(FormulariosUiState())
     val uiState: StateFlow<FormulariosUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<FormulariosEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
-    init { loadForms() }
+    init {
+        loadForms()
+    }
 
     private fun loadForms() {
         viewModelScope.launch {
             runCatching { formsRepository.getCatalog() }
                 .onSuccess { forms ->
                     _uiState.update { it.copy(forms = forms, isLoading = false) }
-                }
-                .onFailure { e ->
+                }.onFailure { e ->
                     _uiState.update {
                         it.copy(isLoading = false, error = e.message ?: "Erro ao carregar formulários")
                     }

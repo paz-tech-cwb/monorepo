@@ -31,22 +31,24 @@ import br.church.paz.android.ui.theme.PazSpacing
 private fun shimmerBrush(): Brush {
     val transition = rememberInfiniteTransition(label = "shimmer")
     val offset by transition.animateFloat(
-        initialValue  = 0f,
-        targetValue   = 1200f,
-        animationSpec = infiniteRepeatable(
-            animation  = tween(1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
+        initialValue = 0f,
+        targetValue = 1200f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(1200, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
         label = "shimmer_offset",
     )
     return Brush.linearGradient(
-        colors = listOf(
-            Color.LightGray.copy(alpha = 0.6f),
-            Color.LightGray.copy(alpha = 0.2f),
-            Color.LightGray.copy(alpha = 0.6f),
-        ),
+        colors =
+            listOf(
+                Color.LightGray.copy(alpha = 0.6f),
+                Color.LightGray.copy(alpha = 0.2f),
+                Color.LightGray.copy(alpha = 0.6f),
+            ),
         start = Offset.Zero,
-        end   = Offset(offset, offset),
+        end = Offset(offset, offset),
     )
 }
 
@@ -60,22 +62,24 @@ fun PazSkeleton(
     val brush = shimmerBrush()
     val widthMod = if (width != Dp.Unspecified) Modifier.width(width) else Modifier.fillMaxWidth()
     Box(
-        modifier = modifier
-            .then(widthMod)
-            .height(height)
-            .clip(RoundedCornerShape(cornerRadius))
-            .background(brush),
+        modifier =
+            modifier
+                .then(widthMod)
+                .height(height)
+                .clip(RoundedCornerShape(cornerRadius))
+                .background(brush),
     )
 }
 
 @Composable
 fun PazCardSkeleton(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(PazShapes.large)
-            .background(Color.LightGray.copy(alpha = 0.15f))
-            .padding(PazSpacing.Lg),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(PazShapes.large)
+                .background(Color.LightGray.copy(alpha = 0.15f))
+                .padding(PazSpacing.Lg),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
             PazSkeleton(height = 20.dp, width = 160.dp)

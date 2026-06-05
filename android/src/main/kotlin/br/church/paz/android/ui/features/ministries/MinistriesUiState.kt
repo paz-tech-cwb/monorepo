@@ -15,6 +15,12 @@ enum class MinistriesTab { Ministries, LifeGroups }
 
 sealed class MinistriesEffect {
     data object NavigateBack : MinistriesEffect()
-    data class NavigateToMinistryDetail(val ministryId: String) : MinistriesEffect()
-    data class NavigateToLifeGroupDetail(val lifeGroupId: String) : MinistriesEffect()
+
+    data class NavigateToMinistryDetail(
+        val ministryId: String,
+    ) : MinistriesEffect()
+
+    data class NavigateToLifeGroupDetail(
+        val lifeGroupId: String,
+    ) : MinistriesEffect()
 }

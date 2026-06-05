@@ -10,5 +10,7 @@ data class AcademyUiState(
 )
 
 sealed class AcademyEffect {
-    data class NavigateToPlayer(val videoId: String) : AcademyEffect()
+    data class NavigateToPlayer(
+        val videoId: String,
+    ) : AcademyEffect()
 }

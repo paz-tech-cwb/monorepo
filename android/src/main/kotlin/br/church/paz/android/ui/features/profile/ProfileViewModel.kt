@@ -11,15 +11,18 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ProfileViewModel(private val authRepository: AuthRepository) : ViewModel() {
-
+class ProfileViewModel(
+    private val authRepository: AuthRepository,
+) : ViewModel() {
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<ProfileEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
-    init { loadProfile() }
+    init {
+        loadProfile()
+    }
 
     private fun loadProfile() {
         viewModelScope.launch {
@@ -34,7 +37,8 @@ class ProfileViewModel(private val authRepository: AuthRepository) : ViewModel()
     }
 
     fun onEditProfile() = emit(ProfileEffect.NavigateToEditProfile)
-    fun onLogout()       = emit(ProfileEffect.Logout)
+
+    fun onLogout() = emit(ProfileEffect.Logout)
 
     private fun emit(effect: ProfileEffect) {
         viewModelScope.launch { _effect.send(effect) }

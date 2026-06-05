@@ -10,5 +10,6 @@ data class EditProfileUiState(
 
 sealed class EditProfileEffect {
     data object SaveSuccess : EditProfileEffect()
+
     data object NavigateBack : EditProfileEffect()
 }

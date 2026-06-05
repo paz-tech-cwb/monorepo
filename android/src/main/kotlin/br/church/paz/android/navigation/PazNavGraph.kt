@@ -13,8 +13,8 @@ import br.church.paz.android.ui.features.formularios.FormulariosScreen
 import br.church.paz.android.ui.features.meetingreport.MeetingReportScreen
 import br.church.paz.android.ui.features.memberjourney.MemberJourneyScreen
 import br.church.paz.android.ui.features.ministries.LifeGroupDetailScreen
-import br.church.paz.android.ui.features.ministries.MinistryDetailScreen
 import br.church.paz.android.ui.features.ministries.MinistriesScreen
+import br.church.paz.android.ui.features.ministries.MinistryDetailScreen
 import br.church.paz.android.ui.features.notifications.NotificationPrefsScreen
 import br.church.paz.android.ui.features.profile.EditProfileScreen
 import br.church.paz.android.ui.features.profile.ProfileScreen
@@ -34,7 +34,7 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
     }
 
     NavHost(
-        navController  = navController,
+        navController = navController,
         startDestination = Screen.Splash.route,
     ) {
         composable(Screen.Splash.route) {

@@ -18,35 +18,40 @@ fun PazButton(
     enabled: Boolean = true,
     loading: Boolean = false,
 ) {
-    val colors = when (variant) {
-        PazButtonVariant.Primary -> ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor   = MaterialTheme.colorScheme.onPrimary,
-        )
-        PazButtonVariant.Secondary -> ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor   = MaterialTheme.colorScheme.secondary,
-        )
-        PazButtonVariant.Destructive -> ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor   = MaterialTheme.colorScheme.error,
-        )
-        PazButtonVariant.Ghost -> ButtonDefaults.buttonColors(
-            containerColor = androidx.compose.ui.graphics.Color.Transparent,
-            contentColor   = MaterialTheme.colorScheme.primary,
-        )
-    }
+    val colors =
+        when (variant) {
+            PazButtonVariant.Primary ->
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                )
+            PazButtonVariant.Secondary ->
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.secondary,
+                )
+            PazButtonVariant.Destructive ->
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.error,
+                )
+            PazButtonVariant.Ghost ->
+                ButtonDefaults.buttonColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                )
+        }
     Button(
-        onClick  = { if (!loading) onClick() },
+        onClick = { if (!loading) onClick() },
         modifier = modifier,
-        enabled  = enabled && !loading,
-        shape    = PazShapePill,
-        colors   = colors,
+        enabled = enabled && !loading,
+        shape = PazShapePill,
+        colors = colors,
     ) {
         if (loading) {
             CircularProgressIndicator(
-                modifier    = Modifier.size(18.dp),
-                color       = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(18.dp),
+                color = MaterialTheme.colorScheme.onPrimary,
                 strokeWidth = 2.dp,
             )
         } else {

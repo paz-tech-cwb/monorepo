@@ -15,13 +15,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 object PushNotificationHelper {
-
     // Call once after login to register the current FCM token with the backend.
     suspend fun registerToken(userRepository: UserRepository) {
         try {
             val token = FirebaseMessaging.getInstance().token.await()
             userRepository.registerDeviceToken(
-                DeviceToken(token = token, platform = DevicePlatform.android)
+                DeviceToken(token = token, platform = DevicePlatform.android),
             )
         } catch (_: Exception) {
             // Non-critical — token registration is best-effort.
@@ -30,7 +29,11 @@ object PushNotificationHelper {
     }
 
     // Call from MainActivity.onCreate to request POST_NOTIFICATIONS permission on Android 13+.
-    fun requestPermissionIfNeeded(activity: ComponentActivity, scope: CoroutineScope, userRepository: UserRepository) {
+    fun requestPermissionIfNeeded(
+        activity: ComponentActivity,
+        scope: CoroutineScope,
+        userRepository: UserRepository,
+    ) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             scope.launch { registerToken(userRepository) }
             return
@@ -42,25 +45,25 @@ object PushNotificationHelper {
             return
         }
 
-        val launcher = activity.registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) {
-                scope.launch { registerToken(userRepository) }
+        val launcher =
+            activity.registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                if (granted) {
+                    scope.launch { registerToken(userRepository) }
+                }
             }
-        }
         launcher.launch(permission)
     }
 
     // Parse a deep link string from a notification tap into a navigation route.
-    fun parseDeepLink(deepLink: String): String? {
-        return when {
-            deepLink.startsWith("paz://agenda/")      -> "agenda_detail/${deepLink.removePrefix("paz://agenda/")}"
-            deepLink.startsWith("paz://form/")        -> "form_detail/${deepLink.removePrefix("paz://form/")}"
-            deepLink.startsWith("paz://ministry/")    -> "ministry_detail/${deepLink.removePrefix("paz://ministry/")}"
-            deepLink.startsWith("paz://lifegroup/")   -> "life_group_detail/${deepLink.removePrefix("paz://lifegroup/")}"
-            deepLink.startsWith("paz://formularios")  -> "formularios"
-            deepLink.startsWith("paz://journey")      -> "member_journey"
-            deepLink.startsWith("paz://account")      -> "account"
+    fun parseDeepLink(deepLink: String): String? =
+        when {
+            deepLink.startsWith("paz://agenda/") -> "agenda_detail/${deepLink.removePrefix("paz://agenda/")}"
+            deepLink.startsWith("paz://form/") -> "form_detail/${deepLink.removePrefix("paz://form/")}"
+            deepLink.startsWith("paz://ministry/") -> "ministry_detail/${deepLink.removePrefix("paz://ministry/")}"
+            deepLink.startsWith("paz://lifegroup/") -> "life_group_detail/${deepLink.removePrefix("paz://lifegroup/")}"
+            deepLink.startsWith("paz://formularios") -> "formularios"
+            deepLink.startsWith("paz://journey") -> "member_journey"
+            deepLink.startsWith("paz://account") -> "account"
             else -> null
         }
-    }
 }

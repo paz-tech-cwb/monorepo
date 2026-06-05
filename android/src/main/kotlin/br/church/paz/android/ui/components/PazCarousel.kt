@@ -41,14 +41,15 @@ fun <T> PazCarousel(
 
     Box(modifier = modifier) {
         HorizontalPager(
-            state    = pagerState,
+            state = pagerState,
             modifier = Modifier.fillMaxWidth(),
         ) { page -> content(items[page], page) }
 
         Row(
-            modifier              = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = PazSpacing.Sm),
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = PazSpacing.Sm),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             repeat(items.size) { index ->
@@ -58,10 +59,14 @@ fun <T> PazCarousel(
                         .width(if (isSelected) 18.dp else 6.dp)
                         .size(6.dp)
                         .background(
-                            color = if (isSelected) PazColors.Primary
-                                    else PazColors.Sky.copy(alpha = 0.6f),
+                            color =
+                                if (isSelected) {
+                                    PazColors.Primary
+                                } else {
+                                    PazColors.Sky.copy(alpha = 0.6f)
+                                },
                             shape = RoundedCornerShape(3.dp),
-                        )
+                        ),
                 )
             }
         }

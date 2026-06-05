@@ -96,11 +96,13 @@ fun EditProfileScreen(
             Box(
                 Modifier
                     .fillMaxSize()
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .background(MaterialTheme.colorScheme.background),
+                    .clip(
+                        androidx.compose.foundation.shape
+                            .RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    ).background(MaterialTheme.colorScheme.background),
             ) {
                 LazyColumn(
-                    modifier            = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
                 ) {
                     item { Spacer(Modifier.height(PazSpacing.Xl)) }
@@ -117,15 +119,15 @@ fun EditProfileScreen(
                             )
                             Spacer(Modifier.height(PazSpacing.Sm))
                             OutlinedTextField(
-                                value        = uiState.name,
+                                value = uiState.name,
                                 onValueChange = viewModel::onNameChanged,
-                                modifier     = Modifier.fillMaxWidth(),
-                                enabled      = !uiState.isSaving,
-                                placeholder  = { Text("Seu nome completo") },
-                                singleLine   = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = !uiState.isSaving,
+                                placeholder = { Text("Seu nome completo") },
+                                singleLine = true,
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                                 keyboardActions = KeyboardActions(onDone = { viewModel.onSave() }),
-                                shape        = PazShapes.large,
+                                shape = PazShapes.large,
                             )
                         }
                     }
@@ -135,10 +137,10 @@ fun EditProfileScreen(
                     item {
                         Column(Modifier.padding(horizontal = PazSpacing.Lg)) {
                             PazButton(
-                                text     = if (uiState.isSaving) "Salvando..." else "Salvar",
-                                onClick  = viewModel::onSave,
+                                text = if (uiState.isSaving) "Salvando..." else "Salvar",
+                                onClick = viewModel::onSave,
                                 modifier = Modifier.fillMaxWidth(),
-                                enabled  = !uiState.isSaving && uiState.name.isNotBlank(),
+                                enabled = !uiState.isSaving && uiState.name.isNotBlank(),
                             )
                         }
                     }
@@ -150,13 +152,14 @@ fun EditProfileScreen(
 
         SnackbarHost(
             hostState = snackbarHostState,
-            modifier  = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(PazSpacing.Lg),
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(PazSpacing.Lg),
         ) { data ->
             Snackbar(
                 containerColor = if (data.visuals.actionLabel != null) PazColors.Error else PazColors.Primary,
-                contentColor   = androidx.compose.ui.graphics.Color.White,
+                contentColor = androidx.compose.ui.graphics.Color.White,
             ) {
                 Text(data.visuals.message)
             }

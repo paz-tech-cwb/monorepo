@@ -13,7 +13,6 @@ import br.church.paz.shared.domain.repository.UserRepository
 import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
-
     private val userRepository: UserRepository by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,8 +23,10 @@ class MainActivity : ComponentActivity() {
         PushNotificationHelper.requestPermissionIfNeeded(this, lifecycleScope, userRepository)
 
         // Resolve any deep link carried by a notification tap.
-        val startRoute = intent.getStringExtra(PazFirebaseMessagingService.EXTRA_DEEP_LINK)
-            ?.let { PushNotificationHelper.parseDeepLink(it) }
+        val startRoute =
+            intent
+                .getStringExtra(PazFirebaseMessagingService.EXTRA_DEEP_LINK)
+                ?.let { PushNotificationHelper.parseDeepLink(it) }
 
         setContent {
             PazTheme {

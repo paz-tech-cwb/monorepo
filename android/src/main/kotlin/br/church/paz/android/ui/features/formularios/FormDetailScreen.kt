@@ -94,29 +94,34 @@ fun FormDetailScreen(
             Box(
                 Modifier
                     .fillMaxSize()
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .background(MaterialTheme.colorScheme.background),
+                    .clip(
+                        androidx.compose.foundation.shape
+                            .RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    ).background(MaterialTheme.colorScheme.background),
             ) {
                 when {
                     uiState.isLoading -> LoadingState()
-                    uiState.form == null -> ErrorState(
-                        error = uiState.error ?: "Formulário não encontrado",
-                        onRetry = null,
-                    )
-                    else -> FormContent(
-                        uiState = uiState,
-                        onFieldChanged = viewModel::onFieldChanged,
-                        onSubmit = viewModel::onSubmit,
-                    )
+                    uiState.form == null ->
+                        ErrorState(
+                            error = uiState.error ?: "Formulário não encontrado",
+                            onRetry = null,
+                        )
+                    else ->
+                        FormContent(
+                            uiState = uiState,
+                            onFieldChanged = viewModel::onFieldChanged,
+                            onSubmit = viewModel::onSubmit,
+                        )
                 }
             }
         }
 
         SnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(PazSpacing.Lg),
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(PazSpacing.Lg),
         )
     }
 }
@@ -132,7 +137,9 @@ private fun FormContent(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(PazSpacing.Lg),
+        contentPadding =
+            androidx.compose.foundation.layout
+                .PaddingValues(PazSpacing.Lg),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
     ) {
         item { Spacer(Modifier.height(PazSpacing.Sm)) }
@@ -141,9 +148,10 @@ private fun FormContent(
             item {
                 Text(
                     form.description!!,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    ),
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        ),
                 )
             }
         }
@@ -165,15 +173,17 @@ private fun FormContent(
                 OutlinedTextField(
                     value = value,
                     onValueChange = { onFieldChanged(def.key, it) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .then(if (def.isMultiline) Modifier.height(120.dp) else Modifier),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .then(if (def.isMultiline) Modifier.height(120.dp) else Modifier),
                     placeholder = { Text(def.placeholder) },
                     singleLine = !def.isMultiline,
                     enabled = !uiState.isSubmitting,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = if (def.isNumeric) KeyboardType.Decimal else KeyboardType.Text,
-                    ),
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = if (def.isNumeric) KeyboardType.Decimal else KeyboardType.Text,
+                        ),
                     shape = PazShapes.large,
                 )
             }
@@ -190,9 +200,10 @@ private fun FormContent(
                 ) {
                     Text(
                         uiState.error,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                        ),
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                            ),
                     )
                 }
             }
@@ -201,9 +212,12 @@ private fun FormContent(
         item { Spacer(Modifier.height(PazSpacing.Md)) }
 
         item {
-            val canSubmit = !uiState.isSubmitting && form.type.fieldDefs()
-                .filter { it.required }
-                .all { (uiState.fields[it.key] ?: "").isNotBlank() }
+            val canSubmit =
+                !uiState.isSubmitting &&
+                    form.type
+                        .fieldDefs()
+                        .filter { it.required }
+                        .all { (uiState.fields[it.key] ?: "").isNotBlank() }
 
             PazButton(
                 text = if (uiState.isSubmitting) "Enviando..." else "Enviar",
@@ -218,7 +232,10 @@ private fun FormContent(
 }
 
 @Composable
-private fun ErrorState(error: String, onRetry: (() -> Unit)?) {
+private fun ErrorState(
+    error: String,
+    onRetry: (() -> Unit)?,
+) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             Modifier.padding(PazSpacing.Xl),

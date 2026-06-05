@@ -11,8 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.cwb.pazchurch.app.R
 import br.church.paz.android.ui.theme.PazGradients
+import com.cwb.pazchurch.app.R
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -30,13 +30,13 @@ fun SplashScreen(
     }
 
     Box(
-        modifier         = Modifier.fillMaxSize().background(PazGradients.Hero),
+        modifier = Modifier.fillMaxSize().background(PazGradients.Hero),
         contentAlignment = Alignment.Center,
     ) {
         Image(
-            painter            = painterResource(R.drawable.paz_logo),
+            painter = painterResource(R.drawable.paz_logo),
             contentDescription = null,
-            modifier           = Modifier.size(140.dp),
+            modifier = Modifier.size(140.dp),
         )
     }
 }

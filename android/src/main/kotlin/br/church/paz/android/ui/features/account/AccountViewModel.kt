@@ -11,15 +11,18 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class AccountViewModel(private val authRepository: AuthRepository) : ViewModel() {
-
+class AccountViewModel(
+    private val authRepository: AuthRepository,
+) : ViewModel() {
     private val _uiState = MutableStateFlow(AccountUiState())
     val uiState: StateFlow<AccountUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<AccountEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
-    init { loadUser() }
+    init {
+        loadUser()
+    }
 
     fun loadUser() {
         viewModelScope.launch {
@@ -40,11 +43,16 @@ class AccountViewModel(private val authRepository: AuthRepository) : ViewModel()
         }
     }
 
-    fun onEditProfile()       = emit(AccountEffect.NavigateToEditProfile)
-    fun onMemberJourney()     = emit(AccountEffect.NavigateToMemberJourney)
-    fun onMeetingReport()     = emit(AccountEffect.NavigateToMeetingReport)
-    fun onFormularios()       = emit(AccountEffect.NavigateToFormularios)
-    fun onMinistries()        = emit(AccountEffect.NavigateToMinistries)
+    fun onEditProfile() = emit(AccountEffect.NavigateToEditProfile)
+
+    fun onMemberJourney() = emit(AccountEffect.NavigateToMemberJourney)
+
+    fun onMeetingReport() = emit(AccountEffect.NavigateToMeetingReport)
+
+    fun onFormularios() = emit(AccountEffect.NavigateToFormularios)
+
+    fun onMinistries() = emit(AccountEffect.NavigateToMinistries)
+
     fun onNotificationPrefs() = emit(AccountEffect.NavigateToNotificationPrefs)
 
     private fun emit(effect: AccountEffect) {

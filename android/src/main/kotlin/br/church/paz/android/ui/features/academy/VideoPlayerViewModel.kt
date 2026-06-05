@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-
 data class VideoPlayerUiState(
     val video: AcademyVideo? = null,
     val relatedVideos: List<AcademyVideo> = emptyList(),
@@ -19,11 +18,12 @@ data class VideoPlayerUiState(
 class VideoPlayerViewModel(
     private val videoId: String,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(VideoPlayerUiState())
     val uiState: StateFlow<VideoPlayerUiState> = _uiState.asStateFlow()
 
-    init { load() }
+    init {
+        load()
+    }
 
     private fun load() {
         viewModelScope.launch {

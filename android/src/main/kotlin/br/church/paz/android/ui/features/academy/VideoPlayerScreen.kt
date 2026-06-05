@@ -91,11 +91,12 @@ fun VideoPlayerScreen(
 
         // Video metadata + related videos
         when {
-            uiState.video != null -> MetadataAndRelated(
-                video   = uiState.video!!,
-                related = uiState.relatedVideos,
-                onVideoTap = { viewModel.onVideoTapped(it) },
-            )
+            uiState.video != null ->
+                MetadataAndRelated(
+                    video = uiState.video!!,
+                    related = uiState.relatedVideos,
+                    onVideoTap = { viewModel.onVideoTapped(it) },
+                )
             uiState.isLoading -> LoadingMetadata()
         }
     }
@@ -104,7 +105,8 @@ fun VideoPlayerScreen(
 @Composable
 private fun YouTubeWebView(youtubeId: String) {
     // YouTube iframe embed with autoplay=1, rel=0 (no related), modestbranding=1
-    val htmlContent = """
+    val htmlContent =
+        """
         <!DOCTYPE html>
         <html>
         <head>
@@ -122,15 +124,16 @@ private fun YouTubeWebView(youtubeId: String) {
           </iframe>
         </body>
         </html>
-    """.trimIndent()
+        """.trimIndent()
 
     AndroidView(
         factory = { context ->
             WebView(context).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                )
+                layoutParams =
+                    ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                    )
                 webChromeClient = WebChromeClient()
                 settings.apply {
                     javaScriptEnabled = true
@@ -159,7 +162,9 @@ private fun MetadataAndRelated(
 ) {
     LazyColumn(
         Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(PazSpacing.Lg),
+        contentPadding =
+            androidx.compose.foundation.layout
+                .PaddingValues(PazSpacing.Lg),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
     ) {
         item {
@@ -173,23 +178,40 @@ private fun MetadataAndRelated(
                     video.category?.let { cat ->
                         Box(
                             Modifier
-                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
-                                .background(PazColors.Primary.copy(alpha = 0.12f))
+                                .clip(
+                                    androidx.compose.foundation.shape
+                                        .RoundedCornerShape(20.dp),
+                                ).background(PazColors.Primary.copy(alpha = 0.12f))
                                 .padding(horizontal = 10.dp, vertical = 4.dp),
                         ) {
                             Text(cat, style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Primary))
                         }
                     }
                     video.durationFormatted?.let { dur ->
-                        Text(dur, style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)))
+                        Text(
+                            dur,
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                ),
+                        )
                     }
                     video.viewCount?.let { views ->
-                        Text("$views visualizações", style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)))
+                        Text(
+                            "$views visualizações",
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                ),
+                        )
                     }
                 }
 
                 video.author?.let { author ->
-                    Text(author, style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)))
+                    Text(
+                        author,
+                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)),
+                    )
                 }
             }
         }
@@ -219,11 +241,14 @@ private fun MetadataAndRelated(
 }
 
 @Composable
-private fun RelatedVideoRow(video: AcademyVideo, onClick: () -> Unit) {
+private fun RelatedVideoRow(
+    video: AcademyVideo,
+    onClick: () -> Unit,
+) {
     androidx.compose.material3.Surface(
         onClick = onClick,
-        shape   = PazShapes.large,
-        color   = MaterialTheme.colorScheme.surface,
+        shape = PazShapes.large,
+        color = MaterialTheme.colorScheme.surface,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -243,7 +268,10 @@ private fun RelatedVideoRow(video: AcademyVideo, onClick: () -> Unit) {
             Column(Modifier.weight(1f)) {
                 Text(video.title, style = MaterialTheme.typography.titleSmall, maxLines = 2)
                 video.durationFormatted?.let { dur ->
-                    Text(dur, style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)))
+                    Text(
+                        dur,
+                        style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)),
+                    )
                 }
             }
         }

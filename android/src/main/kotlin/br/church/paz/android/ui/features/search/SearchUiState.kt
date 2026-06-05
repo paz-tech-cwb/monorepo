@@ -25,8 +25,19 @@ data class SearchResults(
 }
 
 sealed class SearchEffect {
-    data class NavigateToAgendaDetail(val eventId: String) : SearchEffect()
-    data class NavigateToFormDetail(val formId: String) : SearchEffect()
-    data class NavigateToMinistryDetail(val ministryId: String) : SearchEffect()
-    data class NavigateToLifeGroupDetail(val lifeGroupId: String) : SearchEffect()
+    data class NavigateToAgendaDetail(
+        val eventId: String,
+    ) : SearchEffect()
+
+    data class NavigateToFormDetail(
+        val formId: String,
+    ) : SearchEffect()
+
+    data class NavigateToMinistryDetail(
+        val ministryId: String,
+    ) : SearchEffect()
+
+    data class NavigateToLifeGroupDetail(
+        val lifeGroupId: String,
+    ) : SearchEffect()
 }

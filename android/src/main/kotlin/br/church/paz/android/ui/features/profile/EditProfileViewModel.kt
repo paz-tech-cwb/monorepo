@@ -17,14 +17,15 @@ class EditProfileViewModel(
     private val userRepository: UserRepository,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(EditProfileUiState())
     val uiState: StateFlow<EditProfileUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<EditProfileEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
-    init { loadProfile() }
+    init {
+        loadProfile()
+    }
 
     private fun loadProfile() {
         viewModelScope.launch {
@@ -50,8 +51,7 @@ class EditProfileViewModel(
                 .onSuccess {
                     _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
                     _effect.send(EditProfileEffect.SaveSuccess)
-                }
-                .onFailure { e ->
+                }.onFailure { e ->
                     _uiState.update {
                         it.copy(isSaving = false, error = e.message ?: "Erro ao salvar perfil")
                     }

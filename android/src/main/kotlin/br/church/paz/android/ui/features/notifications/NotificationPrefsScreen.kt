@@ -78,13 +78,17 @@ fun NotificationPrefsScreen(
         Box(
             Modifier
                 .fillMaxSize()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(MaterialTheme.colorScheme.background),
+                .clip(
+                    androidx.compose.foundation.shape
+                        .RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                ).background(MaterialTheme.colorScheme.background),
         ) {
             LazyColumn(
-                modifier            = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
-                contentPadding      = androidx.compose.foundation.layout.PaddingValues(PazSpacing.Lg),
+                contentPadding =
+                    androidx.compose.foundation.layout
+                        .PaddingValues(PazSpacing.Lg),
             ) {
                 item { Spacer(Modifier.height(PazSpacing.Sm)) }
 
@@ -96,9 +100,10 @@ fun NotificationPrefsScreen(
                     Spacer(Modifier.height(PazSpacing.Sm))
                     Text(
                         "Escolha quais notificações você deseja receber",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        ),
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            ),
                     )
                 }
 
@@ -140,9 +145,10 @@ fun NotificationPrefsScreen(
                         ) {
                             Text(
                                 uiState.error!!,
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                ),
+                                style =
+                                    MaterialTheme.typography.bodySmall.copy(
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    ),
                             )
                         }
                     }
@@ -153,10 +159,10 @@ fun NotificationPrefsScreen(
                 item {
                     Column(Modifier.padding(horizontal = 0.dp)) {
                         PazButton(
-                            text     = if (uiState.isSaving) "Salvando..." else "Salvar",
-                            onClick  = viewModel::onSave,
+                            text = if (uiState.isSaving) "Salvando..." else "Salvar",
+                            onClick = viewModel::onSave,
                             modifier = Modifier.fillMaxWidth(),
-                            enabled  = !uiState.isSaving,
+                            enabled = !uiState.isSaving,
                         )
                     }
                 }
@@ -182,8 +188,8 @@ private fun PreferenceToggle(
             .padding(PazSpacing.Lg),
     ) {
         Row(
-            modifier            = Modifier.fillMaxWidth(),
-            verticalAlignment   = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
         ) {
             Column(Modifier.weight(1f)) {
@@ -191,9 +197,10 @@ private fun PreferenceToggle(
                 Spacer(Modifier.height(PazSpacing.Xs))
                 Text(
                     description,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    ),
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        ),
                 )
             }
             Switch(checked = checked, onCheckedChange = onCheckedChange)

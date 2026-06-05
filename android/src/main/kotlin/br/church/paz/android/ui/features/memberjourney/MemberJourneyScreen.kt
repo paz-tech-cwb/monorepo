@@ -86,8 +86,10 @@ fun MemberJourneyScreen(
         Box(
             Modifier
                 .fillMaxSize()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(MaterialTheme.colorScheme.background),
+                .clip(
+                    androidx.compose.foundation.shape
+                        .RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                ).background(MaterialTheme.colorScheme.background),
         ) {
             when {
                 uiState.isLoading -> LoadingState()
@@ -101,9 +103,11 @@ fun MemberJourneyScreen(
 @Composable
 private fun ContentState(journey: MemberJourney) {
     LazyColumn(
-        modifier            = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
-        contentPadding      = androidx.compose.foundation.layout.PaddingValues(PazSpacing.Lg),
+        contentPadding =
+            androidx.compose.foundation.layout
+                .PaddingValues(PazSpacing.Lg),
     ) {
         item { Spacer(Modifier.height(PazSpacing.Sm)) }
 
@@ -118,56 +122,61 @@ private fun ContentState(journey: MemberJourney) {
 @Composable
 private fun JourneyStepCard(step: JourneyStep) {
     Row(
-        modifier            = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-        verticalAlignment   = Alignment.Top,
+        verticalAlignment = Alignment.Top,
     ) {
         Box(
-            modifier        = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(
-                    when (step.status) {
-                        JourneyStepStatus.completed -> PazColors.Primary.copy(alpha = 0.1f)
-                        JourneyStepStatus.in_progress -> PazColors.Primary.copy(alpha = 0.05f)
-                        JourneyStepStatus.pending -> MaterialTheme.colorScheme.surfaceVariant
-                    }
-                ),
+            modifier =
+                Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(
+                        when (step.status) {
+                            JourneyStepStatus.completed -> PazColors.Primary.copy(alpha = 0.1f)
+                            JourneyStepStatus.in_progress -> PazColors.Primary.copy(alpha = 0.05f)
+                            JourneyStepStatus.pending -> MaterialTheme.colorScheme.surfaceVariant
+                        },
+                    ),
             contentAlignment = Alignment.Center,
         ) {
             when (step.status) {
-                JourneyStepStatus.completed -> Icon(
-                    Icons.Filled.CheckCircle,
-                    "completado",
-                    tint = PazColors.Primary,
-                    modifier = Modifier.size(24.dp),
-                )
-                JourneyStepStatus.in_progress -> Box(
-                    Modifier
-                        .size(20.dp)
-                        .clip(CircleShape)
-                        .background(PazColors.Primary),
-                )
-                JourneyStepStatus.pending -> Icon(
-                    Icons.Outlined.Circle,
-                    "pendente",
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                    modifier = Modifier.size(24.dp),
-                )
+                JourneyStepStatus.completed ->
+                    Icon(
+                        Icons.Filled.CheckCircle,
+                        "completado",
+                        tint = PazColors.Primary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                JourneyStepStatus.in_progress ->
+                    Box(
+                        Modifier
+                            .size(20.dp)
+                            .clip(CircleShape)
+                            .background(PazColors.Primary),
+                    )
+                JourneyStepStatus.pending ->
+                    Icon(
+                        Icons.Outlined.Circle,
+                        "pendente",
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                        modifier = Modifier.size(24.dp),
+                    )
             }
         }
 
         Column(
-            modifier            = Modifier
-                .weight(1f)
-                .clip(PazShapes.large)
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(PazSpacing.Lg),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .clip(PazShapes.large)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(PazSpacing.Lg),
             verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
         ) {
             Row(
-                modifier            = Modifier.fillMaxWidth(),
-                verticalAlignment   = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
             ) {
                 Column(Modifier.weight(1f)) {
@@ -179,31 +188,35 @@ private fun JourneyStepCard(step: JourneyStep) {
                         JourneyStepStatus.in_progress -> "Em andamento"
                         JourneyStepStatus.pending -> "Pendente"
                     },
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = when (step.status) {
-                            JourneyStepStatus.completed -> PazColors.Primary
-                            JourneyStepStatus.in_progress -> PazColors.Primary
-                            JourneyStepStatus.pending -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                        }
-                    ),
+                    style =
+                        MaterialTheme.typography.labelSmall.copy(
+                            color =
+                                when (step.status) {
+                                    JourneyStepStatus.completed -> PazColors.Primary
+                                    JourneyStepStatus.in_progress -> PazColors.Primary
+                                    JourneyStepStatus.pending -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                },
+                        ),
                 )
             }
 
             if (!step.description.isNullOrEmpty()) {
                 Text(
                     step.description!!,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    ),
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        ),
                 )
             }
 
             if (step.completedAt != null) {
                 Text(
                     "Concluído em ${ step.completedAt}",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                    ),
+                    style =
+                        MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        ),
                 )
             }
         }
@@ -211,15 +224,18 @@ private fun JourneyStepCard(step: JourneyStep) {
 }
 
 @Composable
-private fun ErrorState(error: String, onRetry: () -> Unit) {
+private fun ErrorState(
+    error: String,
+    onRetry: () -> Unit,
+) {
     Box(
-        modifier         = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-            modifier            = Modifier.padding(PazSpacing.Xl),
+            modifier = Modifier.padding(PazSpacing.Xl),
         ) {
             Text(error, style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(PazSpacing.Lg))
@@ -231,17 +247,18 @@ private fun ErrorState(error: String, onRetry: () -> Unit) {
 @Composable
 private fun LoadingState() {
     Column(
-        modifier            = Modifier
-            .fillMaxSize()
-            .padding(PazSpacing.Lg),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(PazSpacing.Lg),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
     ) {
         Spacer(Modifier.height(PazSpacing.Lg))
         repeat(4) {
             Row(
-                modifier            = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                verticalAlignment   = Alignment.Top,
+                verticalAlignment = Alignment.Top,
             ) {
                 PazSkeleton(height = 40.dp, width = 40.dp)
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {

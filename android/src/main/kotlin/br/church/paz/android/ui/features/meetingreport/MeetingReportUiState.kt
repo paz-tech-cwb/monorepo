@@ -13,5 +13,6 @@ data class MeetingReportUiState(
 
 sealed class MeetingReportEffect {
     data object SubmitSuccess : MeetingReportEffect()
+
     data object NavigateBack : MeetingReportEffect()
 }

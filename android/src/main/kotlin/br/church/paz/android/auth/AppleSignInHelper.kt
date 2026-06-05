@@ -2,9 +2,6 @@ package br.church.paz.android.auth
 
 import android.content.Context
 import androidx.credentials.CredentialManager
-import androidx.credentials.CustomCredential
-import androidx.credentials.GetCredentialRequest
-import androidx.credentials.exceptions.GetCredentialException
 import com.google.firebase.auth.OAuthProvider
 
 /**
@@ -14,19 +11,22 @@ import com.google.firebase.auth.OAuthProvider
  * (not the native Apple SDK). The result is an OAuthCredential that
  * is used to sign into Firebase, giving us the Firebase ID token.
  */
-class AppleSignInHelper(private val context: Context) {
-
+class AppleSignInHelper(
+    private val context: Context,
+) {
     private val credentialManager = CredentialManager.create(context)
 
     /**
      * Returns the Firebase ID token after a successful Apple sign-in.
      * Callers should pass this to AuthRepository.socialLogin(provider = "apple").
      */
-    suspend fun getIdToken(): Result<String> {
-        return try {
-            val provider = OAuthProvider.newBuilder("apple.com")
-                .setScopes(listOf("email", "name"))
-                .build()
+    suspend fun getIdToken(): Result<String> =
+        try {
+            val provider =
+                OAuthProvider
+                    .newBuilder("apple.com")
+                    .setScopes(listOf("email", "name"))
+                    .build()
 
             // Firebase handles the Apple OAuth redirect internally on Android.
             // The Credential Manager integration surfaces it as a CustomCredential.
@@ -37,5 +37,4 @@ class AppleSignInHelper(private val context: Context) {
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }
 }

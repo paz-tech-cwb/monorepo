@@ -22,7 +22,6 @@ class SearchViewModel(
     private val formsRepository: FormsRepository,
     private val churchRepository: ChurchRepository,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
@@ -40,10 +39,11 @@ class SearchViewModel(
             return
         }
 
-        searchJob = viewModelScope.launch {
-            delay(300) // debounce
-            search(query.trim())
-        }
+        searchJob =
+            viewModelScope.launch {
+                delay(300) // debounce
+                search(query.trim())
+            }
     }
 
     private suspend fun search(query: String) {
@@ -57,35 +57,46 @@ class SearchViewModel(
         val churchResult = runCatching { churchRepository.getChurch() }
         val lifeGroupsResult = runCatching { churchRepository.getAllLifeGroups() }
 
-        val events = homeResult.getOrNull()?.agenda
-            ?.filter { it.title.lowercase().contains(q) || it.description?.lowercase()?.contains(q) == true }
-            ?: emptyList()
+        val events =
+            homeResult
+                .getOrNull()
+                ?.agenda
+                ?.filter { it.title.lowercase().contains(q) || it.description?.lowercase()?.contains(q) == true }
+                ?: emptyList()
 
         val videos = emptyList<br.church.paz.shared.domain.model.AcademyVideo>()
 
-        val forms = formsResult.getOrNull()
-            ?.filter { it.title.lowercase().contains(q) || it.description?.lowercase()?.contains(q) == true }
-            ?: emptyList()
+        val forms =
+            formsResult
+                .getOrNull()
+                ?.filter { it.title.lowercase().contains(q) || it.description?.lowercase()?.contains(q) == true }
+                ?: emptyList()
 
-        val ministries = churchResult.getOrNull()?.ministries
-            ?.filter { it.name.lowercase().contains(q) || it.description?.lowercase()?.contains(q) == true }
-            ?: emptyList()
+        val ministries =
+            churchResult
+                .getOrNull()
+                ?.ministries
+                ?.filter { it.name.lowercase().contains(q) || it.description?.lowercase()?.contains(q) == true }
+                ?: emptyList()
 
-        val lifeGroups = lifeGroupsResult.getOrNull()
-            ?.filter { it.name.lowercase().contains(q) || it.leader?.lowercase()?.contains(q) == true }
-            ?: emptyList()
+        val lifeGroups =
+            lifeGroupsResult
+                .getOrNull()
+                ?.filter { it.name.lowercase().contains(q) || it.leader?.lowercase()?.contains(q) == true }
+                ?: emptyList()
 
         _uiState.update {
             it.copy(
                 isSearching = false,
                 hasSearched = true,
-                results = SearchResults(
-                    events = events,
-                    videos = videos,
-                    forms = forms,
-                    ministries = ministries,
-                    lifeGroups = lifeGroups,
-                ),
+                results =
+                    SearchResults(
+                        events = events,
+                        videos = videos,
+                        forms = forms,
+                        ministries = ministries,
+                        lifeGroups = lifeGroups,
+                    ),
             )
         }
     }

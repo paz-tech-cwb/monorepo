@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
 class SplashViewModel : ViewModel() {
-
     private val _effect = Channel<SplashEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 

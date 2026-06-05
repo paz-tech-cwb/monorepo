@@ -1,8 +1,8 @@
 package br.church.paz.android.ui.features.home
 
 import br.church.paz.shared.domain.model.AgendaEvent
-import br.church.paz.shared.domain.model.Banner
 import br.church.paz.shared.domain.model.BankInfo
+import br.church.paz.shared.domain.model.Banner
 
 data class HomeUiState(
     val isLoading: Boolean = true,
@@ -15,6 +15,11 @@ data class HomeUiState(
 )
 
 sealed class HomeEffect {
-    data class OpenUrl(val url: String) : HomeEffect()
-    data class NavigateToAgenda(val eventId: String) : HomeEffect()
+    data class OpenUrl(
+        val url: String,
+    ) : HomeEffect()
+
+    data class NavigateToAgenda(
+        val eventId: String,
+    ) : HomeEffect()
 }

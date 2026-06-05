@@ -82,13 +82,17 @@ fun MeetingReportScreen(
         Box(
             Modifier
                 .fillMaxSize()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(MaterialTheme.colorScheme.background),
+                .clip(
+                    androidx.compose.foundation.shape
+                        .RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                ).background(MaterialTheme.colorScheme.background),
         ) {
             LazyColumn(
-                modifier            = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
-                contentPadding      = androidx.compose.foundation.layout.PaddingValues(PazSpacing.Lg),
+                contentPadding =
+                    androidx.compose.foundation.layout
+                        .PaddingValues(PazSpacing.Lg),
             ) {
                 item { Spacer(Modifier.height(PazSpacing.Sm)) }
 
@@ -157,9 +161,10 @@ fun MeetingReportScreen(
                         ) {
                             Text(
                                 uiState.error!!,
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                ),
+                                style =
+                                    MaterialTheme.typography.bodySmall.copy(
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                    ),
                             )
                         }
                     }
@@ -168,10 +173,10 @@ fun MeetingReportScreen(
                 item {
                     Column(Modifier.padding(horizontal = 0.dp)) {
                         PazButton(
-                            text     = if (uiState.isSubmitting) "Enviando..." else "Enviar Relatório",
-                            onClick  = viewModel::onSubmit,
+                            text = if (uiState.isSubmitting) "Enviando..." else "Enviar Relatório",
+                            onClick = viewModel::onSubmit,
                             modifier = Modifier.fillMaxWidth(),
-                            enabled  = !uiState.isSubmitting && uiState.date.isNotBlank() && uiState.attendees.isNotBlank(),
+                            enabled = !uiState.isSubmitting && uiState.date.isNotBlank() && uiState.attendees.isNotBlank(),
                         )
                     }
                 }
@@ -196,16 +201,17 @@ private fun FormField(
         Text(label, style = MaterialTheme.typography.labelMedium)
         Spacer(Modifier.height(PazSpacing.Sm))
         OutlinedTextField(
-            value        = value,
+            value = value,
             onValueChange = onValueChange,
-            modifier     = Modifier
-                .fillMaxWidth()
-                .then(if (singleLine) Modifier else Modifier.height(120.dp)),
-            enabled      = enabled,
-            placeholder  = { Text(placeholder) },
-            singleLine   = singleLine,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .then(if (singleLine) Modifier else Modifier.height(120.dp)),
+            enabled = enabled,
+            placeholder = { Text(placeholder) },
+            singleLine = singleLine,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            shape        = PazShapes.large,
+            shape = PazShapes.large,
         )
     }
 }

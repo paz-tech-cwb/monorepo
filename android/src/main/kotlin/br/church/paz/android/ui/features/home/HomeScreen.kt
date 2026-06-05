@@ -105,36 +105,39 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is HomeEffect.OpenUrl -> context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse(effect.url))
-                )
+                is HomeEffect.OpenUrl ->
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse(effect.url)),
+                    )
                 is HomeEffect.NavigateToAgenda -> { /* TODO Phase 4 */ }
             }
         }
     }
 
     Scaffold(
-        modifier       = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar         = { HomeTopBar(userName = uiState.userName, scrollBehavior = scrollBehavior) },
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = { HomeTopBar(userName = uiState.userName, scrollBehavior = scrollBehavior) },
         containerColor = MaterialTheme.colorScheme.background,
     ) { innerPadding ->
         val bottomPad = contentPadding.calculateBottomPadding() + PazSpacing.Xl
-        val adjustedPadding = PaddingValues(
-            top    = innerPadding.calculateTopPadding(),
-            bottom = bottomPad,
-        )
-        when {
-            uiState.isLoading     -> LoadingSkeleton(adjustedPadding)
-            uiState.error != null -> ErrorState(uiState.error!!, viewModel::load, adjustedPadding)
-            else -> HomeContent(
-                banners        = uiState.banners,
-                agendaEvents   = uiState.agendaEvents,
-                bank           = uiState.bank,
-                sectionOrder   = uiState.sectionOrder,
-                onBannerTap    = viewModel::onBannerTapped,
-                onEventTap     = viewModel::onEventTapped,
-                contentPadding = adjustedPadding,
+        val adjustedPadding =
+            PaddingValues(
+                top = innerPadding.calculateTopPadding(),
+                bottom = bottomPad,
             )
+        when {
+            uiState.isLoading -> LoadingSkeleton(adjustedPadding)
+            uiState.error != null -> ErrorState(uiState.error!!, viewModel::load, adjustedPadding)
+            else ->
+                HomeContent(
+                    banners = uiState.banners,
+                    agendaEvents = uiState.agendaEvents,
+                    bank = uiState.bank,
+                    sectionOrder = uiState.sectionOrder,
+                    onBannerTap = viewModel::onBannerTapped,
+                    onEventTap = viewModel::onEventTapped,
+                    contentPadding = adjustedPadding,
+                )
         }
     }
 }
@@ -143,10 +146,13 @@ fun HomeScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeTopBar(userName: String, scrollBehavior: TopAppBarScrollBehavior) {
-    val fraction  = scrollBehavior.state.collapsedFraction
+private fun HomeTopBar(
+    userName: String,
+    scrollBehavior: TopAppBarScrollBehavior,
+) {
+    val fraction = scrollBehavior.state.collapsedFraction
     val collapsed = fraction > 0.5f
-    val isDark    = LocalPazDarkTheme.current
+    val isDark = LocalPazDarkTheme.current
 
     LargeTopAppBar(
         expandedHeight = 112.dp,
@@ -156,18 +162,24 @@ private fun HomeTopBar(userName: String, scrollBehavior: TopAppBarScrollBehavior
             } else {
                 Column {
                     Text(
-                        text  = "QUARTA, 4 DE JUNHO",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = PazColors.PrimaryLight,
-                        ),
+                        text = "QUARTA, 4 DE JUNHO",
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                color = PazColors.PrimaryLight,
+                            ),
                     )
                     Spacer(Modifier.height(7.dp))
                     Text(
-                        text  = "Olá, ${userName.ifEmpty { "Lucas" }}",
-                        style = MaterialTheme.typography.displayLarge.copy(
-                            color = if (isDark) MaterialTheme.colorScheme.onBackground
-                                    else PazColors.Primary,
-                        ),
+                        text = "Olá, ${userName.ifEmpty { "Lucas" }}",
+                        style =
+                            MaterialTheme.typography.displayLarge.copy(
+                                color =
+                                    if (isDark) {
+                                        MaterialTheme.colorScheme.onBackground
+                                    } else {
+                                        PazColors.Primary
+                                    },
+                            ),
                     )
                 }
             }
@@ -176,9 +188,9 @@ private fun HomeTopBar(userName: String, scrollBehavior: TopAppBarScrollBehavior
             Box(contentAlignment = Alignment.TopEnd) {
                 IconButton(onClick = {}) {
                     Icon(
-                        imageVector        = Icons.Outlined.Notifications,
+                        imageVector = Icons.Outlined.Notifications,
                         contentDescription = "Notificações",
-                        tint               = MaterialTheme.colorScheme.onBackground,
+                        tint = MaterialTheme.colorScheme.onBackground,
                     )
                 }
                 Box(
@@ -186,15 +198,16 @@ private fun HomeTopBar(userName: String, scrollBehavior: TopAppBarScrollBehavior
                         .padding(top = 11.dp, end = 11.dp)
                         .size(8.dp)
                         .border(1.6.dp, MaterialTheme.colorScheme.background, CircleShape)
-                        .background(PazColors.Gold, CircleShape)
+                        .background(PazColors.Gold, CircleShape),
                 )
             }
         },
-        colors = TopAppBarDefaults.largeTopAppBarColors(
-            containerColor         = MaterialTheme.colorScheme.background,
-            scrolledContainerColor = MaterialTheme.colorScheme.background,
-            titleContentColor      = MaterialTheme.colorScheme.onBackground,
-        ),
+        colors =
+            TopAppBarDefaults.largeTopAppBarColors(
+                containerColor = MaterialTheme.colorScheme.background,
+                scrolledContainerColor = MaterialTheme.colorScheme.background,
+                titleContentColor = MaterialTheme.colorScheme.onBackground,
+            ),
         scrollBehavior = scrollBehavior,
     )
 }
@@ -211,43 +224,46 @@ private fun HomeContent(
     onEventTap: (String) -> Unit,
     contentPadding: PaddingValues,
 ) {
-    var selectedDay by remember { mutableIntStateOf(2) }   // Wednesday pre-selected
+    var selectedDay by remember { mutableIntStateOf(2) } // Wednesday pre-selected
 
     LazyColumn(
         contentPadding = contentPadding,
-        modifier       = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
     ) {
         sectionOrder.forEachIndexed { index, type ->
             when (type) {
-                "announcements" -> if (banners.isNotEmpty()) {
-                    item(key = "featured") {
-                        AnimatedSection(index = index) {
-                            FeaturedSection(banners = banners, onBannerTap = onBannerTap)
+                "announcements" ->
+                    if (banners.isNotEmpty()) {
+                        item(key = "featured") {
+                            AnimatedSection(index = index) {
+                                FeaturedSection(banners = banners, onBannerTap = onBannerTap)
+                            }
                         }
                     }
-                }
-                "contribution" -> if (bank != null) {
-                    item(key = "dizimos") {
-                        AnimatedSection(index = index) {
-                            DizimosCard(
-                                bank     = bank,
-                                modifier = Modifier.padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Xl),
-                            )
+                "contribution" ->
+                    if (bank != null) {
+                        item(key = "dizimos") {
+                            AnimatedSection(index = index) {
+                                DizimosCard(
+                                    bank = bank,
+                                    modifier = Modifier.padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Xl),
+                                )
+                            }
                         }
                     }
-                }
-                "agenda" -> if (agendaEvents.isNotEmpty()) {
-                    item(key = "agenda") {
-                        AnimatedSection(index = index) {
-                            AgendaSection(
-                                events        = agendaEvents,
-                                selectedDay   = selectedDay,
-                                onDaySelected = { selectedDay = it },
-                                onEventTap    = onEventTap,
-                            )
+                "agenda" ->
+                    if (agendaEvents.isNotEmpty()) {
+                        item(key = "agenda") {
+                            AnimatedSection(index = index) {
+                                AgendaSection(
+                                    events = agendaEvents,
+                                    selectedDay = selectedDay,
+                                    onDaySelected = { selectedDay = it },
+                                    onEventTap = onEventTap,
+                                )
+                            }
                         }
                     }
-                }
             }
         }
     }
@@ -256,7 +272,10 @@ private fun HomeContent(
 // ── Entrance animation wrapper ────────────────────────────────────────────────
 
 @Composable
-private fun AnimatedSection(index: Int, content: @Composable () -> Unit) {
+private fun AnimatedSection(
+    index: Int,
+    content: @Composable () -> Unit,
+) {
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         delay(index * 65L)
@@ -264,8 +283,9 @@ private fun AnimatedSection(index: Int, content: @Composable () -> Unit) {
     }
     AnimatedVisibility(
         visible = visible,
-        enter   = fadeIn(tween(600, easing = CubicBezierEasing(.2f, .7f, .2f, 1f))) +
-                  slideInVertically(tween(600)) { (it * 0.08f).toInt() },
+        enter =
+            fadeIn(tween(600, easing = CubicBezierEasing(.2f, .7f, .2f, 1f))) +
+                slideInVertically(tween(600)) { (it * 0.08f).toInt() },
     ) {
         content()
     }
@@ -274,9 +294,12 @@ private fun AnimatedSection(index: Int, content: @Composable () -> Unit) {
 // ── Featured events section ───────────────────────────────────────────────────
 
 @Composable
-private fun FeaturedSection(banners: List<Banner>, onBannerTap: (String?) -> Unit) {
+private fun FeaturedSection(
+    banners: List<Banner>,
+    onBannerTap: (String?) -> Unit,
+) {
     val pagerState = rememberPagerState { banners.size }
-    val isDark     = LocalPazDarkTheme.current
+    val isDark = LocalPazDarkTheme.current
 
     Column(Modifier.padding(top = PazSpacing.Md)) {
         Row(
@@ -284,7 +307,7 @@ private fun FeaturedSection(banners: List<Banner>, onBannerTap: (String?) -> Uni
                 .fillMaxWidth()
                 .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Sm),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment     = Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("Eventos", style = MaterialTheme.typography.headlineMedium)
             TextButton(onClick = {}, contentPadding = PaddingValues(0.dp)) {
@@ -295,21 +318,21 @@ private fun FeaturedSection(banners: List<Banner>, onBannerTap: (String?) -> Uni
                 Icon(
                     Icons.AutoMirrored.Outlined.ArrowForward,
                     contentDescription = null,
-                    tint               = PazColors.PrimaryLight,
-                    modifier           = Modifier.size(15.dp).padding(start = 4.dp),
+                    tint = PazColors.PrimaryLight,
+                    modifier = Modifier.size(15.dp).padding(start = 4.dp),
                 )
             }
         }
 
         HorizontalPager(
-            state          = pagerState,
+            state = pagerState,
             contentPadding = PaddingValues(start = PazSpacing.Lg, end = PazSpacing.Md),
-            pageSpacing    = PazSpacing.Md,
-            modifier       = Modifier.fillMaxWidth(),
+            pageSpacing = PazSpacing.Md,
+            modifier = Modifier.fillMaxWidth(),
         ) { page ->
             FeaturedCard(
-                banner  = banners[page],
-                isAlt   = page % 2 == 1,
+                banner = banners[page],
+                isAlt = page % 2 == 1,
                 onClick = { onBannerTap(banners[page].actionUrl) },
             )
         }
@@ -320,25 +343,28 @@ private fun FeaturedSection(banners: List<Banner>, onBannerTap: (String?) -> Uni
                 .fillMaxWidth()
                 .padding(top = PazSpacing.Md),
             horizontalArrangement = Arrangement.Center,
-            verticalAlignment     = Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             banners.indices.forEach { i ->
                 val isActive = pagerState.currentPage == i
                 val w by animateDpAsState(
-                    targetValue   = if (isActive) 20.dp else 7.dp,
+                    targetValue = if (isActive) 20.dp else 7.dp,
                     animationSpec = tween(250),
-                    label         = "dotWidth$i",
+                    label = "dotWidth$i",
                 )
                 Box(
                     Modifier
                         .padding(horizontal = 3.dp)
                         .size(width = w, height = 7.dp)
                         .background(
-                            color = if (isActive) {
-                                if (isDark) PazColors.PrimaryLight else PazColors.Primary
-                            } else PazColors.DotInactive,
+                            color =
+                                if (isActive) {
+                                    if (isDark) PazColors.PrimaryLight else PazColors.Primary
+                                } else {
+                                    PazColors.DotInactive
+                                },
                             shape = RoundedCornerShape(4.dp),
-                        )
+                        ),
                 )
             }
         }
@@ -348,18 +374,21 @@ private fun FeaturedSection(banners: List<Banner>, onBannerTap: (String?) -> Uni
 // ── Featured card ─────────────────────────────────────────────────────────────
 
 @Composable
-private fun FeaturedCard(banner: Banner, isAlt: Boolean, onClick: () -> Unit) {
+private fun FeaturedCard(
+    banner: Banner,
+    isAlt: Boolean,
+    onClick: () -> Unit,
+) {
     Box(
         Modifier
             .fillMaxWidth()
             .height(176.dp)
             .shadow(
-                elevation    = 12.dp,
-                shape        = RoundedCornerShape(22.dp),
-                spotColor    = PazColors.Primary.copy(alpha = 0.70f),
+                elevation = 12.dp,
+                shape = RoundedCornerShape(22.dp),
+                spotColor = PazColors.Primary.copy(alpha = 0.70f),
                 ambientColor = PazColors.Primary.copy(alpha = 0.10f),
-            )
-            .clip(RoundedCornerShape(22.dp))
+            ).clip(RoundedCornerShape(22.dp))
             .background(if (isAlt) PazGradients.FeaturedCardAlt else PazGradients.FeaturedCard)
             .clickable(onClick = onClick)
             .padding(18.dp),
@@ -374,27 +403,29 @@ private fun FeaturedCard(banner: Banner, isAlt: Boolean, onClick: () -> Unit) {
 
         // Gold pill badge (top-left)
         Text(
-            text     = banner.actionUrl ?: "",
-            style    = MaterialTheme.typography.labelSmall.copy(color = PazColors.GoldOnBadge),
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .background(PazColors.Gold, RoundedCornerShape(100.dp))
-                .padding(horizontal = 13.dp, vertical = 6.dp),
+            text = banner.actionUrl ?: "",
+            style = MaterialTheme.typography.labelSmall.copy(color = PazColors.GoldOnBadge),
+            modifier =
+                Modifier
+                    .align(Alignment.TopStart)
+                    .background(PazColors.Gold, RoundedCornerShape(100.dp))
+                    .padding(horizontal = 13.dp, vertical = 6.dp),
         )
 
         // Title + subtitle (bottom-left)
         Column(Modifier.align(Alignment.BottomStart)) {
             Text(
-                text  = banner.title,
+                text = banner.title,
                 style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
             )
             // banner.imageUrl holds the subtitle in mock data
             // TODO(backend): when real data arrives, add a `subtitle` field to Banner
             Text(
-                text     = banner.imageUrl,
-                style    = MaterialTheme.typography.bodySmall.copy(
-                    color = Color.White.copy(alpha = 0.72f),
-                ),
+                text = banner.imageUrl,
+                style =
+                    MaterialTheme.typography.bodySmall.copy(
+                        color = Color.White.copy(alpha = 0.72f),
+                    ),
                 modifier = Modifier.padding(top = 5.dp),
             )
         }
@@ -406,18 +437,25 @@ private fun FeaturedCard(banner: Banner, isAlt: Boolean, onClick: () -> Unit) {
 @Composable
 private fun CrossWatermark(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
-        val sx = size.width  / 24f
+        val sx = size.width / 24f
         val sy = size.height / 24f
         drawPath(
-            path = Path().apply {
-                moveTo(10.6f * sx,  2.5f * sy); lineTo(13.4f * sx,  2.5f * sy)
-                lineTo(13.4f * sx,  6.7f * sy); lineTo(18f   * sx,  6.7f * sy)
-                lineTo(18f   * sx,  9.5f * sy); lineTo(13.4f * sx,  9.5f * sy)
-                lineTo(13.4f * sx, 21.5f * sy); lineTo(10.6f * sx, 21.5f * sy)
-                lineTo(10.6f * sx,  9.5f * sy); lineTo(6f    * sx,  9.5f * sy)
-                lineTo(6f    * sx,  6.7f * sy); lineTo(10.6f * sx,  6.7f * sy)
-                close()
-            },
+            path =
+                Path().apply {
+                    moveTo(10.6f * sx, 2.5f * sy)
+                    lineTo(13.4f * sx, 2.5f * sy)
+                    lineTo(13.4f * sx, 6.7f * sy)
+                    lineTo(18f * sx, 6.7f * sy)
+                    lineTo(18f * sx, 9.5f * sy)
+                    lineTo(13.4f * sx, 9.5f * sy)
+                    lineTo(13.4f * sx, 21.5f * sy)
+                    lineTo(10.6f * sx, 21.5f * sy)
+                    lineTo(10.6f * sx, 9.5f * sy)
+                    lineTo(6f * sx, 9.5f * sy)
+                    lineTo(6f * sx, 6.7f * sy)
+                    lineTo(10.6f * sx, 6.7f * sy)
+                    close()
+                },
             color = Color.White,
             alpha = 0.08f,
         )
@@ -427,60 +465,66 @@ private fun CrossWatermark(modifier: Modifier = Modifier) {
 // ── Dízimos card ──────────────────────────────────────────────────────────────
 
 @Composable
-private fun DizimosCard(bank: BankInfo, modifier: Modifier = Modifier) {
+private fun DizimosCard(
+    bank: BankInfo,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier
             .fillMaxWidth()
             .shadow(
-                elevation    = 12.dp,
-                shape        = RoundedCornerShape(24.dp),
-                spotColor    = PazColors.ContributionDeep.copy(alpha = 0.70f),
+                elevation = 12.dp,
+                shape = RoundedCornerShape(24.dp),
+                spotColor = PazColors.ContributionDeep.copy(alpha = 0.70f),
                 ambientColor = PazColors.ContributionDeep.copy(alpha = 0.10f),
-            )
-            .clip(RoundedCornerShape(24.dp))
+            ).clip(RoundedCornerShape(24.dp))
             .drawBehind {
                 drawRect(
-                    brush = Brush.radialGradient(
-                        colorStops = arrayOf(
-                            0f    to PazColors.ContributionHighlight,
-                            0.40f to PazColors.PrimaryMid,
-                            1f    to PazColors.ContributionDeep,
+                    brush =
+                        Brush.radialGradient(
+                            colorStops =
+                                arrayOf(
+                                    0f to PazColors.ContributionHighlight,
+                                    0.40f to PazColors.PrimaryMid,
+                                    1f to PazColors.ContributionDeep,
+                                ),
+                            center = Offset(size.width * 0.82f, -size.height * 0.08f),
+                            radius = size.width * 1.30f,
                         ),
-                        center = Offset(size.width * 0.82f, -size.height * 0.08f),
-                        radius = size.width * 1.30f,
-                    ),
                 )
-            }
-            .padding(22.dp),
+            }.padding(22.dp),
     ) {
         Column {
             Text(
                 "DÍZIMOS & OFERTAS",
-                style = MaterialTheme.typography.labelSmall.copy(
-                    color = Color.White.copy(alpha = 0.6f),
-                ),
+                style =
+                    MaterialTheme.typography.labelSmall.copy(
+                        color = Color.White.copy(alpha = 0.6f),
+                    ),
             )
             Spacer(Modifier.height(PazSpacing.Xs))
             Text(
                 "Contribua com a visão",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontSize   = 27.sp,
-                    lineHeight = 30.sp,
-                    color      = Color.White,
-                ),
+                style =
+                    MaterialTheme.typography.headlineMedium.copy(
+                        fontSize = 27.sp,
+                        lineHeight = 30.sp,
+                        color = Color.White,
+                    ),
             )
             Text(
                 "Sua oferta transforma vidas na comunidade",
-                style    = MaterialTheme.typography.bodySmall.copy(
-                    color      = Color.White.copy(alpha = 0.70f),
-                    lineHeight = 20.sp,
-                ),
+                style =
+                    MaterialTheme.typography.bodySmall.copy(
+                        color = Color.White.copy(alpha = 0.70f),
+                        lineHeight = 20.sp,
+                    ),
                 modifier = Modifier.padding(top = PazSpacing.Xs),
             )
             Spacer(Modifier.height(PazSpacing.Lg))
             Row(horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md)) {
                 if (bank.pixKey != null) {
-                    DizimosButton("PIX",    primary = true,  modifier = Modifier.weight(1f), onClick = {})
+                    DizimosButton("PIX", primary = true, modifier = Modifier.weight(1f), onClick = {})
                 }
                 DizimosButton("Cartão", primary = false, modifier = Modifier.weight(1f), onClick = {})
             }
@@ -498,47 +542,60 @@ private fun DizimosButton(
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue   = if (pressed) 0.97f else 1f,
+        targetValue = if (pressed) 0.97f else 1f,
         animationSpec = tween(120),
-        label         = "btnScale",
+        label = "btnScale",
     )
     Box(
-        modifier = modifier
-            .height(52.dp)
-            .shadow(
-                elevation = if (primary) 8.dp else 0.dp,
-                shape     = PazShapePill,
-                spotColor = Color.Black.copy(alpha = 0.33f),
-            )
-            .clip(PazShapePill)
-            .background(if (primary) Color.White else Color.White.copy(alpha = 0.13f))
-            .border(
-                width = if (primary) 0.dp else 1.dp,
-                color = if (primary) Color.Transparent else Color.White.copy(alpha = 0.24f),
-                shape = PazShapePill,
-            )
-            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-            .graphicsLayer { scaleX = scale; scaleY = scale },
+        modifier =
+            modifier
+                .height(52.dp)
+                .shadow(
+                    elevation = if (primary) 8.dp else 0.dp,
+                    shape = PazShapePill,
+                    spotColor = Color.Black.copy(alpha = 0.33f),
+                ).clip(PazShapePill)
+                .background(if (primary) Color.White else Color.White.copy(alpha = 0.13f))
+                .border(
+                    width = if (primary) 0.dp else 1.dp,
+                    color = if (primary) Color.Transparent else Color.White.copy(alpha = 0.24f),
+                    shape = PazShapePill,
+                ).clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                },
         contentAlignment = Alignment.Center,
     ) {
         Text(
             label,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize   = 14.5.sp,
-                color      = if (primary) PazColors.NavyText else Color.White,
-            ),
+            style =
+                MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.5.sp,
+                    color = if (primary) PazColors.NavyText else Color.White,
+                ),
         )
     }
 }
 
 // ── Agenda section ────────────────────────────────────────────────────────────
 
-private data class DayItem(val dow: String, val day: Int)
-private val agendaDays = listOf(
-    DayItem("SEG", 2), DayItem("TER", 3), DayItem("QUA", 4),
-    DayItem("QUI", 5), DayItem("SEX", 6), DayItem("SÁB", 7), DayItem("DOM", 8),
+private data class DayItem(
+    val dow: String,
+    val day: Int,
 )
+
+private val agendaDays =
+    listOf(
+        DayItem("SEG", 2),
+        DayItem("TER", 3),
+        DayItem("QUA", 4),
+        DayItem("QUI", 5),
+        DayItem("SEX", 6),
+        DayItem("SÁB", 7),
+        DayItem("DOM", 8),
+    )
 
 @Composable
 private fun AgendaSection(
@@ -553,7 +610,7 @@ private fun AgendaSection(
                 .fillMaxWidth()
                 .padding(horizontal = PazSpacing.Lg),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment     = Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("Agenda", style = MaterialTheme.typography.headlineMedium)
             TextButton(onClick = {}, contentPadding = PaddingValues(0.dp)) {
@@ -564,24 +621,25 @@ private fun AgendaSection(
                 Icon(
                     Icons.AutoMirrored.Outlined.ArrowForward,
                     contentDescription = null,
-                    tint               = PazColors.PrimaryLight,
-                    modifier           = Modifier.size(15.dp).padding(start = 4.dp),
+                    tint = PazColors.PrimaryLight,
+                    modifier = Modifier.size(15.dp).padding(start = 4.dp),
                 )
             }
         }
         Spacer(Modifier.height(PazSpacing.Md))
 
         Row(
-            modifier              = Modifier
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = PazSpacing.Lg),
+            modifier =
+                Modifier
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = PazSpacing.Lg),
             horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
         ) {
             agendaDays.forEachIndexed { index, item ->
                 DayPill(
-                    item       = item,
+                    item = item,
                     isSelected = index == selectedDay,
-                    onClick    = { onDaySelected(index) },
+                    onClick = { onDaySelected(index) },
                 )
             }
         }
@@ -600,31 +658,37 @@ private fun AgendaSection(
 }
 
 @Composable
-private fun DayPill(item: DayItem, isSelected: Boolean, onClick: () -> Unit) {
-    val activeGradient = remember {
-        Brush.linearGradient(
-            colors = listOf(PazColors.DayPillStart, PazColors.DayPillEnd),
-            start  = Offset(0f, 0f),
-            end    = Offset(0f, Float.POSITIVE_INFINITY),
-        )
-    }
+private fun DayPill(
+    item: DayItem,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    val activeGradient =
+        remember {
+            Brush.linearGradient(
+                colors = listOf(PazColors.DayPillStart, PazColors.DayPillEnd),
+                start = Offset(0f, 0f),
+                end = Offset(0f, Float.POSITIVE_INFINITY),
+            )
+        }
     Box(
         Modifier
             .size(width = 52.dp, height = 74.dp)
             .shadow(
-                elevation    = if (isSelected) 8.dp else 2.dp,
-                shape        = RoundedCornerShape(18.dp),
-                spotColor    = if (isSelected) PazColors.Primary.copy(alpha = 0.70f) else PazColors.ShadowNavy,
+                elevation = if (isSelected) 8.dp else 2.dp,
+                shape = RoundedCornerShape(18.dp),
+                spotColor = if (isSelected) PazColors.Primary.copy(alpha = 0.70f) else PazColors.ShadowNavy,
                 ambientColor = PazColors.ShadowNavy.copy(alpha = 0.04f),
-            )
-            .clip(RoundedCornerShape(18.dp))
+            ).clip(RoundedCornerShape(18.dp))
             .then(
-                if (isSelected) Modifier.background(activeGradient)
-                else Modifier
-                    .background(MaterialTheme.colorScheme.surface)
-                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(18.dp))
-            )
-            .clickable(onClick = onClick),
+                if (isSelected) {
+                    Modifier.background(activeGradient)
+                } else {
+                    Modifier
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(18.dp))
+                },
+            ).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -633,21 +697,31 @@ private fun DayPill(item: DayItem, isSelected: Boolean, onClick: () -> Unit) {
         ) {
             Text(
                 item.dow,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    color         = if (isSelected) Color.White.copy(alpha = 0.72f)
-                                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize      = 11.sp,
-                    letterSpacing = 0.5.sp,
-                ),
+                style =
+                    MaterialTheme.typography.labelSmall.copy(
+                        color =
+                            if (isSelected) {
+                                Color.White.copy(alpha = 0.72f)
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        fontSize = 11.sp,
+                        letterSpacing = 0.5.sp,
+                    ),
             )
             Text(
                 item.day.toString(),
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize   = 21.sp,
-                    color      = if (isSelected) Color.White
-                                 else MaterialTheme.colorScheme.onSurface,
-                ),
+                style =
+                    MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 21.sp,
+                        color =
+                            if (isSelected) {
+                                Color.White
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                    ),
             )
             Box(
                 Modifier
@@ -656,39 +730,46 @@ private fun DayPill(item: DayItem, isSelected: Boolean, onClick: () -> Unit) {
                     .background(
                         color = if (isSelected) PazColors.Gold else Color.Transparent,
                         shape = CircleShape,
-                    )
+                    ),
             )
         }
     }
 }
 
 @Composable
-private fun EventCard(event: AgendaEvent, onClick: () -> Unit) {
-    val time = event.startDate.substringAfter("T", "").take(5).ifEmpty { "--:--" }
+private fun EventCard(
+    event: AgendaEvent,
+    onClick: () -> Unit,
+) {
+    val time =
+        event.startDate
+            .substringAfter("T", "")
+            .take(5)
+            .ifEmpty { "--:--" }
     Row(
         Modifier
             .fillMaxWidth()
             .shadow(
-                elevation    = 4.dp,
-                shape        = RoundedCornerShape(18.dp),
-                spotColor    = PazColors.ShadowNavy.copy(alpha = 0.21f),
+                elevation = 4.dp,
+                shape = RoundedCornerShape(18.dp),
+                spotColor = PazColors.ShadowNavy.copy(alpha = 0.21f),
                 ambientColor = PazColors.ShadowNavy.copy(alpha = 0.04f),
-            )
-            .clip(RoundedCornerShape(18.dp))
+            ).clip(RoundedCornerShape(18.dp))
             .background(MaterialTheme.colorScheme.surface)
             .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
             .clickable(onClick = onClick)
             .padding(15.dp),
-        verticalAlignment     = Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
     ) {
         Text(
             time,
-            style    = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize   = 15.5.sp,
-                color      = PazColors.PrimaryLight,
-            ),
+            style =
+                MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.5.sp,
+                    color = PazColors.PrimaryLight,
+                ),
             modifier = Modifier.width(50.dp),
         )
         Box(Modifier.size(18.dp), contentAlignment = Alignment.Center) {
@@ -698,30 +779,32 @@ private fun EventCard(event: AgendaEvent, onClick: () -> Unit) {
         Column(Modifier.weight(1f)) {
             Text(
                 event.title,
-                style    = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize   = 15.5.sp,
-                ),
+                style =
+                    MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.5.sp,
+                    ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             if (!event.location.isNullOrBlank()) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier          = Modifier.padding(top = 3.dp),
+                    modifier = Modifier.padding(top = 3.dp),
                 ) {
                     Icon(
-                        imageVector        = Icons.Filled.LocationOn,
+                        imageVector = Icons.Filled.LocationOn,
                         contentDescription = null,
-                        tint               = PazColors.LocationRed,
-                        modifier           = Modifier.size(12.dp),
+                        tint = PazColors.LocationRed,
+                        modifier = Modifier.size(12.dp),
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
                         event.location!!,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        ),
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
                     )
                 }
             }
@@ -734,11 +817,12 @@ private fun EventCard(event: AgendaEvent, onClick: () -> Unit) {
 @Composable
 private fun LoadingSkeleton(contentPadding: PaddingValues) {
     LazyColumn(
-        contentPadding      = contentPadding,
+        contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
-        modifier            = Modifier
-            .fillMaxSize()
-            .padding(horizontal = PazSpacing.Lg),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = PazSpacing.Lg),
     ) {
         item { Spacer(Modifier.height(PazSpacing.Md)) }
         item { PazSkeleton(height = 176.dp) }
@@ -750,7 +834,11 @@ private fun LoadingSkeleton(contentPadding: PaddingValues) {
 // ── Error state ───────────────────────────────────────────────────────────────
 
 @Composable
-private fun ErrorState(message: String, onRetry: () -> Unit, contentPadding: PaddingValues) {
+private fun ErrorState(
+    message: String,
+    onRetry: () -> Unit,
+    contentPadding: PaddingValues,
+) {
     Box(
         Modifier
             .fillMaxSize()
@@ -764,9 +852,10 @@ private fun ErrorState(message: String, onRetry: () -> Unit, contentPadding: Pad
             Text("Erro ao carregar", style = MaterialTheme.typography.titleMedium)
             Text(
                 message,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                ),
+                style =
+                    MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    ),
             )
             PazButton(text = "Tentar novamente", onClick = onRetry)
         }

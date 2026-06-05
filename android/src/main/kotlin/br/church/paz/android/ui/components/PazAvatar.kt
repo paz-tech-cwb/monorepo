@@ -26,45 +26,54 @@ fun PazAvatar(
     size: Dp = 48.dp,
     showBorder: Boolean = true,
 ) {
-    val initials = name.trim()
-        .split(Regex("\\s+"))
-        .filter { it.isNotEmpty() }
-        .let { parts ->
-            when {
-                parts.isEmpty() -> "?"
-                parts.size == 1 -> parts[0].first().uppercaseChar().toString()
-                else            -> "${parts.first().first().uppercaseChar()}${parts.last().first().uppercaseChar()}"
+    val initials =
+        name
+            .trim()
+            .split(Regex("\\s+"))
+            .filter { it.isNotEmpty() }
+            .let { parts ->
+                when {
+                    parts.isEmpty() -> "?"
+                    parts.size == 1 -> parts[0].first().uppercaseChar().toString()
+                    else -> "${parts.first().first().uppercaseChar()}${parts.last().first().uppercaseChar()}"
+                }
             }
+
+    val borderMod =
+        if (showBorder) {
+            Modifier.border(
+                width = 1.5.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                shape = CircleShape,
+            )
+        } else {
+            Modifier
         }
 
-    val borderMod = if (showBorder) Modifier.border(
-        width = 1.5.dp,
-        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
-        shape = CircleShape,
-    ) else Modifier
-
     Box(
-        modifier         = modifier
-            .size(size)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
-            .then(borderMod),
+        modifier =
+            modifier
+                .size(size)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
+                .then(borderMod),
         contentAlignment = Alignment.Center,
     ) {
         if (!imageUrl.isNullOrEmpty()) {
             AsyncImage(
-                model              = imageUrl,
+                model = imageUrl,
                 contentDescription = name,
-                contentScale       = ContentScale.Crop,
-                modifier           = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
             )
         } else {
             Text(
-                text  = initials,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    color      = MaterialTheme.colorScheme.primary,
-                ),
+                text = initials,
+                style =
+                    MaterialTheme.typography.bodySmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                    ),
             )
         }
     }

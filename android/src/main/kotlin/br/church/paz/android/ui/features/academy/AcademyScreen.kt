@@ -43,7 +43,6 @@ import br.church.paz.android.ui.components.PazCardSkeleton
 import br.church.paz.android.ui.components.PazSectionHeader
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.features.auth.LoginScreen
-import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
@@ -75,7 +74,7 @@ fun AcademyScreen(
     if (showLoginSheet) {
         ModalBottomSheet(
             onDismissRequest = { showLoginSheet = false },
-            sheetState       = sheetState,
+            sheetState = sheetState,
         ) {
             LoginScreen(
                 onLoginSuccess = {
@@ -115,34 +114,38 @@ fun AcademyScreen(
         ) {
             when {
                 uiState.isLoading -> AcademySkeleton(contentPadding)
-                uiState.error != null -> Box(
-                    Modifier.fillMaxSize().padding(contentPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(uiState.error!!, style = MaterialTheme.typography.bodyMedium)
-                }
-                uiState.tracks.isEmpty() -> Box(
-                    Modifier.fillMaxSize().padding(contentPadding),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        "Nenhum conteúdo disponível",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                        ),
+                uiState.error != null ->
+                    Box(
+                        Modifier.fillMaxSize().padding(contentPadding),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(uiState.error!!, style = MaterialTheme.typography.bodyMedium)
+                    }
+                uiState.tracks.isEmpty() ->
+                    Box(
+                        Modifier.fillMaxSize().padding(contentPadding),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            "Nenhum conteúdo disponível",
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                ),
+                        )
+                    }
+                else ->
+                    AcademyContent(
+                        tracks = uiState.tracks,
+                        contentPadding = contentPadding,
+                        onCourseTap = { course ->
+                            if (uiState.isAuthenticated) {
+                                viewModel.onVideoTapped(course.id)
+                            } else {
+                                showLoginSheet = true
+                            }
+                        },
                     )
-                }
-                else -> AcademyContent(
-                    tracks          = uiState.tracks,
-                    contentPadding  = contentPadding,
-                    onCourseTap     = { course ->
-                        if (uiState.isAuthenticated) {
-                            viewModel.onVideoTapped(course.id)
-                        } else {
-                            showLoginSheet = true
-                        }
-                    },
-                )
             }
         }
     }
@@ -155,24 +158,25 @@ private fun AcademyContent(
     onCourseTap: (Course) -> Unit,
 ) {
     LazyColumn(
-        contentPadding      = contentPadding,
+        contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Xl),
-        modifier            = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
     ) {
         for (track in tracks) {
             item {
                 Column(Modifier.padding(top = PazSpacing.Xl)) {
                     PazSectionHeader(
-                        title    = track.title,
+                        title = track.title,
                         modifier = Modifier.padding(horizontal = PazSpacing.Lg),
                     )
                     if (!track.description.isNullOrBlank()) {
                         Spacer(Modifier.height(PazSpacing.Xs))
                         Text(
-                            text     = track.description!!,
-                            style    = MaterialTheme.typography.bodySmall.copy(
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
-                            ),
+                            text = track.description!!,
+                            style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+                                ),
                             modifier = Modifier.padding(horizontal = PazSpacing.Lg),
                         )
                     }
@@ -180,9 +184,9 @@ private fun AcademyContent(
             }
             items(track.courses, key = { "${track.id}_${it.id}" }) { course ->
                 CourseListItem(
-                    course   = course,
+                    course = course,
                     modifier = Modifier.padding(horizontal = PazSpacing.Lg),
-                    onClick  = { onCourseTap(course) },
+                    onClick = { onCourseTap(course) },
                 )
             }
         }
@@ -197,49 +201,52 @@ private fun CourseListItem(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier              = modifier
-            .fillMaxWidth()
-            .clip(PazShapes.large)
-            .background(MaterialTheme.colorScheme.surface)
-            .clickable(onClick = onClick)
-            .padding(PazSpacing.Md),
-        verticalAlignment     = Alignment.CenterVertically,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(PazShapes.large)
+                .background(MaterialTheme.colorScheme.surface)
+                .clickable(onClick = onClick)
+                .padding(PazSpacing.Md),
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
     ) {
         Box(
-            modifier         = Modifier
-                .size(width = 88.dp, height = 60.dp)
-                .clip(PazShapes.medium)
-                .background(PazGradients.Card),
+            modifier =
+                Modifier
+                    .size(width = 88.dp, height = 60.dp)
+                    .clip(PazShapes.medium)
+                    .background(PazGradients.Card),
             contentAlignment = Alignment.Center,
         ) {
             if (course.thumbnailUrl != null) {
                 AsyncImage(
-                    model              = course.thumbnailUrl,
+                    model = course.thumbnailUrl,
                     contentDescription = null,
-                    contentScale       = ContentScale.Crop,
-                    modifier           = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
                 )
             } else {
                 Text(
-                    text  = course.title.take(1),
+                    text = course.title.take(1),
                     style = MaterialTheme.typography.titleLarge.copy(color = Color.White),
                 )
             }
         }
         Column(Modifier.weight(1f)) {
             Text(
-                text     = course.title,
-                style    = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                text = course.title,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                 maxLines = 2,
             )
             if (!course.description.isNullOrBlank()) {
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text     = course.description!!,
-                    style    = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    ),
+                    text = course.description!!,
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        ),
                     maxLines = 2,
                 )
             }
@@ -250,9 +257,9 @@ private fun CourseListItem(
 @Composable
 private fun AcademySkeleton(contentPadding: PaddingValues) {
     LazyColumn(
-        contentPadding      = contentPadding,
+        contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
-        modifier            = Modifier.fillMaxSize().padding(top = PazSpacing.Xl, start = PazSpacing.Lg, end = PazSpacing.Lg),
+        modifier = Modifier.fillMaxSize().padding(top = PazSpacing.Xl, start = PazSpacing.Lg, end = PazSpacing.Lg),
     ) {
         item { PazSkeleton(height = 24.dp, width = 160.dp) }
         repeat(3) { item { PazCardSkeleton() } }

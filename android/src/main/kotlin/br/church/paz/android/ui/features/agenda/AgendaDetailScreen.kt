@@ -18,7 +18,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Icon
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -86,8 +86,10 @@ fun AgendaDetailScreen(
         Box(
             Modifier
                 .fillMaxSize()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(MaterialTheme.colorScheme.background),
+                .clip(
+                    androidx.compose.foundation.shape
+                        .RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                ).background(MaterialTheme.colorScheme.background),
         ) {
             when {
                 uiState.isLoading -> LoadingState()
@@ -101,7 +103,7 @@ fun AgendaDetailScreen(
 @Composable
 private fun ContentState(event: AgendaEvent) {
     LazyColumn(
-        modifier            = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
     ) {
         item { Spacer(Modifier.height(PazSpacing.Lg)) }
@@ -127,7 +129,11 @@ private fun ContentState(event: AgendaEvent) {
                     .padding(PazSpacing.Lg),
                 verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
             ) {
-                DetailRow(icon = Icons.Default.Schedule, title = "Data e Hora", value = formatDateTime(event.startDate, event.endDate ?: ""))
+                DetailRow(
+                    icon = Icons.Default.Schedule,
+                    title = "Data e Hora",
+                    value = formatDateTime(event.startDate, event.endDate ?: ""),
+                )
                 if (!event.location.isNullOrEmpty()) {
                     DetailRow(icon = Icons.Default.LocationOn, title = "Local", value = event.location!!)
                 }
@@ -153,7 +159,11 @@ private fun ContentState(event: AgendaEvent) {
 }
 
 @Composable
-private fun DetailRow(icon: ImageVector, title: String, value: String) {
+private fun DetailRow(
+    icon: ImageVector,
+    title: String,
+    value: String,
+) {
     Row(
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
@@ -173,15 +183,18 @@ private fun DetailRow(icon: ImageVector, title: String, value: String) {
 }
 
 @Composable
-private fun ErrorState(error: String, onRetry: () -> Unit) {
+private fun ErrorState(
+    error: String,
+    onRetry: () -> Unit,
+) {
     Box(
-        modifier         = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-            modifier            = Modifier.padding(PazSpacing.Xl),
+            modifier = Modifier.padding(PazSpacing.Xl),
         ) {
             Text(error, style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(PazSpacing.Lg))
@@ -193,9 +206,10 @@ private fun ErrorState(error: String, onRetry: () -> Unit) {
 @Composable
 private fun LoadingState() {
     Column(
-        modifier            = Modifier
-            .fillMaxSize()
-            .padding(PazSpacing.Xl),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(PazSpacing.Xl),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
     ) {
         Spacer(Modifier.height(PazSpacing.Lg))
@@ -208,6 +222,7 @@ private fun LoadingState() {
     }
 }
 
-private fun formatDateTime(startDate: String, endDate: String): String {
-    return "$startDate — $endDate"
-}
+private fun formatDateTime(
+    startDate: String,
+    endDate: String,
+): String = "$startDate — $endDate"

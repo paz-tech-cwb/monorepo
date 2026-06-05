@@ -9,6 +9,8 @@ data class ProfileUiState(
 
 sealed class ProfileEffect {
     data object NavigateToEditProfile : ProfileEffect()
-    data object NavigateToLogin     : ProfileEffect()
-    data object Logout              : ProfileEffect()
+
+    data object NavigateToLogin : ProfileEffect()
+
+    data object Logout : ProfileEffect()
 }

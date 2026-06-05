@@ -17,37 +17,45 @@ class HomeViewModel(
     private val homeRepository: HomeRepository,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<HomeEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
-    init { load() }
+    init {
+        load()
+    }
 
     fun load() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             val user = runCatching { authRepository.currentUser() }.getOrNull()
-            val firstName = user?.name?.trim()?.split(Regex("\\s+"))?.firstOrNull() ?: ""
+            val firstName =
+                user
+                    ?.name
+                    ?.trim()
+                    ?.split(Regex("\\s+"))
+                    ?.firstOrNull() ?: ""
 
             runCatching { homeRepository.getHomeContent() }
                 .onSuccess { content ->
-                    Log.d("HomeVM", "banners=${content.banners.size} agenda=${content.agenda.size} bank=${content.contribution?.bank?.name}")
+                    Log.d(
+                        "HomeVM",
+                        "banners=${content.banners.size} agenda=${content.agenda.size} bank=${content.contribution?.bank?.name}",
+                    )
                     _uiState.update {
                         it.copy(
-                            isLoading    = false,
-                            banners      = content.banners,
+                            isLoading = false,
+                            banners = content.banners,
                             agendaEvents = content.agenda,
-                            bank         = content.contribution?.bank,
+                            bank = content.contribution?.bank,
                             sectionOrder = content.sectionOrder,
-                            userName     = firstName,
+                            userName = firstName,
                         )
                     }
-                }
-                .onFailure { e ->
+                }.onFailure { e ->
                     Log.e("HomeVM", "load failed", e)
                     _uiState.update { it.copy(isLoading = false, error = e.message ?: e::class.simpleName ?: "Erro desconhecido") }
                 }

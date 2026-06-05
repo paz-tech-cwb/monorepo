@@ -57,7 +57,11 @@ fun MinistryDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        viewModel.effect.collect { when (it) { MinistryDetailEffect.NavigateBack -> navController.popBackStack() } }
+        viewModel.effect.collect {
+            when (it) {
+                MinistryDetailEffect.NavigateBack -> navController.popBackStack()
+            }
+        }
     }
 
     DetailScaffold(
@@ -74,17 +78,20 @@ fun MinistryDetailScreen(
 private fun MinistryContent(ministry: Ministry) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(PazSpacing.Lg),
+        contentPadding =
+            androidx.compose.foundation.layout
+                .PaddingValues(PazSpacing.Lg),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
     ) {
         item { Spacer(Modifier.height(PazSpacing.Lg)) }
 
         item {
             Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(PazShapes.large)
-                    .background(PazColors.Primary.copy(alpha = 0.12f)),
+                modifier =
+                    Modifier
+                        .size(72.dp)
+                        .clip(PazShapes.large)
+                        .background(PazColors.Primary.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.Outlined.Groups, contentDescription = null, tint = PazColors.Primary, modifier = Modifier.size(36.dp))
@@ -108,9 +115,10 @@ private fun MinistryContent(ministry: Ministry) {
                     Spacer(Modifier.height(PazSpacing.Sm))
                     Text(
                         ministry.description!!,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        ),
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            ),
                     )
                 }
             }
@@ -151,10 +159,15 @@ fun LifeGroupDetailScreen(
 }
 
 @Composable
-private fun LifeGroupContent(lifeGroup: LifeGroup, onMeetingReport: () -> Unit) {
+private fun LifeGroupContent(
+    lifeGroup: LifeGroup,
+    onMeetingReport: () -> Unit,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(PazSpacing.Lg),
+        contentPadding =
+            androidx.compose.foundation.layout
+                .PaddingValues(PazSpacing.Lg),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
     ) {
         item { Spacer(Modifier.height(PazSpacing.Lg)) }
@@ -162,10 +175,11 @@ private fun LifeGroupContent(lifeGroup: LifeGroup, onMeetingReport: () -> Unit) 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(PazSpacing.Lg), verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    modifier = Modifier
-                        .size(72.dp)
-                        .clip(PazShapes.large)
-                        .background(PazColors.Primary.copy(alpha = 0.12f)),
+                    modifier =
+                        Modifier
+                            .size(72.dp)
+                            .clip(PazShapes.large)
+                            .background(PazColors.Primary.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(Icons.Default.Person, contentDescription = null, tint = PazColors.Primary, modifier = Modifier.size(36.dp))
@@ -175,8 +189,10 @@ private fun LifeGroupContent(lifeGroup: LifeGroup, onMeetingReport: () -> Unit) 
                     Spacer(Modifier.height(PazSpacing.Xs))
                     Box(
                         Modifier
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
-                            .background(PazColors.Primary.copy(alpha = 0.12f))
+                            .clip(
+                                androidx.compose.foundation.shape
+                                    .RoundedCornerShape(20.dp),
+                            ).background(PazColors.Primary.copy(alpha = 0.12f))
                             .padding(horizontal = 10.dp, vertical = 4.dp),
                     ) {
                         Text(
@@ -204,11 +220,12 @@ private fun LifeGroupContent(lifeGroup: LifeGroup, onMeetingReport: () -> Unit) 
                     InfoRow(
                         icon = Icons.Default.CalendarToday,
                         label = "Reunião",
-                        value = buildString {
-                            lifeGroup.meetingDay?.let { append(it) }
-                            if (!lifeGroup.meetingDay.isNullOrEmpty() && !lifeGroup.meetingTime.isNullOrEmpty()) append(" às ")
-                            lifeGroup.meetingTime?.let { append(it) }
-                        },
+                        value =
+                            buildString {
+                                lifeGroup.meetingDay?.let { append(it) }
+                                if (!lifeGroup.meetingDay.isNullOrEmpty() && !lifeGroup.meetingTime.isNullOrEmpty()) append(" às ")
+                                lifeGroup.meetingTime?.let { append(it) }
+                            },
                     )
                 }
                 lifeGroup.address?.let {
@@ -230,7 +247,11 @@ private fun LifeGroupContent(lifeGroup: LifeGroup, onMeetingReport: () -> Unit) 
 }
 
 @Composable
-private fun InfoRow(icon: ImageVector, label: String, value: String) {
+private fun InfoRow(
+    icon: ImageVector,
+    label: String,
+    value: String,
+) {
     Row(horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md), verticalAlignment = Alignment.Top) {
         Icon(icon, contentDescription = null, tint = PazColors.Primary, modifier = Modifier.size(20.dp).padding(top = 2.dp))
         Column {
@@ -278,19 +299,26 @@ private fun DetailScaffold(
         Box(
             Modifier
                 .fillMaxSize()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(MaterialTheme.colorScheme.background),
+                .clip(
+                    androidx.compose.foundation.shape
+                        .RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                ).background(MaterialTheme.colorScheme.background),
         ) {
             when {
-                isLoading -> Column(Modifier.padding(PazSpacing.Lg), verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg)) {
-                    Spacer(Modifier.height(PazSpacing.Lg))
-                    PazSkeleton(height = 72.dp, width = 72.dp)
-                    PazSkeleton(height = 28.dp, width = 200.dp)
-                    PazSkeleton(height = 120.dp)
-                }
-                error != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(error, style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)))
-                }
+                isLoading ->
+                    Column(Modifier.padding(PazSpacing.Lg), verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg)) {
+                        Spacer(Modifier.height(PazSpacing.Lg))
+                        PazSkeleton(height = 72.dp, width = 72.dp)
+                        PazSkeleton(height = 28.dp, width = 200.dp)
+                        PazSkeleton(height = 120.dp)
+                    }
+                error != null ->
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            error,
+                            style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)),
+                        )
+                    }
                 else -> content()
             }
         }

@@ -15,14 +15,15 @@ import kotlinx.coroutines.launch
 class MinistriesViewModel(
     private val churchRepository: ChurchRepository,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(MinistriesUiState())
     val uiState: StateFlow<MinistriesUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<MinistriesEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
-    init { load() }
+    init {
+        load()
+    }
 
     private fun load() {
         viewModelScope.launch {

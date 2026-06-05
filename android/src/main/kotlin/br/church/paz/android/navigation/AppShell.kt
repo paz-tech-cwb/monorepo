@@ -1,6 +1,5 @@
 package br.church.paz.android.navigation
 
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
@@ -22,19 +21,21 @@ import br.church.paz.android.ui.features.account.AccountScreen
 import br.church.paz.android.ui.features.home.HomeScreen
 import br.church.paz.android.ui.features.search.SearchScreen
 
-private val TAB_ITEMS = listOf(
-    PazNavItem(icon = Icons.Outlined.Home,   label = "Início"),
-    PazNavItem(icon = Icons.Outlined.School, label = "Academia"),
-    PazNavItem(icon = Icons.Outlined.Search, label = "Buscar"),
-    PazNavItem(icon = Icons.Outlined.Person, label = "Conta"),
-)
+private val TAB_ITEMS =
+    listOf(
+        PazNavItem(icon = Icons.Outlined.Home, label = "Início"),
+        PazNavItem(icon = Icons.Outlined.School, label = "Academia"),
+        PazNavItem(icon = Icons.Outlined.Search, label = "Buscar"),
+        PazNavItem(icon = Icons.Outlined.Person, label = "Conta"),
+    )
 
-private val TAB_ROUTES = listOf(
-    Screen.Home.route,
-    Screen.Academy.route,
-    Screen.Search.route,
-    Screen.Account.route,
-)
+private val TAB_ROUTES =
+    listOf(
+        Screen.Home.route,
+        Screen.Academy.route,
+        Screen.Search.route,
+        Screen.Account.route,
+    )
 
 @Composable
 fun AppShell(rootNavController: NavController) {
@@ -46,26 +47,26 @@ fun AppShell(rootNavController: NavController) {
         bottomBar = {
             val selectedIndex = TAB_ROUTES.indexOf(currentRoute).coerceAtLeast(0)
             PazBottomNavBar(
-                items          = TAB_ITEMS,
-                selectedIndex  = selectedIndex,
+                items = TAB_ITEMS,
+                selectedIndex = selectedIndex,
                 onItemSelected = { i ->
                     tabNavController.navigate(TAB_ROUTES[i]) {
                         popUpTo(tabNavController.graph.startDestinationId) { saveState = true }
                         launchSingleTop = true
-                        restoreState    = true
+                        restoreState = true
                     }
                 },
             )
         },
     ) { innerPadding ->
         NavHost(
-            navController    = tabNavController,
+            navController = tabNavController,
             startDestination = Screen.Home.route,
-            modifier         = Modifier,
+            modifier = Modifier,
         ) {
-            composable(Screen.Home.route)    { HomeScreen(rootNavController, contentPadding = innerPadding) }
+            composable(Screen.Home.route) { HomeScreen(rootNavController, contentPadding = innerPadding) }
             composable(Screen.Academy.route) { AcademyScreen(navController = rootNavController, contentPadding = innerPadding) }
-            composable(Screen.Search.route)  { SearchScreen(navController = rootNavController) }
+            composable(Screen.Search.route) { SearchScreen(navController = rootNavController) }
             composable(Screen.Account.route) { AccountScreen(rootNavController, contentPadding = innerPadding) }
         }
     }

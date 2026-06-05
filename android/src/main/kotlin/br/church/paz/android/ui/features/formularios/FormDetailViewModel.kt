@@ -25,27 +25,30 @@ class FormDetailViewModel(
     private val formsRepository: FormsRepository,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(FormDetailUiState())
     val uiState: StateFlow<FormDetailUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<FormDetailEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
-    init { loadForm() }
+    init {
+        loadForm()
+    }
 
     private fun loadForm() {
         viewModelScope.launch {
             runCatching { formsRepository.getCatalog() }
                 .onSuccess { catalog ->
                     val form = catalog.find { it.id == formId }
-                    val initialFields = form?.type?.fieldDefs()
-                        ?.associate { it.key to "" } ?: emptyMap()
+                    val initialFields =
+                        form
+                            ?.type
+                            ?.fieldDefs()
+                            ?.associate { it.key to "" } ?: emptyMap()
                     _uiState.update {
                         it.copy(form = form, isLoading = false, fields = initialFields)
                     }
-                }
-                .onFailure { e ->
+                }.onFailure { e ->
                     _uiState.update {
                         it.copy(isLoading = false, error = e.message ?: "Erro ao carregar formulário")
                     }
@@ -53,7 +56,10 @@ class FormDetailViewModel(
         }
     }
 
-    fun onFieldChanged(key: String, value: String) {
+    fun onFieldChanged(
+        key: String,
+        value: String,
+    ) {
         _uiState.update { state ->
             state.copy(fields = state.fields + (key to value), error = null)
         }
@@ -79,8 +85,7 @@ class FormDetailViewModel(
                 .onSuccess {
                     _uiState.update { it.copy(isSubmitting = false) }
                     _effect.send(FormDetailEffect.SubmitSuccess)
-                }
-                .onFailure { e ->
+                }.onFailure { e ->
                     _uiState.update {
                         it.copy(isSubmitting = false, error = e.message ?: "Erro ao enviar formulário")
                     }
@@ -88,37 +93,85 @@ class FormDetailViewModel(
         }
     }
 
-    private suspend fun submitForm(type: FormType, f: Map<String, String>): Result<Unit> {
+    private suspend fun submitForm(
+        type: FormType,
+        f: Map<String, String>,
+    ): Result<Unit> {
         val userId = authRepository.currentUser()?.id ?: ""
         return runCatching {
             when (type) {
-                FormType.member_registration -> formsRepository.submitMemberRegistration(
-                    MemberRegistrationForm(name = f.req("name"), phone = f.opt("phone"), email = f.opt("email"))
-                )
-                FormType.conversion -> formsRepository.submitConversion(
-                    ConversionForm(name = f.req("name"), phone = f.opt("phone"), date = f.req("date"), observations = f.opt("observations"))
-                )
-                FormType.guest -> formsRepository.submitGuest(
-                    GuestForm(name = f.req("name"), phone = f.opt("phone"), invitedBy = f.opt("invited_by"), date = f.req("date"))
-                )
-                FormType.multiplication -> formsRepository.submitMultiplication(
-                    MultiplicationForm(originalLifeGroupId = userId, newLifeGroupName = f.req("new_life_group_name"), newLeaderId = userId, date = f.req("date"))
-                )
-                FormType.service_report -> formsRepository.submitServiceReport(
-                    ServiceReportForm(date = f.req("date"), attendees = f.int("attendees"), visitors = f.int("visitors"), offerings = f.double("offerings"))
-                )
-                FormType.course -> formsRepository.submitCourse(
-                    CourseForm(courseName = f.req("course_name"), memberId = userId, enrolledAt = f.req("enrolled_at"))
-                )
-                FormType.life_group_report -> formsRepository.submitLifeGroupReport(
-                    MeetingReportRequest(lifeGroupId = userId, date = f.req("date"), attendees = f.int("attendees"), visitors = f.int("visitors"), offerings = f.doubleOrNull("offerings"), observations = f.opt("observations"))
-                )
-                FormType.sector_supervisor_report -> formsRepository.submitSectorReport(
-                    MeetingReportRequest(lifeGroupId = userId, date = f.req("date"), attendees = f.int("attendees"), visitors = f.int("visitors"), offerings = f.doubleOrNull("offerings"), observations = f.opt("observations"))
-                )
-                FormType.area_supervisor_report -> formsRepository.submitAreaReport(
-                    MeetingReportRequest(lifeGroupId = userId, date = f.req("date"), attendees = f.int("attendees"), visitors = f.int("visitors"), offerings = f.doubleOrNull("offerings"), observations = f.opt("observations"))
-                )
+                FormType.member_registration ->
+                    formsRepository.submitMemberRegistration(
+                        MemberRegistrationForm(name = f.req("name"), phone = f.opt("phone"), email = f.opt("email")),
+                    )
+                FormType.conversion ->
+                    formsRepository.submitConversion(
+                        ConversionForm(
+                            name = f.req("name"),
+                            phone = f.opt("phone"),
+                            date = f.req("date"),
+                            observations = f.opt("observations"),
+                        ),
+                    )
+                FormType.guest ->
+                    formsRepository.submitGuest(
+                        GuestForm(name = f.req("name"), phone = f.opt("phone"), invitedBy = f.opt("invited_by"), date = f.req("date")),
+                    )
+                FormType.multiplication ->
+                    formsRepository.submitMultiplication(
+                        MultiplicationForm(
+                            originalLifeGroupId = userId,
+                            newLifeGroupName = f.req("new_life_group_name"),
+                            newLeaderId = userId,
+                            date = f.req("date"),
+                        ),
+                    )
+                FormType.service_report ->
+                    formsRepository.submitServiceReport(
+                        ServiceReportForm(
+                            date = f.req("date"),
+                            attendees = f.int("attendees"),
+                            visitors = f.int("visitors"),
+                            offerings = f.double("offerings"),
+                        ),
+                    )
+                FormType.course ->
+                    formsRepository.submitCourse(
+                        CourseForm(courseName = f.req("course_name"), memberId = userId, enrolledAt = f.req("enrolled_at")),
+                    )
+                FormType.life_group_report ->
+                    formsRepository.submitLifeGroupReport(
+                        MeetingReportRequest(
+                            lifeGroupId = userId,
+                            date = f.req("date"),
+                            attendees = f.int("attendees"),
+                            visitors = f.int("visitors"),
+                            offerings = f.doubleOrNull("offerings"),
+                            observations = f.opt("observations"),
+                        ),
+                    )
+                FormType.sector_supervisor_report ->
+                    formsRepository.submitSectorReport(
+                        MeetingReportRequest(
+                            lifeGroupId = userId,
+                            date = f.req("date"),
+                            attendees = f.int("attendees"),
+                            visitors = f.int("visitors"),
+                            offerings = f.doubleOrNull("offerings"),
+                            observations = f.opt("observations"),
+                        ),
+                    )
+                FormType.area_supervisor_report ->
+                    formsRepository.submitAreaReport(
+                        MeetingReportRequest(
+                            lifeGroupId = userId,
+                            date = f.req("date"),
+                            attendees = f.int("attendees"),
+                            visitors = f.int("visitors"),
+                            offerings = f.doubleOrNull("offerings"),
+                            observations = f.opt("observations"),
+                        ),
+                    )
             }
         }
     }
@@ -129,8 +182,12 @@ class FormDetailViewModel(
 
     // Field helpers
     private fun Map<String, String>.req(key: String) = get(key)?.trim() ?: ""
+
     private fun Map<String, String>.opt(key: String) = get(key)?.trim()?.ifEmpty { null }
+
     private fun Map<String, String>.int(key: String) = get(key)?.trim()?.toIntOrNull() ?: 0
+
     private fun Map<String, String>.double(key: String) = get(key)?.trim()?.toDoubleOrNull() ?: 0.0
+
     private fun Map<String, String>.doubleOrNull(key: String) = get(key)?.trim()?.toDoubleOrNull()
 }

@@ -15,14 +15,15 @@ import kotlinx.coroutines.launch
 class NotificationPrefsViewModel(
     private val userRepository: UserRepository,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(NotificationPrefsUiState())
     val uiState: StateFlow<NotificationPrefsUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<NotificationPrefsEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
-    init { loadPreferences() }
+    init {
+        loadPreferences()
+    }
 
     private fun loadPreferences() {
         viewModelScope.launch {
@@ -30,9 +31,9 @@ class NotificationPrefsViewModel(
                 .onSuccess { prefs ->
                     _uiState.update {
                         it.copy(
-                            eventsNotifications       = prefs.events,
+                            eventsNotifications = prefs.events,
                             announcementsNotifications = prefs.announcements,
-                            lifeGroupNotifications    = prefs.lifeGroup,
+                            lifeGroupNotifications = prefs.lifeGroup,
                         )
                     }
                 }
@@ -40,9 +41,17 @@ class NotificationPrefsViewModel(
         }
     }
 
-    fun toggleEvents()        { _uiState.update { it.copy(eventsNotifications       = !it.eventsNotifications) } }
-    fun toggleAnnouncements() { _uiState.update { it.copy(announcementsNotifications = !it.announcementsNotifications) } }
-    fun toggleLifeGroup()     { _uiState.update { it.copy(lifeGroupNotifications    = !it.lifeGroupNotifications) } }
+    fun toggleEvents() {
+        _uiState.update { it.copy(eventsNotifications = !it.eventsNotifications) }
+    }
+
+    fun toggleAnnouncements() {
+        _uiState.update { it.copy(announcementsNotifications = !it.announcementsNotifications) }
+    }
+
+    fun toggleLifeGroup() {
+        _uiState.update { it.copy(lifeGroupNotifications = !it.lifeGroupNotifications) }
+    }
 
     fun onSave() {
         viewModelScope.launch {
@@ -51,21 +60,19 @@ class NotificationPrefsViewModel(
             runCatching {
                 userRepository.updateNotificationPreferences(
                     NotificationPreferences(
-                        events        = state.eventsNotifications,
+                        events = state.eventsNotifications,
                         announcements = state.announcementsNotifications,
-                        lifeGroup     = state.lifeGroupNotifications,
-                    )
+                        lifeGroup = state.lifeGroupNotifications,
+                    ),
                 )
+            }.onSuccess {
+                _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
+                _effect.send(NotificationPrefsEffect.SaveSuccess)
+            }.onFailure { e ->
+                _uiState.update {
+                    it.copy(isSaving = false, error = e.message ?: "Erro ao salvar preferências")
+                }
             }
-                .onSuccess {
-                    _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
-                    _effect.send(NotificationPrefsEffect.SaveSuccess)
-                }
-                .onFailure { e ->
-                    _uiState.update {
-                        it.copy(isSaving = false, error = e.message ?: "Erro ao salvar preferências")
-                    }
-                }
         }
     }
 

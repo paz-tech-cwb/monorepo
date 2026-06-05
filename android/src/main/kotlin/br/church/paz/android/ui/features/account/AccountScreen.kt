@@ -19,7 +19,6 @@ import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DynamicForm
-import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Notifications
@@ -44,16 +43,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
-import br.church.paz.android.ui.features.auth.LoginScreen
 import br.church.paz.android.ui.components.PazAvatar
 import br.church.paz.android.ui.components.PazMenuRow
 import br.church.paz.android.ui.components.PazSectionHeader
+import br.church.paz.android.ui.features.auth.LoginScreen
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.User
-import br.church.paz.shared.domain.model.UserRole
 import br.church.paz.shared.domain.model.displayName
 import br.church.paz.shared.domain.model.isLeader
 import org.koin.androidx.compose.koinViewModel
@@ -70,15 +68,16 @@ fun AccountScreen(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                AccountEffect.NavigateToEditProfile       -> navController.navigate(Screen.EditProfile.route)
-                AccountEffect.NavigateToMemberJourney     -> navController.navigate(Screen.MemberJourney.route)
-                AccountEffect.NavigateToMeetingReport     -> navController.navigate(Screen.MeetingReport.route)
-                AccountEffect.NavigateToFormularios       -> navController.navigate(Screen.FormulariosList.route)
-                AccountEffect.NavigateToMinistries        -> navController.navigate(Screen.Ministries.route)
+                AccountEffect.NavigateToEditProfile -> navController.navigate(Screen.EditProfile.route)
+                AccountEffect.NavigateToMemberJourney -> navController.navigate(Screen.MemberJourney.route)
+                AccountEffect.NavigateToMeetingReport -> navController.navigate(Screen.MeetingReport.route)
+                AccountEffect.NavigateToFormularios -> navController.navigate(Screen.FormulariosList.route)
+                AccountEffect.NavigateToMinistries -> navController.navigate(Screen.Ministries.route)
                 AccountEffect.NavigateToNotificationPrefs -> navController.navigate(Screen.NotificationPrefs.route)
                 // NavigateToLogin and LoggedOut: no nav needed — the screen recomposes to show LoginScreen inline
                 AccountEffect.NavigateToLogin,
-                AccountEffect.LoggedOut -> Unit
+                AccountEffect.LoggedOut,
+                -> Unit
             }
         }
     }
@@ -87,7 +86,7 @@ fun AccountScreen(
     if (!uiState.isLoading && uiState.user == null) {
         LoginScreen(
             onLoginSuccess = { viewModel.loadUser() },
-            isEmbedded     = true,
+            isEmbedded = true,
         )
         return
     }
@@ -95,14 +94,17 @@ fun AccountScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            title            = { Text("Sair da conta") },
-            text             = { Text("Tem certeza que deseja sair?") },
-            confirmButton    = {
-                TextButton(onClick = { showLogoutDialog = false; viewModel.onLogout() }) {
+            title = { Text("Sair da conta") },
+            text = { Text("Tem certeza que deseja sair?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLogoutDialog = false
+                    viewModel.onLogout()
+                }) {
                     Text("Sair", color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton    = {
+            dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) { Text("Cancelar") }
             },
         )
@@ -123,7 +125,11 @@ fun AccountScreen(
                     style = MaterialTheme.typography.bodySmall.copy(color = Color.White.copy(.5f)),
                 )
                 Text(
-                    text  = uiState.user?.name?.split(Regex("\\s+"))?.firstOrNull() ?: "Conta",
+                    text =
+                        uiState.user
+                            ?.name
+                            ?.split(Regex("\\s+"))
+                            ?.firstOrNull() ?: "Conta",
                     style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
                 )
             }
@@ -137,7 +143,7 @@ fun AccountScreen(
         ) {
             LazyColumn(
                 contentPadding = contentPadding,
-                modifier       = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
             ) {
                 item { Spacer(Modifier.height(PazSpacing.Xl)) }
 
@@ -145,8 +151,8 @@ fun AccountScreen(
                 uiState.user?.let { user ->
                     item {
                         ProfileCard(
-                            user     = user,
-                            onClick  = viewModel::onEditProfile,
+                            user = user,
+                            onClick = viewModel::onEditProfile,
                             modifier = Modifier.padding(horizontal = PazSpacing.Lg),
                         )
                     }
@@ -157,7 +163,7 @@ fun AccountScreen(
                 // Minha Igreja section
                 item {
                     PazSectionHeader(
-                        title    = "Minha Igreja",
+                        title = "Minha Igreja",
                         modifier = Modifier.padding(horizontal = PazSpacing.Lg + 4.dp),
                     )
                     Spacer(Modifier.height(PazSpacing.Sm))
@@ -165,27 +171,27 @@ fun AccountScreen(
                         modifier = Modifier.padding(horizontal = PazSpacing.Lg),
                     ) {
                         PazMenuRow(
-                            title   = "Jornada do Membro",
-                            icon    = Icons.Outlined.Route,
+                            title = "Jornada do Membro",
+                            icon = Icons.Outlined.Route,
                             onClick = viewModel::onMemberJourney,
                         )
                         if (uiState.user?.role?.isLeader == true) {
                             PazMenuRow(
-                                title   = "Relatar Reunião",
-                                icon    = Icons.AutoMirrored.Outlined.Assignment,
+                                title = "Relatar Reunião",
+                                icon = Icons.AutoMirrored.Outlined.Assignment,
                                 onClick = viewModel::onMeetingReport,
                             )
                             PazMenuRow(
-                                title   = "Formulários",
-                                icon    = Icons.Outlined.DynamicForm,
+                                title = "Formulários",
+                                icon = Icons.Outlined.DynamicForm,
                                 onClick = viewModel::onFormularios,
                             )
                         }
                         PazMenuRow(
-                            title        = "Ministérios",
-                            icon         = Icons.Outlined.MusicNote,
-                            onClick      = viewModel::onMinistries,
-                            showDivider  = false,
+                            title = "Ministérios",
+                            icon = Icons.Outlined.MusicNote,
+                            onClick = viewModel::onMinistries,
+                            showDivider = false,
                         )
                     }
                 }
@@ -195,28 +201,29 @@ fun AccountScreen(
                 // Preferências
                 item {
                     PazSectionHeader(
-                        title    = "Preferências",
+                        title = "Preferências",
                         modifier = Modifier.padding(horizontal = PazSpacing.Lg + 4.dp),
                     )
                     Spacer(Modifier.height(PazSpacing.Sm))
                     MenuCard(Modifier.padding(horizontal = PazSpacing.Lg)) {
                         PazMenuRow(
-                            title   = "Notificações",
-                            icon    = Icons.Outlined.Notifications,
+                            title = "Notificações",
+                            icon = Icons.Outlined.Notifications,
                             onClick = viewModel::onNotificationPrefs,
                         )
                         PazMenuRow(
-                            title       = "Modo escuro",
-                            icon        = if (uiState.isDarkMode) Icons.Outlined.DarkMode else Icons.Outlined.LightMode,
+                            title = "Modo escuro",
+                            icon = if (uiState.isDarkMode) Icons.Outlined.DarkMode else Icons.Outlined.LightMode,
                             showDivider = false,
-                            trailing    = {
+                            trailing = {
                                 Switch(
-                                    checked         = uiState.isDarkMode,
+                                    checked = uiState.isDarkMode,
                                     onCheckedChange = viewModel::onToggleDarkMode,
-                                    colors          = SwitchDefaults.colors(
-                                        checkedThumbColor  = Color.White,
-                                        checkedTrackColor  = PazColors.PrimaryLight,
-                                    ),
+                                    colors =
+                                        SwitchDefaults.colors(
+                                            checkedThumbColor = Color.White,
+                                            checkedTrackColor = PazColors.PrimaryLight,
+                                        ),
                                 )
                             },
                         )
@@ -229,11 +236,11 @@ fun AccountScreen(
                 item {
                     MenuCard(Modifier.padding(horizontal = PazSpacing.Lg)) {
                         PazMenuRow(
-                            title       = "Sair da conta",
-                            icon        = Icons.AutoMirrored.Outlined.Logout,
-                            onClick     = { showLogoutDialog = true },
+                            title = "Sair da conta",
+                            icon = Icons.AutoMirrored.Outlined.Logout,
+                            onClick = { showLogoutDialog = true },
                             showDivider = false,
-                            tintIcon    = false,
+                            tintIcon = false,
                         )
                     }
                 }
@@ -245,24 +252,30 @@ fun AccountScreen(
 }
 
 @Composable
-private fun ProfileCard(user: User, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun ProfileCard(
+    user: User,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(PazShapes.large)
-            .background(
-                if (MaterialTheme.colorScheme.background == PazColors.Background)
-                    PazColors.PrimaryTint
-                else PazColors.DarkPrimaryContainer
-            )
-            .border(1.dp, PazColors.Primary.copy(alpha = 0.13f), PazShapes.large)
-            .padding(PazSpacing.Md),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(PazShapes.large)
+                .background(
+                    if (MaterialTheme.colorScheme.background == PazColors.Background) {
+                        PazColors.PrimaryTint
+                    } else {
+                        PazColors.DarkPrimaryContainer
+                    },
+                ).border(1.dp, PazColors.Primary.copy(alpha = 0.13f), PazShapes.large)
+                .padding(PazSpacing.Md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         PazAvatar(
-            name     = user.name,
+            name = user.name,
             imageUrl = user.picture,
-            size     = 52.dp,
+            size = 52.dp,
         )
         Column(
             Modifier
@@ -272,7 +285,7 @@ private fun ProfileCard(user: User, onClick: () -> Unit, modifier: Modifier = Mo
             Text(user.name, style = MaterialTheme.typography.titleMedium.copy(color = PazColors.Primary))
             Text(
                 user.email,
-                style   = MaterialTheme.typography.bodySmall.copy(color = PazColors.Accent),
+                style = MaterialTheme.typography.bodySmall.copy(color = PazColors.Accent),
                 maxLines = 1,
             )
             Spacer(Modifier.height(4.dp))
@@ -292,11 +305,15 @@ private fun ProfileCard(user: User, onClick: () -> Unit, modifier: Modifier = Mo
 }
 
 @Composable
-private fun MenuCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+private fun MenuCard(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(PazShapes.large)
-            .background(MaterialTheme.colorScheme.surface),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(PazShapes.large)
+                .background(MaterialTheme.colorScheme.surface),
     ) { content() }
 }

@@ -14,22 +14,22 @@ import kotlinx.coroutines.launch
 class MemberJourneyViewModel(
     private val memberJourneyRepository: MemberJourneyRepository,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(MemberJourneyUiState())
     val uiState: StateFlow<MemberJourneyUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<MemberJourneyEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
-    init { loadJourney() }
+    init {
+        loadJourney()
+    }
 
     private fun loadJourney() {
         viewModelScope.launch {
             runCatching { memberJourneyRepository.getMemberJourney() }
                 .onSuccess { journey ->
                     _uiState.update { it.copy(journey = journey, isLoading = false) }
-                }
-                .onFailure { e ->
+                }.onFailure { e ->
                     _uiState.update {
                         it.copy(isLoading = false, error = e.message ?: "Erro ao carregar jornada")
                     }

@@ -6,8 +6,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import br.church.paz.android.di.androidModule
-import com.cwb.pazchurch.app.BuildConfig
 import br.church.paz.shared.di.sharedModules
+import com.cwb.pazchurch.app.BuildConfig
 import io.ktor.client.engine.cio.CIO
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -21,17 +21,19 @@ class PazApplication : Application() {
         super.onCreate()
         startKoin {
             androidContext(this@PazApplication)
-            properties(mapOf(
-                "BASE_URL" to BuildConfig.BASE_URL,
-                "DEBUG"    to BuildConfig.DEBUG.toString(),
-            ))
+            properties(
+                mapOf(
+                    "BASE_URL" to BuildConfig.BASE_URL,
+                    "DEBUG" to BuildConfig.DEBUG.toString(),
+                ),
+            )
             modules(
                 sharedModules +
-                module {
-                    single { androidContext().dataStore }
-                    single<io.ktor.client.engine.HttpClientEngineFactory<*>> { CIO }
-                } +
-                androidModule
+                    module {
+                        single { androidContext().dataStore }
+                        single<io.ktor.client.engine.HttpClientEngineFactory<*>> { CIO }
+                    } +
+                    androidModule,
             )
         }
     }

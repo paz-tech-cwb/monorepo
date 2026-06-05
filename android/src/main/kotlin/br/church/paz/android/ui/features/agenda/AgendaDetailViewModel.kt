@@ -15,14 +15,15 @@ class AgendaDetailViewModel(
     private val homeRepository: HomeRepository,
     private val eventId: String,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(AgendaDetailUiState())
     val uiState: StateFlow<AgendaDetailUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<AgendaDetailEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
-    init { loadEvent() }
+    init {
+        loadEvent()
+    }
 
     private fun loadEvent() {
         viewModelScope.launch {
@@ -32,8 +33,7 @@ class AgendaDetailViewModel(
                     _uiState.update {
                         it.copy(event = event, isLoading = false, error = if (event == null) "Evento não encontrado" else null)
                     }
-                }
-                .onFailure { e ->
+                }.onFailure { e ->
                     _uiState.update {
                         it.copy(isLoading = false, error = e.message ?: "Erro ao carregar evento")
                     }

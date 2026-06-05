@@ -2,7 +2,6 @@ package br.church.paz.android.ui.components
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -15,7 +14,10 @@ import androidx.compose.ui.unit.sp
 import br.church.paz.android.ui.theme.PazShapePill
 import br.church.paz.android.ui.theme.PazSpacing
 
-data class PazNavItem(val icon: ImageVector, val label: String)
+data class PazNavItem(
+    val icon: ImageVector,
+    val label: String,
+)
 
 @Composable
 fun PazBottomNavBar(
@@ -25,7 +27,7 @@ fun PazBottomNavBar(
     modifier: Modifier = Modifier,
 ) {
     NavigationBar(
-        modifier       = modifier,
+        modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
         tonalElevation = 0.dp,
     ) {
@@ -33,36 +35,50 @@ fun PazBottomNavBar(
             val selected = index == selectedIndex
             NavigationBarItem(
                 selected = selected,
-                onClick  = { onItemSelected(index) },
+                onClick = { onItemSelected(index) },
                 icon = {
                     AnimatedContent(
-                        targetState   = selected,
+                        targetState = selected,
                         transitionSpec = { fadeIn() togetherWith fadeOut() },
-                        label          = "nav_$index",
+                        label = "nav_$index",
                     ) { isSelected ->
                         if (isSelected) {
                             Row(
-                                modifier = Modifier
-                                    .clip(PazShapePill)
-                                    .background(MaterialTheme.colorScheme.primary)
-                                    .padding(horizontal = PazSpacing.Md, vertical = 7.dp),
+                                modifier =
+                                    Modifier
+                                        .clip(PazShapePill)
+                                        .background(MaterialTheme.colorScheme.primary)
+                                        .padding(horizontal = PazSpacing.Md, vertical = 7.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(item.icon, contentDescription = item.label,
+                                Icon(
+                                    item.icon,
+                                    contentDescription = item.label,
                                     tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(20.dp))
+                                    modifier = Modifier.size(20.dp),
+                                )
                                 Spacer(Modifier.width(6.dp))
-                                Text(item.label, style = MaterialTheme.typography.labelSmall.copy(
-                                    color = MaterialTheme.colorScheme.onPrimary, fontSize = 11.sp, letterSpacing = 0.sp))
+                                Text(
+                                    item.label,
+                                    style =
+                                        MaterialTheme.typography.labelSmall.copy(
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                            fontSize = 11.sp,
+                                            letterSpacing = 0.sp,
+                                        ),
+                                )
                             }
                         } else {
-                            Icon(item.icon, contentDescription = item.label,
+                            Icon(
+                                item.icon,
+                                contentDescription = item.label,
                                 modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                            )
                         }
                     }
                 },
-                label  = null,
+                label = null,
                 colors = NavigationBarItemDefaults.colors(indicatorColor = androidx.compose.ui.graphics.Color.Transparent),
             )
         }

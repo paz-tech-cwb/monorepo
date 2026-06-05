@@ -16,14 +16,15 @@ class AcademyViewModel(
     private val academyRepository: AcademyRepository,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(AcademyUiState())
     val uiState: StateFlow<AcademyUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<AcademyEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
-    init { load() }
+    init {
+        load()
+    }
 
     fun load() {
         viewModelScope.launch {
@@ -33,8 +34,7 @@ class AcademyViewModel(
             runCatching { academyRepository.getAcademyContent() }
                 .onSuccess { content ->
                     _uiState.update { it.copy(isLoading = false, tracks = content.tracks) }
-                }
-                .onFailure { e ->
+                }.onFailure { e ->
                     _uiState.update { it.copy(isLoading = false, error = e.message) }
                 }
         }

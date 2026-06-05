@@ -17,7 +17,6 @@ class MeetingReportViewModel(
     private val formsRepository: FormsRepository,
     private val authRepository: AuthRepository,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(MeetingReportUiState())
     val uiState: StateFlow<MeetingReportUiState> = _uiState.asStateFlow()
 
@@ -70,21 +69,21 @@ class MeetingReportViewModel(
             val user = authRepository.currentUser()
             val lifeGroupId = user?.id ?: ""
 
-            val report = MeetingReportRequest(
-                lifeGroupId = lifeGroupId,
-                date = state.date,
-                attendees = attendeesInt,
-                visitors = visitorsInt,
-                offerings = offeringsDouble,
-                observations = state.observations.takeIf { it.isNotEmpty() },
-            )
+            val report =
+                MeetingReportRequest(
+                    lifeGroupId = lifeGroupId,
+                    date = state.date,
+                    attendees = attendeesInt,
+                    visitors = visitorsInt,
+                    offerings = offeringsDouble,
+                    observations = state.observations.takeIf { it.isNotEmpty() },
+                )
 
             runCatching { formsRepository.submitLifeGroupReport(report) }
                 .onSuccess {
                     _uiState.update { it.copy(isSubmitting = false, success = true) }
                     _effect.send(MeetingReportEffect.SubmitSuccess)
-                }
-                .onFailure { e ->
+                }.onFailure { e ->
                     _uiState.update {
                         it.copy(isSubmitting = false, error = e.message ?: "Erro ao enviar relatório")
                     }

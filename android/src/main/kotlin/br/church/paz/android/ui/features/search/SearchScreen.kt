@@ -15,9 +15,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
@@ -30,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -95,13 +94,14 @@ fun SearchScreen(
                 },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color.White.copy(alpha = 0.6f),
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
-                    cursorColor = Color.White,
-                ),
+                colors =
+                    OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color.White.copy(alpha = 0.6f),
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                        cursorColor = Color.White,
+                    ),
                 shape = PazShapes.large,
             )
         }
@@ -109,8 +109,10 @@ fun SearchScreen(
         Box(
             Modifier
                 .fillMaxSize()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(MaterialTheme.colorScheme.background),
+                .clip(
+                    androidx.compose.foundation.shape
+                        .RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                ).background(MaterialTheme.colorScheme.background),
         ) {
             when {
                 !uiState.hasSearched && uiState.query.isEmpty() -> EmptyQueryState()
@@ -122,10 +124,15 @@ fun SearchScreen(
 }
 
 @Composable
-private fun ResultsList(uiState: SearchUiState, viewModel: SearchViewModel) {
+private fun ResultsList(
+    uiState: SearchUiState,
+    viewModel: SearchViewModel,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(PazSpacing.Lg),
+        contentPadding =
+            androidx.compose.foundation.layout
+                .PaddingValues(PazSpacing.Lg),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
     ) {
         item { Spacer(Modifier.height(PazSpacing.Sm)) }
@@ -204,7 +211,10 @@ private fun ResultsList(uiState: SearchUiState, viewModel: SearchViewModel) {
 }
 
 @Composable
-private fun SectionHeader(title: String, count: Int) {
+private fun SectionHeader(
+    title: String,
+    count: Int,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
@@ -213,8 +223,10 @@ private fun SectionHeader(title: String, count: Int) {
         Text(title, style = MaterialTheme.typography.titleSmall)
         Box(
             Modifier
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
-                .background(PazColors.Primary.copy(alpha = 0.12f))
+                .clip(
+                    androidx.compose.foundation.shape
+                        .RoundedCornerShape(20.dp),
+                ).background(PazColors.Primary.copy(alpha = 0.12f))
                 .padding(horizontal = 8.dp, vertical = 2.dp),
         ) {
             Text(
@@ -226,7 +238,12 @@ private fun SectionHeader(title: String, count: Int) {
 }
 
 @Composable
-private fun ResultRow(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
+private fun ResultRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+) {
     androidx.compose.material3.Surface(
         onClick = onClick,
         shape = PazShapes.large,
@@ -252,9 +269,10 @@ private fun ResultRow(icon: ImageVector, title: String, subtitle: String, onClic
                 if (subtitle.isNotEmpty()) {
                     Text(
                         subtitle,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                        ),
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            ),
                         maxLines = 1,
                     )
                 }
@@ -279,9 +297,10 @@ private fun EmptyQueryState() {
             )
             Text(
                 "Busque eventos, vídeos, formulários, ministérios e grupos de vida",
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                ),
+                style =
+                    MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    ),
             )
         }
     }
@@ -303,9 +322,10 @@ private fun NoResultsState(query: String) {
             )
             Text(
                 "Nenhum resultado para \"$query\"",
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                ),
+                style =
+                    MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    ),
             )
         }
     }

@@ -48,8 +48,8 @@ fun ProfileScreen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 ProfileEffect.NavigateToEditProfile -> navController.navigate(Screen.EditProfile.route)
-                ProfileEffect.NavigateToLogin       -> navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } }
-                ProfileEffect.Logout                -> navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } }
+                ProfileEffect.NavigateToLogin -> navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } }
+                ProfileEffect.Logout -> navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } }
             }
         }
     }
@@ -71,8 +71,10 @@ fun ProfileScreen(
         Box(
             Modifier
                 .fillMaxSize()
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(MaterialTheme.colorScheme.background),
+                .clip(
+                    androidx.compose.foundation.shape
+                        .RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                ).background(MaterialTheme.colorScheme.background),
         ) {
             when {
                 uiState.isLoading -> LoadingState()
@@ -84,9 +86,12 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun LoggedInState(user: br.church.paz.shared.domain.model.User, viewModel: ProfileViewModel) {
+private fun LoggedInState(
+    user: br.church.paz.shared.domain.model.User,
+    viewModel: ProfileViewModel,
+) {
     LazyColumn(
-        modifier            = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Xl),
     ) {
         item { Spacer(Modifier.height(PazSpacing.Xl)) }
@@ -94,14 +99,15 @@ private fun LoggedInState(user: br.church.paz.shared.domain.model.User, viewMode
         item {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier            = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = PazSpacing.Xl),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = PazSpacing.Xl),
             ) {
                 PazAvatar(
-                    name     = user.name,
+                    name = user.name,
                     imageUrl = user.picture,
-                    size     = 80.dp,
+                    size = 80.dp,
                 )
                 Spacer(Modifier.height(PazSpacing.Md))
                 Text(user.name, style = MaterialTheme.typography.headlineSmall)
@@ -109,8 +115,10 @@ private fun LoggedInState(user: br.church.paz.shared.domain.model.User, viewMode
                 Spacer(Modifier.height(PazSpacing.Sm))
                 Box(
                     Modifier
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
-                        .background(PazColors.Primary.copy(alpha = 0.12f))
+                        .clip(
+                            androidx.compose.foundation.shape
+                                .RoundedCornerShape(20.dp),
+                        ).background(PazColors.Primary.copy(alpha = 0.12f))
                         .padding(horizontal = 12.dp, vertical = 4.dp),
                 ) {
                     Text(
@@ -140,11 +148,11 @@ private fun LoggedInState(user: br.church.paz.shared.domain.model.User, viewMode
                     .background(MaterialTheme.colorScheme.surface),
             ) {
                 PazMenuRow(
-                    title       = "Sair da conta",
-                    icon        = Icons.Outlined.Edit,
-                    onClick     = viewModel::onLogout,
+                    title = "Sair da conta",
+                    icon = Icons.Outlined.Edit,
+                    onClick = viewModel::onLogout,
                     showDivider = false,
-                    tintIcon    = false,
+                    tintIcon = false,
                 )
             }
         }
@@ -156,13 +164,13 @@ private fun LoggedInState(user: br.church.paz.shared.domain.model.User, viewMode
 @Composable
 private fun LoggedOutState(onLogin: () -> Unit) {
     Box(
-        modifier         = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-            modifier            = Modifier.padding(PazSpacing.Xl),
+            modifier = Modifier.padding(PazSpacing.Xl),
         ) {
             Text(
                 "Faça login para ver seu perfil",
@@ -181,9 +189,10 @@ private fun LoggedOutState(onLogin: () -> Unit) {
 @Composable
 private fun LoadingState() {
     Column(
-        modifier            = Modifier
-            .fillMaxSize()
-            .padding(PazSpacing.Xl),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(PazSpacing.Xl),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
     ) {
         Spacer(Modifier.height(PazSpacing.Xl))
