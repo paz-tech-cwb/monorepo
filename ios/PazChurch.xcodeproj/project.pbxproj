@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -421,7 +421,6 @@
 				1FE66062384A01E6B73D3198 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				4BF6352E4A89663882C292AC /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
