@@ -12,30 +12,19 @@ class ProfileViewModel {
 
     init(authRepository: AuthRepository) {
         self.authRepository = authRepository
-        loadProfile()
     }
 
-    private func loadProfile() {
-        Task {
-            do {
-                let user = try await authRepository.currentUser() as? Shared.User
-                self.user = user
-                self.isLoading = false
-
-                if user == nil {
-                    // Navigate to login
-                }
-            } catch {
-                self.isLoading = false
-            }
+    func loadUser() async {
+        isLoading = true
+        do {
+            user = try await authRepository.currentUser() as? Shared.User
+        } catch {
+            user = nil
         }
+        isLoading = false
     }
 
-    func onEditProfile() {
-        // Navigate to EditProfile
-    }
+    func onEditProfile() {}
 
-    func onLogout() {
-        // Show logout confirmation
-    }
+    func onLogout() {}
 }

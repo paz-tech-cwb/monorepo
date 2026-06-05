@@ -1,18 +1,26 @@
 package br.church.paz.android.ui.features.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -62,19 +70,14 @@ fun ProfileScreen(
                 .statusBarsPadding()
                 .padding(horizontal = PazSpacing.Xl, vertical = PazSpacing.Lg),
         ) {
-            Text(
-                "Meu Perfil",
-                style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
-            )
+            Text("Meu Perfil", style = MaterialTheme.typography.headlineMedium.copy(color = Color.White))
         }
 
         Box(
             Modifier
                 .fillMaxSize()
-                .clip(
-                    androidx.compose.foundation.shape
-                        .RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                ).background(MaterialTheme.colorScheme.background),
+                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .background(MaterialTheme.colorScheme.background),
         ) {
             when {
                 uiState.isLoading -> LoadingState()
@@ -90,98 +93,121 @@ private fun LoggedInState(
     user: br.church.paz.shared.domain.model.User,
     viewModel: ProfileViewModel,
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(PazSpacing.Xl),
-    ) {
-        item { Spacer(Modifier.height(PazSpacing.Xl)) }
-
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
+            // Avatar card overlapping header via negative offset
             Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = PazSpacing.Lg)
+                    .offset(y = (-22).dp)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(PazSpacing.Lg),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = PazSpacing.Xl),
+                verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
             ) {
-                PazAvatar(
-                    name = user.name,
-                    imageUrl = user.picture,
-                    size = 80.dp,
-                )
-                Spacer(Modifier.height(PazSpacing.Md))
+                Box {
+                    PazAvatar(name = user.name, imageUrl = user.picture, size = 80.dp)
+                    Box(
+                        Modifier
+                            .size(26.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(PazColors.Gold)
+                            .align(Alignment.BottomEnd),
+                        Alignment.Center,
+                    ) {
+                        Icon(Icons.Outlined.Edit, null, tint = PazColors.GoldOnBadge, modifier = Modifier.size(14.dp))
+                    }
+                }
                 Text(user.name, style = MaterialTheme.typography.headlineSmall)
                 Text(user.email, style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.5f)))
-                Spacer(Modifier.height(PazSpacing.Sm))
                 Box(
                     Modifier
-                        .clip(
-                            androidx.compose.foundation.shape
-                                .RoundedCornerShape(20.dp),
-                        ).background(PazColors.Primary.copy(alpha = 0.12f))
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(PazColors.Primary.copy(.12f))
                         .padding(horizontal = 12.dp, vertical = 4.dp),
                 ) {
-                    Text(
-                        user.role.displayName,
-                        style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Primary),
-                    )
+                    Text(user.role.displayName, style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Primary))
                 }
             }
         }
 
-        item { Spacer(Modifier.height(PazSpacing.Lg)) }
-
         item {
-            Column(Modifier.padding(horizontal = PazSpacing.Lg)) {
+            Column(Modifier.padding(horizontal = PazSpacing.Lg).offset(y = (-22).dp)) {
                 PazButton(text = "Editar Perfil", onClick = viewModel::onEditProfile, modifier = Modifier.fillMaxWidth())
             }
         }
-
-        item { Spacer(Modifier.height(PazSpacing.Lg)) }
 
         item {
             Column(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = PazSpacing.Lg)
+                    .offset(y = (-14).dp)
                     .clip(PazShapes.large)
                     .background(MaterialTheme.colorScheme.surface),
             ) {
                 PazMenuRow(
                     title = "Sair da conta",
-                    icon = Icons.Outlined.Edit,
+                    icon = Icons.AutoMirrored.Outlined.Logout,
+                    iconTint = PazColors.Error,
+                    titleColor = PazColors.Error,
                     onClick = viewModel::onLogout,
                     showDivider = false,
                     tintIcon = false,
                 )
             }
+            Spacer(Modifier.height(PazSpacing.Xl))
         }
-
-        item { Spacer(Modifier.height(PazSpacing.Xl)) }
     }
 }
 
 @Composable
 private fun LoggedOutState(onLogin: () -> Unit) {
-    Box(
+    LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
+        contentPadding = PaddingValues(PazSpacing.Lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-            modifier = Modifier.padding(PazSpacing.Xl),
-        ) {
+        item { Spacer(Modifier.height(PazSpacing.Xl)) }
+        item {
+            Box(
+                Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(2.dp, PazColors.Primary.copy(.25f), RoundedCornerShape(50)),
+                Alignment.Center,
+            ) {
+                Icon(Icons.Outlined.Person, null, tint = PazColors.Primary.copy(.4f), modifier = Modifier.size(40.dp))
+            }
+        }
+        item {
+            Text("Bem-vindo(a)!", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(4.dp))
             Text(
-                "Faça login para ver seu perfil",
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Text(
-                "Acesse sua conta para gerenciar informações pessoais e preferências",
+                "Faça login para ver seu perfil e acompanhar sua jornada",
                 style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.6f)),
             )
-            Spacer(Modifier.height(PazSpacing.Lg))
-            PazButton(text = "Entrar", onClick = onLogin, modifier = Modifier.fillMaxWidth())
+        }
+        item {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(PazShapes.large)
+                    .background(PazGradients.Card)
+                    .padding(PazSpacing.Xl),
+                verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+            ) {
+                Text("Entre na comunidade", style = MaterialTheme.typography.titleMedium.copy(color = Color.White))
+                Text(
+                    "Conecte-se com sua família de fé",
+                    style = MaterialTheme.typography.bodySmall.copy(color = Color.White.copy(.8f)),
+                )
+                PazButton(text = "Entrar na minha conta", onClick = onLogin, modifier = Modifier.fillMaxWidth())
+            }
         }
     }
 }
@@ -189,10 +215,7 @@ private fun LoggedOutState(onLogin: () -> Unit) {
 @Composable
 private fun LoadingState() {
     Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .padding(PazSpacing.Xl),
+        modifier = Modifier.fillMaxSize().padding(PazSpacing.Xl),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
     ) {
         Spacer(Modifier.height(PazSpacing.Xl))
