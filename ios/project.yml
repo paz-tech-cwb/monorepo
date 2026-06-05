@@ -13,6 +13,9 @@ packages:
   GoogleSignIn:
     url: https://github.com/google/GoogleSignIn-iOS
     from: "7.0.0"
+  Kingfisher:
+    url: https://github.com/onevcat/Kingfisher.git
+    from: "8.0.0"
 
 settings:
   base:
@@ -44,6 +47,9 @@ targets:
       # Google Sign-In via SPM
       - package: GoogleSignIn
         product: GoogleSignIn
+      # Kingfisher for image caching
+      - package: Kingfisher
+        product: Kingfisher
     settings:
       base:
         INFOPLIST_FILE: PazChurch/Info.plist

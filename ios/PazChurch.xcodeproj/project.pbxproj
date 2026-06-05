@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -11,6 +11,7 @@
 		09EDC02009417BFD3B3FA3BC /* NotificationPrefsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33772BE7A618459F8F98DA2 /* NotificationPrefsView.swift */; };
 		133044023D8AFC650E9E9FAB /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDF386921E4FE34F3D834257 /* ProfileViewModel.swift */; };
 		14045D80B33A84CAE8070AC7 /* PazTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82E14328F3FC3C44E1C3AC60 /* PazTypography.swift */; };
+		16B832FD065C7338B522ABFA /* AppThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21EFE728C0EA836F247AB28D /* AppThemeManager.swift */; };
 		1CB207F6227C85FD1293E3A2 /* Shared.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9089E1E2EF61D9C3A28227C1 /* Shared.xcframework */; };
 		1E73813601B5D626FF99A87A /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 2D74D60AD3C0597184B72C20 /* GoogleSignIn */; };
 		1F3D35E5FF143FC6C08A16BC /* MinistriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10DAE923513B1C91EC22B66 /* MinistriesView.swift */; };
@@ -30,6 +31,7 @@
 		3A40345A216427C276DD32B7 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = D4D3763343A64715B4360CF2 /* FirebaseMessaging */; };
 		3CE51AC613425F8FDCAD49FB /* AcademyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF28DC87154DE4489A6243FF /* AcademyViewModel.swift */; };
 		4A82A695C9D2A71805FA21F2 /* EditProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA7936BCA1C57C580876AD98 /* EditProfileView.swift */; };
+		5171876776DB984B0FC857E5 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 14D3154CD353A1E73ECC271B /* Kingfisher */; };
 		643DD272E3E5374F92A3FEA9 /* Shared.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9089E1E2EF61D9C3A28227C1 /* Shared.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		65323BAB5459A81F682BE7B1 /* EditProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667C5328F0D1720F48DB35B2 /* EditProfileViewModel.swift */; };
 		6D6B04D0664285834955DF7E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 79C75FF4BA56BB550DD04506 /* Assets.xcassets */; };
@@ -78,6 +80,7 @@
 		121FA55058E48ADE89F7DCDC /* AgendaListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgendaListView.swift; sourceTree = "<group>"; };
 		19E3E44DBCB2C6495E5BB60D /* PazColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazColors.swift; sourceTree = "<group>"; };
 		1A78FBD0E12C138DD1D1835C /* FormulariosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulariosView.swift; sourceTree = "<group>"; };
+		21EFE728C0EA836F247AB28D /* AppThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppThemeManager.swift; sourceTree = "<group>"; };
 		22597D6E893E60A78DA0327F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2612BFB288D8A1A154A3B847 /* MeetingReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingReportView.swift; sourceTree = "<group>"; };
 		36DB133997051B82A7D0D38D /* SkeletonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonView.swift; sourceTree = "<group>"; };
@@ -130,6 +133,7 @@
 				A0CCE565617A81DD9C6404A9 /* FirebaseAuth in Frameworks */,
 				3A40345A216427C276DD32B7 /* FirebaseMessaging in Frameworks */,
 				1E73813601B5D626FF99A87A /* GoogleSignIn in Frameworks */,
+				5171876776DB984B0FC857E5 /* Kingfisher in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -148,6 +152,7 @@
 		1BC6EACBFB5AD78E6BB372DE /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				21EFE728C0EA836F247AB28D /* AppThemeManager.swift */,
 				BB0E4F5F057D2C920865C94F /* AuthenticationCoordinator.swift */,
 				C737DAE09240790962AA668E /* KeychainService.swift */,
 				5AD2DBF8ABF3E564BDA14950 /* PushNotificationService.swift */,
@@ -387,6 +392,7 @@
 				F04B442417CCD3B5A58BC0DF /* FirebaseAuth */,
 				D4D3763343A64715B4360CF2 /* FirebaseMessaging */,
 				2D74D60AD3C0597184B72C20 /* GoogleSignIn */,
+				14D3154CD353A1E73ECC271B /* Kingfisher */,
 			);
 			productName = PazChurch;
 			productReference = 01FFDF96B4BA2F02238FEF09 /* PazChurch.app */;
@@ -420,7 +426,9 @@
 			packageReferences = (
 				1FE66062384A01E6B73D3198 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				4BF6352E4A89663882C292AC /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				96EB51DB675FF756632E0F01 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 			);
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -481,6 +489,7 @@
 				A98EE8C9CC199B26F49D75EB /* AgendaDetailView.swift in Sources */,
 				32B8A8B3FD0A30A168DDE7CB /* AgendaListView.swift in Sources */,
 				F44D2FA2EA14E8B29A866F25 /* AppDelegate.swift in Sources */,
+				16B832FD065C7338B522ABFA /* AppThemeManager.swift in Sources */,
 				E111D004E3CD35D07B1252C8 /* AuthenticationCoordinator.swift in Sources */,
 				4A82A695C9D2A71805FA21F2 /* EditProfileView.swift in Sources */,
 				65323BAB5459A81F682BE7B1 /* EditProfileViewModel.swift in Sources */,
@@ -728,9 +737,22 @@
 				minimumVersion = 7.0.0;
 			};
 		};
+		96EB51DB675FF756632E0F01 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		14D3154CD353A1E73ECC271B /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 96EB51DB675FF756632E0F01 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
 		2D74D60AD3C0597184B72C20 /* GoogleSignIn */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 4BF6352E4A89663882C292AC /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
