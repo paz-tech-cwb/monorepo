@@ -4,6 +4,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.gms.google-services")
+    alias(libs.plugins.ktlint)
 }
 
 android {
@@ -23,14 +24,25 @@ android {
         debug {
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3001/api\"")
             // Web client ID from google-services.json → oauth_client[type=3]
-            buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"139667803306-l99mi58j9d2ovncd4frvh4j2tpjaq2ei.apps.googleusercontent.com\"")
+            buildConfigField(
+                "String",
+                "GOOGLE_WEB_CLIENT_ID",
+                "\"139667803306-l99mi58j9d2ovncd4frvh4j2tpjaq2ei.apps.googleusercontent.com\"",
+            )
         }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             buildConfigField("String", "BASE_URL", "\"https://api.paz.church/api\"")
-            buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"139667803306-l99mi58j9d2ovncd4frvh4j2tpjaq2ei.apps.googleusercontent.com\"")
+            buildConfigField(
+                "String",
+                "GOOGLE_WEB_CLIENT_ID",
+                "\"139667803306-l99mi58j9d2ovncd4frvh4j2tpjaq2ei.apps.googleusercontent.com\"",
+            )
         }
     }
 
@@ -43,6 +55,13 @@ android {
         compose = true
         buildConfig = true
     }
+}
+
+ktlint {
+    version.set("1.3.1")
+    android.set(true)
+    outputColorName.set("RED")
+    reporters { reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.PLAIN) }
 }
 
 dependencies {
