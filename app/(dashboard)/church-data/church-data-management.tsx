@@ -13,16 +13,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Separator } from "@/components/ui/separator"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { FormDrawer } from "@/components/ui/form-drawer"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Building2, MapPin, Clock, CreditCard, Phone, Globe, Save, Plus, MoreHorizontal, Edit, Trash2, Search, DollarSign } from "lucide-react"
 import {
@@ -524,68 +517,10 @@ export function ChurchDataManagement() {
                   </CardTitle>
                   <CardDescription>Informacoes para doacoes e transferencias</CardDescription>
                 </div>
-                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Adicionar Conta
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Adicionar Nova Conta</DialogTitle>
-                      <DialogDescription>Preencha os dados da conta bancaria</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4">
-                      <div>
-                        <Label htmlFor="bank_name">Nome do Banco</Label>
-                        <Input
-                          id="bank_name"
-                          value={contributionFormData.bank_name}
-                          onChange={(e) => setContributionFormData({ ...contributionFormData, bank_name: e.target.value })}
-                          placeholder="Ex: Banco do Brasil"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="branch_number">Agencia</Label>
-                          <Input
-                            id="branch_number"
-                            value={contributionFormData.branch_number}
-                            onChange={(e) => setContributionFormData({ ...contributionFormData, branch_number: e.target.value })}
-                            placeholder="0001"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="account_number">Conta</Label>
-                          <Input
-                            id="account_number"
-                            value={contributionFormData.account_number}
-                            onChange={(e) => setContributionFormData({ ...contributionFormData, account_number: e.target.value })}
-                            placeholder="12345-6"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="pix_key">Chave PIX</Label>
-                        <Input
-                          id="pix_key"
-                          value={contributionFormData.pix_key}
-                          onChange={(e) => setContributionFormData({ ...contributionFormData, pix_key: e.target.value })}
-                          placeholder="email@exemplo.com ou CPF/CNPJ"
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                        Cancelar
-                      </Button>
-                      <Button onClick={handleAddContribution} disabled={createMutation.isPending}>
-                        {createMutation.isPending ? "Adicionando..." : "Adicionar Conta"}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                <Button onClick={() => setIsAddDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Adicionar Conta
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -658,63 +593,113 @@ export function ChurchDataManagement() {
             </CardContent>
           </Card>
 
-          {/* Edit Contribution Dialog */}
-          <Dialog open={!!editingContribution} onOpenChange={() => setEditingContribution(null)}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Editar Conta</DialogTitle>
-                <DialogDescription>Atualize os dados da conta bancaria</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4">
+          {/* Add Contribution Drawer */}
+          <FormDrawer
+            open={isAddDialogOpen}
+            onOpenChange={setIsAddDialogOpen}
+            title="Adicionar Nova Conta"
+            description="Preencha os dados da conta bancaria"
+            isLoading={createMutation.isPending}
+            onSubmit={handleAddContribution}
+            submitLabel="Adicionar Conta"
+          >
+            <div className="grid gap-4">
+              <div>
+                <Label htmlFor="bank_name">Nome do Banco</Label>
+                <Input
+                  id="bank_name"
+                  value={contributionFormData.bank_name}
+                  onChange={(e) => setContributionFormData({ ...contributionFormData, bank_name: e.target.value })}
+                  placeholder="Ex: Banco do Brasil"
+                />
+              </div>
+              <Separator />
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="edit-bank_name">Nome do Banco</Label>
+                  <Label htmlFor="branch_number">Agencia</Label>
                   <Input
-                    id="edit-bank_name"
-                    value={contributionFormData.bank_name}
-                    onChange={(e) => setContributionFormData({ ...contributionFormData, bank_name: e.target.value })}
-                    placeholder="Ex: Banco do Brasil"
+                    id="branch_number"
+                    value={contributionFormData.branch_number}
+                    onChange={(e) => setContributionFormData({ ...contributionFormData, branch_number: e.target.value })}
+                    placeholder="0001"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-branch_number">Agencia</Label>
-                    <Input
-                      id="edit-branch_number"
-                      value={contributionFormData.branch_number}
-                      onChange={(e) => setContributionFormData({ ...contributionFormData, branch_number: e.target.value })}
-                      placeholder="0001"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="edit-account_number">Conta</Label>
-                    <Input
-                      id="edit-account_number"
-                      value={contributionFormData.account_number}
-                      onChange={(e) => setContributionFormData({ ...contributionFormData, account_number: e.target.value })}
-                      placeholder="12345-6"
-                    />
-                  </div>
-                </div>
                 <div>
-                  <Label htmlFor="edit-pix_key">Chave PIX</Label>
+                  <Label htmlFor="account_number">Conta</Label>
                   <Input
-                    id="edit-pix_key"
-                    value={contributionFormData.pix_key}
-                    onChange={(e) => setContributionFormData({ ...contributionFormData, pix_key: e.target.value })}
-                    placeholder="email@exemplo.com ou CPF/CNPJ"
+                    id="account_number"
+                    value={contributionFormData.account_number}
+                    onChange={(e) => setContributionFormData({ ...contributionFormData, account_number: e.target.value })}
+                    placeholder="12345-6"
                   />
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setEditingContribution(null)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleUpdateContribution} disabled={updateMutation.isPending}>
-                  {updateMutation.isPending ? "Salvando..." : "Salvar"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              <Separator />
+              <div>
+                <Label htmlFor="pix_key">Chave PIX</Label>
+                <Input
+                  id="pix_key"
+                  value={contributionFormData.pix_key}
+                  onChange={(e) => setContributionFormData({ ...contributionFormData, pix_key: e.target.value })}
+                  placeholder="email@exemplo.com ou CPF/CNPJ"
+                />
+              </div>
+            </div>
+          </FormDrawer>
+
+          {/* Edit Contribution Drawer */}
+          <FormDrawer
+            open={!!editingContribution}
+            onOpenChange={(open) => { if (!open) setEditingContribution(null) }}
+            title="Editar Conta"
+            description="Atualize os dados da conta bancaria"
+            isLoading={updateMutation.isPending}
+            onSubmit={handleUpdateContribution}
+            submitLabel="Salvar"
+          >
+            <div className="grid gap-4">
+              <div>
+                <Label htmlFor="edit-bank_name">Nome do Banco</Label>
+                <Input
+                  id="edit-bank_name"
+                  value={contributionFormData.bank_name}
+                  onChange={(e) => setContributionFormData({ ...contributionFormData, bank_name: e.target.value })}
+                  placeholder="Ex: Banco do Brasil"
+                />
+              </div>
+              <Separator />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-branch_number">Agencia</Label>
+                  <Input
+                    id="edit-branch_number"
+                    value={contributionFormData.branch_number}
+                    onChange={(e) => setContributionFormData({ ...contributionFormData, branch_number: e.target.value })}
+                    placeholder="0001"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-account_number">Conta</Label>
+                  <Input
+                    id="edit-account_number"
+                    value={contributionFormData.account_number}
+                    onChange={(e) => setContributionFormData({ ...contributionFormData, account_number: e.target.value })}
+                    placeholder="12345-6"
+                  />
+                </div>
+              </div>
+              <Separator />
+              <div>
+                <Label htmlFor="edit-pix_key">Chave PIX</Label>
+                <Input
+                  id="edit-pix_key"
+                  value={contributionFormData.pix_key}
+                  onChange={(e) => setContributionFormData({ ...contributionFormData, pix_key: e.target.value })}
+                  placeholder="email@exemplo.com ou CPF/CNPJ"
+                />
+              </div>
+            </div>
+          </FormDrawer>
         </TabsContent>
 
         <TabsContent value="schedule" className="space-y-4">
