@@ -252,22 +252,18 @@ export function NotificationSystem() {
                     <WipOverlay>
                       <div className="flex flex-wrap gap-2">
                         {CATEGORIES.map(cat => (
-                          <button
+                          <Button
                             key={cat.value}
                             type="button"
+                            variant={form.category === cat.value ? 'default' : 'outline'}
+                            size="sm"
                             onClick={() => {
                               isDirty.current = true
                               setForm(f => ({ ...f, category: cat.value }))
                             }}
-                            className="focus:outline-none"
                           >
-                            <Badge
-                              variant={form.category === cat.value ? 'default' : 'outline'}
-                              className="cursor-pointer"
-                            >
-                              {cat.label}
-                            </Badge>
-                          </button>
+                            {cat.label}
+                          </Button>
                         ))}
                       </div>
                     </WipOverlay>
@@ -306,24 +302,22 @@ export function NotificationSystem() {
                       const Icon = ch.icon
                       const selected = form.channels.includes(ch.value)
                       return (
-                        <button
+                        <Button
                           key={ch.value}
                           type="button"
+                          variant={selected ? 'default' : 'outline'}
+                          size="sm"
                           onClick={() => toggleChannel(ch.value)}
-                          className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-colors text-left ${
-                            selected
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border hover:border-muted-foreground/50'
-                          }`}
+                          className="flex items-center gap-3 p-3 h-auto rounded-lg justify-start"
                         >
-                          <div className={`p-2 rounded-md ${selected ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                          <div className={`p-2 rounded-md ${selected ? 'bg-primary-foreground/20' : 'bg-muted'}`}>
                             <Icon size={16} />
                           </div>
-                          <div>
+                          <div className="text-left">
                             <div className="font-medium text-sm">{ch.label}</div>
-                            <div className="text-xs text-muted-foreground">{ch.sub}</div>
+                            <div className={`text-xs ${selected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>{ch.sub}</div>
                           </div>
-                        </button>
+                        </Button>
                       )
                     })}
                     </div>
@@ -342,11 +336,13 @@ export function NotificationSystem() {
                       {filters.map((f, i) => (
                         <Badge key={`${f.type}-${f.value}`} variant="secondary" className="gap-1">
                           {f.type}: {f.value}
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => removeFilter(i)}
-                            className="ml-1 hover:text-destructive"
+                            className="ml-1 h-auto p-0 hover:text-destructive"
                             aria-label={`Remover filtro ${f.type}: ${f.value}`}
-                          >×</button>
+                          >×</Button>
                         </Badge>
                       ))}
                     </div>
