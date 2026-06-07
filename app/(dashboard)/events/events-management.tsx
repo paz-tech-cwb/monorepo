@@ -8,32 +8,52 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Search, Plus, MoreHorizontal, Edit, Trash2, Calendar, MapPin, ChevronLeft, ChevronRight, List, CalendarDays, Clock } from "lucide-react"
+import { DateTimePicker } from "@/components/ui/date-time-picker"
 import {
   useAgenda,
   useCreateAgendaEvent,
   useUpdateAgendaEvent,
   useDeleteAgendaEvent,
 } from "@/lib/hooks/use-agenda"
-import { StatsCardSkeleton, TableSkeleton, CalendarSkeleton } from "@/components/ui/skeleton-components"
+import { StatsCardSkeleton, CalendarSkeleton } from "@/components/ui/skeleton-components"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { AgendaEvent, CreateAgendaEventRequest, UpdateAgendaEventRequest, Address, AgendaStats } from "@/lib/api/types"
+import type { AgendaEvent, CreateAgendaEventRequest, UpdateAgendaEventRequest, Address } from "@/lib/api/types"
+import type { RecurrenceType } from "@/lib/api/types/agenda"
 import { useAgendaStats } from "@/lib/hooks/use-agenda"
 import { format } from "date-fns"
 import { AddressForm, type AddressFormData } from "@/components/ui/address-form"
 
-// Church default address
+// ── Constants ─────────────────────────────────────────────────────────────────
+
 const CHURCH_ADDRESS: Address = {
   zip_code: "80410-000",
   country: "Brasil",
@@ -44,6 +64,124 @@ const CHURCH_ADDRESS: Address = {
   number: "123",
 }
 
+const EMPTY_FORM: CreateAgendaEventRequest = {
+  title: "",
+  description: "",
+  initial_date: "",
+  final_date: "",
+  recurrence_type: undefined,
+  image: "",
+  address: {
+    zip_code: "",
+    country: "Brasil",
+    state: "",
+    city: "",
+    neighborhood: "",
+    street: "",
+    number: "",
+  },
+}
+
+// ── Top-level form component (must NOT be defined inside EventsManagement) ────
+
+interface EventFormProps {
+  formData: CreateAgendaEventRequest
+  onChange: (data: CreateAgendaEventRequest) => void
+  onUseChurchAddress: () => void
+  idPrefix?: string
+}
+
+function EventForm({ formData, onChange, onUseChurchAddress, idPrefix = "" }: EventFormProps) {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-2">
+          <Label htmlFor={`${idPrefix}title`}>Titulo</Label>
+          <Input
+            id={`${idPrefix}title`}
+            value={formData.title}
+            onChange={(e) => onChange({ ...formData, title: e.target.value })}
+            placeholder="Nome do evento"
+          />
+        </div>
+        <div className="col-span-2">
+          <Label htmlFor={`${idPrefix}description`}>Descricao</Label>
+          <Textarea
+            id={`${idPrefix}description`}
+            value={formData.description}
+            onChange={(e) => onChange({ ...formData, description: e.target.value })}
+            placeholder="Descricao do evento"
+            rows={3}
+          />
+        </div>
+
+        <div className="col-span-2">
+          <DateTimePicker
+            label="Data Inicial"
+            value={formData.initial_date}
+            onChange={(iso) => onChange({ ...formData, initial_date: iso })}
+          />
+        </div>
+        <div className="col-span-2">
+          <DateTimePicker
+            label="Data Final"
+            value={formData.final_date || ""}
+            onChange={(iso) => onChange({ ...formData, final_date: iso })}
+            optional
+          />
+        </div>
+
+        <div>
+          <Label htmlFor={`${idPrefix}recurrence_type`}>Recorrencia</Label>
+          <Select
+            value={formData.recurrence_type || ""}
+            onValueChange={(v) =>
+              onChange({
+                ...formData,
+                recurrence_type: (v as RecurrenceType) || undefined,
+              })
+            }
+          >
+            <SelectTrigger id={`${idPrefix}recurrence_type`}>
+              <SelectValue placeholder="Sem recorrencia" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Sem recorrencia</SelectItem>
+              <SelectItem value="WEEKLY">Semanal</SelectItem>
+              <SelectItem value="MONTHLY">Mensal</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor={`${idPrefix}image`}>URL da Imagem (opcional)</Label>
+          <Input
+            id={`${idPrefix}image`}
+            value={formData.image}
+            onChange={(e) => onChange({ ...formData, image: e.target.value })}
+            placeholder="https://exemplo.com/imagem.jpg"
+          />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <MapPin className="h-5 w-5" />
+          Endereco do Evento
+        </h3>
+        <AddressForm
+          value={formData.address as AddressFormData}
+          onChange={(address) => onChange({ ...formData, address })}
+          idPrefix={idPrefix}
+          showUseChurchAddress
+          onUseChurchAddress={onUseChurchAddress}
+        />
+      </div>
+    </div>
+  )
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+
 export function EventsManagement() {
   const { data: events = [], isLoading, error } = useAgenda()
   const { data: stats } = useAgendaStats()
@@ -52,25 +190,10 @@ export function EventsManagement() {
   const deleteMutation = useDeleteAgendaEvent()
 
   const [searchTerm, setSearchTerm] = useState("")
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isAddSheetOpen, setIsAddSheetOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<AgendaEvent | null>(null)
-  const [formData, setFormData] = useState<CreateAgendaEventRequest>({
-    title: "",
-    description: "",
-    initial_date: "",
-    final_date: "",
-    recurrence_type: undefined,
-    image: "",
-    address: {
-      zip_code: "",
-      country: "Brasil",
-      state: "",
-      city: "",
-      neighborhood: "",
-      street: "",
-      number: "",
-    },
-  })
+  const [deletingEvent, setDeletingEvent] = useState<AgendaEvent | null>(null)
+  const [formData, setFormData] = useState<CreateAgendaEventRequest>(EMPTY_FORM)
 
   // Calendar state
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -83,34 +206,24 @@ export function EventsManagement() {
         (event.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false))
   )
 
-  const resetForm = () => {
-    setFormData({
-      title: "",
-      description: "",
-      initial_date: "",
-      final_date: "",
-      recurrence_type: undefined,
-      image: "",
-      address: {
-        zip_code: "",
-        country: "Brasil",
-        state: "",
-        city: "",
-        neighborhood: "",
-        street: "",
-        number: "",
-      },
-    })
+  const resetForm = () => setFormData(EMPTY_FORM)
+
+  const handleUseChurchAddress = () => {
+    setFormData((prev) => ({ ...prev, address: { ...CHURCH_ADDRESS } }))
+  }
+
+  const handleOpenAdd = () => {
+    resetForm()
+    setIsAddSheetOpen(true)
   }
 
   const handleAddEvent = async () => {
     await createMutation.mutateAsync(formData)
     resetForm()
-    setIsAddDialogOpen(false)
+    setIsAddSheetOpen(false)
   }
 
   const handleEditEvent = (event: AgendaEvent) => {
-    setEditingEvent(event)
     setFormData({
       title: event.title,
       description: event.description || "",
@@ -118,99 +231,58 @@ export function EventsManagement() {
       final_date: event.final_date || "",
       recurrence_type: event.recurrence_type,
       image: event.image || "",
-      address: event.address || {
-        zip_code: "",
-        country: "Brasil",
-        state: "",
-        city: "",
-        neighborhood: "",
-        street: "",
-        number: "",
-      },
+      address: event.address ?? EMPTY_FORM.address,
     })
+    setEditingEvent(event)
   }
 
   const handleUpdateEvent = async () => {
     if (!editingEvent) return
-
-    await updateMutation.mutateAsync({
-      id: editingEvent.id,
-      data: formData as UpdateAgendaEventRequest,
-    })
+    await updateMutation.mutateAsync({ id: editingEvent.id, data: formData as UpdateAgendaEventRequest })
     setEditingEvent(null)
     resetForm()
   }
 
-  const handleDeleteEvent = async (eventId: number) => {
-    await deleteMutation.mutateAsync(eventId)
-  }
-
-  const handleUseChurchAddress = () => {
-    setFormData({
-      ...formData,
-      address: { ...CHURCH_ADDRESS },
-    })
+  const handleDeleteEvent = async () => {
+    if (!deletingEvent) return
+    await deleteMutation.mutateAsync(deletingEvent.id)
+    setDeletingEvent(null)
   }
 
   const getRecurrenceBadge = (recurrenceType?: string | null) => {
     if (!recurrenceType) return null
     const labels: Record<string, string> = {
-      WEEKLY: "Semanal",
-      MONTHLY: "Mensal",
-      weekly: "Semanal",
-      monthly: "Mensal",
+      WEEKLY: "Semanal", MONTHLY: "Mensal", weekly: "Semanal", monthly: "Mensal",
     }
     return <Badge variant="outline">{labels[recurrenceType] || recurrenceType}</Badge>
   }
 
   const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "dd/MM/yyyy HH:mm")
-    } catch {
-      return dateString
-    }
+    try { return format(new Date(dateString), "dd/MM/yyyy HH:mm") } catch { return dateString }
   }
 
-  // Calendar functions
-  const getDaysInMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
-  }
+  // ── Calendar helpers ─────────────────────────────────────────────────────────
 
-  const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay()
-  }
+  const getDaysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+  const getFirstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay()
+  const formatCalendarDate = (year: number, month: number, day: number) =>
+    `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
 
-  const formatCalendarDate = (year: number, month: number, day: number) => {
-    return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-  }
-
-  const getEventsForDate = (dateString: string) => {
-    return events.filter((event) => {
-      if (event == null) return false
-      const eventDate = event.initial_date.split("T")[0]
-      return eventDate === dateString
-    })
-  }
+  const getEventsForDate = (dateString: string) =>
+    events.filter((event) => event != null && event.initial_date.split("T")[0] === dateString)
 
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentDate((prev) => {
-      const newDate = new Date(prev)
-      if (direction === "prev") {
-        newDate.setMonth(prev.getMonth() - 1)
-      } else {
-        newDate.setMonth(prev.getMonth() + 1)
-      }
-      return newDate
+      const d = new Date(prev)
+      d.setMonth(prev.getMonth() + (direction === "next" ? 1 : -1))
+      return d
     })
   }
 
   const getTypeColor = (recurrenceType?: string | null) => {
     if (!recurrenceType) return "#d97706"
     const colors: Record<string, string> = {
-      WEEKLY: "#15803d",
-      MONTHLY: "#3b82f6",
-      weekly: "#15803d",
-      monthly: "#3b82f6",
+      WEEKLY: "#15803d", MONTHLY: "#3b82f6", weekly: "#15803d", monthly: "#3b82f6",
     }
     return colors[recurrenceType] || "#6b7280"
   }
@@ -220,12 +292,10 @@ export function EventsManagement() {
     const firstDay = getFirstDayOfMonth(currentDate)
     const days = []
 
-    // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-24 border border-border"></div>)
+      days.push(<div key={`empty-${i}`} className="h-24 border border-border" />)
     }
 
-    // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const dateString = formatCalendarDate(currentDate.getFullYear(), currentDate.getMonth(), day)
       const dayEvents = getEventsForDate(dateString)
@@ -234,9 +304,7 @@ export function EventsManagement() {
       days.push(
         <div
           key={day}
-          className={`h-24 border border-border p-1 cursor-pointer hover:bg-muted/50 ${
-            isSelected ? "bg-primary/10 border-primary" : ""
-          }`}
+          className={`h-24 border border-border p-1 cursor-pointer hover:bg-muted/50 ${isSelected ? "bg-primary/10 border-primary" : ""}`}
           onClick={() => setSelectedDate(dateString)}
         >
           <div className="text-sm font-medium mb-1">{day}</div>
@@ -250,16 +318,19 @@ export function EventsManagement() {
                 {event.title}
               </div>
             ))}
-            {dayEvents.length > 2 && <div className="text-xs text-muted-foreground">+{dayEvents.length - 2} mais</div>}
+            {dayEvents.length > 2 && (
+              <div className="text-xs text-muted-foreground">+{dayEvents.length - 2} mais</div>
+            )}
           </div>
         </div>,
       )
     }
-
     return days
   }
 
   const selectedDateEvents = selectedDate ? getEventsForDate(selectedDate) : []
+
+  // ── Loading / error states ────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -271,30 +342,22 @@ export function EventsManagement() {
           </div>
           <Skeleton className="h-10 w-[140px]" />
         </div>
-
         <div className="grid gap-4 md:grid-cols-2">
           <StatsCardSkeleton />
           <StatsCardSkeleton />
         </div>
-
         <Tabs defaultValue="calendar" className="space-y-4">
           <div className="flex gap-2">
             <Skeleton className="h-10 w-[120px]" />
             <Skeleton className="h-10 w-[120px]" />
           </div>
-
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
               <Card>
-                <CardHeader>
-                  <Skeleton className="h-6 w-[200px]" />
-                </CardHeader>
-                <CardContent>
-                  <CalendarSkeleton />
-                </CardContent>
+                <CardHeader><Skeleton className="h-6 w-[200px]" /></CardHeader>
+                <CardContent><CalendarSkeleton /></CardContent>
               </Card>
             </div>
-
             <div>
               <Card>
                 <CardHeader>
@@ -331,123 +394,23 @@ export function EventsManagement() {
     )
   }
 
-  const EventForm = ({ isEdit = false }: { isEdit?: boolean }) => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
-          <Label htmlFor={isEdit ? "edit-title" : "title"}>Titulo</Label>
-          <Input
-            id={isEdit ? "edit-title" : "title"}
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            placeholder="Nome do evento"
-          />
-        </div>
-        <div className="col-span-2">
-          <Label htmlFor={isEdit ? "edit-description" : "description"}>Descricao</Label>
-          <Textarea
-            id={isEdit ? "edit-description" : "description"}
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            placeholder="Descricao do evento"
-            rows={3}
-          />
-        </div>
-        <div>
-          <Label htmlFor={isEdit ? "edit-initial_date" : "initial_date"}>Data Inicial</Label>
-          <Input
-            id={isEdit ? "edit-initial_date" : "initial_date"}
-            type="datetime-local"
-            value={formData.initial_date}
-            onChange={(e) => setFormData({ ...formData, initial_date: e.target.value })}
-          />
-        </div>
-        <div>
-          <Label htmlFor={isEdit ? "edit-final_date" : "final_date"}>Data Final (opcional)</Label>
-          <Input
-            id={isEdit ? "edit-final_date" : "final_date"}
-            type="datetime-local"
-            value={formData.final_date}
-            onChange={(e) => setFormData({ ...formData, final_date: e.target.value })}
-          />
-        </div>
-        <div>
-          <Label htmlFor={isEdit ? "edit-recurrence_type" : "recurrence_type"}>Recorrencia</Label>
-          <select
-            id={isEdit ? "edit-recurrence_type" : "recurrence_type"}
-            value={formData.recurrence_type || ""}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                recurrence_type: (e.target.value as "WEEKLY" | "MONTHLY") || undefined,
-              })
-            }
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            <option value="">Sem recorrencia</option>
-            <option value="WEEKLY">Semanal</option>
-            <option value="MONTHLY">Mensal</option>
-          </select>
-        </div>
-        <div>
-          <Label htmlFor={isEdit ? "edit-image" : "image"}>URL da Imagem (opcional)</Label>
-          <Input
-            id={isEdit ? "edit-image" : "image"}
-            value={formData.image}
-            onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-            placeholder="https://exemplo.com/imagem.jpg"
-          />
-        </div>
-      </div>
-
-      <div>
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <MapPin className="h-5 w-5" />
-          Endereco do Evento
-        </h3>
-        <AddressForm
-          value={formData.address as AddressFormData}
-          onChange={(address) => setFormData({ ...formData, address })}
-          idPrefix={isEdit ? "edit-" : ""}
-          showUseChurchAddress={true}
-          onUseChurchAddress={handleUseChurchAddress}
-        />
-      </div>
-    </div>
-  )
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Gerenciar Eventos</h1>
           <p className="text-muted-foreground">Organize e gerencie os eventos da igreja</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Criar Evento
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Criar Novo Evento</DialogTitle>
-              <DialogDescription>Preencha os dados do evento</DialogDescription>
-            </DialogHeader>
-            <EventForm />
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleAddEvent} disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Criando..." : "Criar Evento"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={handleOpenAdd}>
+          <Plus className="mr-2 h-4 w-4" />
+          Criar Evento
+        </Button>
       </div>
 
+      {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -459,7 +422,6 @@ export function EventsManagement() {
             <p className="text-xs text-muted-foreground">Eventos cadastrados</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Eventos Recorrentes</CardTitle>
@@ -474,6 +436,7 @@ export function EventsManagement() {
         </Card>
       </div>
 
+      {/* Tabs */}
       <Tabs defaultValue="calendar" className="space-y-4">
         <TabsList>
           <TabsTrigger value="calendar" className="flex items-center gap-2">
@@ -486,6 +449,7 @@ export function EventsManagement() {
           </TabsTrigger>
         </TabsList>
 
+        {/* Calendar tab */}
         <TabsContent value="calendar" className="space-y-4">
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
@@ -557,7 +521,7 @@ export function EventsManagement() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleDeleteEvent(event.id)}
+                              onClick={() => setDeletingEvent(event)}
                               className="text-destructive"
                             >
                               <Trash2 className="h-3 w-3 mr-1" />
@@ -578,6 +542,7 @@ export function EventsManagement() {
           </div>
         </TabsContent>
 
+        {/* List tab */}
         <TabsContent value="list" className="space-y-4">
           <Card>
             <CardHeader>
@@ -598,7 +563,6 @@ export function EventsManagement() {
                   className="max-w-sm"
                 />
               </div>
-
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -613,20 +577,24 @@ export function EventsManagement() {
                   {filteredEvents.map((event) => (
                     <TableRow key={event.id}>
                       <TableCell>
-                        <div>
-                          <p className="font-medium">{event.title}</p>
-                          <p className="text-sm text-muted-foreground truncate max-w-xs">
-                            {event.description}
-                          </p>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>
+                              {event.title.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{event.title}</p>
+                            <p className="text-sm text-muted-foreground truncate max-w-xs">{event.description}</p>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>{formatDate(event.initial_date)}</TableCell>
-                      <TableCell>
-                        {event.final_date ? formatDate(event.final_date) : "-"}
-                      </TableCell>
+                      <TableCell>{event.final_date ? formatDate(event.final_date) : "-"}</TableCell>
                       <TableCell>{getRecurrenceBadge(event.recurrence_type) || "-"}</TableCell>
                       <TableCell>
-                        <DropdownMenu>
+                        {/* modal={false} prevents DropdownMenu from blocking AlertDialog overlay */}
+                        <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">
                               <MoreHorizontal className="h-4 w-4" />
@@ -638,7 +606,7 @@ export function EventsManagement() {
                               Editar
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleDeleteEvent(event.id)}
+                              onClick={() => setDeletingEvent(event)}
                               className="text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
@@ -656,24 +624,83 @@ export function EventsManagement() {
         </TabsContent>
       </Tabs>
 
-      {/* Edit Event Dialog */}
-      <Dialog open={!!editingEvent} onOpenChange={() => setEditingEvent(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Editar Evento</DialogTitle>
-            <DialogDescription>Atualize os dados do evento</DialogDescription>
-          </DialogHeader>
-          <EventForm isEdit />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingEvent(null)}>
+      {/* Create drawer */}
+      <Drawer open={isAddSheetOpen} onOpenChange={setIsAddSheetOpen}>
+        <DrawerContent className="flex flex-col max-h-[90vh]">
+          <DrawerHeader className="text-left px-6">
+            <DrawerTitle>Criar Novo Evento</DrawerTitle>
+            <DrawerDescription>Preencha os dados do evento</DrawerDescription>
+          </DrawerHeader>
+          <div className="flex-1 overflow-y-auto px-6 pb-2">
+            <EventForm
+              formData={formData}
+              onChange={setFormData}
+              onUseChurchAddress={handleUseChurchAddress}
+              idPrefix="add-"
+            />
+          </div>
+          <DrawerFooter className="flex-row justify-end gap-2 px-6">
+            <Button variant="outline" onClick={() => setIsAddSheetOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleAddEvent} disabled={createMutation.isPending}>
+              {createMutation.isPending ? "Criando..." : "Criar Evento"}
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Edit drawer */}
+      <Drawer open={!!editingEvent} onOpenChange={(open) => { if (!open) { setEditingEvent(null); resetForm() } }}>
+        <DrawerContent className="flex flex-col max-h-[90vh]">
+          <DrawerHeader className="text-left px-6">
+            <DrawerTitle>Editar Evento</DrawerTitle>
+            <DrawerDescription>Atualize os dados do evento</DrawerDescription>
+          </DrawerHeader>
+          <div className="flex-1 overflow-y-auto px-6 pb-2">
+            <EventForm
+              formData={formData}
+              onChange={setFormData}
+              onUseChurchAddress={handleUseChurchAddress}
+              idPrefix="edit-"
+            />
+          </div>
+          <DrawerFooter className="flex-row justify-end gap-2 px-6">
+            <Button variant="outline" onClick={() => { setEditingEvent(null); resetForm() }}>
               Cancelar
             </Button>
             <Button onClick={handleUpdateEvent} disabled={updateMutation.isPending}>
               {updateMutation.isPending ? "Salvando..." : "Salvar"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Delete confirmation */}
+      <AlertDialog
+        open={!!deletingEvent}
+        onOpenChange={(open) => { if (!open) setDeletingEvent(null) }}
+      >
+        <AlertDialogContent onCloseAutoFocus={(e) => e.preventDefault()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza que deseja excluir este evento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acao nao pode ser desfeita. O evento
+              {deletingEvent ? ` "${deletingEvent.title}"` : ""} sera removido permanentemente do sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteEvent}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
