@@ -29,16 +29,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
+import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -217,6 +209,7 @@ export function SectorsManagement() {
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Nome</TableHead>
+                  <TableHead>Área</TableHead>
                   <TableHead>Criado em</TableHead>
                   <TableHead className="w-[70px]">Acoes</TableHead>
                 </TableRow>
@@ -226,6 +219,11 @@ export function SectorsManagement() {
                   <TableRow key={sector.id}>
                     <TableCell className="font-medium">{sector.id}</TableCell>
                     <TableCell>{sector.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {sector.area_id != null ? `Área ${sector.area_id}` : "—"}
+                      </Badge>
+                    </TableCell>
                     <TableCell>
                       {format(new Date(sector.created_at), "dd/MM/yyyy")}
                     </TableCell>
@@ -297,38 +295,13 @@ export function SectorsManagement() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog
+      <ConfirmDeleteDialog
         open={deletingSectorId !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeletingSectorId(null)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Tem certeza que deseja excluir este setor?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acao nao pode ser desfeita. O setor sera removido
-              permanentemente do sistema.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (deletingSectorId !== null) {
-                  handleDelete(deletingSectorId)
-                }
-              }}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onOpenChange={(open) => { if (!open) setDeletingSectorId(null) }}
+        entityName="este setor"
+        onConfirm={() => { if (deletingSectorId !== null) handleDelete(deletingSectorId) }}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   )
 }
