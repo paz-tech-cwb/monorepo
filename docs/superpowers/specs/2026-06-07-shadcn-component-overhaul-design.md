@@ -55,6 +55,7 @@ These replace all inline Dialog/AlertDialog boilerplate across the 13 management
 | `phone-input`, `address-form` | Member registration form |
 | `popover` | Used internally by date pickers (no change needed) |
 | `dialog` | Simple 1–2 field forms (Areas, Sectors, Course Tracks, Member Journey notification) |
+| `wip-overlay` | Already in use in Life Groups and Conversions — no change needed |
 
 ### New strategic placements
 
@@ -82,7 +83,7 @@ These replace all inline Dialog/AlertDialog boilerplate across the 13 management
 | Courses | title, description, creator, hours, category, url, image_url | Switch for published; Badge for category in table; Separator between basic info and media |
 | Events | Already uses Drawer ✅ | Add Badge for status; Switch for highlight; Avatar for organizer |
 | Life Groups | name, leader, sector, meeting day/time, address | Avatar for leader in Drawer header; Badge for sector in table; Separator |
-| Members | Full registration (name, phone, address, LG, role…) | Drawer for create; Sheet kept for journey panel; Tabs on page (Lista / Jornada); Avatar in table; Badge for role; Collapsible for filters; Checkbox for bulk select |
+| Members | Full registration (name, phone, address, LG, role…) | Drawer for create; Sheet kept for journey panel; Tabs on page to filter by role (Todos / Líderes / Membros); Avatar in table; Badge for role; Collapsible for advanced filters; Checkbox for bulk select |
 | Users | name, email, role, member link | Avatar in table and Drawer; Badge for role; Switch for active; Separator |
 
 ### Dialog (simple, 1–2 fields)
