@@ -7,27 +7,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Switch } from "@/components/ui/switch"
+import { Separator } from "@/components/ui/separator"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { FormDrawer } from "@/components/ui/form-drawer"
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { Search, Plus, MoreHorizontal, Edit, Trash2 } from "lucide-react"
 import { useUsers, useCreateUser, useUpdateUser, useUpdateUserRole, useDeleteUser } from "@/lib/hooks/use-users"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
@@ -161,64 +154,10 @@ export function UsersManagement() {
               <CardTitle>Lista de Usuarios</CardTitle>
               <CardDescription>{filteredUsers.length} usuario(s) encontrado(s)</CardDescription>
             </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Adicionar Usuario
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Adicionar Novo Usuario</DialogTitle>
-                  <DialogDescription>Preencha os dados do novo usuario</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Nome</Label>
-                    <Input
-                      id="name"
-                      value={newUser.name}
-                      onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                      placeholder="Nome completo"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={newUser.email}
-                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                      placeholder="email@exemplo.com"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="role">Funcao</Label>
-                    <WipOverlay>
-                      <select
-                        id="role"
-                        value={newUser.role}
-                        onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
-                        className="w-full p-2 border border-input rounded-md bg-background"
-                      >
-                        {ROLE_OPTIONS.map((opt) => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                      </select>
-                    </WipOverlay>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleAddUser} disabled={createMutation.isPending}>
-                    {createMutation.isPending ? "Adicionando..." : "Adicionar"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar Usuario
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -253,7 +192,16 @@ export function UsersManagement() {
               <TableBody>
                 {filteredUsers.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>
+                            {user.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{user.name}</span>
+                      </div>
+                    </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{getRoleBadge(user.role)}</TableCell>
                     <TableCell>{getStatusBadge(user.status)}</TableCell>
@@ -285,90 +233,112 @@ export function UsersManagement() {
         </CardContent>
       </Card>
 
-      {/* Edit User Dialog */}
-      <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Usuario</DialogTitle>
-            <DialogDescription>Atualize os dados do usuario</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-name">Nome</Label>
-              <Input
-                id="edit-name"
-                value={newUser.name}
-                onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                placeholder="Nome completo"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-email">Email</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                value={newUser.email}
-                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                placeholder="email@exemplo.com"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-role">Funcao</Label>
-              <WipOverlay>
-                <select
-                  id="edit-role"
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
-                  className="w-full p-2 border border-input rounded-md bg-background"
-                >
-                  {ROLE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </WipOverlay>
-            </div>
+      {/* Add User Drawer */}
+      <FormDrawer
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        title="Adicionar Novo Usuario"
+        description="Preencha os dados do novo usuario"
+        isLoading={createMutation.isPending}
+        onSubmit={handleAddUser}
+        submitLabel="Adicionar"
+      >
+        <div className="grid gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="user-name">Nome</Label>
+            <Input
+              id="user-name"
+              value={newUser.name}
+              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+              placeholder="Nome completo"
+            />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingUser(null)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleUpdateUser} disabled={isSaving}>
-              {isSaving ? "Salvando..." : "Salvar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="space-y-1.5">
+            <Label htmlFor="user-email">E-mail</Label>
+            <Input
+              id="user-email"
+              type="email"
+              value={newUser.email}
+              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              placeholder="email@exemplo.com"
+            />
+          </div>
+          <Separator />
+          <div className="space-y-1.5">
+            <Label htmlFor="user-role">Funcao</Label>
+            <WipOverlay>
+              <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v as UserRole })}>
+                <SelectTrigger id="user-role">
+                  <SelectValue placeholder="Selecione uma funcao" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </WipOverlay>
+          </div>
+        </div>
+      </FormDrawer>
+
+      {/* Edit User Drawer */}
+      <FormDrawer
+        open={!!editingUser}
+        onOpenChange={(open) => { if (!open) { setEditingUser(null); resetForm() } }}
+        title="Editar Usuario"
+        description="Atualize os dados do usuario"
+        isLoading={isSaving}
+        onSubmit={handleUpdateUser}
+        submitLabel="Salvar"
+      >
+        <div className="grid gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-name">Nome</Label>
+            <Input
+              id="edit-name"
+              value={newUser.name}
+              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+              placeholder="Nome completo"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-email">E-mail</Label>
+            <Input
+              id="edit-email"
+              type="email"
+              value={newUser.email}
+              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              placeholder="email@exemplo.com"
+            />
+          </div>
+          <Separator />
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-role">Funcao</Label>
+            <WipOverlay>
+              <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v as UserRole })}>
+                <SelectTrigger id="edit-role">
+                  <SelectValue placeholder="Selecione uma funcao" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </WipOverlay>
+          </div>
+        </div>
+      </FormDrawer>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog
+      <ConfirmDeleteDialog
         open={deletingUserId !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeletingUserId(null)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza que deseja excluir este usuario?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acao nao pode ser desfeita. O usuario sera removido permanentemente do sistema.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (deletingUserId !== null) {
-                  handleDeleteUser(deletingUserId)
-                }
-              }}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onOpenChange={(open) => { if (!open) setDeletingUserId(null) }}
+        entityName="este usuario"
+        onConfirm={() => { if (deletingUserId !== null) handleDeleteUser(deletingUserId) }}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   )
 }
