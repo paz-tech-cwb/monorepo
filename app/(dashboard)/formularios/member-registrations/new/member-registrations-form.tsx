@@ -6,6 +6,7 @@ import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import { PhoneInput } from "@/components/ui/phone-input"
 import { DateInput } from "@/components/ui/date-input"
 import {
@@ -309,20 +310,21 @@ export function MemberRegistrationsForm({ defaultValues }: { defaultValues?: Par
           <h3 className="font-medium pt-2 mb-2">Cursos concluídos</h3>
           <div className="flex flex-wrap gap-3">
             {courses.map((c) => (
-              <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  value={c.id}
+              <div key={c.id} className="flex items-center gap-2">
+                <Checkbox
+                  id={`course-${c.id}`}
                   checked={completedCourses.includes(c.id)}
-                  onChange={(e) => {
-                    const next = e.target.checked
+                  onCheckedChange={(checked) => {
+                    const next = checked
                       ? [...completedCourses, c.id]
                       : completedCourses.filter((id) => id !== c.id)
                     setValue("completed_courses", next)
                   }}
                 />
-                {c.name}
-              </label>
+                <Label htmlFor={`course-${c.id}`} className="font-normal cursor-pointer">
+                  {c.name}
+                </Label>
+              </div>
             ))}
           </div>
         </div>
