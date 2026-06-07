@@ -7,20 +7,29 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
+import { Separator } from "@/components/ui/separator"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { FormDrawer } from "@/components/ui/form-drawer"
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { Search, Plus, MoreHorizontal, Edit, Trash2, BookOpen, Clock, Link as LinkIcon, Image, Loader2 } from "lucide-react"
 import { useCourses, useCourseStats, useCreateCourse, useUpdateCourse, useDeleteCourse } from "@/lib/hooks/use-courses"
 import type { Course, CourseCategory, CreateCourseRequest, UpdateCourseRequest } from "@/lib/api/types/courses"
+
+const CATEGORY_LABELS: Record<string, string> = {
+  teologia: "Teologia",
+  lideranca: "Liderança",
+  ministerio: "Ministério",
+  discipulado: "Discipulado",
+}
 
 export function CoursesManagement() {
   const { data: courses = [], isLoading, error } = useCourses()
@@ -32,6 +41,7 @@ export function CoursesManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
+  const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -40,6 +50,7 @@ export function CoursesManagement() {
     category: "teologia" as CourseCategory,
     url: "",
     image_url: "",
+    is_published: false,
   })
 
   const filteredCourses = courses.filter(
@@ -58,6 +69,7 @@ export function CoursesManagement() {
       category: "teologia",
       url: "",
       image_url: "",
+      is_published: false,
     })
   }
 
@@ -92,6 +104,7 @@ export function CoursesManagement() {
       category: course.category,
       url: course.url || "",
       image_url: course.image_url || "",
+      is_published: false,
     })
   }
 
@@ -120,22 +133,10 @@ export function CoursesManagement() {
   const handleDeleteCourse = async (courseId: string) => {
     try {
       await deleteCourseMutation.mutateAsync(courseId)
+      setDeletingCourseId(null)
     } catch (err) {
       console.error("Failed to delete course:", err)
     }
-  }
-
-  const getCategoryBadge = (category: string) => {
-    const variants = {
-      teologia: { variant: "default" as const, text: "Teologia" },
-      lideranca: { variant: "secondary" as const, text: "Lideranca" },
-      ministerio: { variant: "outline" as const, text: "Ministerio" },
-      discipulado: { variant: "destructive" as const, text: "Discipulado" },
-    }
-
-    const config = variants[category as keyof typeof variants]
-    if (!config) return <Badge variant="outline">{category}</Badge>
-    return <Badge variant={config.variant}>{config.text}</Badge>
   }
 
   const getStatusBadge = (status: string) => {
@@ -150,76 +151,89 @@ export function CoursesManagement() {
     return <Badge variant={config.variant}>{config.text}</Badge>
   }
 
-  const CourseForm = ({ isEdit = false }: { isEdit?: boolean }) => (
-    <div className="grid grid-cols-2 gap-4">
-      <div className="col-span-2">
-        <Label htmlFor={isEdit ? "edit-title" : "title"}>Titulo do Curso</Label>
+  const CourseFormFields = () => (
+    <div className="grid gap-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="course-title">Título</Label>
         <Input
-          id={isEdit ? "edit-title" : "title"}
+          id="course-title"
           value={formData.title}
           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          placeholder="Nome do curso"
+          placeholder="Título do curso"
         />
       </div>
-      <div className="col-span-2">
-        <Label htmlFor={isEdit ? "edit-description" : "description"}>Descricao</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="course-description">Descrição</Label>
         <Textarea
-          id={isEdit ? "edit-description" : "description"}
+          id="course-description"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Descricao do curso"
-          rows={3}
+          placeholder="Descrição do curso"
         />
       </div>
-      <div>
-        <Label htmlFor={isEdit ? "edit-creator" : "creator"}>Criador</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="course-creator">Criador</Label>
         <Input
-          id={isEdit ? "edit-creator" : "creator"}
+          id="course-creator"
           value={formData.creator}
           onChange={(e) => setFormData({ ...formData, creator: e.target.value })}
           placeholder="Nome do criador"
         />
       </div>
-      <div>
-        <Label htmlFor={isEdit ? "edit-estimated_hours" : "estimated_hours"}>Horas Estimadas</Label>
-        <Input
-          id={isEdit ? "edit-estimated_hours" : "estimated_hours"}
-          type="number"
-          value={formData.estimated_hours}
-          onChange={(e) => setFormData({ ...formData, estimated_hours: Number.parseInt(e.target.value) || 0 })}
-          placeholder="16"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="course-hours">Horas estimadas</Label>
+          <Input
+            id="course-hours"
+            type="number"
+            value={formData.estimated_hours}
+            onChange={(e) => setFormData({ ...formData, estimated_hours: Number(e.target.value) })}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="course-category">Categoria</Label>
+          <Select
+            value={formData.category}
+            onValueChange={(v) => setFormData({ ...formData, category: v as CourseCategory })}
+          >
+            <SelectTrigger id="course-category">
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="teologia">Teologia</SelectItem>
+              <SelectItem value="lideranca">Liderança</SelectItem>
+              <SelectItem value="ministerio">Ministério</SelectItem>
+              <SelectItem value="discipulado">Discipulado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      <div>
-        <Label htmlFor={isEdit ? "edit-category" : "category"}>Categoria</Label>
-        <select
-          id={isEdit ? "edit-category" : "category"}
-          value={formData.category}
-          onChange={(e) => setFormData({ ...formData, category: e.target.value as CourseCategory })}
-          className="w-full p-2 border border-input rounded-md bg-background"
-        >
-          <option value="teologia">Teologia</option>
-          <option value="lideranca">Lideranca</option>
-          <option value="ministerio">Ministerio</option>
-          <option value="discipulado">Discipulado</option>
-        </select>
-      </div>
-      <div>
-        <Label htmlFor={isEdit ? "edit-url" : "url"}>URL do Curso</Label>
+      <Separator />
+      <div className="space-y-1.5">
+        <Label htmlFor="course-url">URL do curso (opcional)</Label>
         <Input
-          id={isEdit ? "edit-url" : "url"}
+          id="course-url"
           value={formData.url}
           onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-          placeholder="https://exemplo.com/curso"
+          placeholder="https://..."
         />
       </div>
-      <div className="col-span-2">
-        <Label htmlFor={isEdit ? "edit-image_url" : "image_url"}>URL da Imagem (Capa)</Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="course-image_url">URL da imagem (opcional)</Label>
         <Input
-          id={isEdit ? "edit-image_url" : "image_url"}
+          id="course-image_url"
           value={formData.image_url}
           onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-          placeholder="https://exemplo.com/imagem.jpg"
+          placeholder="https://..."
+        />
+      </div>
+      <Separator />
+      <div className="flex items-center justify-between">
+        <Label htmlFor="course-published">Publicado</Label>
+        <Switch
+          id="course-published"
+          checked={formData.is_published}
+          onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
         />
       </div>
     </div>
@@ -301,30 +315,10 @@ export function CoursesManagement() {
               <CardTitle>Lista de Cursos</CardTitle>
               <CardDescription>{filteredCourses.length} curso(s) encontrado(s)</CardDescription>
             </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Criar Curso
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Criar Novo Curso</DialogTitle>
-                  <DialogDescription>Preencha os dados do novo curso</DialogDescription>
-                </DialogHeader>
-                <CourseForm />
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleAddCourse} disabled={createCourseMutation.isPending}>
-                    {createCourseMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Criar Curso
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Criar Curso
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -368,7 +362,11 @@ export function CoursesManagement() {
                     </div>
                   </TableCell>
                   <TableCell>{course.creator}</TableCell>
-                  <TableCell>{getCategoryBadge(course.category)}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {CATEGORY_LABELS[course.category] ?? course.category}
+                    </Badge>
+                  </TableCell>
                   <TableCell>{course.estimated_hours}h</TableCell>
                   <TableCell>{getStatusBadge(course.status)}</TableCell>
                   <TableCell>
@@ -384,9 +382,8 @@ export function CoursesManagement() {
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleDeleteCourse(course.id)}
+                          onClick={() => setDeletingCourseId(course.id)}
                           className="text-destructive"
-                          disabled={deleteCourseMutation.isPending}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Excluir
@@ -401,25 +398,46 @@ export function CoursesManagement() {
         </CardContent>
       </Card>
 
-      {/* Edit Course Dialog */}
-      <Dialog open={!!editingCourse} onOpenChange={() => setEditingCourse(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Editar Curso</DialogTitle>
-            <DialogDescription>Atualize os dados do curso</DialogDescription>
-          </DialogHeader>
-          <CourseForm isEdit />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingCourse(null)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleUpdateCourse} disabled={updateCourseMutation.isPending}>
-              {updateCourseMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Salvar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <FormDrawer
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        title="Criar Novo Curso"
+        description="Preencha os dados do curso"
+        isLoading={createCourseMutation.isPending}
+        onSubmit={handleAddCourse}
+        submitLabel="Criar Curso"
+      >
+        <CourseFormFields />
+      </FormDrawer>
+
+      <FormDrawer
+        open={!!editingCourse}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingCourse(null)
+            resetForm()
+          }
+        }}
+        title="Editar Curso"
+        description="Atualize os dados do curso"
+        isLoading={updateCourseMutation.isPending}
+        onSubmit={handleUpdateCourse}
+        submitLabel="Salvar"
+      >
+        <CourseFormFields />
+      </FormDrawer>
+
+      <ConfirmDeleteDialog
+        open={deletingCourseId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingCourseId(null)
+        }}
+        entityName="este curso"
+        onConfirm={() => {
+          if (deletingCourseId !== null) handleDeleteCourse(deletingCourseId)
+        }}
+        isLoading={deleteCourseMutation.isPending}
+      />
     </div>
   )
 }
