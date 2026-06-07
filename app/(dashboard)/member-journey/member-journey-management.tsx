@@ -228,23 +228,21 @@ export function MemberJourneyManagement() {
               const count = stat?.count ?? 0
               const isActive = activeStageFilter === stage.id
               return (
-                <button
+                <Button
                   key={stage.id}
+                  variant={isActive ? "default" : "outline"}
+                  size="sm"
                   onClick={() => {
                     setActiveStageFilter(isActive ? undefined : (stage.id as JourneyStageId))
                     setPage(1)
                   }}
-                  className={`rounded-lg border p-3 text-left transition-all hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-ring ${
-                    isActive
-                      ? "border-primary bg-primary/5 ring-1 ring-primary"
-                      : "border-border bg-card"
-                  }`}
+                  className="h-auto w-full flex-col items-start p-3 text-left"
                 >
-                  <p className="text-xs font-medium text-muted-foreground truncate">
+                  <p className="text-xs font-medium truncate w-full">
                     {stage.label}
                   </p>
                   <p className="text-2xl font-bold mt-1">{count}</p>
-                </button>
+                </Button>
               )
             })}
       </div>
