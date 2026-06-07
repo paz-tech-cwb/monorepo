@@ -7,20 +7,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { FormDrawer } from "@/components/ui/form-drawer"
 import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, MapPin } from "lucide-react"
 import { useAgenda, useCreateAgendaEvent } from "@/lib/hooks/use-agenda"
 import type { AgendaEvent, RecurrenceType } from "@/lib/api/types"
+
+const RECURRENCE_LABELS: Record<string, string> = {
+  WEEKLY: "Semanal",
+  MONTHLY: "Mensal",
+}
 
 export function CalendarManagement() {
   const { data: events = [], isLoading } = useAgenda()
@@ -80,8 +84,11 @@ export function CalendarManagement() {
 
   const getRecurrenceBadge = (type?: RecurrenceType | null) => {
     if (!type) return null
-    const labels: Record<RecurrenceType, string> = { WEEKLY: "Semanal", MONTHLY: "Mensal" }
-    return <Badge variant="outline" className="text-xs">{labels[type]}</Badge>
+    return (
+      <Badge variant="secondary" className="text-xs">
+        {RECURRENCE_LABELS[type] ?? type}
+      </Badge>
+    )
   }
 
   const navigateMonth = (direction: "prev" | "next") => {
@@ -148,90 +155,88 @@ export function CalendarManagement() {
           <h1 className="text-3xl font-bold text-foreground">Gerenciar Calendario</h1>
           <p className="text-muted-foreground">Visualize e gerencie os eventos da igreja</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Evento
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Criar Novo Evento</DialogTitle>
-              <DialogDescription>Adicione um evento ao calendario</DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <Label htmlFor="title">Titulo</Label>
-                <Input
-                  id="title"
-                  value={newEvent.title}
-                  onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                  placeholder="Nome do evento"
-                />
-              </div>
-              <div className="col-span-2">
-                <Label htmlFor="description">Descricao</Label>
-                <Textarea
-                  id="description"
-                  value={newEvent.description}
-                  onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                  placeholder="Descricao do evento"
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="initial_date">Data de Inicio</Label>
-                <Input
-                  id="initial_date"
-                  type="date"
-                  value={newEvent.initial_date}
-                  onChange={(e) => setNewEvent({ ...newEvent, initial_date: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="initial_time">Horario</Label>
-                <Input
-                  id="initial_time"
-                  type="time"
-                  value={newEvent.initial_time}
-                  onChange={(e) => setNewEvent({ ...newEvent, initial_time: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="final_date">Data de Termino</Label>
-                <Input
-                  id="final_date"
-                  type="date"
-                  value={newEvent.final_date}
-                  onChange={(e) => setNewEvent({ ...newEvent, final_date: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="recurrence_type">Recorrencia</Label>
-                <select
-                  id="recurrence_type"
-                  value={newEvent.recurrence_type}
-                  onChange={(e) => setNewEvent({ ...newEvent, recurrence_type: e.target.value as RecurrenceType | "" })}
-                  className="w-full p-2 border border-input rounded-md bg-background"
-                >
-                  <option value="">Sem recorrencia</option>
-                  <option value="WEEKLY">Semanal</option>
-                  <option value="MONTHLY">Mensal</option>
-                </select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleAddEvent} disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Criando..." : "Criar Evento"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setIsAddDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo Evento
+        </Button>
       </div>
+
+      <FormDrawer
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        title="Criar Novo Evento"
+        description="Adicione um evento ao calendario"
+        isLoading={createMutation.isPending}
+        onSubmit={handleAddEvent}
+        submitLabel="Criar Evento"
+      >
+        <div className="grid gap-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="cal-title">Titulo</Label>
+            <Input
+              id="cal-title"
+              value={newEvent.title}
+              onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+              placeholder="Nome do evento"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="cal-description">Descricao</Label>
+            <Textarea
+              id="cal-description"
+              value={newEvent.description}
+              onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+              placeholder="Descricao do evento"
+              rows={3}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="cal-initial_date">Data de Inicio</Label>
+            <Input
+              id="cal-initial_date"
+              type="date"
+              value={newEvent.initial_date}
+              onChange={(e) => setNewEvent({ ...newEvent, initial_date: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="cal-initial_time">Horario</Label>
+            <Input
+              id="cal-initial_time"
+              type="time"
+              value={newEvent.initial_time}
+              onChange={(e) => setNewEvent({ ...newEvent, initial_time: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="cal-final_date">Data de Termino</Label>
+            <Input
+              id="cal-final_date"
+              type="date"
+              value={newEvent.final_date}
+              onChange={(e) => setNewEvent({ ...newEvent, final_date: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="cal-recurrence">Recorrencia</Label>
+            <Select
+              value={newEvent.recurrence_type || ""}
+              onValueChange={(v) =>
+                setNewEvent({ ...newEvent, recurrence_type: v as RecurrenceType | "" })
+              }
+            >
+              <SelectTrigger id="cal-recurrence">
+                <SelectValue placeholder="Sem recorrencia" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Sem recorrencia</SelectItem>
+                <SelectItem value="WEEKLY">Semanal</SelectItem>
+                <SelectItem value="MONTHLY">Mensal</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </FormDrawer>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
