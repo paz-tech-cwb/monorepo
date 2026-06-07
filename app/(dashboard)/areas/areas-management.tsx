@@ -29,16 +29,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
+import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -224,7 +216,7 @@ export function AreasManagement() {
               <TableBody>
                 {filteredAreas.map((area) => (
                   <TableRow key={area.id}>
-                    <TableCell className="font-medium">{area.id}</TableCell>
+                    <TableCell className="font-medium"><Badge variant="outline">#{area.id}</Badge></TableCell>
                     <TableCell>{area.name}</TableCell>
                     <TableCell>
                       {format(new Date(area.created_at), "dd/MM/yyyy")}
@@ -294,38 +286,13 @@ export function AreasManagement() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog
+      <ConfirmDeleteDialog
         open={deletingAreaId !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeletingAreaId(null)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Tem certeza que deseja excluir esta area?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acao nao pode ser desfeita. A area sera removida
-              permanentemente do sistema.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (deletingAreaId !== null) {
-                  handleDelete(deletingAreaId)
-                }
-              }}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onOpenChange={(open) => { if (!open) setDeletingAreaId(null) }}
+        entityName="esta área"
+        onConfirm={() => { if (deletingAreaId !== null) handleDelete(deletingAreaId) }}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   )
 }
