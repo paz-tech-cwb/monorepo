@@ -21,15 +21,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Dialog,
   DialogContent,
@@ -38,13 +35,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import { FormDrawer } from "@/components/ui/form-drawer"
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import {
   Search,
   MoreHorizontal,
@@ -57,6 +57,7 @@ import {
   Plus,
   Pencil,
   Trash2,
+  Filter,
 } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -189,8 +190,10 @@ export function LifeGroupsManagement() {
 
   // Group list state
   const [searchTerm, setSearchTerm] = useState("")
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [sectorFilter, setSectorFilter] = useState("")
 
-  // Create / Edit dialog state
+  // Create / Edit drawer state
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingGroup, setEditingGroup] = useState<LifeGroup | null>(null)
   const [form, setForm] = useState<LifeGroupFormData>(EMPTY_FORM)
@@ -216,9 +219,19 @@ export function LifeGroupsManagement() {
     ? Math.round(lifeGroups.reduce((s, g) => s + g.member_count, 0) / totalGroups)
     : 0
 
-  const filteredGroups = lifeGroups.filter((g) =>
-    g.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // Sector lookup map
+  const sectorMap = useMemo(
+    () => new Map(sectors.map((s) => [s.id, s.name])),
+    [sectors]
   )
+
+  const filteredGroups = lifeGroups.filter((g) => {
+    const matchesSearch = g.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSector = sectorFilter
+      ? (g.sector_id != null && sectorMap.get(g.sector_id)?.toLowerCase().includes(sectorFilter.toLowerCase()))
+      : true
+    return matchesSearch && matchesSector
+  })
 
   // ----- members dialog ------------------------------------------------------
 
@@ -418,20 +431,40 @@ export function LifeGroupsManagement() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center space-x-2 mb-4">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar grupos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center space-x-2 flex-1">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar grupos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+            <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filtros avançados
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-3 grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Setor</Label>
+                  <Input
+                    placeholder="Filtrar por setor"
+                    value={sectorFilter}
+                    onChange={(e) => setSectorFilter(e.target.value)}
+                  />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           {filteredGroups.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              {searchTerm
-                ? `Nenhum grupo encontrado para "${searchTerm}"`
+              {searchTerm || sectorFilter
+                ? `Nenhum grupo encontrado para os filtros aplicados`
                 : "Nenhum grupo cadastrado. Crie o primeiro grupo clicando em \"Novo Grupo\"."}
             </div>
           ) : (
@@ -439,7 +472,8 @@ export function LifeGroupsManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Grupo</TableHead>
-                  <TableHead>Local</TableHead>
+                  <TableHead>Líder</TableHead>
+                  <TableHead>Setor</TableHead>
                   <TableHead>Reunião</TableHead>
                   <TableHead>Membros</TableHead>
                   <TableHead className="w-[70px]">Ações</TableHead>
@@ -450,9 +484,22 @@ export function LifeGroupsManagement() {
                   <TableRow key={group.id}>
                     <TableCell>
                       <p className="font-medium">{group.name}</p>
+                      <p className="text-xs text-muted-foreground">{group.location ?? ""}</p>
                     </TableCell>
                     <TableCell>
-                      <p className="text-sm text-muted-foreground">{group.location ?? "—"}</p>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>
+                            {(group.leader_name ?? "G").charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">{group.leader_name ?? "—"}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {group.sector_id != null ? (sectorMap.get(group.sector_id) ?? "—") : "—"}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       {group.meeting_day || group.meeting_time ? (
@@ -508,118 +555,112 @@ export function LifeGroupsManagement() {
         </CardContent>
       </Card>
 
-      {/* Create / Edit Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editingGroup ? "Editar Life Group" : "Novo Life Group"}</DialogTitle>
-            <DialogDescription>
-              {editingGroup
-                ? "Atualize os dados do grupo."
-                : "Preencha os dados do novo grupo. Você poderá adicionar membros em seguida."}
-            </DialogDescription>
-          </DialogHeader>
+      {/* Create / Edit FormDrawer */}
+      <FormDrawer
+        open={isFormOpen}
+        onOpenChange={(open) => {
+          setIsFormOpen(open)
+          if (!open) setEditingGroup(null)
+        }}
+        title={editingGroup ? "Editar Life Group" : "Novo Life Group"}
+        description={
+          editingGroup
+            ? "Atualize os dados do grupo."
+            : "Preencha os dados do novo grupo. Você poderá adicionar membros em seguida."
+        }
+        isLoading={isFormPending}
+        onSubmit={handleFormSubmit}
+        submitLabel={editingGroup ? "Salvar" : "Criar e Adicionar Membros"}
+      >
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <Label htmlFor="lg-name">Nome *</Label>
+            <Input
+              id="lg-name"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder="Ex: Grupo da Quarta"
+            />
+          </div>
 
-          <div className="space-y-4">
+          <div className="space-y-1">
+            <Label htmlFor="lg-location">Local</Label>
+            <Input
+              id="lg-location"
+              value={form.location}
+              onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+              placeholder="Ex: Rua das Flores, 123"
+            />
+          </div>
+
+          <Separator />
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="lg-name">Nome *</Label>
+              <Label>Dia da Reunião</Label>
+              <WipOverlay>
+                <Select
+                  value={form.meeting_day}
+                  onValueChange={(v) => setForm((f) => ({ ...f, meeting_day: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MEETING_DAYS.map((day) => (
+                      <SelectItem key={day} value={day}>{day}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </WipOverlay>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="lg-time">Horário</Label>
               <Input
-                id="lg-name"
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Ex: Grupo da Quarta"
+                id="lg-time"
+                type="time"
+                value={form.meeting_time}
+                onChange={(e) => setForm((f) => ({ ...f, meeting_time: e.target.value }))}
               />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="lg-location">Local</Label>
-              <Input
-                id="lg-location"
-                value={form.location}
-                onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-                placeholder="Ex: Rua das Flores, 123"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label>Dia da Reunião</Label>
-                <WipOverlay>
-                  <Select
-                    value={form.meeting_day}
-                    onValueChange={(v) => setForm((f) => ({ ...f, meeting_day: v }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MEETING_DAYS.map((day) => (
-                        <SelectItem key={day} value={day}>{day}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </WipOverlay>
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="lg-time">Horário</Label>
-                <Input
-                  id="lg-time"
-                  type="time"
-                  value={form.meeting_time}
-                  onChange={(e) => setForm((f) => ({ ...f, meeting_time: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <Label>Líder</Label>
-              <Select
-                value={form.leader_id}
-                onValueChange={(v) => setForm((f) => ({ ...f, leader_id: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um líder..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {allUsers.map((u) => (
-                    <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1">
-              <Label>Setor</Label>
-              <Select
-                value={form.sector_id}
-                onValueChange={(v) => setForm((f) => ({ ...f, sector_id: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um setor..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {sectors.map((s) => (
-                    <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsFormOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleFormSubmit} disabled={!form.name.trim() || isFormPending}>
-              {isFormPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : null}
-              {editingGroup ? "Salvar" : "Criar e Adicionar Membros"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="space-y-1">
+            <Label>Líder</Label>
+            <Select
+              value={form.leader_id}
+              onValueChange={(v) => setForm((f) => ({ ...f, leader_id: v }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um líder..." />
+              </SelectTrigger>
+              <SelectContent>
+                {allUsers.map((u) => (
+                  <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label>Setor</Label>
+            <Select
+              value={form.sector_id}
+              onValueChange={(v) => setForm((f) => ({ ...f, sector_id: v }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um setor..." />
+              </SelectTrigger>
+              <SelectContent>
+                {sectors.map((s) => (
+                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </FormDrawer>
 
       {/* Manage Members Dialog */}
       <Dialog open={isMembersDialogOpen} onOpenChange={(open) => {
@@ -713,30 +754,13 @@ export function LifeGroupsManagement() {
       </Dialog>
 
       {/* Delete Confirmation */}
-      <AlertDialog open={!!deletingGroup} onOpenChange={(open) => !open && setDeletingGroup(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Life Group</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir o grupo &quot;{deletingGroup?.name}&quot;?
-              Esta ação não pode ser desfeita e todos os membros serão removidos do grupo.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => deletingGroup && handleDelete(deletingGroup)}
-              disabled={deleteLifeGroup.isPending}
-            >
-              {deleteLifeGroup.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : null}
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteDialog
+        open={!!deletingGroup}
+        onOpenChange={(open) => { if (!open) setDeletingGroup(null) }}
+        entityName={deletingGroup?.name ?? "este grupo de vida"}
+        onConfirm={() => { if (deletingGroup) handleDelete(deletingGroup) }}
+        isLoading={deleteLifeGroup.isPending}
+      />
     </div>
   )
 }
