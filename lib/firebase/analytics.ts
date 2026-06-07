@@ -34,6 +34,14 @@ export type AnalyticsEventName =
   | "life_group_created"
   | "life_group_updated"
   | "life_group_deleted"
+  | "area_created"
+  | "area_updated"
+  | "area_deleted"
+  | "sector_created"
+  | "sector_updated"
+  | "sector_deleted"
+  | "conversion_created"
+  | "conversion_deleted"
   | "api_error"
 
 export interface AnalyticsEventParams {
@@ -69,6 +77,14 @@ export interface AnalyticsEventParams {
   life_group_created: { life_group_id: number }
   life_group_updated: { life_group_id: number }
   life_group_deleted: { life_group_id: number }
+  area_created: { area_id?: number }
+  area_updated: { area_id: number }
+  area_deleted: { area_id: number }
+  sector_created: { sector_id?: number }
+  sector_updated: { sector_id: number }
+  sector_deleted: { sector_id: number }
+  conversion_created: { conversion_id?: number; type?: string }
+  conversion_deleted: { conversion_id: number }
   api_error: { endpoint: string; status: number; message?: string }
 }
 

@@ -208,7 +208,7 @@ export function ChurchDataManagement() {
       bank_name: contribution.bank_name,
       branch_number: contribution.branch_number,
       account_number: contribution.account_number,
-      pix_key: contribution.pix_key,
+      pix_key: contribution.pix_key ?? "",
     })
   }
 
