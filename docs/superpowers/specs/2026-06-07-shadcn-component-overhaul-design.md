@@ -114,7 +114,23 @@ These replace all inline Dialog/AlertDialog boilerplate across the 13 management
 
 ---
 
-## 6. Implementation Order
+## 6. Raw HTML Element Replacements
+
+Several files use raw HTML elements instead of shadcn components. These must be replaced as part of the migration:
+
+| File | Raw element | Replace with |
+|------|-------------|--------------|
+| `calendar/calendar-management.tsx` | `<select>` (event type) | `<Select>` |
+| `courses/courses-management.tsx` | `<select>` (category) | `<Select>` |
+| `users/users-management.tsx` | `<select>` (role ×2) | `<Select>` |
+| `members/members-management.tsx` | `<select>` (sector, LG ×2) | `<Select>` |
+| `events/events-management.tsx` | `<select>` (event type) | `<Select>` |
+| `formularios/multiplications/new` | `<input type="checkbox">` | `<Checkbox>` |
+| `formularios/member-registrations/new` | `<input>` | `<Input>` |
+
+---
+
+## 7. Implementation Order
 
 1. Build `<FormDrawer>` wrapper
 2. Build `<ConfirmDeleteDialog>` wrapper
