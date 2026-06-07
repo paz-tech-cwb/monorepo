@@ -5,6 +5,7 @@ export interface Announcement {
   subtitle: string
   markdown_content: string
   action_url?: string
+  is_active?: boolean
 }
 
 export interface CreateAnnouncementRequest {
@@ -13,6 +14,7 @@ export interface CreateAnnouncementRequest {
   subtitle: string
   markdown_content: string
   action_url?: string
+  is_active?: boolean
 }
 
 export interface UpdateAnnouncementRequest {
@@ -21,4 +23,5 @@ export interface UpdateAnnouncementRequest {
   subtitle?: string
   markdown_content?: string
   action_url?: string
+  is_active?: boolean
 }
