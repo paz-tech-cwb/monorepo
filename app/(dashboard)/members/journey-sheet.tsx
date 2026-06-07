@@ -124,8 +124,10 @@ function StepperItem({
             <div className="mt-2 rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
               <p className="font-medium text-foreground mb-0.5">{STAGE_MESSAGES[stageKey].title}</p>
               <p className="leading-relaxed">{STAGE_MESSAGES[stageKey].message}</p>
-              <button
-                className="mt-1.5 inline-flex items-center gap-1 text-primary hover:underline"
+              <Button
+                variant="link"
+                size="sm"
+                className="mt-1.5 h-auto p-0 text-primary"
                 onClick={() => {
                   navigator.clipboard.writeText(STAGE_MESSAGES[stageKey].message)
                   toast.success("Mensagem copiada!")
@@ -133,7 +135,7 @@ function StepperItem({
               >
                 <Copy className="h-3 w-3" />
                 Copiar mensagem
-              </button>
+              </Button>
             </div>
           </WipOverlay>
         )}
