@@ -6,16 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import { FormDrawer } from "@/components/ui/form-drawer"
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { Search, Plus, MoreHorizontal, Edit, Trash2, DollarSign, Building2, CreditCard } from "lucide-react"
 import {
   useContributions,
@@ -36,6 +36,9 @@ export function ContributionsManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingContribution, setEditingContribution] = useState<Contribution | null>(null)
+  const [deletingContributionId, setDeletingContributionId] = useState<number | null>(null)
+  const [periodTab, setPeriodTab] = useState<"all" | "month" | "year">("all")
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [formData, setFormData] = useState<CreateContributionRequest>({
     bank_name: "",
     branch_number: "",
@@ -46,7 +49,7 @@ export function ContributionsManagement() {
   const filteredContributions = contributions.filter(
     (contribution) =>
       contribution.bank_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contribution.pix_key.toLowerCase().includes(searchTerm.toLowerCase())
+      (contribution.pix_key ?? "").toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const resetForm = () => {
@@ -70,7 +73,7 @@ export function ContributionsManagement() {
       bank_name: contribution.bank_name,
       branch_number: contribution.branch_number,
       account_number: contribution.account_number,
-      pix_key: contribution.pix_key,
+      pix_key: contribution.pix_key ?? "",
     })
   }
 
@@ -87,6 +90,7 @@ export function ContributionsManagement() {
 
   const handleDeleteContribution = async (id: number) => {
     await deleteMutation.mutateAsync(id)
+    setDeletingContributionId(null)
   }
 
   if (isLoading) {
@@ -186,79 +190,52 @@ export function ContributionsManagement() {
               <CardTitle>Lista de Contas</CardTitle>
               <CardDescription>{filteredContributions.length} conta(s) encontrada(s)</CardDescription>
             </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Adicionar Conta
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Adicionar Nova Conta</DialogTitle>
-                  <DialogDescription>Preencha os dados da conta bancaria</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4">
-                  <div>
-                    <Label htmlFor="bank_name">Nome do Banco</Label>
-                    <Input
-                      id="bank_name"
-                      value={formData.bank_name}
-                      onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
-                      placeholder="Ex: Banco do Brasil"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="branch_number">Agencia</Label>
-                      <Input
-                        id="branch_number"
-                        value={formData.branch_number}
-                        onChange={(e) => setFormData({ ...formData, branch_number: e.target.value })}
-                        placeholder="0001"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="account_number">Conta</Label>
-                      <Input
-                        id="account_number"
-                        value={formData.account_number}
-                        onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
-                        placeholder="12345-6"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="pix_key">Chave PIX</Label>
-                    <Input
-                      id="pix_key"
-                      value={formData.pix_key}
-                      onChange={(e) => setFormData({ ...formData, pix_key: e.target.value })}
-                      placeholder="email@exemplo.com ou CPF/CNPJ"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleAddContribution} disabled={createMutation.isPending}>
-                    {createMutation.isPending ? "Adicionando..." : "Adicionar Conta"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar Conta
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center space-x-2 mb-4">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar contas..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
+          <div className="flex flex-col gap-4 mb-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center space-x-2">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar contas..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="max-w-sm"
+                />
+              </div>
+              <Tabs value={periodTab} onValueChange={(v) => setPeriodTab(v as typeof periodTab)}>
+                <TabsList>
+                  <TabsTrigger value="all">Todos</TabsTrigger>
+                  <TabsTrigger value="month">Este mês</TabsTrigger>
+                  <TabsTrigger value="year">Este ano</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
+            <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" size="sm" className="w-fit">
+                  Filtros avançados
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-3">
+                <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg">
+                  <div>
+                    <Label htmlFor="filter-bank">Banco</Label>
+                    <Input id="filter-bank" placeholder="Nome do banco..." />
+                  </div>
+                  <div>
+                    <Label htmlFor="filter-pix">Chave PIX</Label>
+                    <Input id="filter-pix" placeholder="Filtrar por chave PIX..." />
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
           <Table>
@@ -278,7 +255,9 @@ export function ContributionsManagement() {
                   <TableCell>{contribution.branch_number}</TableCell>
                   <TableCell>{contribution.account_number}</TableCell>
                   <TableCell>
-                    <span className="truncate max-w-xs block">{contribution.pix_key}</span>
+                    <Badge variant="secondary">
+                      {contribution.pix_key || "—"}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -293,7 +272,7 @@ export function ContributionsManagement() {
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleDeleteContribution(contribution.id)}
+                          onClick={() => setDeletingContributionId(contribution.id)}
                           className="text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
@@ -309,63 +288,118 @@ export function ContributionsManagement() {
         </CardContent>
       </Card>
 
-      {/* Edit Contribution Dialog */}
-      <Dialog open={!!editingContribution} onOpenChange={() => setEditingContribution(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Conta</DialogTitle>
-            <DialogDescription>Atualize os dados da conta bancaria</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4">
+      {/* Add Contribution Drawer */}
+      <FormDrawer
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        title="Registrar Contribuição"
+        description="Preencha os dados da conta bancaria"
+        isLoading={createMutation.isPending}
+        onSubmit={handleAddContribution}
+        submitLabel="Adicionar Conta"
+      >
+        <div className="grid gap-4">
+          <div>
+            <Label htmlFor="bank_name">Nome do Banco</Label>
+            <Input
+              id="bank_name"
+              value={formData.bank_name}
+              onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
+              placeholder="Ex: Banco do Brasil"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="edit-bank_name">Nome do Banco</Label>
+              <Label htmlFor="branch_number">Agencia</Label>
               <Input
-                id="edit-bank_name"
-                value={formData.bank_name}
-                onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
-                placeholder="Ex: Banco do Brasil"
+                id="branch_number"
+                value={formData.branch_number}
+                onChange={(e) => setFormData({ ...formData, branch_number: e.target.value })}
+                placeholder="0001"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-branch_number">Agencia</Label>
-                <Input
-                  id="edit-branch_number"
-                  value={formData.branch_number}
-                  onChange={(e) => setFormData({ ...formData, branch_number: e.target.value })}
-                  placeholder="0001"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-account_number">Conta</Label>
-                <Input
-                  id="edit-account_number"
-                  value={formData.account_number}
-                  onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
-                  placeholder="12345-6"
-                />
-              </div>
-            </div>
             <div>
-              <Label htmlFor="edit-pix_key">Chave PIX</Label>
+              <Label htmlFor="account_number">Conta</Label>
               <Input
-                id="edit-pix_key"
-                value={formData.pix_key}
-                onChange={(e) => setFormData({ ...formData, pix_key: e.target.value })}
-                placeholder="email@exemplo.com ou CPF/CNPJ"
+                id="account_number"
+                value={formData.account_number}
+                onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
+                placeholder="12345-6"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingContribution(null)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleUpdateContribution} disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? "Salvando..." : "Salvar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div>
+            <Label htmlFor="pix_key">Chave PIX</Label>
+            <Input
+              id="pix_key"
+              value={formData.pix_key}
+              onChange={(e) => setFormData({ ...formData, pix_key: e.target.value })}
+              placeholder="email@exemplo.com ou CPF/CNPJ"
+            />
+          </div>
+        </div>
+      </FormDrawer>
+
+      {/* Edit Contribution Drawer */}
+      <FormDrawer
+        open={!!editingContribution}
+        onOpenChange={(open) => { if (!open) { setEditingContribution(null); resetForm() } }}
+        title="Editar Conta"
+        description="Atualize os dados da conta bancaria"
+        isLoading={updateMutation.isPending}
+        onSubmit={handleUpdateContribution}
+        submitLabel="Salvar"
+      >
+        <div className="grid gap-4">
+          <div>
+            <Label htmlFor="edit-bank_name">Nome do Banco</Label>
+            <Input
+              id="edit-bank_name"
+              value={formData.bank_name}
+              onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
+              placeholder="Ex: Banco do Brasil"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="edit-branch_number">Agencia</Label>
+              <Input
+                id="edit-branch_number"
+                value={formData.branch_number}
+                onChange={(e) => setFormData({ ...formData, branch_number: e.target.value })}
+                placeholder="0001"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-account_number">Conta</Label>
+              <Input
+                id="edit-account_number"
+                value={formData.account_number}
+                onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
+                placeholder="12345-6"
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="edit-pix_key">Chave PIX</Label>
+            <Input
+              id="edit-pix_key"
+              value={formData.pix_key}
+              onChange={(e) => setFormData({ ...formData, pix_key: e.target.value })}
+              placeholder="email@exemplo.com ou CPF/CNPJ"
+            />
+          </div>
+        </div>
+      </FormDrawer>
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDeleteDialog
+        open={deletingContributionId !== null}
+        onOpenChange={(open) => { if (!open) setDeletingContributionId(null) }}
+        entityName="esta contribuição"
+        onConfirm={() => { if (deletingContributionId !== null) handleDeleteContribution(deletingContributionId) }}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   )
 }
