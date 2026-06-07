@@ -4,6 +4,7 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { PhoneInput } from "@/components/ui/phone-input"
@@ -60,6 +61,7 @@ export function MultiplicationsForm({ defaultValues }: { defaultValues?: Partial
     handleSubmit,
     control,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues })
   const create = useCreateFormSubmission<unknown, FormValues>("multiplications")
@@ -327,10 +329,18 @@ export function MultiplicationsForm({ defaultValues }: { defaultValues?: Partial
       <h3 className="font-medium pt-2">Critérios do líder</h3>
       <div className="flex flex-wrap gap-4">
         {CHECKBOXES.map(({ key, label }) => (
-          <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
-            <input type="checkbox" {...register(key as never)} />
-            {label}
-          </label>
+          <div key={key} className="flex items-center">
+            <Checkbox
+              id={key}
+              checked={!!watch(key as never)}
+              onCheckedChange={(checked) =>
+                setValue(key as never, checked as never)
+              }
+            />
+            <Label htmlFor={key} className="ml-2 font-normal">
+              {label}
+            </Label>
+          </div>
         ))}
       </div>
 
