@@ -25,5 +25,4 @@ class AccountViewModel {
         }
         isLoading = false
     }
-
 }

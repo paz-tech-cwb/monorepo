@@ -9,6 +9,7 @@ struct PazChurchApp: App {
 
     @State private var authCoordinator: AuthenticationCoordinator
     @State private var pushService = PushNotificationService.shared
+    @State private var themeManager = AppThemeManager()
 
     init() {
         FirebaseApp.configure()
@@ -20,16 +21,18 @@ struct PazChurchApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if authCoordinator.isLoading {
+                if authCoordinator.isInitializing {
                     SplashView()
                 } else {
                     MainTabView()
                         .environment(authCoordinator)
+                        .environment(themeManager)
                         .onAppear {
                             pushService.requestPermissionAndRegister()
                         }
                 }
             }
+            .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
             // When the user taps a notification and the app is already running,
             // pendingDeepLink is set; views can observe this to navigate.
             .environment(pushService)

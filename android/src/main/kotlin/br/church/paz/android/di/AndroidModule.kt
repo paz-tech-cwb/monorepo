@@ -1,6 +1,5 @@
 package br.church.paz.android.di
 
-import br.church.paz.android.ui.theme.AppThemeManager
 import br.church.paz.android.ui.features.academy.AcademyViewModel
 import br.church.paz.android.ui.features.academy.VideoPlayerViewModel
 import br.church.paz.android.ui.features.account.AccountViewModel
@@ -20,6 +19,7 @@ import br.church.paz.android.ui.features.profile.EditProfileViewModel
 import br.church.paz.android.ui.features.profile.ProfileViewModel
 import br.church.paz.android.ui.features.search.SearchViewModel
 import br.church.paz.android.ui.features.splash.SplashViewModel
+import br.church.paz.android.ui.theme.AppThemeManager
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 

@@ -1,6 +1,7 @@
 package br.church.paz.android.ui.features.meetingreport
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,14 +16,23 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +46,9 @@ import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import org.koin.androidx.compose.koinViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun MeetingReportScreen(
@@ -97,11 +110,10 @@ fun MeetingReportScreen(
                 item { Spacer(Modifier.height(PazSpacing.Sm)) }
 
                 item {
-                    FormField(
+                    DateFormField(
                         label = "Data da Reunião",
                         value = uiState.date,
-                        onValueChange = viewModel::onDateChanged,
-                        placeholder = "DD/MM/YYYY",
+                        onDateSelected = viewModel::onDateChanged,
                         enabled = !uiState.isSubmitting,
                     )
                 }
@@ -183,6 +195,65 @@ fun MeetingReportScreen(
 
                 item { Spacer(Modifier.height(PazSpacing.Xl)) }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DateFormField(
+    label: String,
+    value: String,
+    onDateSelected: (String) -> Unit,
+    enabled: Boolean = true,
+) {
+    var showPicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
+    val formatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
+
+    Column {
+        Text(label, style = MaterialTheme.typography.labelMedium)
+        Spacer(Modifier.height(PazSpacing.Sm))
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = enabled) { showPicker = true },
+            enabled = false,
+            placeholder = { Text("DD/MM/YYYY") },
+            trailingIcon = {
+                Icon(Icons.Default.CalendarMonth, contentDescription = null)
+            },
+            singleLine = true,
+            shape = PazShapes.large,
+            colors =
+                androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+        )
+    }
+
+    if (showPicker) {
+        DatePickerDialog(
+            onDismissRequest = { showPicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        onDateSelected(formatter.format(Date(millis)))
+                    }
+                    showPicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPicker = false }) { Text("Cancelar") }
+            },
+        ) {
+            DatePicker(state = datePickerState)
         }
     }
 }

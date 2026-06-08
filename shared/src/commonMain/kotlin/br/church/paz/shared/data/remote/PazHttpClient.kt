@@ -4,6 +4,7 @@ import br.church.paz.shared.auth.TokenPair
 import br.church.paz.shared.auth.TokenStorage
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.HttpCallValidator
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerTokens
@@ -11,10 +12,12 @@ import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.call.body
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
@@ -47,8 +50,24 @@ fun createPazHttpClient(
     }
 
     install(Logging) {
-        level = if (debug) LogLevel.INFO else LogLevel.NONE
-        sanitizeHeader { header -> header == io.ktor.http.HttpHeaders.Authorization }
+        logger = object : Logger {
+            override fun log(message: String) {
+                println("[PazHttp] $message")
+            }
+        }
+        level = if (debug) LogLevel.BODY else LogLevel.NONE
+        sanitizeHeader { header -> header == HttpHeaders.Authorization }
+    }
+
+    install(HttpCallValidator) {
+        validateResponse { response ->
+            if (!response.status.isSuccess()) {
+                println("[PazHttp] HTTP ${response.status.value} ${response.status.description} — ${response.call.request.url}")
+            }
+        }
+        handleResponseExceptionWithRequest { cause, request ->
+            println("[PazHttp] request failed — ${request.url} — ${cause::class.simpleName}: ${cause.message}")
+        }
     }
 
     install(Auth) {
@@ -61,6 +80,18 @@ fun createPazHttpClient(
                 BearerTokens(refreshed.access, refreshed.refresh)
             }
         }
+    }
+}
+
+/**
+ * Use instead of [body] so decode failures are always printed at the network layer.
+ */
+suspend inline fun <reified T> HttpResponse.decodedBody(): T {
+    return try {
+        body()
+    } catch (e: Exception) {
+        println("[PazHttp] decode error — ${call.request.url} — ${e::class.simpleName}: ${e.message}")
+        throw e
     }
 }
 
@@ -83,7 +114,7 @@ private suspend fun refreshAccessToken(storage: TokenStorage, client: HttpClient
             setBody(RefreshRequest(current.refresh))
         }
         if (!response.status.isSuccess()) { storage.clear(); return null }
-        val body = response.body<RefreshResponse>()
+        val body = response.decodedBody<RefreshResponse>()
         val pair = TokenPair(body.accessToken, body.refreshToken)
         storage.save(pair)
         pair

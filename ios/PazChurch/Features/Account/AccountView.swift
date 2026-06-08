@@ -51,22 +51,28 @@ struct AccountView: View {
 
                     sectionLabel("MINHA IGREJA")
                     menuCard {
-                        NavigationLink(destination: MemberJourneyView(memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository)) {
+                        NavigationLink(destination: MemberJourneyView(memberJourneyRepository: IosAppContainer.shared
+                                .memberJourneyRepository)) {
                             AccountRow(title: "Jornada do Membro", icon: "figure.walk", tint: PazColors.pazPrimaryLight)
                         }
                         .buttonStyle(.plain)
                         rowDivider
-                        NavigationLink(destination: MeetingReportView(formsRepository: IosAppContainer.shared.formsRepository, authRepository: IosAppContainer.shared.authRepository)) {
+                        NavigationLink(destination: MeetingReportView(
+                            formsRepository: IosAppContainer.shared.formsRepository,
+                            authRepository: IosAppContainer.shared.authRepository
+                        )) {
                             AccountRow(title: "Relatar Reunião", icon: "doc.text", tint: Color(hex: "2E7D32"))
                         }
                         .buttonStyle(.plain)
                         rowDivider
-                        NavigationLink(destination: FormulariosView(formsRepository: IosAppContainer.shared.formsRepository)) {
+                        NavigationLink(destination: FormulariosView(formsRepository: IosAppContainer.shared
+                                .formsRepository)) {
                             AccountRow(title: "Formulários", icon: "list.clipboard", tint: Color(hex: "6A1B9A"))
                         }
                         .buttonStyle(.plain)
                         rowDivider
-                        NavigationLink(destination: MinistriesView(churchRepository: IosAppContainer.shared.churchRepository)) {
+                        NavigationLink(destination: MinistriesView(churchRepository: IosAppContainer.shared
+                                .churchRepository)) {
                             AccountRow(title: "Ministérios", icon: "music.note", tint: Color(hex: "E65100"))
                         }
                         .buttonStyle(.plain)
@@ -88,7 +94,8 @@ struct AccountView: View {
                             )
                             Text("Modo Escuro").font(PazTypography.bodyMedium).foregroundStyle(PazColors.ink)
                             Spacer()
-                            Toggle("", isOn: Bindable(themeManager).isDarkMode).labelsHidden().tint(PazColors.pazPrimaryLight)
+                            Toggle("", isOn: Bindable(themeManager).isDarkMode).labelsHidden()
+                                .tint(PazColors.pazPrimaryLight)
                         }
                         .padding(.horizontal, 16).padding(.vertical, 12)
                     }
@@ -101,7 +108,8 @@ struct AccountView: View {
                                 PazIconContainer(icon: "door.left.hand.open", tint: PazColors.error)
                                 Text("Sair da conta").font(PazTypography.bodyMedium).foregroundStyle(PazColors.error)
                                 Spacer()
-                                Image(systemName: "chevron.right").font(.system(size: 13)).foregroundStyle(PazColors.slateLight)
+                                Image(systemName: "chevron.right").font(.system(size: 13))
+                                    .foregroundStyle(PazColors.slateLight)
                             }
                             .padding(.horizontal, 16).padding(.vertical, 12)
                         }
@@ -123,7 +131,8 @@ struct AccountView: View {
             HStack(spacing: 12) {
                 ZStack {
                     Circle().fill(PazColors.pazPrimary.opacity(0.15)).frame(width: 56, height: 56)
-                    Text(user.name.prefix(1).uppercased()).font(PazTypography.headlineSmall).foregroundStyle(PazColors.pazPrimary)
+                    Text(user.name.prefix(1).uppercased()).font(PazTypography.headlineSmall)
+                        .foregroundStyle(PazColors.pazPrimary)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(user.name).font(PazTypography.titleMedium).foregroundStyle(PazColors.pazPrimary)
@@ -163,7 +172,7 @@ struct AccountView: View {
             .padding(.bottom, 8)
     }
 
-    private func menuCard<C: View>(@ViewBuilder content: () -> C) -> some View {
+    private func menuCard(@ViewBuilder content: () -> some View) -> some View {
         VStack(spacing: 0) { content() }
             .background(PazColors.surface)
             .clipShape(RoundedRectangle(cornerRadius: 18))
@@ -178,7 +187,7 @@ struct AccountView: View {
             VStack(spacing: 16) {
                 SkeletonView().frame(height: 100).padding(.horizontal, 20).padding(.top, 20)
                 SkeletonView().frame(height: 80).padding(.horizontal, 20)
-                ForEach(0 ..< 4, id: \.self) { _ in SkeletonView().frame(height: 52).padding(.horizontal, 20) }
+                ForEach(0..<4, id: \.self) { _ in SkeletonView().frame(height: 52).padding(.horizontal, 20) }
                 Spacer()
             }
         }

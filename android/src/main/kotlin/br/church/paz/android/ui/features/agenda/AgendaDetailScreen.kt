@@ -5,11 +5,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -36,6 +38,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -46,8 +49,10 @@ import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.AgendaEvent
+import coil3.compose.AsyncImage
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
+import java.time.LocalDateTime
 
 @Composable
 fun AgendaDetailScreen(
@@ -88,12 +93,26 @@ private fun ContentState(
                 .background(PazGradients.Hero)
                 .statusBarsPadding(),
         ) {
-            Icon(
-                Icons.Outlined.Favorite,
-                contentDescription = null,
-                tint = Color.White.copy(alpha = 0.08f),
-                modifier = Modifier.size(180.dp).align(Alignment.Center),
-            )
+            if (!event.imageUrl.isNullOrEmpty()) {
+                AsyncImage(
+                    model = event.imageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize(),
+                )
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .background(Brush.verticalGradient(listOf(Color.Black.copy(.3f), Color.Black.copy(.7f)))),
+                )
+            } else {
+                Icon(
+                    Icons.Outlined.Favorite,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.08f),
+                    modifier = Modifier.size(180.dp).align(Alignment.Center),
+                )
+            }
             Box(
                 Modifier
                     .padding(PazSpacing.Md)
@@ -112,12 +131,12 @@ private fun ContentState(
                     .padding(start = PazSpacing.Lg, end = PazSpacing.Lg, bottom = 28.dp),
                 verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
             ) {
-                PazGoldBadge(text = event.startDate.take(8).uppercase())
+                PazGoldBadge(text = formatDetailDate(event.startDate).uppercase())
                 Text(event.title, style = MaterialTheme.typography.headlineMedium.copy(color = Color.White))
             }
         }
 
-        // Body card overlapping hero
+        // Scrollable body — bottom padding reserves space for the pinned button
         Box(
             Modifier
                 .fillMaxSize()
@@ -125,13 +144,17 @@ private fun ContentState(
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(MaterialTheme.colorScheme.background),
         ) {
-            LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg)) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 96.dp),
+                verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
+            ) {
                 item { Spacer(Modifier.height(PazSpacing.Lg)) }
 
                 // Meta chips
                 item {
                     Row(Modifier.padding(horizontal = PazSpacing.Lg), horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
-                        MetaChip(icon = Icons.Outlined.CalendarToday, label = "${event.startDate} — ${event.endDate ?: event.startDate}")
+                        MetaChip(icon = Icons.Outlined.CalendarToday, label = formatDetailDate(event.startDate))
                         if (!event.location.isNullOrEmpty()) {
                             MetaChip(icon = Icons.Outlined.LocationOn, label = event.location!!)
                         }
@@ -189,35 +212,61 @@ private fun ContentState(
                         }
                     }
                 }
+            }
+        }
 
-                // CTA
-                item {
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = PazSpacing.Lg)
-                            .height(56.dp)
-                            .shadow(
-                                12.dp,
-                                RoundedCornerShape(16.dp),
-                                ambientColor = PazColors.PrimaryMid.copy(.4f),
-                                spotColor = PazColors.PrimaryMid.copy(.4f),
-                            ).clip(RoundedCornerShape(16.dp))
-                            .background(Brush.horizontalGradient(listOf(PazColors.PrimaryMid, PazColors.PrimaryLight)))
-                            .clickable { },
-                        Alignment.Center,
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
-                            Icon(Icons.Outlined.Favorite, null, tint = Color.White, modifier = Modifier.size(20.dp))
-                            Text("Confirmar presença", style = MaterialTheme.typography.titleSmall.copy(color = Color.White))
-                        }
-                    }
-                    Spacer(Modifier.height(PazSpacing.Xl))
+        // Pinned "Confirmar presença" button at the bottom
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .background(MaterialTheme.colorScheme.background)
+                    .navigationBarsPadding()
+                    .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
+        ) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .shadow(
+                        12.dp,
+                        RoundedCornerShape(16.dp),
+                        ambientColor = PazColors.PrimaryMid.copy(.4f),
+                        spotColor = PazColors.PrimaryMid.copy(.4f),
+                    ).clip(RoundedCornerShape(16.dp))
+                    .background(Brush.horizontalGradient(listOf(PazColors.PrimaryMid, PazColors.PrimaryLight)))
+                    .clickable { },
+                Alignment.Center,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
+                    Icon(Icons.Outlined.Favorite, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    Text("Confirmar presença", style = MaterialTheme.typography.titleSmall.copy(color = Color.White))
                 }
             }
         }
     }
 }
+
+// ── Date formatting ────────────────────────────────────────────────────────────
+
+private fun formatDetailDate(iso: String): String {
+    val dt =
+        runCatching {
+            val s = iso.replace("Z", "").substringBefore("+").trimEnd()
+            when {
+                s.length == 10 -> LocalDateTime.parse("${s}T00:00")
+                else -> LocalDateTime.parse(s.take(16))
+            }
+        }.getOrNull() ?: return iso
+    val d = dt.dayOfMonth.toString().padStart(2, '0')
+    val m = dt.monthValue.toString().padStart(2, '0')
+    val h = dt.hour.toString().padStart(2, '0')
+    val min = dt.minute.toString().padStart(2, '0')
+    return "$d/$m/${dt.year}  $h:$min"
+}
+
+// ── Supporting composables ─────────────────────────────────────────────────────
 
 @Composable
 private fun MetaChip(
@@ -227,9 +276,8 @@ private fun MetaChip(
     Row(
         modifier =
             Modifier
-                .clip(
-                    RoundedCornerShape(50.dp),
-                ).background(MaterialTheme.colorScheme.surface)
+                .clip(RoundedCornerShape(50.dp))
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),

@@ -10,18 +10,16 @@ struct MemberJourneyView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if viewModel.isLoading {
-                    loadingState
-                } else {
-                    contentState
-                }
+        Group {
+            if viewModel.isLoading {
+                loadingState
+            } else {
+                contentState
             }
-            .background(PazColors.background)
-            .navigationTitle("Minha Jornada")
-            .navigationBarTitleDisplayMode(.large)
         }
+        .background(PazColors.background.ignoresSafeArea())
+        .navigationTitle("Minha Jornada")
+        .navigationBarTitleDisplayMode(.large)
     }
 
     private var contentState: some View {

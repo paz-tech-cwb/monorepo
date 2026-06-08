@@ -4,6 +4,7 @@ import br.church.paz.shared.auth.TokenStorage
 import br.church.paz.shared.auth.createTokenStorage
 import br.church.paz.shared.data.remote.createPazHttpClient
 import br.church.paz.shared.data.repository.AcademyRepositoryImpl
+import br.church.paz.shared.data.repository.AgendaRepositoryImpl
 import br.church.paz.shared.data.repository.AuthRepositoryImpl
 import br.church.paz.shared.data.repository.ChurchRepositoryImpl
 import br.church.paz.shared.data.repository.FormsRepositoryImpl
@@ -13,6 +14,7 @@ import br.church.paz.shared.data.repository.UserRepositoryImpl
 import br.church.paz.shared.data.repository.UserStore
 import br.church.paz.shared.data.repository.createUserStore
 import br.church.paz.shared.domain.repository.AcademyRepository
+import br.church.paz.shared.domain.repository.AgendaRepository
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.FormsRepository
@@ -41,6 +43,7 @@ val sharedNetworkModule = module {
 val sharedRepositoryModule = module {
     single<AuthRepository>          { AuthRepositoryImpl(get(), get(), get()) }
     single<HomeRepository>          { HomeRepositoryImpl(get()) }
+    single<AgendaRepository>        { AgendaRepositoryImpl(get()) }
     single<AcademyRepository>       { AcademyRepositoryImpl(get()) }
     single<UserRepository>          { UserRepositoryImpl(get()) }
     single<ChurchRepository>        { ChurchRepositoryImpl(get()) }

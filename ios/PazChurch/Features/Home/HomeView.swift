@@ -13,11 +13,14 @@ struct HomeView: View {
     @State private var isUserDragging = false
     @Environment(\.colorScheme) private var colorScheme
 
+    private let agendaRepository: AgendaRepository
+
     init(homeRepository: HomeRepository, authRepository: AuthRepository) {
         _viewModel = State(initialValue: HomeViewModel(
             homeRepository: homeRepository,
             authRepository: authRepository
         ))
+        agendaRepository = IosAppContainer.shared.agendaRepository
     }
 
     private var isDark: Bool {
@@ -50,7 +53,7 @@ struct HomeView: View {
         guard let weekInterval = cal.dateInterval(of: .weekOfYear, for: today) else { return [] }
         let dowLabels = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"]
         let allEvents = viewModel.homeContent?.agenda ?? []
-        return (0 ..< 7).compactMap { offset -> WeekDay? in
+        return (0..<7).compactMap { offset -> WeekDay? in
             guard let date = cal.date(byAdding: .day, value: offset, to: weekInterval.start) else { return nil }
             let comps = cal.dateComponents([.weekday, .day], from: date)
             let isToday = cal.isDateInToday(date)
@@ -70,6 +73,9 @@ struct HomeView: View {
 
     private func parseEventDate(_ str: String) -> Date? {
         let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = iso.date(from: str) { return d }
+        iso.formatOptions = [.withInternetDateTime]
         if let d = iso.date(from: str) { return d }
         let fmt = DateFormatter()
         fmt.locale = Locale(identifier: "en_US_POSIX")
@@ -129,7 +135,7 @@ struct HomeView: View {
             }
         }
         .sheet(isPresented: $showAgendaList) {
-            AgendaListView(events: viewModel.homeContent?.agenda ?? [])
+            AgendaListView(agendaRepository: agendaRepository)
         }
     }
 
@@ -273,7 +279,7 @@ struct HomeView: View {
                 Spacer()
                 Button(action: { showAgendaList = true }) {
                     HStack(spacing: 5) {
-                        Text("Mês completo").font(PazTypography.labelSmall)
+                        Text("Ver tudo").font(PazTypography.labelSmall)
                         Image(systemName: "arrow.right").font(.system(size: 12, weight: .semibold))
                     }
                     .foregroundStyle(PazColors.pazPrimaryLight)

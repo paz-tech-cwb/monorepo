@@ -2,6 +2,7 @@ package br.church.paz.android.ui.features.account
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import br.church.paz.android.ui.theme.AppThemeManager
 import br.church.paz.shared.domain.repository.AuthRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.launch
 
 class AccountViewModel(
     private val authRepository: AuthRepository,
+    private val themeManager: AppThemeManager,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AccountUiState())
     val uiState: StateFlow<AccountUiState> = _uiState.asStateFlow()
@@ -33,6 +35,7 @@ class AccountViewModel(
     }
 
     fun onToggleDarkMode(enabled: Boolean) {
+        themeManager.set(enabled)
         _uiState.update { it.copy(isDarkMode = enabled) }
     }
 

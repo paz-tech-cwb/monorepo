@@ -21,9 +21,7 @@ struct ProfileView: View {
 
     @ViewBuilder
     private var screenContent: some View {
-        if viewModel.isLoading { loadingState }
-        else if viewModel.user == nil { loggedOutState }
-        else { loggedInState }
+        if viewModel.isLoading { loadingState } else if viewModel.user == nil { loggedOutState } else { loggedInState }
     }
 
     private var loggedInState: some View {

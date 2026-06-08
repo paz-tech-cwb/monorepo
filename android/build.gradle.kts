@@ -22,7 +22,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3001/api\"")
+            buildConfigField("String", "BASE_URL", "\"http://localhost:3001/api\"")
             // Web client ID from google-services.json → oauth_client[type=3]
             buildConfigField(
                 "String",

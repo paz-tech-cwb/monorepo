@@ -13,7 +13,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +31,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -68,6 +66,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -87,8 +86,12 @@ import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.AgendaEvent
 import br.church.paz.shared.domain.model.BankInfo
 import br.church.paz.shared.domain.model.Banner
+import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -155,6 +158,16 @@ private fun HomeTopBar(
     val collapsed = fraction > 0.5f
     val isDark = LocalPazDarkTheme.current
 
+    val today = remember { Calendar.getInstance() }
+    val ptBr = remember { Locale("pt", "BR") }
+    val dateLabel =
+        remember {
+            val dow = SimpleDateFormat("EEEE", ptBr).format(today.time).uppercase(ptBr)
+            val day = today.get(Calendar.DAY_OF_MONTH)
+            val month = SimpleDateFormat("MMMM", ptBr).format(today.time).uppercase(ptBr)
+            "$dow, $day DE $month"
+        }
+
     LargeTopAppBar(
         expandedHeight = 112.dp,
         title = {
@@ -163,7 +176,7 @@ private fun HomeTopBar(
             } else {
                 Column {
                     Text(
-                        text = "QUARTA, 4 DE JUNHO",
+                        text = dateLabel,
                         style =
                             MaterialTheme.typography.labelSmall.copy(
                                 color = PazColors.PrimaryLight,
@@ -225,7 +238,9 @@ private fun HomeContent(
     onEventTap: (String) -> Unit,
     contentPadding: PaddingValues,
 ) {
-    var selectedDay by remember { mutableIntStateOf(2) } // Wednesday pre-selected
+    val weekDays = remember(agendaEvents) { buildWeekDays(agendaEvents) }
+    val todayIndex = remember(weekDays) { weekDays.indexOfFirst { it.isToday }.coerceAtLeast(0) }
+    var selectedDay by remember { mutableIntStateOf(todayIndex) }
 
     LazyColumn(
         contentPadding = contentPadding,
@@ -252,19 +267,19 @@ private fun HomeContent(
                             }
                         }
                     }
-                "agenda" ->
-                    if (agendaEvents.isNotEmpty()) {
-                        item(key = "agenda") {
-                            AnimatedSection(index = index) {
-                                AgendaSection(
-                                    events = agendaEvents,
-                                    selectedDay = selectedDay,
-                                    onDaySelected = { selectedDay = it },
-                                    onEventTap = onEventTap,
-                                )
-                            }
+                "agenda" -> {
+                    item(key = "agenda") {
+                        AnimatedSection(index = index) {
+                            AgendaSection(
+                                weekDays = weekDays,
+                                allEvents = agendaEvents,
+                                selectedDay = selectedDay,
+                                onDaySelected = { selectedDay = it },
+                                onEventTap = onEventTap,
+                            )
                         }
                     }
+                }
             }
         }
     }
@@ -380,56 +395,60 @@ private fun FeaturedCard(
     isAlt: Boolean,
     onClick: () -> Unit,
 ) {
+    val shape = RoundedCornerShape(22.dp)
     Box(
         Modifier
             .fillMaxWidth()
             .height(176.dp)
             .shadow(
                 elevation = 12.dp,
-                shape = RoundedCornerShape(22.dp),
+                shape = shape,
                 spotColor = PazColors.Primary.copy(alpha = 0.70f),
                 ambientColor = PazColors.Primary.copy(alpha = 0.10f),
-            ).clip(RoundedCornerShape(22.dp))
-            .background(if (isAlt) PazGradients.FeaturedCardAlt else PazGradients.FeaturedCard)
-            .clickable(onClick = onClick)
-            .padding(18.dp),
+            ).clip(shape)
+            .clickable(onClick = onClick),
     ) {
-        CrossWatermark(
-            Modifier
-                .size(158.dp)
-                .align(Alignment.BottomEnd)
-                .offset(x = 14.dp, y = 30.dp)
-                .rotate(-9f),
-        )
-
-        // Gold pill badge (top-left)
-        Text(
-            text = banner.actionUrl ?: "",
-            style = MaterialTheme.typography.labelSmall.copy(color = PazColors.GoldOnBadge),
-            modifier =
-                Modifier
-                    .align(Alignment.TopStart)
-                    .background(PazColors.Gold, RoundedCornerShape(100.dp))
-                    .padding(horizontal = 13.dp, vertical = 6.dp),
-        )
-
-        // Title + subtitle (bottom-left)
-        Column(Modifier.align(Alignment.BottomStart)) {
-            Text(
-                text = banner.title,
-                style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
+        if (banner.imageUrl.isNotEmpty()) {
+            AsyncImage(
+                model = banner.imageUrl,
+                contentDescription = banner.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
             )
-            // banner.imageUrl holds the subtitle in mock data
-            // TODO(backend): when real data arrives, add a `subtitle` field to Banner
-            Text(
-                text = banner.imageUrl,
-                style =
-                    MaterialTheme.typography.bodySmall.copy(
-                        color = Color.White.copy(alpha = 0.72f),
+            // Dark gradient overlay so title remains legible
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
+                        ),
                     ),
-                modifier = Modifier.padding(top = 5.dp),
+            )
+        } else {
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .background(if (isAlt) PazGradients.FeaturedCardAlt else PazGradients.FeaturedCard),
+            )
+            CrossWatermark(
+                Modifier
+                    .size(158.dp)
+                    .align(Alignment.BottomEnd)
+                    .offset(x = 14.dp, y = 30.dp)
+                    .rotate(-9f),
             )
         }
+
+        // Title (bottom-left)
+        Text(
+            text = banner.title,
+            style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
+            modifier =
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(18.dp),
+        )
     }
 }
 
@@ -585,26 +604,92 @@ private fun DizimosButton(
 private data class DayItem(
     val dow: String,
     val day: Int,
+    val date: Calendar,
+    val isToday: Boolean,
+    val hasEvent: Boolean,
 )
 
-private val agendaDays =
-    listOf(
-        DayItem("SEG", 2),
-        DayItem("TER", 3),
-        DayItem("QUA", 4),
-        DayItem("QUI", 5),
-        DayItem("SEX", 6),
-        DayItem("SÁB", 7),
-        DayItem("DOM", 8),
-    )
+private val dowLabels = listOf("DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB")
+
+private fun buildWeekDays(events: List<AgendaEvent>): List<DayItem> {
+    fun parseDate(str: String): Calendar? {
+        val instant = runCatching { java.time.Instant.parse(str) }.getOrNull()
+        if (instant != null) {
+            return Calendar.getInstance().also { it.timeInMillis = instant.toEpochMilli() }
+        }
+        val localFmt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US)
+        val dateFmt = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val date =
+            runCatching { localFmt.parse(str) }.getOrNull()
+                ?: runCatching { dateFmt.parse(str) }.getOrNull()
+                ?: return null
+        return Calendar.getInstance().also { it.time = date }
+    }
+
+    val today = Calendar.getInstance()
+    val weekStart =
+        Calendar.getInstance().apply {
+            set(Calendar.DAY_OF_WEEK, firstDayOfWeek)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+    return (0 until 7).map { offset ->
+        val day = (weekStart.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, offset) }
+        val dowIndex = day.get(Calendar.DAY_OF_WEEK) - 1
+        val isToday =
+            day.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                day.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
+        val hasEvent =
+            events.any { event ->
+                val ed = parseDate(event.startDate) ?: return@any false
+                ed.get(Calendar.YEAR) == day.get(Calendar.YEAR) &&
+                    ed.get(Calendar.DAY_OF_YEAR) == day.get(Calendar.DAY_OF_YEAR)
+            }
+        DayItem(
+            dow = dowLabels[dowIndex],
+            day = day.get(Calendar.DAY_OF_MONTH),
+            date = day,
+            isToday = isToday,
+            hasEvent = hasEvent,
+        )
+    }
+}
 
 @Composable
 private fun AgendaSection(
-    events: List<AgendaEvent>,
+    weekDays: List<DayItem>,
+    allEvents: List<AgendaEvent>,
     selectedDay: Int,
     onDaySelected: (Int) -> Unit,
     onEventTap: (String) -> Unit,
 ) {
+    fun parseDate(str: String): Calendar? {
+        val instant = runCatching { java.time.Instant.parse(str) }.getOrNull()
+        if (instant != null) {
+            return Calendar.getInstance().also { it.timeInMillis = instant.toEpochMilli() }
+        }
+        val localFmt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US)
+        val dateFmt = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val date =
+            runCatching { localFmt.parse(str) }.getOrNull()
+                ?: runCatching { dateFmt.parse(str) }.getOrNull()
+                ?: return null
+        return Calendar.getInstance().also { it.time = date }
+    }
+
+    val selectedDate = weekDays.getOrNull(selectedDay)?.date
+    val dayEvents =
+        remember(selectedDay, allEvents) {
+            if (selectedDate == null) return@remember emptyList()
+            allEvents.filter { event ->
+                val ed = parseDate(event.startDate) ?: return@filter false
+                ed.get(Calendar.YEAR) == selectedDate.get(Calendar.YEAR) &&
+                    ed.get(Calendar.DAY_OF_YEAR) == selectedDate.get(Calendar.DAY_OF_YEAR)
+            }
+        }
+
     Column(Modifier.padding(top = PazSpacing.Xl)) {
         Row(
             Modifier
@@ -616,7 +701,7 @@ private fun AgendaSection(
             Text("Agenda", style = MaterialTheme.typography.headlineMedium)
             TextButton(onClick = {}, contentPadding = PaddingValues(0.dp)) {
                 Text(
-                    "Mês completo",
+                    "Ver tudo",
                     style = MaterialTheme.typography.labelSmall.copy(color = PazColors.PrimaryLight),
                 )
                 Icon(
@@ -632,26 +717,41 @@ private fun AgendaSection(
         Row(
             modifier =
                 Modifier
-                    .horizontalScroll(rememberScrollState())
+                    .fillMaxWidth()
                     .padding(horizontal = PazSpacing.Lg),
             horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
         ) {
-            agendaDays.forEachIndexed { index, item ->
+            weekDays.forEachIndexed { index, item ->
                 DayPill(
                     item = item,
                     isSelected = index == selectedDay,
+                    modifier = Modifier.weight(1f),
                     onClick = { onDaySelected(index) },
                 )
             }
         }
         Spacer(Modifier.height(PazSpacing.Md))
 
-        Column(
-            Modifier.padding(horizontal = PazSpacing.Lg),
-            verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-        ) {
-            events.take(3).forEach { event ->
-                EventCard(event = event, onClick = { onEventTap(event.id) })
+        if (dayEvents.isEmpty()) {
+            Text(
+                "Nenhum evento",
+                style =
+                    MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = PazSpacing.Lg + 4.dp, vertical = PazSpacing.Sm),
+            )
+        } else {
+            Column(
+                Modifier.padding(horizontal = PazSpacing.Lg),
+                verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+            ) {
+                dayEvents.forEach { event ->
+                    EventCard(event = event, onClick = { onEventTap(event.id) })
+                }
             }
         }
         Spacer(Modifier.height(PazSpacing.Lg))
@@ -662,8 +762,10 @@ private fun AgendaSection(
 private fun DayPill(
     item: DayItem,
     isSelected: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
+    val pillShape = RoundedCornerShape(18.dp)
     val activeGradient =
         remember {
             Brush.linearGradient(
@@ -672,22 +774,32 @@ private fun DayPill(
                 end = Offset(0f, Float.POSITIVE_INFINITY),
             )
         }
+    val dotColor =
+        when {
+            item.isToday -> PazColors.Gold
+            item.hasEvent -> PazColors.Primary
+            else -> Color.Transparent
+        }
     Box(
-        Modifier
-            .size(width = 52.dp, height = 74.dp)
+        modifier
+            .height(74.dp)
             .shadow(
                 elevation = if (isSelected) 8.dp else 2.dp,
-                shape = RoundedCornerShape(18.dp),
+                shape = pillShape,
                 spotColor = if (isSelected) PazColors.Primary.copy(alpha = 0.70f) else PazColors.ShadowNavy,
                 ambientColor = PazColors.ShadowNavy.copy(alpha = 0.04f),
-            ).clip(RoundedCornerShape(18.dp))
+            ).clip(pillShape)
             .then(
-                if (isSelected) {
-                    Modifier.background(activeGradient)
-                } else {
-                    Modifier
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(18.dp))
+                when {
+                    isSelected -> Modifier.background(activeGradient)
+                    item.isToday ->
+                        Modifier
+                            .background(MaterialTheme.colorScheme.surface)
+                            .border(1.5.dp, PazColors.Primary.copy(alpha = 0.5f), pillShape)
+                    else ->
+                        Modifier
+                            .background(MaterialTheme.colorScheme.surface)
+                            .border(1.dp, MaterialTheme.colorScheme.outline, pillShape)
                 },
             ).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -728,10 +840,7 @@ private fun DayPill(
                 Modifier
                     .padding(top = 2.dp)
                     .size(4.dp)
-                    .background(
-                        color = if (isSelected) PazColors.Gold else Color.Transparent,
-                        shape = CircleShape,
-                    ),
+                    .background(color = dotColor, shape = CircleShape),
             )
         }
     }

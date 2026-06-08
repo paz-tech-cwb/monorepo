@@ -255,88 +255,73 @@ struct FormDetailView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Hero header
-                HStack(spacing: PazSpacing.lg) {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
-                    Text(form.title)
-                        .font(PazTypography.headlineMedium)
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                    Spacer()
-                }
-                .padding(.horizontal, PazSpacing.lg)
-                .padding(.vertical, PazSpacing.md)
-                .background(PazColors.heroGradient)
-
-                if viewModel.isLoading {
-                    loadingState
-                } else {
-                    formContent
-                }
+        VStack(spacing: 0) {
+            if viewModel.isLoading {
+                loadingState
+            } else {
+                formContent
             }
-            .background(PazColors.background)
         }
-        .navigationBarBackButtonHidden()
+        .background(PazColors.background)
+        .navigationTitle(form.title)
+        .navigationBarTitleDisplayMode(.large)
         .onChange(of: viewModel.submitSuccess) { success in
             if success { dismiss() }
         }
     }
 
     private var formContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: PazSpacing.lg) {
-                Spacer().frame(height: PazSpacing.sm)
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: PazSpacing.lg) {
+                    Spacer().frame(height: PazSpacing.sm)
 
-                if let description = form.description_ {
-                    Text(description)
-                        .font(PazTypography.bodySmall)
-                        .foregroundColor(.gray)
-                }
-
-                ForEach(form.type.fieldDefs, id: \.key) { def in
-                    FieldRow(
-                        def: def,
-                        value: viewModel.fields[def.key] ?? "",
-                        isSubmitting: viewModel.isSubmitting
-                    ) { newValue in
-                        viewModel.update(key: def.key, value: newValue)
+                    if let description = form.description_ {
+                        Text(description)
+                            .font(PazTypography.bodySmall)
+                            .foregroundColor(.gray)
                     }
+
+                    ForEach(form.type.fieldDefs, id: \.key) { def in
+                        FieldRow(
+                            def: def,
+                            value: viewModel.fields[def.key] ?? "",
+                            isSubmitting: viewModel.isSubmitting
+                        ) { newValue in
+                            viewModel.update(key: def.key, value: newValue)
+                        }
+                    }
+
+                    if let error = viewModel.error {
+                        Text(error)
+                            .font(PazTypography.bodySmall)
+                            .foregroundColor(.red)
+                            .padding(PazSpacing.md)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(12)
+                    }
+
+                    Spacer().frame(height: PazSpacing.md)
                 }
-
-                if let error = viewModel.error {
-                    Text(error)
-                        .font(PazTypography.bodySmall)
-                        .foregroundColor(.red)
-                        .padding(PazSpacing.md)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.red.opacity(0.1))
-                        .cornerRadius(12)
-                }
-
-                Spacer().frame(height: PazSpacing.md)
-
-                Button(action: { viewModel.onSubmit() }) {
-                    Text(viewModel.isSubmitting ? "Enviando..." : "Enviar")
-                        .font(PazTypography.titleMedium)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, PazSpacing.md)
-                        .background(viewModel.canSubmit ? PazColors.primary : Color.gray)
-                        .cornerRadius(12)
-                }
-                .disabled(!viewModel.canSubmit)
-
-                Spacer().frame(height: PazSpacing.xl)
+                .padding(.horizontal, PazSpacing.lg)
             }
+            .background(PazColors.background)
+
+            Button(action: { viewModel.onSubmit() }) {
+                Text(viewModel.isSubmitting ? "Enviando..." : "Enviar")
+                    .font(PazTypography.titleMedium)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(viewModel.canSubmit ? PazColors.primary : Color.gray)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .disabled(!viewModel.canSubmit)
             .padding(.horizontal, PazSpacing.lg)
+            .padding(.vertical, PazSpacing.md)
+            .background(PazColors.background)
         }
-        .background(PazColors.background)
     }
 
     private var loadingState: some View {
@@ -376,31 +361,130 @@ private struct FieldRow: View {
             if def.isMultiline {
                 TextEditor(text: Binding(get: { value }, set: onChange))
                     .font(PazTypography.bodyMedium)
-                    .frame(height: 100)
+                    .frame(height: 120)
                     .padding(PazSpacing.sm)
                     .background(PazColors.surface)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .scrollContentBackground(.hidden)
+                    .disabled(isSubmitting)
+            } else if def.key.contains("date") || def.key.contains("at") {
+                DateFieldRow(
+                    placeholder: def.placeholder,
+                    value: value,
+                    onChange: onChange,
+                    disabled: isSubmitting
+                )
+            } else if def.key == "phone" {
+                TextField(def.placeholder, text: Binding(
+                    get: { value },
+                    set: { new in onChange(applyPhoneMask(old: value, new: new)) }
+                ))
+                .font(PazTypography.bodyMedium)
+                .keyboardType(.phonePad)
+                .textContentType(.telephoneNumber)
+                .padding(.horizontal, PazSpacing.md)
+                .frame(height: 56)
+                .background(PazColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .disabled(isSubmitting)
+            } else if def.key == "email" {
+                TextField(def.placeholder, text: Binding(get: { value }, set: onChange))
+                    .font(PazTypography.bodyMedium)
+                    .keyboardType(.emailAddress)
+                    .textContentType(.emailAddress)
+                    .autocapitalization(.none)
+                    .padding(.horizontal, PazSpacing.md)
+                    .frame(height: 56)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     .disabled(isSubmitting)
             } else {
                 TextField(def.placeholder, text: Binding(get: { value }, set: onChange))
                     .font(PazTypography.bodyMedium)
                     .keyboardType(def.isNumeric ? .decimalPad : .default)
+                    .autocapitalization(def.isNumeric ? .none : .words)
                     .padding(.horizontal, PazSpacing.md)
-                    .padding(.vertical, PazSpacing.sm)
+                    .frame(height: 56)
                     .background(PazColors.surface)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     .disabled(isSubmitting)
             }
         }
     }
+}
+
+private struct DateFieldRow: View {
+    let placeholder: String
+    let value: String
+    let onChange: (String) -> Void
+    let disabled: Bool
+
+    @State private var showPicker = false
+    @State private var selected = Date()
+
+    private let display = DateFormatter.brazilianDate
+    private let iso = DateFormatter.isoDate
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: { if !disabled { showPicker.toggle() } }) {
+                HStack {
+                    Text(value.isEmpty ? placeholder : value)
+                        .font(PazTypography.bodyMedium)
+                        .foregroundStyle(value.isEmpty ? PazColors.slate : PazColors.ink)
+                    Spacer()
+                    Image(systemName: "calendar").foregroundStyle(PazColors.pazPrimary)
+                }
+                .padding(.horizontal, PazSpacing.md)
+                .frame(height: 56)
+                .background(PazColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+
+            if showPicker {
+                DatePicker("", selection: $selected, displayedComponents: .date)
+                    .datePickerStyle(.graphical)
+                    .tint(PazColors.pazPrimary)
+                    .onChange(of: selected) { _, d in
+                        onChange(display.string(from: d))
+                        showPicker = false
+                    }
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+    }
+}
+
+private func applyPhoneMask(old: String, new: String) -> String {
+    var digits = new.filter(\.isNumber)
+    let oldDigits = old.filter(\.isNumber)
+    if new.count < old.count, digits.count == oldDigits.count, !digits.isEmpty {
+        digits = String(digits.dropLast())
+    }
+    var result = ""
+    let d = Array(digits.prefix(11))
+    for (i, c) in d.enumerated() {
+        switch i {
+        case 0: result += "(\(c)"
+        case 1: result += "\(c)) "
+        case 2: result += "\(c) "
+        case 6: result += "\(c)-"
+        default: result += "\(c)"
+        }
+    }
+    return result
+}
+
+private extension DateFormatter {
+    static let brazilianDate: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "dd/MM/yyyy"; return f
+    }()
+
+    static let isoDate: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; return f
+    }()
 }
 
 #Preview {

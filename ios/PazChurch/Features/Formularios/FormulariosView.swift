@@ -10,13 +10,11 @@ struct FormulariosView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            screenContent
-                .background(PazColors.background)
-                .navigationTitle("Formulários")
-                .navigationBarTitleDisplayMode(.large)
-        }
-        .task { await viewModel.load() }
+        screenContent
+            .background(PazColors.background)
+            .navigationTitle("Formulários")
+            .navigationBarTitleDisplayMode(.large)
+            .task { await viewModel.load() }
     }
 
     // MARK: - States

@@ -50,9 +50,18 @@ private data class HomeResponse(val sections: List<SectionDto> = emptyList()) {
         val sorted = sections.sortedBy { it.order }
         for (section in sorted) {
             when (section.type) {
-                "announcements" -> banners = section.items.mapNotNull { it.toBanner() }
+                "announcements" -> {
+                    banners = section.items.mapNotNull { it.toBanner() }
+                    val dropped = section.items.size - banners.size
+                    if (dropped > 0) println("[HomeRepo] announcements: $dropped/${section.items.size} items dropped (missing id/title/imageUrl)")
+                }
                 "contribution"  -> contribution = section.items.firstOrNull()?.toContribution()
-                "agenda"        -> agenda = section.items.mapNotNull { it.toEvent() }
+                "agenda"        -> {
+                    agenda = section.items.mapNotNull { it.toEvent() }
+                    val dropped = section.items.size - agenda.size
+                    if (dropped > 0) println("[HomeRepo] agenda: $dropped/${section.items.size} items dropped (missing id/title/initial_date)")
+                    println("[HomeRepo] agenda parsed: ${agenda.size} event(s)")
+                }
             }
         }
         return HomeContent(
@@ -77,7 +86,7 @@ private data class ItemDto(
     @SerialName("branch_number")  val branchNumber:  String? = null,
     @SerialName("account_number") val accountNumber: String? = null,
     @SerialName("pix_key")        val pixKey:        String? = null,
-    val date: String? = null,
+    @SerialName("initial_date") val date: String? = null,
 ) {
     fun toBanner(): Banner? {
         val id    = id    ?: return null

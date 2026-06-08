@@ -3,12 +3,13 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		045500E917135CF9ED6D160E /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB3B8D8FB1ECDA45FE9ACC57 /* LoginView.swift */; };
 		09EDC02009417BFD3B3FA3BC /* NotificationPrefsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33772BE7A618459F8F98DA2 /* NotificationPrefsView.swift */; };
+		127BCE182FD590FF004D4473 /* AgendaListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 127BCE172FD590FF004D4473 /* AgendaListViewModel.swift */; };
 		133044023D8AFC650E9E9FAB /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDF386921E4FE34F3D834257 /* ProfileViewModel.swift */; };
 		14045D80B33A84CAE8070AC7 /* PazTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82E14328F3FC3C44E1C3AC60 /* PazTypography.swift */; };
 		16B832FD065C7338B522ABFA /* AppThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21EFE728C0EA836F247AB28D /* AppThemeManager.swift */; };
@@ -78,6 +79,7 @@
 		0DC5A70D94121801DA57AA49 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		0DDF8FF84082AAD03C474820 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		121FA55058E48ADE89F7DCDC /* AgendaListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgendaListView.swift; sourceTree = "<group>"; };
+		127BCE172FD590FF004D4473 /* AgendaListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgendaListViewModel.swift; sourceTree = "<group>"; };
 		19E3E44DBCB2C6495E5BB60D /* PazColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazColors.swift; sourceTree = "<group>"; };
 		1A78FBD0E12C138DD1D1835C /* FormulariosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulariosView.swift; sourceTree = "<group>"; };
 		21EFE728C0EA836F247AB28D /* AppThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppThemeManager.swift; sourceTree = "<group>"; };
@@ -329,6 +331,7 @@
 		C2F87C2FD639BBECB403D28F /* Agenda */ = {
 			isa = PBXGroup;
 			children = (
+				127BCE172FD590FF004D4473 /* AgendaListViewModel.swift */,
 				BE4B8D8AE9B398AA3A77DA29 /* AgendaDetailView.swift */,
 				121FA55058E48ADE89F7DCDC /* AgendaListView.swift */,
 			);
@@ -428,7 +431,6 @@
 				4BF6352E4A89663882C292AC /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				96EB51DB675FF756632E0F01 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -493,6 +495,7 @@
 				E111D004E3CD35D07B1252C8 /* AuthenticationCoordinator.swift in Sources */,
 				4A82A695C9D2A71805FA21F2 /* EditProfileView.swift in Sources */,
 				65323BAB5459A81F682BE7B1 /* EditProfileViewModel.swift in Sources */,
+				127BCE182FD590FF004D4473 /* AgendaListViewModel.swift in Sources */,
 				71ABCCDA3D92687839B11506 /* FormDetailView.swift in Sources */,
 				BDFEB77ACA79918920040484 /* FormulariosView.swift in Sources */,
 				214CF4956D0B65E1AFA723F8 /* HomeView.swift in Sources */,

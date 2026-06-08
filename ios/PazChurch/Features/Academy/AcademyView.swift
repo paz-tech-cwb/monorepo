@@ -1,3 +1,4 @@
+import Kingfisher
 import Shared
 import SwiftUI
 
@@ -13,19 +14,10 @@ struct AcademyView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .top) {
-                PazColors.background.ignoresSafeArea()
-                VStack(spacing: 0) {
-                    heroHeader
-                    ZStack {
-                        PazColors.background
-                            .clipShape(RoundedRectangle(cornerRadius: 28))
-                            .ignoresSafeArea(edges: .bottom)
-                        screenContent
-                    }
-                }
-            }
-            .navigationBarHidden(true)
+            screenContent
+                .background(PazColors.background)
+                .navigationTitle("Academia")
+                .navigationBarTitleDisplayMode(.large)
         }
         .sheet(isPresented: $showLoginSheet) {
             LoginView(authCoordinator: authCoordinator, onDismiss: { showLoginSheet = false })
@@ -51,22 +43,6 @@ struct AcademyView: View {
         } else {
             contentState
         }
-    }
-
-    private var heroHeader: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Conteúdo exclusivo")
-                .font(PazTypography.bodySmall)
-                .foregroundStyle(.white.opacity(0.5))
-            Text("Academia\nPaz Church")
-                .font(PazTypography.headlineMedium)
-                .foregroundStyle(.white)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 24)
-        .padding(.top, 16)
-        .padding(.bottom, 24)
-        .background(PazColors.heroGradient)
     }
 
     private var contentState: some View {
@@ -106,8 +82,7 @@ struct AcademyView: View {
 
                 ForEach(Array(track.courses.enumerated()), id: \.element.id) { index, course in
                     CourseCard(course: course) {
-                        if authCoordinator.isAuthenticated { viewModel.onCourseTapped(course) }
-                        else { showLoginSheet = true }
+                        if authCoordinator.isAuthenticated { viewModel.onCourseTapped(course) } else { showLoginSheet = true }
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 12)
@@ -250,13 +225,13 @@ private struct CourseCard: View {
             HStack(spacing: 12) {
                 ZStack {
                     PazColors.featuredCardGradient
-                    if let url = course.thumbnailUrl, !url.isEmpty {
-                        AsyncImage(url: URL(string: url)) { img in
-                            img.resizable().scaledToFill()
-                        } placeholder: {
-                            Color.clear
-                        }
-                        .clipped()
+                    if let urlStr = course.thumbnailUrl, !urlStr.isEmpty, let url = URL(string: urlStr) {
+                        KFImage(url)
+                            .resizable()
+                            .placeholder { Color.clear }
+                            .fade(duration: 0.2)
+                            .scaledToFill()
+                            .clipped()
                     } else {
                         Image(systemName: "play.rectangle.fill")
                             .font(.system(size: 22))

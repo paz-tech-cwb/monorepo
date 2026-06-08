@@ -18,6 +18,9 @@ struct AgendaDetailView: View {
                 }
             }
             .ignoresSafeArea(edges: .top)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                confirmButton
+            }
 
             // Floating back button
             Button(action: { dismiss() }) {
@@ -35,6 +38,8 @@ struct AgendaDetailView: View {
         .navigationBarHidden(true)
     }
 
+    // MARK: - Hero
+
     private var heroArea: some View {
         ZStack(alignment: .bottom) {
             if let imageUrl = event.imageUrl, !imageUrl.isEmpty, let url = URL(string: imageUrl) {
@@ -43,9 +48,13 @@ struct AgendaDetailView: View {
                     .placeholder { PazColors.heroGradient }
                     .fade(duration: 0.2)
                     .scaledToFill()
-                    .frame(height: 300)
+                    .frame(maxWidth: .infinity, minHeight: 300, maxHeight: 300)
                     .clipped()
-                    .overlay(LinearGradient(colors: [.black.opacity(0.3), .black.opacity(0.7)], startPoint: .top, endPoint: .bottom))
+                    .overlay(LinearGradient(
+                        colors: [.black.opacity(0.3), .black.opacity(0.7)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ))
             } else {
                 PazColors.heroGradient.frame(height: 300)
                     .overlay(
@@ -55,7 +64,7 @@ struct AgendaDetailView: View {
                     )
             }
             VStack(alignment: .leading, spacing: 8) {
-                PazGoldBadge(text: String(event.startDate.prefix(8)).uppercased())
+                PazGoldBadge(text: formatDetailDate(event.startDate).uppercased())
                 Text(event.title)
                     .font(PazTypography.headlineMedium)
                     .foregroundStyle(.white)
@@ -67,12 +76,14 @@ struct AgendaDetailView: View {
         }
     }
 
+    // MARK: - Body card (no CTA inside)
+
     private var bodyCard: some View {
         VStack(alignment: .leading, spacing: 20) {
             // Meta chips
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    MetaChip(icon: "calendar", label: formatDate(event.startDate, event.endDate))
+                    MetaChip(icon: "calendar", label: formatDetailDate(event.startDate))
                     if let loc = event.location, !loc.isEmpty {
                         MetaChip(icon: "mappin.circle.fill", label: loc)
                     }
@@ -113,21 +124,6 @@ struct AgendaDetailView: View {
                 }
             }
 
-            // CTA
-            Button(action: {}) {
-                HStack(spacing: 8) {
-                    Image(systemName: "heart.fill")
-                    Text("Confirmar presença").font(PazTypography.titleMedium)
-                }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity).frame(height: 56)
-                .background(PazColors.heroGradient)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .shadow(color: PazColors.pazPrimaryMid.opacity(0.4), radius: 12, y: 6)
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 8)
-
             Spacer().frame(height: 16)
         }
         .padding(20)
@@ -136,11 +132,51 @@ struct AgendaDetailView: View {
         .offset(y: -20)
     }
 
-    private func formatDate(_ start: String, _ end: String?) -> String {
-        guard let end, !end.isEmpty else { return start }
-        return "\(start) — \(end)"
+    // MARK: - Pinned CTA
+
+    private var confirmButton: some View {
+        Button(action: {}) {
+            HStack(spacing: 8) {
+                Image(systemName: "heart.fill")
+                Text("Confirmar presença").font(PazTypography.titleMedium)
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity).frame(height: 56)
+            .background(PazColors.heroGradient)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: PazColors.pazPrimaryMid.opacity(0.4), radius: 12, y: 6)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(PazColors.background)
+    }
+
+    // MARK: - Date formatting
+
+    private func formatDetailDate(_ iso: String) -> String {
+        let formats = [
+            "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+            "yyyy-MM-dd'T'HH:mm:ssZ",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd'T'HH:mm",
+            "yyyy-MM-dd",
+        ]
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "pt_BR")
+        var date: Date?
+        for fmt in formats {
+            f.dateFormat = fmt
+            if let d = f.date(from: iso) { date = d; break }
+        }
+        guard let date else { return iso }
+        let out = DateFormatter()
+        out.dateFormat = "dd/MM/yyyy HH:mm"
+        return out.string(from: date)
     }
 }
+
+// MARK: - MetaChip
 
 private struct MetaChip: View {
     let icon: String
@@ -160,14 +196,14 @@ private struct MetaChip: View {
 #Preview("Light") {
     AgendaDetailView(event: AgendaEvent(
         id: "1", title: "Culto de Domingo", description: "Venha participar",
-        startDate: "2026-06-08", endDate: "2026-06-08", location: "Sede Paz Church", imageUrl: nil
+        startDate: "2026-06-08T19:52", endDate: "2026-06-08T21:00", location: "Sede Paz Church", imageUrl: nil
     ))
 }
 
 #Preview("Dark") {
     AgendaDetailView(event: AgendaEvent(
         id: "1", title: "Culto de Domingo", description: "Venha participar",
-        startDate: "2026-06-08", endDate: "2026-06-08", location: "Sede Paz Church", imageUrl: nil
+        startDate: "2026-06-08T19:52", endDate: "2026-06-08T21:00", location: "Sede Paz Church", imageUrl: nil
     ))
     .preferredColorScheme(.dark)
 }

@@ -4,7 +4,6 @@ import SwiftUI
 
 struct MinistriesView: View {
     @State private var viewModel: MinistriesViewModel
-    @Environment(\.dismiss) var dismiss
     @State private var selectedTab = 0
 
     init(churchRepository: ChurchRepository) {
@@ -12,50 +11,31 @@ struct MinistriesView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Hero header
-                HStack(spacing: PazSpacing.lg) {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                    }
-                    Text("Ministérios & Grupos")
-                        .font(PazTypography.headlineMedium)
-                        .foregroundColor(.white)
-                    Spacer()
-                }
-                .padding(.horizontal, PazSpacing.lg)
-                .padding(.vertical, PazSpacing.md)
-                .background(PazColors.heroGradient)
-
-                // Tab picker
-                Picker("", selection: $selectedTab) {
-                    Text("Ministérios").tag(0)
-                    Text("Grupos de Vida").tag(1)
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, PazSpacing.lg)
-                .padding(.vertical, PazSpacing.sm)
-                .background(PazColors.surface)
-
-                // Content
-                if viewModel.isLoading {
-                    loadingState
-                } else if let error = viewModel.error,
-                          viewModel.ministries.isEmpty,
-                          viewModel.lifeGroups.isEmpty {
-                    errorState(error: error)
-                } else if selectedTab == 0 {
-                    ministriesTab
-                } else {
-                    lifeGroupsTab
-                }
+        VStack(spacing: 0) {
+            Picker("", selection: $selectedTab) {
+                Text("Ministérios").tag(0)
+                Text("Grupos de Vida").tag(1)
             }
-            .background(PazColors.background)
+            .pickerStyle(.segmented)
+            .padding(.horizontal, PazSpacing.lg)
+            .padding(.vertical, PazSpacing.sm)
+            .background(PazColors.surface)
+
+            if viewModel.isLoading {
+                loadingState
+            } else if let error = viewModel.error,
+                      viewModel.ministries.isEmpty,
+                      viewModel.lifeGroups.isEmpty {
+                errorState(error: error)
+            } else if selectedTab == 0 {
+                ministriesTab
+            } else {
+                lifeGroupsTab
+            }
         }
-        .navigationBarBackButtonHidden()
+        .background(PazColors.background)
+        .navigationTitle("Ministérios & Grupos")
+        .navigationBarTitleDisplayMode(.large)
     }
 
     @ViewBuilder

@@ -4,7 +4,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.School
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,13 +18,11 @@ import br.church.paz.android.ui.components.PazNavItem
 import br.church.paz.android.ui.features.academy.AcademyScreen
 import br.church.paz.android.ui.features.account.AccountScreen
 import br.church.paz.android.ui.features.home.HomeScreen
-import br.church.paz.android.ui.features.search.SearchScreen
 
 private val TAB_ITEMS =
     listOf(
         PazNavItem(icon = Icons.Outlined.Home, label = "Início"),
         PazNavItem(icon = Icons.Outlined.School, label = "Academia"),
-        PazNavItem(icon = Icons.Outlined.Search, label = "Buscar"),
         PazNavItem(icon = Icons.Outlined.Person, label = "Conta"),
     )
 
@@ -33,7 +30,6 @@ private val TAB_ROUTES =
     listOf(
         Screen.Home.route,
         Screen.Academy.route,
-        Screen.Search.route,
         Screen.Account.route,
     )
 
@@ -66,7 +62,6 @@ fun AppShell(rootNavController: NavController) {
         ) {
             composable(Screen.Home.route) { HomeScreen(rootNavController, contentPadding = innerPadding) }
             composable(Screen.Academy.route) { AcademyScreen(navController = rootNavController, contentPadding = innerPadding) }
-            composable(Screen.Search.route) { SearchScreen(navController = rootNavController) }
             composable(Screen.Account.route) { AccountScreen(rootNavController, contentPadding = innerPadding) }
         }
     }

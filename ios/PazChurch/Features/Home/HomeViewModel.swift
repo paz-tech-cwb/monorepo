@@ -22,24 +22,18 @@ class HomeViewModel {
     /// Being @MainActor, calling a nonisolated async function (KMP) automatically
     /// hops to a background thread and returns here when done.
     func load() async {
-        print("[HomeVM] load() started")
         isLoading = true
         error = nil
         do {
-            print("[HomeVM] calling getHomeContent()")
             let content = try await homeRepository.getHomeContent()
             let banners = content.banners.count
             let agenda = content.agenda.count
-            print("[HomeVM] getHomeContent() succeeded — banners: \(banners), agenda: \(agenda)")
             homeContent = content
-            print("[HomeVM] calling currentUser()")
-            let user = try await authRepository.currentUser() as? Shared.User
-            print("[HomeVM] currentUser() returned: \(user?.name ?? "nil")")
-            userName = user?.name.split(separator: " ").first.map(String.init) ?? "Membro"
+            let user = try await authRepository.currentUser()
+            userName = user?.name.split(separator: " ").first.map(String.init) ?? ""
             isLoading = false
-            print("[HomeVM] load() completed successfully")
         } catch {
-            print("[HomeVM] load() caught error: \(error)")
+            print("[HomeVM] load() FAILED — \(type(of: error)): \(error)")
             isLoading = false
             self.error = error.localizedDescription
         }

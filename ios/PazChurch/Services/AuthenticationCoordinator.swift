@@ -47,7 +47,8 @@ class AuthenticationCoordinator {
         }
         do {
             let idToken = try await firebaseUser.getIDToken(forcingRefresh: true)
-            let provider = firebaseUser.providerData.first(where: { $0.providerID != "firebase" })?.providerID == "google.com" ? "google" : "apple"
+            let provider = firebaseUser.providerData.first(where: { $0.providerID != "firebase" })?
+                .providerID == "google.com" ? "google" : "apple"
             let user = try await IosAppContainer.shared.socialLogin(idToken: idToken, provider: provider)
             self.currentUser = user
             self.isAuthenticated = true

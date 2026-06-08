@@ -31,13 +31,15 @@ class SplashViewModel(
                 return@launch
             }
             try {
-                val idToken = firebaseUser.getIdToken(true).await()?.token
-                    ?: throw Exception("No Firebase token")
-                val provider = firebaseUser.providerData
-                    .firstOrNull { it.providerId != "firebase" }
-                    ?.providerId
-                    ?.let { if (it == "google.com") "google" else "apple" }
-                    ?: "google"
+                val idToken =
+                    firebaseUser.getIdToken(true).await()?.token
+                        ?: throw Exception("No Firebase token")
+                val provider =
+                    firebaseUser.providerData
+                        .firstOrNull { it.providerId != "firebase" }
+                        ?.providerId
+                        ?.let { if (it == "google.com") "google" else "apple" }
+                        ?: "google"
                 authRepository.socialLogin(idToken, provider)
                 _effect.send(SplashEffect.NavigateToHome)
             } catch (_: Exception) {

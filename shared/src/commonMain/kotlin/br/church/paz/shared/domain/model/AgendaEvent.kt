@@ -12,4 +12,5 @@ data class AgendaEvent(
     @SerialName("end_date") val endDate: String? = null,
     val location: String? = null,
     @SerialName("image_url") val imageUrl: String? = null,
+    @SerialName("recurrence_type") val recurrenceType: String? = null,
 )

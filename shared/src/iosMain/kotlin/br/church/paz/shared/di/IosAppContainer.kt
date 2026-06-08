@@ -3,6 +3,7 @@ package br.church.paz.shared.di
 import br.church.paz.shared.auth.createTokenStorage
 import br.church.paz.shared.data.remote.createPazHttpClient
 import br.church.paz.shared.data.repository.AcademyRepositoryImpl
+import br.church.paz.shared.data.repository.AgendaRepositoryImpl
 import br.church.paz.shared.data.repository.AuthRepositoryImpl
 import br.church.paz.shared.data.repository.ChurchRepositoryImpl
 import br.church.paz.shared.data.repository.FormsRepositoryImpl
@@ -12,6 +13,7 @@ import br.church.paz.shared.data.repository.UserRepositoryImpl
 import br.church.paz.shared.data.repository.createUserStore
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.repository.AcademyRepository
+import br.church.paz.shared.domain.repository.AgendaRepository
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.FormsRepository
@@ -22,7 +24,7 @@ import io.ktor.client.engine.darwin.Darwin
 
 object IosAppContainer {
 
-    var baseUrl: String = "http://192.168.15.4:3001"
+    var baseUrl: String = "http://localhost:3001"
 
     private val tokenStorage by lazy { createTokenStorage() }
     private val userStore by lazy { createUserStore() }
@@ -41,6 +43,7 @@ object IosAppContainer {
     }
 
     val homeRepository: HomeRepository by lazy { HomeRepositoryImpl(httpClient) }
+    val agendaRepository: AgendaRepository by lazy { AgendaRepositoryImpl(httpClient) }
     val academyRepository: AcademyRepository by lazy { AcademyRepositoryImpl(httpClient) }
     val userRepository: UserRepository by lazy { UserRepositoryImpl(httpClient) }
     val churchRepository: ChurchRepository by lazy { ChurchRepositoryImpl(httpClient) }
