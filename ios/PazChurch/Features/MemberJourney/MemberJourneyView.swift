@@ -163,7 +163,7 @@ private struct JourneyStepRow: View {
 class MemberJourneyViewModel {
     var steps: [JourneyStep] = []
     var isLoading = true
-    var error: String? = nil
+    var error: String?
 
     private let repository: MemberJourneyRepository
 

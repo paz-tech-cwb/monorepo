@@ -148,7 +148,6 @@ private struct AgendaEventRow: View {
                 if let loc = event.location, !loc.isEmpty {
                     Text(loc).font(PazTypography.bodySmall).foregroundStyle(PazColors.slate).lineLimit(1)
                 }
-
             }
             Spacer()
             Circle().fill(PazColors.pazPrimary).frame(width: 8, height: 8)
@@ -181,18 +180,18 @@ private struct AgendaEventRow: View {
 
     private func monthAbbrev(_ m: String?) -> String {
         switch m {
-        case "01": "JAN"; 
-case "02": "FEV"; 
-case "03": "MAR"; 
-case "04": "ABR"
-        case "05": "MAI"; 
-case "06": "JUN"; 
-case "07": "JUL"; 
-case "08": "AGO"
-        case "09": "SET"; 
-case "10": "OUT"; 
-case "11": "NOV"; 
-case "12": "DEZ"
+        case "01": "JAN"
+        case "02": "FEV"
+        case "03": "MAR"
+        case "04": "ABR"
+        case "05": "MAI"
+        case "06": "JUN"
+        case "07": "JUL"
+        case "08": "AGO"
+        case "09": "SET"
+        case "10": "OUT"
+        case "11": "NOV"
+        case "12": "DEZ"
         default: "???"
         }
     }
