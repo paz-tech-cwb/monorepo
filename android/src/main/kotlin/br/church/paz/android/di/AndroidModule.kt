@@ -1,5 +1,6 @@
 package br.church.paz.android.di
 
+import br.church.paz.android.ui.theme.AppThemeManager
 import br.church.paz.android.ui.features.academy.AcademyViewModel
 import br.church.paz.android.ui.features.academy.VideoPlayerViewModel
 import br.church.paz.android.ui.features.account.AccountViewModel
@@ -24,16 +25,17 @@ import org.koin.dsl.module
 
 val androidModule =
     module {
-        viewModel { SplashViewModel() }
+        single { AppThemeManager() }
+        viewModel { SplashViewModel(get()) }
         viewModel { LoginViewModel(get()) }
         viewModel { HomeViewModel(get(), get()) }
         viewModel { AcademyViewModel(get(), get()) }
         viewModel { (videoId: String) -> VideoPlayerViewModel(videoId) }
-        viewModel { AccountViewModel(get()) }
+        viewModel { AccountViewModel(get(), get()) }
         viewModel { ProfileViewModel(get()) }
         viewModel { EditProfileViewModel(get(), get()) }
         viewModel { (eventId: String) -> AgendaDetailViewModel(get(), eventId) }
-        viewModel { AgendaListViewModel(get()) }
+        viewModel { AgendaListViewModel(get()) } // get() resolves AgendaRepository
         viewModel { FormulariosViewModel(get()) }
         viewModel { (formId: String) -> FormDetailViewModel(formId, get(), get()) }
         viewModel { MemberJourneyViewModel(get()) }
