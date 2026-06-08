@@ -3,13 +3,13 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Event } from './entities/event.entity';
-import { Repository } from 'typeorm';
+import { IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
 
-function toResponse(event: Event) {
+function toResponse(event: Event, overrideDate?: Date) {
   return {
     id: event.id,
     title: event.title,
-    initial_date: event.initialDate,
+    initial_date: overrideDate ?? event.initialDate,
     final_date: event.finalDate ?? null,
     description: event.description ?? null,
     recurrence_type: event.recurrenceType ?? null,
@@ -17,6 +17,25 @@ function toResponse(event: Event) {
     created_at: event.createdAt,
     updated_at: event.updatedAt,
   };
+}
+
+function addByRecurrence(date: Date, recurrenceType: string): Date {
+  const next = new Date(date);
+  switch (recurrenceType.toUpperCase()) {
+    case 'DAILY':
+      next.setDate(next.getDate() + 1);
+      break;
+    case 'WEEKLY':
+      next.setDate(next.getDate() + 7);
+      break;
+    case 'MONTHLY':
+      next.setMonth(next.getMonth() + 1);
+      break;
+    case 'YEARLY':
+      next.setFullYear(next.getFullYear() + 1);
+      break;
+  }
+  return next;
 }
 
 @Injectable()
@@ -45,16 +64,48 @@ export class EventsService {
     const events = await this.eventsRepository.find({
       order: { initialDate: 'ASC' },
     });
-    return events.map(toResponse);
+    return events.map((e) => toResponse(e));
   }
 
   async findPaginated(page: number, limit: number) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const lookahead = new Date(today);
+    lookahead.setFullYear(lookahead.getFullYear() + 2);
+
     const events = await this.eventsRepository.find({
-      order: { initialDate: 'ASC' },
-      skip: (page - 1) * limit,
-      take: limit,
+      where: [
+        { recurrenceType: Not(IsNull()) },
+        { initialDate: MoreThanOrEqual(today) },
+      ],
     });
-    return events.map(toResponse);
+
+    const occurrences: ReturnType<typeof toResponse>[] = [];
+
+    for (const event of events) {
+      if (!event.recurrenceType) {
+        if (event.initialDate >= today) {
+          occurrences.push(toResponse(event));
+        }
+      } else {
+        let current = new Date(event.initialDate);
+        while (current < today) {
+          current = addByRecurrence(current, event.recurrenceType);
+        }
+        while (current <= lookahead) {
+          occurrences.push(toResponse(event, new Date(current)));
+          current = addByRecurrence(current, event.recurrenceType);
+        }
+      }
+    }
+
+    occurrences.sort(
+      (a, b) =>
+        new Date(a.initial_date).getTime() - new Date(b.initial_date).getTime(),
+    );
+
+    const skip = (page - 1) * limit;
+    return occurrences.slice(skip, skip + limit);
   }
 
   async findOne(id: number) {
