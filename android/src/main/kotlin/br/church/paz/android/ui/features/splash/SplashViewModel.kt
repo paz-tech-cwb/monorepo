@@ -25,12 +25,16 @@ class SplashViewModel(
                 _effect.send(SplashEffect.NavigateToHome)
                 return@launch
             }
-            val firebaseUser = FirebaseAuth.getInstance().currentUser
-            if (firebaseUser == null) {
-                _effect.send(SplashEffect.NavigateToLogin)
-                return@launch
-            }
+            // No stored tokens — attempt silent Firebase re-auth.
+            // The entire block is wrapped so Firebase initialization errors
+            // in test environments also route to NavigateToLogin.
             try {
+                val firebaseUser =
+                    FirebaseAuth.getInstance().currentUser
+                        ?: run {
+                            _effect.send(SplashEffect.NavigateToLogin)
+                            return@launch
+                        }
                 val idToken =
                     firebaseUser.getIdToken(true).await()?.token
                         ?: throw Exception("No Firebase token")

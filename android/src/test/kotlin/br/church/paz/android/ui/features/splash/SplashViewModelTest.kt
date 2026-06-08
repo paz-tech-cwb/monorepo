@@ -2,8 +2,7 @@ package br.church.paz.android.ui.features.splash
 
 import app.cash.turbine.test
 import br.church.paz.android.util.MainDispatcherRule
-import br.church.paz.shared.domain.model.User
-import br.church.paz.shared.domain.model.UserRole
+import br.church.paz.shared.auth.TokenPair
 import br.church.paz.shared.domain.repository.AuthRepository
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -18,18 +17,12 @@ class SplashViewModelTest {
 
     private val authRepository = mockk<AuthRepository>()
 
-    private val fakeUser =
-        User(
-            id = "u1",
-            name = "João",
-            email = "joao@paz.church",
-            role = UserRole.member,
-        )
+    private val fakeTokens = TokenPair(access = "access", refresh = "refresh", provider = "google")
 
     @Test
-    fun `navigates to home when user is already logged in`() =
+    fun `navigates to home when stored tokens exist`() =
         runTest {
-            coEvery { authRepository.currentUser() } returns fakeUser
+            coEvery { authRepository.storedTokens() } returns fakeTokens
             val viewModel = SplashViewModel(authRepository)
 
             viewModel.effect.test {
@@ -39,9 +32,10 @@ class SplashViewModelTest {
         }
 
     @Test
-    fun `navigates to login when no user session`() =
+    fun `navigates to login when no tokens and no Firebase user`() =
         runTest {
-            coEvery { authRepository.currentUser() } returns null
+            // No stored tokens — Firebase has no current user in unit test env
+            coEvery { authRepository.storedTokens() } returns null
             val viewModel = SplashViewModel(authRepository)
 
             viewModel.effect.test {
