@@ -24,8 +24,9 @@ class AuthenticationCoordinator {
     private func checkAuthState() {
         Task {
             do {
-                let user = try await authRepository.currentUser()
-                if user != nil {
+                let tokens = try await authRepository.storedTokens()
+                if tokens != nil {
+                    let user = try await authRepository.currentUser()
                     self.currentUser = user
                     self.isAuthenticated = true
                     self.isInitializing = false
@@ -33,7 +34,7 @@ class AuthenticationCoordinator {
                 }
             } catch {}
 
-            // No cached user — try silent Firebase re-auth before showing login
+            // No stored tokens — try silent Firebase re-auth before showing login
             await silentReAuth()
             self.isInitializing = false
         }
@@ -45,10 +46,13 @@ class AuthenticationCoordinator {
             isAuthenticated = false
             return
         }
+        guard let rawProvider = firebaseUser.providerData.first(where: { $0.providerID != "firebase" })?.providerID else {
+            isAuthenticated = false
+            return
+        }
+        let provider = rawProvider == "google.com" ? "google" : "apple"
         do {
             let idToken = try await firebaseUser.getIDToken(forcingRefresh: true)
-            let provider = firebaseUser.providerData.first(where: { $0.providerID != "firebase" })?
-                .providerID == "google.com" ? "google" : "apple"
             let user = try await IosAppContainer.shared.socialLogin(idToken: idToken, provider: provider)
             self.currentUser = user
             self.isAuthenticated = true

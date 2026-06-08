@@ -1,5 +1,6 @@
 package br.church.paz.shared.domain.repository
 
+import br.church.paz.shared.auth.TokenPair
 import br.church.paz.shared.domain.model.User
 
 interface AuthRepository {
@@ -7,4 +8,6 @@ interface AuthRepository {
     suspend fun logout(): Result<Unit>
     @Throws(Exception::class)
     suspend fun currentUser(): User?
+    @Throws(Exception::class)
+    suspend fun storedTokens(): TokenPair?
 }

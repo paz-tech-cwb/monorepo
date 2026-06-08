@@ -21,7 +21,7 @@ class SplashViewModel(
 
     private fun checkSession() {
         viewModelScope.launch {
-            if (authRepository.currentUser() != null) {
+            if (authRepository.storedTokens() != null) {
                 _effect.send(SplashEffect.NavigateToHome)
                 return@launch
             }

@@ -58,6 +58,8 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun currentUser(): User? = userStore.read()
+
+    override suspend fun storedTokens(): TokenPair? = tokenStorage.read()
 }
 
 @Serializable

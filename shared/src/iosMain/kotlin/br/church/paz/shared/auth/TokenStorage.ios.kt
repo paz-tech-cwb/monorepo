@@ -63,7 +63,10 @@ class KeychainTokenStorage : TokenStorage {
         query.setObject(key, forKey = cfKey(kSecAttrAccount))
         SecItemDelete(query as CFDictionaryRef)
         query.setObject(data, forKey = cfKey(kSecValueData))
-        SecItemAdd(query as CFDictionaryRef, null)
+        val addStatus = SecItemAdd(query as CFDictionaryRef, null)
+        if (addStatus != errSecSuccess) {
+            println("[Keychain] SecItemAdd failed for key=$key status=$addStatus")
+        }
     }
 
     private fun keychainGet(key: String): String? = memScoped {
