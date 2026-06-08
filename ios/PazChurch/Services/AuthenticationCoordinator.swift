@@ -10,11 +10,11 @@ import SwiftUI
 class AuthenticationCoordinator {
     var isAuthenticated = false
     var currentUser: Shared.User?
-    var isLoading = true
+    var isLoading = false
+    var isInitializing = true
     var error: String?
 
     private let authRepository: AuthRepository
-    private let keychain = KeychainService.shared
 
     init(authRepository: AuthRepository) {
         self.authRepository = authRepository
@@ -24,61 +24,70 @@ class AuthenticationCoordinator {
     private func checkAuthState() {
         Task {
             do {
-                if try keychain.retrieve(key: "accessToken") != nil {
-                    let user = try await authRepository.currentUser()
-                    if user != nil {
-                        self.currentUser = user
-                        self.isAuthenticated = true
-                        self.isLoading = false
-                        return
-                    }
+                let user = try await authRepository.currentUser()
+                if user != nil {
+                    self.currentUser = user
+                    self.isAuthenticated = true
+                    self.isInitializing = false
+                    return
                 }
-            } catch {
-                // Token lookup failed; treat as logged out
-            }
+            } catch {}
 
+            // No cached user — try silent Firebase re-auth before showing login
+            await silentReAuth()
+            self.isInitializing = false
+        }
+    }
+
+    /// Attempts to refresh the session silently using the existing Firebase user.
+    func silentReAuth() async {
+        guard let firebaseUser = Auth.auth().currentUser else {
+            isAuthenticated = false
+            return
+        }
+        do {
+            let idToken = try await firebaseUser.getIDToken(forcingRefresh: true)
+            let provider = firebaseUser.providerData.first(where: { $0.providerID != "firebase" })?.providerID == "google.com" ? "google" : "apple"
+            let user = try await IosAppContainer.shared.socialLogin(idToken: idToken, provider: provider)
+            self.currentUser = user
+            self.isAuthenticated = true
+        } catch {
             self.isAuthenticated = false
-            self.currentUser = nil
-            self.isLoading = false
         }
     }
 
     func signInWithGoogle(idToken: String) async {
         isLoading = true
         error = nil
-
         do {
             let user = try await IosAppContainer.shared.socialLogin(idToken: idToken, provider: "google")
             self.currentUser = user
             self.isAuthenticated = true
-            isLoading = false
         } catch {
             self.error = error.localizedDescription
-            isLoading = false
         }
+        isLoading = false
     }
 
     func signInWithApple(idToken: String, nonce: String) async {
         isLoading = true
         error = nil
-
         do {
             let user = try await IosAppContainer.shared.socialLogin(idToken: idToken, provider: "apple")
             self.currentUser = user
             self.isAuthenticated = true
-            isLoading = false
         } catch {
             self.error = error.localizedDescription
-            isLoading = false
         }
+        isLoading = false
     }
 
     func logout() {
         Task {
             do {
                 try await IosAppContainer.shared.logout()
-                try? keychain.delete(key: "accessToken")
-                try? keychain.delete(key: "refreshToken")
+                GIDSignIn.sharedInstance.signOut()
+                try? Auth.auth().signOut()
             } catch {
                 self.error = "Erro ao fazer logout: \(error.localizedDescription)"
             }
