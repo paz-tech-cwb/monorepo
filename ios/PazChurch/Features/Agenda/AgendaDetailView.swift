@@ -35,7 +35,7 @@ struct AgendaDetailView: View {
             .padding(.leading, 20)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .navigationBarHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     // MARK: - Hero
