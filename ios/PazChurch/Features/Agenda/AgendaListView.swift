@@ -148,11 +148,7 @@ private struct AgendaEventRow: View {
                 if let loc = event.location, !loc.isEmpty {
                     Text(loc).font(PazTypography.bodySmall).foregroundStyle(PazColors.slate).lineLimit(1)
                 }
-                if let recurrence = event.recurrenceType, !recurrence.isEmpty {
-                    Text(recurrenceLabel(recurrence))
-                        .font(PazTypography.labelSmall)
-                        .foregroundStyle(PazColors.pazPrimary)
-                }
+
             }
             Spacer()
             Circle().fill(PazColors.pazPrimary).frame(width: 8, height: 8)
@@ -180,16 +176,6 @@ private struct AgendaEventRow: View {
                 .background(PazColors.pazPrimary.opacity(0.08))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-        }
-    }
-
-    private func recurrenceLabel(_ type: String) -> String {
-        switch type.uppercased() {
-        case "WEEKLY": "Semanal"
-        case "MONTHLY": "Mensal"
-        case "YEARLY": "Anual"
-        case "DAILY": "Diário"
-        default: type
         }
     }
 
