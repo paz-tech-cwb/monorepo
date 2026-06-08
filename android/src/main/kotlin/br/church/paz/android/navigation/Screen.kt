@@ -5,8 +5,6 @@ sealed class Screen(
 ) {
     data object Splash : Screen("splash")
 
-    data object Login : Screen("login")
-
     data object Shell : Screen("shell")
 
     data object Home : Screen("home")

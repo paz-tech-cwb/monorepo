@@ -28,6 +28,8 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -43,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -78,15 +81,22 @@ fun AccountScreen(
                 AccountEffect.NavigateToFormularios -> navController.navigate(Screen.FormulariosList.route)
                 AccountEffect.NavigateToMinistries -> navController.navigate(Screen.Ministries.route)
                 AccountEffect.NavigateToNotificationPrefs -> navController.navigate(Screen.NotificationPrefs.route)
-                AccountEffect.NavigateToLogin,
-                AccountEffect.LoggedOut,
-                -> Unit
+                AccountEffect.LoggedOut -> Unit
             }
         }
     }
 
-    if (!uiState.isLoading && uiState.user == null) {
-        LoginScreen(onLoginSuccess = { viewModel.loadUser() }, isEmbedded = true)
+    if (!uiState.isLoading && uiState.user == null && !uiState.isGuestMode) {
+        LoginScreen(
+            onLoginSuccess = { viewModel.loadUser() },
+            onVisitorRequested = { viewModel.onExploreAsGuest() },
+            isEmbedded = true,
+        )
+        return
+    }
+
+    if (!uiState.isLoading && uiState.user == null && uiState.isGuestMode) {
+        GuestAccountScreen(onSignIn = { viewModel.onShowLogin() })
         return
     }
 
@@ -304,6 +314,38 @@ private fun MenuCard(
                 .clip(PazShapes.large)
                 .background(MaterialTheme.colorScheme.surface),
     ) { content() }
+}
+
+@Composable
+private fun GuestAccountScreen(onSignIn: () -> Unit) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = PazSpacing.Xl),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = "Você está navegando como visitante",
+            style = MaterialTheme.typography.titleMedium.copy(color = PazColors.Primary),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(PazSpacing.Sm))
+        Text(
+            text = "Faça login para acessar sua conta e recursos exclusivos.",
+            style = MaterialTheme.typography.bodyMedium.copy(color = PazColors.Slate),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(PazSpacing.Xl))
+        Button(
+            onClick = onSignIn,
+            colors = ButtonDefaults.buttonColors(containerColor = PazColors.Primary),
+        ) {
+            Text("Entrar na conta")
+        }
+    }
 }
 
 private val Settings = Icons.Outlined.Settings

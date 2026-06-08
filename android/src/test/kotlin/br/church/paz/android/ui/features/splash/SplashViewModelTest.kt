@@ -32,14 +32,15 @@ class SplashViewModelTest {
         }
 
     @Test
-    fun `navigates to login when no tokens and no Firebase user`() =
+    fun `navigates to home when no tokens and no Firebase user`() =
         runTest {
-            // No stored tokens — Firebase has no current user in unit test env
+            // No stored tokens, no Firebase user in unit test env — always go to shell.
+            // AccountScreen handles auth gating for the Account tab.
             coEvery { authRepository.storedTokens() } returns null
             val viewModel = SplashViewModel(authRepository)
 
             viewModel.effect.test {
-                assertEquals(SplashEffect.NavigateToLogin, awaitItem())
+                assertEquals(SplashEffect.NavigateToHome, awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
         }

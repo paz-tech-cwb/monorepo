@@ -60,14 +60,11 @@ import org.koin.androidx.compose.koinViewModel
 
 private val CardShape = RoundedCornerShape(26.dp)
 
-/**
- * Full-screen login (standalone route or bottom sheet).
- * For embedding inside another tab (tab bar stays visible), use [isEmbedded] = true.
- */
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onDismiss: (() -> Unit)? = null,
+    onVisitorRequested: (() -> Unit)? = null,
     isEmbedded: Boolean = false,
     viewModel: LoginViewModel = koinViewModel(),
 ) {
@@ -138,7 +135,7 @@ fun LoginScreen(
                     isDark = isDark,
                     onGoogle = onGoogleClick,
                     onApple = onAppleClick,
-                    onVisitor = { onLoginSuccess() },
+                    onVisitor = onVisitorRequested,
                 )
             }
             SnackbarHost(
@@ -211,7 +208,7 @@ fun LoginScreen(
                     isDark = isDark,
                     onGoogle = onGoogleClick,
                     onApple = onAppleClick,
-                    onVisitor = { onLoginSuccess() },
+                    onVisitor = onVisitorRequested,
                 )
                 Spacer(Modifier.weight(1f))
                 Spacer(Modifier.navigationBarsPadding())
@@ -237,7 +234,7 @@ private fun LoginCard(
     isDark: Boolean,
     onGoogle: () -> Unit,
     onApple: () -> Unit,
-    onVisitor: () -> Unit,
+    onVisitor: (() -> Unit)?,
 ) {
     val cardBg = if (isDark) PazColors.DarkSurface else Color.White
     val titleColor = if (isDark) PazColors.Accent else PazColors.Primary
@@ -300,20 +297,22 @@ private fun LoginCard(
                 isApple = true,
                 onClick = onApple,
             )
-            Spacer(Modifier.height(15.dp))
-            Text(
-                text = "Explorar como visitante",
-                style =
-                    MaterialTheme.typography.bodySmall.copy(
-                        color = slateColor,
-                        textDecoration = TextDecoration.Underline,
-                    ),
-                modifier =
-                    Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .clickable(enabled = !isLoading, onClick = onVisitor)
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
-            )
+            if (onVisitor != null) {
+                Spacer(Modifier.height(15.dp))
+                Text(
+                    text = "Explorar como visitante",
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(
+                            color = slateColor,
+                            textDecoration = TextDecoration.Underline,
+                        ),
+                    modifier =
+                        Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .clickable(enabled = !isLoading, onClick = onVisitor)
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                )
+            }
         }
     }
 }

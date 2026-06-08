@@ -8,7 +8,6 @@ import androidx.navigation.compose.rememberNavController
 import br.church.paz.android.ui.features.academy.VideoPlayerScreen
 import br.church.paz.android.ui.features.agenda.AgendaDetailScreen
 import br.church.paz.android.ui.features.agenda.AgendaListScreen
-import br.church.paz.android.ui.features.auth.LoginScreen
 import br.church.paz.android.ui.features.formularios.FormDetailScreen
 import br.church.paz.android.ui.features.formularios.FormulariosScreen
 import br.church.paz.android.ui.features.meetingreport.MeetingReportScreen
@@ -45,16 +44,6 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 },
-                onNavigateToLogin = {
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(Screen.Splash.route) { inclusive = true }
-                    }
-                },
-            )
-        }
-        composable(Screen.Login.route) {
-            LoginScreen(
-                onLoginSuccess = { navController.popBackStack() },
             )
         }
         composable(Screen.Shell.route) {

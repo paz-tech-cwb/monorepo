@@ -29,9 +29,16 @@ class AccountViewModel(
     fun loadUser() {
         viewModelScope.launch {
             val user = authRepository.currentUser()
-            _uiState.update { it.copy(user = user, isLoading = false) }
-            if (user == null) _effect.send(AccountEffect.NavigateToLogin)
+            _uiState.update { it.copy(user = user, isLoading = false, isGuestMode = false) }
         }
+    }
+
+    fun onExploreAsGuest() {
+        _uiState.update { it.copy(isGuestMode = true) }
+    }
+
+    fun onShowLogin() {
+        _uiState.update { it.copy(isGuestMode = false) }
     }
 
     fun onToggleDarkMode(enabled: Boolean) {

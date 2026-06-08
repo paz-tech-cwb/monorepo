@@ -56,8 +56,8 @@ fun ProfileScreen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 ProfileEffect.NavigateToEditProfile -> navController.navigate(Screen.EditProfile.route)
-                ProfileEffect.NavigateToLogin -> navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } }
-                ProfileEffect.Logout -> navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } }
+                ProfileEffect.NavigateToLogin -> navController.navigate(Screen.Shell.route) { popUpTo(0) { inclusive = true } }
+                ProfileEffect.Logout -> navController.navigate(Screen.Shell.route) { popUpTo(0) { inclusive = true } }
             }
         }
     }
@@ -81,7 +81,15 @@ fun ProfileScreen(
         ) {
             when {
                 uiState.isLoading -> LoadingState()
-                uiState.user == null -> LoggedOutState(onLogin = { navController.navigate(Screen.Login.route) })
+                uiState.user == null ->
+                    LoggedOutState(onLogin = {
+                        navController.navigate(Screen.Shell.route) {
+                            popUpTo(0) {
+                                inclusive =
+                                    true
+                            }
+                        }
+                    })
                 else -> LoggedInState(user = uiState.user!!, viewModel = viewModel)
             }
         }

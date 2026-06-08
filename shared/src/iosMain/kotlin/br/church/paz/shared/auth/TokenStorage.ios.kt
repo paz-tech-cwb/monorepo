@@ -1,4 +1,4 @@
-@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, kotlinx.cinterop.BetaInteropApi::class)
 
 package br.church.paz.shared.auth
 
@@ -6,18 +6,20 @@ import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.value
-import platform.CoreFoundation.CFDataRef
 import platform.CoreFoundation.CFDictionaryRef
+import platform.CoreFoundation.CFRelease
 import platform.CoreFoundation.CFStringRef
-import platform.CoreFoundation.CFStringCreateExternalRepresentation
-import platform.CoreFoundation.CFStringCreateFromExternalRepresentation
 import platform.CoreFoundation.CFTypeRefVar
-import platform.CoreFoundation.kCFStringEncodingUTF8
 import platform.Foundation.CFBridgingRelease
+import platform.Foundation.CFBridgingRetain
 import platform.Foundation.NSCopyingProtocol
 import platform.Foundation.NSData
 import platform.Foundation.NSMutableDictionary
 import platform.Foundation.NSNumber
+import platform.Foundation.NSString
+import platform.Foundation.NSUTF8StringEncoding
+import platform.Foundation.create
+import platform.Foundation.dataUsingEncoding
 import platform.Security.SecItemAdd
 import platform.Security.SecItemCopyMatching
 import platform.Security.SecItemDelete
@@ -61,9 +63,9 @@ class KeychainTokenStorage : TokenStorage {
         query.setObject(kSecClassGenericPassword, forKey = cfKey(kSecClass))
         query.setObject(service, forKey = cfKey(kSecAttrService))
         query.setObject(key, forKey = cfKey(kSecAttrAccount))
-        SecItemDelete(query as CFDictionaryRef)
+        withCFDictionary(query) { SecItemDelete(it) }
         query.setObject(data, forKey = cfKey(kSecValueData))
-        val addStatus = SecItemAdd(query as CFDictionaryRef, null)
+        val addStatus = withCFDictionary(query) { SecItemAdd(it, null) }
         if (addStatus != errSecSuccess) {
             println("[Keychain] SecItemAdd failed for key=$key status=$addStatus")
         }
@@ -77,7 +79,7 @@ class KeychainTokenStorage : TokenStorage {
         query.setObject(NSNumber(bool = true), forKey = cfKey(kSecReturnData))
         query.setObject(kSecMatchLimitOne, forKey = cfKey(kSecMatchLimit))
         val result = alloc<CFTypeRefVar>()
-        val status = SecItemCopyMatching(query as CFDictionaryRef, result.ptr)
+        val status = withCFDictionary(query) { SecItemCopyMatching(it, result.ptr) }
         if (status != errSecSuccess) return null
         val data = CFBridgingRelease(result.value) as? NSData ?: return null
         decodeUtf8(data)
@@ -88,26 +90,27 @@ class KeychainTokenStorage : TokenStorage {
         query.setObject(kSecClassGenericPassword, forKey = cfKey(kSecClass))
         query.setObject(service, forKey = cfKey(kSecAttrService))
         query.setObject(key, forKey = cfKey(kSecAttrAccount))
-        SecItemDelete(query as CFDictionaryRef)
+        withCFDictionary(query) { SecItemDelete(it) }
+    }
+
+    /** Bridges an NSMutableDictionary to CFDictionaryRef for Keychain API calls. */
+    private inline fun <T> withCFDictionary(dict: NSMutableDictionary, block: (CFDictionaryRef) -> T): T {
+        @Suppress("UNCHECKED_CAST")
+        val cfDict = CFBridgingRetain(dict) as CFDictionaryRef
+        return try {
+            block(cfDict)
+        } finally {
+            CFRelease(cfDict)
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun cfKey(ref: CFStringRef?): NSCopyingProtocol =
         CFBridgingRelease(ref) as NSCopyingProtocol
 
-    @Suppress("UNCHECKED_CAST")
-    private fun encodeUtf8(value: String): NSData? {
-        val cfStr = value as? CFStringRef ?: return null
-        val cfData = CFStringCreateExternalRepresentation(null, cfStr, kCFStringEncodingUTF8, 0u)
-            ?: return null
-        return CFBridgingRelease(cfData) as? NSData
-    }
+    private fun encodeUtf8(value: String): NSData? =
+        (value as NSString).dataUsingEncoding(NSUTF8StringEncoding)
 
-    @Suppress("UNCHECKED_CAST")
-    private fun decodeUtf8(data: NSData): String? {
-        val cfData = data as? CFDataRef ?: return null
-        val cfStr = CFStringCreateFromExternalRepresentation(null, cfData, kCFStringEncodingUTF8)
-            ?: return null
-        return CFBridgingRelease(cfStr) as? String
-    }
+    private fun decodeUtf8(data: NSData): String? =
+        NSString.create(data = data, encoding = NSUTF8StringEncoding) as? String
 }

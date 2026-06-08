@@ -25,30 +25,26 @@ class SplashViewModel(
                 _effect.send(SplashEffect.NavigateToHome)
                 return@launch
             }
-            // No stored tokens — attempt silent Firebase re-auth.
-            // The entire block is wrapped so Firebase initialization errors
-            // in test environments also route to NavigateToLogin.
+            // No stored tokens — attempt silent Firebase re-auth before opening the shell.
+            // Always navigate to Home regardless of outcome; AccountScreen handles auth gating.
             try {
-                val firebaseUser =
-                    FirebaseAuth.getInstance().currentUser
-                        ?: run {
-                            _effect.send(SplashEffect.NavigateToLogin)
-                            return@launch
-                        }
-                val idToken =
-                    firebaseUser.getIdToken(true).await()?.token
-                        ?: throw Exception("No Firebase token")
-                val provider =
-                    firebaseUser.providerData
-                        .firstOrNull { it.providerId != "firebase" }
-                        ?.providerId
-                        ?.let { if (it == "google.com") "google" else "apple" }
-                        ?: "google"
-                authRepository.socialLogin(idToken, provider)
-                _effect.send(SplashEffect.NavigateToHome)
+                val firebaseUser = FirebaseAuth.getInstance().currentUser
+                if (firebaseUser != null) {
+                    val idToken =
+                        firebaseUser.getIdToken(true).await()?.token
+                            ?: throw Exception("No Firebase token")
+                    val provider =
+                        firebaseUser.providerData
+                            .firstOrNull { it.providerId != "firebase" }
+                            ?.providerId
+                            ?.let { if (it == "google.com") "google" else "apple" }
+                            ?: "google"
+                    authRepository.socialLogin(idToken, provider)
+                }
             } catch (_: Exception) {
-                _effect.send(SplashEffect.NavigateToLogin)
+                // Silent re-auth failed — proceed unauthenticated
             }
+            _effect.send(SplashEffect.NavigateToHome)
         }
     }
 }
