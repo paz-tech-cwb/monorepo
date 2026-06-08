@@ -16,11 +16,17 @@ export class FormCoursesService {
   ) {}
 
   async listAll(): Promise<FormCourse[]> {
-    return this.courses.find({ where: { isActive: true }, order: { name: 'ASC' } });
+    return this.courses.find({
+      where: { isActive: true },
+      order: { name: 'ASC' },
+    });
   }
 
   async linkExisting(formSlug: string, courseId: string): Promise<FormCourse> {
-    const course = await this.courses.findOneBy({ id: courseId, isActive: true });
+    const course = await this.courses.findOneBy({
+      id: courseId,
+      isActive: true,
+    });
     if (!course) throw new NotFoundException();
     const existing = await this.links.findOneBy({ formSlug, courseId });
     if (!existing) {

@@ -52,7 +52,10 @@ export class FormCoursesController {
   @UseGuards(RolesGuard)
   @Roles('admin')
   async link(@Param('courseId') courseId: string) {
-    const course = await this.svc.linkExisting('member-registrations', courseId);
+    const course = await this.svc.linkExisting(
+      'member-registrations',
+      courseId,
+    );
     return plainToInstance(FormCourseResponseDto, course, {
       excludeExtraneousValues: true,
     });

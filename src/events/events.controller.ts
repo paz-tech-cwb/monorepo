@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   SerializeOptions,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
@@ -26,7 +27,12 @@ export class EventsController {
   }
 
   @Get()
-  findAll() {
+  findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
+    if (page !== undefined && limit !== undefined) {
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+      return this.eventsService.findPaginated(pageNum, limitNum);
+    }
     return this.eventsService.findAll();
   }
 

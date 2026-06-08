@@ -4,7 +4,6 @@ import { Announcement } from 'src/announcements/entities/announcement.entity';
 import { Contribution } from 'src/contributions/entities/contribution.entity';
 import { ContributionsService } from 'src/contributions/contributions.service';
 import { EventsService } from 'src/events/events.service';
-import { Event } from 'src/events/entities/event.entity';
 
 @Injectable()
 export class HomeService {
@@ -21,7 +20,7 @@ export class HomeService {
     const contributionsList: Contribution[] =
       await this.contributionsService.findAll();
 
-    const eventsList: Event[] = await this.eventsService.findAll();
+    const eventsList = await this.eventsService.findAll();
 
     return {
       sections: [

@@ -22,7 +22,7 @@ export class LifeGroupsService {
       id: lifeGroup.id,
       name: lifeGroup.name,
       leader_id: lifeGroup.leader?.id ?? null,
-    leader_name: lifeGroup.leader?.name ?? null,
+      leader_name: lifeGroup.leader?.name ?? null,
       sector_id: lifeGroup.sector?.id ?? null,
       location: lifeGroup.location ?? null,
       meeting_day: lifeGroup.meetingDay ?? null,

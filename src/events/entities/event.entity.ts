@@ -14,11 +14,20 @@ export class Event {
   @Column()
   title: string;
 
-  @Column({ type: 'timestamp' })
-  date: Date;
+  @Column({ name: 'initial_date', type: 'timestamp' })
+  initialDate: Date;
 
-  @Column({ name: 'image_url' })
-  imageUrl: string;
+  @Column({ name: 'final_date', type: 'timestamp', nullable: true })
+  finalDate: Date | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  description: string | null;
+
+  @Column({ name: 'recurrence_type', type: 'varchar', nullable: true })
+  recurrenceType: string | null;
+
+  @Column({ name: 'image_url', type: 'varchar', nullable: true })
+  imageUrl: string | null;
 
   @CreateDateColumn({ name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
