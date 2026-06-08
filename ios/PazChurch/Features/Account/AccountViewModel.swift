@@ -6,7 +6,6 @@ import SwiftUI
 @Observable
 class AccountViewModel {
     var user: User?
-    var isDarkMode = false
     var isLoading = true
 
     private let userRepository: UserRepository
@@ -27,11 +26,4 @@ class AccountViewModel {
         isLoading = false
     }
 
-    func onToggleDarkMode() {
-        isDarkMode.toggle()
-    }
-
-    func onLogout() {
-        // sign-out handled by AuthenticationCoordinator
-    }
 }

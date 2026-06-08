@@ -96,7 +96,7 @@ struct AccountView: View {
                     .padding(.bottom, 20)
 
                     menuCard {
-                        Button(action: { viewModel.onLogout() }) {
+                        Button(action: { authCoordinator.logout() }) {
                             HStack(spacing: 16) {
                                 PazIconContainer(icon: "door.left.hand.open", tint: PazColors.error)
                                 Text("Sair da conta").font(PazTypography.bodyMedium).foregroundStyle(PazColors.error)
