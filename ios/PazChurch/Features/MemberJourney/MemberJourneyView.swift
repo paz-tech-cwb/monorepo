@@ -13,6 +13,10 @@ struct MemberJourneyView: View {
         Group {
             if viewModel.isLoading {
                 loadingState
+            } else if let errorMessage = viewModel.error {
+                errorState(message: errorMessage)
+            } else if viewModel.steps.isEmpty {
+                emptyState
             } else {
                 contentState
             }
@@ -20,6 +24,31 @@ struct MemberJourneyView: View {
         .background(PazColors.background.ignoresSafeArea())
         .navigationTitle("Minha Jornada")
         .navigationBarTitleDisplayMode(.large)
+    }
+
+    private func errorState(message: String) -> some View {
+        VStack(spacing: PazSpacing.lg) {
+            Spacer()
+            Text(message)
+                .font(PazTypography.bodyMedium)
+                .foregroundStyle(PazColors.slate)
+                .multilineTextAlignment(.center)
+            Button("Tentar Novamente") { viewModel.retry() }
+                .font(PazTypography.titleSmall)
+                .foregroundStyle(PazColors.pazPrimary)
+            Spacer()
+        }
+        .padding(.horizontal, PazSpacing.lg)
+    }
+
+    private var emptyState: some View {
+        VStack {
+            Spacer()
+            Text("Nenhuma etapa encontrada")
+                .font(PazTypography.bodyMedium)
+                .foregroundStyle(PazColors.slate)
+            Spacer()
+        }
     }
 
     private var contentState: some View {
@@ -134,6 +163,7 @@ private struct JourneyStepRow: View {
 class MemberJourneyViewModel {
     var steps: [JourneyStep] = []
     var isLoading = true
+    var error: String? = nil
 
     private let repository: MemberJourneyRepository
 
@@ -146,12 +176,20 @@ class MemberJourneyViewModel {
         Task {
             do {
                 let journey = try await repository.getMemberJourney()
-                self.steps = ((journey.steps as? [JourneyStep]) ?? []).sorted { $0.order < $1.order }
+                self.steps = journey.steps.compactMap { $0 as? JourneyStep }
+                    .sorted { $0.order < $1.order }
                 self.isLoading = false
             } catch {
+                self.error = "Erro ao carregar jornada"
                 self.isLoading = false
             }
         }
+    }
+
+    func retry() {
+        isLoading = true
+        error = nil
+        loadJourney()
     }
 }
 
