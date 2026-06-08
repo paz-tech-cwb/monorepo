@@ -43,7 +43,7 @@ class AuthRepositoryImpl(
             }
             val response = decodeSocialLoginResponse(responseText)
 
-            tokenStorage.save(TokenPair(response.accessToken, response.refreshToken))
+            tokenStorage.save(TokenPair(response.accessToken, response.refreshToken, provider))
             userStore.save(response.user)
             response.user
         }
