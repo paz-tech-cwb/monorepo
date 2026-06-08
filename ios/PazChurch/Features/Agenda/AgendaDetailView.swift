@@ -196,14 +196,16 @@ private struct MetaChip: View {
 #Preview("Light") {
     AgendaDetailView(event: AgendaEvent(
         id: "1", title: "Culto de Domingo", description: "Venha participar",
-        startDate: "2026-06-08T19:52", endDate: "2026-06-08T21:00", location: "Sede Paz Church", imageUrl: nil
+        startDate: "2026-06-08T19:52", endDate: "2026-06-08T21:00", location: "Sede Paz Church",
+        imageUrl: nil, recurrenceType: nil
     ))
 }
 
 #Preview("Dark") {
     AgendaDetailView(event: AgendaEvent(
         id: "1", title: "Culto de Domingo", description: "Venha participar",
-        startDate: "2026-06-08T19:52", endDate: "2026-06-08T21:00", location: "Sede Paz Church", imageUrl: nil
+        startDate: "2026-06-08T19:52", endDate: "2026-06-08T21:00", location: "Sede Paz Church",
+        imageUrl: nil, recurrenceType: nil
     ))
     .preferredColorScheme(.dark)
 }
