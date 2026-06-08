@@ -10,6 +10,7 @@ import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.patch
+import io.ktor.client.request.put
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -23,7 +24,7 @@ class UserRepositoryImpl(private val client: HttpClient) : UserRepository {
 
     @Throws(Exception::class)
     override suspend fun updateProfile(request: UpdateProfileRequest): User =
-        client.patch("api/users/me") {
+        client.put("api/users/me") {
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()
