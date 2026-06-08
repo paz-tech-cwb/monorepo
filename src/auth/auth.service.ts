@@ -19,7 +19,7 @@ import { Role } from 'src/roles/entities/role.entity';
 import { Repository } from 'typeorm';
 
 const ACCESS_TOKEN_EXPIRES_IN = '24h';
-const REFRESH_TOKEN_EXPIRES_IN = '30d';
+const REFRESH_TOKEN_EXPIRES_IN = '90d';
 const JWT_ALGORITHM: jwt.Algorithm = 'HS256';
 
 const APPLE_JWKS_URI = 'https://appleid.apple.com/auth/keys';
@@ -168,7 +168,7 @@ export class AuthService implements OnModuleInit {
       { expiresIn: REFRESH_TOKEN_EXPIRES_IN, algorithm: JWT_ALGORITHM },
     );
 
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days
     const hashedToken = this.hashToken(refreshToken);
 
     const account = this.userAccountRepo.create({
