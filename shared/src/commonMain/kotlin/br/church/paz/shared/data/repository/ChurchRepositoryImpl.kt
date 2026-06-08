@@ -26,7 +26,7 @@ class ChurchRepositoryImpl(private val client: HttpClient) : ChurchRepository {
 
     @Throws(Exception::class)
     override suspend fun getAllLifeGroups(): List<LifeGroup> =
-        client.get("api/life-groups/my-groups").body()
+        client.get("api/life-groups").body()
 
     @Throws(Exception::class)
     override suspend fun getAreas(): List<Area> =
