@@ -60,6 +60,7 @@
     "react-day-picker": "10.0.1",
     "react-dom": "^19",
     "react-hook-form": "^7.60.0",
+    "react-image-crop": "^11.0.10",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.7",
     "recharts": "latest",
