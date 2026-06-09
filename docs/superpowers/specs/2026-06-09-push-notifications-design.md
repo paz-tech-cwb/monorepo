@@ -66,7 +66,7 @@ Drop columns (no longer needed — these categories are non-toggleable):
 - Add `memberJourneyEnabled: boolean`
 - Add `contributionsEnabled: boolean`
 - Add `osPermissionStatus: 'granted' | 'denied' | 'not_determined'`
-- Remove nothing — `admin_alerts_enabled` stays (used for any future toggleable admin alert variant)
+- `adminAlertsEnabled` column stays in the table but `admin_alerts` is excluded from `CATEGORY_PREF_MAP` — dispatch skips the pref check for it, consistent with the no-toggle rule.
 
 ### 3.3 `CATEGORY_PREF_MAP` in `NotificationDispatchService`
 
@@ -211,7 +211,7 @@ One Android notification channel per category (best practice Android 8+):
 paz_events, paz_announcements, paz_life_group, paz_academy,
 paz_member_journey, paz_contributions, paz_admin_alerts
 ```
-Created in `PazFirebaseMessagingService.ensureChannels()`. FCM message `data` payload includes `channel_id` field so the backend can route each category to the right channel.
+Created in `PazFirebaseMessagingService.ensureChannels()`. FCM message `data` payload must include a `channel_id` field matching the category channel — `FcmService.sendToUser()` on the backend must set `android.channelId` in the FCM message to the appropriate channel ID based on the notification's category.
 
 ---
 
@@ -231,7 +231,7 @@ Messaging.messaging().token { token, error in
     }
 }
 ```
-Replaces the current raw APNs hex-string registration.
+Replaces the current raw APNs hex-string registration. Requires `FirebaseMessaging` to be configured in `PazChurchApp.init()` after `FirebaseApp.configure()`: add `Messaging.messaging().delegate = AppDelegate.shared` (or wire the token callback via `PushNotificationService`).
 
 ### 7.2 Logout
 
