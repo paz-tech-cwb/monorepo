@@ -1,0 +1,120 @@
+<h2>Form Migration Map — All 13 Pages</h2>
+<p class="subtitle">Rule: 1–2 fields → Dialog. 3+ fields or rich content → Drawer (right side). Deletes always → AlertDialog.</p>
+
+<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;font-size:12px;">
+
+  <!-- Header -->
+  <div style="display:grid;grid-template-columns:160px 1fr 120px 120px;gap:8px;padding:6px 10px;background:#f4f4f5;border-radius:6px;font-weight:700;font-size:11px;color:#52525b;">
+    <div>Page</div>
+    <div>Form fields</div>
+    <div>Add / Edit</div>
+    <div>New components</div>
+  </div>
+
+  <!-- Announcements -->
+  <div style="display:grid;grid-template-columns:160px 1fr 120px 120px;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e4e4e7;border-radius:6px;align-items:start;">
+    <div style="font-weight:600;">Announcements</div>
+    <div style="color:#52525b;">title, subtitle, image_url, action_url, markdown_content</div>
+    <div style="color:#2563eb;font-weight:600;">→ Drawer</div>
+    <div style="color:#7c3aed;">Separator, Switch (active), Badge (status)</div>
+  </div>
+
+  <!-- Areas -->
+  <div style="display:grid;grid-template-columns:160px 1fr 120px 120px;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e4e4e7;border-radius:6px;align-items:start;">
+    <div style="font-weight:600;">Areas</div>
+    <div style="color:#52525b;">name (1 field)</div>
+    <div style="color:#059669;font-weight:600;">→ Dialog ✓</div>
+    <div style="color:#7c3aed;">Badge (sector count)</div>
+  </div>
+
+  <!-- Calendar -->
+  <div style="display:grid;grid-template-columns:160px 1fr 120px 120px;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e4e4e7;border-radius:6px;align-items:start;">
+    <div style="font-weight:600;">Calendar</div>
+    <div style="color:#52525b;">title, date, type, description</div>
+    <div style="color:#2563eb;font-weight:600;">→ Drawer</div>
+    <div style="color:#7c3aed;">Separator, Badge (event type)</div>
+  </div>
+
+  <!-- Church Data -->
+  <div style="display:grid;grid-template-columns:160px 1fr 120px 120px;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e4e4e7;border-radius:6px;align-items:start;">
+    <div style="font-weight:600;">Church Data</div>
+    <div style="color:#52525b;">name, address, phone, social links, schedule…</div>
+    <div style="color:#2563eb;font-weight:600;">→ Drawer</div>
+    <div style="color:#7c3aed;">Separator, Tabs (info / schedule / social)</div>
+  </div>
+
+  <!-- Contributions -->
+  <div style="display:grid;grid-template-columns:160px 1fr 120px 120px;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e4e4e7;border-radius:6px;align-items:start;">
+    <div style="font-weight:600;">Contributions</div>
+    <div style="color:#52525b;">member, amount, date, category, notes</div>
+    <div style="color:#2563eb;font-weight:600;">→ Drawer</div>
+    <div style="color:#7c3aed;">Tabs (by period), Collapsible (filters), Badge (category)</div>
+  </div>
+
+  <!-- Course Tracks -->
+  <div style="display:grid;grid-template-columns:160px 1fr 120px 120px;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e4e4e7;border-radius:6px;align-items:start;">
+    <div style="font-weight:600;">Course Tracks</div>
+    <div style="color:#52525b;">name (1 field)</div>
+    <div style="color:#059669;font-weight:600;">→ Dialog ✓</div>
+    <div style="color:#7c3aed;">Badge (course count)</div>
+  </div>
+
+  <!-- Courses -->
+  <div style="display:grid;grid-template-columns:160px 1fr 120px 120px;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e4e4e7;border-radius:6px;align-items:start;">
+    <div style="font-weight:600;">Courses</div>
+    <div style="color:#52525b;">title, description, creator, hours, category, url, image_url</div>
+    <div style="color:#2563eb;font-weight:600;">→ Drawer</div>
+    <div style="color:#7c3aed;">Separator, Badge (category), Switch (published)</div>
+  </div>
+
+  <!-- Events -->
+  <div style="display:grid;grid-template-columns:160px 1fr 120px 120px;gap:8px;padding:8px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;align-items:start;">
+    <div style="font-weight:600;">Events ✅</div>
+    <div style="color:#52525b;">Already uses Drawer correctly</div>
+    <div style="color:#059669;font-weight:600;">Drawer ✓</div>
+    <div style="color:#7c3aed;">Badge (status), Switch (highlight), Avatar</div>
+  </div>
+
+  <!-- Life Groups -->
+  <div style="display:grid;grid-template-columns:160px 1fr 120px 120px;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e4e4e7;border-radius:6px;align-items:start;">
+    <div style="font-weight:600;">Life Groups</div>
+    <div style="color:#52525b;">name, leader, sector, meeting day/time, address</div>
+    <div style="color:#2563eb;font-weight:600;">→ Drawer</div>
+    <div style="color:#7c3aed;">Separator, Avatar (leader), Badge (sector)</div>
+  </div>
+
+  <!-- Member Journey -->
+  <div style="display:grid;grid-template-columns:160px 1fr 120px 120px;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e4e4e7;border-radius:6px;align-items:start;">
+    <div style="font-weight:600;">Member Journey</div>
+    <div style="color:#52525b;">Notification dialog (message, stage)</div>
+    <div style="color:#059669;font-weight:600;">→ Dialog ✓</div>
+    <div style="color:#7c3aed;">Badge (stage), Tabs (journey stages)</div>
+  </div>
+
+  <!-- Members -->
+  <div style="display:grid;grid-template-columns:160px 1fr 120px 120px;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e4e4e7;border-radius:6px;align-items:start;">
+    <div style="font-weight:600;">Members</div>
+    <div style="color:#52525b;">Full registration (name, phone, address, LG, role…). Journey = Sheet (keep)</div>
+    <div style="color:#2563eb;font-weight:600;">→ Drawer + Sheet</div>
+    <div style="color:#7c3aed;">Avatar, Badge (role), Tabs (list / journey), Collapsible (filters), Checkbox (bulk)</div>
+  </div>
+
+  <!-- Sectors -->
+  <div style="display:grid;grid-template-columns:160px 1fr 120px 120px;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e4e4e7;border-radius:6px;align-items:start;">
+    <div style="font-weight:600;">Sectors</div>
+    <div style="color:#52525b;">name, area (2 fields)</div>
+    <div style="color:#059669;font-weight:600;">→ Dialog ✓</div>
+    <div style="color:#7c3aed;">Badge (area name), Avatar</div>
+  </div>
+
+  <!-- Users -->
+  <div style="display:grid;grid-template-columns:160px 1fr 120px 120px;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e4e4e7;border-radius:6px;align-items:start;">
+    <div style="font-weight:600;">Users</div>
+    <div style="color:#52525b;">name, email, role, member link</div>
+    <div style="color:#2563eb;font-weight:600;">→ Drawer</div>
+    <div style="color:#7c3aed;">Avatar, Badge (role), Switch (active), Separator</div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px;">Does this mapping look right? Anything to adjust before we write the spec?</p>

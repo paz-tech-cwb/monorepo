@@ -79,8 +79,9 @@ interface AuthProviderProps {
 // ---------------------------------------------------------------------------
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  // Eagerly restore user from localStorage so isAuthenticated is true on mount
-  const [user, setUser] = useState<User | null>(() => restoreUser())
+  // Keep the first client render identical to SSR, then restore browser state
+  // after hydration.
+  const [user, setUser] = useState<User | null>(null)
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -100,6 +101,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const storedAccess = getAccessToken()
     const storedRefresh = getRefreshToken()
+    const cachedUser = restoreUser()
 
     if (storedAccess) {
       setAccessToken(storedAccess)
@@ -109,6 +111,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
     if (storedAccess) {
       setSessionCookie()
+    }
+    if (cachedUser) {
+      setUser(cachedUser)
     }
   }, [])
 

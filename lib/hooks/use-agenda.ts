@@ -49,7 +49,7 @@ export function useCreateAgendaEvent() {
     mutationFn: (data: CreateAgendaEventRequest) => agendaApi.create(data),
     onSuccess: (newEvent) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
-      trackEvent("event_created", { event_id: newEvent.id })
+      if (newEvent?.id) trackEvent("event_created", { event_id: newEvent.id })
     },
   })
 }

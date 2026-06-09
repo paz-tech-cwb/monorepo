@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Search, Plus, MoreHorizontal, Edit, Trash2, Calendar, MapPin, ChevronLeft, ChevronRight, List, CalendarDays, Clock } from "lucide-react"
+import { ImageField } from "@/components/ui/image-field"
 import { DateTimePicker } from "@/components/ui/date-time-picker"
 import {
   useAgenda,
@@ -134,11 +135,11 @@ function EventForm({ formData, onChange, onUseChurchAddress, idPrefix = "" }: Ev
         <div>
           <Label htmlFor={`${idPrefix}recurrence_type`}>Recorrencia</Label>
           <Select
-            value={formData.recurrence_type || ""}
+            value={formData.recurrence_type || "none"}
             onValueChange={(v) =>
               onChange({
                 ...formData,
-                recurrence_type: (v as RecurrenceType) || undefined,
+                recurrence_type: v === "none" ? undefined : (v as RecurrenceType),
               })
             }
           >
@@ -146,19 +147,18 @@ function EventForm({ formData, onChange, onUseChurchAddress, idPrefix = "" }: Ev
               <SelectValue placeholder="Sem recorrencia" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Sem recorrencia</SelectItem>
+              <SelectItem value="none">Sem recorrencia</SelectItem>
               <SelectItem value="WEEKLY">Semanal</SelectItem>
               <SelectItem value="MONTHLY">Mensal</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Label htmlFor={`${idPrefix}image`}>URL da Imagem (opcional)</Label>
-          <Input
-            id={`${idPrefix}image`}
-            value={formData.image}
-            onChange={(e) => onChange({ ...formData, image: e.target.value })}
-            placeholder="https://exemplo.com/imagem.jpg"
+        <div className="col-span-2">
+          <ImageField
+            value={formData.image ?? ""}
+            onChange={(url) => onChange({ ...formData, image: url })}
+            category="events"
+            label="Imagem (opcional)"
           />
         </div>
       </div>
@@ -218,6 +218,7 @@ export function EventsManagement() {
   }
 
   const handleAddEvent = async () => {
+    if (!formData.title.trim() || !formData.initial_date) return
     await createMutation.mutateAsync(formData)
     resetForm()
     setIsAddSheetOpen(false)
@@ -269,7 +270,19 @@ export function EventsManagement() {
     `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
 
   const getEventsForDate = (dateString: string) =>
-    events.filter((event) => event != null && event.initial_date.split("T")[0] === dateString)
+    events.filter((event) => {
+      if (event == null) return false
+      const eventDay = event.initial_date.split("T")[0]
+      if (eventDay === dateString) return true
+      if (!event.recurrence_type) return false
+      const start = new Date(event.initial_date)
+      const target = new Date(dateString + "T00:00:00")
+      if (target <= start) return false
+      const type = event.recurrence_type.toUpperCase()
+      if (type === "WEEKLY") return start.getDay() === target.getDay()
+      if (type === "MONTHLY") return start.getDate() === target.getDate()
+      return false
+    })
 
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentDate((prev) => {
@@ -625,8 +638,8 @@ export function EventsManagement() {
       </Tabs>
 
       {/* Create drawer */}
-      <Drawer open={isAddSheetOpen} onOpenChange={setIsAddSheetOpen}>
-        <DrawerContent className="flex flex-col max-h-[90vh]">
+      <Drawer direction="right" open={isAddSheetOpen} onOpenChange={setIsAddSheetOpen}>
+        <DrawerContent className="flex flex-col h-full sm:max-w-[640px]">
           <DrawerHeader className="text-left px-6">
             <DrawerTitle>Criar Novo Evento</DrawerTitle>
             <DrawerDescription>Preencha os dados do evento</DrawerDescription>
@@ -651,8 +664,8 @@ export function EventsManagement() {
       </Drawer>
 
       {/* Edit drawer */}
-      <Drawer open={!!editingEvent} onOpenChange={(open) => { if (!open) { setEditingEvent(null); resetForm() } }}>
-        <DrawerContent className="flex flex-col max-h-[90vh]">
+      <Drawer direction="right" open={!!editingEvent} onOpenChange={(open) => { if (!open) { setEditingEvent(null); resetForm() } }}>
+        <DrawerContent className="flex flex-col h-full sm:max-w-[640px]">
           <DrawerHeader className="text-left px-6">
             <DrawerTitle>Editar Evento</DrawerTitle>
             <DrawerDescription>Atualize os dados do evento</DrawerDescription>

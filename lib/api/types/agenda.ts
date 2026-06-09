@@ -31,7 +31,23 @@ export interface AgendaMonthGroup {
   events: AgendaEvent[]
 }
 
-export type AgendaApiResponse = AgendaMonthGroup[]
+export interface BackendAgendaEvent {
+  id: number
+  title: string
+  // Legacy flat shape — date was renamed to initial_date; keep both for compatibility
+  date?: string
+  initial_date?: string
+  final_date?: string | null
+  description?: string | null
+  recurrence_type?: RecurrenceType | null
+  image?: string | null
+  imageUrl?: string | null
+  image_url?: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+export type AgendaApiResponse = AgendaMonthGroup[] | BackendAgendaEvent[]
 
 // Stats derived from agenda data
 export interface AgendaStats {

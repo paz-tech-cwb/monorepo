@@ -36,9 +36,9 @@ function buildIso(date: Date | undefined, time: string): string {
   const datePart = format(date, "yyyy-MM-dd")
   const digits = time.replace(/\D/g, "")
   if (digits.length === 4) {
-    return `${datePart}T${digits.slice(0, 2)}:${digits.slice(2, 4)}`
+    return `${datePart}T${digits.slice(0, 2)}:${digits.slice(2, 4)}:00`
   }
-  return datePart
+  return `${datePart}T00:00:00`
 }
 
 export function DateTimePicker({ label, value, onChange, optional = false }: DateTimePickerProps) {

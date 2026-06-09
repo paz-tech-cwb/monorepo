@@ -1,0 +1,85 @@
+<h2>Which direction for the Drawer?</h2>
+<p class="subtitle">Complex forms (announcements, events, courses, etc.) will use Drawer. Which side feels right?</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Option A — Right side (like a panel)</div>
+    <div class="mockup-body" style="display:flex;height:340px;gap:0;padding:0;overflow:hidden;border-radius:6px;">
+      <!-- Main content dimmed -->
+      <div style="flex:1;background:#f4f4f5;padding:16px;opacity:0.4;">
+        <div class="mock-nav" style="margin-bottom:12px;font-size:11px;">Dashboard sidebar</div>
+        <div style="background:#e4e4e7;border-radius:4px;height:32px;margin-bottom:8px;"></div>
+        <div style="background:#e4e4e7;border-radius:4px;height:24px;width:60%;margin-bottom:8px;"></div>
+        <div style="background:#e4e4e7;border-radius:4px;height:80px;margin-bottom:8px;"></div>
+        <div style="background:#e4e4e7;border-radius:4px;height:24px;width:80%;"></div>
+      </div>
+      <!-- Drawer panel -->
+      <div style="width:380px;background:#fff;border-left:1px solid #e4e4e7;padding:20px;box-shadow:-4px 0 16px rgba(0,0,0,0.08);">
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Criar Aviso</div>
+        <div style="font-size:11px;color:#71717a;margin-bottom:16px;">Preencha os dados do aviso</div>
+        <div style="font-size:11px;color:#52525b;margin-bottom:4px;">Título</div>
+        <div class="mock-input" style="margin-bottom:10px;font-size:11px;height:28px;"></div>
+        <div style="font-size:11px;color:#52525b;margin-bottom:4px;">Subtítulo</div>
+        <div class="mock-input" style="margin-bottom:10px;font-size:11px;height:28px;"></div>
+        <div style="font-size:11px;color:#52525b;margin-bottom:4px;">Conteúdo (Markdown)</div>
+        <div style="background:#f4f4f5;border:1px solid #e4e4e7;border-radius:4px;height:80px;margin-bottom:16px;"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <div class="mock-button" style="background:#f4f4f5;color:#333;font-size:11px;padding:6px 14px;">Cancelar</div>
+          <div class="mock-button" style="font-size:11px;padding:6px 14px;">Criar Aviso</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">Option B — Bottom (sheet style)</div>
+    <div class="mockup-body" style="display:flex;flex-direction:column;height:340px;gap:0;padding:0;overflow:hidden;border-radius:6px;">
+      <!-- Main content dimmed -->
+      <div style="flex:1;background:#f4f4f5;padding:16px;opacity:0.4;">
+        <div class="mock-nav" style="margin-bottom:12px;font-size:11px;">Dashboard sidebar</div>
+        <div style="background:#e4e4e7;border-radius:4px;height:32px;margin-bottom:8px;"></div>
+        <div style="background:#e4e4e7;border-radius:4px;height:24px;width:60%;"></div>
+      </div>
+      <!-- Bottom drawer -->
+      <div style="background:#fff;border-top:1px solid #e4e4e7;padding:20px;box-shadow:0 -4px 16px rgba(0,0,0,0.08);">
+        <div style="width:40px;height:4px;background:#e4e4e7;border-radius:2px;margin:0 auto 14px;"></div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Criar Aviso</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px;">
+          <div>
+            <div style="font-size:10px;color:#52525b;margin-bottom:3px;">Título</div>
+            <div class="mock-input" style="height:26px;font-size:10px;"></div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:#52525b;margin-bottom:3px;">Subtítulo</div>
+            <div class="mock-input" style="height:26px;font-size:10px;"></div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:#52525b;margin-bottom:3px;">URL da Imagem</div>
+            <div class="mock-input" style="height:26px;font-size:10px;"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">
+          <div class="mock-button" style="background:#f4f4f5;color:#333;font-size:11px;padding:6px 14px;">Cancelar</div>
+          <div class="mock-button" style="font-size:11px;padding:6px 14px;">Criar Aviso</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options" style="margin-top:20px;">
+  <div class="option" data-choice="right" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Right-side panel</h3>
+      <p>Slides in from the right. More vertical space — great for long forms with markdown editors. Feels like a detail panel.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="bottom" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Bottom sheet</h3>
+      <p>Slides up from the bottom. More horizontal space — better for grid-style forms. Familiar mobile pattern.</p>
+    </div>
+  </div>
+</div>
