@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { uploadMedia, listMedia, type MediaItem } from "@/lib/firebase/storage"
 import { cn } from "@/lib/utils"
+import { ImageCropDialog } from "@/components/ui/image-crop-dialog"
 
 // ── MediaPickerDialog ──────────────────────────────────────────────────────────
 
@@ -18,9 +19,10 @@ interface MediaPickerDialogProps {
   onOpenChange: (open: boolean) => void
   category: string
   onSelect: (url: string) => void
+  cropAspectRatio?: number
 }
 
-export function MediaPickerDialog({ open, onOpenChange, category, onSelect }: MediaPickerDialogProps) {
+export function MediaPickerDialog({ open, onOpenChange, category, onSelect, cropAspectRatio = 4 / 3 }: MediaPickerDialogProps) {
   const [tab, setTab] = useState<"library" | "upload">("library")
   const [items, setItems] = useState<MediaItem[]>([])
   const [loadingLibrary, setLoadingLibrary] = useState(false)
@@ -30,6 +32,7 @@ export function MediaPickerDialog({ open, onOpenChange, category, onSelect }: Me
   const [uploadProgress, setUploadProgress] = useState(0)
   const [dragging, setDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [cropFile, setCropFile] = useState<File | null>(null)
 
   const loadLibrary = useCallback(async () => {
     setLoadingLibrary(true)
@@ -78,14 +81,15 @@ export function MediaPickerDialog({ open, onOpenChange, category, onSelect }: Me
 
   const handleFilePicked = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) handleUploadFile(file)
+    if (file) setCropFile(file)
+    e.target.value = ""
   }
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setDragging(false)
     const file = e.dataTransfer.files?.[0]
-    if (file) handleUploadFile(file)
+    if (file) setCropFile(file)
   }
 
   return (
@@ -195,6 +199,17 @@ export function MediaPickerDialog({ open, onOpenChange, category, onSelect }: Me
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      <ImageCropDialog
+        file={cropFile}
+        aspectRatio={cropAspectRatio}
+        onCrop={(blob) => {
+          const name = cropFile?.name ?? "cropped.jpg"
+          setCropFile(null)
+          handleUploadFile(new File([blob], name, { type: "image/jpeg" }))
+        }}
+        onCancel={() => setCropFile(null)}
+      />
     </Dialog>
   )
 }
