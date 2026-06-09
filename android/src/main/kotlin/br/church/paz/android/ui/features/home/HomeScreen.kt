@@ -113,7 +113,7 @@ fun HomeScreen(
                     context.startActivity(
                         Intent(Intent.ACTION_VIEW, Uri.parse(effect.url)),
                     )
-                is HomeEffect.NavigateToAgenda -> navController.navigate(Screen.AgendaList.route)
+                is HomeEffect.NavigateToAgenda -> navController.navigate(Screen.AgendaDetail.createRoute(effect.eventId))
             }
         }
     }
@@ -140,6 +140,7 @@ fun HomeScreen(
                     sectionOrder = uiState.sectionOrder,
                     onBannerTap = viewModel::onBannerTapped,
                     onEventTap = viewModel::onEventTapped,
+                    onSeeAllEvents = { navController.navigate(Screen.AgendaList.route) },
                     contentPadding = adjustedPadding,
                 )
         }
@@ -236,6 +237,7 @@ private fun HomeContent(
     sectionOrder: List<String>,
     onBannerTap: (String?) -> Unit,
     onEventTap: (String) -> Unit,
+    onSeeAllEvents: () -> Unit,
     contentPadding: PaddingValues,
 ) {
     val weekDays = remember(agendaEvents) { buildWeekDays(agendaEvents) }
@@ -252,7 +254,7 @@ private fun HomeContent(
                     if (banners.isNotEmpty()) {
                         item(key = "featured") {
                             AnimatedSection(index = index) {
-                                FeaturedSection(banners = banners, onBannerTap = onBannerTap)
+                                FeaturedSection(banners = banners, onBannerTap = onBannerTap, onSeeAll = onSeeAllEvents)
                             }
                         }
                     }
@@ -276,6 +278,7 @@ private fun HomeContent(
                                 selectedDay = selectedDay,
                                 onDaySelected = { selectedDay = it },
                                 onEventTap = onEventTap,
+                                onSeeAll = onSeeAllEvents,
                             )
                         }
                     }
@@ -313,6 +316,7 @@ private fun AnimatedSection(
 private fun FeaturedSection(
     banners: List<Banner>,
     onBannerTap: (String?) -> Unit,
+    onSeeAll: () -> Unit,
 ) {
     val pagerState = rememberPagerState { banners.size }
     val isDark = LocalPazDarkTheme.current
@@ -326,7 +330,7 @@ private fun FeaturedSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("Eventos", style = MaterialTheme.typography.headlineMedium)
-            TextButton(onClick = {}, contentPadding = PaddingValues(0.dp)) {
+            TextButton(onClick = onSeeAll) {
                 Text(
                     "Ver todos",
                     style = MaterialTheme.typography.labelSmall.copy(color = PazColors.PrimaryLight),
@@ -664,6 +668,7 @@ private fun AgendaSection(
     selectedDay: Int,
     onDaySelected: (Int) -> Unit,
     onEventTap: (String) -> Unit,
+    onSeeAll: () -> Unit,
 ) {
     fun parseDate(str: String): Calendar? {
         val instant = runCatching { java.time.Instant.parse(str) }.getOrNull()
@@ -699,7 +704,7 @@ private fun AgendaSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("Agenda", style = MaterialTheme.typography.headlineMedium)
-            TextButton(onClick = {}, contentPadding = PaddingValues(0.dp)) {
+            TextButton(onClick = onSeeAll) {
                 Text(
                     "Ver tudo",
                     style = MaterialTheme.typography.labelSmall.copy(color = PazColors.PrimaryLight),

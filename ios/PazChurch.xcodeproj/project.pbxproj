@@ -75,7 +75,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		01FFDF96B4BA2F02238FEF09 /* PazChurch.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PazChurch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		01FFDF96B4BA2F02238FEF09 /* PazChurch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PazChurch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0DC5A70D94121801DA57AA49 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		0DDF8FF84082AAD03C474820 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		121FA55058E48ADE89F7DCDC /* AgendaListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgendaListView.swift; sourceTree = "<group>"; };
@@ -600,6 +600,7 @@
 				);
 				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.139667803306-vbo7nbgufjpr464k2ko91gnbvodjo9v7";
 				INFOPLIST_FILE = PazChurch/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -622,6 +623,7 @@
 				);
 				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.139667803306-vbo7nbgufjpr464k2ko91gnbvodjo9v7";
 				INFOPLIST_FILE = PazChurch/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

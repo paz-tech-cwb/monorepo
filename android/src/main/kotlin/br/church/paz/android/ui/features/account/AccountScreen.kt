@@ -89,7 +89,6 @@ fun AccountScreen(
     if (!uiState.isLoading && uiState.user == null && !uiState.isGuestMode) {
         LoginScreen(
             onLoginSuccess = { viewModel.loadUser() },
-            onVisitorRequested = { viewModel.onExploreAsGuest() },
             isEmbedded = true,
         )
         return

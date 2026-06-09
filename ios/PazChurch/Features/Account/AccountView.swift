@@ -21,11 +21,12 @@ struct AccountView: View {
                     loadingState
                 } else if !authCoordinator.isAuthenticated {
                     LoginView(authCoordinator: authCoordinator, isEmbedded: true)
+                        .toolbar(.hidden, for: .navigationBar)
                 } else {
                     contentState
                 }
             }
-            .navigationTitle("Conta")
+            .navigationTitle(authCoordinator.isAuthenticated ? "Conta" : "")
             .navigationBarTitleDisplayMode(.large)
         }
         .task { await viewModel.reload() }

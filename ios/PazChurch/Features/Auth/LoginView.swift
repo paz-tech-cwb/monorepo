@@ -6,115 +6,68 @@ import SwiftUI
 struct LoginView: View {
     var authCoordinator: AuthenticationCoordinator
     var onDismiss: (() -> Void)?
-    /// When true: no hero zone, card centered in a scroll view (for embedding inside another tab).
     var isEmbedded: Bool = false
 
     @State private var isLoading = false
     @State private var currentNonce: String?
 
     @Environment(\.colorScheme) private var colorScheme
-    private var isDark: Bool {
-        colorScheme == .dark
-    }
+    private var isDark: Bool { colorScheme == .dark }
+
+    // MARK: - Body
 
     var body: some View {
-        if isEmbedded {
-            embeddedLayout
-        } else {
-            fullscreenLayout
-        }
-    }
-
-    /// ── Embedded (inside Account tab — tab bar stays visible) ─────────────
-    private var embeddedLayout: some View {
         GeometryReader { geo in
             ZStack(alignment: .top) {
-                PazColors.background.ignoresSafeArea()
+                // ── Hero image — full screen ──
+                Image("welcome-pazchurch")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .clipped()
+                    .ignoresSafeArea()
 
-                heroZone
-                    .frame(height: geo.size.height * 0.50)
-                    .frame(maxWidth: .infinity)
-                    .ignoresSafeArea(edges: .top)
-
-                VStack(spacing: 0) {
-                    Spacer().frame(height: geo.size.height * 0.50 - 48)
-                    loginCard
-                        .padding(.horizontal, 16)
-                    Spacer()
-                }
-            }
-        }
-    }
-
-    /// ── Full-screen (standalone route or sheet) ───────────────────────────
-    private var fullscreenLayout: some View {
-        ZStack(alignment: .top) {
-            PazColors.background
-                .ignoresSafeArea()
-
-            heroZone
-                .frame(maxWidth: .infinity)
-                .frame(height: 380)
+                // ── Status bar scrim ──
+                LinearGradient(
+                    colors: [Color.black.opacity(0.45), .clear],
+                    startPoint: .top,
+                    endPoint: .init(x: 0.5, y: 0.35)
+                )
+                .frame(width: geo.size.width, height: 120)
                 .ignoresSafeArea(edges: .top)
 
-            VStack(spacing: 0) {
-                Spacer().frame(height: 332) // 380 - 48
-                loginCard
-                    .padding(.horizontal, 16)
-                Spacer()
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-
-    // MARK: - Hero
-
-    private var heroZone: some View {
-        ZStack {
-            PazColors.heroGradient
-
-            // Top scrim for status bar readability
-            LinearGradient(
-                colors: [Color.black.opacity(0.55), .clear],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 120)
-            .frame(maxHeight: .infinity, alignment: .top)
-
-            // Ghost cross watermark
-            Text("✝")
-                .font(.system(size: 200, weight: .bold))
-                .foregroundStyle(.white.opacity(0.07))
-
-            // Close button (modal context only)
-            if let onDismiss {
-                Button(action: onDismiss) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.85))
-                        .padding(10)
-                        .background(.white.opacity(0.15), in: Circle())
+                // ── Close button (sheet/modal context only) ──
+                if let onDismiss {
+                    Button(action: onDismiss) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .padding(10)
+                            .background(.white.opacity(0.15), in: Circle())
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .padding(.top, 56)
+                    .padding(.trailing, 20)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                .padding(.top, 56)
-                .padding(.trailing, 20)
+
+                // ── Login card — centered at 70% down ──
+                loginCard
+                    .frame(width: geo.size.width - 32)
+                    .position(x: geo.size.width / 2, y: geo.size.height * 0.7)
             }
+            .frame(width: geo.size.width, height: geo.size.height)
         }
+        .ignoresSafeArea()
     }
 
     // MARK: - Card
 
     @ViewBuilder
     private var loginCard: some View {
-        let cardBg = PazColors.surface
-        let titleColor = isDark ? PazColors.pazSky : PazColors.pazPrimary
-        let slateColor = PazColors.slate
-
         VStack(spacing: 0) {
             Text("Paz Church")
                 .font(PazTypography.displayLarge)
-                .foregroundStyle(titleColor)
+                .foregroundStyle(isDark ? PazColors.pazSky : PazColors.pazPrimary)
                 .multilineTextAlignment(.center)
 
             Spacer().frame(height: 14)
@@ -127,12 +80,11 @@ struct LoginView: View {
 
             Text("Uma comunidade de fé, amor e propósito.")
                 .font(PazTypography.bodyLarge)
-                .foregroundStyle(slateColor)
+                .foregroundStyle(PazColors.slate)
                 .multilineTextAlignment(.center)
 
             Spacer().frame(height: 22)
 
-            // Google
             authButton(
                 text: "Continuar com Google",
                 imageName: "google_logo",
@@ -143,10 +95,7 @@ struct LoginView: View {
 
             Spacer().frame(height: 11)
 
-            // Apple — nonce lifecycle:
-            // 1. Generate raw nonce here (before request)
-            // 2. Send SHA256(nonce) so Apple embeds it in the ID token
-            // 3. Pass raw nonce to backend to verify the claim
+            // Nonce lifecycle: generate raw nonce → send SHA256 to Apple → pass raw to backend
             SignInWithAppleButton(.signIn) { request in
                 let nonce = randomNonceString()
                 currentNonce = nonce
@@ -169,14 +118,15 @@ struct LoginView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 26)
-        .background(cardBg, in: RoundedRectangle(cornerRadius: 26))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26))
         .overlay(
             RoundedRectangle(cornerRadius: 26)
-                .stroke(PazColors.pazPrimary.opacity(0.06), lineWidth: 1)
+                .stroke(.white.opacity(0.25), lineWidth: 1)
         )
-        .shadow(color: PazColors.pazPrimary.opacity(0.40), radius: 22, x: 0, y: 20)
-        .shadow(color: PazColors.pazPrimary.opacity(0.06), radius: 4, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 12)
     }
+
+    // MARK: - Auth Buttons
 
     @ViewBuilder
     private func authButton(
@@ -187,13 +137,11 @@ struct LoginView: View {
         isLoading: Bool,
         action: @escaping () -> Void
     ) -> some View {
-        let bg = isApple
+        let bg: Color = isApple
             ? (isDark ? Color.white.opacity(0.10) : .black)
             : PazColors.surface2
-        let fg: Color = isApple
-            ? .white
-            : PazColors.ink
-        let border = isApple
+        let fg: Color = isApple ? .white : PazColors.ink
+        let border: Color = isApple
             ? (isDark ? Color.white.opacity(0.20) : .clear)
             : PazColors.line
 
@@ -250,10 +198,12 @@ struct LoginView: View {
     private func handleAppleSignIn(_ result: Result<ASAuthorization, Error>, rawNonce: String?) {
         switch result {
         case let .success(authorization):
-            guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
-                  let idTokenData = appleIDCredential.identityToken,
-                  let idToken = String(data: idTokenData, encoding: .utf8),
-                  let rawNonce else {
+            guard
+                let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                let idTokenData = appleIDCredential.identityToken,
+                let idToken = String(data: idTokenData, encoding: .utf8),
+                let rawNonce
+            else {
                 authCoordinator.error = "Apple Sign-In state error: missing nonce"
                 return
             }

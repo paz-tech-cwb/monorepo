@@ -142,12 +142,14 @@ private fun AgendaEventList(
         }
 
     LaunchedEffect(listState) {
-        snapshotFlow { listState.layoutInfo }
+        snapshotFlow {
+            val info = listState.layoutInfo
+            val last = info.visibleItemsInfo.lastOrNull()?.index ?: -1
+            info.totalItemsCount > 0 && last >= info.totalItemsCount - 3
+        }
             .distinctUntilChanged()
-            .filter { info ->
-                val last = info.visibleItemsInfo.lastOrNull()?.index ?: -1
-                last >= info.totalItemsCount - 3
-            }.collect { onLoadMore() }
+            .filter { it }
+            .collect { onLoadMore() }
     }
 
     LazyColumn(

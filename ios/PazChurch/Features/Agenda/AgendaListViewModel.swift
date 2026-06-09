@@ -39,8 +39,8 @@ class AgendaListViewModel {
 
     func loadMore() {
         guard !isRequestInFlight, !isLoading, !isLoadingMore, !hasReachedEnd else { return }
+        isRequestInFlight = true
         Task {
-            isRequestInFlight = true
             isLoadingMore = true
             defer {
                 isLoadingMore = false

@@ -1,15 +1,19 @@
 package br.church.paz.android.ui.features.auth
 
 import android.app.Activity
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.layout.layout
+
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,7 +44,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -52,6 +59,7 @@ import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapePill
 import br.church.paz.android.ui.theme.PazSpacing
 import com.cwb.pazchurch.app.BuildConfig
+import com.cwb.pazchurch.app.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.OAuthProvider
 import kotlinx.coroutines.launch
@@ -122,114 +130,92 @@ fun LoginScreen(
             }
     }
 
-    if (isEmbedded) {
-        // ── Embedded: card only, tab bar stays visible ─────────────────────
-        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(vertical = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                LoginCard(
-                    isLoading = uiState.isLoading,
-                    isDark = isDark,
-                    onGoogle = onGoogleClick,
-                    onApple = onAppleClick,
-                    onVisitor = onVisitorRequested,
-                )
-            }
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            ) { data ->
-                Snackbar(
-                    snackbarData = data,
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                )
-            }
-        }
-    } else {
-        // ── Full-screen: hero + overlapping card ────────────────────────────
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background),
-        ) {
+    BoxWithConstraints(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+    ) {
+        val screenHeight = maxHeight
+
+        Box(modifier = Modifier.fillMaxSize()) {
+            // ── Hero image — full screen ──
+            Image(
+                painter = painterResource(id = R.drawable.welcome_pazchurch),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            // ── Status bar scrim ──
             Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(380.dp)
-                        .background(PazGradients.Hero),
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(PazColors.DarkBackground.copy(alpha = 0.55f), Color.Transparent),
-                            ),
+                Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(PazColors.DarkBackground.copy(alpha = 0.55f), Color.Transparent),
                         ),
-                )
-                Text(
-                    text = "✝",
-                    style =
-                        MaterialTheme.typography.displayLarge.copy(
-                            fontSize = 200.sp,
-                            color = Color.White.copy(alpha = 0.07f),
-                        ),
-                    modifier = Modifier.align(Alignment.Center),
-                )
-                if (onDismiss != null) {
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier =
-                            Modifier
-                                .align(Alignment.TopEnd)
-                                .statusBarsPadding()
-                                .padding(end = 12.dp, top = 4.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Close,
-                            contentDescription = "Fechar",
-                            tint = Color.White.copy(alpha = 0.85f),
-                        )
-                    }
+                    ),
+            )
+
+            if (!isEmbedded && onDismiss != null) {
+                IconButton(
+                    onClick = onDismiss,
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .statusBarsPadding()
+                            .padding(end = 12.dp, top = 4.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = "Fechar",
+                        tint = Color.White.copy(alpha = 0.85f),
+                    )
                 }
             }
 
-            Column(Modifier.fillMaxSize()) {
-                Spacer(Modifier.height(332.dp))
-                LoginCard(
-                    isLoading = uiState.isLoading,
-                    isDark = isDark,
-                    onGoogle = onGoogleClick,
-                    onApple = onAppleClick,
-                    onVisitor = onVisitorRequested,
-                )
-                Spacer(Modifier.weight(1f))
-                Spacer(Modifier.navigationBarsPadding())
-            }
+            // ── Login card — centered at 70% down ──
+            LoginCard(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .layout { measurable, constraints ->
+                            val placeable = measurable.measure(constraints)
+                            val yCenter = (screenHeight * 0.7f).toPx().toInt()
+                            val y = (yCenter - placeable.height / 2).coerceAtLeast(0)
+                            layout(placeable.width, constraints.maxHeight) {
+                                placeable.placeRelative(0, y)
+                            }
+                        },
+                isLoading = uiState.isLoading,
+                isDark = isDark,
+                onGoogle = onGoogleClick,
+                onApple = onAppleClick,
+                onVisitor = onVisitorRequested,
+            )
+        }
 
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
-            ) { data ->
-                Snackbar(
-                    snackbarData = data,
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                )
-            }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .then(if (!isEmbedded) Modifier.navigationBarsPadding() else Modifier),
+        ) { data ->
+            Snackbar(
+                snackbarData = data,
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            )
         }
     }
 }
 
 @Composable
 private fun LoginCard(
+    modifier: Modifier = Modifier,
     isLoading: Boolean,
     isDark: Boolean,
     onGoogle: () -> Unit,
@@ -242,7 +228,7 @@ private fun LoginCard(
 
     Box(
         modifier =
-            Modifier
+            modifier
                 .padding(horizontal = 20.dp)
                 .shadow(
                     elevation = 20.dp,
@@ -282,7 +268,7 @@ private fun LoginCard(
 
             AuthButton(
                 text = "Continuar com Google",
-                icon = "G",
+                iconResId = R.drawable.google_logo,
                 isLoading = isLoading,
                 isDark = isDark,
                 isApple = false,
@@ -291,7 +277,6 @@ private fun LoginCard(
             Spacer(Modifier.height(11.dp))
             AuthButton(
                 text = "Continuar com Apple",
-                icon = "",
                 isLoading = false,
                 isDark = isDark,
                 isApple = true,
@@ -320,7 +305,8 @@ private fun LoginCard(
 @Composable
 private fun AuthButton(
     text: String,
-    icon: String,
+    icon: String = "",
+    iconResId: Int? = null,
     isLoading: Boolean,
     isDark: Boolean,
     isApple: Boolean,
@@ -367,10 +353,18 @@ private fun AuthButton(
                 strokeWidth = 2.dp,
             )
         } else {
-            Text(
-                text = icon,
-                style = MaterialTheme.typography.titleMedium.copy(color = contentColor),
-            )
+            if (iconResId != null) {
+                Image(
+                    painter = painterResource(id = iconResId),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+            } else if (icon.isNotEmpty()) {
+                Text(
+                    text = icon,
+                    style = MaterialTheme.typography.titleMedium.copy(color = contentColor),
+                )
+            }
             Spacer(Modifier.width(PazSpacing.Sm))
             Text(
                 text = text,

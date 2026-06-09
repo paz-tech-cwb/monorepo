@@ -52,8 +52,8 @@ class AgendaListViewModel(
     fun loadMore() {
         val state = _uiState.value
         if (isRequestInFlight || state.isLoading || state.isLoadingMore || state.hasReachedEnd) return
+        isRequestInFlight = true
         viewModelScope.launch {
-            isRequestInFlight = true
             val nextPage = currentPage + 1
             _uiState.value = state.copy(isLoadingMore = true)
             runCatching { agendaRepository.getEvents(page = nextPage, limit = PAGE_SIZE) }
