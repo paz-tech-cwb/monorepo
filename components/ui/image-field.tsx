@@ -11,9 +11,10 @@ interface ImageFieldProps {
   onChange: (url: string) => void
   category: string
   label?: string
+  cropAspectRatio?: number
 }
 
-export function ImageField({ value, onChange, category, label = "Imagem (opcional)" }: ImageFieldProps) {
+export function ImageField({ value, onChange, category, label = "Imagem (opcional)", cropAspectRatio }: ImageFieldProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -61,6 +62,7 @@ export function ImageField({ value, onChange, category, label = "Imagem (opciona
         onOpenChange={setOpen}
         category={category}
         onSelect={(url) => { onChange(url); setOpen(false) }}
+        cropAspectRatio={cropAspectRatio}
       />
     </div>
   )
