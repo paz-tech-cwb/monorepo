@@ -19,5 +19,6 @@ import { UsersModule } from '../users/users.module';
     SmsService,
     WhatsAppService,
   ],
+  exports: [NotificationDispatchService],
 })
 export class NotificationsModule {}
