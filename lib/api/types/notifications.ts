@@ -40,6 +40,7 @@ export interface Notification {
   recipients_count: number
   recipients_by_channel?: Record<string, number> | null
   status: NotificationStatus
+  origin: 'manual' | 'automatic'
   scheduled_at: string | null
   sent_at: string | null
   created_by: number | null
