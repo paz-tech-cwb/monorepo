@@ -21,6 +21,7 @@ describe('EventReminderEvaluator', () => {
           .mockResolvedValueOnce([{ id: 5, title: 'Culto', initialDate: eventStart }]) // events
           .mockResolvedValue([{ id: 1 }]), // users
       }),
+      findOne: jest.fn().mockResolvedValue(null), // no dedupe row yet
       insert: jest.fn().mockResolvedValue(undefined),
       create: jest.fn((_e, v) => v),
       save: jest.fn((x) => Promise.resolve({ id: 30, ...x })),
@@ -30,9 +31,11 @@ describe('EventReminderEvaluator', () => {
     const evaluator = new EventReminderEvaluator(em, dispatch);
     await evaluator.run(rule, now);
     expect((dispatch as any).dispatch).toHaveBeenCalledTimes(1);
+    // dedupe row recorded only after a successful dispatch
+    expect((em as any).insert).toHaveBeenCalledTimes(1);
   });
 
-  it('skips when dedupe insert raises a unique violation', async () => {
+  it('skips when a dedupe row already exists (no re-send)', async () => {
     const now = new Date('2026-06-10T20:00:00');
     const eventStart = new Date('2026-06-11T20:30:00');
     const em = {
@@ -43,7 +46,8 @@ describe('EventReminderEvaluator', () => {
           .fn()
           .mockResolvedValueOnce([{ id: 5, title: 'Culto', initialDate: eventStart }]),
       }),
-      insert: jest.fn().mockRejectedValue({ code: '23505' }),
+      findOne: jest.fn().mockResolvedValue({ id: 1, dedupeKey: 'event:5:24h' }),
+      insert: jest.fn(),
       create: jest.fn((_e, v) => v),
       save: jest.fn(),
     } as never;
@@ -52,5 +56,6 @@ describe('EventReminderEvaluator', () => {
     const evaluator = new EventReminderEvaluator(em, dispatch);
     await evaluator.run(rule, now);
     expect((dispatch as any).dispatch).not.toHaveBeenCalled();
+    expect((em as any).insert).not.toHaveBeenCalled();
   });
 });

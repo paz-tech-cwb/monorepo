@@ -45,21 +45,19 @@ export class EventReminderEvaluator implements ReminderEvaluator {
         if (!inWindow) continue;
 
         const dedupeKey = `event:${event.id}:${lead}h`;
-        try {
-          await this.em.insert(ReminderDispatchLog, {
-            ruleType: 'event',
-            dedupeKey,
-          });
-        } catch (err: unknown) {
-          if ((err as { code?: string }).code === '23505') continue; // already sent
-          throw err;
-        }
+        // Skip if we already dispatched this (event, lead) window. We check
+        // first and only record AFTER a successful dispatch, so a failed send
+        // is retried on the next tick instead of being silently suppressed.
+        const alreadySent = await this.em.findOne(ReminderDispatchLog, {
+          where: { ruleType: 'event', dedupeKey },
+        });
+        if (alreadySent) continue;
 
         const users = await this.em.createQueryBuilder(User, 'u').getMany();
         const notification = await this.em.save(
           this.em.create(Notification, {
             title: `Lembrete: ${event.title}`,
-            message: `O evento "${event.title}" começa em breve.`,
+            message: `O evento "${event.title}" começa em ${lead}h.`,
             category: 'events',
             channels: ['push'],
             segment: { type: 'all' },
@@ -68,6 +66,17 @@ export class EventReminderEvaluator implements ReminderEvaluator {
           }),
         );
         await this.dispatch.dispatch(notification, users);
+
+        // Record only after a successful dispatch. The unique index still
+        // guards against a concurrent double-insert.
+        try {
+          await this.em.insert(ReminderDispatchLog, {
+            ruleType: 'event',
+            dedupeKey,
+          });
+        } catch (err: unknown) {
+          if ((err as { code?: string }).code !== '23505') throw err;
+        }
       }
     }
   }

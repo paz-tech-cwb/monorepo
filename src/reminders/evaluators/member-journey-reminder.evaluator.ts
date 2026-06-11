@@ -40,15 +40,13 @@ export class MemberJourneyReminderEvaluator implements ReminderEvaluator {
 
     for (const stage of stuck) {
       const dedupeKey = `journey:${stage.memberId}:${stage.stageKey}`;
-      try {
-        await this.em.insert(ReminderDispatchLog, {
-          ruleType: 'member_journey',
-          dedupeKey,
-        });
-      } catch (err: unknown) {
-        if ((err as { code?: string }).code === '23505') continue;
-        throw err;
-      }
+      // Nudge each (member, stage) at most once. We check first and only
+      // record AFTER a successful dispatch, so a failed send is retried on the
+      // next tick instead of being permanently suppressed.
+      const alreadySent = await this.em.findOne(ReminderDispatchLog, {
+        where: { ruleType: 'member_journey', dedupeKey },
+      });
+      if (alreadySent) continue;
 
       const user = await this.em.findOne(User, {
         where: { id: stage.memberId },
@@ -67,6 +65,17 @@ export class MemberJourneyReminderEvaluator implements ReminderEvaluator {
         }),
       );
       await this.dispatch.dispatch(notification, [user]);
+
+      // Record only after a successful dispatch; the unique index still guards
+      // against a concurrent double-insert.
+      try {
+        await this.em.insert(ReminderDispatchLog, {
+          ruleType: 'member_journey',
+          dedupeKey,
+        });
+      } catch (err: unknown) {
+        if ((err as { code?: string }).code !== '23505') throw err;
+      }
     }
   }
 }
