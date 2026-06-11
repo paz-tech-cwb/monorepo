@@ -96,9 +96,10 @@ export class NotificationsService implements OnApplicationBootstrap {
   }
 
   // ── Read ──────────────────────────────────────────────────────────────────
-  async findAll() {
+  async findAll(origin?: 'manual' | 'automatic') {
     const notifications = await this.entityManager.find(Notification, {
       relations: ['createdBy'],
+      where: origin ? { origin } : {},
       order: { createdAt: 'DESC' },
     });
     return notifications.map((n) => this.toResponse(n));
@@ -268,6 +269,7 @@ export class NotificationsService implements OnApplicationBootstrap {
       recipients_count: n.recipientsCount,
       recipients_by_channel: n.recipientsByChannel ?? null,
       status: n.status,
+      origin: n.origin,
       scheduled_at: n.scheduledAt,
       sent_at: n.sentAt,
       created_by: n.createdBy?.id ?? null,

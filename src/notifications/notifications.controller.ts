@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   SerializeOptions,
   UseGuards,
   Request,
@@ -49,8 +50,8 @@ export class NotificationsController {
   @Get()
   @UseGuards(RolesGuard)
   @Roles('admin', 'pastor', 'area_leader', 'sector_leader')
-  findAll() {
-    return this.notificationsService.findAll();
+  findAll(@Query('origin') origin?: 'manual' | 'automatic') {
+    return this.notificationsService.findAll(origin);
   }
 
   @Get(':id')

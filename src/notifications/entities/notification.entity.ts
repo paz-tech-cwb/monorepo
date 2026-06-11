@@ -27,6 +27,8 @@ export type NotificationStatus =
   | 'sent'
   | 'failed';
 
+export type NotificationOrigin = 'manual' | 'automatic';
+
 export interface NotificationSegment {
   type: 'all' | 'filtered';
   filters?: {
@@ -74,6 +76,14 @@ export class Notification {
     default: 'pending',
   })
   status: NotificationStatus;
+
+  @Column({
+    type: 'enum',
+    enum: ['manual', 'automatic'],
+    enumName: 'notification_origin_enum',
+    default: 'manual',
+  })
+  origin: NotificationOrigin;
 
   @Column({ name: 'scheduled_at', type: 'timestamp', nullable: true })
   scheduledAt: Date | null;

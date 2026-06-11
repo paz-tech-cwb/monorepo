@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { NotificationDispatchService } from './notification-dispatch.service';
+import { Notification } from './entities/notification.entity';
 
 const mockQueryBuilder = {
   where: jest.fn().mockReturnThis(),
@@ -89,6 +90,17 @@ describe('NotificationsService', () => {
   it('remove() throws NotFoundException when notification not found', async () => {
     mockEntityManager.findOne.mockResolvedValue(null);
     await expect(service.remove(99)).rejects.toThrow(NotFoundException);
+  });
+
+  it('findAll passes origin filter to the where clause', async () => {
+    const findSpy = jest
+      .spyOn(mockEntityManager, 'find')
+      .mockResolvedValue([] as never);
+    await service.findAll('automatic');
+    expect(findSpy).toHaveBeenCalledWith(
+      Notification,
+      expect.objectContaining({ where: { origin: 'automatic' } }),
+    );
   });
 
   it('getReach() returns zero counts for empty segment', async () => {
