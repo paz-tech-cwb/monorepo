@@ -42,6 +42,7 @@ export type AnalyticsEventName =
   | "sector_deleted"
   | "conversion_created"
   | "conversion_deleted"
+  | "reminder_rule_updated"
   | "api_error"
 
 export interface AnalyticsEventParams {
@@ -85,6 +86,7 @@ export interface AnalyticsEventParams {
   sector_deleted: { sector_id: number }
   conversion_created: { conversion_id?: number; type?: string }
   conversion_deleted: { conversion_id: number }
+  reminder_rule_updated: { reminder_type: string }
   api_error: { endpoint: string; status: number; message?: string }
 }
 
