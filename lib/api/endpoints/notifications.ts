@@ -8,7 +8,10 @@ import type {
 } from '../types'
 
 export const notificationsApi = {
-  getAll: () => api.get<Notification[]>('/notifications'),
+  getAll: (origin?: 'manual' | 'automatic') =>
+    api.get<Notification[]>(
+      origin ? `/notifications?origin=${origin}` : '/notifications',
+    ),
 
   getById: (id: number) => api.get<Notification>(`/notifications/${id}`),
 

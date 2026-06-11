@@ -119,9 +119,12 @@ export function NotificationSystem() {
   const [newFilterType, setNewFilterType] = useState('')
   const [newFilterValue, setNewFilterValue] = useState('')
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [historyOrigin, setHistoryOrigin] = useState<'all' | 'manual' | 'automatic'>('all')
   const isDirty = useRef(false)
 
-  const { data: notifications = [], isLoading: notificationsLoading } = useNotifications()
+  const { data: notifications = [], isLoading: notificationsLoading } = useNotifications(
+    historyOrigin === 'all' ? undefined : historyOrigin,
+  )
   const { data: sectors = [] } = useQuery({ queryKey: ['sectors'], queryFn: () => sectorsApi.getAll() })
   const { data: lifeGroups = [] } = useQuery({ queryKey: ['life-groups'], queryFn: () => lifeGroupsApi.getAll() })
 
@@ -635,6 +638,19 @@ export function NotificationSystem() {
         <TabsContent value="history">
           <Card>
             <CardContent className="pt-6">
+              <div className="mb-4 w-48">
+                <Select
+                  value={historyOrigin}
+                  onValueChange={(v) => setHistoryOrigin(v as 'all' | 'manual' | 'automatic')}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="manual">Manuais</SelectItem>
+                    <SelectItem value="automatic">Automáticas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               {notificationsLoading ? (
                 <p className="text-center text-muted-foreground">Carregando...</p>
               ) : notifications.length === 0 ? (
@@ -650,6 +666,9 @@ export function NotificationSystem() {
                             <span className="font-medium truncate">{n.title}</span>
                             <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
                             <Badge variant="outline">{CATEGORIES.find(c => c.value === n.category)?.label ?? n.category}</Badge>
+                            {n.origin === 'automatic' && (
+                              <Badge variant="secondary">Automático</Badge>
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground line-clamp-2">{n.message}</p>
                           <div className="flex gap-2 flex-wrap">

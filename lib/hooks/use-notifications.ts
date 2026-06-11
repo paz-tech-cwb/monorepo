@@ -10,10 +10,10 @@ import { trackEvent } from '@/lib/firebase/analytics'
 
 const QUERY_KEY = ['notifications']
 
-export function useNotifications() {
+export function useNotifications(origin?: 'manual' | 'automatic') {
   return useQuery({
-    queryKey: QUERY_KEY,
-    queryFn: () => notificationsApi.getAll(),
+    queryKey: [...QUERY_KEY, origin ?? 'all'],
+    queryFn: () => notificationsApi.getAll(origin),
   })
 }
 
