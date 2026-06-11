@@ -27,6 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator'
 import { Label } from '@/components/ui/label'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { ReminderSettings } from './reminder-settings'
 import {
   useNotifications,
   useCreateNotification,
@@ -107,7 +108,7 @@ const EMPTY_FORM: CreateNotificationRequest = {
 }
 
 export function NotificationSystem() {
-  const [activeTab, setActiveTab] = useState<'compose' | 'history'>('compose')
+  const [activeTab, setActiveTab] = useState<'compose' | 'history' | 'automatic'>('compose')
   const [form, setForm] = useState<CreateNotificationRequest>(EMPTY_FORM)
   const [scheduleEnabled, setScheduleEnabled] = useState(false)
   const [scheduleDate, setScheduleDate] = useState('')
@@ -322,10 +323,11 @@ export function NotificationSystem() {
         <p className="text-muted-foreground">Envie notificações segmentadas para membros</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'compose' | 'history')}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'compose' | 'history' | 'automatic')}>
         <TabsList>
           <TabsTrigger value="compose">Criar</TabsTrigger>
           <TabsTrigger value="history">Histórico</TabsTrigger>
+          <TabsTrigger value="automatic">Automáticos</TabsTrigger>
         </TabsList>
 
         {/* CREATE TAB */}
@@ -691,6 +693,11 @@ export function NotificationSystem() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* AUTOMATIC TAB */}
+        <TabsContent value="automatic">
+          <ReminderSettings />
         </TabsContent>
       </Tabs>
     </div>
