@@ -15,6 +15,10 @@ export class RemindersService {
     return this.repo.find({ order: { id: 'ASC' } });
   }
 
+  findEnabled(): Promise<ReminderRule[]> {
+    return this.repo.find({ where: { enabled: true }, order: { id: 'ASC' } });
+  }
+
   async update(
     id: number,
     dto: UpdateReminderRuleDto,
