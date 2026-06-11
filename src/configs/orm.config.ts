@@ -31,6 +31,7 @@ import { Multiplication } from '../multiplications/entities/multiplication.entit
 import { ServiceReport } from '../service-reports/entities/service-report.entity';
 import { FormGuest } from '../form-guests/entities/form-guest.entity';
 import { ReminderRule } from '../reminders/entities/reminder-rule.entity';
+import { ReminderDispatchLog } from '../reminders/entities/reminder-dispatch-log.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -74,6 +75,7 @@ const config: DataSourceOptions = {
     ServiceReport,
     FormGuest,
     ReminderRule,
+    ReminderDispatchLog,
   ],
   migrations: ['dist/migrations/*.js'],
   synchronize: process.env.DB_SYNCHRONIZE === 'true',
