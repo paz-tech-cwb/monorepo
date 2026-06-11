@@ -1,8 +1,21 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Bell, Mail, Phone, MessageSquare, Plus, Trash2, Copy, Send, Clock } from 'lucide-react'
+import {
+  Bell,
+  Mail,
+  Phone,
+  MessageSquare,
+  Plus,
+  Trash2,
+  Copy,
+  Send,
+  Clock,
+  ChevronDown,
+  Users,
+} from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Label } from '@/components/ui/label'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   useNotifications,
   useCreateNotification,
@@ -30,7 +44,6 @@ import type {
   NotificationStatus,
   Notification,
 } from '@/lib/api/types'
-import { WipOverlay } from '@/components/ui/wip-overlay'
 
 const CATEGORIES: { value: NotificationCategory; label: string }[] = [
   { value: 'announcements', label: 'Anúncios' },
@@ -38,14 +51,28 @@ const CATEGORIES: { value: NotificationCategory; label: string }[] = [
   { value: 'life_group', label: 'Célula' },
   { value: 'academy', label: 'Academia' },
   { value: 'admin_alerts', label: 'Alertas Admin' },
+  { value: 'forms', label: 'Formulários' },
+  { value: 'member_journey', label: 'Jornada do Membro' },
+  { value: 'contributions', label: 'Contribuições' },
+  { value: 'meeting_reports', label: 'Relatórios de Reunião' },
 ]
 
+const LEADER_ONLY_CATEGORIES: NotificationCategory[] = ['forms', 'meeting_reports']
+
+// Only push is available for now — the other channels are not implemented yet.
 const CHANNELS = [
-  { value: 'push', label: 'Push', sub: 'Android & iOS', icon: Bell },
-  { value: 'email', label: 'Email', sub: 'via Resend', icon: Mail },
-  { value: 'sms', label: 'SMS', sub: 'via Twilio', icon: Phone },
-  { value: 'whatsapp', label: 'WhatsApp', sub: 'via Meta API', icon: MessageSquare },
+  { value: 'push', label: 'Push', icon: Bell, available: true },
+  { value: 'email', label: 'Email', icon: Mail, available: false },
+  { value: 'sms', label: 'SMS', icon: Phone, available: false },
+  { value: 'whatsapp', label: 'WhatsApp', icon: MessageSquare, available: false },
 ] as const
+
+const CHANNEL_LABELS: Record<string, string> = {
+  push: 'Push',
+  email: 'Email',
+  sms: 'SMS',
+  whatsapp: 'WhatsApp',
+}
 
 const ROLES = [
   { value: 'member', label: 'Membro' },
@@ -55,6 +82,13 @@ const ROLES = [
   { value: 'pastor', label: 'Pastor' },
   { value: 'admin', label: 'Admin' },
 ]
+
+const FILTER_TYPE_LABELS: Record<string, string> = {
+  role: 'Cargo',
+  sector: 'Setor',
+  life_group: 'Célula',
+  status: 'Status',
+}
 
 const STATUS_LABELS: Record<NotificationStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   pending: { label: 'Pendente', variant: 'secondary' },
@@ -78,6 +112,8 @@ export function NotificationSystem() {
   const [scheduleEnabled, setScheduleEnabled] = useState(false)
   const [scheduleDate, setScheduleDate] = useState('')
   const [scheduleTime, setScheduleTime] = useState('')
+  const [segmentOpen, setSegmentOpen] = useState(false)
+  const [scheduleOpen, setScheduleOpen] = useState(false)
   const [filters, setFilters] = useState<Array<{ type: string; value: string }>>([])
   const [newFilterType, setNewFilterType] = useState('')
   const [newFilterValue, setNewFilterValue] = useState('')
@@ -92,13 +128,48 @@ export function NotificationSystem() {
   const reachMutation = useNotificationReach()
   const deleteMutation = useDeleteNotification()
 
+  // Lock segment to 'filtered' for leader-only categories
+  const isLeaderOnlyCategory = LEADER_ONLY_CATEGORIES.includes(form.category)
+
+  // Friendly label for a single filter value
+  const filterValueLabel = useCallback(
+    (type: string, value: string): string => {
+      if (type === 'role') return ROLES.find(r => r.value === value)?.label ?? value
+      if (type === 'sector') return sectors.find(s => String(s.id) === value)?.name ?? value
+      if (type === 'life_group') return lifeGroups.find(g => String(g.id) === value)?.name ?? value
+      if (type === 'status') return value === 'active' ? 'Ativo' : 'Inativo'
+      return value
+    },
+    [sectors, lifeGroups],
+  )
+
+  const segmentSummary =
+    filters.length === 0
+      ? isLeaderOnlyCategory
+        ? 'Nenhum filtro'
+        : 'Todos os membros ativos'
+      : `${filters.length} filtro${filters.length > 1 ? 's' : ''}`
+
+  useEffect(() => {
+    if (LEADER_ONLY_CATEGORIES.includes(form.category)) {
+      isDirty.current = true
+      setSegmentOpen(true)
+      setForm(f => ({
+        ...f,
+        segment: { ...f.segment, type: 'filtered' },
+      }))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.category])
+
   // Rebuild segment when filters change
   useEffect(() => {
     isDirty.current = true
-    if (filters.length === 0) {
+    if (filters.length === 0 && !isLeaderOnlyCategory) {
       setForm(f => ({ ...f, segment: { type: 'all' } }))
       return
     }
+    if (filters.length === 0) return
     const built: NotificationSegment = { type: 'filtered', filters: {} }
     filters.forEach(filter => {
       if (!built.filters) built.filters = {}
@@ -108,7 +179,7 @@ export function NotificationSystem() {
       if (filter.type === 'status') built.filters.status = filter.value as 'active' | 'inactive'
     })
     setForm(f => ({ ...f, segment: built }))
-  }, [filters])
+  }, [filters, isLeaderOnlyCategory])
 
   // Debounced reach preview
   const fetchReach = useCallback(() => {
@@ -153,7 +224,14 @@ export function NotificationSystem() {
     setScheduleEnabled(false)
     setScheduleDate('')
     setScheduleTime('')
+    setSegmentOpen(false)
+    setScheduleOpen(false)
     setFilters([])
+  }
+
+  const handleScheduleToggle = (checked: boolean) => {
+    setScheduleEnabled(checked)
+    if (checked) setScheduleOpen(true)
   }
 
   const handleSubmit = async () => {
@@ -165,9 +243,21 @@ export function NotificationSystem() {
       toast.error('Selecione pelo menos um canal')
       return
     }
+    if (LEADER_ONLY_CATEGORIES.includes(form.category) && !filters.some(f => f.type === 'role')) {
+      toast.error('Selecione pelo menos um cargo para esta categoria')
+      return
+    }
     const payload: CreateNotificationRequest = { ...form }
-    if (scheduleEnabled && scheduleDate && scheduleTime) {
+    if (scheduleEnabled) {
+      if (!scheduleDate || !scheduleTime) {
+        toast.error('Informe a data e a hora do agendamento')
+        return
+      }
       const scheduledAt = new Date(`${scheduleDate}T${scheduleTime}`)
+      if (Number.isNaN(scheduledAt.getTime())) {
+        toast.error('Data de agendamento inválida')
+        return
+      }
       if (scheduledAt <= new Date()) {
         toast.error('A data de agendamento deve ser no futuro')
         return
@@ -205,6 +295,7 @@ export function NotificationSystem() {
       if (status) rebuilt.push({ type: 'status', value: status })
     }
     setFilters(rebuilt)
+    setSegmentOpen(rebuilt.length > 0)
 
     setActiveTab('compose')
     toast.info('Notificação duplicada para edição')
@@ -233,71 +324,65 @@ export function NotificationSystem() {
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'compose' | 'history')}>
         <TabsList>
-          <TabsTrigger value="compose">Compor</TabsTrigger>
+          <TabsTrigger value="compose">Criar</TabsTrigger>
           <TabsTrigger value="history">Histórico</TabsTrigger>
         </TabsList>
 
-        {/* COMPOSE TAB */}
+        {/* CREATE TAB */}
         <TabsContent value="compose">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left: Form */}
-            <div className="lg:col-span-2 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            {/* Left: single composition card */}
+            <Card className="lg:col-span-2">
+              <CardHeader><CardTitle>Conteúdo</CardTitle></CardHeader>
+              <CardContent className="space-y-5">
+                {/* Category dropdown */}
+                <div className="space-y-2">
+                  <Label htmlFor="category">Categoria</Label>
+                  <Select
+                    value={form.category}
+                    onValueChange={(v) => {
+                      isDirty.current = true
+                      setForm(f => ({ ...f, category: v as NotificationCategory }))
+                    }}
+                  >
+                    <SelectTrigger id="category" className="w-full">
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map(cat => (
+                        <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {/* Content */}
-              <Card>
-                <CardHeader><CardTitle>Conteúdo</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Categoria</Label>
-                    <WipOverlay>
-                      <div className="flex flex-wrap gap-2">
-                        {CATEGORIES.map(cat => (
-                          <Button
-                            key={cat.value}
-                            type="button"
-                            variant={form.category === cat.value ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => {
-                              isDirty.current = true
-                              setForm(f => ({ ...f, category: cat.value }))
-                            }}
-                          >
-                            {cat.label}
-                          </Button>
-                        ))}
-                      </div>
-                    </WipOverlay>
-                  </div>
+                {/* Title */}
+                <div className="space-y-2">
+                  <Label htmlFor="title">Título</Label>
+                  <Input
+                    id="title"
+                    placeholder="Ex: Culto de domingo"
+                    value={form.title}
+                    onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                  />
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Título</Label>
-                    <Input
-                      id="title"
-                      placeholder="Ex: Culto de domingo"
-                      value={form.title}
-                      onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                    />
-                  </div>
+                {/* Message */}
+                <div className="space-y-2">
+                  <Label htmlFor="message">Mensagem</Label>
+                  <Textarea
+                    id="message"
+                    placeholder="Escreva a mensagem..."
+                    rows={4}
+                    value={form.message}
+                    onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+                  />
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="message">Mensagem</Label>
-                    <Textarea
-                      id="message"
-                      placeholder="Escreva a mensagem..."
-                      rows={4}
-                      value={form.message}
-                      onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Channels */}
-              <Card>
-                <CardHeader><CardTitle>Canais</CardTitle></CardHeader>
-                <CardContent>
-                  <WipOverlay>
-                    <div className="grid grid-cols-2 gap-3">
+                {/* Channels — inline, single line, no technical info */}
+                <div className="space-y-2">
+                  <Label>Canais</Label>
+                  <div className="flex flex-wrap gap-2">
                     {CHANNELS.map(ch => {
                       const Icon = ch.icon
                       const selected = form.channels.includes(ch.value)
@@ -307,64 +392,79 @@ export function NotificationSystem() {
                           type="button"
                           variant={selected ? 'default' : 'outline'}
                           size="sm"
-                          onClick={() => toggleChannel(ch.value)}
-                          className="flex items-center gap-3 p-3 h-auto rounded-lg justify-start"
+                          disabled={!ch.available}
+                          onClick={() => ch.available && toggleChannel(ch.value)}
+                          className="gap-2"
+                          title={ch.available ? undefined : 'Em breve'}
                         >
-                          <div className={`p-2 rounded-md ${selected ? 'bg-primary-foreground/20' : 'bg-muted'}`}>
-                            <Icon size={16} />
-                          </div>
-                          <div className="text-left">
-                            <div className="font-medium text-sm">{ch.label}</div>
-                            <div className={`text-xs ${selected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>{ch.sub}</div>
-                          </div>
+                          <Icon size={16} />
+                          {ch.label}
+                          {!ch.available && (
+                            <span className="text-[10px] text-muted-foreground">em breve</span>
+                          )}
                         </Button>
                       )
                     })}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Segment — collapsible */}
+                <Collapsible open={segmentOpen} onOpenChange={setSegmentOpen}>
+                  <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md py-1 text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Segmento</span>
+                      {isLeaderOnlyCategory && (
+                        <Badge variant="outline" className="text-xs">Somente líderes</Badge>
+                      )}
                     </div>
-                  </WipOverlay>
-                </CardContent>
-              </Card>
-
-              {/* Segment */}
-              <Card>
-                <CardHeader><CardTitle>Segmento</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  {filters.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Todos os membros ativos</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {filters.map((f, i) => (
-                        <Badge key={`${f.type}-${f.value}`} variant="secondary" className="gap-1">
-                          {f.type}: {f.value}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeFilter(i)}
-                            className="ml-1 h-auto p-0 hover:text-destructive"
-                            aria-label={`Remover filtro ${f.type}: ${f.value}`}
-                          >×</Button>
-                        </Badge>
-                      ))}
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>{segmentSummary}</span>
+                      <ChevronDown size={16} className={cn('transition-transform', segmentOpen && 'rotate-180')} />
                     </div>
-                  )}
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 pt-3">
+                    {isLeaderOnlyCategory && (
+                      <p className="text-sm text-amber-600 dark:text-amber-400">
+                        Esta categoria requer filtro por cargo. Adicione pelo menos um cargo abaixo.
+                      </p>
+                    )}
+                    {filters.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        {isLeaderOnlyCategory ? 'Nenhum filtro adicionado' : 'Todos os membros ativos'}
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {filters.map((f, i) => (
+                          <Badge key={`${f.type}-${f.value}`} variant="secondary" className="gap-1">
+                            {FILTER_TYPE_LABELS[f.type] ?? f.type}: {filterValueLabel(f.type, f.value)}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFilter(i)}
+                              className="ml-1 h-auto p-0 hover:text-destructive"
+                              aria-label={`Remover filtro ${FILTER_TYPE_LABELS[f.type] ?? f.type}: ${filterValueLabel(f.type, f.value)}`}
+                            >×</Button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
 
-                  <Separator />
+                    <div className="flex gap-2">
+                      <Select value={newFilterType} onValueChange={(v) => { setNewFilterType(v); setNewFilterValue('') }}>
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder="Filtro" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="role">Cargo</SelectItem>
+                          <SelectItem value="sector">Setor</SelectItem>
+                          <SelectItem value="life_group">Célula</SelectItem>
+                          <SelectItem value="status">Status</SelectItem>
+                        </SelectContent>
+                      </Select>
 
-                  <div className="flex gap-2">
-                    <Select value={newFilterType} onValueChange={setNewFilterType}>
-                      <SelectTrigger className="w-40">
-                        <SelectValue placeholder="Filtro" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="role">Cargo</SelectItem>
-                        <SelectItem value="sector">Setor</SelectItem>
-                        <SelectItem value="life_group">Célula</SelectItem>
-                        <SelectItem value="status">Status</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    {newFilterType === 'role' && (
-                      <WipOverlay>
+                      {newFilterType === 'role' && (
                         <Select value={newFilterValue} onValueChange={setNewFilterValue}>
                           <SelectTrigger className="flex-1">
                             <SelectValue placeholder="Cargo" />
@@ -373,92 +473,118 @@ export function NotificationSystem() {
                             {ROLES.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                           </SelectContent>
                         </Select>
-                      </WipOverlay>
-                    )}
-                    {newFilterType === 'sector' && (
-                      <Select value={newFilterValue} onValueChange={setNewFilterValue}>
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Setor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {sectors.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    {newFilterType === 'life_group' && (
-                      <Select value={newFilterValue} onValueChange={setNewFilterValue}>
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Célula" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {lifeGroups.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    {newFilterType === 'status' && (
-                      <Select value={newFilterValue} onValueChange={setNewFilterValue}>
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Ativo</SelectItem>
-                          <SelectItem value="inactive">Inativo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
+                      )}
+                      {newFilterType === 'sector' && (
+                        <Select value={newFilterValue} onValueChange={setNewFilterValue}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Setor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {sectors.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {newFilterType === 'life_group' && (
+                        <Select value={newFilterValue} onValueChange={setNewFilterValue}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Célula" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {lifeGroups.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      {newFilterType === 'status' && (
+                        <Select value={newFilterValue} onValueChange={setNewFilterValue}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">Ativo</SelectItem>
+                            <SelectItem value="inactive">Inativo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
 
-                    <Button type="button" variant="outline" size="icon" onClick={addFilter} disabled={!newFilterType || !newFilterValue}>
-                      <Plus size={16} />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                      <Button type="button" variant="outline" size="icon" onClick={addFilter} disabled={!newFilterType || !newFilterValue}>
+                        <Plus size={16} />
+                      </Button>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
 
-              {/* Schedule */}
-              <Card>
-                <CardHeader>
+                <Separator />
+
+                {/* Schedule — collapsible */}
+                <Collapsible open={scheduleOpen} onOpenChange={setScheduleOpen}>
+                  <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md py-1 text-left">
+                    <span className="font-medium">Agendamento</span>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>{scheduleEnabled ? 'Programado' : 'Enviar agora'}</span>
+                      <ChevronDown size={16} className={cn('transition-transform', scheduleOpen && 'rotate-180')} />
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 pt-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="schedule-switch" className="text-sm font-normal text-muted-foreground">
+                        Agendar para enviar depois
+                      </Label>
+                      <Switch
+                        id="schedule-switch"
+                        checked={scheduleEnabled}
+                        onCheckedChange={handleScheduleToggle}
+                      />
+                    </div>
+                    {scheduleEnabled && (
+                      <div className="flex gap-3">
+                        <div className="space-y-2 flex-1">
+                          <Label htmlFor="schedule-date">Data</Label>
+                          <Input
+                            id="schedule-date"
+                            type="date"
+                            min={new Date().toISOString().split('T')[0]}
+                            value={scheduleDate}
+                            onChange={e => setScheduleDate(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2 flex-1">
+                          <Label htmlFor="schedule-time">Hora</Label>
+                          <Input id="schedule-time" type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} />
+                        </div>
+                      </div>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
+              </CardContent>
+            </Card>
+
+            {/* Right: highlighted reach + final actions */}
+            <div className="lg:sticky lg:top-6">
+              <Card className="border-primary/60 shadow-md ring-1 ring-primary/20">
+                <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle>Agendamento</CardTitle>
-                    <Switch checked={scheduleEnabled} onCheckedChange={setScheduleEnabled} />
+                    <CardTitle className="flex items-center gap-2">
+                      <Users size={18} className="text-primary" />
+                      Alcance Estimado
+                    </CardTitle>
+                    <Badge variant="outline" className="border-primary/40 text-primary">Última etapa</Badge>
                   </div>
                 </CardHeader>
-                {scheduleEnabled && (
-                  <CardContent>
-                    <div className="flex gap-3">
-                      <div className="space-y-2 flex-1">
-                        <Label htmlFor="schedule-date">Data</Label>
-                        <Input id="schedule-date" type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} />
-                      </div>
-                      <div className="space-y-2 flex-1">
-                        <Label htmlFor="schedule-time">Hora</Label>
-                        <Input id="schedule-time" type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} />
-                      </div>
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
-            </div>
-
-            {/* Right: Reach Preview + Send */}
-            <div className="space-y-4">
-              <Card>
-                <CardHeader><CardTitle>Alcance Estimado</CardTitle></CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                   {reachMutation.isPending ? (
                     <p className="text-sm text-muted-foreground">Calculando...</p>
                   ) : reach ? (
                     <div className="space-y-3">
-                      <div className="text-center">
-                        <div className="text-4xl font-bold">{reach.total}</div>
+                      <div className="text-center rounded-lg bg-primary/5 py-4">
+                        <div className="text-4xl font-bold text-primary">{reach.total}</div>
                         <div className="text-sm text-muted-foreground">membros atingidos</div>
                       </div>
-                      <Separator />
                       <div className="space-y-1">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Por canal</p>
-                        {Object.entries(reach.by_channel).map(([ch, count]) => (
+                        {form.channels.map((ch) => (
                           <div key={ch} className="flex justify-between text-sm">
-                            <span className="capitalize">{ch}</span>
-                            <span className="font-medium">{count}</span>
+                            <span>{CHANNEL_LABELS[ch] ?? ch}</span>
+                            <span className="font-medium">{reach.by_channel[ch] ?? 0}</span>
                           </div>
                         ))}
                       </div>
@@ -469,7 +595,7 @@ export function NotificationSystem() {
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Excluídos por preferência</p>
                             {Object.entries(reach.excluded).filter(([, v]) => v > 0).map(([ch, count]) => (
                               <div key={ch} className="flex justify-between text-sm text-muted-foreground">
-                                <span className="capitalize">{ch}</span>
+                                <span>{CHANNEL_LABELS[ch] ?? ch}</span>
                                 <span>{count}</span>
                               </div>
                             ))}
@@ -478,23 +604,27 @@ export function NotificationSystem() {
                       )}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Selecione canais e segmento</p>
+                    <p className="text-sm text-muted-foreground">Preencha o conteúdo para ver o alcance</p>
                   )}
+
+                  <Separator />
+
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={handleSubmit}
+                    disabled={createMutation.isPending}
+                  >
+                    {scheduleEnabled
+                      ? <><Clock size={16} className="mr-2" aria-hidden="true" />Agendar</>
+                      : <><Send size={16} className="mr-2" aria-hidden="true" />Enviar</>}
+                  </Button>
+
+                  <Button variant="outline" className="w-full" onClick={resetForm}>
+                    Limpar
+                  </Button>
                 </CardContent>
               </Card>
-
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={handleSubmit}
-                disabled={createMutation.isPending}
-              >
-                {scheduleEnabled ? <><Clock size={16} className="mr-2" aria-hidden="true" />Agendar</> : <><Send size={16} className="mr-2" aria-hidden="true" />Enviar</>}
-              </Button>
-
-              <Button variant="outline" className="w-full" onClick={resetForm}>
-                Limpar
-              </Button>
             </div>
           </div>
         </TabsContent>
@@ -521,9 +651,17 @@ export function NotificationSystem() {
                           </div>
                           <p className="text-sm text-muted-foreground line-clamp-2">{n.message}</p>
                           <div className="flex gap-2 flex-wrap">
-                            {n.channels.map(ch => (
-                              <Badge key={ch} variant="secondary" className="text-xs">{ch}</Badge>
-                            ))}
+                            {n.channels.map(ch => {
+                              const delivered = n.recipients_by_channel?.[ch]
+                              return (
+                                <Badge key={ch} variant="secondary" className="text-xs">
+                                  {CHANNEL_LABELS[ch] ?? ch}
+                                  {delivered !== undefined && (
+                                    <span className="ml-1 opacity-70">· {delivered}</span>
+                                  )}
+                                </Badge>
+                              )
+                            })}
                           </div>
                           <p className="text-xs text-muted-foreground">
                             {n.recipients_count} destinatários · {new Date(n.created_at).toLocaleDateString('pt-BR')}

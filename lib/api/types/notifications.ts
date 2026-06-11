@@ -8,6 +8,10 @@ export type NotificationCategory =
   | 'life_group'
   | 'academy'
   | 'admin_alerts'
+  | 'forms'
+  | 'member_journey'
+  | 'contributions'
+  | 'meeting_reports'
 
 export type NotificationStatus =
   | 'pending'
@@ -34,6 +38,7 @@ export interface Notification {
   channels: NotificationChannel[]
   segment: NotificationSegment
   recipients_count: number
+  recipients_by_channel?: Record<string, number> | null
   status: NotificationStatus
   scheduled_at: string | null
   sent_at: string | null
