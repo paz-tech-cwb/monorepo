@@ -12,15 +12,15 @@ import { EmailService } from './providers/email.service';
 import { SmsService } from './providers/sms.service';
 import { WhatsAppService } from './providers/whatsapp.service';
 
-const CATEGORY_PREF_MAP: Record<
-  NotificationCategory,
-  keyof UserNotificationPreferences
+const CATEGORY_PREF_MAP: Partial<
+  Record<NotificationCategory, keyof UserNotificationPreferences>
 > = {
   events: 'eventsEnabled',
   announcements: 'announcementsEnabled',
   life_group: 'lifeGroupEnabled',
   academy: 'academyEnabled',
-  admin_alerts: 'adminAlertsEnabled',
+  member_journey: 'memberJourneyEnabled',
+  contributions: 'contributionsEnabled',
 };
 
 @Injectable()
@@ -40,10 +40,14 @@ export class NotificationDispatchService {
       status: 'processing',
     });
 
+    const byChannel: Record<string, number> = {};
+    for (const ch of notification.channels) byChannel[ch] = 0;
+
     if (users.length === 0) {
       await this.entityManager.update(Notification, notification.id, {
         status: 'sent',
         recipientsCount: 0,
+        recipientsByChannel: byChannel,
         sentAt: new Date(),
       });
       return;
@@ -63,7 +67,7 @@ export class NotificationDispatchService {
       if (prefs && !prefs.allNotificationsEnabled) continue;
 
       const categoryKey = CATEGORY_PREF_MAP[notification.category];
-      if (prefs && !prefs[categoryKey]) continue;
+      if (prefs && categoryKey !== undefined && !prefs[categoryKey]) continue;
 
       const activeChannels = notification.channels.filter((ch) => {
         if (!prefs) return true;
@@ -77,15 +81,25 @@ export class NotificationDispatchService {
       if (activeChannels.length === 0) continue;
 
       const results = await Promise.all(
-        activeChannels.map((ch) => this.sendChannel(ch, user, notification)),
+        activeChannels.map((ch) =>
+          this.sendChannel(ch, user, notification).then((ok) => ({ ch, ok })),
+        ),
       );
 
-      if (results.some(Boolean)) successCount++;
+      let reachedThisUser = false;
+      for (const { ch, ok } of results) {
+        if (ok) {
+          byChannel[ch] = (byChannel[ch] ?? 0) + 1;
+          reachedThisUser = true;
+        }
+      }
+      if (reachedThisUser) successCount++;
     }
 
     await this.entityManager.update(Notification, notification.id, {
       status: successCount > 0 ? 'sent' : 'failed',
       recipientsCount: successCount,
+      recipientsByChannel: byChannel,
       sentAt: new Date(),
     });
 

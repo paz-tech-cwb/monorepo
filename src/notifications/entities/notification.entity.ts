@@ -14,7 +14,11 @@ export type NotificationCategory =
   | 'announcements'
   | 'life_group'
   | 'academy'
-  | 'admin_alerts';
+  | 'admin_alerts'
+  | 'forms'
+  | 'member_journey'
+  | 'contributions'
+  | 'meeting_reports';
 
 export type NotificationStatus =
   | 'pending'
@@ -46,7 +50,7 @@ export class Notification {
 
   @Column({
     type: 'enum',
-    enum: ['events', 'announcements', 'life_group', 'academy', 'admin_alerts'],
+    enum: ['events', 'announcements', 'life_group', 'academy', 'admin_alerts', 'forms', 'member_journey', 'contributions', 'meeting_reports'],
     enumName: 'notification_category_enum',
   })
   category: NotificationCategory;
@@ -59,6 +63,9 @@ export class Notification {
 
   @Column({ name: 'recipients_count', type: 'int', default: 0 })
   recipientsCount: number;
+
+  @Column({ name: 'recipients_by_channel', type: 'jsonb', nullable: true })
+  recipientsByChannel: Record<string, number> | null;
 
   @Column({
     type: 'enum',

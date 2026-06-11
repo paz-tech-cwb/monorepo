@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -15,6 +16,7 @@ import { NotificationDispatchService } from './notification-dispatch.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { User } from '../users/entities/user.entity';
 import { UserNotificationPreferences } from '../users/entities/user-notification-preferences.entity';
+import { UserDeviceToken } from '../users/entities/user-device-token.entity';
 
 @Injectable()
 export class NotificationsService implements OnApplicationBootstrap {
@@ -50,6 +52,16 @@ export class NotificationsService implements OnApplicationBootstrap {
 
   // ── Create ────────────────────────────────────────────────────────────────
   async create(dto: CreateNotificationDto, creatorId: number) {
+    const leaderOnlyCategories: string[] = ['forms', 'meeting_reports'];
+    if (leaderOnlyCategories.includes(dto.category)) {
+      const roles = dto.segment?.filters?.roles;
+      if (dto.segment?.type !== 'filtered' || !roles || roles.length === 0) {
+        throw new BadRequestException(
+          `Category '${dto.category}' requires a filtered segment with at least one role`,
+        );
+      }
+    }
+
     const isScheduled = !!dto.scheduled_at;
 
     if (isScheduled) {
@@ -146,14 +158,24 @@ export class NotificationsService implements OnApplicationBootstrap {
     );
     const prefsMap = new Map(allPrefs.map((p) => [p.user.id, p]));
 
-    const CATEGORY_PREF_MAP: Record<string, keyof UserNotificationPreferences> =
-      {
-        events: 'eventsEnabled',
-        announcements: 'announcementsEnabled',
-        life_group: 'lifeGroupEnabled',
-        academy: 'academyEnabled',
-        admin_alerts: 'adminAlertsEnabled',
-      };
+    // Users with at least one registered device token (push deliverability)
+    const tokenRows = await this.entityManager
+      .createQueryBuilder(UserDeviceToken, 'dt')
+      .select('DISTINCT dt.user_id', 'userId')
+      .where('dt.user_id IN (:...userIds)', { userIds })
+      .getRawMany<{ userId: number }>();
+    const usersWithToken = new Set(tokenRows.map((r) => Number(r.userId)));
+
+    const CATEGORY_PREF_MAP: Partial<
+      Record<string, keyof UserNotificationPreferences>
+    > = {
+      events: 'eventsEnabled',
+      announcements: 'announcementsEnabled',
+      life_group: 'lifeGroupEnabled',
+      academy: 'academyEnabled',
+      member_journey: 'memberJourneyEnabled',
+      contributions: 'contributionsEnabled',
+    };
     const categoryPrefKey = CATEGORY_PREF_MAP[category];
 
     const CHANNEL_PREF_MAP: Record<string, keyof UserNotificationPreferences> =
@@ -182,10 +204,14 @@ export class NotificationsService implements OnApplicationBootstrap {
         const chPrefKey = CHANNEL_PREF_MAP[ch];
         if (prefs && chPrefKey && !prefs[chPrefKey]) {
           excluded[ch] = (excluded[ch] ?? 0) + 1;
-        } else {
-          by_channel[ch] = (by_channel[ch] ?? 0) + 1;
-          totalReached.add(userId);
+          continue;
         }
+        // Push is only deliverable to users with a registered device token
+        if (ch === 'push' && !usersWithToken.has(userId)) {
+          continue;
+        }
+        by_channel[ch] = (by_channel[ch] ?? 0) + 1;
+        totalReached.add(userId);
       }
     }
 
@@ -240,6 +266,7 @@ export class NotificationsService implements OnApplicationBootstrap {
       channels: n.channels,
       segment: n.segment,
       recipients_count: n.recipientsCount,
+      recipients_by_channel: n.recipientsByChannel ?? null,
       status: n.status,
       scheduled_at: n.scheduledAt,
       sent_at: n.sentAt,
