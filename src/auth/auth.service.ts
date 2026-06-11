@@ -16,6 +16,7 @@ import { JwksClient } from 'jwks-rsa';
 import { UserAccount } from 'src/users/entities/account.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Role } from 'src/roles/entities/role.entity';
+import { UserDeviceToken } from 'src/users/entities/user-device-token.entity';
 import { Repository } from 'typeorm';
 
 const ACCESS_TOKEN_EXPIRES_IN = '24h';
@@ -45,6 +46,8 @@ export class AuthService implements OnModuleInit {
     private userAccountRepo: Repository<UserAccount>,
     @InjectRepository(Role)
     private roleRepo: Repository<Role>,
+    @InjectRepository(UserDeviceToken)
+    private userDeviceTokenRepo: Repository<UserDeviceToken>,
     private configService: ConfigService,
   ) {
     this.accessTokenSecret = this.configService.getOrThrow<string>(
@@ -229,7 +232,7 @@ export class AuthService implements OnModuleInit {
     };
   }
 
-  async logout(refreshToken: string, userId: number) {
+  async logout(refreshToken: string, userId: number, fcmToken?: string) {
     const hashedToken = this.hashToken(refreshToken);
     const tokenRecord = await this.userAccountRepo.findOne({
       where: {
@@ -241,6 +244,13 @@ export class AuthService implements OnModuleInit {
 
     if (!tokenRecord) {
       throw new UnauthorizedException('Token not found or already revoked');
+    }
+
+    if (fcmToken) {
+      await this.userDeviceTokenRepo.delete({
+        token: fcmToken,
+        user: { id: userId },
+      });
     }
 
     tokenRecord.isRevoked = true;

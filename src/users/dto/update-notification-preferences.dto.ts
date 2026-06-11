@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString } from 'class-validator';
 import { Expose } from 'class-transformer';
 
 export class UpdateNotificationPreferencesDto {
@@ -12,4 +12,11 @@ export class UpdateNotificationPreferencesDto {
   @Expose() @IsOptional() @IsBoolean() life_group_enabled?: boolean;
   @Expose() @IsOptional() @IsBoolean() academy_enabled?: boolean;
   @Expose() @IsOptional() @IsBoolean() admin_alerts_enabled?: boolean;
+  @Expose() @IsOptional() @IsBoolean() member_journey_enabled?: boolean;
+  @Expose() @IsOptional() @IsBoolean() contributions_enabled?: boolean;
+  @Expose()
+  @IsOptional()
+  @IsString()
+  @IsIn(['granted', 'denied', 'not_determined'])
+  os_permission_status?: string;
 }

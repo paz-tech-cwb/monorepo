@@ -48,6 +48,21 @@ export class UserNotificationPreferences {
   @Column({ name: 'admin_alerts_enabled', type: 'boolean', default: true })
   adminAlertsEnabled: boolean;
 
+  @Column({ name: 'member_journey_enabled', type: 'boolean', default: true })
+  memberJourneyEnabled: boolean;
+
+  @Column({ name: 'contributions_enabled', type: 'boolean', default: true })
+  contributionsEnabled: boolean;
+
+  @Column({
+    name: 'os_permission_status',
+    type: 'enum',
+    enumName: 'notification_os_permission_enum',
+    enum: ['granted', 'denied', 'not_determined'],
+    default: 'not_determined',
+  })
+  osPermissionStatus: 'granted' | 'denied' | 'not_determined';
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

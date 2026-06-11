@@ -15,6 +15,9 @@ export interface NotificationPreferencesResponse {
   life_group_enabled: boolean;
   academy_enabled: boolean;
   admin_alerts_enabled: boolean;
+  member_journey_enabled: boolean;
+  contributions_enabled: boolean;
+  os_permission_status: 'granted' | 'denied' | 'not_determined';
 }
 
 @Injectable()
@@ -63,6 +66,15 @@ export class UserNotificationPreferencesService {
       updates.academyEnabled = dto.academy_enabled;
     if (dto.admin_alerts_enabled !== undefined)
       updates.adminAlertsEnabled = dto.admin_alerts_enabled;
+    if (dto.member_journey_enabled !== undefined)
+      updates.memberJourneyEnabled = dto.member_journey_enabled;
+    if (dto.contributions_enabled !== undefined)
+      updates.contributionsEnabled = dto.contributions_enabled;
+    if (dto.os_permission_status !== undefined)
+      updates.osPermissionStatus = dto.os_permission_status as
+        | 'granted'
+        | 'denied'
+        | 'not_determined';
     Object.assign(prefs, updates);
     return this.entityManager.save(prefs);
   }
@@ -81,6 +93,9 @@ export class UserNotificationPreferencesService {
       life_group_enabled: prefs.lifeGroupEnabled,
       academy_enabled: prefs.academyEnabled,
       admin_alerts_enabled: prefs.adminAlertsEnabled,
+      member_journey_enabled: prefs.memberJourneyEnabled,
+      contributions_enabled: prefs.contributionsEnabled,
+      os_permission_status: prefs.osPermissionStatus,
     };
   }
 }

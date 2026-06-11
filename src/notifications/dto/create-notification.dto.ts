@@ -45,7 +45,17 @@ export class CreateNotificationDto {
   message: string;
 
   @Expose()
-  @IsEnum(['events', 'announcements', 'life_group', 'academy', 'admin_alerts'])
+  @IsEnum([
+    'events',
+    'announcements',
+    'life_group',
+    'academy',
+    'admin_alerts',
+    'forms',
+    'member_journey',
+    'contributions',
+    'meeting_reports',
+  ])
   category: NotificationCategory;
 
   @Expose()

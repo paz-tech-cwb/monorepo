@@ -6,10 +6,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/user.entity';
 import { UserAccount } from 'src/users/entities/account.entity';
 import { Role } from 'src/roles/entities/role.entity';
+import { UserDeviceToken } from 'src/users/entities/user-device-token.entity';
 import { JwtStrategy } from './jwt.strategy';
 
 @Module({
-  imports: [ConfigModule, TypeOrmModule.forFeature([User, UserAccount, Role])],
+  imports: [
+    ConfigModule,
+    TypeOrmModule.forFeature([User, UserAccount, Role, UserDeviceToken]),
+  ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
   exports: [AuthService],

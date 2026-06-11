@@ -12,6 +12,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { SocialLoginDto } from './dto/social-login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { LogoutDto } from './dto/logout.dto';
 import { Request } from 'express';
 import { User } from 'src/users/entities/user.entity';
 
@@ -41,8 +42,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async logout(
     @Req() req: Request & { user: User },
-    @Body() refreshTokenDto: RefreshTokenDto,
+    @Body() logoutDto: LogoutDto,
   ) {
-    return this.authService.logout(refreshTokenDto.refreshToken, req.user.id);
+    return this.authService.logout(
+      logoutDto.refreshToken,
+      req.user.id,
+      logoutDto.fcmToken,
+    );
   }
 }
