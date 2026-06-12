@@ -110,27 +110,25 @@ struct HomeView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    if viewModel.isLoading {
-                        loadingState
-                    } else if viewModel.error != nil {
-                        errorState
-                    } else {
-                        contentSections
-                    }
-
-                    Spacer()
-                        .frame(height: 40)
+        ScrollView {
+            VStack(spacing: 0) {
+                if viewModel.isLoading {
+                    loadingState
+                } else if viewModel.error != nil {
+                    errorState
+                } else {
+                    contentSections
                 }
+
+                Spacer()
+                    .frame(height: 40)
             }
-            .background(PazColors.background)
-            .navigationTitle("Início")
-            .navigationBarTitleDisplayMode(.large)
-            .navigationDestination(for: AgendaEvent.self) { event in
-                AgendaDetailView(event: event)
-            }
+        }
+        .background(PazColors.background)
+        .navigationTitle("Início")
+        .navigationBarTitleDisplayMode(.large)
+        .navigationDestination(for: AgendaEvent.self) { event in
+            AgendaDetailView(event: event)
         }
         .task {
             await viewModel.load()
