@@ -34,6 +34,7 @@ class MainActivity : ComponentActivity() {
         val startRoute =
             intent
                 .getStringExtra(PazFirebaseMessagingService.EXTRA_DEEP_LINK)
+                ?.also { intent.removeExtra(PazFirebaseMessagingService.EXTRA_DEEP_LINK) }
                 ?.let { PushNotificationHelper.parseDeepLink(it) }
 
         setContent {
