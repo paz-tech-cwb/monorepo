@@ -6,7 +6,11 @@ describe('MemberJourneyReminderEvaluator', () => {
     id: 3,
     type: 'member_journey',
     enabled: true,
-    config: { threshold_days: 7, steps: ['baptism'] },
+    config: {
+      steps: [{ key: 'baptism', days: 7 }],
+      title: 'Lembrete',
+      message: 'Complete sua jornada',
+    },
   } as ReminderRule;
 
   it('dispatches once per stuck member and logs dedupe', async () => {
