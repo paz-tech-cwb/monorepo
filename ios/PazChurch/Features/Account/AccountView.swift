@@ -6,6 +6,8 @@ struct AccountView: View {
     @State private var viewModel: AccountViewModel
     @Environment(AuthenticationCoordinator.self) private var authCoordinator
     @Environment(AppThemeManager.self) private var themeManager
+    @Environment(PushNotificationService.self) private var pushService
+    @State private var path: [DeepLinkDestination] = []
 
     init(userRepository: UserRepository, authRepository: AuthRepository) {
         _viewModel = State(initialValue: AccountViewModel(
@@ -15,7 +17,7 @@ struct AccountView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 if viewModel.isLoading {
                     loadingState
@@ -28,10 +30,32 @@ struct AccountView: View {
             }
             .navigationTitle(authCoordinator.isAuthenticated ? "Conta" : "")
             .navigationBarTitleDisplayMode(.large)
+            .navigationDestination(for: DeepLinkDestination.self) { destination in
+                switch destination {
+                case .formularios:
+                    FormulariosView(formsRepository: IosAppContainer.shared.formsRepository)
+                case .memberJourney:
+                    MemberJourneyView(memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository)
+                default:
+                    EmptyView()
+                }
+            }
         }
         .task { await viewModel.reload() }
         .onChange(of: authCoordinator.isAuthenticated) { _, isAuth in
             if isAuth { Task { await viewModel.reload() } }
+        }
+        .onChange(of: pushService.pendingDeepLink) { _, newValue in
+            guard newValue != nil,
+                  let destination = pushService.deepLinkDestination
+            else { return }
+            switch destination {
+            case .formularios, .memberJourney:
+                path = [destination]
+                pushService.consumeDeepLink()
+            default:
+                break
+            }
         }
     }
 
