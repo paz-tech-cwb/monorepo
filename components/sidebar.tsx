@@ -204,9 +204,8 @@ function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" className="w-full justify-start text-sidebar-foreground">
-        <Sun className="mr-2 h-4 w-4" />
-        Modo Claro
+      <Button variant="ghost" size="icon" className="h-8 w-8 text-sidebar-foreground shrink-0">
+        <Sun className="h-4 w-4" />
       </Button>
     )
   }
@@ -216,15 +215,11 @@ function ThemeToggle() {
   return (
     <Button
       variant="ghost"
+      size="icon"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+      className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent transition-colors shrink-0"
     >
-      {isDark ? (
-        <Sun className="mr-2 h-4 w-4" />
-      ) : (
-        <Moon className="mr-2 h-4 w-4" />
-      )}
-      {isDark ? "Modo Claro" : "Modo Escuro"}
+      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </Button>
   )
 }
@@ -235,7 +230,8 @@ export const SidebarContent = memo(function SidebarContent() {
   return (
     <div className="flex h-full flex-col bg-sidebar border-r border-sidebar-border">
       <div className="flex h-14 items-center border-b border-sidebar-border px-4">
-        <h2 className="text-lg font-bold text-sidebar-primary tracking-tight">Painel Admin</h2>
+        <h2 className="flex-1 text-lg font-bold text-sidebar-primary tracking-tight">Painel Admin</h2>
+        <ThemeToggle />
       </div>
       <div className="flex-1 overflow-auto py-4">
         <nav className="space-y-6 px-2">
@@ -250,8 +246,7 @@ export const SidebarContent = memo(function SidebarContent() {
       </div>
       <div className="border-t border-sidebar-border p-4 space-y-1">
         <UserProfile />
-        <div className="pt-2 space-y-1">
-          <ThemeToggle />
+        <div className="pt-2">
           <LogoutButton />
         </div>
       </div>
