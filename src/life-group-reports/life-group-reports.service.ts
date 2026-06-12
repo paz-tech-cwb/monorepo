@@ -43,7 +43,6 @@ export class LifeGroupReportsService {
         disciplesDiscipledThisWeek: dto.disciplesDiscipledThisWeek,
         pastoringActivityType: dto.pastoringActivityType,
         pastoringActivityOther: dto.pastoringActivityOther ?? null,
-        pastoringActivityObjective: dto.pastoringActivityObjective ?? null,
         trainingActivityType: dto.trainingActivityType,
         trainingActivityOther: dto.trainingActivityOther ?? null,
         submittedBy: { id: actorId } as User,

@@ -32,19 +32,17 @@ export class CreateLifeGroupReportDto {
   @IsInt()
   disciplesDiscipledThisWeek: number;
   @Expose({ name: 'pastoring_activity_type' })
-  @IsString()
-  pastoringActivityType: string;
+  @IsArray()
+  @IsString({ each: true })
+  pastoringActivityType: string[];
   @Expose({ name: 'pastoring_activity_other' })
   @IsOptional()
   @IsString()
   pastoringActivityOther?: string;
-  @Expose({ name: 'pastoring_activity_objective' })
-  @IsOptional()
-  @IsString()
-  pastoringActivityObjective?: string;
   @Expose({ name: 'training_activity_type' })
-  @IsString()
-  trainingActivityType: string;
+  @IsArray()
+  @IsString({ each: true })
+  trainingActivityType: string[];
   @Expose({ name: 'training_activity_other' })
   @IsOptional()
   @IsString()

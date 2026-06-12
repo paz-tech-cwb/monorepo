@@ -28,8 +28,8 @@ export class MultiplicationsService {
       this.repo.create({
         date: dto.date,
         sourceLifeGroupId: dto.sourceLifeGroupId,
-        areaId: dto.areaId,
-        sectorId: dto.sectorId,
+        area: dto.area ?? null,
+        sector: dto.sector ?? null,
         completedLeadershipTrack: dto.completedLeadershipTrack,
         legallyMarried: dto.legallyMarried,
         faithfulTither: dto.faithfulTither,

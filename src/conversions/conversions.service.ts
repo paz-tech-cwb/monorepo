@@ -32,7 +32,12 @@ export class ConversionsService {
       sex: conversion.sex ?? null,
       age: conversion.age ?? null,
       civil_status: conversion.civilStatus ?? null,
-      address: conversion.address ?? null,
+      street: conversion.street ?? null,
+      neighborhood: conversion.neighborhood ?? null,
+      city: conversion.city ?? null,
+      culto_attendance: conversion.cultoAttendance ?? null,
+      life_group_status: conversion.lifeGroupStatus ?? null,
+      how_met_church_other: conversion.howMetChurchOther ?? null,
       church_attendance_history: conversion.churchAttendanceHistory ?? null,
       life_group_experience: conversion.lifeGroupExperience ?? null,
       life_group_leader_name: conversion.lifeGroupLeaderName ?? null,
@@ -55,7 +60,12 @@ export class ConversionsService {
         civilStatus: dto.civil_status
           ? (dto.civil_status as CivilStatus)
           : null,
-        address: dto.address ?? null,
+        street: dto.street ?? null,
+        neighborhood: dto.neighborhood ?? null,
+        city: dto.city ?? null,
+        cultoAttendance: dto.cultoAttendance ?? null,
+        lifeGroupStatus: dto.lifeGroupStatus ?? null,
+        howMetChurchOther: dto.howMetChurchOther ?? null,
         churchAttendanceHistory: dto.church_attendance_history ?? null,
         lifeGroupExperience: dto.life_group_experience
           ? (dto.life_group_experience as LifeGroupExperience)
@@ -130,7 +140,12 @@ export class ConversionsService {
         conversion.civilStatus = dto.civil_status
           ? (dto.civil_status as CivilStatus)
           : null;
-      if (dto.address !== undefined) conversion.address = dto.address;
+      if (dto.street !== undefined) conversion.street = dto.street ?? null;
+      if (dto.neighborhood !== undefined) conversion.neighborhood = dto.neighborhood ?? null;
+      if (dto.city !== undefined) conversion.city = dto.city ?? null;
+      if (dto.cultoAttendance !== undefined) conversion.cultoAttendance = dto.cultoAttendance ?? null;
+      if (dto.lifeGroupStatus !== undefined) conversion.lifeGroupStatus = dto.lifeGroupStatus ?? null;
+      if (dto.howMetChurchOther !== undefined) conversion.howMetChurchOther = dto.howMetChurchOther ?? null;
       if (dto.church_attendance_history !== undefined)
         conversion.churchAttendanceHistory = dto.church_attendance_history;
       if (dto.life_group_experience !== undefined)

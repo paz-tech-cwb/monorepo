@@ -40,7 +40,6 @@ export class MemberRegistrationsService {
   ): Promise<MemberRegistration> {
     const reg = await this.repo.save(
       this.repo.create({
-        email: dto.email,
         fullName: dto.fullName,
         birthDate: dto.birthDate,
         phone: dto.phone,
@@ -48,7 +47,7 @@ export class MemberRegistrationsService {
         civilState: dto.civilState,
         sectorId: dto.sectorId,
         lifeGroupId: dto.lifeGroupId ?? null,
-        leaderId: dto.leaderId ?? null,
+        discipuladorName: dto.discipuladorName ?? null,
         completedCourses: dto.completedCourses ?? [],
         cep: dto.cep ?? null,
         street: dto.street ?? null,

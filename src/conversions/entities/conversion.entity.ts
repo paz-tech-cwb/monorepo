@@ -67,8 +67,12 @@ export class Conversion {
   })
   civilStatus: CivilStatus | null;
 
-  @Column({ type: 'varchar', length: 500, nullable: true })
-  address: string | null;
+  @Column({ type: 'varchar', length: 255, nullable: true }) street: string | null;
+  @Column({ type: 'varchar', length: 180, nullable: true }) neighborhood: string | null;
+  @Column({ type: 'varchar', length: 180, nullable: true }) city: string | null;
+  @Column({ name: 'culto_attendance', type: 'varchar', length: 30, nullable: true }) cultoAttendance: string | null;
+  @Column({ name: 'life_group_status', type: 'varchar', length: 30, nullable: true }) lifeGroupStatus: string | null;
+  @Column({ name: 'how_met_church_other', type: 'varchar', length: 255, nullable: true }) howMetChurchOther: string | null;
 
   @Column({
     name: 'church_attendance_history',

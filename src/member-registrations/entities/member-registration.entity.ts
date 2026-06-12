@@ -12,7 +12,6 @@ import { User } from '../../users/entities/user.entity';
 @Entity('member_registrations')
 export class MemberRegistration {
   @PrimaryGeneratedColumn('uuid') id: string;
-  @Column({ type: 'varchar', length: 180 }) email: string;
   @Column({ name: 'full_name', type: 'varchar', length: 180 }) fullName: string;
   @Column({ name: 'birth_date', type: 'date' }) birthDate: string;
   @Column({ type: 'varchar', length: 32 }) phone: string;
@@ -43,9 +42,8 @@ export class MemberRegistration {
   @Column({ name: 'life_group_id', type: 'int', nullable: true }) lifeGroupId:
     | number
     | null;
-  @Column({ name: 'leader_id', type: 'int', nullable: true }) leaderId:
-    | number
-    | null;
+  @Column({ name: 'discipulador_name', type: 'varchar', length: 180, nullable: true })
+  discipuladorName: string | null;
   @Column({
     name: 'completed_courses',
     type: 'uuid',

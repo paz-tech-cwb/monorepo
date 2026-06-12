@@ -36,8 +36,8 @@ export class LifeGroupReport {
   @Column({ name: 'disciples_count', type: 'int' }) disciplesCount: number;
   @Column({ name: 'disciples_discipled_this_week', type: 'int' })
   disciplesDiscipledThisWeek: number;
-  @Column({ name: 'pastoring_activity_type', type: 'varchar', length: 40 })
-  pastoringActivityType: string;
+  @Column({ name: 'pastoring_activity_type', type: 'text', array: true, default: [] })
+  pastoringActivityType: string[];
   @Column({
     name: 'pastoring_activity_other',
     type: 'varchar',
@@ -45,14 +45,8 @@ export class LifeGroupReport {
     nullable: true,
   })
   pastoringActivityOther: string | null;
-  @Column({
-    name: 'pastoring_activity_objective',
-    type: 'text',
-    nullable: true,
-  })
-  pastoringActivityObjective: string | null;
-  @Column({ name: 'training_activity_type', type: 'varchar', length: 40 })
-  trainingActivityType: string;
+  @Column({ name: 'training_activity_type', type: 'text', array: true, default: [] })
+  trainingActivityType: string[];
   @Column({
     name: 'training_activity_other',
     type: 'varchar',

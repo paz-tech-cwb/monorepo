@@ -3,7 +3,6 @@ import {
   ArrayUnique,
   IsArray,
   IsDateString,
-  IsEmail,
   IsIn,
   IsInt,
   IsOptional,
@@ -14,7 +13,6 @@ import {
 } from 'class-validator';
 
 export class CreateMemberRegistrationDto {
-  @Expose() @IsEmail() email: string;
   @Expose({ name: 'full_name' }) @IsString() @Length(2, 180) fullName: string;
   @Expose({ name: 'birth_date' }) @IsDateString() birthDate: string;
   @Expose() @IsString() @Matches(/^\+?[0-9]{8,15}$/) phone: string;
@@ -38,7 +36,7 @@ export class CreateMemberRegistrationDto {
   @IsOptional()
   @IsInt()
   lifeGroupId?: number;
-  @Expose({ name: 'leader_id' }) @IsOptional() @IsInt() leaderId?: number;
+  @Expose({ name: 'discipulador_name' }) @IsOptional() @IsString() discipuladorName?: string;
   @Expose({ name: 'completed_courses' })
   @IsOptional()
   @IsArray()

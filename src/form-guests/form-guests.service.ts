@@ -23,12 +23,13 @@ export class FormGuestsService {
     const entity = await this.repo.save(
       this.repo.create({
         fullName: dto.fullName,
-        email: dto.email ?? null,
-        phone: dto.phone,
+        phone: dto.phone ?? null,
         address: dto.address ?? null,
-        invitedBy: dto.invitedBy,
+        invitedBy: dto.invitedBy ?? null,
         howMetChurch: dto.howMetChurch ?? null,
+        filledBy: dto.filledBy ?? null,
         notes: dto.notes ?? null,
+        viaCasaDePaz: dto.viaCasaDePaz ?? false,
         areaId: dto.areaId ?? null,
         sectorId: dto.sectorId ?? null,
         lifeGroupId: dto.lifeGroupId ?? null,

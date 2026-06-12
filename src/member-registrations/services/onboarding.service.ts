@@ -13,12 +13,10 @@ export class OnboardingService {
   ) {}
 
   async onSubmit(reg: MemberRegistration): Promise<void> {
-    let user = await this.users.findOne({
-      where: [{ email: reg.email }, { phoneNumber: reg.phone }],
-    });
+    if (!reg.phone) return;
+    let user = await this.users.findOne({ where: { phoneNumber: reg.phone } });
     if (!user) {
       user = this.users.create({
-        email: reg.email,
         name: reg.fullName,
         phoneNumber: reg.phone,
         birthDate: new Date(reg.birthDate),
@@ -26,25 +24,7 @@ export class OnboardingService {
       });
     } else {
       user.name = reg.fullName;
-      user.phoneNumber = reg.phone;
     }
     await this.users.save(user);
-    const escHtml = (s: string) =>
-      s.replace(
-        /[&<>"']/g,
-        (c) =>
-          ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;',
-          })[c] ?? c,
-      );
-    void this.notifications.sendEmail({
-      to: reg.email,
-      subject: 'Bem-vindo à Igreja Paz Curitiba',
-      html: `<h1>Olá, ${escHtml(reg.fullName)}!</h1><p>Seu cadastro foi recebido. Baixe o app Paz Curitiba.</p>`,
-    });
   }
 }
