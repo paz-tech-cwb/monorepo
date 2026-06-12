@@ -43,7 +43,6 @@
 		8BBB7655494EE2891298CD78 /* PazPillChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62DDEA0026352360D73E873 /* PazPillChip.swift */; };
 		96BF8A72553894BA74F6934B /* PazIconContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC853F6E892CF7A2AE4283F /* PazIconContainer.swift */; };
 		9B9A6148AFFD0C8167085DD0 /* MinistryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDD6B4FBC968ED037D73EAA9 /* MinistryDetailView.swift */; };
-		9F149A61A5B000D84C29A19D /* MeetingReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2612BFB288D8A1A154A3B847 /* MeetingReportView.swift */; };
 		A0CCE565617A81DD9C6404A9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = F04B442417CCD3B5A58BC0DF /* FirebaseAuth */; };
 		A98EE8C9CC199B26F49D75EB /* AgendaDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE4B8D8AE9B398AA3A77DA29 /* AgendaDetailView.swift */; };
 		B1755FA9565F9D4D98A3167A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FA678CF8F2462F7530E49E46 /* GoogleService-Info.plist */; };
@@ -85,7 +84,6 @@
 		1A78FBD0E12C138DD1D1835C /* FormulariosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulariosView.swift; sourceTree = "<group>"; };
 		21EFE728C0EA836F247AB28D /* AppThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppThemeManager.swift; sourceTree = "<group>"; };
 		22597D6E893E60A78DA0327F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		2612BFB288D8A1A154A3B847 /* MeetingReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingReportView.swift; sourceTree = "<group>"; };
 		36DB133997051B82A7D0D38D /* SkeletonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonView.swift; sourceTree = "<group>"; };
 		3B09921331A9C0A41304A36A /* dm_sans_bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = dm_sans_bold.ttf; sourceTree = "<group>"; };
 		43523C0C1306C6777492969E /* dm_sans_medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = dm_sans_medium.ttf; sourceTree = "<group>"; };
@@ -198,7 +196,6 @@
 				CDB19A2D2D5B6981617D8234 /* Auth */,
 				0E08E2571AD28D4B6DAFCFC6 /* Formularios */,
 				9583323C0C4D778E6E30C67E /* Home */,
-				493B505F6D942A02B56B6C5F /* MeetingReport */,
 				F1CD9530F50CB5214AE5DF32 /* MemberJourney */,
 				36D27ED148027B3DCC6FD3CF /* Ministries */,
 				23C7D2740D252722209A1DB5 /* Notifications */,
@@ -224,14 +221,6 @@
 				EDD6B4FBC968ED037D73EAA9 /* MinistryDetailView.swift */,
 			);
 			path = Ministries;
-			sourceTree = "<group>";
-		};
-		493B505F6D942A02B56B6C5F /* MeetingReport */ = {
-			isa = PBXGroup;
-			children = (
-				2612BFB288D8A1A154A3B847 /* MeetingReportView.swift */,
-			);
-			path = MeetingReport;
 			sourceTree = "<group>";
 		};
 		5830433A030E9A21D325B7F8 /* Theme */ = {
@@ -506,7 +495,6 @@
 				045500E917135CF9ED6D160E /* LoginView.swift in Sources */,
 				2793855F821689FC2DFCA082 /* MainTabView.swift in Sources */,
 				A1B2C3D4E5F6A7B8C9D0E1F2 /* DeepLinkDestination.swift in Sources */,
-				9F149A61A5B000D84C29A19D /* MeetingReportView.swift in Sources */,
 				D801CBE1B82319E0DA01E3CF /* MemberJourneyView.swift in Sources */,
 				1F3D35E5FF143FC6C08A16BC /* MinistriesView.swift in Sources */,
 				9B9A6148AFFD0C8167085DD0 /* MinistryDetailView.swift in Sources */,
