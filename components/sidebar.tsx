@@ -35,38 +35,43 @@ const sidebarSections = [
       { name: "Inicio", href: "/dashboard", icon: Home },
       { name: "Membros", href: "/members", icon: Users },
       { name: "Jornada", href: "/member-journey", icon: GitMerge },
-      { name: "Life groups", href: "/life-groups", icon: Users2 },
     ],
   },
   {
-    title: "Comunicacao",
+    title: "Life Groups",
     items: [
-      { name: "Notificacoes", href: "/notifications", icon: Bell },
+      { name: "Life Groups", href: "/life-groups", icon: Users2 },
+    ],
+  },
+  {
+    title: "Ministérios",
+    items: [
+      { name: "Ministérios", href: "/ministerios", icon: Waves },
+    ],
+  },
+  {
+    title: "Formulários",
+    items: [
+      { name: "Formulários", href: "/formularios", icon: ClipboardList },
+    ],
+  },
+  {
+    title: "Comunicação",
+    items: [
+      { name: "Notificações", href: "/notifications", icon: Bell },
       { name: "Avisos", href: "/announcements", icon: Megaphone },
-    ],
-  },
-  {
-    title: "Eventos",
-    items: [
-      { name: "Calendario", href: "/events", icon: CalendarDays },
+      { name: "Calendário", href: "/events", icon: CalendarDays },
     ],
   },
   {
     title: "Estudo",
     items: [
       { name: "Trilhos", href: "/course-tracks", icon: Route },
-      { name: "Cursos", href: "/courses", icon: BookOpen }
+      { name: "Cursos", href: "/courses", icon: BookOpen },
     ],
   },
   {
-    title: "Formularios",
-    items: [
-      { name: "Formulários", href: "/formularios", icon: ClipboardList },
-      { name: "Atmosfera", href: "/atmosfera", icon: Waves },
-    ],
-  },
-  {
-    title: "Configuracoes",
+    title: "Configurações",
     items: [
       { name: "Dados da igreja", href: "/church-data", icon: Building2 },
     ],

@@ -27,7 +27,7 @@ import {
 import { useUsers } from "@/lib/hooks/use-users"
 import type { AtmosphereMinistry, AtmosphereTeam } from "@/lib/api/types"
 
-export function AtmosferaManagement() {
+export function MisteriosManagement() {
   const { data: ministries = [], isLoading } = useAtmosphereMinistries()
   const createMinistry = useCreateAtmosphereMinistry()
   const updateMinistry = useUpdateAtmosphereMinistry()
@@ -85,8 +85,8 @@ export function AtmosferaManagement() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Atmosfera</h1>
-          <p className="text-muted-foreground">Ministérios e equipes de atmosfera</p>
+          <h1 className="text-2xl font-bold">Ministérios</h1>
+          <p className="text-muted-foreground">Ministérios e equipes de serviço</p>
         </div>
         <Dialog open={ministryDialog === "add"} onOpenChange={(o) => { setMinistryDialog(o ? "add" : null); setMinistryForm({ name: "" }) }}>
           <DialogTrigger asChild>
