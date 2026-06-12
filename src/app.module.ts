@@ -33,6 +33,7 @@ import { AreaSupervisorReportsModule } from './area-supervisor-reports/area-supe
 import { MultiplicationsModule } from './multiplications/multiplications.module';
 import { ServiceReportsModule } from './service-reports/service-reports.module';
 import { FormGuestsModule } from './form-guests/form-guests.module';
+import { AtmosphereModule } from './atmosphere/atmosphere.module';
 import { RemindersModule } from './reminders/reminders.module';
 
 import ormconfig from './configs/orm.config';
@@ -87,6 +88,7 @@ import ormconfig from './configs/orm.config';
     MultiplicationsModule,
     ServiceReportsModule,
     FormGuestsModule,
+    AtmosphereModule,
     RemindersModule,
   ],
   providers: [

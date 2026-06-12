@@ -30,6 +30,8 @@ import { AreaSupervisorReport } from '../area-supervisor-reports/entities/area-s
 import { Multiplication } from '../multiplications/entities/multiplication.entity';
 import { ServiceReport } from '../service-reports/entities/service-report.entity';
 import { FormGuest } from '../form-guests/entities/form-guest.entity';
+import { AtmosphereMinistry } from '../atmosphere/entities/atmosphere-ministry.entity';
+import { AtmosphereTeam } from '../atmosphere/entities/atmosphere-team.entity';
 import { ReminderRule } from '../reminders/entities/reminder-rule.entity';
 import { ReminderDispatchLog } from '../reminders/entities/reminder-dispatch-log.entity';
 import * as dotenv from 'dotenv';
@@ -74,6 +76,8 @@ const config: DataSourceOptions = {
     Multiplication,
     ServiceReport,
     FormGuest,
+    AtmosphereMinistry,
+    AtmosphereTeam,
     ReminderRule,
     ReminderDispatchLog,
   ],

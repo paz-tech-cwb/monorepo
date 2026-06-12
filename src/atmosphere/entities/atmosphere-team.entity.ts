@@ -1,5 +1,5 @@
 import {
-  Column, CreateDateColumn, Entity, ManyToOne,
+  Column, CreateDateColumn, Entity, JoinTable, ManyToMany, ManyToOne,
   PrimaryGeneratedColumn, UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
@@ -13,6 +13,13 @@ export class AtmosphereTeam {
   ministry: AtmosphereMinistry;
   @Column({ name: 'ministry_id' }) ministryId: number;
   @ManyToOne(() => User, { nullable: true }) leader: User | null;
+  @ManyToMany(() => User)
+  @JoinTable({
+    name: 'atmosphere_team_members',
+    joinColumn: { name: 'team_id' },
+    inverseJoinColumn: { name: 'user_id' },
+  })
+  members: User[];
   @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
   @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
 }
