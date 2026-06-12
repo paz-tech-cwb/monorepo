@@ -46,17 +46,16 @@ Backend roles (canonical):
 
 Form to register a new member. After submission, a `pending_user` record is created; when the person later logs in via Firebase, their profile is **pre-filled** and activated. On submit, system **sends onboarding email** with link to download the app (WhatsApp deferred to v2).
 
-| Field               | Type           | Required | Notes                                  |
-| ------------------- | -------------- | -------- | -------------------------------------- |
-| `email`             | string         | yes      | unique key for matching on first login |
-| `full_name`         | string         | yes      |                                        |
-| `birthday`          | date           | yes      |                                        |
-| `phone`             | string (E.164) | yes      | reserved for WhatsApp v2               |
-| `address`           | string         | yes      |                                        |
-| `sector_id`         | uuid           | yes      | dropdown of sectors                    |
-| `life_group_id`     | uuid           | yes      | filtered by sector                     |
-| `leader_id`         | uuid           | yes      | derived from life group, editable      |
-| `completed_courses` | uuid[]         | no       | multi-select; options come from `form_course_links` for this form |
+| Field               | Type           | Required | Notes                                                             |
+| ------------------- | -------------- | -------- | ----------------------------------------------------------------- |
+| `full_name`         | string         | yes      | SEM ABREVIAÇÕES                                                   |
+| `birthday`          | date           | yes      |                                                                   |
+| `phone`             | string (E.164) | yes      | reserved for WhatsApp v2                                          |
+| `address`           | string         | yes      |                                                                   |
+| `sector_id`         | uuid           | yes      | dropdown of sectors                                               |
+| `life_group_id`     | uuid           | yes      | filtered by sector                                                |
+| `discipulador_name` | string         | no       | Nome do seu discipulador (free text)                              |
+| `completed_courses` | uuid[]         | no       | multi-select checkboxes; options come from `form_course_links` for this form |
 
 **Side effects on submit**
 
@@ -78,25 +77,26 @@ Form to register a new member. After submission, a `pending_user` record is crea
 
 ### 3.2. Conversão e Reconciliação com Jesus
 
-Captures decisions for Christ. On submit, system tries to match an existing user by email/phone; if not found, **creates** a new user and updates their *Trilho* with the appropriate next step.
+Captures decisions for Christ. On submit, system tries to match an existing user by phone; if not found, **creates** a new user and updates their *Trilho* with the appropriate next step.
 
-| Field                       | Type   | Required    | Options                                                                          |
+| Field                       | Type   | Required    | Options / Notes                                                                  |
 | --------------------------- | ------ | ----------- | -------------------------------------------------------------------------------- |
-| `full_name`                 | string | yes         |                                                                                  |
-| `email`                     | string | yes         |                                                                                  |
-| `phone`                     | string | yes         | WhatsApp                                                                         |
-| `decision_type`             | enum   | yes         | `first_time`, `reconciliation`                                                   |
+| `full_name`                 | string | yes         | Nome e sobrenome                                                                 |
+| `phone`                     | string | yes         | Fone/WhatsApp                                                                    |
+| `decision_type`             | enum   | yes         | `primeira_vez`, `reconciliacao`                                                  |
 | `how_met_church`            | enum   | yes         | `convite_amigo`, `convite_parente`, `redes_sociais`, `passou_em_frente`, `outro` |
 | `how_met_church_other`      | string | conditional | required if `outro`                                                              |
-| `gender`                    | enum   | yes         | `m`, `f`                                                                         |
-| `birth_date`                | date   | yes         |                                                                                  |
+| `gender`                    | enum   | yes         | `feminino`, `masculino`                                                          |
+| `age`                       | int    | yes         | Idade (not birth date)                                                           |
 | `civil_state`               | enum   | yes         | `solteiro`, `casado`, `divorciado`, `viuvo`                                      |
-| `address`                   | string | yes         |                                                                                  |
-| `attendance_count`          | enum   | yes         | `primeira_vez`, `segunda_vez`, `terceira_vez`, `mais_de_um_mes`                  |
+| `street`                    | string | yes         | Rua / N°                                                                         |
+| `neighborhood`              | string | yes         | Bairro                                                                           |
+| `city`                      | string | yes         | Cidade                                                                           |
+| `culto_attendance`          | enum   | yes         | `primeira_vez`, `segunda_vez`, `terceira_vez`, `mais_de_um_mes`                  |
 | `life_group_status`         | enum   | yes         | `sim`, `nao`, `ja_foi_convidado`                                                 |
-| `life_group_leader_or_name` | string | conditional | required if `sim`                                                                |
-| `invited_by`                | string | no          |                                                                                  |
-| `notes`                     | text   | no          |                                                                                  |
+| `life_group_leader_name`    | string | conditional | required if `sim` — "Qual o nome do líder"                                       |
+| `invited_by`                | string | yes         | Quem te convidou                                                                 |
+| `notes`                     | text   | no          | Alguma observação                                                                |
 
 **Side effects on submit**
 
@@ -125,22 +125,21 @@ Filled by the life group leader after each weekly meeting. `area`, `sector`, and
 | `area_id`                       | uuid          | yes         | auto from leader                                                                          |
 | `sector_id`                     | uuid          | yes         | auto from leader                                                                          |
 | `life_group_id`                 | uuid          | yes         | auto from leader                                                                          |
-| `committed_members`             | int           | yes         | Membros compromissados                                                                    |
-| `committed_members_present`     | int           | yes         |                                                                                           |
-| `kids_0_to_11`                  | int           | yes         |                                                                                           |
+| `committed_members`             | int           | yes         | Membros Compromissados                                                                    |
+| `committed_members_present`     | int           | yes         | Membros Compromissados PRESENTES                                                          |
+| `kids_0_to_11`                  | int           | yes         | Crianças de 0 a 11 anos                                                                   |
 | `guests`                        | int           | yes         | Convidados                                                                                |
 | `mdas`                          | int           | yes         | MDA's                                                                                     |
 | `offering`                      | decimal(10,2) | yes         | 0,00 if none                                                                              |
-| `committed_at_tadel`            | int           | yes         |                                                                                           |
-| `committed_at_culto`            | int           | yes         |                                                                                           |
-| `leader_attended`               | string[]      | yes         | multi-select: `culto`, `tadel`, `oracao_antes_culto`                                      |
+| `committed_at_tadel`            | int           | yes         | Quantos membros comprometidos presentes no TADEL                                          |
+| `committed_at_culto`            | int           | yes         | Quantos membros comprometidos presentes no CULTO                                          |
+| `leader_attended`               | string[]      | yes         | multi-checkbox: `culto`, `tadel`, `oracao_antes_culto`                                    |
 | `disciples_count`               | int           | yes         | Quantos discípulos você tem                                                               |
-| `disciples_discipled_this_week` | int           | yes         |                                                                                           |
-| `pastoring_activity_type`       | enum          | yes         | `nao_realizei`, `enfermidade`, `aconselhamento`, `encorajamento`, `consolidacao`, `outro` |
-| `pastoring_activity_other`      | string        | conditional | required if `outro`                                                                       |
-| `pastoring_activity_objective`  | text          | no          | "NÃO USE VÍRGULA" — sanitize on input                                                     |
-| `training_activity_type`        | enum          | yes         | `nao_realizei`, `outro` (+ visit/tasks options)                                           |
-| `training_activity_other`       | string        | conditional |                                                                                           |
+| `disciples_discipled_this_week` | int           | yes         | Quantos você discipulou esta semana                                                       |
+| `pastoring_activity_type`       | string[]      | yes         | multi-checkbox: `nao_realizei`, `enfermidade`, `aconselhamento`, `encorajamento`, `consolidacao`, `outro` |
+| `pastoring_activity_other`      | string        | conditional | required if `outro` selected; "NÃO USE VÍRGULA NA RESPOSTA"                              |
+| `training_activity_type`        | string[]      | yes         | multi-checkbox: `nao_realizei`, `outro`                                                   |
+| `training_activity_other`       | string        | conditional | required if `outro` selected; "NÃO USE VÍRGULA NA RESPOSTA"                              |
 
 | Role              | Can write | Visibility                          |
 | ----------------- | --------- | ----------------------------------- |
@@ -157,16 +156,14 @@ Filled by the life group leader after each weekly meeting. `area`, `sector`, and
 
 Weekly report of a sector supervisor's pastoral activity over the life groups in their sector.
 
-| Field                       | Type   | Required | Notes                           |
-| --------------------------- | ------ | -------- | ------------------------------- |
-| `date`                      | date   | yes      |                                 |
-| `sector_id`                 | uuid   | yes      | auto from supervisor            |
-| `life_groups_visited`       | uuid[] | yes      | multi-select of lifes in sector |
-| `leaders_pastored`          | uuid[] | no       | multi-select                    |
-| `meetings_held`             | int    | yes      |                                 |
-| `trainings_conducted`       | int    | yes      |                                 |
-| `multiplication_candidates` | uuid[] | no       | lifes ready to multiply         |
-| `notes`                     | text   | no       |                                 |
+| Field                      | Type     | Required | Notes                                                                                                               |
+| -------------------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------- |
+| `date`                     | date     | yes      |                                                                                                                     |
+| `sector_id`                | uuid     | yes      | auto from supervisor                                                                                                |
+| `sector_multiplication_date` | date   | no       | Data de multiplicação do setor                                                                                      |
+| `life_groups_count`        | int      | yes      | Quantos Life Groups você tem                                                                                        |
+| `life_groups_supervised`   | int      | yes      | Quantos Life Groups você supervisionou                                                                              |
+| `life_group_observations`  | string[] | no       | multi-checkbox observations: `tempo`, `momento_discontracao`, `palavra`, `louvor`, `visao`, `atmosfera`, `oferta`, `ambiente` |
 
 | Role              | Can write | Visibility                              |
 | ----------------- | --------- | --------------------------------------- |
@@ -183,16 +180,13 @@ Weekly report of a sector supervisor's pastoral activity over the life groups in
 
 Weekly report of an area supervisor's activity across the sectors in their area.
 
-| Field                         | Type   | Required | Notes                |
-| ----------------------------- | ------ | -------- | -------------------- |
-| `date`                        | date   | yes      |                      |
-| `area_id`                     | uuid   | yes      | auto from supervisor |
-| `sectors_visited`             | uuid[] | yes      |                      |
-| `sector_leaders_pastored`     | uuid[] | no       |                      |
-| `meetings_held`               | int    | yes      |                      |
-| `trainings_conducted`         | int    | yes      |                      |
-| `multiplications_in_progress` | int    | no       |                      |
-| `notes`                       | text   | no       |                      |
+| Field                     | Type     | Required | Notes                                                                                                               |
+| ------------------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------- |
+| `date`                    | date     | yes      |                                                                                                                     |
+| `area_id`                 | uuid     | yes      | auto from supervisor                                                                                                |
+| `life_groups_count`       | int      | yes      | Quantos Life Groups você tem                                                                                        |
+| `life_groups_supervised`  | int      | yes      | Quantos Life Groups você supervisionou                                                                              |
+| `life_group_observations` | string[] | no       | multi-checkbox observations: `tempo`, `momento_discontracao`, `palavra`, `louvor`, `visao`, `atmosfera`, `oferta`, `ambiente` |
 
 | Role              | Can write | Visibility                 |
 | ----------------- | --------- | -------------------------- |
@@ -206,38 +200,50 @@ Weekly report of an area supervisor's activity across the sectors in their area.
 
 ### 3.6. Formulário de Multiplicação
 
-Submitted by an `area_leader`. On submit (no approval workflow), the system **creates a new life group** in a single DB transaction, links the new leader, optionally moves selected members from the source life, and lets the supervisor add new members.
+Submitted by an `area_leader` together with the new leader ("Deve ser preenchido pelo supervisor junto com o próximo líder"). On submit (no approval workflow), the system **creates a new life group** in a single DB transaction and links the new leader.
 
-**Pre-step:** select source life group being multiplied.
+**New leader qualification fields (first page):**
 
-| Field                            | Type     | Required    | Notes                              |
-| -------------------------------- | -------- | ----------- | ---------------------------------- |
-| `date`                           | date     | yes         |                                    |
-| `source_life_group_id`           | uuid     | yes         | the life that's multiplying        |
-| `area_id`                        | uuid     | yes         | auto                               |
-| `sector_id`                      | uuid     | yes         | auto                               |
-| `completed_leadership_track`     | bool     | yes         | Trilho de liderança                |
-| `legally_married`                | bool     | yes         | civil + religioso                  |
-| `faithful_tither`                | bool     | yes         | Fiel no dízimo (3 condições)       |
-| `evangelizing_and_consolidating` | bool     | yes         |                                    |
-| `good_testimony`                 | bool     | yes         |                                    |
-| `single_living_in_purity`        | bool     | conditional | required if civil_state = solteiro |
-| `new_life_group_name`            | string   | yes         |                                    |
-| `new_leader_id`                  | uuid     | yes         | existing user                      |
-| `host_id`                        | uuid     | yes         | Anfitrião                          |
-| `address`                        | string   | yes         |                                    |
-| `leader_phone`                   | string   | yes         |                                    |
-| `meeting_day_time`               | datetime | yes         | dia + hora                         |
-| `members_to_move`                | uuid[]   | no          | from source life                   |
-| `new_members`                    | uuid[]   | no          | added during multiplication        |
+| Field                            | Type   | Required    | Notes                                                      |
+| -------------------------------- | ------ | ----------- | ---------------------------------------------------------- |
+| `date`                           | date   | yes         | Data da multiplicação                                      |
+| `completed_leadership_track`     | enum   | yes         | Completou o trilho de liderança? (yes/no dropdown)         |
+| `legally_married`                | enum   | no          | É casado legalmente? (civil e religioso) (dropdown)        |
+| `faithful_tither`                | enum   | yes         | É dizimista e ofertante fiel? (fiel todos os meses / fiel de tudo / não administra) |
+| `evangelizing_and_consolidating` | enum   | yes         | Está evangelizando e consolidando? (dropdown)              |
+| `good_testimony`                 | enum   | yes         | Dá bom testemunho? (dropdown)                              |
+| `single_living_in_purity`        | enum   | conditional | Se solteiro está vivendo uma vida de pureza moral? (dropdown) |
+| `area`                           | string | yes         | Área (free text)                                           |
+| `sector`                         | string | yes         | Setor (free text)                                          |
+
+**Life Group 1 — NOVO Life Group (que está saindo):**
+
+| Field                    | Type   | Required | Notes                         |
+| ------------------------ | ------ | -------- | ----------------------------- |
+| `new_lg_name`            | string | yes      | Nome do Life Group            |
+| `new_lg_leader`          | string | yes      | Líder (name)                  |
+| `new_lg_host`            | string | yes      | Anfitrião                     |
+| `new_lg_address`         | string | yes      | Endereço                      |
+| `new_lg_leader_phone`    | string | yes      | Telefone do Líder             |
+| `new_lg_meeting_day_time`| string | yes      | Dia e Hora                    |
+| `new_lg_members`         | string[] | no     | 1-Membro(a), 2-Membro(a), ... |
+
+**Life Group 2 — ANTIGO Life Group (que multiplicou):**
+
+| Field                    | Type   | Required | Notes                         |
+| ------------------------ | ------ | -------- | ----------------------------- |
+| `old_lg_name`            | string | yes      | Nome do Life Group            |
+| `old_lg_leader`          | string | yes      | Líder (name)                  |
+| `old_lg_host`            | string | yes      | Anfitrião                     |
+| `old_lg_address`         | string | yes      | Endereço                      |
+| `old_lg_leader_phone`    | string | yes      | Telefone do Líder             |
+| `old_lg_meeting_day_time`| string | yes      | Dia e Hora                    |
+| `old_lg_members`         | string[] | no     | 1-Membro(a), 2-Membro(a), ... |
 
 **Side effects on submit (transactional)**
 
-- Create new `LifeGroup`
-- Set `new_leader_id` as leader, update their role to `life_group_leader`
-- Move `members_to_move` from source life to new life
-- Add `new_members` to new life
-- Persist `host` and address details
+- Create new `LifeGroup` with new leader, host, address, day/time
+- Update old life group record (members, host, etc.)
 - Append audit log entry
 
 | Role              | Can write | Visibility                 |
@@ -250,48 +256,74 @@ Submitted by an `area_leader`. On submit (no approval workflow), the system **cr
 
 ---
 
-### 3.7. Relatório do Culto
+### 3.7. Relatório do Culto (ATM — Atmosfera)
 
-Filled per service by the responsible leader.
+Filled by an Atmosfera team leader after each service. Replaces the previous generic service report. The team is selected from the `atmosphere_teams` table (managed by admins).
 
-| Field                  | Type          | Required    | Notes                                                   |
-| ---------------------- | ------------- | ----------- | ------------------------------------------------------- |
-| `date`                 | date          | yes         |                                                         |
-| `service_type`         | enum          | yes         | `culto_domingo`, `culto_meio_semana`, `oracao`, `outro` |
-| `service_type_other`   | string        | conditional |                                                         |
-| `total_attendance`     | int           | yes         |                                                         |
-| `members_present`      | int           | yes         |                                                         |
-| `guests_present`       | int           | yes         |                                                         |
-| `kids_present`         | int           | yes         |                                                         |
-| `decisions_for_christ` | int           | yes         |                                                         |
-| `reconciliations`      | int           | yes         |                                                         |
-| `baptism_candidates`   | int           | no          |                                                         |
-| `offering`             | decimal(10,2) | yes         |                                                         |
-| `notes`                | text          | no          |                                                         |
+**Section 1 — Identificação**
 
-| Role              | Can write | Visibility |
-| ----------------- | --------- | ---------- |
-| admin             | ✅         | all        |
-| pastor            | ✅         | all        |
-| area_leader       | ✅         | their own  |
-| sector_leader     | ✅         | their own  |
-| life_group_leader | ✅         | their own  |
+| Field                        | Type   | Required    | Notes                                                               |
+| ---------------------------- | ------ | ----------- | ------------------------------------------------------------------- |
+| `date`                       | date   | yes         |                                                                     |
+| `report_type`                | enum   | yes         | `tadel`, `culto_celebracao`, `evento`                               |
+| `period`                     | enum   | yes         | `manha`, `tarde_noite`                                              |
+| `atmosphere_team_id`         | int    | conditional | FK to `atmosphere_teams`; null if `atmosphere_team_other` filled    |
+| `atmosphere_team_other`      | string | conditional | free text when team not in list                                     |
+| `atmosphere_responsible`     | string | yes         | "Responsável pela equipe Atmosfera no dia"                          |
+
+**Section 2 — Contabilização de pessoas Tadel**
+
+| Field          | Type | Required | Notes   |
+| -------------- | ---- | -------- | ------- |
+| `tadel_adults` | int  | yes      | Adultos |
+| `tadel_kids`   | int  | no       | Crianças |
+
+**Section 3 — Contabilização de veículos**
+
+| Field              | Type   | Required | Notes                                     |
+| ------------------ | ------ | -------- | ----------------------------------------- |
+| `vehicles_cars`    | int    | yes      | Carros                                    |
+| `vehicles_motos`   | int    | no       | Motos                                     |
+| `vehicles_bikes`   | int    | no       | Bicicletas                                |
+| `vehicles_others`  | string | no       | Outros (free text, ex: "Ônibus - 2")      |
+
+**Section 4 — Contabilização de voluntários**
+
+| Field                    | Type | Required | Notes      |
+| ------------------------ | ---- | -------- | ---------- |
+| `volunteers_atmosfera`   | int  | no       | Atmosfera  |
+| `volunteers_louvor`      | int  | no       | Louvor     |
+| `volunteers_midia`       | int  | no       | Mídia (transmissão ao vivo, vídeos, fotos) |
+| `volunteers_danca`       | int  | no       | Dança      |
+
+**Section 5 — Informações gerais**
+
+| Field   | Type | Required | Notes                                                    |
+| ------- | ---- | -------- | -------------------------------------------------------- |
+| `notes` | text | no       | Observação sobre ocorrências, materiais faltando, danos |
+
+| Role                        | Can write | Visibility |
+| --------------------------- | --------- | ---------- |
+| admin                       | ✅         | all        |
+| pastor                      | ✅         | all        |
+| atmosphere_ministry_leader  | ✅         | all their ministry teams |
+| atmosphere_team_leader      | ✅         | their own  |
 
 ---
 
 ### 3.8. Convidado
 
-Quick form to register a guest.
+Quick form to register a guest (filled by a leader on the mobile app — "Página convidado").
 
-| Field            | Type   | Required | Notes                               |
-| ---------------- | ------ | -------- | ----------------------------------- |
-| `full_name`      | string | yes      |                                     |
-| `email`          | string | no       |                                     |
-| `phone`          | string | yes      | WhatsApp                            |
-| `address`        | string | no       |                                     |
-| `invited_by`     | string | yes      | who invited (free text or user ref) |
-| `how_met_church` | enum   | no       | same options as Conversão form      |
-| `notes`          | text   | no       |                                     |
+| Field            | Type   | Required | Notes                                           |
+| ---------------- | ------ | -------- | ----------------------------------------------- |
+| `full_name`      | string | yes      | Nome                                            |
+| `phone`          | string | no       | WhatsApp                                        |
+| `address`        | string | no       | Endereço                                        |
+| `how_met_church` | string | no       | "Quem te convidou ou como conheceu a igreja" (free text) |
+| `filled_by`          | string  | no       | Quem preencheu                                  |
+| `notes`              | text    | no       | Observação                                      |
+| `via_casa_de_paz`    | boolean | no       | checkbox — convidado veio de uma Casa de Paz    |
 
 **Side effects on submit**
 
