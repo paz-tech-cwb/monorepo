@@ -61,6 +61,7 @@ export class EventReminderEvaluator implements ReminderEvaluator {
           this.em.create(Notification, {
             title: cfg.title,
             message: event.title,
+            deepLink: `paz://agenda/${String(event.id)}`,
             category: 'events' as NotificationCategory,
             channels: ['push'],
             segment: { type: 'all' },

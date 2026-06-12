@@ -65,6 +65,7 @@ export class MemberJourneyReminderEvaluator implements ReminderEvaluator {
         this.em.create(Notification, {
           title: cfg.title,
           message: cfg.message,
+          deepLink: 'paz://journey',
           category: 'member_journey' as NotificationCategory,
           channels: ['push'],
           segment: { type: 'filtered', filters: {} },

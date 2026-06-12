@@ -64,6 +64,7 @@ export class FormReportReminderEvaluator implements ReminderEvaluator {
       this.em.create(Notification, {
         title: entry.title,
         message: entry.message,
+        deepLink: 'paz://formularios',
         category: 'forms' as NotificationCategory,
         channels: ['push'],
         segment: { type: 'filtered', filters: { roles: entry.roles } },
