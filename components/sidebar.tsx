@@ -38,20 +38,10 @@ const sidebarSections = [
     ],
   },
   {
-    title: "Life Groups",
+    title: "Igreja",
     items: [
       { name: "Life Groups", href: "/life-groups", icon: Users2 },
-    ],
-  },
-  {
-    title: "Ministérios",
-    items: [
       { name: "Ministérios", href: "/ministerios", icon: Waves },
-    ],
-  },
-  {
-    title: "Formulários",
-    items: [
       { name: "Formulários", href: "/formularios", icon: ClipboardList },
     ],
   },
