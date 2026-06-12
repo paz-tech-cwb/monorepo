@@ -11,7 +11,6 @@ export type NotificationCategory =
   | 'forms'
   | 'member_journey'
   | 'contributions'
-  | 'meeting_reports'
 
 export type NotificationStatus =
   | 'pending'

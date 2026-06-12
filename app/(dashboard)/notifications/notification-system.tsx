@@ -55,10 +55,9 @@ const CATEGORIES: { value: NotificationCategory; label: string }[] = [
   { value: 'forms', label: 'Formulários' },
   { value: 'member_journey', label: 'Jornada do Membro' },
   { value: 'contributions', label: 'Contribuições' },
-  { value: 'meeting_reports', label: 'Relatórios de Reunião' },
 ]
 
-const LEADER_ONLY_CATEGORIES: NotificationCategory[] = ['forms', 'meeting_reports']
+const LEADER_ONLY_CATEGORIES: NotificationCategory[] = ['forms']
 
 // Only push is available for now — the other channels are not implemented yet.
 const CHANNELS = [
@@ -330,7 +329,7 @@ export function NotificationSystem() {
         <TabsList>
           <TabsTrigger value="compose">Criar</TabsTrigger>
           <TabsTrigger value="history">Histórico</TabsTrigger>
-          <TabsTrigger value="automatic">Automáticos</TabsTrigger>
+          <TabsTrigger value="automatic">Lembretes</TabsTrigger>
         </TabsList>
 
         {/* CREATE TAB */}
@@ -647,7 +646,7 @@ export function NotificationSystem() {
                   <SelectContent>
                     <SelectItem value="all">Todas</SelectItem>
                     <SelectItem value="manual">Manuais</SelectItem>
-                    <SelectItem value="automatic">Automáticas</SelectItem>
+                    <SelectItem value="automatic">Lembretes</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -667,7 +666,7 @@ export function NotificationSystem() {
                             <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
                             <Badge variant="outline">{CATEGORIES.find(c => c.value === n.category)?.label ?? n.category}</Badge>
                             {n.origin === 'automatic' && (
-                              <Badge variant="secondary">Automático</Badge>
+                              <Badge variant="secondary">Lembrete</Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground line-clamp-2">{n.message}</p>

@@ -1,11 +1,12 @@
 "use client"
 
-import { memo } from "react"
+import { memo, useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { useTheme } from "next-themes"
 import {
   Home,
   Users,
@@ -19,6 +20,8 @@ import {
   Megaphone,
   GitMerge,
   ClipboardList,
+  Sun,
+  Moon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -68,7 +71,6 @@ const sidebarSections = [
   },
 ] as const
 
-// Memoized nav item to prevent unnecessary re-renders
 const NavItem = memo(function NavItem({
   href,
   icon: Icon,
@@ -87,8 +89,8 @@ const NavItem = memo(function NavItem({
       className={cn(
         "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
         isActive
-          ? "bg-sidebar-primary text-sidebar-primary-foreground"
-          : "text-sidebar-foreground hover:bg-sidebar-primary/60 hover:text-white/100",
+          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
       )}
     >
       <Icon className="h-4 w-4" />
@@ -97,7 +99,6 @@ const NavItem = memo(function NavItem({
   )
 })
 
-// Memoized section component
 const NavSection = memo(function NavSection({
   section,
   pathname
@@ -107,7 +108,7 @@ const NavSection = memo(function NavSection({
 }) {
   return (
     <div>
-      <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/60">
+      <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
         {section.title}
       </h3>
       <div className="space-y-1">
@@ -172,17 +173,51 @@ function LogoutButton() {
 
   const handleLogout = async () => {
     await logout()
-    // Redirect handled by auth context
   }
 
   return (
     <Button
       variant="ghost"
       onClick={handleLogout}
-      className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-primary/80 hover:text-white/80"
+      className="w-full justify-start text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
     >
       <LogOut className="mr-2 h-4 w-4" />
       Sair
+    </Button>
+  )
+}
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <Button variant="ghost" className="w-full justify-start text-sidebar-foreground">
+        <Sun className="mr-2 h-4 w-4" />
+        Modo Claro
+      </Button>
+    )
+  }
+
+  const isDark = theme === "dark"
+
+  return (
+    <Button
+      variant="ghost"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+    >
+      {isDark ? (
+        <Sun className="mr-2 h-4 w-4" />
+      ) : (
+        <Moon className="mr-2 h-4 w-4" />
+      )}
+      {isDark ? "Modo Claro" : "Modo Escuro"}
     </Button>
   )
 }
@@ -191,9 +226,9 @@ export const SidebarContent = memo(function SidebarContent() {
   const pathname = usePathname()
 
   return (
-    <div className="flex h-full flex-col bg-sidebar">
+    <div className="flex h-full flex-col bg-sidebar border-r border-sidebar-border">
       <div className="flex h-14 items-center border-b border-sidebar-border px-4">
-        <h2 className="text-lg font-semibold text-sidebar-foreground">Painel Admin</h2>
+        <h2 className="text-lg font-bold text-sidebar-primary tracking-tight">Painel Admin</h2>
       </div>
       <div className="flex-1 overflow-auto py-4">
         <nav className="space-y-6 px-2">
@@ -206,9 +241,12 @@ export const SidebarContent = memo(function SidebarContent() {
           ))}
         </nav>
       </div>
-      <div className="border-t border-sidebar-border p-4 space-y-2">
+      <div className="border-t border-sidebar-border p-4 space-y-1">
         <UserProfile />
-        <LogoutButton />
+        <div className="pt-2 space-y-1">
+          <ThemeToggle />
+          <LogoutButton />
+        </div>
       </div>
     </div>
   )

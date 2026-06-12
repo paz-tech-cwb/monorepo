@@ -5,6 +5,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { QueryProvider } from '@/providers/query-provider'
 import { AuthProvider } from '@/contexts/auth-context'
 import { AnalyticsProvider } from '@/providers/analytics-provider'
+import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
@@ -20,17 +21,24 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
-        <QueryProvider>
-          <AuthProvider>
-            <AnalyticsProvider>
-              {children}
-            </AnalyticsProvider>
-          </AuthProvider>
-        </QueryProvider>
-        <Toaster />
-        <Analytics />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <QueryProvider>
+            <AuthProvider>
+              <AnalyticsProvider>
+                {children}
+              </AnalyticsProvider>
+            </AuthProvider>
+          </QueryProvider>
+          <Toaster />
+          <Analytics />
+        </ThemeProvider>
       </body>
     </html>
   )

@@ -2,20 +2,36 @@
 
 export type ReminderRuleType = 'form_report' | 'event' | 'member_journey'
 
-export interface FormReportReminderConfig {
+export interface FormReminderEntry {
+  form_slug: string
+  title: string
+  message: string
   weekday: number
   hour: number
-  minute: number
   roles: string[]
+}
+
+export interface FormReportReminderConfig {
+  forms: FormReminderEntry[]
 }
 
 export interface EventReminderConfig {
   lead_times_hours: number[]
+  title: string
+  // message is always the event's own title — set dynamically at dispatch time
+  // category is always 'events' — hardcoded in the evaluator
+}
+
+export interface MemberJourneyStep {
+  key: string
+  days: number
 }
 
 export interface MemberJourneyReminderConfig {
-  threshold_days: number
-  steps: string[]
+  steps: MemberJourneyStep[]
+  title: string
+  message: string
+  // category is always 'member_journey' — hardcoded in the evaluator
 }
 
 export type ReminderConfig =
