@@ -127,9 +127,21 @@ class FormDetailViewModel(
                     formsRepository.submitServiceReport(
                         ServiceReportForm(
                             date = f.req("date"),
-                            attendees = f.int("attendees"),
-                            visitors = f.int("visitors"),
-                            offerings = f.brl("offerings"),
+                            reportType = f.req("report_type"),
+                            period = f.req("period"),
+                            atmosphereTeamId = f.intOrNull("atmosphere_team_id"),
+                            atmosphereResponsible = f.req("atmosphere_responsible"),
+                            tadelAdults = f.int("tadel_adults"),
+                            tadelKids = f.int("tadel_kids"),
+                            vehiclesCars = f.int("vehicles_cars"),
+                            vehiclesMotos = f.int("vehicles_motos"),
+                            vehiclesBikes = f.int("vehicles_bikes"),
+                            vehiclesOthers = f["vehicles_others"],
+                            volunteersAtmosfera = f.int("volunteers_atmosfera"),
+                            volunteersLouvor = f.int("volunteers_louvor"),
+                            volunteersMiddia = f.int("volunteers_midia"),
+                            volunteersDanca = f.int("volunteers_danca"),
+                            notes = f["notes"],
                         ),
                     )
                 FormType.course ->
@@ -180,6 +192,7 @@ class FormDetailViewModel(
     private fun Map<String, String>.req(key: String) = get(key)?.trim() ?: ""
     private fun Map<String, String>.opt(key: String) = get(key)?.trim()?.ifEmpty { null }
     private fun Map<String, String>.int(key: String) = get(key)?.trim()?.toIntOrNull() ?: 0
+    private fun Map<String, String>.intOrNull(key: String) = get(key)?.trim()?.toIntOrNull()
 
     // Parse BRL-masked value e.g. "1.234,56" → 1234.56
     private fun Map<String, String>.brl(key: String): Double {

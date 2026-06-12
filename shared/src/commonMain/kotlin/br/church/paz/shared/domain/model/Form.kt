@@ -85,10 +85,22 @@ data class MultiplicationForm(
 @Serializable
 data class ServiceReportForm(
     val date: String,
-    val attendees: Int,
-    val visitors: Int,
-    val offerings: Double? = null,
-    val observations: String? = null,
+    @SerialName("report_type") val reportType: String,
+    val period: String,
+    @SerialName("atmosphere_team_id") val atmosphereTeamId: Int? = null,
+    @SerialName("atmosphere_team_other") val atmosphereTeamOther: String? = null,
+    @SerialName("atmosphere_responsible") val atmosphereResponsible: String,
+    @SerialName("tadel_adults") val tadelAdults: Int = 0,
+    @SerialName("tadel_kids") val tadelKids: Int = 0,
+    @SerialName("vehicles_cars") val vehiclesCars: Int = 0,
+    @SerialName("vehicles_motos") val vehiclesMotos: Int = 0,
+    @SerialName("vehicles_bikes") val vehiclesBikes: Int = 0,
+    @SerialName("vehicles_others") val vehiclesOthers: String? = null,
+    @SerialName("volunteers_atmosfera") val volunteersAtmosfera: Int = 0,
+    @SerialName("volunteers_louvor") val volunteersLouvor: Int = 0,
+    @SerialName("volunteers_midia") val volunteersMiddia: Int = 0,
+    @SerialName("volunteers_danca") val volunteersDanca: Int = 0,
+    val notes: String? = null,
 )
 
 @Serializable

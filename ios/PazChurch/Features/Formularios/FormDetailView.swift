@@ -67,11 +67,22 @@ extension FormType {
             ]
         case .serviceReport:
             [
-                FormFieldDef("date", "Data do Culto", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef("attendees", "Quantidade de Participantes", placeholder: "0", required: true, fieldType: .integer),
-                FormFieldDef("visitors", "Quantidade de Visitantes", placeholder: "0", fieldType: .integer),
-                FormFieldDef("offerings", "Oferta (R$)", placeholder: "0,00", fieldType: .currency),
-                FormFieldDef("observations", "Observações", fieldType: .multiline),
+                FormFieldDef("date", "Data", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+                FormFieldDef("report_type", "Tipo de relatório", placeholder: "tadel / culto_celebracao / evento", required: true),
+                FormFieldDef("period", "Período", placeholder: "manha / tarde_noite", required: true),
+                FormFieldDef("atmosphere_team_id", "Equipe Atmosfera (ID)", placeholder: ""),
+                FormFieldDef("atmosphere_responsible", "Responsável no dia", placeholder: "", required: true),
+                FormFieldDef("tadel_adults", "Adultos (Tadel)", placeholder: "0", required: true, fieldType: .integer),
+                FormFieldDef("tadel_kids", "Crianças (Tadel)", placeholder: "0", fieldType: .integer),
+                FormFieldDef("vehicles_cars", "Carros", placeholder: "0", required: true, fieldType: .integer),
+                FormFieldDef("vehicles_motos", "Motos", placeholder: "0", fieldType: .integer),
+                FormFieldDef("vehicles_bikes", "Bicicletas", placeholder: "0", fieldType: .integer),
+                FormFieldDef("vehicles_others", "Outros veículos", placeholder: "Ex: Ônibus - 2"),
+                FormFieldDef("volunteers_atmosfera", "Voluntários Atmosfera", placeholder: "0", fieldType: .integer),
+                FormFieldDef("volunteers_louvor", "Voluntários Louvor", placeholder: "0", fieldType: .integer),
+                FormFieldDef("volunteers_midia", "Voluntários Mídia", placeholder: "0", fieldType: .integer),
+                FormFieldDef("volunteers_danca", "Voluntários Dança", placeholder: "0", fieldType: .integer),
+                FormFieldDef("notes", "Observação", placeholder: "Ocorrências, materiais...", fieldType: .multiline),
             ]
         case .course:
             [
@@ -251,8 +262,22 @@ class FormDetailViewModelIOS {
             ))
         case .serviceReport:
             _ = try await formsRepository.submitServiceReport(form: ServiceReportForm(
-                date: req("date"), attendees: int32("attendees"), visitors: int32("visitors"),
-                offerings: kdbl("offerings"), observations: opt("observations")
+                date: req("date"),
+                reportType: req("report_type"),
+                period: req("period"),
+                atmosphereTeamId: fields["atmosphere_team_id"].flatMap { Int32($0) },
+                atmosphereResponsible: req("atmosphere_responsible"),
+                tadelAdults: int32("tadel_adults"),
+                tadelKids: int32("tadel_kids"),
+                vehiclesCars: int32("vehicles_cars"),
+                vehiclesMotos: int32("vehicles_motos"),
+                vehiclesBikes: int32("vehicles_bikes"),
+                vehiclesOthers: opt("vehicles_others"),
+                volunteersAtmosfera: int32("volunteers_atmosfera"),
+                volunteersLouvor: int32("volunteers_louvor"),
+                volunteersMiddia: int32("volunteers_midia"),
+                volunteersDanca: int32("volunteers_danca"),
+                notes: opt("notes")
             ))
         case .course:
             _ = try await formsRepository.submitCourse(form: CourseForm(

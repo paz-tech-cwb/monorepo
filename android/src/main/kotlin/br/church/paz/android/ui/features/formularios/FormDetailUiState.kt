@@ -55,11 +55,22 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
             )
         FormType.service_report ->
             listOf(
-                FormFieldDef("date", "Data do Culto", "DD/MM/YYYY", required = true, fieldType = FormFieldType.DATE),
-                FormFieldDef("attendees", "Quantidade de Participantes", "0", required = true, fieldType = FormFieldType.INTEGER),
-                FormFieldDef("visitors", "Quantidade de Visitantes", "0", fieldType = FormFieldType.INTEGER),
-                FormFieldDef("offerings", "Oferta (R$)", "0,00", fieldType = FormFieldType.CURRENCY),
-                FormFieldDef("observations", "Observações", fieldType = FormFieldType.MULTILINE),
+                FormFieldDef("date", "Data", "DD/MM/YYYY", required = true, fieldType = FormFieldType.DATE),
+                FormFieldDef("report_type", "Tipo de relatório", "Tadel / Culto / Evento", required = true),
+                FormFieldDef("period", "Período", "Manhã / Tarde-Noite", required = true),
+                FormFieldDef("atmosphere_team_id", "Equipe Atmosfera", "", fieldType = FormFieldType.INTEGER),
+                FormFieldDef("atmosphere_responsible", "Responsável no dia", "", required = true),
+                FormFieldDef("tadel_adults", "Adultos (Tadel)", "0", required = true, fieldType = FormFieldType.INTEGER),
+                FormFieldDef("tadel_kids", "Crianças (Tadel)", "0", fieldType = FormFieldType.INTEGER),
+                FormFieldDef("vehicles_cars", "Carros", "0", required = true, fieldType = FormFieldType.INTEGER),
+                FormFieldDef("vehicles_motos", "Motos", "0", fieldType = FormFieldType.INTEGER),
+                FormFieldDef("vehicles_bikes", "Bicicletas", "0", fieldType = FormFieldType.INTEGER),
+                FormFieldDef("vehicles_others", "Outros veículos", "Ex: Ônibus - 2"),
+                FormFieldDef("volunteers_atmosfera", "Voluntários Atmosfera", "0", fieldType = FormFieldType.INTEGER),
+                FormFieldDef("volunteers_louvor", "Voluntários Louvor", "0", fieldType = FormFieldType.INTEGER),
+                FormFieldDef("volunteers_midia", "Voluntários Mídia", "0", fieldType = FormFieldType.INTEGER),
+                FormFieldDef("volunteers_danca", "Voluntários Dança", "0", fieldType = FormFieldType.INTEGER),
+                FormFieldDef("notes", "Observação", "", fieldType = FormFieldType.MULTILINE),
             )
         FormType.course ->
             listOf(
