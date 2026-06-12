@@ -1,11 +1,6 @@
 import {
-  Column,
-  CreateDateColumn,
-  DeleteDateColumn,
-  Entity,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
+  Column, CreateDateColumn, DeleteDateColumn, Entity,
+  ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
@@ -13,35 +8,22 @@ import { User } from '../../users/entities/user.entity';
 export class ServiceReport {
   @PrimaryGeneratedColumn('uuid') id: string;
   @Column({ type: 'date' }) date: string;
-  @Column({ name: 'service_type', type: 'varchar', length: 40 })
-  serviceType: string;
-  @Column({
-    name: 'service_type_other',
-    type: 'varchar',
-    length: 180,
-    nullable: true,
-  })
-  serviceTypeOther: string | null;
-  @Column({ name: 'total_attendance', type: 'int' }) totalAttendance: number;
-  @Column({ name: 'members_present', type: 'int' }) membersPresent: number;
-  @Column({ name: 'guests_present', type: 'int' }) guestsPresent: number;
-  @Column({ name: 'kids_present', type: 'int' }) kidsPresent: number;
-  @Column({ name: 'decisions_for_christ', type: 'int' })
-  decisionsForChrist: number;
-  @Column({ type: 'int' }) reconciliations: number;
-  @Column({ name: 'baptism_candidates', type: 'int', nullable: true })
-  baptismCandidates: number | null;
-  @Column({ type: 'numeric', precision: 10, scale: 2 }) offering: string;
+  @Column({ name: 'report_type', type: 'varchar', length: 30 }) reportType: string;
+  @Column({ type: 'varchar', length: 20 }) period: string;
+  @Column({ name: 'atmosphere_team_id', type: 'int', nullable: true }) atmosphereTeamId: number | null;
+  @Column({ name: 'atmosphere_team_other', type: 'varchar', length: 180, nullable: true }) atmosphereTeamOther: string | null;
+  @Column({ name: 'atmosphere_responsible', type: 'varchar', length: 180 }) atmosphereResponsible: string;
+  @Column({ name: 'tadel_adults', type: 'int', default: 0 }) tadelAdults: number;
+  @Column({ name: 'tadel_kids', type: 'int', default: 0 }) tadelKids: number;
+  @Column({ name: 'vehicles_cars', type: 'int', default: 0 }) vehiclesCars: number;
+  @Column({ name: 'vehicles_motos', type: 'int', default: 0 }) vehiclesMotos: number;
+  @Column({ name: 'vehicles_bikes', type: 'int', default: 0 }) vehiclesBikes: number;
+  @Column({ name: 'vehicles_others', type: 'varchar', length: 255, nullable: true }) vehiclesOthers: string | null;
+  @Column({ name: 'volunteers_atmosfera', type: 'int', default: 0 }) volunteersAtmosfera: number;
+  @Column({ name: 'volunteers_louvor', type: 'int', default: 0 }) volunteersLouvor: number;
+  @Column({ name: 'volunteers_midia', type: 'int', default: 0 }) volunteersMiddia: number;
+  @Column({ name: 'volunteers_danca', type: 'int', default: 0 }) volunteersDanca: number;
   @Column({ type: 'text', nullable: true }) notes: string | null;
-  @Column({ name: 'area_id', type: 'int', nullable: true }) areaId:
-    | number
-    | null;
-  @Column({ name: 'sector_id', type: 'int', nullable: true }) sectorId:
-    | number
-    | null;
-  @Column({ name: 'life_group_id', type: 'int', nullable: true }) lifeGroupId:
-    | number
-    | null;
   @ManyToOne(() => User, { nullable: false }) submittedBy: User;
   @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
   @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;

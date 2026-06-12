@@ -1,35 +1,22 @@
 import { Expose } from 'class-transformer';
-import {
-  IsDateString,
-  IsInt,
-  IsNumberString,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateServiceReportDto {
-  @Expose() @IsDateString() date: string;
-  @Expose({ name: 'service_type' }) @IsString() serviceType: string;
-  @Expose({ name: 'service_type_other' })
-  @IsOptional()
-  @IsString()
-  serviceTypeOther?: string;
-  @Expose({ name: 'total_attendance' }) @IsInt() totalAttendance: number;
-  @Expose({ name: 'members_present' }) @IsInt() membersPresent: number;
-  @Expose({ name: 'guests_present' }) @IsInt() guestsPresent: number;
-  @Expose({ name: 'kids_present' }) @IsInt() kidsPresent: number;
-  @Expose({ name: 'decisions_for_christ' }) @IsInt() decisionsForChrist: number;
-  @Expose() @IsInt() reconciliations: number;
-  @Expose({ name: 'baptism_candidates' })
-  @IsOptional()
-  @IsInt()
-  baptismCandidates?: number;
-  @Expose() @IsNumberString() offering: string;
+  @Expose() @IsString() date: string;
+  @Expose({ name: 'report_type' }) @IsString() reportType: string;
+  @Expose() @IsString() period: string;
+  @Expose({ name: 'atmosphere_team_id' }) @IsOptional() @IsInt() atmosphereTeamId?: number;
+  @Expose({ name: 'atmosphere_team_other' }) @IsOptional() @IsString() atmosphereTeamOther?: string;
+  @Expose({ name: 'atmosphere_responsible' }) @IsString() atmosphereResponsible: string;
+  @Expose({ name: 'tadel_adults' }) @IsInt() @Min(0) tadelAdults: number;
+  @Expose({ name: 'tadel_kids' }) @IsOptional() @IsInt() @Min(0) tadelKids?: number;
+  @Expose({ name: 'vehicles_cars' }) @IsInt() @Min(0) vehiclesCars: number;
+  @Expose({ name: 'vehicles_motos' }) @IsOptional() @IsInt() @Min(0) vehiclesMotos?: number;
+  @Expose({ name: 'vehicles_bikes' }) @IsOptional() @IsInt() @Min(0) vehiclesBikes?: number;
+  @Expose({ name: 'vehicles_others' }) @IsOptional() @IsString() vehiclesOthers?: string;
+  @Expose({ name: 'volunteers_atmosfera' }) @IsOptional() @IsInt() @Min(0) volunteersAtmosfera?: number;
+  @Expose({ name: 'volunteers_louvor' }) @IsOptional() @IsInt() @Min(0) volunteersLouvor?: number;
+  @Expose({ name: 'volunteers_midia' }) @IsOptional() @IsInt() @Min(0) volunteersMiddia?: number;
+  @Expose({ name: 'volunteers_danca' }) @IsOptional() @IsInt() @Min(0) volunteersDanca?: number;
   @Expose() @IsOptional() @IsString() notes?: string;
-  @Expose({ name: 'area_id' }) @IsOptional() @IsInt() areaId?: number;
-  @Expose({ name: 'sector_id' }) @IsOptional() @IsInt() sectorId?: number;
-  @Expose({ name: 'life_group_id' })
-  @IsOptional()
-  @IsInt()
-  lifeGroupId?: number;
 }
