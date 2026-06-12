@@ -38,19 +38,20 @@ struct MainTabView: View {
             guard newValue != nil,
                   let destination = pushService.deepLinkDestination
             else { return }
-            handleDeepLink(destination)
-            pushService.consumeDeepLink()
+            handleDeepLink(destination, consume: destination.isAgendaDestination)
         }
     }
 
-    private func handleDeepLink(_ destination: DeepLinkDestination) {
+    private func handleDeepLink(_ destination: DeepLinkDestination, consume: Bool) {
         switch destination {
         case .agendaDetail:
             selectedTab = 0
             agendaPath = [destination]
-        case .formularios, .memberJourney, .account:
+        case .formDetail, .ministryDetail, .lifeGroupDetail, .formularios, .memberJourney, .account:
+            // Switch tab only — AccountView observes pendingDeepLink and pushes its own path
             selectedTab = 2
         }
+        if consume { pushService.consumeDeepLink() }
     }
 
     @ViewBuilder
@@ -60,6 +61,21 @@ struct MainTabView: View {
             AgendaDetailDeepLinkView(
                 eventId: eventId,
                 agendaRepository: IosAppContainer.shared.agendaRepository
+            )
+        case .formDetail(let formId):
+            FormDetailDeepLinkView(
+                formId: formId,
+                formsRepository: IosAppContainer.shared.formsRepository
+            )
+        case .ministryDetail(let ministryId):
+            MinistryDetailDeepLinkView(
+                ministryId: ministryId,
+                churchRepository: IosAppContainer.shared.churchRepository
+            )
+        case .lifeGroupDetail(let lifeGroupId):
+            LifeGroupDetailDeepLinkView(
+                lifeGroupId: lifeGroupId,
+                churchRepository: IosAppContainer.shared.churchRepository
             )
         default:
             EmptyView()
@@ -110,6 +126,7 @@ private struct AgendaDetailDeepLinkView: View {
         isLoading = false
     }
 }
+
 
 #Preview {
     MainTabView()

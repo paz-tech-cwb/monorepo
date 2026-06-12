@@ -19,6 +19,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class FormDetailViewModel(
     private val formId: String,
@@ -31,6 +34,8 @@ class FormDetailViewModel(
     private val _effect = Channel<FormDetailEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
+    private val brazilianDate = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+
     init {
         loadForm()
     }
@@ -40,11 +45,10 @@ class FormDetailViewModel(
             runCatching { formsRepository.getCatalog() }
                 .onSuccess { catalog ->
                     val form = catalog.find { it.id == formId }
-                    val initialFields =
-                        form
-                            ?.type
-                            ?.fieldDefs()
-                            ?.associate { it.key to "" } ?: emptyMap()
+                    val today = brazilianDate.format(Date())
+                    val initialFields = form?.type?.fieldDefs()?.associate { def ->
+                        def.key to if (def.fieldType == FormFieldType.DATE) today else ""
+                    } ?: emptyMap()
                     _uiState.update {
                         it.copy(form = form, isLoading = false, fields = initialFields)
                     }
@@ -56,10 +60,7 @@ class FormDetailViewModel(
         }
     }
 
-    fun onFieldChanged(
-        key: String,
-        value: String,
-    ) {
+    fun onFieldChanged(key: String, value: String) {
         _uiState.update { state ->
             state.copy(fields = state.fields + (key to value), error = null)
         }
@@ -70,7 +71,6 @@ class FormDetailViewModel(
         val form = state.form ?: return
         val fields = state.fields
 
-        // Validate required fields
         val missingField = form.type.fieldDefs().firstOrNull { it.required && fields[it.key].isNullOrEmpty() }
         if (missingField != null) {
             _uiState.update { it.copy(error = "${missingField.label} é obrigatório") }
@@ -93,10 +93,7 @@ class FormDetailViewModel(
         }
     }
 
-    private suspend fun submitForm(
-        type: FormType,
-        f: Map<String, String>,
-    ): Result<Unit> {
+    private suspend fun submitForm(type: FormType, f: Map<String, String>): Result<Unit> {
         val userId = authRepository.currentUser()?.id ?: ""
         return runCatching {
             when (type) {
@@ -132,7 +129,7 @@ class FormDetailViewModel(
                             date = f.req("date"),
                             attendees = f.int("attendees"),
                             visitors = f.int("visitors"),
-                            offerings = f.double("offerings"),
+                            offerings = f.brl("offerings"),
                         ),
                     )
                 FormType.course ->
@@ -146,7 +143,7 @@ class FormDetailViewModel(
                             date = f.req("date"),
                             attendees = f.int("attendees"),
                             visitors = f.int("visitors"),
-                            offerings = f.doubleOrNull("offerings"),
+                            offerings = f.brlOrNull("offerings"),
                             observations = f.opt("observations"),
                         ),
                     )
@@ -157,7 +154,7 @@ class FormDetailViewModel(
                             date = f.req("date"),
                             attendees = f.int("attendees"),
                             visitors = f.int("visitors"),
-                            offerings = f.doubleOrNull("offerings"),
+                            offerings = f.brlOrNull("offerings"),
                             observations = f.opt("observations"),
                         ),
                     )
@@ -168,7 +165,7 @@ class FormDetailViewModel(
                             date = f.req("date"),
                             attendees = f.int("attendees"),
                             visitors = f.int("visitors"),
-                            offerings = f.doubleOrNull("offerings"),
+                            offerings = f.brlOrNull("offerings"),
                             observations = f.opt("observations"),
                         ),
                     )
@@ -180,14 +177,19 @@ class FormDetailViewModel(
         viewModelScope.launch { _effect.send(FormDetailEffect.NavigateBack) }
     }
 
-    // Field helpers
     private fun Map<String, String>.req(key: String) = get(key)?.trim() ?: ""
-
     private fun Map<String, String>.opt(key: String) = get(key)?.trim()?.ifEmpty { null }
-
     private fun Map<String, String>.int(key: String) = get(key)?.trim()?.toIntOrNull() ?: 0
 
-    private fun Map<String, String>.double(key: String) = get(key)?.trim()?.toDoubleOrNull() ?: 0.0
+    // Parse BRL-masked value e.g. "1.234,56" → 1234.56
+    private fun Map<String, String>.brl(key: String): Double {
+        val raw = get(key)?.trim() ?: return 0.0
+        return raw.replace(".", "").replace(",", ".").toDoubleOrNull() ?: 0.0
+    }
 
-    private fun Map<String, String>.doubleOrNull(key: String) = get(key)?.trim()?.toDoubleOrNull()
+    private fun Map<String, String>.brlOrNull(key: String): Double? {
+        val raw = get(key)?.trim() ?: return null
+        if (raw == "0,00" || raw.isEmpty()) return null
+        return raw.replace(".", "").replace(",", ".").toDoubleOrNull()
+    }
 }

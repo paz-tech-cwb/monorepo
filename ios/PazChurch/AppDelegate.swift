@@ -15,6 +15,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
     /// Called when APNs successfully registers the device.
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        let hex = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
+        print("[APNs] device token: \(hex)")
         Task { @MainActor in
             await PushNotificationService.shared.didRegisterForRemoteNotifications(deviceToken: deviceToken)
         }

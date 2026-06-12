@@ -4,92 +4,119 @@ import SwiftUI
 
 // MARK: - Field Definitions
 
+enum FormFieldType {
+    case text
+    case name
+    case phone
+    case email
+    case date
+    case integer
+    case currency
+    case multiline
+}
+
 struct FormFieldDef {
     let key: String
     let label: String
     let placeholder: String
     let required: Bool
-    let isNumeric: Bool
-    let isMultiline: Bool
+    let fieldType: FormFieldType
 
     init(
         _ key: String,
         _ label: String,
         placeholder: String = "",
         required: Bool = false,
-        isNumeric: Bool = false,
-        isMultiline: Bool = false
+        fieldType: FormFieldType = .text
     ) {
         self.key = key
         self.label = label
         self.placeholder = placeholder
         self.required = required
-        self.isNumeric = isNumeric
-        self.isMultiline = isMultiline
+        self.fieldType = fieldType
     }
 }
 
 extension FormType {
     var fieldDefs: [FormFieldDef] {
-        if self == .memberRegistration {
+        switch self {
+        case .memberRegistration:
             [
-                FormFieldDef("name", "Nome Completo", placeholder: "Digite o nome", required: true),
-                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999"),
-                FormFieldDef("email", "E-mail", placeholder: "email@exemplo.com"),
+                FormFieldDef("name", "Nome Completo", placeholder: "Digite o nome completo", required: true, fieldType: .name),
+                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", fieldType: .phone),
+                FormFieldDef("email", "E-mail", placeholder: "email@exemplo.com", fieldType: .email),
             ]
-        } else if self == .conversion {
+        case .conversion:
             [
-                FormFieldDef("name", "Nome", required: true),
-                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999"),
-                FormFieldDef("date", "Data da Conversão", placeholder: "DD/MM/YYYY", required: true),
-                FormFieldDef("observations", "Observações", isMultiline: true),
+                FormFieldDef("name", "Nome", placeholder: "Nome do convertido", required: true, fieldType: .name),
+                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", fieldType: .phone),
+                FormFieldDef("date", "Data da Conversão", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+                FormFieldDef("observations", "Observações", fieldType: .multiline),
             ]
-        } else if self == .guest {
+        case .guest:
             [
-                FormFieldDef("name", "Nome do Visitante", required: true),
-                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999"),
-                FormFieldDef("invited_by", "Convidado por"),
-                FormFieldDef("date", "Data da Visita", placeholder: "DD/MM/YYYY", required: true),
+                FormFieldDef("name", "Nome do Visitante", placeholder: "Nome completo", required: true, fieldType: .name),
+                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", fieldType: .phone),
+                FormFieldDef("invited_by", "Convidado por", placeholder: "Nome de quem convidou"),
+                FormFieldDef("date", "Data da Visita", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
             ]
-        } else if self == .multiplication {
+        case .multiplication:
             [
-                FormFieldDef("new_life_group_name", "Nome do Novo Grupo", required: true),
-                FormFieldDef("date", "Data da Multiplicação", placeholder: "DD/MM/YYYY", required: true),
+                FormFieldDef("new_life_group_name", "Nome do Novo Grupo", placeholder: "Ex: GL Norte", required: true),
+                FormFieldDef("date", "Data da Multiplicação", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
             ]
-        } else if self == .serviceReport {
+        case .serviceReport:
             [
-                FormFieldDef("date", "Data do Culto", placeholder: "DD/MM/YYYY", required: true),
-                FormFieldDef("attendees", "Participantes", placeholder: "0", required: true, isNumeric: true),
-                FormFieldDef("visitors", "Visitantes", placeholder: "0", isNumeric: true),
-                FormFieldDef("offerings", "Ofertas (R$)", placeholder: "0,00", isNumeric: true),
-                FormFieldDef("observations", "Observações", isMultiline: true),
+                FormFieldDef("date", "Data do Culto", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+                FormFieldDef("attendees", "Quantidade de Participantes", placeholder: "0", required: true, fieldType: .integer),
+                FormFieldDef("visitors", "Quantidade de Visitantes", placeholder: "0", fieldType: .integer),
+                FormFieldDef("offerings", "Oferta (R$)", placeholder: "0,00", fieldType: .currency),
+                FormFieldDef("observations", "Observações", fieldType: .multiline),
             ]
-        } else if self == .course {
+        case .course:
             [
-                FormFieldDef("course_name", "Nome do Curso", required: true),
-                FormFieldDef("enrolled_at", "Data de Inscrição", placeholder: "DD/MM/YYYY", required: true),
+                FormFieldDef("course_name", "Nome do Curso", placeholder: "Ex: Escola de Membros", required: true),
+                FormFieldDef("enrolled_at", "Data de Inscrição", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
             ]
-        } else {
+        case .lifeGroupReport:
             [
-                FormFieldDef("date", "Data da Reunião", placeholder: "DD/MM/YYYY", required: true),
-                FormFieldDef("attendees", "Participantes", placeholder: "0", required: true, isNumeric: true),
-                FormFieldDef("visitors", "Visitantes", placeholder: "0", isNumeric: true),
-                FormFieldDef("offerings", "Ofertas (R$)", placeholder: "0,00", isNumeric: true),
-                FormFieldDef("observations", "Observações", isMultiline: true),
+                FormFieldDef("date", "Data da Reunião", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+                FormFieldDef("attendees", "Quantidade de Participantes", placeholder: "0", required: true, fieldType: .integer),
+                FormFieldDef("visitors", "Quantidade de Visitantes", placeholder: "0", fieldType: .integer),
+                FormFieldDef("offerings", "Oferta (R$)", placeholder: "0,00", fieldType: .currency),
+                FormFieldDef("observations", "Observações", fieldType: .multiline),
+            ]
+        case .sectorSupervisorReport:
+            [
+                FormFieldDef("date", "Data do Relatório", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+                FormFieldDef("attendees", "Total de Participantes", placeholder: "0", required: true, fieldType: .integer),
+                FormFieldDef("visitors", "Total de Visitantes", placeholder: "0", fieldType: .integer),
+                FormFieldDef("offerings", "Total de Ofertas (R$)", placeholder: "0,00", fieldType: .currency),
+                FormFieldDef("observations", "Observações", fieldType: .multiline),
+            ]
+        default: // areaSupervisorReport
+            [
+                FormFieldDef("date", "Data do Relatório", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+                FormFieldDef("attendees", "Total de Participantes", placeholder: "0", required: true, fieldType: .integer),
+                FormFieldDef("visitors", "Total de Visitantes", placeholder: "0", fieldType: .integer),
+                FormFieldDef("offerings", "Total de Ofertas (R$)", placeholder: "0,00", fieldType: .currency),
+                FormFieldDef("observations", "Observações", fieldType: .multiline),
             ]
         }
     }
 
     var displayName: String {
-        if self == .memberRegistration { return "Registro de Membro" }
-        if self == .conversion { return "Conversão" }
-        if self == .guest { return "Visitante" }
-        if self == .multiplication { return "Multiplicação" }
-        if self == .serviceReport { return "Relatório de Culto" }
-        if self == .course { return "Curso" }
-        if self == .lifeGroupReport { return "Relatório de Grupo" }
-        if self == .sectorSupervisorReport { return "Rel. Supervisor de Setor" }
-        return "Rel. Supervisor de Área"
+        switch self {
+        case .memberRegistration: return "Registro de Membro"
+        case .conversion: return "Conversão"
+        case .guest: return "Visitante"
+        case .multiplication: return "Multiplicação"
+        case .serviceReport: return "Relatório de Culto"
+        case .course: return "Curso"
+        case .lifeGroupReport: return "Relatório de Grupo"
+        case .sectorSupervisorReport: return "Rel. Supervisor de Setor"
+        default: return "Rel. Supervisor de Área"
+        }
     }
 }
 
@@ -127,7 +154,16 @@ class FormDetailViewModelIOS {
                     return
                 }
                 self.form = found
-                self.fields = Dictionary(uniqueKeysWithValues: found.type.fieldDefs.map { ($0.key, "") })
+                let today = DateFormatter.brazilianDate.string(from: Date())
+                self.fields = Dictionary(uniqueKeysWithValues: found.type.fieldDefs.map { def in
+                    let initial: String
+                    if def.fieldType == .date {
+                        initial = today
+                    } else {
+                        initial = ""
+                    }
+                    return (def.key, initial)
+                })
                 self.isLoading = false
             } catch {
                 self.error = error.localizedDescription
@@ -187,49 +223,52 @@ class FormDetailViewModelIOS {
             Int32(snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0
         }
         func kdbl(_ key: String) -> KotlinDouble? {
-            Double(snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? "")
-                .map { KotlinDouble(value: $0) }
+            // Parse BRL formatted string e.g. "1.234,56" → 1234.56
+            let raw = snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? ""
+            let normalized = raw.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: ",", with: ".")
+            return Double(normalized).map { KotlinDouble(value: $0) }
         }
 
-        if type == .memberRegistration {
+        switch type {
+        case .memberRegistration:
             _ = try await formsRepository.submitMemberRegistration(form: MemberRegistrationForm(
                 name: req("name"), phone: opt("phone"), email: opt("email"),
                 lifeGroupId: nil, sectorId: nil, areaId: nil, leaderId: nil
             ))
-        } else if type == .conversion {
+        case .conversion:
             _ = try await formsRepository.submitConversion(form: ConversionForm(
                 name: req("name"), phone: opt("phone"), date: req("date"),
                 lifeGroupId: nil, observations: opt("observations")
             ))
-        } else if type == .guest {
+        case .guest:
             _ = try await formsRepository.submitGuest(form: GuestForm(
                 name: req("name"), phone: opt("phone"), invitedBy: opt("invited_by"), date: req("date")
             ))
-        } else if type == .multiplication {
+        case .multiplication:
             _ = try await formsRepository.submitMultiplication(form: MultiplicationForm(
                 originalLifeGroupId: userId, newLifeGroupName: req("new_life_group_name"),
                 newLeaderId: userId, date: req("date")
             ))
-        } else if type == .serviceReport {
+        case .serviceReport:
             _ = try await formsRepository.submitServiceReport(form: ServiceReportForm(
                 date: req("date"), attendees: int32("attendees"), visitors: int32("visitors"),
                 offerings: kdbl("offerings"), observations: opt("observations")
             ))
-        } else if type == .course {
+        case .course:
             _ = try await formsRepository.submitCourse(form: CourseForm(
                 courseName: req("course_name"), memberId: userId, enrolledAt: req("enrolled_at")
             ))
-        } else if type == .lifeGroupReport {
+        case .lifeGroupReport:
             _ = try await formsRepository.submitLifeGroupReport(form: LifeGroupReportForm(
                 lifeGroupId: userId, date: req("date"), attendees: int32("attendees"),
                 visitors: int32("visitors"), offerings: kdbl("offerings"), observations: opt("observations")
             ))
-        } else if type == .sectorSupervisorReport {
+        case .sectorSupervisorReport:
             _ = try await formsRepository.submitSectorReport(form: LifeGroupReportForm(
                 lifeGroupId: userId, date: req("date"), attendees: int32("attendees"),
                 visitors: int32("visitors"), offerings: kdbl("offerings"), observations: opt("observations")
             ))
-        } else {
+        default:
             _ = try await formsRepository.submitAreaReport(form: LifeGroupReportForm(
                 lifeGroupId: userId, date: req("date"), attendees: int32("attendees"),
                 visitors: int32("visitors"), offerings: kdbl("offerings"), observations: opt("observations")
@@ -358,7 +397,8 @@ private struct FieldRow: View {
                 }
             }
 
-            if def.isMultiline {
+            switch def.fieldType {
+            case .multiline:
                 TextEditor(text: Binding(get: { value }, set: onChange))
                     .font(PazTypography.bodyMedium)
                     .frame(height: 120)
@@ -367,27 +407,22 @@ private struct FieldRow: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .scrollContentBackground(.hidden)
                     .disabled(isSubmitting)
-            } else if def.key.contains("date") || def.key.contains("at") {
-                DateFieldRow(
+
+            case .date:
+                DateFieldRow(value: value, onChange: onChange, disabled: isSubmitting)
+
+            case .phone:
+                MaskedTextField(
                     placeholder: def.placeholder,
-                    value: value,
-                    onChange: onChange,
-                    disabled: isSubmitting
+                    initialValue: value,
+                    disabled: isSubmitting,
+                    keyboardType: .numberPad,
+                    contentType: .telephoneNumber,
+                    mask: applyPhoneMask,
+                    onChange: onChange
                 )
-            } else if def.key == "phone" {
-                TextField(def.placeholder, text: Binding(
-                    get: { value },
-                    set: { new in onChange(applyPhoneMask(old: value, new: new)) }
-                ))
-                .font(PazTypography.bodyMedium)
-                .keyboardType(.phonePad)
-                .textContentType(.telephoneNumber)
-                .padding(.horizontal, PazSpacing.md)
-                .frame(height: 56)
-                .background(PazColors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .disabled(isSubmitting)
-            } else if def.key == "email" {
+
+            case .email:
                 TextField(def.placeholder, text: Binding(get: { value }, set: onChange))
                     .font(PazTypography.bodyMedium)
                     .keyboardType(.emailAddress)
@@ -398,11 +433,45 @@ private struct FieldRow: View {
                     .background(PazColors.surface)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .disabled(isSubmitting)
-            } else {
+
+            case .name:
                 TextField(def.placeholder, text: Binding(get: { value }, set: onChange))
                     .font(PazTypography.bodyMedium)
-                    .keyboardType(def.isNumeric ? .decimalPad : .default)
-                    .autocapitalization(def.isNumeric ? .none : .words)
+                    .textContentType(.name)
+                    .autocapitalization(.words)
+                    .padding(.horizontal, PazSpacing.md)
+                    .frame(height: 56)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .disabled(isSubmitting)
+
+            case .integer:
+                TextField(def.placeholder, text: Binding(
+                    get: { value },
+                    set: { new in onChange(new.filter(\.isNumber)) }
+                ))
+                .font(PazTypography.bodyMedium)
+                .keyboardType(.numberPad)
+                .padding(.horizontal, PazSpacing.md)
+                .frame(height: 56)
+                .background(PazColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .disabled(isSubmitting)
+
+            case .currency:
+                MaskedTextField(
+                    placeholder: def.placeholder,
+                    initialValue: value,
+                    disabled: isSubmitting,
+                    keyboardType: .numberPad,
+                    mask: { _, new in applyCurrencyMask(new) },
+                    onChange: onChange
+                )
+
+            case .text:
+                TextField(def.placeholder, text: Binding(get: { value }, set: onChange))
+                    .font(PazTypography.bodyMedium)
+                    .autocapitalization(.sentences)
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
                     .background(PazColors.surface)
@@ -413,23 +482,55 @@ private struct FieldRow: View {
     }
 }
 
-private struct DateFieldRow: View {
+// Uses local @State so the mask runs inside onChange(of:) — the only reliable
+// way to intercept and replace text in SwiftUI without cursor/state conflicts.
+private struct MaskedTextField: View {
     let placeholder: String
+    let initialValue: String
+    let disabled: Bool
+    var keyboardType: UIKeyboardType = .default
+    var contentType: UITextContentType? = nil
+    let mask: (String, String) -> String  // (old, new) -> masked
+    let onChange: (String) -> Void
+
+    @State private var text: String = ""
+
+    var body: some View {
+        TextField(placeholder, text: $text)
+            .font(PazTypography.bodyMedium)
+            .keyboardType(keyboardType)
+            .textContentType(contentType)
+            .padding(.horizontal, PazSpacing.md)
+            .frame(height: 56)
+            .background(PazColors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .disabled(disabled)
+            .onAppear { text = initialValue }
+            .onChange(of: text) { old, new in
+                let masked = mask(old, new)
+                if masked != new { text = masked }
+                onChange(masked)
+            }
+    }
+}
+
+private struct DateFieldRow: View {
     let value: String
     let onChange: (String) -> Void
     let disabled: Bool
 
     @State private var showPicker = false
-    @State private var selected = Date()
+    @State private var selected: Date = {
+        DateFormatter.brazilianDate.date(from: DateFormatter.brazilianDate.string(from: Date())) ?? Date()
+    }()
 
     private let display = DateFormatter.brazilianDate
-    private let iso = DateFormatter.isoDate
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button(action: { if !disabled { showPicker.toggle() } }) {
                 HStack {
-                    Text(value.isEmpty ? placeholder : value)
+                    Text(value.isEmpty ? "DD/MM/YYYY" : value)
                         .font(PazTypography.bodyMedium)
                         .foregroundStyle(value.isEmpty ? PazColors.slate : PazColors.ink)
                     Spacer()
@@ -441,6 +542,10 @@ private struct DateFieldRow: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain)
+            .onAppear {
+                if let d = display.date(from: value) { selected = d }
+                if value.isEmpty { onChange(display.string(from: Date())) }
+            }
 
             if showPicker {
                 DatePicker("", selection: $selected, displayedComponents: .date)
@@ -450,6 +555,7 @@ private struct DateFieldRow: View {
                         onChange(display.string(from: d))
                         showPicker = false
                     }
+                    .padding(PazSpacing.sm)
                     .background(PazColors.surface)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             }
@@ -457,22 +563,52 @@ private struct DateFieldRow: View {
     }
 }
 
+// MARK: - Input helpers
+
 private func applyPhoneMask(old: String, new: String) -> String {
     var digits = new.filter(\.isNumber)
     let oldDigits = old.filter(\.isNumber)
+    // User deleted a separator character — drop the preceding digit too
     if new.count < old.count, digits.count == oldDigits.count, !digits.isEmpty {
         digits = String(digits.dropLast())
     }
+    return formatPhone(String(digits.prefix(11)))
+}
+
+// Separators go BEFORE the digit at boundary positions — no trailing chars at partial input
+private func formatPhone(_ digits: String) -> String {
+    let d = Array(digits)
+    guard !d.isEmpty else { return "" }
     var result = ""
-    let d = Array(digits.prefix(11))
     for (i, c) in d.enumerated() {
         switch i {
-        case 0: result += "(\(c)"
-        case 1: result += "\(c)) "
-        case 2: result += "\(c) "
-        case 6: result += "\(c)-"
+        case 0: result = "(\(c)"
+        case 1: result += "\(c)"
+        case 2: result += ") \(c)"  // ") " inserted before 3rd digit
+        case 3: result += " \(c)"   // " " inserted before 4th digit
+        case 7: result += "-\(c)"   // "-" inserted before 8th digit
         default: result += "\(c)"
         }
+    }
+    return result
+}
+
+private func applyCurrencyMask(_ input: String) -> String {
+    let digits = input.filter(\.isNumber)
+    guard !digits.isEmpty else { return "" }
+    let value = Int64(digits) ?? 0
+    let reais = value / 100
+    let centavos = value % 100
+    let reaisStr = reais == 0 ? "0" : formatThousands(reais)
+    return "\(reaisStr),\(String(format: "%02d", centavos))"
+}
+
+private func formatThousands(_ n: Int64) -> String {
+    var result = ""
+    let s = String(n)
+    for (i, c) in s.reversed().enumerated() {
+        if i > 0, i % 3 == 0 { result = "." + result }
+        result = String(c) + result
     }
     return result
 }
@@ -480,10 +616,6 @@ private func applyPhoneMask(old: String, new: String) -> String {
 private extension DateFormatter {
     static let brazilianDate: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "dd/MM/yyyy"; return f
-    }()
-
-    static let isoDate: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; return f
     }()
 }
 
