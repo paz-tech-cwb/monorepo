@@ -13,6 +13,7 @@ enum FormFieldType {
     case integer
     case currency
     case multiline
+    case toggle
 }
 
 struct FormFieldDef {
@@ -58,6 +59,7 @@ extension FormType {
                 FormFieldDef("name", "Nome do Visitante", placeholder: "Nome completo", required: true, fieldType: .name),
                 FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", fieldType: .phone),
                 FormFieldDef("invited_by", "Convidado por", placeholder: "Nome de quem convidou"),
+                FormFieldDef("via_casa_de_paz", "Veio de uma Casa de Paz?", placeholder: "", fieldType: .toggle),
                 FormFieldDef("date", "Data da Visita", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
             ]
         case .multiplication:
@@ -253,7 +255,11 @@ class FormDetailViewModelIOS {
             ))
         case .guest:
             _ = try await formsRepository.submitGuest(form: GuestForm(
-                name: req("name"), phone: opt("phone"), invitedBy: opt("invited_by"), date: req("date")
+                name: req("name"),
+                phone: opt("phone"),
+                invitedBy: opt("invited_by"),
+                viaCasaDePaz: fields["via_casa_de_paz"] == "true",
+                date: req("date")
             ))
         case .multiplication:
             _ = try await formsRepository.submitMultiplication(form: MultiplicationForm(
@@ -492,6 +498,15 @@ private struct FieldRow: View {
                     mask: { _, new in applyCurrencyMask(new) },
                     onChange: onChange
                 )
+
+            case .toggle:
+                Toggle(isOn: Binding(
+                    get: { value == "true" },
+                    set: { onChange($0 ? "true" : "false") }
+                )) {
+                    EmptyView()
+                }
+                .disabled(isSubmitting)
 
             case .text:
                 TextField(def.placeholder, text: Binding(get: { value }, set: onChange))

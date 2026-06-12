@@ -16,7 +16,7 @@ sealed class FormDetailEffect {
     data object NavigateBack : FormDetailEffect()
 }
 
-enum class FormFieldType { TEXT, NAME, PHONE, EMAIL, DATE, INTEGER, CURRENCY, MULTILINE }
+enum class FormFieldType { TEXT, NAME, PHONE, EMAIL, DATE, INTEGER, CURRENCY, MULTILINE, BOOLEAN }
 
 data class FormFieldDef(
     val key: String,
@@ -46,6 +46,7 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
                 FormFieldDef("name", "Nome do Visitante", "Nome completo", required = true, fieldType = FormFieldType.NAME),
                 FormFieldDef("phone", "Telefone", "(41) 9 9999-9999", fieldType = FormFieldType.PHONE),
                 FormFieldDef("invited_by", "Convidado por", "Nome de quem convidou"),
+                FormFieldDef("via_casa_de_paz", "Veio de uma Casa de Paz?", fieldType = FormFieldType.BOOLEAN),
                 FormFieldDef("date", "Data da Visita", "DD/MM/YYYY", required = true, fieldType = FormFieldType.DATE),
             )
         FormType.multiplication ->

@@ -112,7 +112,13 @@ class FormDetailViewModel(
                     )
                 FormType.guest ->
                     formsRepository.submitGuest(
-                        GuestForm(name = f.req("name"), phone = f.opt("phone"), invitedBy = f.opt("invited_by"), date = f.req("date")),
+                        GuestForm(
+                            name = f.req("name"),
+                            phone = f.opt("phone"),
+                            invitedBy = f.opt("invited_by"),
+                            viaCasaDePaz = f["via_casa_de_paz"]?.toBooleanStrictOrNull() ?: false,
+                            date = f.req("date"),
+                        ),
                     )
                 FormType.multiplication ->
                     formsRepository.submitMultiplication(

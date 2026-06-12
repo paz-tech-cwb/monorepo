@@ -312,6 +312,18 @@ private fun FieldRow(
                     shape = PazShapes.large,
                 )
 
+            FormFieldType.BOOLEAN ->
+                Row(
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    androidx.compose.material3.Switch(
+                        checked = value == "true",
+                        onCheckedChange = { onValueChange(if (it) "true" else "false") },
+                        enabled = !isSubmitting,
+                    )
+                }
+
             FormFieldType.TEXT ->
                 OutlinedTextField(
                     value = value,

@@ -71,6 +71,7 @@ data class GuestForm(
     val name: String,
     val phone: String? = null,
     @SerialName("invited_by") val invitedBy: String? = null,
+    @SerialName("via_casa_de_paz") val viaCasaDePaz: Boolean = false,
     val date: String,
 )
 
