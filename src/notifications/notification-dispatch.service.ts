@@ -116,7 +116,12 @@ export class NotificationDispatchService {
     const payload = { title: notification.title, body: notification.message };
     switch (channel) {
       case 'push':
-        return this.fcmService.sendToUser(user.id, payload);
+        return this.fcmService.sendToUser(user.id, {
+          ...payload,
+          data: notification.deepLink
+            ? { deep_link: notification.deepLink }
+            : undefined,
+        });
       case 'email':
         return this.emailService.sendToUser(user.email, payload);
       case 'sms':
