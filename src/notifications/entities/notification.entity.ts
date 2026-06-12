@@ -91,6 +91,9 @@ export class Notification {
   @Column({ name: 'sent_at', type: 'timestamp', nullable: true })
   sentAt: Date | null;
 
+  @Column({ name: 'deep_link', type: 'varchar', length: 500, nullable: true })
+  deepLink: string | null;
+
   @ManyToOne(() => User, { nullable: true, eager: false })
   @JoinColumn({ name: 'created_by' })
   createdBy: User | null;
