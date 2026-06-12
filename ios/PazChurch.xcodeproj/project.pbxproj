@@ -22,6 +22,7 @@
 		21F50B565FBD16CF5729BD56 /* PazColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19E3E44DBCB2C6495E5BB60D /* PazColors.swift */; };
 		264EC5A6A5C1DCB55BBB0AA9 /* dm_sans_medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 43523C0C1306C6777492969E /* dm_sans_medium.ttf */; };
 		2793855F821689FC2DFCA082 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79F54E72B01670D1FF11B3CB /* MainTabView.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* DeepLinkDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7B8C9D0E1F2A3 /* DeepLinkDestination.swift */; };
 		2BDADC15A7FA399B64EF3840 /* AccountViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFCF04B5FB518B8BB0F8B54B /* AccountViewModel.swift */; };
 		3083EB016EBB1908EFB4E779 /* dm_sans_bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3B09921331A9C0A41304A36A /* dm_sans_bold.ttf */; };
 		32B8A8B3FD0A30A168DDE7CB /* AgendaListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 121FA55058E48ADE89F7DCDC /* AgendaListView.swift */; };
@@ -94,6 +95,7 @@
 		667C5328F0D1720F48DB35B2 /* EditProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfileViewModel.swift; sourceTree = "<group>"; };
 		79C75FF4BA56BB550DD04506 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		79F54E72B01670D1FF11B3CB /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		B2C3D4E5F6A7B8C9D0E1F2A3 /* DeepLinkDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkDestination.swift; sourceTree = "<group>"; };
 		7C3499C673982AA1C0FA8EA5 /* FormDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormDetailView.swift; sourceTree = "<group>"; };
 		82E14328F3FC3C44E1C3AC60 /* PazTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazTypography.swift; sourceTree = "<group>"; };
 		9089E1E2EF61D9C3A28227C1 /* Shared.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Shared.xcframework; path = ../shared/build/XCFrameworks/debug/Shared.xcframework; sourceTree = "<group>"; };
@@ -278,6 +280,7 @@
 			isa = PBXGroup;
 			children = (
 				79F54E72B01670D1FF11B3CB /* MainTabView.swift */,
+				B2C3D4E5F6A7B8C9D0E1F2A3 /* DeepLinkDestination.swift */,
 			);
 			path = Navigation;
 			sourceTree = "<group>";
@@ -502,6 +505,7 @@
 				C81CB606C64CB0B6AA3D8743 /* KeychainService.swift in Sources */,
 				045500E917135CF9ED6D160E /* LoginView.swift in Sources */,
 				2793855F821689FC2DFCA082 /* MainTabView.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* DeepLinkDestination.swift in Sources */,
 				9F149A61A5B000D84C29A19D /* MeetingReportView.swift in Sources */,
 				D801CBE1B82319E0DA01E3CF /* MemberJourneyView.swift in Sources */,
 				1F3D35E5FF143FC6C08A16BC /* MinistriesView.swift in Sources */,
