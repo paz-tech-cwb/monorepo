@@ -22,6 +22,7 @@ import {
   ClipboardList,
   Sun,
   Moon,
+  Waves,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -61,6 +62,7 @@ const sidebarSections = [
     title: "Formularios",
     items: [
       { name: "Formulários", href: "/formularios", icon: ClipboardList },
+      { name: "Atmosfera", href: "/atmosfera", icon: Waves },
     ],
   },
   {
