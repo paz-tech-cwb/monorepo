@@ -15,6 +15,14 @@ class PushNotificationService: NSObject {
 
     var pendingDeepLink: String?
 
+    var deepLinkDestination: DeepLinkDestination? {
+        pendingDeepLink.flatMap { DeepLinkDestination.from(parsedRoute: $0) }
+    }
+
+    func consumeDeepLink() {
+        pendingDeepLink = nil
+    }
+
     private var userRepository: UserRepository {
         IosAppContainer.shared.userRepository
     }
