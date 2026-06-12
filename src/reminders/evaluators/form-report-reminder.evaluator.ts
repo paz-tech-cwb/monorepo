@@ -4,13 +4,17 @@ import { EntityManager } from 'typeorm';
 import type { ReminderEvaluator } from './reminder-evaluator.interface';
 import { ReminderRule } from '../entities/reminder-rule.entity';
 import type {
+  FormReminderEntry,
   FormReportReminderConfig,
   ReminderRuleType,
 } from '../types/reminder-config';
-import { Notification } from '../../notifications/entities/notification.entity';
+import {
+  Notification,
+  NotificationCategory,
+} from '../../notifications/entities/notification.entity';
 import { NotificationDispatchService } from '../../notifications/notification-dispatch.service';
+import { ReminderDispatchLog } from '../entities/reminder-dispatch-log.entity';
 import { User } from '../../users/entities/user.entity';
-import { MeetingReport } from '../../meeting-reports/entities/meeting-report.entity';
 
 @Injectable()
 export class FormReportReminderEvaluator implements ReminderEvaluator {
@@ -23,50 +27,50 @@ export class FormReportReminderEvaluator implements ReminderEvaluator {
 
   async run(rule: ReminderRule, now: Date): Promise<void> {
     const cfg = rule.config as FormReportReminderConfig;
-    if (now.getDay() !== cfg.weekday || now.getHours() !== cfg.hour) return;
+    if (!cfg.forms?.length) return;
 
-    // start of the current period = beginning of today (the configured weekday)
+    for (const entry of cfg.forms) {
+      if (now.getDay() !== entry.weekday || now.getHours() !== entry.hour) {
+        continue;
+      }
+      await this.runEntry(entry, now);
+    }
+  }
+
+  private async runEntry(entry: FormReminderEntry, now: Date): Promise<void> {
     const periodStart = new Date(now);
     periodStart.setHours(0, 0, 0, 0);
-    if (rule.lastRunAt && rule.lastRunAt >= periodStart) return;
+    const dedupeKey = `form_report:${entry.form_slug}:${periodStart.toISOString().slice(0, 10)}`;
 
-    // leaders in the configured roles
-    const leaders = await this.em
+    try {
+      await this.em.insert(ReminderDispatchLog, {
+        ruleType: 'form_report',
+        dedupeKey,
+      });
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === '23505') return; // already sent this period
+      throw err;
+    }
+
+    const targets = await this.em
       .createQueryBuilder(User, 'u')
       .leftJoinAndSelect('u.role', 'role')
-      .where('role.slug IN (:...roles)', { roles: cfg.roles })
+      .where('role.slug IN (:...roles)', { roles: entry.roles })
       .getMany();
-    if (leaders.length === 0) {
-      await this.em.update(ReminderRule, rule.id, { lastRunAt: now });
-      return;
-    }
 
-    // leaders who already submitted a report this period
-    // MeetingReport.leader has no @JoinColumn, so TypeORM generates FK column `leaderId`
-    const reported = await this.em
-      .createQueryBuilder(MeetingReport, 'm')
-      .select('m.leaderId', 'leaderId')
-      .where('m.created_at >= :start', { start: periodStart })
-      .getRawMany<{ leaderId: number }>();
-    const reportedIds = new Set(reported.map((r) => Number(r.leaderId)));
+    if (targets.length === 0) return;
 
-    const targets = leaders.filter((l) => !reportedIds.has(l.id));
-    if (targets.length > 0) {
-      const notification = await this.em.save(
-        this.em.create(Notification, {
-          title: 'Lembrete: relatório de reunião pendente',
-          message:
-            'Você ainda não enviou o relatório da reunião desta semana. Toque para enviar.',
-          category: 'meeting_reports',
-          channels: ['push'],
-          segment: { type: 'filtered', filters: { roles: cfg.roles } },
-          status: 'pending',
-          origin: 'automatic',
-        }),
-      );
-      await this.dispatch.dispatch(notification, targets);
-    }
-
-    await this.em.update(ReminderRule, rule.id, { lastRunAt: now });
+    const notification = await this.em.save(
+      this.em.create(Notification, {
+        title: entry.title,
+        message: entry.message,
+        category: 'forms' as NotificationCategory,
+        channels: ['push'],
+        segment: { type: 'filtered', filters: { roles: entry.roles } },
+        status: 'pending',
+        origin: 'automatic',
+      }),
+    );
+    await this.dispatch.dispatch(notification, targets);
   }
 }

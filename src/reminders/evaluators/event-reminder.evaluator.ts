@@ -7,7 +7,10 @@ import {
   EventReminderConfig,
   ReminderRuleType,
 } from '../types/reminder-config';
-import { Notification } from '../../notifications/entities/notification.entity';
+import {
+  Notification,
+  NotificationCategory,
+} from '../../notifications/entities/notification.entity';
 import { NotificationDispatchService } from '../../notifications/notification-dispatch.service';
 import { Event } from '../../events/entities/event.entity';
 import { User } from '../../users/entities/user.entity';
@@ -56,9 +59,9 @@ export class EventReminderEvaluator implements ReminderEvaluator {
         const users = await this.em.createQueryBuilder(User, 'u').getMany();
         const notification = await this.em.save(
           this.em.create(Notification, {
-            title: `Lembrete: ${event.title}`,
-            message: `O evento "${event.title}" começa em ${lead}h.`,
-            category: 'events',
+            title: cfg.title,
+            message: event.title,
+            category: 'events' as NotificationCategory,
             channels: ['push'],
             segment: { type: 'all' },
             status: 'pending',
