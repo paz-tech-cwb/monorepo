@@ -24,7 +24,7 @@ import io.ktor.client.engine.darwin.Darwin
 
 object IosAppContainer {
 
-    var baseUrl: String = "http://localhost:3001"
+    var baseUrl: String = "http://192.168.15.10:3001/api"
 
     private val tokenStorage by lazy { createTokenStorage() }
     private val userStore by lazy { createUserStore() }
@@ -56,7 +56,7 @@ object IosAppContainer {
         authRepository.socialLogin(idToken, provider).getOrThrow()
 
     @Throws(Exception::class)
-    suspend fun logout() {
-        authRepository.logout().getOrThrow()
+    suspend fun logout(fcmToken: String?) {
+        authRepository.logout(fcmToken).getOrThrow()
     }
 }

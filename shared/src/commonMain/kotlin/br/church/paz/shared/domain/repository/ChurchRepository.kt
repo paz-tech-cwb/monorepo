@@ -3,7 +3,6 @@ package br.church.paz.shared.domain.repository
 import br.church.paz.shared.domain.model.Area
 import br.church.paz.shared.domain.model.Church
 import br.church.paz.shared.domain.model.LifeGroup
-import br.church.paz.shared.domain.model.MeetingReportRequest
 import br.church.paz.shared.domain.model.Sector
 
 interface ChurchRepository {
@@ -17,6 +16,4 @@ interface ChurchRepository {
     suspend fun getAreas(): List<Area>
     @Throws(Exception::class)
     suspend fun getSectors(): List<Sector>
-    @Throws(Exception::class)
-    suspend fun submitMeetingReport(report: MeetingReportRequest)
 }

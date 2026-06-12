@@ -2,6 +2,7 @@ package br.church.paz.shared.data.repository
 
 import br.church.paz.shared.domain.model.DeviceToken
 import br.church.paz.shared.domain.model.NotificationPreferences
+import br.church.paz.shared.domain.model.UpdateNotificationPrefsDto
 import br.church.paz.shared.domain.model.UpdateProfileRequest
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.repository.UserRepository
@@ -9,7 +10,6 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
-import io.ktor.client.request.patch
 import io.ktor.client.request.put
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -34,13 +34,12 @@ class UserRepositoryImpl(private val client: HttpClient) : UserRepository {
         client.get("api/users/me/notification-preferences").body()
 
     @Throws(Exception::class)
-    override suspend fun updateNotificationPreferences(
-        prefs: NotificationPreferences,
-    ): NotificationPreferences =
-        client.patch("api/users/me/notification-preferences") {
+    override suspend fun updateNotificationPreferences(dto: UpdateNotificationPrefsDto) {
+        client.put("api/users/me/notification-preferences") {
             contentType(ContentType.Application.Json)
-            setBody(prefs)
-        }.body()
+            setBody(dto)
+        }
+    }
 
     @Throws(Exception::class)
     override suspend fun registerDeviceToken(token: DeviceToken) {

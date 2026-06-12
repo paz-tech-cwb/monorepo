@@ -134,6 +134,33 @@ fun NotificationPrefsScreen(
                     )
                 }
 
+                item {
+                    PreferenceToggle(
+                        title = "Academia",
+                        description = "Conteúdos da academia",
+                        checked = uiState.academyNotifications,
+                        onCheckedChange = { viewModel.toggleAcademy() },
+                    )
+                }
+
+                item {
+                    PreferenceToggle(
+                        title = "Jornada do Membro",
+                        description = "Acompanhe sua jornada na igreja",
+                        checked = uiState.memberJourneyNotifications,
+                        onCheckedChange = { viewModel.toggleMemberJourney() },
+                    )
+                }
+
+                item {
+                    PreferenceToggle(
+                        title = "Contribuições",
+                        description = "Notificações sobre contribuições",
+                        checked = uiState.contributionsNotifications,
+                        onCheckedChange = { viewModel.toggleContributions() },
+                    )
+                }
+
                 if (uiState.error != null) {
                     item {
                         Box(

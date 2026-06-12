@@ -142,8 +142,6 @@ fun LifeGroupDetailScreen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 LifeGroupDetailEffect.NavigateBack -> navController.popBackStack()
-                LifeGroupDetailEffect.NavigateToMeetingReport ->
-                    navController.navigate(Screen.MeetingReport.route)
             }
         }
     }
@@ -154,14 +152,13 @@ fun LifeGroupDetailScreen(
         error = uiState.error,
         onBack = viewModel::onBack,
     ) {
-        uiState.lifeGroup?.let { LifeGroupContent(lifeGroup = it, onMeetingReport = viewModel::onMeetingReport) }
+        uiState.lifeGroup?.let { LifeGroupContent(lifeGroup = it) }
     }
 }
 
 @Composable
 private fun LifeGroupContent(
     lifeGroup: LifeGroup,
-    onMeetingReport: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -229,17 +226,9 @@ private fun LifeGroupContent(
                     )
                 }
                 lifeGroup.address?.let {
-                    InfoRow(icon = Icons.Default.LocationOn, label = "Endereço", value = it)
+                    InfoRow(icon = Icons.Default.LocationOn, label = "Endereço", value = it.fullAddress)
                 }
             }
-        }
-
-        item {
-            PazButton(
-                text = "Relatório de Reunião",
-                onClick = onMeetingReport,
-                modifier = Modifier.fillMaxWidth(),
-            )
         }
 
         item { Spacer(Modifier.height(PazSpacing.Xl)) }

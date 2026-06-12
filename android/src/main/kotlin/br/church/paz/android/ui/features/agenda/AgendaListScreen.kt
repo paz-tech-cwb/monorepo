@@ -200,8 +200,8 @@ private fun AgendaEventList(
 
         if (uiState.isLoadingMore) {
             item(key = "loading_more") {
-                Box(Modifier.fillMaxWidth().padding(vertical = PazSpacing.Lg), Alignment.Center) {
-                    CircularProgressIndicator(color = PazColors.Primary, modifier = Modifier.size(24.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(PazSpacing.Md)) {
+                    repeat(2) { PazSkeleton(height = 72.dp) }
                 }
             }
         }

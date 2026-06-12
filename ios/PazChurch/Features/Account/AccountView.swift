@@ -58,14 +58,6 @@ struct AccountView: View {
                         }
                         .buttonStyle(.plain)
                         rowDivider
-                        NavigationLink(destination: MeetingReportView(
-                            formsRepository: IosAppContainer.shared.formsRepository,
-                            authRepository: IosAppContainer.shared.authRepository
-                        )) {
-                            AccountRow(title: "Relatar Reunião", icon: "doc.text", tint: Color(hex: "2E7D32"))
-                        }
-                        .buttonStyle(.plain)
-                        rowDivider
                         NavigationLink(destination: FormulariosView(formsRepository: IosAppContainer.shared
                                 .formsRepository)) {
                             AccountRow(title: "Formulários", icon: "list.clipboard", tint: Color(hex: "6A1B9A"))

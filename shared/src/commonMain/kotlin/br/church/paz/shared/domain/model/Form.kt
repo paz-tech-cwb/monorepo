@@ -5,23 +5,43 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class FormCatalogItem(
-    val id: String,
-    val title: String,
+    @SerialName("slug") val id: String,
+    @SerialName("name") val title: String,
     val description: String? = null,
-    val type: FormType,
-)
+    @SerialName("can_write") val canWrite: Boolean = false,
+    @SerialName("can_read") val canRead: Boolean = false,
+) {
+    val type: FormType
+        get() = try {
+            // This is a bit of a hack since we don't have easy access to SerialName at runtime
+            // but we can map the string ID back to the enum.
+            when (id) {
+                "member-registrations" -> FormType.member_registration
+                "form-conversions" -> FormType.conversion
+                "life-group-reports" -> FormType.life_group_report
+                "sector-supervisor-reports" -> FormType.sector_supervisor_report
+                "area-supervisor-reports" -> FormType.area_supervisor_report
+                "multiplications" -> FormType.multiplication
+                "service-reports" -> FormType.service_report
+                "form-guests" -> FormType.guest
+                else -> FormType.course
+            }
+        } catch (e: Exception) {
+            FormType.course
+        }
+}
 
 @Serializable
 enum class FormType {
-    @SerialName("member_registration")         member_registration,
-    @SerialName("conversion")                  conversion,
-    @SerialName("life_group_report")           life_group_report,
-    @SerialName("sector_supervisor_report")    sector_supervisor_report,
-    @SerialName("area_supervisor_report")      area_supervisor_report,
-    @SerialName("multiplication")              multiplication,
-    @SerialName("service_report")              service_report,
-    @SerialName("guest")                       guest,
-    @SerialName("course")                      course,
+    @SerialName("member-registrations")         member_registration,
+    @SerialName("form-conversions")             conversion,
+    @SerialName("life-group-reports")           life_group_report,
+    @SerialName("sector-supervisor-reports")    sector_supervisor_report,
+    @SerialName("area-supervisor-reports")      area_supervisor_report,
+    @SerialName("multiplications")              multiplication,
+    @SerialName("service-reports")              service_report,
+    @SerialName("form-guests")                  guest,
+    @SerialName("course")                       course,
 }
 
 // ── Submission payloads ──────────────────────────────────────────────────────
@@ -76,4 +96,14 @@ data class CourseForm(
     @SerialName("course_name") val courseName: String,
     @SerialName("member_id") val memberId: String,
     @SerialName("enrolled_at") val enrolledAt: String,
+)
+
+@Serializable
+data class LifeGroupReportForm(
+    @SerialName("life_group_id") val lifeGroupId: String,
+    val date: String,
+    val attendees: Int,
+    val visitors: Int,
+    val offerings: Double? = null,
+    val observations: String? = null,
 )

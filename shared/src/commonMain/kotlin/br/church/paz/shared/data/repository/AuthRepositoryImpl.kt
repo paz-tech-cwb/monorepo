@@ -2,6 +2,7 @@ package br.church.paz.shared.data.repository
 
 import br.church.paz.shared.auth.TokenPair
 import br.church.paz.shared.auth.TokenStorage
+import br.church.paz.shared.data.remote.clearBearerTokenCache
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.util.safeRunCatching
@@ -42,17 +43,27 @@ class AuthRepositoryImpl(
                 )
             }
             val response = decodeSocialLoginResponse(responseText)
+            println("[PazAuth] socialLogin OK, saving token len=${response.accessToken.length}")
 
             tokenStorage.save(TokenPair(response.accessToken, response.refreshToken, provider))
+            // Invalidate Ktor's cached (likely null) token so the next authenticated
+            // request re-reads the freshly-saved token instead of sending none.
+            httpClient.clearBearerTokenCache()
             userStore.save(response.user)
             response.user
         }
     }
 
-    override suspend fun logout(): Result<Unit> {
+    override suspend fun logout(fcmToken: String?): Result<Unit> {
         return safeRunCatching {
-            runCatching { httpClient.post("api/auth/logout") }
+            runCatching {
+                httpClient.post("api/auth/logout") {
+                    contentType(ContentType.Application.Json)
+                    setBody(LogoutRequest(fcmToken = fcmToken))
+                }
+            }
             tokenStorage.clear()
+            httpClient.clearBearerTokenCache()
             userStore.clear()
         }
     }
@@ -61,6 +72,11 @@ class AuthRepositoryImpl(
 
     override suspend fun storedTokens(): TokenPair? = tokenStorage.read()
 }
+
+@Serializable
+private data class LogoutRequest(
+    @SerialName("fcm_token") val fcmToken: String? = null,
+)
 
 @Serializable
 private data class SocialLoginRequest(

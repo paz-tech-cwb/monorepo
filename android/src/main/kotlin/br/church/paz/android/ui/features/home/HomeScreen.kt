@@ -69,6 +69,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -240,9 +241,10 @@ private fun HomeContent(
     onSeeAllEvents: () -> Unit,
     contentPadding: PaddingValues,
 ) {
-    val weekDays = remember(agendaEvents) { buildWeekDays(agendaEvents) }
-    val todayIndex = remember(weekDays) { weekDays.indexOfFirst { it.isToday }.coerceAtLeast(0) }
-    var selectedDay by remember { mutableIntStateOf(todayIndex) }
+        val weekDays = remember(agendaEvents) { buildWeekDays(agendaEvents) }
+        val weekHasEvents = remember(weekDays) { weekDays.any { it.hasEvent } }
+        val todayIndex = remember(weekDays) { weekDays.indexOfFirst { it.isToday }.coerceAtLeast(0) }
+        var selectedDay by remember { mutableIntStateOf(todayIndex) }
 
     LazyColumn(
         contentPadding = contentPadding,
@@ -275,6 +277,7 @@ private fun HomeContent(
                             AgendaSection(
                                 weekDays = weekDays,
                                 allEvents = agendaEvents,
+                                weekHasEvents = weekHasEvents,
                                 selectedDay = selectedDay,
                                 onDaySelected = { selectedDay = it },
                                 onEventTap = onEventTap,
@@ -346,9 +349,11 @@ private fun FeaturedSection(
 
         HorizontalPager(
             state = pagerState,
-            contentPadding = PaddingValues(start = PazSpacing.Lg, end = PazSpacing.Md),
+            contentPadding = PaddingValues(horizontal = PazSpacing.Lg),
             pageSpacing = PazSpacing.Md,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
         ) { page ->
             FeaturedCard(
                 banner = banners[page],
@@ -665,6 +670,7 @@ private fun buildWeekDays(events: List<AgendaEvent>): List<DayItem> {
 private fun AgendaSection(
     weekDays: List<DayItem>,
     allEvents: List<AgendaEvent>,
+    weekHasEvents: Boolean,
     selectedDay: Int,
     onDaySelected: (Int) -> Unit,
     onEventTap: (String) -> Unit,
@@ -717,37 +723,35 @@ private fun AgendaSection(
                 )
             }
         }
-        Spacer(Modifier.height(PazSpacing.Md))
+        
+        if (weekHasEvents) {
+            Spacer(Modifier.height(PazSpacing.Md))
 
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = PazSpacing.Lg),
-            horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
-        ) {
-            weekDays.forEachIndexed { index, item ->
-                DayPill(
-                    item = item,
-                    isSelected = index == selectedDay,
-                    modifier = Modifier.weight(1f),
-                    onClick = { onDaySelected(index) },
-                )
-            }
-        }
-        Spacer(Modifier.height(PazSpacing.Md))
-
-        if (dayEvents.isEmpty()) {
-            Text(
-                "Nenhum evento",
-                style =
-                    MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
+            Row(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = PazSpacing.Lg + 4.dp, vertical = PazSpacing.Sm),
+                        .padding(horizontal = PazSpacing.Lg)
+                        .padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
+            ) {
+                weekDays.forEachIndexed { index, item ->
+                    DayPill(
+                        item = item,
+                        isSelected = index == selectedDay,
+                        modifier = Modifier.weight(1f),
+                        onClick = { onDaySelected(index) },
+                    )
+                }
+            }
+        }
+        
+        Spacer(Modifier.height(PazSpacing.Md))
+
+        if (dayEvents.isEmpty()) {
+            EmptyAgendaCard(
+                hasUpcomingEvents = allEvents.isNotEmpty(),
+                onSeeAll = onSeeAll
             )
         } else {
             Column(
@@ -760,6 +764,58 @@ private fun AgendaSection(
             }
         }
         Spacer(Modifier.height(PazSpacing.Lg))
+    }
+}
+
+@Composable
+private fun EmptyAgendaCard(
+    hasUpcomingEvents: Boolean,
+    onSeeAll: () -> Unit
+) {
+    val shape = RoundedCornerShape(20.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = PazSpacing.Lg)
+            .shadow(
+                elevation = 6.dp,
+                shape = shape,
+                spotColor = PazColors.ShadowNavy.copy(alpha = 0.20f),
+                ambientColor = PazColors.ShadowNavy.copy(alpha = 0.04f),
+            )
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), shape)
+            .padding(PazSpacing.Lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = if (hasUpcomingEvents) "Nenhum evento para esta semana" else "Nenhum evento agendado",
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 17.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = if (hasUpcomingEvents)
+                "Confira todos os eventos clicando no botão abaixo."
+            else "Aguarde novos eventos para o futuro.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        if (hasUpcomingEvents) {
+            Spacer(Modifier.height(PazSpacing.Lg))
+            PazButton(
+                text = "Ver próximos eventos",
+                onClick = onSeeAll,
+                modifier = Modifier.fillMaxWidth(0.9f)
+            )
+        }
     }
 }
 

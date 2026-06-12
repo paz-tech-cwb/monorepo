@@ -1,4 +1,5 @@
 import Observation
+import Shared
 import SwiftUI
 
 struct NotificationPrefsView: View {
@@ -33,6 +34,24 @@ struct NotificationPrefsView: View {
                         isOn: $viewModel.lifeGroupNotifications
                     )
 
+                    PreferenceToggle(
+                        title: "Academia",
+                        description: "Conteúdos da academia",
+                        isOn: $viewModel.academyNotifications
+                    )
+
+                    PreferenceToggle(
+                        title: "Jornada do Membro",
+                        description: "Acompanhe sua jornada na igreja",
+                        isOn: $viewModel.memberJourneyNotifications
+                    )
+
+                    PreferenceToggle(
+                        title: "Contribuições",
+                        description: "Notificações sobre contribuições",
+                        isOn: $viewModel.contributionsNotifications
+                    )
+
                     if let error = viewModel.error {
                         Text(error)
                             .font(PazTypography.bodySmall)
@@ -63,6 +82,7 @@ struct NotificationPrefsView: View {
         .background(PazColors.background)
         .navigationTitle("Notificações")
         .navigationBarTitleDisplayMode(.large)
+        .task { await viewModel.loadPreferences() }
     }
 }
 
@@ -96,16 +116,49 @@ class NotificationPrefsViewModel {
     var eventsNotifications = true
     var announcementsNotifications = true
     var lifeGroupNotifications = true
+    var academyNotifications = true
+    var memberJourneyNotifications = true
+    var contributionsNotifications = true
     var isSaving = false
+    var isLoading = false
     var error: String?
+
+    func loadPreferences() async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let prefs = try await IosAppContainer.shared.userRepository.getNotificationPreferences()
+            eventsNotifications = prefs.eventsEnabled
+            announcementsNotifications = prefs.announcementsEnabled
+            lifeGroupNotifications = prefs.lifeGroupEnabled
+            academyNotifications = prefs.academyEnabled
+            memberJourneyNotifications = prefs.memberJourneyEnabled
+            contributionsNotifications = prefs.contributionsEnabled
+        } catch {
+            // Silently keep defaults if load fails
+        }
+    }
 
     func onSave() {
         isSaving = true
         error = nil
-
-        // TODO: persist to backend via API call
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.isSaving = false
+        Task {
+            do {
+                try await IosAppContainer.shared.userRepository.updateNotificationPreferences(
+                    dto: UpdateNotificationPrefsDto(
+                        eventsEnabled: KotlinBoolean(value: eventsNotifications),
+                        announcementsEnabled: KotlinBoolean(value: announcementsNotifications),
+                        lifeGroupEnabled: KotlinBoolean(value: lifeGroupNotifications),
+                        academyEnabled: KotlinBoolean(value: academyNotifications),
+                        memberJourneyEnabled: KotlinBoolean(value: memberJourneyNotifications),
+                        contributionsEnabled: KotlinBoolean(value: contributionsNotifications),
+                        osPermissionStatus: nil
+                    )
+                )
+            } catch {
+                self.error = "Erro ao salvar preferências"
+            }
+            isSaving = false
         }
     }
 }

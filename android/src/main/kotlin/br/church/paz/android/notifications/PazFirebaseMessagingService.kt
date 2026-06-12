@@ -36,17 +36,18 @@ class PazFirebaseMessagingService : FirebaseMessagingService() {
         val title = message.notification?.title ?: message.data["title"] ?: return
         val body = message.notification?.body ?: message.data["body"] ?: ""
         val deepLink = message.data["deep_link"]
+        val channelId = message.data["channel_id"] ?: CHANNELS.first().first
 
-        showNotification(title, body, deepLink)
+        ensureChannels(applicationContext)
+        showNotification(title, body, deepLink, channelId)
     }
 
     private fun showNotification(
         title: String,
         body: String,
         deepLink: String?,
+        channelId: String,
     ) {
-        ensureChannel()
-
         val intent =
             Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -63,7 +64,7 @@ class PazFirebaseMessagingService : FirebaseMessagingService() {
 
         val notification =
             NotificationCompat
-                .Builder(this, CHANNEL_ID)
+                .Builder(this, channelId)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setContentTitle(title)
                 .setContentText(body)
@@ -77,22 +78,29 @@ class PazFirebaseMessagingService : FirebaseMessagingService() {
         manager.notify(System.currentTimeMillis().toInt(), notification)
     }
 
-    private fun ensureChannel() {
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (manager.getNotificationChannel(CHANNEL_ID) != null) return
-        val channel =
-            NotificationChannel(
-                CHANNEL_ID,
-                "Paz Church",
-                NotificationManager.IMPORTANCE_HIGH,
-            ).apply {
-                description = "Avisos, eventos e atualizações da Paz Church"
+    private fun ensureChannels(context: Context) {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        CHANNELS.forEach { (id, name) ->
+            if (manager.getNotificationChannel(id) == null) {
+                manager.createNotificationChannel(
+                    NotificationChannel(id, name, NotificationManager.IMPORTANCE_DEFAULT),
+                )
             }
-        manager.createNotificationChannel(channel)
+        }
     }
 
     companion object {
-        const val CHANNEL_ID = "paz_church_default"
         const val EXTRA_DEEP_LINK = "deep_link"
+
+        val CHANNELS =
+            listOf(
+                "paz_events" to "Eventos",
+                "paz_announcements" to "Avisos",
+                "paz_life_group" to "Grupo de Vida",
+                "paz_academy" to "Academia",
+                "paz_member_journey" to "Jornada do Membro",
+                "paz_contributions" to "Contribuições",
+                "paz_admin_alerts" to "Alertas Administrativos",
+            )
     }
 }

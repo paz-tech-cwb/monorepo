@@ -52,7 +52,7 @@ struct LoginView: View {
 
                 // ── Login card — centered at 70% down ──
                 loginCard
-                    .frame(width: geo.size.width - 32)
+                    .frame(width: max(0, geo.size.width - 32))
                     .position(x: geo.size.width / 2, y: geo.size.height * 0.7)
             }
             .frame(width: geo.size.width, height: geo.size.height)

@@ -88,7 +88,4 @@ class LifeGroupDetailViewModel(
         viewModelScope.launch { _effect.send(LifeGroupDetailEffect.NavigateBack) }
     }
 
-    fun onMeetingReport() {
-        viewModelScope.launch { _effect.send(LifeGroupDetailEffect.NavigateToMeetingReport) }
-    }
 }

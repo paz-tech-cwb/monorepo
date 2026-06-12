@@ -8,6 +8,7 @@ struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var selectedDayIndex: Int = 2
     @State private var currentFeatureIndex: Int = 0
+    @State private var scrolledFeatureID: Int? = 0
     @State private var showAgendaList = false
     @State private var autoScrollTimer: Timer?
     @State private var isUserDragging = false
@@ -69,6 +70,10 @@ struct HomeView: View {
                 hasEvent: hasEvent
             )
         }
+    }
+
+    private var weekHasEvents: Bool {
+        weekDays.contains { $0.hasEvent }
     }
 
     private func parseEventDate(_ str: String) -> Date? {
@@ -175,23 +180,27 @@ struct HomeView: View {
     // MARK: - Featured section
 
     private var featuredSection: some View {
-        let count = banners.count
-        return TabView(selection: $currentFeatureIndex) {
-            ForEach(Array(banners.enumerated()), id: \.offset) { index, banner in
-                FeaturedCardView(
-                    title: banner.title,
-                    imageUrl: banner.imageUrl,
-                    isAlt: index % 2 == 1
-                )
-                .padding(.horizontal, 18)
-                .padding(.trailing, count > 1 ? 44 : 0)
-                .padding(.bottom, 60)
-                .tag(index)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: PazSpacing.lg) {
+                ForEach(Array(banners.enumerated()), id: \.offset) { index, banner in
+                    FeaturedCardView(
+                        title: banner.title,
+                        imageUrl: banner.imageUrl,
+                        isAlt: index % 2 == 1
+                    )
+                    .frame(width: UIScreen.main.bounds.width - 64)
+                    .frame(height: 180)
+                    .id(index)
+                }
             }
+            .scrollTargetLayout()
+            .padding(.bottom, 20)
         }
-        .frame(height: 240)
-        .tabViewStyle(.page(indexDisplayMode: .never))
-        .tint(.primary)
+        .contentMargins(.horizontal, 32, for: .scrollContent)
+        .contentMargins(.vertical, 16, for: .scrollContent)
+        .scrollTargetBehavior(.viewAligned)
+        .scrollPosition(id: $scrolledFeatureID)
+        .frame(height: 220)
         .onAppear { startAutoScroll() }
         .onDisappear { stopAutoScroll() }
         .onChange(of: currentFeatureIndex) { _, _ in
@@ -210,8 +219,10 @@ struct HomeView: View {
     private func startAutoScroll() {
         guard banners.count > 1 else { return }
         autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { _ in
+            let next = (currentFeatureIndex + 1) % banners.count
             withAnimation(.easeInOut) {
-                currentFeatureIndex = (currentFeatureIndex + 1) % banners.count
+                currentFeatureIndex = next
+                scrolledFeatureID = next
             }
         }
     }
@@ -288,35 +299,42 @@ struct HomeView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 13)
 
-            // Sticky week strip — full width, no horizontal scroll
-            HStack(spacing: 6) {
-                ForEach(Array(weekDays.enumerated()), id: \.offset) { index, item in
-                    DayPillView(
-                        dow: item.dow,
-                        day: item.day,
-                        isSelected: index == selectedDayIndex,
-                        isToday: item.isToday,
-                        hasEvent: item.hasEvent
-                    )
-                    .frame(maxWidth: .infinity)
-                    .onTapGesture {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedDayIndex = index
+            if weekHasEvents {
+                // Sticky week strip — scrollable, partial peek reveals continuity
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: PazSpacing.sm) {
+                        ForEach(Array(weekDays.enumerated()), id: \.offset) { index, item in
+                            DayPillView(
+                                dow: item.dow,
+                                day: item.day,
+                                isSelected: index == selectedDayIndex,
+                                isToday: item.isToday,
+                                hasEvent: item.hasEvent
+                            )
+                            .frame(width: 52)
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    selectedDayIndex = index
+                                }
+                            }
                         }
                     }
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 12)
                 }
+                .padding(.bottom, 4)
+            } else {
+                Spacer().frame(height: 8)
             }
-            .padding(.horizontal, 18)
-            .padding(.bottom, 16)
 
             // Event list filtered to selected day
             if selectedDayEvents.isEmpty {
-                Text("Nenhum evento")
-                    .font(PazTypography.bodySmall)
-                    .foregroundStyle(PazColors.slate)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
+                EmptyAgendaView(
+                    hasUpcomingEvents: !(viewModel.homeContent?.agenda ?? []).isEmpty,
+                    onSeeAll: { showAgendaList = true }
+                )
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
             } else {
                 VStack(spacing: 12) {
                     ForEach(selectedDayEvents, id: \.id) { event in
@@ -411,6 +429,7 @@ private struct FeaturedCardView: View {
             .padding(18)
         }
         .clipShape(RoundedRectangle(cornerRadius: 22))
+        .contentShape(RoundedRectangle(cornerRadius: 22))
         .shadow(color: PazColors.pazPrimary.opacity(0.6), radius: 15, x: 0, y: 16)
     }
 }
@@ -502,7 +521,6 @@ private struct DayPillView: View {
                 if isSelected {
                     RoundedRectangle(cornerRadius: 18)
                         .fill(PazColors.dayPillSelectedGradient)
-                        .shadow(color: PazColors.pazPrimary.opacity(0.6), radius: 11, x: 0, y: 12)
                 } else if isToday {
                     RoundedRectangle(cornerRadius: 18)
                         .fill(PazColors.surface)
@@ -510,15 +528,63 @@ private struct DayPillView: View {
                             RoundedRectangle(cornerRadius: 18)
                                 .strokeBorder(PazColors.pazPrimary.opacity(0.5), lineWidth: 1.5)
                         )
-                        .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 2)
                 } else {
                     RoundedRectangle(cornerRadius: 18)
                         .fill(PazColors.surface)
                         .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(PazColors.line))
-                        .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 2)
                 }
             }
         )
+        .shadow(
+            color: isSelected ? PazColors.pazPrimary.opacity(0.4) : Color.black.opacity(0.06),
+            radius: isSelected ? 8 : 4,
+            x: 0,
+            y: isSelected ? 6 : 2
+        )
+    }
+}
+
+// MARK: - EmptyAgendaView
+
+private struct EmptyAgendaView: View {
+    let hasUpcomingEvents: Bool
+    let onSeeAll: () -> Void
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Text(hasUpcomingEvents ? "Nenhum evento para esta semana" : "Nenhum evento agendado")
+                .font(PazTypography.titleLarge)
+                .foregroundStyle(PazColors.ink)
+                .multilineTextAlignment(.center)
+
+            Text(hasUpcomingEvents ? "Confira todos os eventos clicando no botão abaixo." : "Aguarde novos eventos para o futuro.")
+                .font(PazTypography.bodyMedium)
+                .foregroundStyle(PazColors.slate)
+                .multilineTextAlignment(.center)
+                .padding(.bottom, hasUpcomingEvents ? 12 : 0)
+
+            if hasUpcomingEvents {
+                Button(action: onSeeAll) {
+                    Text("Ver próximos eventos")
+                        .font(PazTypography.titleMedium)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(PazColors.pazPrimaryLight)
+                        .clipShape(Capsule())
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity)
+        .background(PazColors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .strokeBorder(PazColors.line, lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
     }
 }
 

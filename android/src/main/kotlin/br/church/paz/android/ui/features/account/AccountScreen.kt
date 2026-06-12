@@ -77,7 +77,6 @@ fun AccountScreen(
             when (effect) {
                 AccountEffect.NavigateToEditProfile -> navController.navigate(Screen.EditProfile.route)
                 AccountEffect.NavigateToMemberJourney -> navController.navigate(Screen.MemberJourney.route)
-                AccountEffect.NavigateToMeetingReport -> navController.navigate(Screen.MeetingReport.route)
                 AccountEffect.NavigateToFormularios -> navController.navigate(Screen.FormulariosList.route)
                 AccountEffect.NavigateToMinistries -> navController.navigate(Screen.Ministries.route)
                 AccountEffect.NavigateToNotificationPrefs -> navController.navigate(Screen.NotificationPrefs.route)
@@ -178,12 +177,6 @@ fun AccountScreen(
                                 onClick = viewModel::onMemberJourney,
                             )
                             if (user.role.isLeader) {
-                                PazMenuRow(
-                                    title = "Relatar Reunião",
-                                    icon = Icons.AutoMirrored.Outlined.Assignment,
-                                    iconTint = Color(0xFF2E7D32),
-                                    onClick = viewModel::onMeetingReport,
-                                )
                                 PazMenuRow(
                                     title = "Formulários",
                                     icon = Icons.Outlined.DynamicForm,

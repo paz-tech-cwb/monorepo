@@ -303,10 +303,10 @@ private fun LifeGroupCard(
                 }
             }
 
-            if (!lifeGroup.address.isNullOrEmpty()) {
+            if (lifeGroup.address != null) {
                 Spacer(Modifier.height(PazSpacing.Xs))
                 Text(
-                    lifeGroup.address!!,
+                    lifeGroup.address!!.fullAddress,
                     style =
                         MaterialTheme.typography.bodySmall.copy(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),

@@ -210,7 +210,7 @@ private struct LifeGroupCard: View {
                     Image(systemName: "mappin")
                         .font(.system(size: 12))
                         .foregroundColor(.gray)
-                    Text(address)
+                    Text(address.fullAddress)
                         .font(PazTypography.bodySmall)
                         .foregroundColor(.gray)
                         .lineLimit(1)

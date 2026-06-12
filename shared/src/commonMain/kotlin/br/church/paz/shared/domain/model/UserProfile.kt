@@ -13,10 +13,24 @@ data class UpdateProfileRequest(
 
 @Serializable
 data class NotificationPreferences(
-    @SerialName("events")         val events: Boolean = true,
-    @SerialName("life_group")     val lifeGroup: Boolean = true,
-    @SerialName("announcements")  val announcements: Boolean = true,
-    @SerialName("reminders")      val reminders: Boolean = true,
+    @SerialName("events_enabled")         val eventsEnabled: Boolean = true,
+    @SerialName("announcements_enabled")  val announcementsEnabled: Boolean = true,
+    @SerialName("life_group_enabled")     val lifeGroupEnabled: Boolean = true,
+    @SerialName("academy_enabled")        val academyEnabled: Boolean = true,
+    @SerialName("member_journey_enabled") val memberJourneyEnabled: Boolean = true,
+    @SerialName("contributions_enabled")  val contributionsEnabled: Boolean = true,
+    @SerialName("os_permission_status")   val osPermissionStatus: String = "not_determined",
+)
+
+@Serializable
+data class UpdateNotificationPrefsDto(
+    @SerialName("events_enabled")         val eventsEnabled: Boolean? = null,
+    @SerialName("announcements_enabled")  val announcementsEnabled: Boolean? = null,
+    @SerialName("life_group_enabled")     val lifeGroupEnabled: Boolean? = null,
+    @SerialName("academy_enabled")        val academyEnabled: Boolean? = null,
+    @SerialName("member_journey_enabled") val memberJourneyEnabled: Boolean? = null,
+    @SerialName("contributions_enabled")  val contributionsEnabled: Boolean? = null,
+    @SerialName("os_permission_status")   val osPermissionStatus: String? = null,
 )
 
 @Serializable

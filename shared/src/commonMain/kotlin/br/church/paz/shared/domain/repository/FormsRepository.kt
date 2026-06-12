@@ -4,6 +4,7 @@ import br.church.paz.shared.domain.model.ConversionForm
 import br.church.paz.shared.domain.model.CourseForm
 import br.church.paz.shared.domain.model.FormCatalogItem
 import br.church.paz.shared.domain.model.GuestForm
+import br.church.paz.shared.domain.model.LifeGroupReportForm
 import br.church.paz.shared.domain.model.MemberRegistrationForm
 import br.church.paz.shared.domain.model.MultiplicationForm
 import br.church.paz.shared.domain.model.ServiceReportForm
@@ -27,9 +28,9 @@ interface FormsRepository {
     @Throws(Exception::class)
     suspend fun submitCourse(form: CourseForm)
     @Throws(Exception::class)
-    suspend fun submitLifeGroupReport(report: br.church.paz.shared.domain.model.MeetingReportRequest)
+    suspend fun submitLifeGroupReport(form: LifeGroupReportForm)
     @Throws(Exception::class)
-    suspend fun submitSectorReport(report: br.church.paz.shared.domain.model.MeetingReportRequest)
+    suspend fun submitSectorReport(form: LifeGroupReportForm)
     @Throws(Exception::class)
-    suspend fun submitAreaReport(report: br.church.paz.shared.domain.model.MeetingReportRequest)
+    suspend fun submitAreaReport(form: LifeGroupReportForm)
 }

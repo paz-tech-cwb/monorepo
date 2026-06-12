@@ -7,6 +7,8 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.HttpCallValidator
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.auth.Auth
+import io.ktor.client.plugins.auth.authProvider
+import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -73,14 +75,33 @@ fun createPazHttpClient(
     install(Auth) {
         bearer {
             loadTokens {
-                tokenStorage.read()?.let { BearerTokens(it.access, it.refresh) }
+                val pair = tokenStorage.read()
+                println(
+                    "[PazAuth] loadTokens -> " +
+                        if (pair != null) "access=${pair.access.take(10)}… len=${pair.access.length}"
+                        else "NO TOKEN",
+                )
+                pair?.let { BearerTokens(it.access, it.refresh) }
             }
             refreshTokens {
+                println("[PazAuth] refreshTokens invoked")
                 val refreshed = refreshAccessToken(tokenStorage, client) ?: return@refreshTokens null
                 BearerTokens(refreshed.access, refreshed.refresh)
             }
         }
     }
+}
+
+/**
+ * Clears the Ktor bearer provider's cached token so the next request re-invokes
+ * [loadTokens] and reads freshly-persisted tokens from storage.
+ *
+ * Ktor caches the result of `loadTokens` for the client's lifetime; without this,
+ * a token persisted AFTER the first authenticated request (e.g. right after login)
+ * is never picked up, and every subsequent request is sent unauthenticated.
+ */
+fun HttpClient.clearBearerTokenCache() {
+    authProvider<BearerAuthProvider>()?.clearToken()
 }
 
 /**

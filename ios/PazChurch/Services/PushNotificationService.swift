@@ -1,3 +1,4 @@
+import FirebaseMessaging
 import Foundation
 import Observation
 import Shared
@@ -14,10 +15,11 @@ class PushNotificationService: NSObject {
 
     var pendingDeepLink: String?
 
-    private let userRepository: UserRepository
+    private var userRepository: UserRepository {
+        IosAppContainer.shared.userRepository
+    }
 
     override init() {
-        self.userRepository = IosAppContainer.shared.userRepository
         super.init()
     }
 
@@ -33,23 +35,18 @@ class PushNotificationService: NSObject {
             }
         }
         UNUserNotificationCenter.current().delegate = self
+
     }
 
     /// Called by AppDelegate.application(_:didRegisterForRemoteNotificationsWithDeviceToken:)
     func didRegisterForRemoteNotifications(deviceToken: Data) {
-        // Convert APNs token to hex string for direct APNs usage.
-        let tokenString = deviceToken.map { String(format: "%02x", $0) }.joined()
-
-        // If using Firebase Messaging, FIRMessaging.messaging().apnsToken = deviceToken
-        // and use messaging().token(completion:) for the FCM token instead.
-        // For now, register the APNs token directly.
-        Task {
-            do {
-                try await userRepository.registerDeviceToken(
-                    token: DeviceToken(token: tokenString, platform: .ios)
+        Messaging.messaging().apnsToken = deviceToken
+        Messaging.messaging().token { [weak self] token, _ in
+            guard let token else { return }
+            Task {
+                try? await self?.userRepository.registerDeviceToken(
+                    token: DeviceToken(token: token, platform: .ios)
                 )
-            } catch {
-                // Non-critical — token registration is best-effort
             }
         }
     }
@@ -95,6 +92,19 @@ class PushNotificationService: NSObject {
 
         default:
             nil
+        }
+    }
+}
+
+// MARK: - MessagingDelegate (FCM token refresh)
+
+extension PushNotificationService: MessagingDelegate {
+    nonisolated func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        guard let fcmToken else { return }
+        Task {
+            try? await self.userRepository.registerDeviceToken(
+                token: DeviceToken(token: fcmToken, platform: .ios)
+            )
         }
     }
 }

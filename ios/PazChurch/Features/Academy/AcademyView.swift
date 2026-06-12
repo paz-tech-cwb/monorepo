@@ -156,11 +156,26 @@ struct AcademyView: View {
     }
 
     private var emptyState: some View {
-        VStack {
-            Spacer()
-            Text("Nenhum conteúdo disponível").font(PazTypography.bodyMedium).foregroundStyle(PazColors.slate)
-            Spacer()
+        VStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(PazColors.pazPrimary.opacity(0.1))
+                    .frame(width: 64, height: 64)
+                Image(systemName: "books.vertical.fill")
+                    .font(.system(size: 26))
+                    .foregroundStyle(PazColors.pazPrimary)
+            }
+            Text("Nenhum conteúdo disponível")
+                .font(PazTypography.titleMedium)
+                .foregroundStyle(PazColors.ink)
+            Text("Os cursos aparecerão aqui assim que forem publicados.")
+                .font(PazTypography.bodySmall)
+                .foregroundStyle(PazColors.slate)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(PazColors.background)
     }
 
     private func errorState(message: String) -> some View {

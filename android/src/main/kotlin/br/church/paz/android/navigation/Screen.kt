@@ -31,8 +31,6 @@ sealed class Screen(
 
     data object MemberJourney : Screen("member_journey")
 
-    data object MeetingReport : Screen("meeting_report")
-
     data object Ministries : Screen("ministries")
 
     data object MinistryDetail : Screen("ministry_detail/{ministryId}") {

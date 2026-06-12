@@ -91,7 +91,7 @@ struct LifeGroupDetailView: View {
                             InfoRowView(icon: "calendar", label: "Reunião", value: meetingStr)
                         }
                         if let address = lifeGroup.address {
-                            InfoRowView(icon: "mappin.circle.fill", label: "Endereço", value: address)
+                            InfoRowView(icon: "mappin.circle.fill", label: "Endereço", value: address.fullAddress)
                         }
                     }
                     .padding(PazSpacing.lg)
@@ -105,21 +105,6 @@ struct LifeGroupDetailView: View {
             }
             .background(PazColors.background)
 
-            NavigationLink(destination: MeetingReportView(
-                formsRepository: IosAppContainer.shared.formsRepository,
-                authRepository: IosAppContainer.shared.authRepository
-            )) {
-                Text("Relatório de Reunião")
-                    .font(PazTypography.titleMedium)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(PazColors.primary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .padding(.horizontal, PazSpacing.lg)
-            .padding(.vertical, PazSpacing.md)
-            .background(PazColors.background)
         }
         .background(PazColors.background)
         .navigationTitle(lifeGroup.name)

@@ -30,7 +30,14 @@ struct AgendaListView: View {
     }
 
     private var loadingState: some View {
-        VStack { Spacer(); ProgressView().tint(PazColors.pazPrimary); Spacer() }
+        ScrollView {
+            VStack(spacing: 12) {
+                ForEach(0..<8, id: \.self) { _ in
+                    AgendaSkeletonRow()
+                }
+            }
+            .padding(20)
+        }
     }
 
     private var emptyState: some View {
@@ -54,17 +61,69 @@ struct AgendaListView: View {
                 }
 
                 if viewModel.isLoadingMore {
-                    HStack {
-                        Spacer()
-                        ProgressView().tint(PazColors.pazPrimary).padding(.vertical, 20)
-                        Spacer()
+                    VStack(spacing: 12) {
+                        AgendaSkeletonRow()
+                        AgendaSkeletonRow()
                     }
+                    .padding(.top, 12)
                 }
                 Spacer().frame(height: 32)
             }
             .padding(.horizontal, 20)
         }
         .background(PazColors.background)
+    }
+}
+
+// MARK: - Skeleton
+
+private struct AgendaSkeletonRow: View {
+    @State private var animating = false
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(shimmerGradient)
+                .frame(width: 52, height: 52)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(shimmerGradient)
+                    .frame(height: 16)
+                    .frame(maxWidth: .infinity)
+                
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(shimmerGradient)
+                    .frame(height: 12)
+                    .frame(width: 150)
+            }
+            
+            Spacer()
+            
+            Circle()
+                .fill(shimmerGradient)
+                .frame(width: 8, height: 8)
+        }
+        .padding(14)
+        .background(PazColors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .onAppear {
+            withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                animating.toggle()
+            }
+        }
+    }
+    
+    private var shimmerGradient: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color.gray.opacity(0.1),
+                Color.gray.opacity(0.2),
+                Color.gray.opacity(0.1)
+            ],
+            startPoint: animating ? .leading : .trailing,
+            endPoint: animating ? .trailing : .leading
+        )
     }
 }
 

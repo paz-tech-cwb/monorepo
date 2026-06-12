@@ -20,6 +20,4 @@ sealed class MinistryDetailEffect {
 
 sealed class LifeGroupDetailEffect {
     data object NavigateBack : LifeGroupDetailEffect()
-
-    data object NavigateToMeetingReport : LifeGroupDetailEffect()
 }

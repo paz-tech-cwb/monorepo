@@ -6,7 +6,7 @@ import br.church.paz.shared.domain.model.ConversionForm
 import br.church.paz.shared.domain.model.CourseForm
 import br.church.paz.shared.domain.model.FormType
 import br.church.paz.shared.domain.model.GuestForm
-import br.church.paz.shared.domain.model.MeetingReportRequest
+import br.church.paz.shared.domain.model.LifeGroupReportForm
 import br.church.paz.shared.domain.model.MemberRegistrationForm
 import br.church.paz.shared.domain.model.MultiplicationForm
 import br.church.paz.shared.domain.model.ServiceReportForm
@@ -141,7 +141,7 @@ class FormDetailViewModel(
                     )
                 FormType.life_group_report ->
                     formsRepository.submitLifeGroupReport(
-                        MeetingReportRequest(
+                        LifeGroupReportForm(
                             lifeGroupId = userId,
                             date = f.req("date"),
                             attendees = f.int("attendees"),
@@ -152,7 +152,7 @@ class FormDetailViewModel(
                     )
                 FormType.sector_supervisor_report ->
                     formsRepository.submitSectorReport(
-                        MeetingReportRequest(
+                        LifeGroupReportForm(
                             lifeGroupId = userId,
                             date = f.req("date"),
                             attendees = f.int("attendees"),
@@ -163,7 +163,7 @@ class FormDetailViewModel(
                     )
                 FormType.area_supervisor_report ->
                     formsRepository.submitAreaReport(
-                        MeetingReportRequest(
+                        LifeGroupReportForm(
                             lifeGroupId = userId,
                             date = f.req("date"),
                             attendees = f.int("attendees"),

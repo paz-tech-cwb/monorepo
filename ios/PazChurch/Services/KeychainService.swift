@@ -1,5 +1,24 @@
 import Foundation
 import Security
+import Shared
+
+/// Bridges the shared module's `PlatformKeychain` to the native Swift Keychain API.
+/// Injected into the shared module at app startup (see PazChurchApp.init).
+final class KmpKeychainBridge: PlatformKeychain {
+    private let keychain = KeychainService.shared
+
+    func set(key: String, value: String) {
+        try? keychain.save(token: value, key: key)
+    }
+
+    func get(key: String) -> String? {
+        try? keychain.retrieve(key: key)
+    }
+
+    func remove(key: String) {
+        try? keychain.delete(key: key)
+    }
+}
 
 class KeychainService {
     static let shared = KeychainService()

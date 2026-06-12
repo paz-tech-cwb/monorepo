@@ -411,7 +411,6 @@
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					32AE5640F622679E9E0DC963 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -594,6 +593,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = PazChurch/PazChurch.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = NMCA95DPCN;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"../shared/build/XCFrameworks/debug\"",
@@ -617,6 +617,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = PazChurch/PazChurch.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = NMCA95DPCN;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"../shared/build/XCFrameworks/debug\"",

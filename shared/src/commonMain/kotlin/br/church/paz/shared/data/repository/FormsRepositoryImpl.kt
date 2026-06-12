@@ -4,7 +4,7 @@ import br.church.paz.shared.domain.model.ConversionForm
 import br.church.paz.shared.domain.model.CourseForm
 import br.church.paz.shared.domain.model.FormCatalogItem
 import br.church.paz.shared.domain.model.GuestForm
-import br.church.paz.shared.domain.model.MeetingReportRequest
+import br.church.paz.shared.domain.model.LifeGroupReportForm
 import br.church.paz.shared.domain.model.MemberRegistrationForm
 import br.church.paz.shared.domain.model.MultiplicationForm
 import br.church.paz.shared.domain.model.ServiceReportForm
@@ -54,16 +54,16 @@ class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
         post("api/forms/member-registrations/courses", form)
 
     @Throws(Exception::class)
-    override suspend fun submitLifeGroupReport(report: MeetingReportRequest) =
-        post("api/forms/life-group-reports", report)
+    override suspend fun submitLifeGroupReport(form: LifeGroupReportForm) =
+        post("api/forms/life-group-reports", form)
 
     @Throws(Exception::class)
-    override suspend fun submitSectorReport(report: MeetingReportRequest) =
-        post("api/forms/sector-supervisor-reports", report)
+    override suspend fun submitSectorReport(form: LifeGroupReportForm) =
+        post("api/forms/sector-supervisor-reports", form)
 
     @Throws(Exception::class)
-    override suspend fun submitAreaReport(report: MeetingReportRequest) =
-        post("api/forms/area-supervisor-reports", report)
+    override suspend fun submitAreaReport(form: LifeGroupReportForm) =
+        post("api/forms/area-supervisor-reports", form)
 
     private suspend inline fun <reified T : Any> post(path: String, body: T) {
         client.post(path) {

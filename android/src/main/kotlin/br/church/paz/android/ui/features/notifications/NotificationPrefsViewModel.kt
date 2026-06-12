@@ -2,7 +2,7 @@ package br.church.paz.android.ui.features.notifications
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import br.church.paz.shared.domain.model.NotificationPreferences
+import br.church.paz.shared.domain.model.UpdateNotificationPrefsDto
 import br.church.paz.shared.domain.repository.UserRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,17 +27,21 @@ class NotificationPrefsViewModel(
 
     private fun loadPreferences() {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
             runCatching { userRepository.getNotificationPreferences() }
                 .onSuccess { prefs ->
                     _uiState.update {
                         it.copy(
-                            eventsNotifications = prefs.events,
-                            announcementsNotifications = prefs.announcements,
-                            lifeGroupNotifications = prefs.lifeGroup,
+                            eventsNotifications = prefs.eventsEnabled,
+                            announcementsNotifications = prefs.announcementsEnabled,
+                            lifeGroupNotifications = prefs.lifeGroupEnabled,
+                            academyNotifications = prefs.academyEnabled,
+                            memberJourneyNotifications = prefs.memberJourneyEnabled,
+                            contributionsNotifications = prefs.contributionsEnabled,
                         )
                     }
                 }
-            // On failure: keep defaults — non-critical
+            _uiState.update { it.copy(isLoading = false) }
         }
     }
 
@@ -53,16 +57,32 @@ class NotificationPrefsViewModel(
         _uiState.update { it.copy(lifeGroupNotifications = !it.lifeGroupNotifications) }
     }
 
+    fun toggleAcademy() {
+        _uiState.update { it.copy(academyNotifications = !it.academyNotifications) }
+    }
+
+    fun toggleMemberJourney() {
+        _uiState.update { it.copy(memberJourneyNotifications = !it.memberJourneyNotifications) }
+    }
+
+    fun toggleContributions() {
+        _uiState.update { it.copy(contributionsNotifications = !it.contributionsNotifications) }
+    }
+
     fun onSave() {
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true, error = null) }
             val state = _uiState.value
             runCatching {
                 userRepository.updateNotificationPreferences(
-                    NotificationPreferences(
-                        events = state.eventsNotifications,
-                        announcements = state.announcementsNotifications,
-                        lifeGroup = state.lifeGroupNotifications,
+                    UpdateNotificationPrefsDto(
+                        eventsEnabled = state.eventsNotifications,
+                        announcementsEnabled = state.announcementsNotifications,
+                        lifeGroupEnabled = state.lifeGroupNotifications,
+                        academyEnabled = state.academyNotifications,
+                        memberJourneyEnabled = state.memberJourneyNotifications,
+                        contributionsEnabled = state.contributionsNotifications,
+                        osPermissionStatus = null,
                     ),
                 )
             }.onSuccess {

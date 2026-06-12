@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.android.ui.theme.AppThemeManager
 import br.church.paz.shared.domain.repository.AuthRepository
+import br.church.paz.shared.push.getFcmToken
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,7 +49,8 @@ class AccountViewModel(
 
     fun onLogout() {
         viewModelScope.launch {
-            authRepository.logout()
+            val fcmToken = getFcmToken()
+            authRepository.logout(fcmToken = fcmToken)
             _effect.send(AccountEffect.LoggedOut)
         }
     }
@@ -56,8 +58,6 @@ class AccountViewModel(
     fun onEditProfile() = emit(AccountEffect.NavigateToEditProfile)
 
     fun onMemberJourney() = emit(AccountEffect.NavigateToMemberJourney)
-
-    fun onMeetingReport() = emit(AccountEffect.NavigateToMeetingReport)
 
     fun onFormularios() = emit(AccountEffect.NavigateToFormularios)
 

@@ -220,17 +220,17 @@ class FormDetailViewModelIOS {
                 courseName: req("course_name"), memberId: userId, enrolledAt: req("enrolled_at")
             ))
         } else if type == .lifeGroupReport {
-            _ = try await formsRepository.submitLifeGroupReport(report: MeetingReportRequest(
+            _ = try await formsRepository.submitLifeGroupReport(form: LifeGroupReportForm(
                 lifeGroupId: userId, date: req("date"), attendees: int32("attendees"),
                 visitors: int32("visitors"), offerings: kdbl("offerings"), observations: opt("observations")
             ))
         } else if type == .sectorSupervisorReport {
-            _ = try await formsRepository.submitSectorReport(report: MeetingReportRequest(
+            _ = try await formsRepository.submitSectorReport(form: LifeGroupReportForm(
                 lifeGroupId: userId, date: req("date"), attendees: int32("attendees"),
                 visitors: int32("visitors"), offerings: kdbl("offerings"), observations: opt("observations")
             ))
         } else {
-            _ = try await formsRepository.submitAreaReport(report: MeetingReportRequest(
+            _ = try await formsRepository.submitAreaReport(form: LifeGroupReportForm(
                 lifeGroupId: userId, date: req("date"), attendees: int32("attendees"),
                 visitors: int32("visitors"), offerings: kdbl("offerings"), observations: opt("observations")
             ))
@@ -489,9 +489,10 @@ private extension DateFormatter {
 
 #Preview {
     FormDetailView(form: FormCatalogItem(
-        id: "1",
+        id: "member-registrations",
         title: "Registro de Membro",
         description: "Formulário para registrar um novo membro",
-        type: .memberRegistration
+        canWrite: true,
+        canRead: true
     ))
 }

@@ -1,5 +1,6 @@
 import FirebaseAuth
 import FirebaseCore
+import FirebaseMessaging
 import GoogleSignIn
 import Observation
 import Shared
@@ -91,7 +92,8 @@ class AuthenticationCoordinator {
     func logout() {
         Task {
             do {
-                try await IosAppContainer.shared.logout()
+                let fcmToken = try? await Messaging.messaging().token()
+                try await IosAppContainer.shared.logout(fcmToken: fcmToken)
                 GIDSignIn.sharedInstance.signOut()
                 try? Auth.auth().signOut()
             } catch {
