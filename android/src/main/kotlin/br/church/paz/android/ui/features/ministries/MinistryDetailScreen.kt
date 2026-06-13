@@ -34,8 +34,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import br.church.paz.android.navigation.Screen
-import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
@@ -124,6 +122,23 @@ private fun MinistryContent(ministry: Ministry) {
             }
         }
 
+        ministry.leader?.let { leader ->
+            val leaderText =
+                if (ministry.coLeader != null) "$leader & ${ministry.coLeader}" else leader
+            item {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(PazShapes.large)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(PazSpacing.Lg),
+                    verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                ) {
+                    InfoRow(icon = Icons.Default.Person, label = "Liderança", value = leaderText)
+                }
+            }
+        }
+
         item { Spacer(Modifier.height(PazSpacing.Xl)) }
     }
 }
@@ -157,9 +172,7 @@ fun LifeGroupDetailScreen(
 }
 
 @Composable
-private fun LifeGroupContent(
-    lifeGroup: LifeGroup,
-) {
+private fun LifeGroupContent(lifeGroup: LifeGroup) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding =

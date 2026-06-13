@@ -74,6 +74,8 @@ data class Ministry(
     val name: String,
     val description: String? = null,
     @SerialName("image_url") val imageUrl: String? = null,
+    val leader: String? = null,
+    @SerialName("co_leader") val coLeader: String? = null,
 )
 
 @Serializable
