@@ -30,6 +30,8 @@ import {
   useDeleteMinistryTeam,
   useAddMinistryMember,
   useRemoveMinistryMember,
+  useAddMinistryTeamMember,
+  useRemoveMinistryTeamMember,
 } from "@/lib/hooks/use-ministries"
 import { useUsers } from "@/lib/hooks/use-users"
 import { LeaderPairPicker } from "@/components/ministries/leader-pair-picker"
@@ -242,50 +244,27 @@ export function MisteriosManagement() {
           {expandedMinistries.has(ministry.id) && (
             <CardContent>
               {ministry.membership_mode === "teams" ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Equipe</TableHead>
-                      <TableHead>Liderança</TableHead>
-                      <TableHead className="w-12" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(ministry.teams ?? []).map((team) => (
-                      <TableRow key={team.id}>
-                        <TableCell>{team.name}</TableCell>
-                        <TableCell>{leaderPairLabel(team.leader, team.co_leader)}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon"><MoreHorizontal className="w-4 h-4" /></Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuItem onClick={() => {
-                                setTeamDialog(team)
-                                setTeamForm({
-                                  name: team.name,
-                                  leader_id: team.leader?.id ?? null,
-                                  co_leader_id: team.co_leader?.id ?? null,
-                                })
-                              }}>
-                                <Edit className="w-4 h-4 mr-2" />Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive" onClick={() => setDeletingTeamId(team.id)}>
-                                <Trash2 className="w-4 h-4 mr-2" />Excluir
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {(ministry.teams ?? []).length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground">Nenhuma equipe</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                <div className="space-y-2">
+                  {(ministry.teams ?? []).length === 0 && (
+                    <p className="text-center text-muted-foreground py-4">Nenhuma equipe</p>
+                  )}
+                  {(ministry.teams ?? []).map((team) => (
+                    <TeamSection
+                      key={team.id}
+                      team={team}
+                      allUsers={allUsers}
+                      onEdit={() => {
+                        setTeamDialog(team)
+                        setTeamForm({
+                          name: team.name,
+                          leader_id: team.leader?.id ?? null,
+                          co_leader_id: team.co_leader?.id ?? null,
+                        })
+                      }}
+                      onDelete={() => setDeletingTeamId(team.id)}
+                    />
+                  ))}
+                </div>
               ) : (
                 <MinistryPeopleTab ministry={ministry} />
               )}
@@ -440,6 +419,113 @@ function MinistryFormFields({ form, users, onChange, onMembershipModeChange }: M
           </SelectContent>
         </Select>
       </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// TeamSection — expandable team card with member management
+// ---------------------------------------------------------------------------
+
+interface TeamSectionProps {
+  team: MinistryTeam
+  allUsers: { id: number; name: string }[]
+  onEdit: () => void
+  onDelete: () => void
+}
+
+function TeamSection({ team, allUsers, onEdit, onDelete }: TeamSectionProps) {
+  const [expanded, setExpanded] = useState(false)
+  const [search, setSearch] = useState("")
+  const addMember = useAddMinistryTeamMember()
+  const removeMember = useRemoveMinistryTeamMember()
+
+  const memberIds = new Set(team.members?.map((m) => m.id) ?? [])
+  const candidates = allUsers.filter(
+    (u) => !memberIds.has(u.id) && u.name?.toLowerCase().includes(search.toLowerCase())
+  )
+
+  return (
+    <div className="border rounded-md">
+      <div className="flex items-center justify-between px-4 py-3">
+        <button
+          className="flex items-center gap-2 font-medium text-left flex-1"
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {expanded ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronRight className="w-4 h-4 shrink-0" />}
+          <span>{team.name}</span>
+          {leaderPairLabel(team.leader, team.co_leader) !== "—" && (
+            <span className="text-sm text-muted-foreground font-normal">
+              — {leaderPairLabel(team.leader, team.co_leader)}
+            </span>
+          )}
+          <span className="text-xs text-muted-foreground ml-auto mr-2">
+            {(team.members ?? []).length} pessoa{(team.members ?? []).length !== 1 ? "s" : ""}
+          </span>
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon"><MoreHorizontal className="w-4 h-4" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={onEdit}><Edit className="w-4 h-4 mr-2" />Editar</DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive" onClick={onDelete}><Trash2 className="w-4 h-4 mr-2" />Excluir</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {expanded && (
+        <div className="border-t px-4 py-3 space-y-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead className="w-24" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(team.members ?? []).map((m) => (
+                <TableRow key={m.id}>
+                  <TableCell>{m.name}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      onClick={() => removeMember.mutate({ teamId: team.id, userId: m.id })}
+                    >
+                      Remover
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {(team.members ?? []).length === 0 && (
+                <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground">Nenhum membro</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+
+          <div>
+            <Label className="text-sm mb-1 block">Adicionar pessoa</Label>
+            <Command className="border rounded-md">
+              <CommandInput placeholder="Buscar por nome..." value={search} onValueChange={setSearch} />
+              <CommandList className="max-h-40">
+                {candidates.slice(0, 10).map((u) => (
+                  <CommandItem
+                    key={u.id}
+                    onSelect={() => {
+                      addMember.mutate({ teamId: team.id, userId: u.id })
+                      setSearch("")
+                    }}
+                  >
+                    {u.name}
+                  </CommandItem>
+                ))}
+              </CommandList>
+            </Command>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
