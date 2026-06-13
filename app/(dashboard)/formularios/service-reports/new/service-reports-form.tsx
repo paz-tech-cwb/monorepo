@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useCreateFormSubmission } from "@/lib/hooks/use-form-submissions"
-import { useAtmosphereTeams } from "@/lib/hooks/use-atmosphere"
+import { useMinistryTeams } from "@/lib/hooks/use-ministries"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -41,7 +41,7 @@ export function ServiceReportsForm({ defaultValues }: { defaultValues?: Partial<
   const { register, control, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } =
     useForm<FormValues>({ resolver: zodResolver(schema), defaultValues })
   const create = useCreateFormSubmission<unknown, FormValues>("service-reports")
-  const { data: teams = [] } = useAtmosphereTeams()
+  const { data: teams = [] } = useMinistryTeams()
   const router = useRouter()
 
   const selectedTeamId = watch("atmosphere_team_id")

@@ -1,5 +1,5 @@
 export * from "./auth"
-export * from "./atmosphere"
+export * from "./ministries"
 export * from "./announcements"
 export * from "./contributions"
 export * from "./agenda"
