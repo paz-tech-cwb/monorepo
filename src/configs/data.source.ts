@@ -30,8 +30,8 @@ import { AreaSupervisorReport } from '../area-supervisor-reports/entities/area-s
 import { Multiplication } from '../multiplications/entities/multiplication.entity';
 import { ServiceReport } from '../service-reports/entities/service-report.entity';
 import { FormGuest } from '../form-guests/entities/form-guest.entity';
-import { AtmosphereMinistry } from '../atmosphere/entities/atmosphere-ministry.entity';
-import { AtmosphereTeam } from '../atmosphere/entities/atmosphere-team.entity';
+import { Ministry } from '../ministries/entities/ministry.entity';
+import { MinistryTeam } from '../ministries/entities/ministry-team.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -74,8 +74,8 @@ export const AppDataSource = new DataSource({
     Multiplication,
     ServiceReport,
     FormGuest,
-    AtmosphereMinistry,
-    AtmosphereTeam,
+    Ministry,
+    MinistryTeam,
   ],
   migrations: ['dist/database/migrations/*.js'],
   synchronize: process.env.DB_SYNCHRONIZE === 'true',
