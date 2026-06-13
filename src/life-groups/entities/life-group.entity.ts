@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToMany,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -19,7 +20,12 @@ export class LifeGroup {
   name: string;
 
   @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'leader_id' })
   leader: User | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'co_leader_id' })
+  coLeader: User | null;
 
   @ManyToOne(() => Sector, { nullable: true })
   sector: Sector | null;
