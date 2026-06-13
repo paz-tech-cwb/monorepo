@@ -15,6 +15,11 @@ export class CreateLifeGroupDto {
   @Expose()
   @IsOptional()
   @IsInt()
+  co_leader_id?: number | null;
+
+  @Expose()
+  @IsOptional()
+  @IsInt()
   sector_id?: number | null;
 
   @Expose()

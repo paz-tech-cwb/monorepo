@@ -23,6 +23,8 @@ export class LifeGroupsService {
       name: lifeGroup.name,
       leader_id: lifeGroup.leader?.id ?? null,
       leader_name: lifeGroup.leader?.name ?? null,
+      co_leader_id: lifeGroup.coLeader?.id ?? null,
+      co_leader_name: lifeGroup.coLeader?.name ?? null,
       sector_id: lifeGroup.sector?.id ?? null,
       location: lifeGroup.location ?? null,
       meeting_day: lifeGroup.meetingDay ?? null,
@@ -44,6 +46,7 @@ export class LifeGroupsService {
       const lifeGroup = this.entityManager.create(LifeGroup, {
         name: dto.name,
         leader: dto.leader_id ? { id: dto.leader_id } : null,
+        coLeader: dto.co_leader_id ? ({ id: dto.co_leader_id } as any) : null,
         sector: dto.sector_id ? { id: dto.sector_id } : null,
         location: dto.location ?? null,
         meetingDay: dto.meeting_day ?? null,
@@ -52,7 +55,7 @@ export class LifeGroupsService {
       const saved = await this.entityManager.save(lifeGroup);
       const loaded = await this.entityManager.findOne(LifeGroup, {
         where: { id: saved.id },
-        relations: ['leader', 'sector', 'users'],
+        relations: ['leader', 'coLeader', 'sector', 'users'],
       });
       return this.toResponse(loaded!);
     } catch (error: unknown) {
@@ -65,7 +68,7 @@ export class LifeGroupsService {
   async findAll() {
     try {
       const lifeGroups = await this.entityManager.find(LifeGroup, {
-        relations: ['leader', 'sector', 'users'],
+        relations: ['leader', 'coLeader', 'sector', 'users'],
         order: { name: 'ASC' },
       });
       return lifeGroups.map((lg) => this.toResponse(lg));
@@ -79,7 +82,7 @@ export class LifeGroupsService {
   async findOne(id: number) {
     const lifeGroup = await this.entityManager.findOne(LifeGroup, {
       where: { id },
-      relations: ['leader', 'sector', 'users'],
+      relations: ['leader', 'coLeader', 'sector', 'users'],
     });
     if (!lifeGroup) {
       throw new NotFoundException(`Life group with ID ${id} not found`);
@@ -90,7 +93,7 @@ export class LifeGroupsService {
   async findOneEntity(id: number): Promise<LifeGroup> {
     const lifeGroup = await this.entityManager.findOne(LifeGroup, {
       where: { id },
-      relations: ['leader', 'sector', 'users'],
+      relations: ['leader', 'coLeader', 'sector', 'users'],
     });
     if (!lifeGroup) {
       throw new NotFoundException(`Life group with ID ${id} not found`);
@@ -107,6 +110,10 @@ export class LifeGroupsService {
         lifeGroup.leader = dto.leader_id
           ? ({ id: dto.leader_id } as any)
           : null;
+      if (dto.co_leader_id !== undefined)
+        lifeGroup.coLeader = dto.co_leader_id
+          ? ({ id: dto.co_leader_id } as any)
+          : null;
       if (dto.sector_id !== undefined)
         lifeGroup.sector = dto.sector_id
           ? ({ id: dto.sector_id } as any)
@@ -119,7 +126,7 @@ export class LifeGroupsService {
       const saved = await this.entityManager.save(LifeGroup, lifeGroup);
       const loaded = await this.entityManager.findOne(LifeGroup, {
         where: { id: saved.id },
-        relations: ['leader', 'sector', 'users'],
+        relations: ['leader', 'coLeader', 'sector', 'users'],
       });
       return this.toResponse(loaded!);
     } catch (error: unknown) {
