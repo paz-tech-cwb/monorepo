@@ -12,6 +12,8 @@ export interface LifeGroup {
   meeting_time: string | null
   leader_id: number | null
   leader_name: string | null
+  co_leader_id: number | null
+  co_leader_name: string | null
   sector_id: number | null
   member_count: number
   members: LifeGroupMember[]
@@ -25,6 +27,7 @@ export interface CreateLifeGroupRequest {
   meeting_day?: string | null
   meeting_time?: string | null
   leader_id?: number | null
+  co_leader_id?: number | null
   sector_id?: number | null
 }
 

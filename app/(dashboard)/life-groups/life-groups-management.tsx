@@ -73,6 +73,7 @@ import { useSectors } from "@/lib/hooks/use-sectors"
 import type { LifeGroup, CreateLifeGroupRequest } from "@/lib/api/types"
 import type { AdminUser } from "@/lib/api/types"
 import { WipOverlay } from "@/components/ui/wip-overlay"
+import { LeaderPairPicker } from "@/components/ministries/leader-pair-picker"
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -99,6 +100,7 @@ interface LifeGroupFormData {
   meeting_day: string
   meeting_time: string
   leader_id: string   // string for select value; converted to number on submit
+  co_leader_id: string   // string for select value; converted to number on submit
   sector_id: string
 }
 
@@ -108,6 +110,7 @@ const EMPTY_FORM: LifeGroupFormData = {
   meeting_day: "",
   meeting_time: "",
   leader_id: "",
+  co_leader_id: "",
   sector_id: "",
 }
 
@@ -118,6 +121,7 @@ function groupToForm(g: LifeGroup): LifeGroupFormData {
     meeting_day: g.meeting_day ?? "",
     meeting_time: g.meeting_time ?? "",
     leader_id: g.leader_id != null ? String(g.leader_id) : "",
+    co_leader_id: g.co_leader_id != null ? String(g.co_leader_id) : "",
     sector_id: g.sector_id != null ? String(g.sector_id) : "",
   }
 }
@@ -129,6 +133,7 @@ function formToRequest(f: LifeGroupFormData): CreateLifeGroupRequest {
     meeting_day: f.meeting_day || null,
     meeting_time: f.meeting_time || null,
     leader_id: f.leader_id ? Number(f.leader_id) : null,
+    co_leader_id: f.co_leader_id ? Number(f.co_leader_id) : null,
     sector_id: f.sector_id ? Number(f.sector_id) : null,
   }
 }
@@ -493,7 +498,7 @@ export function LifeGroupsManagement() {
                             {(group.leader_name ?? "G").charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm">{group.leader_name ?? "—"}</span>
+                        <span className="text-sm">{group.leader_name ?? "—"}{group.co_leader_name ? ` & ${group.co_leader_name}` : ""}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -626,22 +631,13 @@ export function LifeGroupsManagement() {
             </div>
           </div>
 
-          <div className="space-y-1">
-            <Label>Líder</Label>
-            <Select
-              value={form.leader_id}
-              onValueChange={(v) => setForm((f) => ({ ...f, leader_id: v }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um líder..." />
-              </SelectTrigger>
-              <SelectContent>
-                {allUsers.map((u) => (
-                  <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <LeaderPairPicker
+            users={allUsers}
+            leaderId={form.leader_id ? Number(form.leader_id) : null}
+            coLeaderId={form.co_leader_id ? Number(form.co_leader_id) : null}
+            onLeaderChange={(id) => setForm((f) => ({ ...f, leader_id: id != null ? String(id) : "" }))}
+            onCoLeaderChange={(id) => setForm((f) => ({ ...f, co_leader_id: id != null ? String(id) : "" }))}
+          />
 
           <div className="space-y-1">
             <Label>Setor</Label>
