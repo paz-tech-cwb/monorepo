@@ -5,7 +5,6 @@ import { ServiceReport } from './entities/service-report.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateServiceReportDto } from './dto/create-service-report.dto';
 import { UpdateServiceReportDto } from './dto/update-service-report.dto';
-import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
 import { FormSubmissionPolicyService } from '../forms-core/services/form-submission-policy.service';
 import { FormSubmissionAuditService } from '../forms-core/services/form-submission-audit.service';
 
@@ -55,20 +54,20 @@ export class ServiceReportsService {
     return entity;
   }
 
-  async list(scope: ResolvedScope): Promise<ServiceReport[]> {
-    const qb = this.repo.createQueryBuilder('f').where('f.deleted_at IS NULL');
-    if (!scope.unrestricted && scope.lifeGroupIds.length > 0) {
-      qb.andWhere('f.life_group_id = ANY(:lgs)', { lgs: scope.lifeGroupIds });
-    } else if (!scope.unrestricted) {
-      qb.andWhere('1=0');
-    }
-    return qb.orderBy('f.created_at', 'DESC').getMany();
+  async listAll(): Promise<ServiceReport[]> {
+    return this.repo
+      .createQueryBuilder('f')
+      .where('f.deleted_at IS NULL')
+      .leftJoinAndSelect('f.submittedBy', 'submittedBy')
+      .leftJoinAndSelect('f.atmosphereTeam', 'atmosphereTeam')
+      .orderBy('f.created_at', 'DESC')
+      .getMany();
   }
 
   async findOne(id: string): Promise<ServiceReport> {
     const m = await this.repo.findOne({
       where: { id },
-      relations: ['submittedBy'],
+      relations: ['submittedBy', 'atmosphereTeam'],
     });
     if (!m) throw new NotFoundException();
     return m;
