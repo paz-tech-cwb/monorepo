@@ -72,8 +72,6 @@ extension FormType {
                 FormFieldDef("date", "Data", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
                 FormFieldDef("report_type", "Tipo de relatório", placeholder: "tadel / culto_celebracao / evento", required: true),
                 FormFieldDef("period", "Período", placeholder: "manha / tarde_noite", required: true),
-                FormFieldDef("atmosphere_team_id", "Equipe Atmosfera (ID)", placeholder: ""),
-                FormFieldDef("atmosphere_responsible", "Responsável no dia", placeholder: "", required: true),
                 FormFieldDef("tadel_adults", "Adultos (Tadel)", placeholder: "0", required: true, fieldType: .integer),
                 FormFieldDef("tadel_kids", "Crianças (Tadel)", placeholder: "0", fieldType: .integer),
                 FormFieldDef("vehicles_cars", "Carros", placeholder: "0", required: true, fieldType: .integer),
@@ -148,6 +146,7 @@ class FormDetailViewModelIOS {
     private let formsRepository: FormsRepository
     private let authRepository: AuthRepository
     private let formId: String
+    private var currentUserName: String = ""
 
     init(formId: String, formsRepository: FormsRepository, authRepository: AuthRepository) {
         self.formId = formId
@@ -159,8 +158,11 @@ class FormDetailViewModelIOS {
     private func loadForm() {
         Task {
             do {
-                let catalogRaw = try await formsRepository.getCatalog()
-                let catalog = (catalogRaw as? [FormCatalogItem]) ?? []
+                async let catalogRaw = formsRepository.getCatalog()
+                async let user = authRepository.currentUser()
+                let (resolvedCatalog, resolvedUser) = try await (catalogRaw, user)
+                currentUserName = (resolvedUser as? Shared.User)?.name ?? ""
+                let catalog = (resolvedCatalog as? [FormCatalogItem]) ?? []
                 guard let found = catalog.first(where: { $0.id == formId }) else {
                     self.error = "Formulário não encontrado"
                     self.isLoading = false
@@ -271,8 +273,8 @@ class FormDetailViewModelIOS {
                 date: req("date"),
                 reportType: req("report_type"),
                 period: req("period"),
-                atmosphereTeamId: fields["atmosphere_team_id"].flatMap { Int32($0) },
-                atmosphereResponsible: req("atmosphere_responsible"),
+                atmosphereTeamId: nil,
+                atmosphereResponsible: currentUserName,
                 tadelAdults: int32("tadel_adults"),
                 tadelKids: int32("tadel_kids"),
                 vehiclesCars: int32("vehicles_cars"),

@@ -35,7 +35,7 @@ struct FormulariosView: View {
             VStack(spacing: 10) {
                 Spacer().frame(height: 8)
                 ForEach(viewModel.forms, id: \.id) { form in
-                    NavigationLink(destination: FormDetailView(form: form)) {
+                    NavigationLink(destination: destinationView(for: form)) {
                         FormCard(form: form)
                     }
                     .buttonStyle(.plain)
@@ -46,6 +46,15 @@ struct FormulariosView: View {
             .padding(.top, 8)
         }
         .background(PazColors.background)
+    }
+
+    @ViewBuilder
+    private func destinationView(for form: FormCatalogItem) -> some View {
+        if form.canRead {
+            FormSubmissionsListView(formsRepository: IosAppContainer.shared.formsRepository)
+        } else {
+            FormDetailView(form: form)
+        }
     }
 
     private var emptyState: some View {
