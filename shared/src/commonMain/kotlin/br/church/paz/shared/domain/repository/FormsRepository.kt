@@ -8,6 +8,7 @@ import br.church.paz.shared.domain.model.LifeGroupReportForm
 import br.church.paz.shared.domain.model.MemberRegistrationForm
 import br.church.paz.shared.domain.model.MultiplicationForm
 import br.church.paz.shared.domain.model.ServiceReportForm
+import br.church.paz.shared.domain.model.ServiceReportSubmission
 import br.church.paz.shared.domain.model.User
 
 interface FormsRepository {
@@ -33,4 +34,6 @@ interface FormsRepository {
     suspend fun submitSectorReport(form: LifeGroupReportForm)
     @Throws(Exception::class)
     suspend fun submitAreaReport(form: LifeGroupReportForm)
+    @Throws(Exception::class)
+    suspend fun getServiceReportSubmissions(): List<ServiceReportSubmission>
 }

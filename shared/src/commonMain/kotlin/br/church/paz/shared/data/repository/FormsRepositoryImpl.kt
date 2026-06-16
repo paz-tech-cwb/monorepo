@@ -8,6 +8,7 @@ import br.church.paz.shared.domain.model.LifeGroupReportForm
 import br.church.paz.shared.domain.model.MemberRegistrationForm
 import br.church.paz.shared.domain.model.MultiplicationForm
 import br.church.paz.shared.domain.model.ServiceReportForm
+import br.church.paz.shared.domain.model.ServiceReportSubmission
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.repository.FormsRepository
 import io.ktor.client.HttpClient
@@ -64,6 +65,10 @@ class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
     @Throws(Exception::class)
     override suspend fun submitAreaReport(form: LifeGroupReportForm) =
         post("api/forms/area-supervisor-reports", form)
+
+    @Throws(Exception::class)
+    override suspend fun getServiceReportSubmissions(): List<ServiceReportSubmission> =
+        client.get("api/forms/service-reports").body()
 
     private suspend inline fun <reified T : Any> post(path: String, body: T) {
         client.post(path) {
