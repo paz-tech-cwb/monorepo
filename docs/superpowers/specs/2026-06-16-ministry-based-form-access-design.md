@@ -71,7 +71,18 @@ Admin/pastor bypass: the guard short-circuits to
 `{ isLeader: true, isMember: true }` when `req.user.role.slug` is `admin` or
 `pastor`, without querying ministry tables.
 
-### `forms-catalog.service.ts`
+### `forms-catalog.service.ts` (signature change)
+
+`listForRole(roleSlug)` currently receives only the role string and is
+synchronous; the controller (`forms-catalog.controller.ts`) only passes
+`roleSlug`. To compute ministry flags it needs the user id and must do async
+lookups. Change to:
+
+```ts
+async listForRole(actor: { id: number; roleSlug: string }): Promise<FormCatalogEntry[]>
+```
+
+Update `forms-catalog.controller.ts` to pass `{ id: req.user.id, roleSlug }`.
 
 For any slug present in `MINISTRY_LINKED_FORMS`, replace the static
 `write`/`read` role-array check with a call to `MinistryAccessService`:
@@ -83,17 +94,44 @@ can_read  = isAdminOrPastor || isLeader
 
 Other form definitions keep their existing static role arrays — unchanged.
 
-### `service-reports.controller.ts`
+### `service-reports.controller.ts` + `service-reports.service.ts`
 
-- `POST` (create): replace `@Roles(...)` with `@MinistryForm('atmosfera')` +
-  in-handler check `if (!req.ministryAccess.isMember && !req.ministryAccess.isLeader) throw Forbidden`.
-- `GET` (list): add `@MinistryForm('atmosfera')` + check
-  `if (!req.ministryAccess.isLeader) throw Forbidden`. Keep existing
-  `ScopeGuard`/`formScope` filtering as-is on top (area/sector/life-group
-  scoping still applies for admin/pastor/area/sector/life-group-leader rows,
-  unaffected by this change).
-- `PATCH`/`DELETE`: unchanged (`FormSubmissionPolicyService` already covers
-  edit/delete window + admin override).
+**Critical: do NOT reuse the existing life-group `formScope` filter for this
+form.** The `list()` method in `service-reports.service.ts` currently filters
+by `f.life_group_id` — a column that **does not exist** on the `ServiceReport`
+entity (the entity is keyed to `atmosphere_team_id` / `submitted_by_id`, with
+no life-group relation). For any non-admin/pastor actor, `ScopeResolverService`
+returns `lifeGroupIds: []`, so the query falls into the `else` branch (`1=0`)
+and returns zero rows. Layering the new ministry guard on top of this would let
+an Atmosfera leader pass the guard but still see an empty list. The two layers
+contradict each other.
+
+Resolution — ministry-linked forms use ministry-based listing, not
+hierarchy/life-group scoping:
+
+- `service-reports.service.ts`: replace the `ResolvedScope`-based `list(scope)`
+  with `listAll()` (returns all non-deleted service-report submissions ordered
+  by `created_at DESC`, with `submittedBy` + `atmosphereTeam` joins). There is
+  a single Atmosfera ministry, so "all submissions" is the correct ministry
+  scope for its leaders; no per-team row filtering is required now. Drop the
+  dead `f.life_group_id` query and the `ScopeResolverService` import from this
+  service.
+- `service-reports.controller.ts`:
+  - Remove `ScopeGuard` from this controller (it only existed to populate
+    `req.formScope`, which is no longer used here).
+  - `POST` (create): replace `@Roles(...)` with `@MinistryForm('atmosfera')` +
+    in-handler check
+    `if (!req.ministryAccess.isMember && !req.ministryAccess.isLeader) throw Forbidden`.
+  - `GET` (list): add `@MinistryForm('atmosfera')` + check
+    `if (!req.ministryAccess.isLeader) throw Forbidden`, then call `listAll()`.
+  - `GET :id` / `:id/audit`: gate behind `isLeader` (a member who can only
+    submit should not read arbitrary submissions). Admin/pastor pass via the
+    guard bypass.
+  - `PATCH`/`DELETE`: unchanged (`FormSubmissionPolicyService` already covers
+    edit/delete window + admin override).
+
+Note: the other 7 forms keep `ScopeGuard` and the `ResolvedScope` filtering
+untouched — this change is isolated to the service-reports controller/service.
 
 ## Admin-ui
 
@@ -146,7 +184,9 @@ member with global role `member`, and as a team leader).
   neither matrix at both ministry and team level; updated
   `forms-catalog.service.spec.ts` for service-reports flags; controller-level
   test (or extend existing) confirming a `member`-role ministry member can
-  POST but not GET, and a team leader can GET.
+  POST but not GET, and a team leader can GET. Update/replace the existing
+  `list(scope)` test to cover `listAll()` (the life-group-scoped variant is
+  removed).
 - KMP: `FormSubmissionsListViewModel` test for loading/error/empty/data
   states; extend `FormDetailViewModel` test coverage to confirm a
   ministry-member-only (global role `member`) submission succeeds.
