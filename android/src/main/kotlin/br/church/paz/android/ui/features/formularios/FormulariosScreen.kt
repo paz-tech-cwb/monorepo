@@ -62,6 +62,8 @@ fun FormulariosScreen(
             when (effect) {
                 is FormulariosEffect.NavigateToForm ->
                     navController.navigate(Screen.FormDetail.createRoute(effect.formId))
+                FormulariosEffect.NavigateToSubmissionsList ->
+                    navController.navigate(Screen.FormSubmissionsList.route)
                 FormulariosEffect.NavigateBack -> navController.popBackStack()
             }
         }

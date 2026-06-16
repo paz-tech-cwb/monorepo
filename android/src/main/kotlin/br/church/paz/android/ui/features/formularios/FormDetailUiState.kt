@@ -13,6 +13,7 @@ data class FormDetailUiState(
 
 sealed class FormDetailEffect {
     data object SubmitSuccess : FormDetailEffect()
+
     data object NavigateBack : FormDetailEffect()
 }
 

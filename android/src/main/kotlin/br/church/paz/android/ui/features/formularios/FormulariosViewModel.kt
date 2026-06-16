@@ -38,7 +38,15 @@ class FormulariosViewModel(
     }
 
     fun onFormTap(formId: String) {
-        viewModelScope.launch { _effect.send(FormulariosEffect.NavigateToForm(formId)) }
+        viewModelScope.launch {
+            val form = _uiState.value.forms.find { it.id == formId }
+            val effect = if (form?.canRead == true) {
+                FormulariosEffect.NavigateToSubmissionsList
+            } else {
+                FormulariosEffect.NavigateToForm(formId)
+            }
+            _effect.send(effect)
+        }
     }
 
     fun onBack() {

@@ -46,9 +46,10 @@ class FormDetailViewModel(
                 .onSuccess { catalog ->
                     val form = catalog.find { it.id == formId }
                     val today = brazilianDate.format(Date())
-                    val initialFields = form?.type?.fieldDefs()?.associate { def ->
-                        def.key to if (def.fieldType == FormFieldType.DATE) today else ""
-                    } ?: emptyMap()
+                    val initialFields =
+                        form?.type?.fieldDefs()?.associate { def ->
+                            def.key to if (def.fieldType == FormFieldType.DATE) today else ""
+                        } ?: emptyMap()
                     _uiState.update {
                         it.copy(form = form, isLoading = false, fields = initialFields)
                     }
@@ -60,7 +61,10 @@ class FormDetailViewModel(
         }
     }
 
-    fun onFieldChanged(key: String, value: String) {
+    fun onFieldChanged(
+        key: String,
+        value: String,
+    ) {
         _uiState.update { state ->
             state.copy(fields = state.fields + (key to value), error = null)
         }
@@ -93,7 +97,10 @@ class FormDetailViewModel(
         }
     }
 
-    private suspend fun submitForm(type: FormType, f: Map<String, String>): Result<Unit> {
+    private suspend fun submitForm(
+        type: FormType,
+        f: Map<String, String>,
+    ): Result<Unit> {
         val userId = authRepository.currentUser()?.id ?: ""
         return runCatching {
             when (type) {
@@ -196,8 +203,11 @@ class FormDetailViewModel(
     }
 
     private fun Map<String, String>.req(key: String) = get(key)?.trim() ?: ""
+
     private fun Map<String, String>.opt(key: String) = get(key)?.trim()?.ifEmpty { null }
+
     private fun Map<String, String>.int(key: String) = get(key)?.trim()?.toIntOrNull() ?: 0
+
     private fun Map<String, String>.intOrNull(key: String) = get(key)?.trim()?.toIntOrNull()
 
     // Parse BRL-masked value e.g. "1.234,56" → 1234.56

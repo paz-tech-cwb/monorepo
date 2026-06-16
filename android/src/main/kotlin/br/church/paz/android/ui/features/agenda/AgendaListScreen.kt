@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -146,8 +145,7 @@ private fun AgendaEventList(
             val info = listState.layoutInfo
             val last = info.visibleItemsInfo.lastOrNull()?.index ?: -1
             info.totalItemsCount > 0 && last >= info.totalItemsCount - 3
-        }
-            .distinctUntilChanged()
+        }.distinctUntilChanged()
             .filter { it }
             .collect { onLoadMore() }
     }

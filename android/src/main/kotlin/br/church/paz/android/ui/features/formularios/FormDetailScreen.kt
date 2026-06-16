@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -42,9 +40,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -153,9 +153,10 @@ private fun FormContent(
             item {
                 Text(
                     form.description!!,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    ),
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        ),
                 )
             }
         }
@@ -182,9 +183,10 @@ private fun FormContent(
                 ) {
                     Text(
                         uiState.error,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                        ),
+                        style =
+                            MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                            ),
                     )
                 }
             }
@@ -193,8 +195,9 @@ private fun FormContent(
         item { Spacer(Modifier.height(PazSpacing.Md)) }
 
         item {
-            val canSubmit = !uiState.isSubmitting &&
-                fieldDefs.filter { it.required }.all { (uiState.fields[it.key] ?: "").isNotBlank() }
+            val canSubmit =
+                !uiState.isSubmitting &&
+                    fieldDefs.filter { it.required }.all { (uiState.fields[it.key] ?: "").isNotBlank() }
 
             PazButton(
                 text = if (uiState.isSubmitting) "Enviando..." else "Enviar",
@@ -251,11 +254,12 @@ private fun FieldRow(
                     placeholder = { Text(def.placeholder) },
                     singleLine = true,
                     enabled = !isSubmitting,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email,
-                        capitalization = KeyboardCapitalization.None,
-                        imeAction = ImeAction.Next,
-                    ),
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = KeyboardType.Email,
+                            capitalization = KeyboardCapitalization.None,
+                            imeAction = ImeAction.Next,
+                        ),
                     shape = PazShapes.large,
                 )
 
@@ -267,11 +271,12 @@ private fun FieldRow(
                     placeholder = { Text(def.placeholder) },
                     singleLine = true,
                     enabled = !isSubmitting,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
-                        capitalization = KeyboardCapitalization.Words,
-                        imeAction = ImeAction.Next,
-                    ),
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            capitalization = KeyboardCapitalization.Words,
+                            imeAction = ImeAction.Next,
+                        ),
                     shape = PazShapes.large,
                 )
 
@@ -305,10 +310,11 @@ private fun FieldRow(
                     placeholder = { Text(def.placeholder) },
                     singleLine = false,
                     enabled = !isSubmitting,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
-                        capitalization = KeyboardCapitalization.Sentences,
-                    ),
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            capitalization = KeyboardCapitalization.Sentences,
+                        ),
                     shape = PazShapes.large,
                 )
 
@@ -332,11 +338,12 @@ private fun FieldRow(
                     placeholder = { Text(def.placeholder) },
                     singleLine = true,
                     enabled = !isSubmitting,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
-                        capitalization = KeyboardCapitalization.Sentences,
-                        imeAction = ImeAction.Next,
-                    ),
+                    keyboardOptions =
+                        KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            capitalization = KeyboardCapitalization.Sentences,
+                            imeAction = ImeAction.Next,
+                        ),
                     shape = PazShapes.large,
                 )
         }
@@ -380,13 +387,18 @@ private fun MaskedTextField(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DateFieldRow(value: String, enabled: Boolean, onValueChange: (String) -> Unit) {
+private fun DateFieldRow(
+    value: String,
+    enabled: Boolean,
+    onValueChange: (String) -> Unit,
+) {
     val fmt = remember { SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR")) }
     var showDialog by remember { mutableStateOf(false) }
 
-    val initialMs = remember(value) {
-        if (value.isNotEmpty()) fmt.parse(value)?.time else null
-    } ?: System.currentTimeMillis()
+    val initialMs =
+        remember(value) {
+            if (value.isNotEmpty()) fmt.parse(value)?.time else null
+        } ?: System.currentTimeMillis()
 
     val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMs)
 
@@ -427,7 +439,10 @@ private fun DateFieldRow(value: String, enabled: Boolean, onValueChange: (String
 }
 
 @Composable
-private fun ErrorState(error: String, onRetry: (() -> Unit)?) {
+private fun ErrorState(
+    error: String,
+    onRetry: (() -> Unit)?,
+) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             Modifier.padding(PazSpacing.Xl),
@@ -461,7 +476,10 @@ private fun LoadingState() {
 
 // Input helpers
 
-private fun applyPhoneMask(old: String, new: String): String {
+private fun applyPhoneMask(
+    old: String,
+    new: String,
+): String {
     var digits = new.filter { it.isDigit() }
     val oldDigits = old.filter { it.isDigit() }
     // User deleted a separator character — drop the preceding digit too
@@ -479,9 +497,9 @@ private fun formatPhone(digits: String): String {
         when (i) {
             0 -> sb.append("($c")
             1 -> sb.append("$c")
-            2 -> sb.append(") $c")  // ") " inserted before 3rd digit
-            3 -> sb.append(" $c")   // " " inserted before 4th digit
-            7 -> sb.append("-$c")   // "-" inserted before 8th digit
+            2 -> sb.append(") $c") // ") " inserted before 3rd digit
+            3 -> sb.append(" $c") // " " inserted before 4th digit
+            7 -> sb.append("-$c") // "-" inserted before 8th digit
             else -> sb.append(c)
         }
     }

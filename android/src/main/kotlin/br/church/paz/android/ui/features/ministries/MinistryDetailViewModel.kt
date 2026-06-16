@@ -87,5 +87,4 @@ class LifeGroupDetailViewModel(
     fun onBack() {
         viewModelScope.launch { _effect.send(LifeGroupDetailEffect.NavigateBack) }
     }
-
 }
