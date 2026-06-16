@@ -35,6 +35,7 @@ import { ServiceReportsModule } from './service-reports/service-reports.module';
 import { FormGuestsModule } from './form-guests/form-guests.module';
 import { MinistriesModule } from './ministries/ministries.module';
 import { RemindersModule } from './reminders/reminders.module';
+import { MinistryAccessModule } from './ministry-access/ministry-access.module';
 
 import ormconfig from './configs/orm.config';
 
@@ -90,6 +91,7 @@ import ormconfig from './configs/orm.config';
     FormGuestsModule,
     MinistriesModule,
     RemindersModule,
+    MinistryAccessModule,
   ],
   providers: [
     {
