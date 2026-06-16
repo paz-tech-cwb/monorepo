@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { MinistryAccessService } from '../ministry-access/ministry-access.service';
+import { MINISTRY_LINKED_FORMS } from '../ministry-access/ministry-linked-forms';
 
 export interface FormCatalogEntry {
   slug: string;
@@ -129,13 +131,41 @@ const FORM_DEFINITIONS = [
 
 @Injectable()
 export class FormsCatalogService {
-  listForRole(roleSlug: string): FormCatalogEntry[] {
-    return FORM_DEFINITIONS.map((f) => ({
-      slug: f.slug,
-      name: f.name,
-      description: f.description,
-      can_write: f.write.includes(roleSlug),
-      can_read: f.read.includes(roleSlug),
-    })).filter((f) => f.can_read || f.can_write);
+  constructor(private readonly ministryAccess: MinistryAccessService) {}
+
+  async listForRole(actor: {
+    id: number;
+    roleSlug: string;
+  }): Promise<FormCatalogEntry[]> {
+    const entries = await Promise.all(
+      FORM_DEFINITIONS.map(async (f) => {
+        const ministrySlug = MINISTRY_LINKED_FORMS[f.slug];
+        let canWrite: boolean;
+        let canRead: boolean;
+
+        if (ministrySlug) {
+          const isAdminOrPastor =
+            actor.roleSlug === 'admin' || actor.roleSlug === 'pastor';
+          const { isLeader, isMember } = isAdminOrPastor
+            ? { isLeader: true, isMember: true }
+            : await this.ministryAccess.resolve(actor.id, ministrySlug);
+          canWrite = isAdminOrPastor || isMember || isLeader;
+          canRead = isAdminOrPastor || isLeader;
+        } else {
+          canWrite = f.write.includes(actor.roleSlug);
+          canRead = f.read.includes(actor.roleSlug);
+        }
+
+        return {
+          slug: f.slug,
+          name: f.name,
+          description: f.description,
+          can_write: canWrite,
+          can_read: canRead,
+        };
+      }),
+    );
+
+    return entries.filter((f) => f.can_read || f.can_write);
   }
 }

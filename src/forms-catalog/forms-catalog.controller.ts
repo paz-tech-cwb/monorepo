@@ -9,7 +9,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { FormsCatalogService } from './forms-catalog.service';
 
 interface RequestWithUser {
-  user?: { role?: { slug?: string } };
+  user?: { id: number; role?: { slug?: string } };
 }
 
 @UseGuards(AuthGuard('jwt'))
@@ -20,7 +20,8 @@ export class FormsCatalogController {
   @Get()
   @SerializeOptions({ strategy: 'exposeAll', excludeExtraneousValues: false })
   list(@Req() req: RequestWithUser) {
+    const id = req.user?.id ?? 0;
     const roleSlug = req.user?.role?.slug ?? 'member';
-    return this.catalog.listForRole(roleSlug);
+    return this.catalog.listForRole({ id, roleSlug });
   }
 }
