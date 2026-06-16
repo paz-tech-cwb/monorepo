@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { MinistryAccessService } from './ministry-access.service';
 import { MINISTRY_FORM_KEY } from './ministry-form.decorator';
@@ -20,6 +25,11 @@ export class MinistryFormGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
+
+    if (!request.user) {
+      throw new UnauthorizedException();
+    }
+
     const roleSlug = request.user?.role?.slug;
 
     if (roleSlug === 'admin' || roleSlug === 'pastor') {
