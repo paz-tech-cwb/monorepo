@@ -260,7 +260,7 @@ class FormDetailViewModelIOS {
                 name: req("name"),
                 phone: opt("phone"),
                 invitedBy: opt("invited_by"),
-                viaCasaDePaz: fields["via_casa_de_paz"] == "true",
+                viaCasaDePaz: (fields["via_casa_de_paz"] == "true"),
                 date: req("date")
             ))
         case .multiplication:
@@ -273,7 +273,8 @@ class FormDetailViewModelIOS {
                 date: req("date"),
                 reportType: req("report_type"),
                 period: req("period"),
-                atmosphereTeamId: nil,
+                atmosphereTeamId: Int32(opt("atmosphere_team_id") ?? "0").flatMap { $0 > 0 ? $0 : nil },
+                atmosphereTeamOther: nil,
                 atmosphereResponsible: currentUserName,
                 tadelAdults: int32("tadel_adults"),
                 tadelKids: int32("tadel_kids"),
