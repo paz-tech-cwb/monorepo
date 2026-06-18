@@ -32,6 +32,7 @@ import { ServiceReport } from '../service-reports/entities/service-report.entity
 import { FormGuest } from '../form-guests/entities/form-guest.entity';
 import { Ministry } from '../ministries/entities/ministry.entity';
 import { MinistryTeam } from '../ministries/entities/ministry-team.entity';
+import { AuditLog } from '../auth/entities/audit-log.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -76,6 +77,7 @@ export const AppDataSource = new DataSource({
     FormGuest,
     Ministry,
     MinistryTeam,
+    AuditLog,
   ],
   migrations: ['dist/database/migrations/*.js'],
   synchronize: process.env.DB_SYNCHRONIZE === 'true',

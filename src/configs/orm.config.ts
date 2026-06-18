@@ -34,6 +34,7 @@ import { Ministry } from '../ministries/entities/ministry.entity';
 import { MinistryTeam } from '../ministries/entities/ministry-team.entity';
 import { ReminderRule } from '../reminders/entities/reminder-rule.entity';
 import { ReminderDispatchLog } from '../reminders/entities/reminder-dispatch-log.entity';
+import { AuditLog } from '../auth/entities/audit-log.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -80,6 +81,7 @@ const config: DataSourceOptions = {
     MinistryTeam,
     ReminderRule,
     ReminderDispatchLog,
+    AuditLog,
   ],
   migrations: ['dist/migrations/*.js'],
   synchronize: process.env.DB_SYNCHRONIZE === 'true',
