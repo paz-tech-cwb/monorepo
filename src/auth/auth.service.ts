@@ -17,7 +17,6 @@ import { UserAccount } from 'src/users/entities/account.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Role } from 'src/roles/entities/role.entity';
 import { UserDeviceToken } from 'src/users/entities/user-device-token.entity';
-import { AuditLog } from './entities/audit-log.entity';
 import { AuditLogger } from './audit.logger';
 import { Repository } from 'typeorm';
 
@@ -50,8 +49,6 @@ export class AuthService implements OnModuleInit {
     private roleRepo: Repository<Role>,
     @InjectRepository(UserDeviceToken)
     private userDeviceTokenRepo: Repository<UserDeviceToken>,
-    @InjectRepository(AuditLog)
-    private auditLogRepo: Repository<AuditLog>,
     private configService: ConfigService,
     private auditLogger: AuditLogger,
   ) {
@@ -129,13 +126,15 @@ export class AuthService implements OnModuleInit {
       }
       const message =
         error instanceof Error ? error.message : 'Token verification failed';
-      await this.auditLogger.logAuthAttempt(
-        'unknown',
-        provider,
-        'LOGIN_FAILED_AUTH',
-        message,
-        null,
-      );
+      try {
+        await this.auditLogger.logAuthAttempt(
+          'unknown',
+          provider,
+          'LOGIN_FAILED_AUTH',
+          message,
+          null,
+        );
+      } catch { /* audit failure must not surface to caller */ }
       throw error;
     }
 
@@ -167,25 +166,29 @@ export class AuthService implements OnModuleInit {
     // Role-based access check — admin only
     if (!user.role || user.role.slug !== 'admin') {
       const reason = `User role is '${user.role?.slug ?? 'unknown'}', not 'admin'`;
-      await this.auditLogger.logAuthAttempt(
-        userData.email,
-        provider,
-        'LOGIN_FAILED_ROLE',
-        reason,
-        null,
-      );
+      try {
+        await this.auditLogger.logAuthAttempt(
+          userData.email,
+          provider,
+          'LOGIN_FAILED_ROLE',
+          reason,
+          null,
+        );
+      } catch { /* audit failure must not surface to caller */ }
       throw new HttpException('Admin access required', HttpStatus.FORBIDDEN);
     }
 
     const tokens = await this.issueTokens(user);
 
-    await this.auditLogger.logAuthAttempt(
-      userData.email,
-      provider,
-      'LOGIN_SUCCESS',
-      null,
-      null,
-    );
+    try {
+      await this.auditLogger.logAuthAttempt(
+        userData.email,
+        provider,
+        'LOGIN_SUCCESS',
+        null,
+        null,
+      );
+    } catch { /* audit failure must not surface to caller */ }
 
     return {
       user: {

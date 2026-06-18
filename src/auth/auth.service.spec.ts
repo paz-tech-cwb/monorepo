@@ -237,5 +237,153 @@ describe('AuthService', () => {
         null,
       );
     });
+
+    it('should not surface audit logging errors to the caller', async () => {
+      jest.spyOn(service as any, 'verifyGoogleToken').mockResolvedValue({
+        username: 'google-uid',
+        name: 'Admin User',
+        email: 'admin@example.com',
+        photo: null,
+      });
+
+      userRepo.findOne.mockResolvedValue(mockAdminUser);
+      userAccountRepo.create.mockReturnValue({});
+      userAccountRepo.save.mockResolvedValue({});
+      auditLoggerMock.logAuthAttempt.mockRejectedValue(new Error('DB down'));
+
+      // Should still return tokens even if audit logging fails
+      const result = await service.socialLogin('google', 'valid-google-token');
+      expect(result.access_token).toBeDefined();
+    });
+  });
+
+  describe('refreshTokens', () => {
+    it('should throw UnauthorizedException for invalid JWT', async () => {
+      await expect(service.refreshTokens('invalid-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException when token not found in DB', async () => {
+      const validToken = jwt.sign({ userId: 1 }, REFRESH_SECRET, {
+        algorithm: 'HS256',
+      });
+
+      userAccountRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.refreshTokens(validToken)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should throw UnauthorizedException for expired DB record', async () => {
+      const validToken = jwt.sign({ userId: 1 }, REFRESH_SECRET, {
+        algorithm: 'HS256',
+      });
+      const expiredAccount = {
+        refreshToken: hashToken(validToken),
+        isRevoked: false,
+        expiresAt: new Date(Date.now() - 1000), // expired
+        user: mockAdminUser,
+      };
+
+      userAccountRepo.findOne.mockResolvedValue(expiredAccount);
+      userAccountRepo.save.mockResolvedValue(expiredAccount);
+
+      await expect(service.refreshTokens(validToken)).rejects.toThrow(
+        'Refresh token has expired',
+      );
+      expect(expiredAccount.isRevoked).toBe(true);
+    });
+
+    it('should revoke old token and issue new tokens on valid refresh', async () => {
+      const validToken = jwt.sign({ userId: 1 }, REFRESH_SECRET, {
+        algorithm: 'HS256',
+      });
+      const account = {
+        refreshToken: hashToken(validToken),
+        isRevoked: false,
+        expiresAt: new Date(Date.now() + 86400000),
+        user: mockAdminUser,
+      };
+
+      userAccountRepo.findOne.mockResolvedValue(account);
+      userAccountRepo.save.mockResolvedValue(account);
+      userAccountRepo.create.mockReturnValue({});
+
+      const result = await service.refreshTokens(validToken);
+
+      expect(account.isRevoked).toBe(true);
+      expect(result.access_token).toBeDefined();
+      expect(result.refresh_token).toBeDefined();
+      expect(result.user.id).toBe(mockAdminUser.id);
+    });
+
+    it('should look up tokens by hash, not plaintext', async () => {
+      const validToken = jwt.sign({ userId: 1 }, REFRESH_SECRET, {
+        algorithm: 'HS256',
+      });
+      const expectedHash = hashToken(validToken);
+
+      userAccountRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.refreshTokens(validToken)).rejects.toThrow();
+
+      expect(userAccountRepo.findOne).toHaveBeenCalledWith({
+        where: {
+          refreshToken: expectedHash,
+          isRevoked: false,
+        },
+        relations: ['user'],
+      });
+    });
+  });
+
+  describe('logout', () => {
+    it('should throw UnauthorizedException when token not found', async () => {
+      userAccountRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.logout('some-token', 1)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('should revoke the token and return success', async () => {
+      const tokenRecord = {
+        refreshToken: hashToken('some-token'),
+        isRevoked: false,
+      };
+      userAccountRepo.findOne.mockResolvedValue(tokenRecord);
+      userAccountRepo.save.mockResolvedValue(tokenRecord);
+
+      const result = await service.logout('some-token', 1);
+
+      expect(result.success).toBe(true);
+      expect(tokenRecord.isRevoked).toBe(true);
+    });
+
+    it('should look up tokens by hash with userId and isRevoked check', async () => {
+      const token = 'test-refresh-token';
+      const expectedHash = hashToken(token);
+      userAccountRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.logout(token, 42)).rejects.toThrow();
+
+      expect(userAccountRepo.findOne).toHaveBeenCalledWith({
+        where: {
+          refreshToken: expectedHash,
+          user: { id: 42 },
+          isRevoked: false,
+        },
+      });
+    });
+  });
+
+  describe('onModuleInit', () => {
+    it('should not throw during initialization when Firebase is already initialized', () => {
+      // Simulate Firebase already initialized (admin.apps.length > 0 skips initializeApp)
+      jest.spyOn(require('firebase-admin'), 'apps', 'get').mockReturnValue([{}]);
+      expect(() => service.onModuleInit()).not.toThrow();
+    });
   });
 });
