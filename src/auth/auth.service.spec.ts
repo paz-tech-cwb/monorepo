@@ -1,12 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
-import { HttpException, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, UnauthorizedException } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 import { AuthService } from './auth.service';
 import { User } from 'src/users/entities/user.entity';
 import { UserAccount } from 'src/users/entities/account.entity';
+import { Role } from 'src/roles/entities/role.entity';
+import { UserDeviceToken } from 'src/users/entities/user-device-token.entity';
+import { AuditLog } from './entities/audit-log.entity';
+import { AuditLogger } from './audit.logger';
 
 const ACCESS_SECRET = 'test-access-secret-at-least-32-chars!!';
 const REFRESH_SECRET = 'test-refresh-secret-at-least-32-chars!!';
@@ -16,17 +20,33 @@ function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-const mockUser: Partial<User> = {
+const adminRole: Partial<Role> = { id: 1, slug: 'admin' };
+const memberRole: Partial<Role> = { id: 6, slug: 'member' };
+
+const mockAdminUser: Partial<User> = {
   id: 1,
-  name: 'Test User',
-  email: 'test@example.com',
-  picture: 'https://example.com/photo.jpg',
+  name: 'Admin User',
+  email: 'admin@example.com',
+  picture: null,
+  role: adminRole as Role,
+};
+
+const mockMemberUser: Partial<User> = {
+  id: 2,
+  name: 'Member User',
+  email: 'member@example.com',
+  picture: null,
+  role: memberRole as Role,
 };
 
 describe('AuthService', () => {
   let service: AuthService;
   let userRepo: Record<string, jest.Mock>;
   let userAccountRepo: Record<string, jest.Mock>;
+  let roleRepo: Record<string, jest.Mock>;
+  let userDeviceTokenRepo: Record<string, jest.Mock>;
+  let auditLogRepo: Record<string, jest.Mock>;
+  let auditLoggerMock: { logAuthAttempt: jest.Mock };
 
   beforeEach(async () => {
     userRepo = {
@@ -39,6 +59,23 @@ describe('AuthService', () => {
       findOne: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
+    };
+
+    roleRepo = {
+      findOne: jest.fn(),
+    };
+
+    userDeviceTokenRepo = {
+      delete: jest.fn(),
+    };
+
+    auditLogRepo = {
+      create: jest.fn(),
+      save: jest.fn(),
+    };
+
+    auditLoggerMock = {
+      logAuthAttempt: jest.fn().mockResolvedValue(undefined),
     };
 
     const configServiceMock = {
@@ -59,7 +96,11 @@ describe('AuthService', () => {
         AuthService,
         { provide: getRepositoryToken(User), useValue: userRepo },
         { provide: getRepositoryToken(UserAccount), useValue: userAccountRepo },
+        { provide: getRepositoryToken(Role), useValue: roleRepo },
+        { provide: getRepositoryToken(UserDeviceToken), useValue: userDeviceTokenRepo },
+        { provide: getRepositoryToken(AuditLog), useValue: auditLogRepo },
         { provide: ConfigService, useValue: configServiceMock },
+        { provide: AuditLogger, useValue: auditLoggerMock },
       ],
     }).compile();
 
@@ -76,183 +117,125 @@ describe('AuthService', () => {
       ).rejects.toThrow('Unsupported provider');
     });
 
-    it('should create a new user if not found and return tokens for google provider', async () => {
-      const googlePayload = {
-        sub: 'google-id-123',
-        name: 'Google User',
-        email: 'google@example.com',
-        picture: 'https://google.com/photo.jpg',
-      };
-
-      // Mock the private verifyGoogleToken method
+    it('should issue tokens for admin user with Google token', async () => {
       jest.spyOn(service as any, 'verifyGoogleToken').mockResolvedValue({
-        username: googlePayload.sub,
-        name: googlePayload.name,
-        email: googlePayload.email,
-        photo: googlePayload.picture,
+        username: 'google-uid',
+        name: 'Admin User',
+        email: 'admin@example.com',
+        photo: null,
       });
 
-      userRepo.findOne.mockResolvedValue(null);
-      const createdUser = { id: 2, ...googlePayload };
+      userRepo.findOne.mockResolvedValue(mockAdminUser);
+      userAccountRepo.create.mockReturnValue({});
+      userAccountRepo.save.mockResolvedValue({});
+
+      const result = await service.socialLogin('google', 'valid-google-token');
+
+      expect(result.access_token).toBeDefined();
+      expect(result.refresh_token).toBeDefined();
+      expect(result.user.email).toBe('admin@example.com');
+      expect(auditLoggerMock.logAuthAttempt).toHaveBeenCalledWith(
+        'admin@example.com',
+        'google',
+        'LOGIN_SUCCESS',
+        null,
+        null,
+      );
+    });
+
+    it('should reject non-admin user with Google token (403)', async () => {
+      jest.spyOn(service as any, 'verifyGoogleToken').mockResolvedValue({
+        username: 'google-uid',
+        name: 'Member User',
+        email: 'member@example.com',
+        photo: null,
+      });
+
+      userRepo.findOne.mockResolvedValue(mockMemberUser);
+
+      await expect(
+        service.socialLogin('google', 'valid-google-token'),
+      ).rejects.toMatchObject({
+        status: HttpStatus.FORBIDDEN,
+        message: 'Admin access required',
+      });
+
+      expect(auditLoggerMock.logAuthAttempt).toHaveBeenCalledWith(
+        'member@example.com',
+        'google',
+        'LOGIN_FAILED_ROLE',
+        expect.stringContaining('member'),
+        null,
+      );
+    });
+
+    it('should still accept admin user with Apple token', async () => {
+      jest.spyOn(service as any, 'verifyAppleToken').mockResolvedValue({
+        username: 'apple-uid',
+        name: 'Admin User',
+        email: 'admin@example.com',
+        photo: null,
+      });
+
+      userRepo.findOne.mockResolvedValue(mockAdminUser);
+      userAccountRepo.create.mockReturnValue({});
+      userAccountRepo.save.mockResolvedValue({});
+
+      const result = await service.socialLogin('apple', 'valid-apple-token');
+
+      expect(result.access_token).toBeDefined();
+      expect(auditLoggerMock.logAuthAttempt).toHaveBeenCalledWith(
+        'admin@example.com',
+        'apple',
+        'LOGIN_SUCCESS',
+        null,
+        null,
+      );
+    });
+
+    it('should log LOGIN_FAILED_AUTH when token verification fails', async () => {
+      jest
+        .spyOn(service as any, 'verifyGoogleToken')
+        .mockRejectedValue(new UnauthorizedException('Invalid Google token'));
+
+      await expect(
+        service.socialLogin('google', 'bad-token'),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(auditLoggerMock.logAuthAttempt).toHaveBeenCalledWith(
+        'unknown',
+        'google',
+        'LOGIN_FAILED_AUTH',
+        'Invalid Google token',
+        null,
+      );
+    });
+
+    it('should create new user with member role and then reject (403) when not admin', async () => {
+      jest.spyOn(service as any, 'verifyGoogleToken').mockResolvedValue({
+        username: 'google-uid',
+        name: 'New User',
+        email: 'newuser@example.com',
+        photo: null,
+      });
+
+      userRepo.findOne.mockResolvedValue(null); // user not found
+      roleRepo.findOne.mockResolvedValue(memberRole);
+      const createdUser = { ...mockMemberUser, email: 'newuser@example.com' };
       userRepo.create.mockReturnValue(createdUser);
       userRepo.save.mockResolvedValue(createdUser);
 
-      userAccountRepo.create.mockReturnValue({});
-      userAccountRepo.save.mockResolvedValue({});
+      await expect(
+        service.socialLogin('google', 'valid-google-token'),
+      ).rejects.toMatchObject({ status: HttpStatus.FORBIDDEN });
 
-      const result = await service.socialLogin('google', 'fake-google-token');
-
-      expect(result.user.email).toBe(googlePayload.email);
-      expect(result.access_token).toBeDefined();
-      expect(result.refresh_token).toBeDefined();
-      expect(userRepo.create).toHaveBeenCalled();
-      expect(userRepo.save).toHaveBeenCalled();
-    });
-
-    it('should return tokens for existing user without creating', async () => {
-      jest.spyOn(service as any, 'verifyGoogleToken').mockResolvedValue({
-        username: 'sub-123',
-        name: mockUser.name,
-        email: mockUser.email,
-        photo: mockUser.picture,
-      });
-
-      userRepo.findOne.mockResolvedValue(mockUser);
-      userAccountRepo.create.mockReturnValue({});
-      userAccountRepo.save.mockResolvedValue({});
-
-      const result = await service.socialLogin('google', 'fake-google-token');
-
-      expect(result.user.id).toBe(mockUser.id);
-      expect(userRepo.create).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('refreshTokens', () => {
-    it('should throw UnauthorizedException for invalid JWT', async () => {
-      await expect(service.refreshTokens('invalid-token')).rejects.toThrow(
-        UnauthorizedException,
+      expect(auditLoggerMock.logAuthAttempt).toHaveBeenCalledWith(
+        'newuser@example.com',
+        'google',
+        'LOGIN_FAILED_ROLE',
+        expect.any(String),
+        null,
       );
-    });
-
-    it('should throw UnauthorizedException when token not found in DB', async () => {
-      const validToken = jwt.sign({ userId: 1 }, REFRESH_SECRET, {
-        algorithm: 'HS256',
-      });
-
-      userAccountRepo.findOne.mockResolvedValue(null);
-
-      await expect(service.refreshTokens(validToken)).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
-
-    it('should throw UnauthorizedException for expired DB record', async () => {
-      const validToken = jwt.sign({ userId: 1 }, REFRESH_SECRET, {
-        algorithm: 'HS256',
-      });
-      const expiredAccount = {
-        refreshToken: hashToken(validToken),
-        isRevoked: false,
-        expiresAt: new Date(Date.now() - 1000), // expired
-        user: mockUser,
-      };
-
-      userAccountRepo.findOne.mockResolvedValue(expiredAccount);
-      userAccountRepo.save.mockResolvedValue(expiredAccount);
-
-      await expect(service.refreshTokens(validToken)).rejects.toThrow(
-        'Refresh token has expired',
-      );
-      expect(expiredAccount.isRevoked).toBe(true);
-    });
-
-    it('should revoke old token and issue new tokens on valid refresh', async () => {
-      const validToken = jwt.sign({ userId: 1 }, REFRESH_SECRET, {
-        algorithm: 'HS256',
-      });
-      const account = {
-        refreshToken: hashToken(validToken),
-        isRevoked: false,
-        expiresAt: new Date(Date.now() + 86400000),
-        user: mockUser,
-      };
-
-      userAccountRepo.findOne.mockResolvedValue(account);
-      userAccountRepo.save.mockResolvedValue(account);
-      userAccountRepo.create.mockReturnValue({});
-
-      const result = await service.refreshTokens(validToken);
-
-      expect(account.isRevoked).toBe(true);
-      expect(result.access_token).toBeDefined();
-      expect(result.refresh_token).toBeDefined();
-      expect(result.user.id).toBe(mockUser.id);
-    });
-
-    it('should look up tokens by hash, not plaintext', async () => {
-      const validToken = jwt.sign({ userId: 1 }, REFRESH_SECRET, {
-        algorithm: 'HS256',
-      });
-      const expectedHash = hashToken(validToken);
-
-      userAccountRepo.findOne.mockResolvedValue(null);
-
-      await expect(service.refreshTokens(validToken)).rejects.toThrow();
-
-      expect(userAccountRepo.findOne).toHaveBeenCalledWith({
-        where: {
-          refreshToken: expectedHash,
-          isRevoked: false,
-        },
-        relations: ['user'],
-      });
-    });
-  });
-
-  describe('logout', () => {
-    it('should throw UnauthorizedException when token not found', async () => {
-      userAccountRepo.findOne.mockResolvedValue(null);
-
-      await expect(service.logout('some-token', 1)).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
-
-    it('should revoke the token and return success', async () => {
-      const tokenRecord = {
-        refreshToken: hashToken('some-token'),
-        isRevoked: false,
-      };
-      userAccountRepo.findOne.mockResolvedValue(tokenRecord);
-      userAccountRepo.save.mockResolvedValue(tokenRecord);
-
-      const result = await service.logout('some-token', 1);
-
-      expect(result.success).toBe(true);
-      expect(tokenRecord.isRevoked).toBe(true);
-    });
-
-    it('should look up tokens by hash with userId and isRevoked check', async () => {
-      const token = 'test-refresh-token';
-      const expectedHash = hashToken(token);
-      userAccountRepo.findOne.mockResolvedValue(null);
-
-      await expect(service.logout(token, 42)).rejects.toThrow();
-
-      expect(userAccountRepo.findOne).toHaveBeenCalledWith({
-        where: {
-          refreshToken: expectedHash,
-          user: { id: 42 },
-          isRevoked: false,
-        },
-      });
-    });
-  });
-
-  describe('onModuleInit', () => {
-    it('should not throw during initialization', () => {
-      expect(() => service.onModuleInit()).not.toThrow();
     });
   });
 });

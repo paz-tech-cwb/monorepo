@@ -17,6 +17,8 @@ import { UserAccount } from 'src/users/entities/account.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Role } from 'src/roles/entities/role.entity';
 import { UserDeviceToken } from 'src/users/entities/user-device-token.entity';
+import { AuditLog } from './entities/audit-log.entity';
+import { AuditLogger } from './audit.logger';
 import { Repository } from 'typeorm';
 
 const ACCESS_TOKEN_EXPIRES_IN = '24h';
@@ -48,7 +50,10 @@ export class AuthService implements OnModuleInit {
     private roleRepo: Repository<Role>,
     @InjectRepository(UserDeviceToken)
     private userDeviceTokenRepo: Repository<UserDeviceToken>,
+    @InjectRepository(AuditLog)
+    private auditLogRepo: Repository<AuditLog>,
     private configService: ConfigService,
+    private auditLogger: AuditLogger,
   ) {
     this.accessTokenSecret = this.configService.getOrThrow<string>(
       'ACCESS_TOKEN_SECRET',
@@ -71,7 +76,7 @@ export class AuthService implements OnModuleInit {
     this.appleJwksClient = new JwksClient({
       jwksUri: APPLE_JWKS_URI,
       cache: true,
-      cacheMaxAge: 86400000, // 24 hours
+      cacheMaxAge: 86400000,
     });
   }
 
@@ -106,12 +111,32 @@ export class AuthService implements OnModuleInit {
       photo: string | null;
     };
 
-    if (provider === 'google') {
-      userData = await this.verifyGoogleToken(idToken);
-    } else if (provider === 'apple') {
-      userData = await this.verifyAppleToken(idToken);
-    } else {
-      throw new HttpException('Unsupported provider', HttpStatus.BAD_REQUEST);
+    // Verify token — log auth failure if verification throws
+    try {
+      if (provider === 'google') {
+        userData = await this.verifyGoogleToken(idToken);
+      } else if (provider === 'apple') {
+        userData = await this.verifyAppleToken(idToken);
+      } else {
+        throw new HttpException('Unsupported provider', HttpStatus.BAD_REQUEST);
+      }
+    } catch (error) {
+      if (
+        error instanceof HttpException &&
+        error.getStatus() === HttpStatus.BAD_REQUEST
+      ) {
+        throw error;
+      }
+      const message =
+        error instanceof Error ? error.message : 'Token verification failed';
+      await this.auditLogger.logAuthAttempt(
+        'unknown',
+        provider,
+        'LOGIN_FAILED_AUTH',
+        message,
+        null,
+      );
+      throw error;
     }
 
     userData.email = userData.email.toLowerCase();
@@ -119,8 +144,8 @@ export class AuthService implements OnModuleInit {
     let user = await this.userRepo.findOne({
       where: { email: userData.email },
     });
+
     if (!user) {
-      // Fetch the 'member' role (ID 6)
       const memberRole = await this.roleRepo.findOne({
         where: { slug: 'member' },
       });
@@ -130,7 +155,6 @@ export class AuthService implements OnModuleInit {
           HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
-
       user = this.userRepo.create({
         name: userData.name,
         email: userData.email,
@@ -140,7 +164,28 @@ export class AuthService implements OnModuleInit {
       await this.userRepo.save(user);
     }
 
+    // Role-based access check — admin only
+    if (!user.role || user.role.slug !== 'admin') {
+      const reason = `User role is '${user.role?.slug ?? 'unknown'}', not 'admin'`;
+      await this.auditLogger.logAuthAttempt(
+        userData.email,
+        provider,
+        'LOGIN_FAILED_ROLE',
+        reason,
+        null,
+      );
+      throw new HttpException('Admin access required', HttpStatus.FORBIDDEN);
+    }
+
     const tokens = await this.issueTokens(user);
+
+    await this.auditLogger.logAuthAttempt(
+      userData.email,
+      provider,
+      'LOGIN_SUCCESS',
+      null,
+      null,
+    );
 
     return {
       user: {
@@ -171,7 +216,7 @@ export class AuthService implements OnModuleInit {
       { expiresIn: REFRESH_TOKEN_EXPIRES_IN, algorithm: JWT_ALGORITHM },
     );
 
-    const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days
+    const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
     const hashedToken = this.hashToken(refreshToken);
 
     const account = this.userAccountRepo.create({
@@ -212,7 +257,6 @@ export class AuthService implements OnModuleInit {
       throw new UnauthorizedException('Refresh token has expired');
     }
 
-    // Revoke the old token (rotation)
     account.isRevoked = true;
     await this.userAccountRepo.save(account);
 
@@ -261,9 +305,6 @@ export class AuthService implements OnModuleInit {
 
   private async verifyGoogleToken(idToken: string) {
     try {
-      // Firebase ID tokens (issued by Firebase Auth, not raw Google OAuth tokens)
-      // must be verified with Firebase Admin SDK — not google-auth-library, which
-      // only knows googleapis.com/oauth2/v3/certs (a different key set).
       const decoded = await admin.auth().verifyIdToken(idToken);
 
       if (!decoded.email) {
@@ -291,19 +332,16 @@ export class AuthService implements OnModuleInit {
     photo: string | null;
   }> {
     try {
-      // Decode header to get the key ID (kid)
       const decodedHeader = jwt.decode(idToken, { complete: true });
       if (!decodedHeader || !decodedHeader.header?.kid) {
         throw new Error('Unable to decode Apple token header');
       }
 
-      // Fetch Apple's public key using the kid
       const signingKey = await this.appleJwksClient.getSigningKey(
         decodedHeader.header.kid,
       );
       const publicKey = signingKey.getPublicKey();
 
-      // Verify the token signature, issuer, and expiration
       const verifyOptions: jwt.VerifyOptions = {
         algorithms: ['RS256'],
         issuer: APPLE_ISSUER,
@@ -331,7 +369,7 @@ export class AuthService implements OnModuleInit {
         name:
           payload.name || this.getUsernameFromEmail(payload.email) || 'Membro',
         email: payload.email,
-        photo: null, // Apple tokens do not include a photo
+        photo: null,
       };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
