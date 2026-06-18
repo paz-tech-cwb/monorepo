@@ -1,6 +1,5 @@
 import {
   GoogleAuthProvider,
-  OAuthProvider,
   signInWithPopup,
   signOut,
   type UserCredential,
@@ -11,18 +10,9 @@ const googleProvider = new GoogleAuthProvider()
 googleProvider.addScope("email")
 googleProvider.addScope("profile")
 
-const appleProvider = new OAuthProvider("apple.com")
-appleProvider.addScope("email")
-appleProvider.addScope("name")
-
 export async function signInWithGoogle(): Promise<UserCredential> {
   const auth = getFirebaseAuth()
   return signInWithPopup(auth, googleProvider)
-}
-
-export async function signInWithApple(): Promise<UserCredential> {
-  const auth = getFirebaseAuth()
-  return signInWithPopup(auth, appleProvider)
 }
 
 export async function firebaseSignOut(): Promise<void> {

@@ -13,7 +13,6 @@ import { onAuthStateChanged, type User as FirebaseUser } from "firebase/auth"
 import { getFirebaseAuth } from "@/lib/firebase/config"
 import {
   signInWithGoogle,
-  signInWithApple,
   firebaseSignOut,
 } from "@/lib/firebase/auth"
 import { authApi } from "@/lib/api/endpoints/auth"
@@ -64,7 +63,6 @@ interface AuthContextValue {
   isLoading: boolean
   isAuthenticated: boolean
   loginWithGoogle: () => Promise<void>
-  loginWithApple: () => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -79,18 +77,12 @@ interface AuthProviderProps {
 // ---------------------------------------------------------------------------
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  // Keep the first client render identical to SSR, then restore browser state
-  // after hydration.
   const [user, setUser] = useState<User | null>(null)
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Track whether a social-login popup is in progress so onAuthStateChanged
-  // knows to call the backend (vs. silently restoring on page refresh).
   const loginInProgressRef = useRef(false)
 
-  // Promise that the login helpers can await so router.push only fires
-  // after the backend has responded and tokens are stored.
   const backendAuthPromiseRef = useRef<Promise<void> | null>(null)
   const resolveBackendAuthRef = useRef<(() => void) | null>(null)
   const rejectBackendAuthRef = useRef<((err: Error) => void) | null>(null)
@@ -126,7 +118,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setFirebaseUser(fbUser)
 
       if (!fbUser) {
-        // User signed out of Firebase
         setUser(null)
         persistUser(null)
         clearTokens()
@@ -134,21 +125,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return
       }
 
-      // Decide whether we need to call the backend:
-      // - If a login popup just completed (loginInProgressRef), always call
-      // - If we have no stored tokens, we must call to get them
-      // - If we already have valid tokens + cached user, skip the backend call
       const hasTokens = !!getAccessToken() && !!getRefreshToken()
       const cachedUser = restoreUser()
 
       if (hasTokens && cachedUser && !loginInProgressRef.current) {
-        // Session is already valid from a previous visit -- just hydrate state
         setUser(cachedUser)
         setIsLoading(false)
         return
       }
 
-      // Call the backend to exchange Firebase token for app tokens
       try {
         const idToken = await fbUser.getIdToken()
         const provider =
@@ -160,17 +145,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
           provider,
         })
 
-        if (response.user.role === "member" || !response.user.role) {
-          throw new Error("Acesso negado. Esta área é exclusiva para líderes e pastores.")
-        }
-
         setUser(response.user)
         persistUser(response.user)
         setAccessToken(response.access_token)
         setRefreshToken(response.refresh_token)
         setSessionCookie()
 
-        // Resolve the promise that loginWithGoogle/loginWithApple is awaiting
         resolveBackendAuthRef.current?.()
       } catch (error) {
         console.error("Failed to authenticate with backend:", error)
@@ -178,7 +158,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         persistUser(null)
         clearTokens()
 
-        // Reject so the login form can show an error
         rejectBackendAuthRef.current?.(
           error instanceof Error
             ? error
@@ -208,7 +187,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [])
 
   // ---------------------------------------------------------------------------
-  // Login helpers -- now awaitable through the full flow
+  // Login helper
   // ---------------------------------------------------------------------------
   const loginWithGoogle = useCallback(async () => {
     setIsLoading(true)
@@ -216,25 +195,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await signInWithGoogle()
       await trackLogin("google")
-      // Wait for onAuthStateChanged -> socialLogin -> token storage to finish
-      await backendAuthPromiseRef.current
-    } catch (error) {
-      loginInProgressRef.current = false
-      backendAuthPromiseRef.current = null
-      resolveBackendAuthRef.current = null
-      rejectBackendAuthRef.current = null
-      setIsLoading(false)
-      throw error
-    }
-  }, [startLoginFlow])
-
-  const loginWithApple = useCallback(async () => {
-    setIsLoading(true)
-    startLoginFlow()
-    try {
-      await signInWithApple()
-      await trackLogin("apple")
-      // Wait for onAuthStateChanged -> socialLogin -> token storage to finish
       await backendAuthPromiseRef.current
     } catch (error) {
       loginInProgressRef.current = false
@@ -269,7 +229,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isLoading,
     isAuthenticated: !!user,
     loginWithGoogle,
-    loginWithApple,
     logout,
   }
 
