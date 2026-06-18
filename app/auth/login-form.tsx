@@ -29,9 +29,26 @@ export function LoginForm() {
       setError(null)
       await loginWithGoogle()
       router.push(redirectTo)
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Google login error:", err)
-      setError(err instanceof Error ? err.message : "Falha ao fazer login com Google. Tente novamente.")
+      const status =
+        err instanceof Error && "status" in err
+          ? (err as { status?: number }).status
+          : (err as { response?: { status?: number } })?.response?.status
+
+      if (status === 403) {
+        setError(
+          "Sua conta não tem acesso ao painel administrativo. Entre em contato com o suporte."
+        )
+      } else if (status === 401) {
+        setError("Autenticação falhou. Tente novamente.")
+      } else {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Erro ao fazer login. Tente novamente."
+        )
+      }
     }
   }
 
@@ -40,7 +57,7 @@ export function LoginForm() {
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl text-center">Entrar</CardTitle>
         <CardDescription className="text-center">
-          Faça login com sua conta Google
+          Entrar com Google
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
