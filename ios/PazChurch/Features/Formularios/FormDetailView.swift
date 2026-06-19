@@ -14,6 +14,11 @@ enum FormFieldType {
     case currency
     case multiline
     case toggle
+    case select          // enum: optionValues[i] = API value, label in options[i] displayed
+    case userPicker      // single user → stores id string
+    case userMultiPicker // multi user → stores "1,2,3"
+    case lgPicker        // life-group → stores id string
+    case selfOrSearch    // invited_by: "" = self, else searched name
 }
 
 struct FormFieldDef {
@@ -22,19 +27,25 @@ struct FormFieldDef {
     let placeholder: String
     let required: Bool
     let fieldType: FormFieldType
+    let options: [String]       // display labels
+    let optionValues: [String]  // API values parallel to options; empty = value IS label
 
     init(
         _ key: String,
         _ label: String,
         placeholder: String = "",
         required: Bool = false,
-        fieldType: FormFieldType = .text
+        fieldType: FormFieldType = .text,
+        options: [String] = [],
+        optionValues: [String] = []
     ) {
         self.key = key
         self.label = label
         self.placeholder = placeholder
         self.required = required
         self.fieldType = fieldType
+        self.options = options
+        self.optionValues = optionValues
     }
 }
 
@@ -143,6 +154,17 @@ class FormDetailViewModelIOS {
     var error: String?
     var submitSuccess = false
 
+    // MARK: - Picker state
+    var pickerKey: String? = nil
+    var pickerLabel: String = ""
+    var pickerIsMulti: Bool = false
+    var pickerIsLifeGroup: Bool = false
+    var pickerQuery: String = ""
+    var pickerResults: [Any] = []
+    var pickerIsLoading: Bool = false
+    var pickerError: String? = nil
+    var selfOrSearchModes: [String: Bool] = [:]
+
     private let formsRepository: FormsRepository
     private let authRepository: AuthRepository
     private let formId: String
@@ -192,6 +214,57 @@ class FormDetailViewModelIOS {
         error = nil
     }
 
+    func openPicker(def: FormFieldDef) {
+        pickerKey = def.key
+        pickerLabel = def.label
+        pickerIsMulti = def.fieldType == .userMultiPicker
+        pickerIsLifeGroup = def.fieldType == .lgPicker
+        pickerQuery = ""
+        pickerResults = []
+        pickerError = nil
+    }
+
+    func closePicker() { pickerKey = nil }
+
+    func onPickerQueryChanged(_ query: String) {
+        pickerQuery = query
+        pickerIsLoading = true
+        pickerError = nil
+        Task {
+            do {
+                if pickerIsLifeGroup {
+                    let results = try await formsRepository.searchLifeGroups(query: query)
+                    pickerResults = results as [Any]
+                } else {
+                    let results = try await formsRepository.searchUsers(query: query)
+                    pickerResults = results as [Any]
+                }
+                pickerIsLoading = false
+            } catch {
+                pickerError = error.localizedDescription
+                pickerIsLoading = false
+            }
+        }
+    }
+
+    func onPickerSelect(id: String, name: String) {
+        guard let key = pickerKey else { return }
+        if pickerIsMulti {
+            var current = (fields[key] ?? "").split(separator: ",").map(String.init).filter { !$0.isEmpty }
+            if current.contains(id) { current.removeAll { $0 == id } } else { current.append(id) }
+            fields[key] = current.joined(separator: ",")
+        } else {
+            fields[key] = id
+            fields["\(key)_name"] = name
+            closePicker()
+        }
+    }
+
+    func setSelfOrSearchMode(key: String, isSearch: Bool) {
+        selfOrSearchModes[key] = isSearch
+        if !isSearch { fields[key] = "" }
+    }
+
     var canSubmit: Bool {
         guard let form else { return false }
         return !isSubmitting && form.type.fieldDefs
@@ -234,78 +307,144 @@ class FormDetailViewModelIOS {
             let value = snapshot[key]?.trimmingCharacters(in: .whitespaces)
             return value?.isEmpty == false ? value : nil
         }
-        func int32(_ key: String) -> Int32 {
+        func intVal(_ key: String) -> Int32 {
             Int32(snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0
         }
-        func kdbl(_ key: String) -> KotlinDouble? {
+        func dblVal(_ key: String) -> Double? {
             // Parse BRL formatted string e.g. "1.234,56" → 1234.56
             let raw = snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? ""
+            guard !raw.isEmpty else { return nil }
             let normalized = raw.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: ",", with: ".")
-            return Double(normalized).map { KotlinDouble(value: $0) }
+            return Double(normalized)
         }
 
         switch type {
         case .memberRegistration:
-            _ = try await formsRepository.submitMemberRegistration(form: MemberRegistrationForm(
-                name: req("name"), phone: opt("phone"), email: opt("email"),
-                lifeGroupId: nil, sectorId: nil, areaId: nil, leaderId: nil
+            try await formsRepository.submitMemberRegistration(form: MemberRegistrationForm(
+                fullName: req("name"),
+                birthDate: req("birth_date"),
+                phone: req("phone"),
+                gender: req("gender"),
+                civilState: req("civil_state"),
+                sectorId: Int32(req("sector_id")) ?? 0,
+                email: opt("email"),
+                lifeGroupId: opt("life_group_id").flatMap { Int32($0) }.map { KotlinInt(value: $0) },
+                cep: opt("cep"),
+                street: opt("street"),
+                addressNumber: opt("address_number"),
+                complement: opt("complement"),
+                neighborhood: opt("neighborhood"),
+                city: opt("city"),
+                state: opt("state"),
+                address: opt("address")
             ))
         case .conversion:
-            _ = try await formsRepository.submitConversion(form: ConversionForm(
-                name: req("name"), phone: opt("phone"), date: req("date"),
-                lifeGroupId: nil, observations: opt("observations")
+            try await formsRepository.submitConversion(form: ConversionForm(
+                fullName: req("name"),
+                email: req("email"),
+                phone: req("phone"),
+                decisionType: req("decision_type"),
+                howMetChurch: req("how_met_church"),
+                gender: req("gender"),
+                birthDate: req("birth_date"),
+                civilState: req("civil_state"),
+                address: req("address"),
+                attendanceCount: req("attendance_count"),
+                lifeGroupStatus: req("life_group_status"),
+                lifeGroupLeaderOrName: opt("life_group_leader_or_name"),
+                invitedBy: opt("invited_by"),
+                notes: opt("notes")
             ))
         case .guest:
-            _ = try await formsRepository.submitGuest(form: GuestForm(
-                name: req("name"),
+            try await formsRepository.submitGuest(form: GuestForm(
+                fullName: req("name"),
+                email: opt("email"),
                 phone: opt("phone"),
                 invitedBy: opt("invited_by"),
                 viaCasaDePaz: (fields["via_casa_de_paz"] == "true"),
+                howMetChurch: opt("how_met_church"),
+                address: opt("address"),
                 date: req("date")
             ))
         case .multiplication:
-            _ = try await formsRepository.submitMultiplication(form: MultiplicationForm(
-                originalLifeGroupId: userId, newLifeGroupName: req("new_life_group_name"),
-                newLeaderId: userId, date: req("date")
+            try await formsRepository.submitMultiplication(form: MultiplicationForm(
+                date: req("date"),
+                sourceLifeGroupId: Int32(req("source_life_group_id")) ?? 0,
+                area: opt("area"),
+                sector: opt("sector"),
+                newLifeGroupName: req("new_life_group_name"),
+                newLeaderId: Int32(req("new_leader_id")) ?? 0,
+                hostId: Int32(req("host_id")) ?? 0,
+                leaderPhone: req("leader_phone"),
+                meetingDayTime: req("meeting_day_time"),
+                address: req("address"),
+                membersToMove: [],
+                newMembers: [],
+                completedLeadershipTrack: false,
+                legallyMarried: nil,
+                faithfulTither: false,
+                evangelizingAndConsolidating: false,
+                goodTestimony: false,
+                singleLivingInPurity: nil
             ))
         case .serviceReport:
-            _ = try await formsRepository.submitServiceReport(form: ServiceReportForm(
+            try await formsRepository.submitServiceReport(form: ServiceReportForm(
                 date: req("date"),
                 reportType: req("report_type"),
                 period: req("period"),
-                atmosphereTeamId: Int32(opt("atmosphere_team_id") ?? "0").flatMap { $0 > 0 ? $0 : nil },
+                atmosphereTeamId: opt("atmosphere_team_id").flatMap { Int32($0) }.map { KotlinInt(value: $0) },
                 atmosphereTeamOther: nil,
                 atmosphereResponsible: currentUserName,
-                tadelAdults: int32("tadel_adults"),
-                tadelKids: int32("tadel_kids"),
-                vehiclesCars: int32("vehicles_cars"),
-                vehiclesMotos: int32("vehicles_motos"),
-                vehiclesBikes: int32("vehicles_bikes"),
+                tadelAdults: intVal("tadel_adults"),
+                tadelKids: intVal("tadel_kids"),
+                vehiclesCars: intVal("vehicles_cars"),
+                vehiclesMotos: intVal("vehicles_motos"),
+                vehiclesBikes: intVal("vehicles_bikes"),
                 vehiclesOthers: opt("vehicles_others"),
-                volunteersAtmosfera: int32("volunteers_atmosfera"),
-                volunteersLouvor: int32("volunteers_louvor"),
-                volunteersMiddia: int32("volunteers_midia"),
-                volunteersDanca: int32("volunteers_danca"),
+                volunteersAtmosfera: intVal("volunteers_atmosfera"),
+                volunteersLouvor: intVal("volunteers_louvor"),
+                volunteersMiddia: intVal("volunteers_midia"),
+                volunteersDanca: intVal("volunteers_danca"),
                 notes: opt("notes")
             ))
         case .course:
-            _ = try await formsRepository.submitCourse(form: CourseForm(
+            try await formsRepository.submitCourse(form: CourseForm(
                 courseName: req("course_name"), memberId: userId, enrolledAt: req("enrolled_at")
             ))
         case .lifeGroupReport:
-            _ = try await formsRepository.submitLifeGroupReport(form: LifeGroupReportForm(
-                lifeGroupId: userId, date: req("date"), attendees: int32("attendees"),
-                visitors: int32("visitors"), offerings: kdbl("offerings"), observations: opt("observations")
+            try await formsRepository.submitLifeGroupReport(form: LifeGroupReportForm(
+                lifeGroupId: userId,
+                date: req("date"),
+                attendees: intVal("attendees"),
+                visitors: intVal("visitors"),
+                offerings: dblVal("offerings").map { KotlinDouble(value: $0) },
+                observations: opt("observations")
             ))
         case .sectorSupervisorReport:
-            _ = try await formsRepository.submitSectorReport(form: LifeGroupReportForm(
-                lifeGroupId: userId, date: req("date"), attendees: int32("attendees"),
-                visitors: int32("visitors"), offerings: kdbl("offerings"), observations: opt("observations")
+            try await formsRepository.submitSectorReport(form: SectorSupervisorReportForm(
+                date: req("date"),
+                sectorId: Int32(req("sector_id")) ?? 0,
+                areaId: nil,
+                lifeGroupsVisited: [],
+                leadersPastored: [],
+                multiplicationCandidates: [],
+                lifeGroupsCount: 0,
+                lifeGroupsSupervised: 0,
+                lifeGroupObservations: [],
+                sectorMultiplicationDate: nil,
+                notes: opt("notes")
             ))
         default:
-            _ = try await formsRepository.submitAreaReport(form: LifeGroupReportForm(
-                lifeGroupId: userId, date: req("date"), attendees: int32("attendees"),
-                visitors: int32("visitors"), offerings: kdbl("offerings"), observations: opt("observations")
+            try await formsRepository.submitAreaReport(form: AreaSupervisorReportForm(
+                date: req("date"),
+                areaId: Int32(req("area_id")) ?? 0,
+                sectorsVisited: [],
+                sectorLeadersPastored: [],
+                multiplicationsInProgress: nil,
+                lifeGroupsCount: 0,
+                lifeGroupsSupervised: 0,
+                lifeGroupObservations: [],
+                notes: opt("notes")
             ))
         }
     }
@@ -359,10 +498,25 @@ struct FormDetailView: View {
                         FieldRow(
                             def: def,
                             value: viewModel.fields[def.key] ?? "",
-                            isSubmitting: viewModel.isSubmitting
-                        ) { newValue in
-                            viewModel.update(key: def.key, value: newValue)
-                        }
+                            extraFields: viewModel.fields,
+                            isSubmitting: viewModel.isSubmitting,
+                            selfOrSearchModes: viewModel.selfOrSearchModes,
+                            onChange: { viewModel.update(key: def.key, value: $0) },
+                            onOpenPicker: viewModel.openPicker,
+                            onSelfOrSearchMode: viewModel.setSelfOrSearchMode
+                        )
+                    }
+                    .sheet(isPresented: Binding(
+                        get: { viewModel.pickerKey != nil && !viewModel.pickerIsLifeGroup },
+                        set: { if !$0 { viewModel.closePicker() } }
+                    )) {
+                        UserPickerSheet(viewModel: viewModel)
+                    }
+                    .sheet(isPresented: Binding(
+                        get: { viewModel.pickerKey != nil && viewModel.pickerIsLifeGroup },
+                        set: { if !$0 { viewModel.closePicker() } }
+                    )) {
+                        LifeGroupPickerSheet(viewModel: viewModel)
                     }
 
                     if let error = viewModel.error {
@@ -416,8 +570,12 @@ struct FormDetailView: View {
 private struct FieldRow: View {
     let def: FormFieldDef
     let value: String
+    let extraFields: [String: String]
     let isSubmitting: Bool
+    let selfOrSearchModes: [String: Bool]
     let onChange: (String) -> Void
+    let onOpenPicker: (FormFieldDef) -> Void
+    let onSelfOrSearchMode: (String, Bool) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: PazSpacing.sm) {
@@ -520,6 +678,98 @@ private struct FieldRow: View {
                     .background(PazColors.surface)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .disabled(isSubmitting)
+
+            case .select:
+                let displayValue: String = {
+                    if def.optionValues.isEmpty { return value }
+                    guard let idx = def.optionValues.firstIndex(of: value) else { return value }
+                    return def.options[idx]
+                }()
+                Menu {
+                    ForEach(Array(def.options.enumerated()), id: \.offset) { idx, label in
+                        Button(label) {
+                            let apiValue = def.optionValues.isEmpty ? label : def.optionValues[idx]
+                            onChange(apiValue)
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Text(displayValue.isEmpty ? (def.placeholder.isEmpty ? "Selecionar" : def.placeholder) : displayValue)
+                            .font(PazTypography.bodyMedium)
+                            .foregroundStyle(displayValue.isEmpty ? PazColors.slate : PazColors.ink)
+                        Spacer()
+                        Image(systemName: "chevron.down").foregroundStyle(PazColors.pazPrimary)
+                    }
+                    .padding(.horizontal, PazSpacing.md)
+                    .frame(height: 56)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .disabled(isSubmitting)
+
+            case .userPicker, .userMultiPicker:
+                let displayName = extraFields["\(def.key)_name"] ?? ""
+                Button(action: { if !isSubmitting { onOpenPicker(def) } }) {
+                    HStack {
+                        Text(displayName.isEmpty ? "Selecionar pessoa" : displayName)
+                            .font(PazTypography.bodyMedium)
+                            .foregroundStyle(displayName.isEmpty ? PazColors.slate : PazColors.ink)
+                        Spacer()
+                        Image(systemName: "chevron.down").foregroundStyle(PazColors.pazPrimary)
+                    }
+                    .padding(.horizontal, PazSpacing.md)
+                    .frame(height: 56)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+
+            case .lgPicker:
+                let displayName = extraFields["\(def.key)_name"] ?? ""
+                Button(action: { if !isSubmitting { onOpenPicker(def) } }) {
+                    HStack {
+                        Text(displayName.isEmpty ? "Selecionar grupo de vida" : displayName)
+                            .font(PazTypography.bodyMedium)
+                            .foregroundStyle(displayName.isEmpty ? PazColors.slate : PazColors.ink)
+                        Spacer()
+                        Image(systemName: "chevron.down").foregroundStyle(PazColors.pazPrimary)
+                    }
+                    .padding(.horizontal, PazSpacing.md)
+                    .frame(height: 56)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+
+            case .selfOrSearch:
+                let isSearchMode = selfOrSearchModes[def.key] == true
+                VStack(alignment: .leading, spacing: PazSpacing.sm) {
+                    HStack(spacing: PazSpacing.sm) {
+                        Button("Eu mesmo") { onSelfOrSearchMode(def.key, false) }
+                            .buttonStyle(.bordered)
+                            .tint(isSearchMode ? .secondary : PazColors.pazPrimary)
+                        Button("Buscar pessoa") { onSelfOrSearchMode(def.key, true) }
+                            .buttonStyle(.bordered)
+                            .tint(isSearchMode ? PazColors.pazPrimary : .secondary)
+                    }
+                    if isSearchMode {
+                        let displayName = extraFields["\(def.key)_name"] ?? ""
+                        Button(action: { if !isSubmitting { onOpenPicker(def) } }) {
+                            HStack {
+                                Text(displayName.isEmpty ? "Selecionar pessoa" : displayName)
+                                    .font(PazTypography.bodyMedium)
+                                    .foregroundStyle(displayName.isEmpty ? PazColors.slate : PazColors.ink)
+                                Spacer()
+                                Image(systemName: "chevron.down").foregroundStyle(PazColors.pazPrimary)
+                            }
+                            .padding(.horizontal, PazSpacing.md)
+                            .frame(height: 56)
+                            .background(PazColors.surface)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
         }
     }

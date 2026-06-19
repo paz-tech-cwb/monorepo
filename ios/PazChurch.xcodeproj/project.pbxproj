@@ -38,6 +38,8 @@
 		65323BAB5459A81F682BE7B1 /* EditProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667C5328F0D1720F48DB35B2 /* EditProfileViewModel.swift */; };
 		6D6B04D0664285834955DF7E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 79C75FF4BA56BB550DD04506 /* Assets.xcassets */; };
 		71ABCCDA3D92687839B11506 /* FormDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C3499C673982AA1C0FA8EA5 /* FormDetailView.swift */; };
+		AA11BB22CC33DD44EE55FF66 /* UserPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF67 /* UserPickerSheet.swift */; };
+		BB22CC33DD44EE55FF66AA11 /* LifeGroupPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CC33DD44EE55FF66AA12 /* LifeGroupPickerSheet.swift */; };
 		81241EF8344367972B2409AF /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0E0ECD6F71C3A9C1F38E441 /* HomeViewModel.swift */; };
 		8696DCD7837887595806B611 /* SkeletonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36DB133997051B82A7D0D38D /* SkeletonView.swift */; };
 		8BBB7655494EE2891298CD78 /* PazPillChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62DDEA0026352360D73E873 /* PazPillChip.swift */; };
@@ -96,6 +98,8 @@
 		79C75FF4BA56BB550DD04506 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		79F54E72B01670D1FF11B3CB /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		7C3499C673982AA1C0FA8EA5 /* FormDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormDetailView.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF67 /* UserPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserPickerSheet.swift; sourceTree = "<group>"; };
+		BB22CC33DD44EE55FF66AA12 /* LifeGroupPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupPickerSheet.swift; sourceTree = "<group>"; };
 		82E14328F3FC3C44E1C3AC60 /* PazTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazTypography.swift; sourceTree = "<group>"; };
 		9089E1E2EF61D9C3A28227C1 /* Shared.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Shared.xcframework; path = ../shared/build/XCFrameworks/debug/Shared.xcframework; sourceTree = "<group>"; };
 		956C0B652EACA4EB866BDD9C /* PazGoldBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazGoldBadge.swift; sourceTree = "<group>"; };
@@ -149,6 +153,8 @@
 			children = (
 				7C3499C673982AA1C0FA8EA5 /* FormDetailView.swift */,
 				1A78FBD0E12C138DD1D1835C /* FormulariosView.swift */,
+				AA11BB22CC33DD44EE55FF67 /* UserPickerSheet.swift */,
+				BB22CC33DD44EE55FF66AA12 /* LifeGroupPickerSheet.swift */,
 			);
 			path = Formularios;
 			sourceTree = "<group>";
@@ -493,6 +499,8 @@
 				127BCE182FD590FF004D4473 /* AgendaListViewModel.swift in Sources */,
 				71ABCCDA3D92687839B11506 /* FormDetailView.swift in Sources */,
 				BDFEB77ACA79918920040484 /* FormulariosView.swift in Sources */,
+				AA11BB22CC33DD44EE55FF66 /* UserPickerSheet.swift in Sources */,
+				BB22CC33DD44EE55FF66AA11 /* LifeGroupPickerSheet.swift in Sources */,
 				214CF4956D0B65E1AFA723F8 /* HomeView.swift in Sources */,
 				81241EF8344367972B2409AF /* HomeViewModel.swift in Sources */,
 				C81CB606C64CB0B6AA3D8743 /* KeychainService.swift in Sources */,
