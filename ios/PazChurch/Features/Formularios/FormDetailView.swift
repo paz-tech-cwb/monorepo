@@ -52,37 +52,17 @@ struct FormFieldDef {
 extension FormType {
     var fieldDefs: [FormFieldDef] {
         switch self {
-        case .memberRegistration:
-            [
-                FormFieldDef("name", "Nome Completo", placeholder: "Digite o nome completo", required: true, fieldType: .name),
-                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", fieldType: .phone),
-                FormFieldDef("email", "E-mail", placeholder: "email@exemplo.com", fieldType: .email),
-            ]
-        case .conversion:
-            [
-                FormFieldDef("name", "Nome", placeholder: "Nome do convertido", required: true, fieldType: .name),
-                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", fieldType: .phone),
-                FormFieldDef("date", "Data da Conversão", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef("observations", "Observações", fieldType: .multiline),
-            ]
-        case .guest:
-            [
-                FormFieldDef("name", "Nome do Visitante", placeholder: "Nome completo", required: true, fieldType: .name),
-                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", fieldType: .phone),
-                FormFieldDef("invited_by", "Convidado por", placeholder: "Nome de quem convidou"),
-                FormFieldDef("via_casa_de_paz", "Veio de uma Casa de Paz?", placeholder: "", fieldType: .toggle),
-                FormFieldDef("date", "Data da Visita", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-            ]
-        case .multiplication:
-            [
-                FormFieldDef("new_life_group_name", "Nome do Novo Grupo", placeholder: "Ex: GL Norte", required: true),
-                FormFieldDef("date", "Data da Multiplicação", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-            ]
         case .serviceReport:
             [
                 FormFieldDef("date", "Data", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef("report_type", "Tipo de relatório", placeholder: "tadel / culto_celebracao / evento", required: true),
-                FormFieldDef("period", "Período", placeholder: "manha / tarde_noite", required: true),
+                FormFieldDef("report_type", "Tipo de relatório", required: true, fieldType: .select,
+                    options: ["Tadel", "Culto de celebração", "Evento"],
+                    optionValues: ["tadel", "culto_celebracao", "evento"]),
+                FormFieldDef("period", "Período", required: true, fieldType: .select,
+                    options: ["Manhã", "Tarde/Noite"],
+                    optionValues: ["manha", "tarde_noite"]),
+                FormFieldDef("atmosphere_team_id", "Equipe Atmosfera", fieldType: .integer),
+                FormFieldDef("atmosphere_responsible", "Responsável no dia", required: true),
                 FormFieldDef("tadel_adults", "Adultos (Tadel)", placeholder: "0", required: true, fieldType: .integer),
                 FormFieldDef("tadel_kids", "Crianças (Tadel)", placeholder: "0", fieldType: .integer),
                 FormFieldDef("vehicles_cars", "Carros", placeholder: "0", required: true, fieldType: .integer),
@@ -93,12 +73,74 @@ extension FormType {
                 FormFieldDef("volunteers_louvor", "Voluntários Louvor", placeholder: "0", fieldType: .integer),
                 FormFieldDef("volunteers_midia", "Voluntários Mídia", placeholder: "0", fieldType: .integer),
                 FormFieldDef("volunteers_danca", "Voluntários Dança", placeholder: "0", fieldType: .integer),
-                FormFieldDef("notes", "Observação", placeholder: "Ocorrências, materiais...", fieldType: .multiline),
+                FormFieldDef("notes", "Observação", fieldType: .multiline),
             ]
-        case .course:
+        case .guest:
             [
-                FormFieldDef("course_name", "Nome do Curso", placeholder: "Ex: Escola de Membros", required: true),
-                FormFieldDef("enrolled_at", "Data de Inscrição", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+                FormFieldDef("date", "Data da Visita", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+                FormFieldDef("full_name", "Nome do Visitante", placeholder: "Nome completo", required: true, fieldType: .name),
+                FormFieldDef("email", "E-mail", placeholder: "email@exemplo.com", required: true, fieldType: .email),
+                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", fieldType: .phone),
+                FormFieldDef("invited_by", "Convidado por", fieldType: .selfOrSearch),
+                FormFieldDef("via_casa_de_paz", "Veio de uma Casa de Paz?", fieldType: .toggle),
+                FormFieldDef("how_met_church", "Como conheceu a igreja?"),
+                FormFieldDef("address", "Endereço"),
+            ]
+        case .multiplication:
+            [
+                FormFieldDef("date", "Data da Multiplicação", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+                FormFieldDef("source_life_group_id", "Grupo de Vida de Origem", required: true, fieldType: .lgPicker),
+                FormFieldDef("new_life_group_name", "Nome do Novo Grupo", placeholder: "Ex: GL Norte", required: true),
+                FormFieldDef("new_leader_id", "Novo Líder", required: true, fieldType: .userPicker),
+                FormFieldDef("host_id", "Anfitrião", required: true, fieldType: .userPicker),
+                FormFieldDef("leader_phone", "Telefone do Líder", required: true, fieldType: .phone),
+                FormFieldDef("meeting_day_time", "Dia e Horário", placeholder: "Ex: Sexta 19h", required: true),
+                FormFieldDef("address", "Endereço", required: true),
+                FormFieldDef("members_to_move", "Membros a Transferir", fieldType: .userMultiPicker),
+                FormFieldDef("new_members", "Novos Membros", fieldType: .userMultiPicker),
+                FormFieldDef("completed_leadership_track", "Completou Trilha de Liderança", fieldType: .toggle),
+                FormFieldDef("legally_married", "Casado Legalmente", fieldType: .toggle),
+                FormFieldDef("faithful_tither", "Dizimista Fiel", fieldType: .toggle),
+                FormFieldDef("evangelizing_and_consolidating", "Evangelizando e Consolidando", fieldType: .toggle),
+                FormFieldDef("good_testimony", "Bom Testemunho", fieldType: .toggle),
+                FormFieldDef("single_living_in_purity", "Solteiro Vivendo em Pureza", fieldType: .toggle),
+            ]
+        case .memberRegistration:
+            [
+                FormFieldDef("full_name", "Nome Completo", required: true, fieldType: .name),
+                FormFieldDef("email", "E-mail", placeholder: "email@exemplo.com", fieldType: .email),
+                FormFieldDef("birth_date", "Data de Nascimento", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", required: true, fieldType: .phone),
+                FormFieldDef("gender", "Gênero", required: true, fieldType: .select,
+                    options: ["Masculino", "Feminino"], optionValues: ["m", "f"]),
+                FormFieldDef("civil_state", "Estado Civil", required: true, fieldType: .select,
+                    options: ["Solteiro", "Casado", "Divorciado", "Viúvo"],
+                    optionValues: ["solteiro", "casado", "divorciado", "viuvo"]),
+                FormFieldDef("sector_id", "Setor", required: true, fieldType: .userPicker), // TODO: sector picker
+                FormFieldDef("life_group_id", "Grupo de Vida", fieldType: .lgPicker),
+                FormFieldDef("address", "Endereço"),
+            ]
+        case .conversion:
+            [
+                FormFieldDef("full_name", "Nome Completo", required: true, fieldType: .name),
+                FormFieldDef("email", "E-mail", placeholder: "email@exemplo.com", required: true, fieldType: .email),
+                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", required: true, fieldType: .phone),
+                FormFieldDef("decision_type", "Tipo de Decisão", required: true, fieldType: .select,
+                    options: ["Primeira vez", "Reconciliação"],
+                    optionValues: ["first_time", "reconciliation"]),
+                FormFieldDef("how_met_church", "Como conheceu a igreja?", required: true),
+                FormFieldDef("gender", "Gênero", required: true, fieldType: .select,
+                    options: ["Masculino", "Feminino"], optionValues: ["m", "f"]),
+                FormFieldDef("birth_date", "Data de Nascimento", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+                FormFieldDef("civil_state", "Estado Civil", required: true, fieldType: .select,
+                    options: ["Solteiro", "Casado", "Divorciado", "Viúvo"],
+                    optionValues: ["solteiro", "casado", "divorciado", "viuvo"]),
+                FormFieldDef("address", "Endereço", required: true),
+                FormFieldDef("attendance_count", "Quantidade de visitas", required: true),
+                FormFieldDef("life_group_status", "Status do Grupo de Vida", required: true),
+                FormFieldDef("life_group_leader_or_name", "Líder ou nome do GV"),
+                FormFieldDef("invited_by", "Convidado por"),
+                FormFieldDef("notes", "Observações", fieldType: .multiline),
             ]
         case .lifeGroupReport:
             [
@@ -108,21 +150,33 @@ extension FormType {
                 FormFieldDef("offerings", "Oferta (R$)", placeholder: "0,00", fieldType: .currency),
                 FormFieldDef("observations", "Observações", fieldType: .multiline),
             ]
+        case .course:
+            [
+                FormFieldDef("course_name", "Nome do Curso", placeholder: "Ex: Escola de Membros", required: true),
+                FormFieldDef("enrolled_at", "Data de Inscrição", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+            ]
         case .sectorSupervisorReport:
             [
                 FormFieldDef("date", "Data do Relatório", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef("attendees", "Total de Participantes", placeholder: "0", required: true, fieldType: .integer),
-                FormFieldDef("visitors", "Total de Visitantes", placeholder: "0", fieldType: .integer),
-                FormFieldDef("offerings", "Total de Ofertas (R$)", placeholder: "0,00", fieldType: .currency),
-                FormFieldDef("observations", "Observações", fieldType: .multiline),
+                FormFieldDef("sector_id", "Setor", required: true, fieldType: .userPicker), // TODO: sector picker
+                FormFieldDef("life_groups_visited", "Grupos Visitados", fieldType: .lgPicker),
+                FormFieldDef("leaders_pastored", "Líderes Pastoreados", fieldType: .userMultiPicker),
+                FormFieldDef("multiplication_candidates", "Candidatos à Multiplicação", fieldType: .userMultiPicker),
+                FormFieldDef("life_groups_count", "Total de Grupos", placeholder: "0", required: true, fieldType: .integer),
+                FormFieldDef("life_groups_supervised", "Grupos Supervisionados", placeholder: "0", required: true, fieldType: .integer),
+                FormFieldDef("life_group_observations", "Observações dos Grupos", fieldType: .multiline),
+                FormFieldDef("sector_multiplication_date", "Data de Multiplicação do Setor", fieldType: .date),
+                FormFieldDef("notes", "Observações", fieldType: .multiline),
             ]
         default: // areaSupervisorReport
             [
                 FormFieldDef("date", "Data do Relatório", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef("attendees", "Total de Participantes", placeholder: "0", required: true, fieldType: .integer),
-                FormFieldDef("visitors", "Total de Visitantes", placeholder: "0", fieldType: .integer),
-                FormFieldDef("offerings", "Total de Ofertas (R$)", placeholder: "0,00", fieldType: .currency),
-                FormFieldDef("observations", "Observações", fieldType: .multiline),
+                FormFieldDef("area_id", "Área", required: true, fieldType: .userPicker), // TODO: area picker
+                FormFieldDef("sector_leaders_pastored", "Líderes de Setor Pastoreados", fieldType: .userMultiPicker),
+                FormFieldDef("life_groups_count", "Total de Grupos", placeholder: "0", required: true, fieldType: .integer),
+                FormFieldDef("life_groups_supervised", "Grupos Supervisionados", placeholder: "0", required: true, fieldType: .integer),
+                FormFieldDef("life_group_observations", "Observações dos Grupos", fieldType: .multiline),
+                FormFieldDef("notes", "Observações", fieldType: .multiline),
             ]
         }
     }
@@ -300,53 +354,96 @@ class FormDetailViewModelIOS {
 
     private func submit(type: FormType, userId: String) async throws {
         let snapshot = fields
-        func req(_ key: String) -> String {
-            snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? ""
-        }
+        func req(_ key: String) -> String { snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? "" }
         func opt(_ key: String) -> String? {
-            let value = snapshot[key]?.trimmingCharacters(in: .whitespaces)
-            return value?.isEmpty == false ? value : nil
+            let v = snapshot[key]?.trimmingCharacters(in: .whitespaces)
+            return v?.isEmpty == false ? v : nil
         }
-        func intVal(_ key: String) -> Int32 {
-            Int32(snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0
-        }
-        func dblVal(_ key: String) -> Double? {
-            // Parse BRL formatted string e.g. "1.234,56" → 1234.56
+        func intVal(_ key: String) -> Int32 { Int32(snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0 }
+        func kdbl(_ key: String) -> KotlinDouble? {
             let raw = snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? ""
-            guard !raw.isEmpty else { return nil }
-            let normalized = raw.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: ",", with: ".")
-            return Double(normalized)
+            let n = raw.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: ",", with: ".")
+            return Double(n).map { KotlinDouble(value: $0) }
+        }
+        func isoDate(_ key: String) -> String {
+            let raw = snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? ""
+            let fmt = DateFormatter(); fmt.dateFormat = "dd/MM/yyyy"
+            let iso = DateFormatter(); iso.dateFormat = "yyyy-MM-dd"
+            return fmt.date(from: raw).map { iso.string(from: $0) } ?? raw
+        }
+        func ids(_ key: String) -> [KotlinInt] {
+            (snapshot[key] ?? "").split(separator: ",")
+                .compactMap { Int32($0.trimmingCharacters(in: .whitespaces)) }
+                .map { KotlinInt(value: $0) }
         }
 
         switch type {
+        case .serviceReport:
+            _ = try await formsRepository.submitServiceReport(form: ServiceReportForm(
+                date: isoDate("date"), reportType: req("report_type"), period: req("period"),
+                atmosphereTeamId: opt("atmosphere_team_id").flatMap { Int32($0) }.map { KotlinInt(value: $0) },
+                atmosphereTeamOther: nil,
+                atmosphereResponsible: req("atmosphere_responsible"),
+                tadelAdults: intVal("tadel_adults"), tadelKids: intVal("tadel_kids"),
+                vehiclesCars: intVal("vehicles_cars"), vehiclesMotos: intVal("vehicles_motos"),
+                vehiclesBikes: intVal("vehicles_bikes"), vehiclesOthers: opt("vehicles_others"),
+                volunteersAtmosfera: intVal("volunteers_atmosfera"), volunteersLouvor: intVal("volunteers_louvor"),
+                volunteersMiddia: intVal("volunteers_midia"), volunteersDanca: intVal("volunteers_danca"),
+                notes: opt("notes")
+            ))
+        case .guest:
+            let invitedByRaw = req("invited_by")
+            let invitedBy = invitedByRaw.isEmpty ? currentUserName : invitedByRaw
+            _ = try await formsRepository.submitGuest(form: GuestForm(
+                fullName: req("full_name"), email: opt("email"), phone: opt("phone"),
+                invitedBy: invitedBy.isEmpty ? nil : invitedBy,
+                viaCasaDePaz: snapshot["via_casa_de_paz"] == "true",
+                howMetChurch: opt("how_met_church"), address: opt("address"),
+                date: isoDate("date")
+            ))
+        case .multiplication:
+            _ = try await formsRepository.submitMultiplication(form: MultiplicationForm(
+                date: isoDate("date"),
+                sourceLifeGroupId: intVal("source_life_group_id"),
+                area: opt("area"), sector: opt("sector"),
+                newLifeGroupName: req("new_life_group_name"),
+                newLeaderId: intVal("new_leader_id"),
+                hostId: intVal("host_id"),
+                leaderPhone: req("leader_phone"),
+                meetingDayTime: req("meeting_day_time"),
+                address: req("address"),
+                membersToMove: ids("members_to_move"),
+                newMembers: ids("new_members"),
+                completedLeadershipTrack: snapshot["completed_leadership_track"] == "true",
+                legallyMarried: snapshot["legally_married"].map { KotlinBoolean(value: $0 == "true") },
+                faithfulTither: snapshot["faithful_tither"] == "true",
+                evangelizingAndConsolidating: snapshot["evangelizing_and_consolidating"] == "true",
+                goodTestimony: snapshot["good_testimony"] == "true",
+                singleLivingInPurity: snapshot["single_living_in_purity"].map { KotlinBoolean(value: $0 == "true") }
+            ))
         case .memberRegistration:
-            try await formsRepository.submitMemberRegistration(form: MemberRegistrationForm(
-                fullName: req("name"),
-                birthDate: req("birth_date"),
+            _ = try await formsRepository.submitMemberRegistration(form: MemberRegistrationForm(
+                fullName: req("full_name"),
+                birthDate: isoDate("birth_date"),
                 phone: req("phone"),
                 gender: req("gender"),
                 civilState: req("civil_state"),
-                sectorId: Int32(req("sector_id")) ?? 0,
+                sectorId: intVal("sector_id"),
                 email: opt("email"),
-                lifeGroupId: opt("life_group_id").flatMap { Int32($0) }.map { KotlinInt(value: $0) },
-                cep: opt("cep"),
-                street: opt("street"),
-                addressNumber: opt("address_number"),
-                complement: opt("complement"),
-                neighborhood: opt("neighborhood"),
-                city: opt("city"),
-                state: opt("state"),
+                lifeGroupId: intVal("life_group_id") > 0 ? KotlinInt(value: intVal("life_group_id")) : nil,
+                cep: nil, street: nil, addressNumber: nil, complement: nil,
+                neighborhood: nil, city: nil, state: nil,
                 address: opt("address")
             ))
         case .conversion:
-            try await formsRepository.submitConversion(form: ConversionForm(
-                fullName: req("name"),
+            _ = try await formsRepository.submitConversion(form: ConversionForm(
+                fullName: req("full_name"),
                 email: req("email"),
                 phone: req("phone"),
                 decisionType: req("decision_type"),
                 howMetChurch: req("how_met_church"),
                 gender: req("gender"),
-                birthDate: req("birth_date"),
+                birthDate: isoDate("birth_date"),
                 civilState: req("civil_state"),
                 address: req("address"),
                 attendanceCount: req("attendance_count"),
@@ -355,95 +452,46 @@ class FormDetailViewModelIOS {
                 invitedBy: opt("invited_by"),
                 notes: opt("notes")
             ))
-        case .guest:
-            try await formsRepository.submitGuest(form: GuestForm(
-                fullName: req("name"),
-                email: opt("email"),
-                phone: opt("phone"),
-                invitedBy: opt("invited_by"),
-                viaCasaDePaz: (fields["via_casa_de_paz"] == "true"),
-                howMetChurch: opt("how_met_church"),
-                address: opt("address"),
-                date: req("date")
-            ))
-        case .multiplication:
-            try await formsRepository.submitMultiplication(form: MultiplicationForm(
-                date: req("date"),
-                sourceLifeGroupId: Int32(req("source_life_group_id")) ?? 0,
-                area: opt("area"),
-                sector: opt("sector"),
-                newLifeGroupName: req("new_life_group_name"),
-                newLeaderId: Int32(req("new_leader_id")) ?? 0,
-                hostId: Int32(req("host_id")) ?? 0,
-                leaderPhone: req("leader_phone"),
-                meetingDayTime: req("meeting_day_time"),
-                address: req("address"),
-                membersToMove: [],
-                newMembers: [],
-                completedLeadershipTrack: false,
-                legallyMarried: nil,
-                faithfulTither: false,
-                evangelizingAndConsolidating: false,
-                goodTestimony: false,
-                singleLivingInPurity: nil
-            ))
-        case .serviceReport:
-            try await formsRepository.submitServiceReport(form: ServiceReportForm(
-                date: req("date"),
-                reportType: req("report_type"),
-                period: req("period"),
-                atmosphereTeamId: opt("atmosphere_team_id").flatMap { Int32($0) }.map { KotlinInt(value: $0) },
-                atmosphereTeamOther: nil,
-                atmosphereResponsible: currentUserName,
-                tadelAdults: intVal("tadel_adults"),
-                tadelKids: intVal("tadel_kids"),
-                vehiclesCars: intVal("vehicles_cars"),
-                vehiclesMotos: intVal("vehicles_motos"),
-                vehiclesBikes: intVal("vehicles_bikes"),
-                vehiclesOthers: opt("vehicles_others"),
-                volunteersAtmosfera: intVal("volunteers_atmosfera"),
-                volunteersLouvor: intVal("volunteers_louvor"),
-                volunteersMiddia: intVal("volunteers_midia"),
-                volunteersDanca: intVal("volunteers_danca"),
-                notes: opt("notes")
+        case .lifeGroupReport:
+            _ = try await formsRepository.submitLifeGroupReport(form: LifeGroupReportForm(
+                lifeGroupId: userId, date: isoDate("date"),
+                attendees: intVal("attendees"), visitors: intVal("visitors"),
+                offerings: kdbl("offerings"), observations: opt("observations")
             ))
         case .course:
-            try await formsRepository.submitCourse(form: CourseForm(
-                courseName: req("course_name"), memberId: userId, enrolledAt: req("enrolled_at")
-            ))
-        case .lifeGroupReport:
-            try await formsRepository.submitLifeGroupReport(form: LifeGroupReportForm(
-                lifeGroupId: userId,
-                date: req("date"),
-                attendees: intVal("attendees"),
-                visitors: intVal("visitors"),
-                offerings: dblVal("offerings").map { KotlinDouble(value: $0) },
-                observations: opt("observations")
+            _ = try await formsRepository.submitCourse(form: CourseForm(
+                courseName: req("course_name"), memberId: userId,
+                enrolledAt: isoDate("enrolled_at")
             ))
         case .sectorSupervisorReport:
-            try await formsRepository.submitSectorReport(form: SectorSupervisorReportForm(
-                date: req("date"),
-                sectorId: Int32(req("sector_id")) ?? 0,
+            let observations = req("life_group_observations")
+                .split(separator: "\n").map(String.init).filter { !$0.isEmpty }
+            _ = try await formsRepository.submitSectorReport(form: SectorSupervisorReportForm(
+                date: isoDate("date"),
+                sectorId: intVal("sector_id"),
                 areaId: nil,
-                lifeGroupsVisited: [],
-                leadersPastored: [],
-                multiplicationCandidates: [],
-                lifeGroupsCount: 0,
-                lifeGroupsSupervised: 0,
-                lifeGroupObservations: [],
-                sectorMultiplicationDate: nil,
+                lifeGroupsVisited: ids("life_groups_visited"),
+                leadersPastored: ids("leaders_pastored"),
+                multiplicationCandidates: ids("multiplication_candidates"),
+                lifeGroupsCount: intVal("life_groups_count"),
+                lifeGroupsSupervised: intVal("life_groups_supervised"),
+                lifeGroupObservations: observations,
+                sectorMultiplicationDate: opt("sector_multiplication_date"),
                 notes: opt("notes")
             ))
-        default:
-            try await formsRepository.submitAreaReport(form: AreaSupervisorReportForm(
-                date: req("date"),
-                areaId: Int32(req("area_id")) ?? 0,
-                sectorsVisited: [],
-                sectorLeadersPastored: [],
-                multiplicationsInProgress: nil,
-                lifeGroupsCount: 0,
-                lifeGroupsSupervised: 0,
-                lifeGroupObservations: [],
+        default: // areaSupervisorReport
+            let observations = req("life_group_observations")
+                .split(separator: "\n").map(String.init).filter { !$0.isEmpty }
+            _ = try await formsRepository.submitAreaReport(form: AreaSupervisorReportForm(
+                date: isoDate("date"),
+                areaId: intVal("area_id"),
+                sectorsVisited: ids("sectors_visited"),
+                sectorLeadersPastored: ids("sector_leaders_pastored"),
+                multiplicationsInProgress: intVal("multiplications_in_progress") > 0
+                    ? KotlinInt(value: intVal("multiplications_in_progress")) : nil,
+                lifeGroupsCount: intVal("life_groups_count"),
+                lifeGroupsSupervised: intVal("life_groups_supervised"),
+                lifeGroupObservations: observations,
                 notes: opt("notes")
             ))
         }
@@ -510,10 +558,10 @@ struct FormDetailView: View {
                     if let error = viewModel.error {
                         Text(error)
                             .font(PazTypography.bodySmall)
-                            .foregroundColor(.red)
+                            .foregroundColor(PazColors.error)
                             .padding(PazSpacing.md)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.red.opacity(0.1))
+                            .background(PazColors.error.opacity(0.1))
                             .cornerRadius(12)
                     }
 
@@ -585,7 +633,7 @@ private struct FieldRow: View {
                 if def.required {
                     Text("*")
                         .font(PazTypography.labelMedium)
-                        .foregroundColor(Color(red: 0.91, green: 0.30, blue: 0.24))
+                        .foregroundColor(PazColors.error)
                 }
             }
 
