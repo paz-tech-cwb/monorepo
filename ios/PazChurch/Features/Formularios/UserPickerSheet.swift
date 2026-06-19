@@ -19,7 +19,7 @@ struct UserPickerSheet: View {
                 if viewModel.pickerIsLoading {
                     ProgressView().padding()
                 } else if let error = viewModel.pickerError {
-                    Text(error).foregroundColor(.red).padding()
+                    Text(error).foregroundStyle(PazColors.error).padding()
                 } else {
                     let users = viewModel.pickerResults.compactMap { $0 as? User }
                     let selectedIds = Set((viewModel.fields[viewModel.pickerKey ?? ""] ?? "")

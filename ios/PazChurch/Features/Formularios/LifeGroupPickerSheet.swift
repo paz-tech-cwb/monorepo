@@ -19,7 +19,7 @@ struct LifeGroupPickerSheet: View {
                 if viewModel.pickerIsLoading {
                     ProgressView().padding()
                 } else if let error = viewModel.pickerError {
-                    Text(error).foregroundColor(.red).padding()
+                    Text(error).foregroundStyle(PazColors.error).padding()
                 } else {
                     let groups = viewModel.pickerResults.compactMap { $0 as? LifeGroupSummary }
                     let selectedId = viewModel.fields[viewModel.pickerKey ?? ""] ?? ""

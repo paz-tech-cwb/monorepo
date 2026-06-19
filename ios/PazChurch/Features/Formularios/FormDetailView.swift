@@ -506,18 +506,6 @@ struct FormDetailView: View {
                             onSelfOrSearchMode: viewModel.setSelfOrSearchMode
                         )
                     }
-                    .sheet(isPresented: Binding(
-                        get: { viewModel.pickerKey != nil && !viewModel.pickerIsLifeGroup },
-                        set: { if !$0 { viewModel.closePicker() } }
-                    )) {
-                        UserPickerSheet(viewModel: viewModel)
-                    }
-                    .sheet(isPresented: Binding(
-                        get: { viewModel.pickerKey != nil && viewModel.pickerIsLifeGroup },
-                        set: { if !$0 { viewModel.closePicker() } }
-                    )) {
-                        LifeGroupPickerSheet(viewModel: viewModel)
-                    }
 
                     if let error = viewModel.error {
                         Text(error)
@@ -534,6 +522,18 @@ struct FormDetailView: View {
                 .padding(.horizontal, PazSpacing.lg)
             }
             .background(PazColors.background)
+            .sheet(isPresented: Binding(
+                get: { viewModel.pickerKey != nil && !viewModel.pickerIsLifeGroup },
+                set: { if !$0 { viewModel.closePicker() } }
+            )) {
+                UserPickerSheet(viewModel: viewModel)
+            }
+            .sheet(isPresented: Binding(
+                get: { viewModel.pickerKey != nil && viewModel.pickerIsLifeGroup },
+                set: { if !$0 { viewModel.closePicker() } }
+            )) {
+                LifeGroupPickerSheet(viewModel: viewModel)
+            }
 
             Button(action: { viewModel.onSubmit() }) {
                 Text(viewModel.isSubmitting ? "Enviando..." : "Enviar")
