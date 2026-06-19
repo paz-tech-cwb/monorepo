@@ -223,7 +223,7 @@ class FormDetailViewModel(
                             viaCasaDePaz = f["via_casa_de_paz"] == "true",
                             howMetChurch = f.opt("how_met_church"),
                             address = f.opt("address"),
-                            date = f.req("date"),
+                            date = f.isoDate("date"),
                         ),
                     )
                 }
