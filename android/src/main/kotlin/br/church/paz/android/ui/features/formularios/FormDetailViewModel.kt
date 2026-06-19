@@ -179,12 +179,14 @@ class FormDetailViewModel(
                     formsRepository.submitMemberRegistration(
                         MemberRegistrationForm(
                             fullName = f.req("full_name"),
-                            birthDate = f.req("birth_date"),
-                            phone = f.req("phone"),
+                            birthDate = f.isoDate("birth_date"),
+                            phone = f.req("phone").filter { it.isDigit() }.let { "+55$it" }.takeIf { it.length > 3 } ?: f.req("phone"),
                             gender = f.req("gender"),
                             civilState = f.req("civil_state"),
-                            sectorId = f.int("sector_id"),
+                            sectorId = f.idInt("sector_id"),
                             email = f.opt("email"),
+                            lifeGroupId = f.idInt("life_group_id").takeIf { it > 0 },
+                            address = f.opt("address"),
                         ),
                     )
                 FormType.conversion ->
@@ -196,36 +198,54 @@ class FormDetailViewModel(
                             decisionType = f.req("decision_type"),
                             howMetChurch = f.req("how_met_church"),
                             gender = f.req("gender"),
-                            birthDate = f.req("birth_date"),
+                            birthDate = f.isoDate("birth_date"),
                             civilState = f.req("civil_state"),
                             address = f.req("address"),
                             attendanceCount = f.req("attendance_count"),
                             lifeGroupStatus = f.req("life_group_status"),
+                            lifeGroupLeaderOrName = f.opt("life_group_leader_or_name"),
+                            invitedBy = f.opt("invited_by"),
                             notes = f.opt("notes"),
                         ),
                     )
-                FormType.guest ->
+                FormType.guest -> {
+                    val invitedBy = if (f["invited_by"].isNullOrEmpty()) {
+                        authRepository.currentUser()?.name
+                    } else {
+                        f["invited_by"]
+                    }
                     formsRepository.submitGuest(
                         GuestForm(
                             fullName = f.req("full_name"),
-                            phone = f.opt("phone"),
                             email = f.opt("email"),
-                            invitedBy = f.opt("invited_by"),
-                            viaCasaDePaz = f["via_casa_de_paz"]?.toBooleanStrictOrNull() ?: false,
+                            phone = f.opt("phone"),
+                            invitedBy = invitedBy,
+                            viaCasaDePaz = f["via_casa_de_paz"] == "true",
+                            howMetChurch = f.opt("how_met_church"),
+                            address = f.opt("address"),
                             date = f.req("date"),
                         ),
                     )
+                }
                 FormType.multiplication ->
                     formsRepository.submitMultiplication(
                         MultiplicationForm(
                             date = f.req("date"),
-                            sourceLifeGroupId = f.int("source_life_group_id"),
+                            sourceLifeGroupId = f.idInt("source_life_group_id"),
                             newLifeGroupName = f.req("new_life_group_name"),
-                            newLeaderId = f.int("new_leader_id"),
-                            hostId = f.int("host_id"),
+                            newLeaderId = f.idInt("new_leader_id"),
+                            hostId = f.idInt("host_id"),
                             leaderPhone = f.req("leader_phone"),
                             meetingDayTime = f.req("meeting_day_time"),
                             address = f.req("address"),
+                            membersToMove = f.ids("members_to_move"),
+                            newMembers = f.ids("new_members"),
+                            completedLeadershipTrack = f["completed_leadership_track"] == "true",
+                            legallyMarried = f["legally_married"]?.let { it == "true" },
+                            faithfulTither = f["faithful_tither"] == "true",
+                            evangelizingAndConsolidating = f["evangelizing_and_consolidating"] == "true",
+                            goodTestimony = f["good_testimony"] == "true",
+                            singleLivingInPurity = f["single_living_in_purity"]?.let { it == "true" },
                         ),
                     )
                 FormType.service_report ->
@@ -251,7 +271,11 @@ class FormDetailViewModel(
                     )
                 FormType.course ->
                     formsRepository.submitCourse(
-                        CourseForm(courseName = f.req("course_name"), memberId = userId, enrolledAt = f.req("enrolled_at")),
+                        CourseForm(
+                            courseName = f.req("course_name"),
+                            memberId = userId,
+                            enrolledAt = f.isoDate("enrolled_at"),
+                        ),
                     )
                 FormType.life_group_report ->
                     formsRepository.submitLifeGroupReport(
@@ -268,9 +292,14 @@ class FormDetailViewModel(
                     formsRepository.submitSectorReport(
                         SectorSupervisorReportForm(
                             date = f.req("date"),
-                            sectorId = f.int("sector_id"),
+                            sectorId = f.idInt("sector_id"),
+                            lifeGroupsVisited = f.ids("life_groups_visited"),
+                            leadersPastored = f.ids("leaders_pastored"),
+                            multiplicationCandidates = f.ids("multiplication_candidates"),
                             lifeGroupsCount = f.int("life_groups_count"),
                             lifeGroupsSupervised = f.int("life_groups_supervised"),
+                            lifeGroupObservations = (f.opt("life_group_observations") ?: "")
+                                .split("\n").filter { it.isNotBlank() },
                             notes = f.opt("notes"),
                         ),
                     )
@@ -278,9 +307,12 @@ class FormDetailViewModel(
                     formsRepository.submitAreaReport(
                         AreaSupervisorReportForm(
                             date = f.req("date"),
-                            areaId = f.int("area_id"),
+                            areaId = f.idInt("area_id"),
+                            sectorLeadersPastored = f.ids("sector_leaders_pastored"),
                             lifeGroupsCount = f.int("life_groups_count"),
                             lifeGroupsSupervised = f.int("life_groups_supervised"),
+                            lifeGroupObservations = (f.opt("life_group_observations") ?: "")
+                                .split("\n").filter { it.isNotBlank() },
                             notes = f.opt("notes"),
                         ),
                     )
@@ -311,4 +343,19 @@ class FormDetailViewModel(
         if (raw == "0,00" || raw.isEmpty()) return null
         return raw.replace(".", "").replace(",", ".").toDoubleOrNull()
     }
+
+    private fun Map<String, String>.isoDate(key: String): String {
+        val raw = get(key)?.trim() ?: return ""
+        return runCatching {
+            val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale("pt", "BR"))
+            val iso = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            iso.format(sdf.parse(raw)!!)
+        }.getOrDefault(raw)
+    }
+
+    private fun Map<String, String>.ids(key: String): List<Int> =
+        (get(key) ?: "").split(",").filter { it.isNotBlank() }.mapNotNull { it.trim().toIntOrNull() }
+
+    private fun Map<String, String>.idInt(key: String): Int =
+        get(key)?.trim()?.toIntOrNull() ?: 0
 }
