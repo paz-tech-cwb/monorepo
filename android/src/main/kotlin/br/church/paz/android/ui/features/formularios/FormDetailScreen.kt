@@ -12,14 +12,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.FilterChip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -121,6 +129,8 @@ fun FormDetailScreen(
                             uiState = uiState,
                             onFieldChanged = viewModel::onFieldChanged,
                             onSubmit = viewModel::onSubmit,
+                            onOpenPicker = viewModel::openPicker,
+                            onSelfOrSearchMode = viewModel::setSelfOrSearchMode,
                         )
                 }
             }
@@ -131,6 +141,30 @@ fun FormDetailScreen(
             modifier = Modifier.align(Alignment.BottomCenter).padding(PazSpacing.Lg),
         )
     }
+
+    val pickerState = uiState.pickerState
+    if (pickerState != null) {
+        if (pickerState.isLifeGroup) {
+            LifeGroupPickerSheet(
+                state = pickerState,
+                selectedId = uiState.fields[pickerState.key] ?: "",
+                onQueryChanged = viewModel::onPickerQueryChanged,
+                onSelect = viewModel::onPickerSelect,
+                onDismiss = viewModel::closePicker,
+            )
+        } else {
+            val selectedIds = (uiState.fields[pickerState.key] ?: "")
+                .split(",").filter { it.isNotBlank() }.toSet()
+            UserPickerSheet(
+                state = pickerState,
+                selectedIds = selectedIds,
+                onQueryChanged = viewModel::onPickerQueryChanged,
+                onSelect = viewModel::onPickerSelect,
+                onDismiss = viewModel::closePicker,
+                onConfirmMulti = viewModel::closePicker,
+            )
+        }
+    }
 }
 
 @Composable
@@ -138,76 +172,116 @@ private fun FormContent(
     uiState: FormDetailUiState,
     onFieldChanged: (String, String) -> Unit,
     onSubmit: () -> Unit,
+    onOpenPicker: (FormFieldDef) -> Unit,
+    onSelfOrSearchMode: (String, Boolean) -> Unit,
 ) {
     val form = uiState.form!!
     val fieldDefs = remember(form.type) { form.type.fieldDefs() }
+    var focusedFieldIndex by remember { mutableStateOf<Int?>(null) }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(PazSpacing.Lg),
-        verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
-    ) {
-        item { Spacer(Modifier.height(PazSpacing.Sm)) }
+    Column(Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(
+                start = PazSpacing.Lg,
+                end = PazSpacing.Lg,
+                top = PazSpacing.Lg,
+                bottom = if (focusedFieldIndex != null) PazSpacing.Xl else PazSpacing.Xl,
+            ),
+            verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
+        ) {
+            item { Spacer(Modifier.height(PazSpacing.Sm)) }
 
-        if (!form.description.isNullOrEmpty()) {
-            item {
-                Text(
-                    form.description!!,
-                    style =
-                        MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        ),
-                )
-            }
-        }
-
-        items(fieldDefs.size) { index ->
-            val def = fieldDefs[index]
-            val value = uiState.fields[def.key] ?: ""
-            FieldRow(
-                def = def,
-                value = value,
-                isSubmitting = uiState.isSubmitting,
-                onValueChange = { onFieldChanged(def.key, it) },
-            )
-        }
-
-        if (uiState.error != null) {
-            item {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(PazShapes.large)
-                        .background(MaterialTheme.colorScheme.errorContainer)
-                        .padding(PazSpacing.Lg),
-                ) {
+            if (!form.description.isNullOrEmpty()) {
+                item {
                     Text(
-                        uiState.error,
+                        form.description!!,
                         style =
                             MaterialTheme.typography.bodySmall.copy(
-                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             ),
                     )
                 }
             }
+
+            items(fieldDefs.size) { index ->
+                val def = fieldDefs[index]
+                val value = uiState.fields[def.key] ?: ""
+                val isFocused = focusedFieldIndex == index
+                FieldRow(
+                    def = def,
+                    value = value,
+                    isFocused = isFocused,
+                    isSubmitting = uiState.isSubmitting,
+                    uiState = uiState,
+                    onValueChange = { onFieldChanged(def.key, it) },
+                    onFocusChange = { focused -> focusedFieldIndex = if (focused) index else null },
+                    onPreviousField = {
+                        val prevIndex = (index - 1).coerceAtLeast(0)
+                        focusedFieldIndex = if (prevIndex < index) prevIndex else null
+                    },
+                    onNextField = {
+                        val nextIndex = (index + 1).coerceAtMost(fieldDefs.size - 1)
+                        focusedFieldIndex = if (nextIndex > index) nextIndex else null
+                    },
+                    onOpenPicker = onOpenPicker,
+                    onSelfOrSearchMode = onSelfOrSearchMode,
+                )
+            }
+
+            if (uiState.error != null) {
+                item {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(PazShapes.large)
+                            .background(MaterialTheme.colorScheme.errorContainer)
+                            .padding(PazSpacing.Lg),
+                    ) {
+                        Text(
+                            uiState.error,
+                            style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                ),
+                        )
+                    }
+                }
+            }
+
+            item { Spacer(Modifier.height(PazSpacing.Md)) }
+
+            item {
+                val canSubmit =
+                    !uiState.isSubmitting &&
+                        fieldDefs.filter { it.required }.all { (uiState.fields[it.key] ?: "").isNotBlank() }
+
+                PazButton(
+                    text = if (uiState.isSubmitting) "Enviando..." else "Enviar",
+                    onClick = onSubmit,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = canSubmit,
+                )
+            }
+
+            item { Spacer(Modifier.height(PazSpacing.Xl)) }
         }
 
-        item { Spacer(Modifier.height(PazSpacing.Md)) }
-
-        item {
-            val canSubmit =
-                !uiState.isSubmitting &&
-                    fieldDefs.filter { it.required }.all { (uiState.fields[it.key] ?: "").isNotBlank() }
-
-            PazButton(
-                text = if (uiState.isSubmitting) "Enviando..." else "Enviar",
-                onClick = onSubmit,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = canSubmit,
+        if (focusedFieldIndex != null) {
+            KeyboardToolbar(
+                currentIndex = focusedFieldIndex ?: 0,
+                totalFields = fieldDefs.size,
+                onPrevious = {
+                    val prevIndex = (focusedFieldIndex ?: 0) - 1
+                    focusedFieldIndex = if (prevIndex >= 0) prevIndex else null
+                },
+                onNext = {
+                    val nextIndex = (focusedFieldIndex ?: 0) + 1
+                    focusedFieldIndex = if (nextIndex < fieldDefs.size) nextIndex else null
+                },
+                onDone = { focusedFieldIndex = null },
             )
         }
-
-        item { Spacer(Modifier.height(PazSpacing.Xl)) }
     }
 }
 
@@ -215,8 +289,15 @@ private fun FormContent(
 private fun FieldRow(
     def: FormFieldDef,
     value: String,
+    isFocused: Boolean,
     isSubmitting: Boolean,
+    uiState: FormDetailUiState,
     onValueChange: (String) -> Unit,
+    onFocusChange: (Boolean) -> Unit,
+    onPreviousField: () -> Unit,
+    onNextField: () -> Unit,
+    onOpenPicker: (FormFieldDef) -> Unit,
+    onSelfOrSearchMode: (String, Boolean) -> Unit,
 ) {
     Column {
         Row(
@@ -234,6 +315,15 @@ private fun FieldRow(
         Spacer(Modifier.height(PazSpacing.Sm))
 
         when (def.fieldType) {
+            FormFieldType.PICKER ->
+                PickerField(
+                    value = value,
+                    options = def.options,
+                    enabled = !isSubmitting,
+                    onValueChange = onValueChange,
+                    onFocusChange = onFocusChange,
+                )
+
             FormFieldType.DATE -> DateFieldRow(value = value, enabled = !isSubmitting, onValueChange = onValueChange)
 
             FormFieldType.PHONE ->
@@ -244,6 +334,9 @@ private fun FieldRow(
                     keyboardType = KeyboardType.Number,
                     mask = { old, new -> applyPhoneMask(old = old, new = new) },
                     onValueChange = onValueChange,
+                    onFocusChange = onFocusChange,
+                    onPreviousField = onPreviousField,
+                    onNextField = onNextField,
                 )
 
             FormFieldType.EMAIL ->
@@ -300,6 +393,9 @@ private fun FieldRow(
                     keyboardType = KeyboardType.Number,
                     mask = { _, new -> applyCurrencyMask(new) },
                     onValueChange = onValueChange,
+                    onFocusChange = onFocusChange,
+                    onPreviousField = onPreviousField,
+                    onNextField = onNextField,
                 )
 
             FormFieldType.MULTILINE ->
@@ -329,6 +425,114 @@ private fun FieldRow(
                         enabled = !isSubmitting,
                     )
                 }
+
+            FormFieldType.SELECT -> {
+                val displayValue = if (def.optionValues.isEmpty()) {
+                    value
+                } else {
+                    def.options.getOrElse(def.optionValues.indexOf(value)) { value }
+                }
+                PickerField(
+                    value = displayValue,
+                    options = def.options,
+                    enabled = !isSubmitting,
+                    onValueChange = { label ->
+                        val apiValue = if (def.optionValues.isEmpty()) {
+                            label
+                        } else {
+                            def.optionValues.getOrElse(def.options.indexOf(label)) { label }
+                        }
+                        onValueChange(apiValue)
+                    },
+                    onFocusChange = onFocusChange,
+                )
+            }
+
+            FormFieldType.USER_PICKER, FormFieldType.USER_MULTI_PICKER -> {
+                val displayName = uiState.fields["${def.key}_name"] ?: ""
+                Box {
+                    OutlinedTextField(
+                        value = displayName,
+                        onValueChange = {},
+                        modifier = Modifier.fillMaxWidth(),
+                        readOnly = true,
+                        enabled = !isSubmitting,
+                        placeholder = { Text(def.placeholder.ifEmpty { "Selecionar pessoa" }) },
+                        trailingIcon = {
+                            Icon(Icons.Default.KeyboardArrowDown, null)
+                        },
+                        shape = PazShapes.large,
+                        singleLine = true,
+                    )
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { if (!isSubmitting) onOpenPicker(def) },
+                        color = Color.Transparent,
+                    ) {}
+                }
+            }
+
+            FormFieldType.LG_PICKER -> {
+                val displayName = uiState.fields["${def.key}_name"] ?: ""
+                Box {
+                    OutlinedTextField(
+                        value = displayName,
+                        onValueChange = {},
+                        modifier = Modifier.fillMaxWidth(),
+                        readOnly = true,
+                        enabled = !isSubmitting,
+                        placeholder = { Text(def.placeholder.ifEmpty { "Selecionar grupo de vida" }) },
+                        trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null) },
+                        shape = PazShapes.large,
+                        singleLine = true,
+                    )
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { if (!isSubmitting) onOpenPicker(def) },
+                        color = Color.Transparent,
+                    ) {}
+                }
+            }
+
+            FormFieldType.SELF_OR_SEARCH -> {
+                val isSearchMode = uiState.selfOrSearchIsSearch[def.key] == true
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        FilterChip(
+                            selected = !isSearchMode,
+                            onClick = { onSelfOrSearchMode(def.key, false) },
+                            label = { Text("Eu mesmo") },
+                        )
+                        Spacer(Modifier.width(PazSpacing.Sm))
+                        FilterChip(
+                            selected = isSearchMode,
+                            onClick = { onSelfOrSearchMode(def.key, true) },
+                            label = { Text("Buscar pessoa") },
+                        )
+                    }
+                    if (isSearchMode) {
+                        Spacer(Modifier.height(PazSpacing.Sm))
+                        val displayName = uiState.fields["${def.key}_name"] ?: ""
+                        Box {
+                            OutlinedTextField(
+                                value = displayName,
+                                onValueChange = {},
+                                modifier = Modifier.fillMaxWidth(),
+                                readOnly = true,
+                                enabled = !isSubmitting,
+                                placeholder = { Text("Selecionar pessoa") },
+                                trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null) },
+                                shape = PazShapes.large,
+                            )
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = { if (!isSubmitting) onOpenPicker(def) },
+                                color = Color.Transparent,
+                            ) {}
+                        }
+                    }
+                }
+            }
 
             FormFieldType.TEXT ->
                 OutlinedTextField(
@@ -360,6 +564,9 @@ private fun MaskedTextField(
     keyboardType: KeyboardType,
     mask: (old: String, new: String) -> String,
     onValueChange: (String) -> Unit,
+    onFocusChange: (Boolean) -> Unit = {},
+    onPreviousField: () -> Unit = {},
+    onNextField: () -> Unit = {},
 ) {
     var tfv by remember { mutableStateOf(TextFieldValue(value, selection = TextRange(value.length))) }
 
@@ -383,6 +590,126 @@ private fun MaskedTextField(
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = ImeAction.Next),
         shape = PazShapes.large,
     )
+}
+
+@Composable
+private fun PickerField(
+    value: String,
+    options: List<String>,
+    enabled: Boolean,
+    onValueChange: (String) -> Unit,
+    onFocusChange: (Boolean) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            modifier = Modifier.fillMaxWidth(),
+            readOnly = true,
+            enabled = enabled,
+            trailingIcon = {
+                Icon(
+                    if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            },
+            shape = PazShapes.large,
+            singleLine = true,
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth(0.9f),
+        ) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = {
+                        onValueChange(option)
+                        expanded = false
+                        onFocusChange(false)
+                    },
+                    leadingIcon = if (value == option) {
+                        {
+                            Icon(
+                                Icons.Filled.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    } else {
+                        null
+                    },
+                )
+            }
+        }
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { if (enabled) expanded = !expanded },
+            color = Color.Transparent,
+        ) {
+            // Invisible surface to handle clicks
+        }
+    }
+}
+
+@Composable
+private fun KeyboardToolbar(
+    currentIndex: Int,
+    totalFields: Int,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onDone: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shadowElevation = 8.dp,
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = PazSpacing.Md, vertical = PazSpacing.Sm),
+            horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(
+                onClick = onPrevious,
+                enabled = currentIndex > 0,
+                modifier = Modifier.weight(1f),
+            ) {
+                Icon(
+                    Icons.Default.KeyboardArrowUp,
+                    contentDescription = "Campo anterior",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            IconButton(
+                onClick = onNext,
+                enabled = currentIndex < totalFields - 1,
+                modifier = Modifier.weight(1f),
+            ) {
+                Icon(
+                    Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Próximo campo",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            PazButton(
+                text = "Pronto",
+                onClick = onDone,
+                modifier = Modifier.weight(2f),
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

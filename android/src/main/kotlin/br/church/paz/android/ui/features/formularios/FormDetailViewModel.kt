@@ -14,6 +14,8 @@ import br.church.paz.shared.domain.model.SectorSupervisorReportForm
 import br.church.paz.shared.domain.model.ServiceReportForm
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.FormsRepository
+import br.church.paz.shared.domain.model.LifeGroupSummary
+import br.church.paz.shared.domain.model.User
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -53,6 +55,7 @@ class FormDetailViewModel(
                             def.key to when {
                                 def.fieldType == FormFieldType.DATE -> today
                                 def.fieldType == FormFieldType.PICKER && def.options.isNotEmpty() -> def.options[0]
+                                def.fieldType == FormFieldType.SELECT && def.optionValues.isNotEmpty() -> def.optionValues[0]
                                 else -> ""
                             }
                         } ?: emptyMap()
@@ -73,6 +76,68 @@ class FormDetailViewModel(
     ) {
         _uiState.update { state ->
             state.copy(fields = state.fields + (key to value), error = null)
+        }
+    }
+
+    fun openPicker(def: FormFieldDef) {
+        val isLifeGroup = def.fieldType == FormFieldType.LG_PICKER
+        _uiState.update {
+            it.copy(
+                pickerState = PickerState(
+                    key = def.key,
+                    label = def.label,
+                    isMulti = def.fieldType == FormFieldType.USER_MULTI_PICKER,
+                    isLifeGroup = isLifeGroup,
+                ),
+            )
+        }
+    }
+
+    fun closePicker() {
+        _uiState.update { it.copy(pickerState = null) }
+    }
+
+    fun onPickerQueryChanged(query: String) {
+        val state = _uiState.value.pickerState ?: return
+        _uiState.update { it.copy(pickerState = state.copy(query = query, isLoading = true, error = null)) }
+        viewModelScope.launch {
+            runCatching {
+                if (state.isLifeGroup) formsRepository.searchLifeGroups(query)
+                else formsRepository.searchUsers(query)
+            }.onSuccess { results ->
+                _uiState.update { s ->
+                    s.copy(pickerState = s.pickerState?.copy(results = results, isLoading = false))
+                }
+            }.onFailure { e ->
+                _uiState.update { s ->
+                    s.copy(pickerState = s.pickerState?.copy(error = e.message, isLoading = false))
+                }
+            }
+        }
+    }
+
+    fun onPickerSelect(id: String, name: String) {
+        val state = _uiState.value.pickerState ?: return
+        if (state.isMulti) {
+            val current = (_uiState.value.fields[state.key] ?: "")
+                .split(",").filter { it.isNotBlank() }.toMutableList()
+            if (id in current) current.remove(id) else current.add(id)
+            _uiState.update { it.copy(fields = it.fields + (state.key to current.joinToString(","))) }
+        } else {
+            _uiState.update {
+                it.copy(
+                    fields = it.fields + (state.key to id) + ("${state.key}_name" to name),
+                    pickerState = null,
+                )
+            }
+        }
+    }
+
+    fun setSelfOrSearchMode(key: String, isSearch: Boolean) {
+        _uiState.update {
+            val newMap = it.selfOrSearchIsSearch.toMutableMap().also { m -> m[key] = isSearch }
+            val newFields = if (!isSearch) it.fields + (key to "") else it.fields
+            it.copy(selfOrSearchIsSearch = newMap, fields = newFields)
         }
     }
 
