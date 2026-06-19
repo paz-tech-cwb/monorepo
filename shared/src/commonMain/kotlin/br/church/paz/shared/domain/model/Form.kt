@@ -47,40 +47,103 @@ enum class FormType {
 // ── Submission payloads ──────────────────────────────────────────────────────
 
 @Serializable
-data class MemberRegistrationForm(
-    val name: String,
-    val phone: String? = null,
+data class GuestForm(
+    @SerialName("full_name") val fullName: String,
     val email: String? = null,
-    @SerialName("life_group_id") val lifeGroupId: String? = null,
-    @SerialName("sector_id") val sectorId: String? = null,
-    @SerialName("area_id") val areaId: String? = null,
-    @SerialName("leader_id") val leaderId: String? = null,
+    val phone: String? = null,
+    @SerialName("invited_by") val invitedBy: String? = null,
+    @SerialName("via_casa_de_paz") val viaCasaDePaz: Boolean = false,
+    @SerialName("how_met_church") val howMetChurch: String? = null,
+    val address: String? = null,
+    val date: String,
+)
+
+@Serializable
+data class MemberRegistrationForm(
+    @SerialName("full_name") val fullName: String,
+    @SerialName("birth_date") val birthDate: String,
+    val phone: String,
+    val gender: String,
+    @SerialName("civil_state") val civilState: String,
+    @SerialName("sector_id") val sectorId: Int,
+    val email: String? = null,
+    @SerialName("life_group_id") val lifeGroupId: Int? = null,
+    val cep: String? = null,
+    val street: String? = null,
+    @SerialName("address_number") val addressNumber: String? = null,
+    val complement: String? = null,
+    val neighborhood: String? = null,
+    val city: String? = null,
+    val state: String? = null,
+    val address: String? = null,
 )
 
 @Serializable
 data class ConversionForm(
-    val name: String,
-    val phone: String? = null,
-    val date: String,
-    @SerialName("life_group_id") val lifeGroupId: String? = null,
-    val observations: String? = null,
-)
-
-@Serializable
-data class GuestForm(
-    val name: String,
-    val phone: String? = null,
+    @SerialName("full_name") val fullName: String,
+    val email: String,
+    val phone: String,
+    @SerialName("decision_type") val decisionType: String,
+    @SerialName("how_met_church") val howMetChurch: String,
+    val gender: String,
+    @SerialName("birth_date") val birthDate: String,
+    @SerialName("civil_state") val civilState: String,
+    val address: String,
+    @SerialName("attendance_count") val attendanceCount: String,
+    @SerialName("life_group_status") val lifeGroupStatus: String,
+    @SerialName("life_group_leader_or_name") val lifeGroupLeaderOrName: String? = null,
     @SerialName("invited_by") val invitedBy: String? = null,
-    @SerialName("via_casa_de_paz") val viaCasaDePaz: Boolean = false,
-    val date: String,
+    val notes: String? = null,
 )
 
 @Serializable
 data class MultiplicationForm(
-    @SerialName("original_life_group_id") val originalLifeGroupId: String,
-    @SerialName("new_life_group_name") val newLifeGroupName: String,
-    @SerialName("new_leader_id") val newLeaderId: String,
     val date: String,
+    @SerialName("source_life_group_id") val sourceLifeGroupId: Int,
+    val area: String? = null,
+    val sector: String? = null,
+    @SerialName("new_life_group_name") val newLifeGroupName: String,
+    @SerialName("new_leader_id") val newLeaderId: Int,
+    @SerialName("host_id") val hostId: Int,
+    @SerialName("leader_phone") val leaderPhone: String,
+    @SerialName("meeting_day_time") val meetingDayTime: String,
+    val address: String,
+    @SerialName("members_to_move") val membersToMove: List<Int> = emptyList(),
+    @SerialName("new_members") val newMembers: List<Int> = emptyList(),
+    @SerialName("completed_leadership_track") val completedLeadershipTrack: Boolean = false,
+    @SerialName("legally_married") val legallyMarried: Boolean? = null,
+    @SerialName("faithful_tither") val faithfulTither: Boolean = false,
+    @SerialName("evangelizing_and_consolidating") val evangelizingAndConsolidating: Boolean = false,
+    @SerialName("good_testimony") val goodTestimony: Boolean = false,
+    @SerialName("single_living_in_purity") val singleLivingInPurity: Boolean? = null,
+)
+
+@Serializable
+data class SectorSupervisorReportForm(
+    val date: String,
+    @SerialName("sector_id") val sectorId: Int,
+    @SerialName("area_id") val areaId: Int? = null,
+    @SerialName("life_groups_visited") val lifeGroupsVisited: List<Int> = emptyList(),
+    @SerialName("leaders_pastored") val leadersPastored: List<Int> = emptyList(),
+    @SerialName("multiplication_candidates") val multiplicationCandidates: List<Int> = emptyList(),
+    @SerialName("life_groups_count") val lifeGroupsCount: Int = 0,
+    @SerialName("life_groups_supervised") val lifeGroupsSupervised: Int = 0,
+    @SerialName("life_group_observations") val lifeGroupObservations: List<String> = emptyList(),
+    @SerialName("sector_multiplication_date") val sectorMultiplicationDate: String? = null,
+    val notes: String? = null,
+)
+
+@Serializable
+data class AreaSupervisorReportForm(
+    val date: String,
+    @SerialName("area_id") val areaId: Int,
+    @SerialName("sectors_visited") val sectorsVisited: List<Int> = emptyList(),
+    @SerialName("sector_leaders_pastored") val sectorLeadersPastored: List<Int> = emptyList(),
+    @SerialName("multiplications_in_progress") val multiplicationsInProgress: Int? = null,
+    @SerialName("life_groups_count") val lifeGroupsCount: Int = 0,
+    @SerialName("life_groups_supervised") val lifeGroupsSupervised: Int = 0,
+    @SerialName("life_group_observations") val lifeGroupObservations: List<String> = emptyList(),
+    val notes: String? = null,
 )
 
 @Serializable

@@ -2,6 +2,7 @@ package br.church.paz.android.ui.features.formularios
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import br.church.paz.shared.domain.model.AreaSupervisorReportForm
 import br.church.paz.shared.domain.model.ConversionForm
 import br.church.paz.shared.domain.model.CourseForm
 import br.church.paz.shared.domain.model.FormType
@@ -9,6 +10,7 @@ import br.church.paz.shared.domain.model.GuestForm
 import br.church.paz.shared.domain.model.LifeGroupReportForm
 import br.church.paz.shared.domain.model.MemberRegistrationForm
 import br.church.paz.shared.domain.model.MultiplicationForm
+import br.church.paz.shared.domain.model.SectorSupervisorReportForm
 import br.church.paz.shared.domain.model.ServiceReportForm
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.FormsRepository
@@ -48,7 +50,11 @@ class FormDetailViewModel(
                     val today = brazilianDate.format(Date())
                     val initialFields =
                         form?.type?.fieldDefs()?.associate { def ->
-                            def.key to if (def.fieldType == FormFieldType.DATE) today else ""
+                            def.key to when {
+                                def.fieldType == FormFieldType.DATE -> today
+                                def.fieldType == FormFieldType.PICKER && def.options.isNotEmpty() -> def.options[0]
+                                else -> ""
+                            }
                         } ?: emptyMap()
                     _uiState.update {
                         it.copy(form = form, isLoading = false, fields = initialFields)
@@ -106,22 +112,39 @@ class FormDetailViewModel(
             when (type) {
                 FormType.member_registration ->
                     formsRepository.submitMemberRegistration(
-                        MemberRegistrationForm(name = f.req("name"), phone = f.opt("phone"), email = f.opt("email")),
+                        MemberRegistrationForm(
+                            fullName = f.req("full_name"),
+                            birthDate = f.req("birth_date"),
+                            phone = f.req("phone"),
+                            gender = f.req("gender"),
+                            civilState = f.req("civil_state"),
+                            sectorId = f.int("sector_id"),
+                            email = f.opt("email"),
+                        ),
                     )
                 FormType.conversion ->
                     formsRepository.submitConversion(
                         ConversionForm(
-                            name = f.req("name"),
-                            phone = f.opt("phone"),
-                            date = f.req("date"),
-                            observations = f.opt("observations"),
+                            fullName = f.req("full_name"),
+                            email = f.req("email"),
+                            phone = f.req("phone"),
+                            decisionType = f.req("decision_type"),
+                            howMetChurch = f.req("how_met_church"),
+                            gender = f.req("gender"),
+                            birthDate = f.req("birth_date"),
+                            civilState = f.req("civil_state"),
+                            address = f.req("address"),
+                            attendanceCount = f.req("attendance_count"),
+                            lifeGroupStatus = f.req("life_group_status"),
+                            notes = f.opt("notes"),
                         ),
                     )
                 FormType.guest ->
                     formsRepository.submitGuest(
                         GuestForm(
-                            name = f.req("name"),
+                            fullName = f.req("full_name"),
                             phone = f.opt("phone"),
+                            email = f.opt("email"),
                             invitedBy = f.opt("invited_by"),
                             viaCasaDePaz = f["via_casa_de_paz"]?.toBooleanStrictOrNull() ?: false,
                             date = f.req("date"),
@@ -130,10 +153,14 @@ class FormDetailViewModel(
                 FormType.multiplication ->
                     formsRepository.submitMultiplication(
                         MultiplicationForm(
-                            originalLifeGroupId = userId,
-                            newLifeGroupName = f.req("new_life_group_name"),
-                            newLeaderId = userId,
                             date = f.req("date"),
+                            sourceLifeGroupId = f.int("source_life_group_id"),
+                            newLifeGroupName = f.req("new_life_group_name"),
+                            newLeaderId = f.int("new_leader_id"),
+                            hostId = f.int("host_id"),
+                            leaderPhone = f.req("leader_phone"),
+                            meetingDayTime = f.req("meeting_day_time"),
+                            address = f.req("address"),
                         ),
                     )
                 FormType.service_report ->
@@ -174,24 +201,22 @@ class FormDetailViewModel(
                     )
                 FormType.sector_supervisor_report ->
                     formsRepository.submitSectorReport(
-                        LifeGroupReportForm(
-                            lifeGroupId = userId,
+                        SectorSupervisorReportForm(
                             date = f.req("date"),
-                            attendees = f.int("attendees"),
-                            visitors = f.int("visitors"),
-                            offerings = f.brlOrNull("offerings"),
-                            observations = f.opt("observations"),
+                            sectorId = f.int("sector_id"),
+                            lifeGroupsCount = f.int("life_groups_count"),
+                            lifeGroupsSupervised = f.int("life_groups_supervised"),
+                            notes = f.opt("notes"),
                         ),
                     )
                 FormType.area_supervisor_report ->
                     formsRepository.submitAreaReport(
-                        LifeGroupReportForm(
-                            lifeGroupId = userId,
+                        AreaSupervisorReportForm(
                             date = f.req("date"),
-                            attendees = f.int("attendees"),
-                            visitors = f.int("visitors"),
-                            offerings = f.brlOrNull("offerings"),
-                            observations = f.opt("observations"),
+                            areaId = f.int("area_id"),
+                            lifeGroupsCount = f.int("life_groups_count"),
+                            lifeGroupsSupervised = f.int("life_groups_supervised"),
+                            notes = f.opt("notes"),
                         ),
                     )
             }

@@ -1,12 +1,15 @@
 package br.church.paz.shared.data.repository
 
+import br.church.paz.shared.domain.model.AreaSupervisorReportForm
 import br.church.paz.shared.domain.model.ConversionForm
 import br.church.paz.shared.domain.model.CourseForm
 import br.church.paz.shared.domain.model.FormCatalogItem
 import br.church.paz.shared.domain.model.GuestForm
 import br.church.paz.shared.domain.model.LifeGroupReportForm
+import br.church.paz.shared.domain.model.LifeGroupSummary
 import br.church.paz.shared.domain.model.MemberRegistrationForm
 import br.church.paz.shared.domain.model.MultiplicationForm
+import br.church.paz.shared.domain.model.SectorSupervisorReportForm
 import br.church.paz.shared.domain.model.ServiceReportForm
 import br.church.paz.shared.domain.model.ServiceReportSubmission
 import br.church.paz.shared.domain.model.User
@@ -27,8 +30,12 @@ class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
         client.get("api/forms").body()
 
     @Throws(Exception::class)
-    override suspend fun lookupUsers(query: String): List<User> =
-        client.get("api/users/lookup") { parameter("q", query) }.body()
+    override suspend fun searchUsers(query: String): List<User> =
+        client.get("api/users") { parameter("q", query) }.body()
+
+    @Throws(Exception::class)
+    override suspend fun searchLifeGroups(query: String): List<LifeGroupSummary> =
+        client.get("api/life-groups") { parameter("q", query) }.body()
 
     @Throws(Exception::class)
     override suspend fun submitMemberRegistration(form: MemberRegistrationForm) =
@@ -59,11 +66,11 @@ class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
         post("api/forms/life-group-reports", form)
 
     @Throws(Exception::class)
-    override suspend fun submitSectorReport(form: LifeGroupReportForm) =
+    override suspend fun submitSectorReport(form: SectorSupervisorReportForm) =
         post("api/forms/sector-supervisor-reports", form)
 
     @Throws(Exception::class)
-    override suspend fun submitAreaReport(form: LifeGroupReportForm) =
+    override suspend fun submitAreaReport(form: AreaSupervisorReportForm) =
         post("api/forms/area-supervisor-reports", form)
 
     @Throws(Exception::class)
