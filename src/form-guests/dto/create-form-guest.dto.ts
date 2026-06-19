@@ -29,6 +29,6 @@ export class CreateFormGuestDto {
   @IsOptional()
   @IsInt()
   lifeGroupId?: number;
-  @Expose() @IsOptional() @IsEmail() email?: string;
-  @Expose() @IsOptional() @IsDateString() date?: string;
+  @Expose({ name: 'email' }) @IsOptional() @IsEmail() email?: string;
+  @Expose({ name: 'date' }) @IsOptional() @IsDateString() date?: string;
 }

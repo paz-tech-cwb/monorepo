@@ -15,7 +15,7 @@ export class FormGuest {
   @Column({ name: 'full_name', type: 'varchar', length: 180 }) fullName: string;
   @Column({ type: 'varchar', length: 32, nullable: true }) phone: string | null;
   @Column({ type: 'varchar', length: 180, nullable: true }) email: string | null;
-  @Column({ type: 'date', nullable: true }) date: Date | null;
+  @Column({ type: 'date', nullable: true }) date: string | null;
   @Column({ name: 'created_user_id', type: 'int', nullable: true })
   createdUserId: number | null;
   @Column({ type: 'text', nullable: true }) address: string | null;

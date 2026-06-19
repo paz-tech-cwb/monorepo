@@ -29,7 +29,7 @@ export class FormGuestsService {
         fullName: dto.fullName,
         phone: dto.phone ?? null,
         email: dto.email ?? null,
-        date: dto.date ? new Date(dto.date) : null,
+        date: dto.date ?? null,
         address: dto.address ?? null,
         invitedBy: dto.invitedBy ?? null,
         howMetChurch: dto.howMetChurch ?? null,
@@ -68,6 +68,7 @@ export class FormGuestsService {
       }
       if (createdUserId) {
         await this.em.update(FormGuest, entity.id, { createdUserId });
+        entity.createdUserId = createdUserId;
       }
     }
 
