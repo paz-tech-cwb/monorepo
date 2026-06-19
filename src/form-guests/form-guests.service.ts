@@ -1,13 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { FormGuest } from './entities/form-guest.entity';
 import { User } from '../users/entities/user.entity';
+import { Role } from '../roles/entities/role.entity';
 import { CreateFormGuestDto } from './dto/create-form-guest.dto';
 import { UpdateFormGuestDto } from './dto/update-form-guest.dto';
 import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
 import { FormSubmissionPolicyService } from '../forms-core/services/form-submission-policy.service';
 import { FormSubmissionAuditService } from '../forms-core/services/form-submission-audit.service';
+import { UsersService } from '../users/users.service';
 
 const SLUG = 'form-guests';
 
@@ -15,6 +17,8 @@ const SLUG = 'form-guests';
 export class FormGuestsService {
   constructor(
     @InjectRepository(FormGuest) private readonly repo: Repository<FormGuest>,
+    @InjectEntityManager() private readonly em: EntityManager,
+    private readonly usersService: UsersService,
     private readonly policy: FormSubmissionPolicyService,
     private readonly audit: FormSubmissionAuditService,
   ) {}
@@ -24,6 +28,8 @@ export class FormGuestsService {
       this.repo.create({
         fullName: dto.fullName,
         phone: dto.phone ?? null,
+        email: dto.email ?? null,
+        date: dto.date ? new Date(dto.date) : null,
         address: dto.address ?? null,
         invitedBy: dto.invitedBy ?? null,
         howMetChurch: dto.howMetChurch ?? null,
@@ -36,6 +42,35 @@ export class FormGuestsService {
         submittedBy: { id: actorId } as User,
       }),
     );
+
+    // Link or create a User record for the guest
+    let createdUserId: number | null = null;
+    if (dto.email || dto.phone) {
+      const existing = await this.usersService.lookupForForms({
+        email: dto.email,
+        phone: dto.phone,
+      });
+      if (existing) {
+        createdUserId = existing.id as number;
+      } else if (dto.fullName && (dto.email || dto.phone)) {
+        const memberRole = await this.em.findOne(Role, {
+          where: { slug: 'member' },
+        });
+        const newUser = this.em.create(User, {
+          name: dto.fullName,
+          email: dto.email ?? null,
+          phoneNumber: dto.phone ?? null,
+          role: memberRole ?? undefined,
+          status: 'active',
+        });
+        const saved = await this.em.save(User, newUser);
+        createdUserId = saved.id;
+      }
+      if (createdUserId) {
+        await this.em.update(FormGuest, entity.id, { createdUserId });
+      }
+    }
+
     await this.audit.record({
       formSlug: SLUG,
       submissionId: entity.id,

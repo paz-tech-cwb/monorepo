@@ -11,6 +11,7 @@ import {
   HttpStatus,
   SerializeOptions,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { LifeGroupsService } from './life-groups.service';
@@ -32,7 +33,8 @@ export class LifeGroupsController {
   }
 
   @Get()
-  findAll() {
+  findAll(@Query('q') q?: string) {
+    if (q?.trim()) return this.lifeGroupsService.search(q);
     return this.lifeGroupsService.findAll();
   }
 

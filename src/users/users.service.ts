@@ -120,6 +120,29 @@ export class UsersService {
     }
   }
 
+  async search(
+    q: string,
+  ): Promise<
+    { id: number; name: string; phone: string | null; email: string | null }[]
+  > {
+    const term = `%${q.trim().toLowerCase()}%`;
+    const users = await this.entityManager
+      .createQueryBuilder(User, 'u')
+      .where(
+        'LOWER(u.name) LIKE :term OR LOWER(u.email) LIKE :term OR u.phone_number LIKE :term',
+        { term },
+      )
+      .orderBy('u.name', 'ASC')
+      .take(30)
+      .getMany();
+    return users.map((u) => ({
+      id: u.id,
+      name: u.name,
+      phone: u.phoneNumber ?? null,
+      email: u.email ?? null,
+    }));
+  }
+
   async findAll() {
     try {
       const users = await this.entityManager.find(User, {

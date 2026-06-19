@@ -46,7 +46,8 @@ export class UsersController {
   }
 
   @Get()
-  findAll() {
+  findAll(@Query('q') q?: string) {
+    if (q?.trim()) return this.usersService.search(q);
     return this.usersService.findAll();
   }
 

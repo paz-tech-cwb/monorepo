@@ -79,6 +79,17 @@ export class LifeGroupsService {
     }
   }
 
+  async search(q: string): Promise<{ id: number; name: string }[]> {
+    const term = `%${q.trim().toLowerCase()}%`;
+    const groups = await this.entityManager
+      .createQueryBuilder(LifeGroup, 'lg')
+      .where('LOWER(lg.name) LIKE :term', { term })
+      .orderBy('lg.name', 'ASC')
+      .take(30)
+      .getMany();
+    return groups.map((lg) => ({ id: lg.id, name: lg.name }));
+  }
+
   async findOne(id: number) {
     const lifeGroup = await this.entityManager.findOne(LifeGroup, {
       where: { id },
