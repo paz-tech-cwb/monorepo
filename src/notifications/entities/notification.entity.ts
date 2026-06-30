@@ -52,7 +52,17 @@ export class Notification {
 
   @Column({
     type: 'enum',
-    enum: ['events', 'announcements', 'life_group', 'academy', 'admin_alerts', 'forms', 'member_journey', 'contributions', 'meeting_reports'],
+    enum: [
+      'events',
+      'announcements',
+      'life_group',
+      'academy',
+      'admin_alerts',
+      'forms',
+      'member_journey',
+      'contributions',
+      'meeting_reports',
+    ],
     enumName: 'notification_category_enum',
   })
   category: NotificationCategory;

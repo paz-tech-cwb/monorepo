@@ -36,7 +36,10 @@ export class CreateMemberRegistrationDto {
   @IsOptional()
   @IsInt()
   lifeGroupId?: number;
-  @Expose({ name: 'discipulador_name' }) @IsOptional() @IsString() discipuladorName?: string;
+  @Expose({ name: 'discipulador_name' })
+  @IsOptional()
+  @IsString()
+  discipuladorName?: string;
   @Expose({ name: 'completed_courses' })
   @IsOptional()
   @IsArray()

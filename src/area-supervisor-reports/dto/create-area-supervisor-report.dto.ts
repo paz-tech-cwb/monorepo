@@ -25,8 +25,18 @@ export class CreateAreaSupervisorReportDto {
   @IsOptional()
   @IsInt()
   multiplicationsInProgress?: number;
-  @Expose({ name: 'life_groups_count' }) @IsInt() @Min(0) lifeGroupsCount: number;
-  @Expose({ name: 'life_groups_supervised' }) @IsInt() @Min(0) lifeGroupsSupervised: number;
-  @Expose({ name: 'life_group_observations' }) @IsOptional() @IsArray() @IsString({ each: true }) lifeGroupObservations?: string[];
+  @Expose({ name: 'life_groups_count' })
+  @IsInt()
+  @Min(0)
+  lifeGroupsCount: number;
+  @Expose({ name: 'life_groups_supervised' })
+  @IsInt()
+  @Min(0)
+  lifeGroupsSupervised: number;
+  @Expose({ name: 'life_group_observations' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  lifeGroupObservations?: string[];
   @Expose() @IsOptional() @IsString() notes?: string;
 }

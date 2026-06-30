@@ -20,9 +20,11 @@ describe('MemberJourneyReminderEvaluator', () => {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([
-          { memberId: 7, stageKey: 'baptism', member: { id: 7 } },
-        ]),
+        getMany: jest
+          .fn()
+          .mockResolvedValue([
+            { memberId: 7, stageKey: 'baptism', member: { id: 7 } },
+          ]),
       }),
       insert: jest.fn().mockResolvedValue(undefined),
       // 1st findOne = dedupe check (null = not sent), 2nd = load the User
@@ -50,10 +52,14 @@ describe('MemberJourneyReminderEvaluator', () => {
         andWhere: jest.fn().mockReturnThis(),
         getMany: jest
           .fn()
-          .mockResolvedValue([{ memberId: 7, stageKey: 'baptism', member: { id: 7 } }]),
+          .mockResolvedValue([
+            { memberId: 7, stageKey: 'baptism', member: { id: 7 } },
+          ]),
       }),
       insert: jest.fn(),
-      findOne: jest.fn().mockResolvedValue({ id: 1, dedupeKey: 'journey:7:baptism' }),
+      findOne: jest
+        .fn()
+        .mockResolvedValue({ id: 1, dedupeKey: 'journey:7:baptism' }),
       create: jest.fn((_e, v) => v),
       save: jest.fn(),
     } as never;

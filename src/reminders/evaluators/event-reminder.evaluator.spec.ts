@@ -18,7 +18,9 @@ describe('EventReminderEvaluator', () => {
         andWhere: jest.fn().mockReturnThis(),
         getMany: jest
           .fn()
-          .mockResolvedValueOnce([{ id: 5, title: 'Culto', initialDate: eventStart }]) // events
+          .mockResolvedValueOnce([
+            { id: 5, title: 'Culto', initialDate: eventStart },
+          ]) // events
           .mockResolvedValue([{ id: 1 }]), // users
       }),
       findOne: jest.fn().mockResolvedValue(null), // no dedupe row yet
@@ -44,7 +46,9 @@ describe('EventReminderEvaluator', () => {
         andWhere: jest.fn().mockReturnThis(),
         getMany: jest
           .fn()
-          .mockResolvedValueOnce([{ id: 5, title: 'Culto', initialDate: eventStart }]),
+          .mockResolvedValueOnce([
+            { id: 5, title: 'Culto', initialDate: eventStart },
+          ]),
       }),
       findOne: jest.fn().mockResolvedValue({ id: 1, dedupeKey: 'event:5:24h' }),
       insert: jest.fn(),

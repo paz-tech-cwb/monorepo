@@ -11,6 +11,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Expose } from 'class-transformer';
 import { Role } from '../../roles/entities/role.entity';
 import { Address } from '../../addresses/entities/address.entity';
 import { UserAccount } from './account.entity';
@@ -21,9 +22,11 @@ import { Area } from '../../areas/entities/area.entity';
 
 @Entity('users')
 export class User {
+  @Expose()
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Expose()
   @Column({ type: 'varchar', length: 255 })
   name: string;
 

@@ -36,7 +36,12 @@ export class LifeGroupReport {
   @Column({ name: 'disciples_count', type: 'int' }) disciplesCount: number;
   @Column({ name: 'disciples_discipled_this_week', type: 'int' })
   disciplesDiscipledThisWeek: number;
-  @Column({ name: 'pastoring_activity_type', type: 'text', array: true, default: [] })
+  @Column({
+    name: 'pastoring_activity_type',
+    type: 'text',
+    array: true,
+    default: [],
+  })
   pastoringActivityType: string[];
   @Column({
     name: 'pastoring_activity_other',
@@ -45,7 +50,12 @@ export class LifeGroupReport {
     nullable: true,
   })
   pastoringActivityOther: string | null;
-  @Column({ name: 'training_activity_type', type: 'text', array: true, default: [] })
+  @Column({
+    name: 'training_activity_type',
+    type: 'text',
+    array: true,
+    default: [],
+  })
   trainingActivityType: string[];
   @Column({
     name: 'training_activity_other',

@@ -14,15 +14,33 @@ export class AreaSupervisorReport {
   @PrimaryGeneratedColumn('uuid') id: string;
   @Column({ type: 'date' }) date: string;
   @Column({ name: 'area_id', type: 'int' }) areaId: number;
-  @Column({ name: 'sectors_visited', type: 'int', array: true, default: () => "'{}'" })
+  @Column({
+    name: 'sectors_visited',
+    type: 'int',
+    array: true,
+    default: () => "'{}'",
+  })
   sectorsVisited: number[];
-  @Column({ name: 'sector_leaders_pastored', type: 'int', array: true, default: () => "'{}'" })
+  @Column({
+    name: 'sector_leaders_pastored',
+    type: 'int',
+    array: true,
+    default: () => "'{}'",
+  })
   sectorLeadersPastored: number[];
   @Column({ name: 'multiplications_in_progress', type: 'int', nullable: true })
   multiplicationsInProgress: number | null;
-  @Column({ name: 'life_groups_count', type: 'int', default: 0 }) lifeGroupsCount: number;
-  @Column({ name: 'life_groups_supervised', type: 'int', default: 0 }) lifeGroupsSupervised: number;
-  @Column({ name: 'life_group_observations', type: 'text', array: true, default: [] }) lifeGroupObservations: string[];
+  @Column({ name: 'life_groups_count', type: 'int', default: 0 })
+  lifeGroupsCount: number;
+  @Column({ name: 'life_groups_supervised', type: 'int', default: 0 })
+  lifeGroupsSupervised: number;
+  @Column({
+    name: 'life_group_observations',
+    type: 'text',
+    array: true,
+    default: [],
+  })
+  lifeGroupObservations: string[];
   @Column({ type: 'text', nullable: true }) notes: string | null;
   @ManyToOne(() => User, { nullable: false }) submittedBy: User;
   @CreateDateColumn({ name: 'created_at' }) createdAt: Date;

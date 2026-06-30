@@ -42,7 +42,12 @@ export class MemberRegistration {
   @Column({ name: 'life_group_id', type: 'int', nullable: true }) lifeGroupId:
     | number
     | null;
-  @Column({ name: 'discipulador_name', type: 'varchar', length: 180, nullable: true })
+  @Column({
+    name: 'discipulador_name',
+    type: 'varchar',
+    length: 180,
+    nullable: true,
+  })
   discipuladorName: string | null;
   @Column({
     name: 'completed_courses',

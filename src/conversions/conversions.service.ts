@@ -141,11 +141,15 @@ export class ConversionsService {
           ? (dto.civil_status as CivilStatus)
           : null;
       if (dto.street !== undefined) conversion.street = dto.street ?? null;
-      if (dto.neighborhood !== undefined) conversion.neighborhood = dto.neighborhood ?? null;
+      if (dto.neighborhood !== undefined)
+        conversion.neighborhood = dto.neighborhood ?? null;
       if (dto.city !== undefined) conversion.city = dto.city ?? null;
-      if (dto.cultoAttendance !== undefined) conversion.cultoAttendance = dto.cultoAttendance ?? null;
-      if (dto.lifeGroupStatus !== undefined) conversion.lifeGroupStatus = dto.lifeGroupStatus ?? null;
-      if (dto.howMetChurchOther !== undefined) conversion.howMetChurchOther = dto.howMetChurchOther ?? null;
+      if (dto.cultoAttendance !== undefined)
+        conversion.cultoAttendance = dto.cultoAttendance ?? null;
+      if (dto.lifeGroupStatus !== undefined)
+        conversion.lifeGroupStatus = dto.lifeGroupStatus ?? null;
+      if (dto.howMetChurchOther !== undefined)
+        conversion.howMetChurchOther = dto.howMetChurchOther ?? null;
       if (dto.church_attendance_history !== undefined)
         conversion.churchAttendanceHistory = dto.church_attendance_history;
       if (dto.life_group_experience !== undefined)

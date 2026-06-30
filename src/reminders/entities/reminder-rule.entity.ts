@@ -5,7 +5,10 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import type { ReminderConfig, ReminderRuleType } from '../types/reminder-config';
+import type {
+  ReminderConfig,
+  ReminderRuleType,
+} from '../types/reminder-config';
 
 @Entity('reminder_rules')
 export class ReminderRule {

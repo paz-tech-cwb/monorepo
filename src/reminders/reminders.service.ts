@@ -19,10 +19,7 @@ export class RemindersService {
     return this.repo.find({ where: { enabled: true }, order: { id: 'ASC' } });
   }
 
-  async update(
-    id: number,
-    dto: UpdateReminderRuleDto,
-  ): Promise<ReminderRule> {
+  async update(id: number, dto: UpdateReminderRuleDto): Promise<ReminderRule> {
     const rule = await this.repo.findOne({ where: { id } });
     if (!rule) throw new NotFoundException(`Reminder rule #${id} not found`);
     if (dto.enabled !== undefined) rule.enabled = dto.enabled;

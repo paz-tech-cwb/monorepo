@@ -47,9 +47,18 @@ export class CreateConversionDto {
   @Expose() @IsOptional() @IsString() street?: string;
   @Expose() @IsOptional() @IsString() neighborhood?: string;
   @Expose() @IsOptional() @IsString() city?: string;
-  @Expose({ name: 'culto_attendance' }) @IsOptional() @IsString() cultoAttendance?: string;
-  @Expose({ name: 'life_group_status' }) @IsOptional() @IsString() lifeGroupStatus?: string;
-  @Expose({ name: 'how_met_church_other' }) @IsOptional() @IsString() howMetChurchOther?: string;
+  @Expose({ name: 'culto_attendance' })
+  @IsOptional()
+  @IsString()
+  cultoAttendance?: string;
+  @Expose({ name: 'life_group_status' })
+  @IsOptional()
+  @IsString()
+  lifeGroupStatus?: string;
+  @Expose({ name: 'how_met_church_other' })
+  @IsOptional()
+  @IsString()
+  howMetChurchOther?: string;
 
   @Expose()
   @IsOptional()

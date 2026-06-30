@@ -7,7 +7,9 @@ describe('ReminderSchedulerService', () => {
       { id: 1, type: 'event', enabled: true } as ReminderRule,
       { id: 2, type: 'form_report', enabled: true } as ReminderRule,
     ];
-    const remindersService = { findEnabled: jest.fn().mockResolvedValue(rules) } as never;
+    const remindersService = {
+      findEnabled: jest.fn().mockResolvedValue(rules),
+    } as never;
     const eventEval = { type: 'event', run: jest.fn() };
     const formEval = { type: 'form_report', run: jest.fn() };
 
@@ -26,8 +28,13 @@ describe('ReminderSchedulerService', () => {
       { id: 1, type: 'event', enabled: true } as ReminderRule,
       { id: 2, type: 'form_report', enabled: true } as ReminderRule,
     ];
-    const remindersService = { findEnabled: jest.fn().mockResolvedValue(rules) } as never;
-    const eventEval = { type: 'event', run: jest.fn().mockRejectedValue(new Error('boom')) };
+    const remindersService = {
+      findEnabled: jest.fn().mockResolvedValue(rules),
+    } as never;
+    const eventEval = {
+      type: 'event',
+      run: jest.fn().mockRejectedValue(new Error('boom')),
+    };
     const formEval = { type: 'form_report', run: jest.fn() };
 
     const scheduler = new ReminderSchedulerService(remindersService, [

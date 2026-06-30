@@ -64,7 +64,9 @@ describe('EventsService', () => {
     });
 
     it('includes one-time future events', async () => {
-      const future = makeEvent({ initialDate: new Date('2099-12-31T10:00:00Z') });
+      const future = makeEvent({
+        initialDate: new Date('2099-12-31T10:00:00Z'),
+      });
       mockRepo.find.mockResolvedValue([future]);
       const result = await service.findPaginated(1, 10);
       expect(result).toHaveLength(1);
@@ -81,19 +83,27 @@ describe('EventsService', () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       result.forEach((r) => {
-        expect(new Date(r.initial_date).getTime()).toBeGreaterThanOrEqual(today.getTime());
+        expect(new Date(r.initial_date).getTime()).toBeGreaterThanOrEqual(
+          today.getTime(),
+        );
       });
     });
 
     it('expands a MONTHLY event and returns sorted occurrences', async () => {
       const base = new Date();
       base.setMonth(base.getMonth() - 1);
-      const monthly = makeEvent({ id: 1, initialDate: base, recurrenceType: 'MONTHLY' });
+      const monthly = makeEvent({
+        id: 1,
+        initialDate: base,
+        recurrenceType: 'MONTHLY',
+      });
       mockRepo.find.mockResolvedValue([monthly]);
       const result = await service.findPaginated(1, 5);
       expect(result.length).toBeGreaterThan(0);
       for (let i = 1; i < result.length; i++) {
-        expect(new Date(result[i].initial_date).getTime()).toBeGreaterThanOrEqual(
+        expect(
+          new Date(result[i].initial_date).getTime(),
+        ).toBeGreaterThanOrEqual(
           new Date(result[i - 1].initial_date).getTime(),
         );
       }

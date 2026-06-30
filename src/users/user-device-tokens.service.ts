@@ -15,14 +15,14 @@ export class UserDeviceTokensService {
     const existing = await this.entityManager.findOne(UserDeviceToken, {
       where: { token: dto.token },
     });
-    
+
     if (existing) {
       existing.user = { id: userId } as any;
       existing.platform = dto.platform;
       await this.entityManager.save(existing);
       return;
     }
-    
+
     const record = this.entityManager.create(UserDeviceToken, {
       user: { id: userId },
       token: dto.token,
