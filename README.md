@@ -148,6 +148,16 @@ The current VPS deployment target is one Coolify Docker Compose application crea
 - `backend`: public API service on a temporary Coolify subdomain
 - `admin-ui`: public web service on a separate temporary Coolify subdomain
 
+### Database
+
+- The current deployment keeps PostgreSQL inside the same root Compose stack.
+- Persistence comes from the named volume `pgdata` declared in [docker-compose.yaml](</Users/jonathalima/.config/superpowers/worktrees/church/coolify-vps-migration/docker-compose.yaml:63>).
+- The backend connects internally over the Compose network with:
+  - `DB_HOST=postgres`
+  - `DB_PORT=5432`
+- For the first production rollout, run migrations manually after the stack is healthy instead of relying on schema sync.
+- Before treating this as production-ready, confirm the Coolify `postgres` service has durable storage attached and that backups are enabled on the VPS.
+
 Recommended temporary public URLs:
 
 - Admin: `https://church-admin.<your-coolify-domain>`
@@ -210,6 +220,17 @@ Notes:
 6. Attach a separate public domain to the `admin-ui` service.
 7. Leave `postgres` internal-only.
 8. Deploy the stack.
+
+### CI/CD
+
+- CI is handled by GitHub Actions in [.github/workflows/coolify-root-stack.yml](</Users/jonathalima/.config/superpowers/worktrees/church/coolify-vps-migration/.github/workflows/coolify-root-stack.yml:1>).
+- On pushes to `main` and `feat/coolify-vps-migration`, and on pull requests into `main`, GitHub Actions:
+  - checks out the repo with submodules
+  - copies `.env.example` to `.env`
+  - runs `docker compose config`
+  - builds the `backend` and `admin-ui` images
+- CD should be handled by Coolify tracking the target GitHub branch and auto-deploying on new pushes after the branch is connected in Coolify.
+- For production, point Coolify at `main` after this branch is merged. For staging or trial rollout, point it at `feat/coolify-vps-migration`.
 
 ### First deploy sequence
 

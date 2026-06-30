@@ -1,0 +1,29 @@
+name: Coolify Root Stack
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+      - feat/coolify-vps-migration
+
+jobs:
+  validate-root-stack:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Prepare env file
+        run: cp .env.example .env
+
+      - name: Validate Docker Compose config
+        run: docker compose config
+
+      - name: Build backend and admin images
+        run: docker compose build backend admin-ui
