@@ -142,6 +142,8 @@ private struct InfoRowView: View {
         id: "1",
         name: "Ministério de Louvor",
         description: "Equipe responsável pela música e adoração nos cultos da igreja.",
-        imageUrl: nil
+        imageUrl: nil,
+        leader: "João Silva",
+        coLeader: "Maria Santos"
     ))
 }
