@@ -104,7 +104,7 @@ npm run start:dev      # http://localhost:3001/api
 
 ```bash
 cd admin-ui
-cp .env.local.example .env.local   # fill in Firebase + API keys
+# create a local .env.local with NEXT_PUBLIC_API_BASE_URL + Firebase keys
 npm install
 npm run dev   # http://localhost:3000
 ```
@@ -135,6 +135,109 @@ Services start at the same URLs. Run migrations after the first boot:
 ```bash
 docker compose exec backend npm run migration:run
 ```
+
+---
+
+## Coolify Deployment
+
+The current VPS deployment target is one Coolify Docker Compose application created from the repository root.
+
+### Deployment shape
+
+- `postgres`: internal-only service with persistent storage
+- `backend`: public API service on a temporary Coolify subdomain
+- `admin-ui`: public web service on a separate temporary Coolify subdomain
+
+Recommended temporary public URLs:
+
+- Admin: `https://church-admin.<your-coolify-domain>`
+- API: `https://church-api.<your-coolify-domain>/api`
+
+### Required environment variables
+
+Set these in Coolify before the first deploy:
+
+```bash
+DB_USERNAME=
+DB_PASSWORD=
+DB_NAME=church
+DB_PORT=5432
+DB_SYNCHRONIZE=false
+DB_LOGGING=false
+
+ADMIN_BASE_URL=https://church-admin.<your-coolify-domain>
+API_BASE_URL=https://church-api.<your-coolify-domain>/api
+CORS_ORIGIN=https://church-admin.<your-coolify-domain>
+
+ACCESS_TOKEN_SECRET=
+REFRESH_TOKEN_SECRET=
+GOOGLE_CLIENT_ID=
+APPLE_BUNDLE_ID=
+
+FIREBASE_PROJECT_ID=
+FIREBASE_CLIENT_EMAIL=
+FIREBASE_PRIVATE_KEY=
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=noreply@pazchurch.com.br
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_FROM_NUMBER=
+META_WHATSAPP_TOKEN=
+META_WHATSAPP_PHONE_NUMBER_ID=
+
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
+```
+
+Notes:
+
+- `API_BASE_URL` is injected into the admin build, so it must already point at the backend public URL before `admin-ui` builds.
+- `ADMIN_BASE_URL` documents the intended public admin host for operators even though the current compose file only consumes `CORS_ORIGIN` and `API_BASE_URL`.
+- Keep production secrets in Coolify only. Do not commit a populated `.env`.
+
+### Coolify setup steps
+
+1. Create a new Docker Compose application in Coolify.
+2. Point it at the repository root.
+3. Use the root `docker-compose.yaml` as the compose source.
+4. Configure the environment variables listed above.
+5. Attach a public domain to the `backend` service.
+6. Attach a separate public domain to the `admin-ui` service.
+7. Leave `postgres` internal-only.
+8. Deploy the stack.
+
+### First deploy sequence
+
+1. Wait for `postgres`, `backend`, and `admin-ui` to become healthy in Coolify.
+2. Run backend migrations from the deployed backend container:
+
+```bash
+npm run migration:run
+```
+
+3. Open the admin public URL and confirm the app loads.
+4. Confirm the admin is calling the deployed backend URL.
+5. Test one authenticated admin flow end-to-end.
+
+### Provider-console follow-up
+
+After assigning the temporary Coolify domains, update external auth/config providers:
+
+- Add the temporary admin domain to Firebase Authorized Domains.
+- Verify Google login accepts the temporary deployed domain.
+- If Apple Sign-In is active, verify its current domain/app identity assumptions before release.
+
+### Future move to `paz.church/curitiba`
+
+This deployment is intentionally subdomain-first so the stack can go live now. Later:
+
+- The backend should be movable mostly through routing and environment changes.
+- The admin may need explicit Next.js `basePath` support if it must live under `paz.church/curitiba` instead of a dedicated subdomain.
 
 ---
 
