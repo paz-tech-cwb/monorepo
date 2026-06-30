@@ -6,8 +6,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
@@ -80,8 +83,9 @@ export function MisteriosManagement() {
 
   const { data: allUsers = [] } = useUsers()
 
-  const [ministryDialog, setMinistryDialog] = useState<"add" | Ministry | null>(null)
-  const [teamDialog, setTeamDialog] = useState<"add" | MinistryTeam | null>(null)
+  // "add" = create new, Ministry object = editing existing, null = closed
+  const [ministrySheet, setMinistrySheet] = useState<"add" | Ministry | null>(null)
+  const [teamSheet, setTeamSheet] = useState<"add" | MinistryTeam | null>(null)
   const [teamMinistryId, setTeamMinistryId] = useState<number | null>(null)
   const [deletingMinistryId, setDeletingMinistryId] = useState<number | null>(null)
   const [deletingTeamId, setDeletingTeamId] = useState<number | null>(null)
@@ -99,11 +103,11 @@ export function MisteriosManagement() {
   }
 
   const handleMembershipModeChange = (newMode: MembershipMode) => {
-    if (ministryDialog === "add") {
+    if (ministrySheet === "add") {
       setMinistryForm((f) => ({ ...f, membership_mode: newMode }))
       return
     }
-    const current = ministryDialog as Ministry
+    const current = ministrySheet as Ministry
     if (newMode === "direct" && (current.teams?.length ?? 0) > 0) {
       setConfirmModeSwitch(newMode)
     } else if (newMode === "teams" && (current.members?.length ?? 0) > 0) {
@@ -115,21 +119,22 @@ export function MisteriosManagement() {
 
   const handleSaveMinistry = async () => {
     if (!ministryForm.name.trim()) return toast.error("Nome é obrigatório")
+    if (ministryForm.leader_id == null) return toast.error("Líder é obrigatório")
     const payload = {
       name: ministryForm.name,
       description: ministryForm.description || undefined,
       membership_mode: ministryForm.membership_mode,
-      ...(ministryForm.leader_id != null ? { leader_id: ministryForm.leader_id } : {}),
-      ...(ministryForm.co_leader_id != null ? { co_leader_id: ministryForm.co_leader_id } : {}),
+      leader_id: ministryForm.leader_id ?? undefined,
+      co_leader_id: ministryForm.co_leader_id ?? undefined,
     }
-    if (ministryDialog === "add") {
+    if (ministrySheet === "add") {
       await createMinistry.mutateAsync(payload)
       toast.success("Ministério criado")
-    } else if (ministryDialog) {
-      await updateMinistry.mutateAsync({ id: (ministryDialog as Ministry).id, ...payload })
+    } else if (ministrySheet) {
+      await updateMinistry.mutateAsync({ id: (ministrySheet as Ministry).id, ...payload })
       toast.success("Ministério atualizado")
     }
-    setMinistryDialog(null)
+    setMinistrySheet(null)
     setMinistryForm(defaultMinistryForm)
   }
 
@@ -137,23 +142,18 @@ export function MisteriosManagement() {
     if (!teamForm.name.trim()) return toast.error("Nome é obrigatório")
     const teamPayload = {
       name: teamForm.name,
-      ...(teamForm.leader_id != null ? { leader_id: teamForm.leader_id } : {}),
-      ...(teamForm.co_leader_id != null ? { co_leader_id: teamForm.co_leader_id } : {}),
+      leader_id: teamForm.leader_id ?? undefined,
+      co_leader_id: teamForm.co_leader_id ?? undefined,
     }
-    if (teamDialog === "add" && teamMinistryId) {
+    if (teamSheet === "add" && teamMinistryId) {
       await createTeam.mutateAsync({ ...teamPayload, ministry_id: teamMinistryId })
       toast.success("Equipe criada")
-    } else if (teamDialog && teamDialog !== "add") {
-      await updateTeam.mutateAsync({ id: (teamDialog as MinistryTeam).id, ...teamPayload })
+    } else if (teamSheet && teamSheet !== "add") {
+      await updateTeam.mutateAsync({ id: (teamSheet as MinistryTeam).id, ...teamPayload })
       toast.success("Equipe atualizada")
     }
-    setTeamDialog(null)
+    setTeamSheet(null)
     setTeamForm(defaultTeamForm)
-  }
-
-  const openAddMinistry = (open: boolean) => {
-    setMinistryDialog(open ? "add" : null)
-    setMinistryForm(defaultMinistryForm)
   }
 
   if (isLoading) return <p className="p-6 text-muted-foreground">Carregando...</p>
@@ -165,23 +165,9 @@ export function MisteriosManagement() {
           <h1 className="text-2xl font-bold">Ministérios</h1>
           <p className="text-muted-foreground">Ministérios e equipes de serviço</p>
         </div>
-        <Dialog open={ministryDialog === "add"} onOpenChange={openAddMinistry}>
-          <DialogTrigger asChild>
-            <Button><Plus className="w-4 h-4 mr-2" />Novo Ministério</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Novo Ministério</DialogTitle></DialogHeader>
-            <MinistryFormFields
-              form={ministryForm}
-              users={allUsers}
-              onChange={(patch) => setMinistryForm((f) => ({ ...f, ...patch }))}
-              onMembershipModeChange={handleMembershipModeChange}
-            />
-            <DialogFooter>
-              <Button onClick={handleSaveMinistry} disabled={createMinistry.isPending}>Salvar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => { setMinistrySheet("add"); setMinistryForm(defaultMinistryForm) }}>
+          <Plus className="w-4 h-4 mr-2" />Novo Ministério
+        </Button>
       </div>
 
       {ministries.map((ministry) => (
@@ -198,6 +184,11 @@ export function MisteriosManagement() {
                     : <ChevronRight className="w-4 h-4" />}
                   {ministry.name}
                 </span>
+                {ministry.description && (
+                  <span className="pl-6 text-sm text-muted-foreground">
+                    {ministry.description}
+                  </span>
+                )}
                 <span className="pl-6 text-xs text-muted-foreground">
                   {leaderPairLabel(ministry.leader, ministry.co_leader)}
                 </span>
@@ -209,7 +200,7 @@ export function MisteriosManagement() {
                     variant="outline"
                     onClick={() => {
                       setTeamMinistryId(ministry.id)
-                      setTeamDialog("add")
+                      setTeamSheet("add")
                       setTeamForm(defaultTeamForm)
                     }}
                   >
@@ -221,8 +212,8 @@ export function MisteriosManagement() {
                     <Button variant="ghost" size="icon"><MoreHorizontal className="w-4 h-4" /></Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => {
-                      setMinistryDialog(ministry)
+                    <DropdownMenuItem onClick={() => setTimeout(() => {
+                      setMinistrySheet(ministry)
                       setMinistryForm({
                         name: ministry.name,
                         description: ministry.description ?? "",
@@ -230,12 +221,14 @@ export function MisteriosManagement() {
                         leader_id: ministry.leader?.id ?? null,
                         co_leader_id: ministry.co_leader?.id ?? null,
                       })
-                    }}>
+                    }, 0)}>
                       <Edit className="w-4 h-4 mr-2" />Editar
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive" onClick={() => setDeletingMinistryId(ministry.id)}>
-                      <Trash2 className="w-4 h-4 mr-2" />Excluir
-                    </DropdownMenuItem>
+                    {!ministry.is_permanent && (
+                      <DropdownMenuItem className="text-destructive" onClick={() => setTimeout(() => setDeletingMinistryId(ministry.id), 0)}>
+                        <Trash2 className="w-4 h-4 mr-2" />Excluir
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -253,15 +246,15 @@ export function MisteriosManagement() {
                       key={team.id}
                       team={team}
                       allUsers={allUsers}
-                      onEdit={() => {
-                        setTeamDialog(team)
+                      onEdit={() => setTimeout(() => {
+                        setTeamSheet(team)
                         setTeamForm({
                           name: team.name,
                           leader_id: team.leader?.id ?? null,
                           co_leader_id: team.co_leader?.id ?? null,
                         })
-                      }}
-                      onDelete={() => setDeletingTeamId(team.id)}
+                      }, 0)}
+                      onDelete={() => setTimeout(() => setDeletingTeamId(team.id), 0)}
                     />
                   ))}
                 </div>
@@ -273,32 +266,44 @@ export function MisteriosManagement() {
         </Card>
       ))}
 
-      {/* Edit ministry dialog */}
-      <Dialog
-        open={ministryDialog !== null && ministryDialog !== "add"}
-        onOpenChange={(o) => { if (!o) { setMinistryDialog(null); setMinistryForm(defaultMinistryForm) } }}
+      {/* Ministry drawer (create + edit) */}
+      <Sheet
+        open={ministrySheet !== null}
+        onOpenChange={(o) => { if (!o) { setMinistrySheet(null); setMinistryForm(defaultMinistryForm) } }}
       >
-        <DialogContent>
-          <DialogHeader><DialogTitle>Editar Ministério</DialogTitle></DialogHeader>
-          <MinistryFormFields
-            form={ministryForm}
-            users={allUsers}
-            onChange={(patch) => setMinistryForm((f) => ({ ...f, ...patch }))}
-            onMembershipModeChange={handleMembershipModeChange}
-          />
-          <DialogFooter>
-            <Button onClick={handleSaveMinistry} disabled={updateMinistry.isPending}>Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>{ministrySheet === "add" ? "Novo Ministério" : "Editar Ministério"}</SheetTitle>
+          </SheetHeader>
+          <SheetBody>
+            <MinistryFormFields
+              form={ministryForm}
+              users={allUsers}
+              onChange={(patch) => setMinistryForm((f) => ({ ...f, ...patch }))}
+              onMembershipModeChange={handleMembershipModeChange}
+            />
+          </SheetBody>
+          <SheetFooter>
+            <Button
+              onClick={handleSaveMinistry}
+              disabled={createMinistry.isPending || updateMinistry.isPending}
+            >
+              Salvar
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
-      {/* Add/edit team dialog */}
-      <Dialog open={teamDialog !== null} onOpenChange={(o) => { if (!o) setTeamDialog(null) }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{teamDialog === "add" ? "Nova Equipe" : "Editar Equipe"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+      {/* Team drawer (create + edit) */}
+      <Sheet
+        open={teamSheet !== null}
+        onOpenChange={(o) => { if (!o) setTeamSheet(null) }}
+      >
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>{teamSheet === "add" ? "Nova Equipe" : "Editar Equipe"}</SheetTitle>
+          </SheetHeader>
+          <SheetBody className="space-y-4">
             <div className="space-y-2">
               <Label>Nome</Label>
               <Input value={teamForm.name} onChange={(e) => setTeamForm((f) => ({ ...f, name: e.target.value }))} />
@@ -310,12 +315,12 @@ export function MisteriosManagement() {
               onLeaderChange={(id) => setTeamForm((f) => ({ ...f, leader_id: id }))}
               onCoLeaderChange={(id) => setTeamForm((f) => ({ ...f, co_leader_id: id }))}
             />
-          </div>
-          <DialogFooter>
+          </SheetBody>
+          <SheetFooter>
             <Button onClick={handleSaveTeam} disabled={createTeam.isPending || updateTeam.isPending}>Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {/* Mode switch confirm dialog */}
       <Dialog open={confirmModeSwitch !== null} onOpenChange={(o) => { if (!o) setConfirmModeSwitch(null) }}>
@@ -344,22 +349,23 @@ export function MisteriosManagement() {
 
       <ConfirmDeleteDialog
         open={deletingMinistryId !== null}
+        onOpenChange={(o) => { if (!o) setDeletingMinistryId(null) }}
+        entityName="Ministério"
         onConfirm={async () => {
           await deleteMinistry.mutateAsync(deletingMinistryId!)
           setDeletingMinistryId(null)
           toast.success("Ministério excluído")
         }}
-        onCancel={() => setDeletingMinistryId(null)}
-        description="Isso também excluirá todas as equipes deste ministério."
       />
       <ConfirmDeleteDialog
         open={deletingTeamId !== null}
+        onOpenChange={(o) => { if (!o) setDeletingTeamId(null) }}
+        entityName="Equipe"
         onConfirm={async () => {
           await deleteTeam.mutateAsync(deletingTeamId!)
           setDeletingTeamId(null)
           toast.success("Equipe excluída")
         }}
-        onCancel={() => setDeletingTeamId(null)}
       />
     </div>
   )
@@ -405,6 +411,7 @@ function MinistryFormFields({ form, users, onChange, onMembershipModeChange }: M
         coLeaderId={form.co_leader_id}
         onLeaderChange={(id) => onChange({ leader_id: id })}
         onCoLeaderChange={(id) => onChange({ co_leader_id: id })}
+        leaderRequired
       />
       <div className="space-y-2">
         <Label>Modo de membros</Label>
@@ -436,7 +443,9 @@ interface TeamSectionProps {
 
 function TeamSection({ team, allUsers, onEdit, onDelete }: TeamSectionProps) {
   const [expanded, setExpanded] = useState(false)
+  const [addingMember, setAddingMember] = useState(false)
   const [search, setSearch] = useState("")
+  const [removingMemberId, setRemovingMemberId] = useState<number | null>(null)
   const addMember = useAddMinistryTeamMember()
   const removeMember = useRemoveMinistryTeamMember()
 
@@ -492,7 +501,7 @@ function TeamSection({ team, allUsers, onEdit, onDelete }: TeamSectionProps) {
                       variant="ghost"
                       size="sm"
                       className="text-destructive"
-                      onClick={() => removeMember.mutate({ teamId: team.id, userId: m.id })}
+                      onClick={() => setRemovingMemberId(m.id)}
                     >
                       Remover
                     </Button>
@@ -500,32 +509,52 @@ function TeamSection({ team, allUsers, onEdit, onDelete }: TeamSectionProps) {
                 </TableRow>
               ))}
               {(team.members ?? []).length === 0 && (
-                <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground">Nenhum membro</TableCell></TableRow>
+                <TableRow key="empty"><TableCell colSpan={2} className="text-center text-muted-foreground">Nenhum membro</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
 
           <div>
-            <Label className="text-sm mb-1 block">Adicionar pessoa</Label>
-            <Command className="border rounded-md">
-              <CommandInput placeholder="Buscar por nome..." value={search} onValueChange={setSearch} />
-              <CommandList className="max-h-40">
-                {candidates.slice(0, 10).map((u) => (
-                  <CommandItem
-                    key={u.id}
-                    onSelect={() => {
-                      addMember.mutate({ teamId: team.id, userId: u.id })
-                      setSearch("")
-                    }}
-                  >
-                    {u.name}
-                  </CommandItem>
-                ))}
-              </CommandList>
-            </Command>
+            {addingMember ? (
+              <Command className="border rounded-md">
+                <CommandInput
+                  placeholder="Buscar por nome..."
+                  value={search}
+                  onValueChange={setSearch}
+                  autoFocus
+                />
+                <CommandList className="max-h-40">
+                  {candidates.slice(0, 10).map((u) => (
+                    <CommandItem
+                      key={u.id}
+                      onSelect={() => {
+                        addMember.mutate({ teamId: team.id, userId: u.id })
+                        setSearch("")
+                        setAddingMember(false)
+                      }}
+                    >
+                      {u.name}
+                    </CommandItem>
+                  ))}
+                </CommandList>
+              </Command>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setAddingMember(true)}>
+                <Plus className="w-3 h-3 mr-1" />Adicionar pessoa
+              </Button>
+            )}
           </div>
         </div>
       )}
+      <ConfirmDeleteDialog
+        open={removingMemberId !== null}
+        onOpenChange={(o) => { if (!o) setRemovingMemberId(null) }}
+        entityName="membro da equipe"
+        onConfirm={() => {
+          removeMember.mutate({ teamId: team.id, userId: removingMemberId! })
+          setRemovingMemberId(null)
+        }}
+      />
     </div>
   )
 }
@@ -538,7 +567,9 @@ function MinistryPeopleTab({ ministry }: { ministry: Ministry }) {
   const { data: allUsers = [] } = useUsers()
   const addMember = useAddMinistryMember()
   const removeMember = useRemoveMinistryMember()
+  const [addingMember, setAddingMember] = useState(false)
   const [search, setSearch] = useState("")
+  const [removingMemberId, setRemovingMemberId] = useState<number | null>(null)
 
   const memberIds = new Set(ministry.members?.map((m) => m.id) ?? [])
   const candidates = allUsers.filter(
@@ -563,7 +594,7 @@ function MinistryPeopleTab({ ministry }: { ministry: Ministry }) {
                   variant="ghost"
                   size="sm"
                   className="text-destructive"
-                  onClick={() => removeMember.mutate({ ministryId: ministry.id, userId: m.id })}
+                  onClick={() => setRemovingMemberId(m.id)}
                 >
                   Remover
                 </Button>
@@ -571,7 +602,7 @@ function MinistryPeopleTab({ ministry }: { ministry: Ministry }) {
             </TableRow>
           ))}
           {(ministry.members ?? []).length === 0 && (
-            <TableRow>
+            <TableRow key="empty">
               <TableCell colSpan={2} className="text-center text-muted-foreground">Nenhum membro</TableCell>
             </TableRow>
           )}
@@ -579,24 +610,44 @@ function MinistryPeopleTab({ ministry }: { ministry: Ministry }) {
       </Table>
 
       <div>
-        <Label className="text-sm mb-1 block">Adicionar pessoa</Label>
-        <Command className="border rounded-md">
-          <CommandInput placeholder="Buscar por nome..." value={search} onValueChange={setSearch} />
-          <CommandList className="max-h-40">
-            {candidates.slice(0, 10).map((u) => (
-              <CommandItem
-                key={u.id}
-                onSelect={() => {
-                  addMember.mutate({ ministryId: ministry.id, userId: u.id })
-                  setSearch("")
-                }}
-              >
-                {u.name}
-              </CommandItem>
-            ))}
-          </CommandList>
-        </Command>
+        {addingMember ? (
+          <Command className="border rounded-md">
+            <CommandInput
+              placeholder="Buscar por nome..."
+              value={search}
+              onValueChange={setSearch}
+              autoFocus
+            />
+            <CommandList className="max-h-40">
+              {candidates.slice(0, 10).map((u) => (
+                <CommandItem
+                  key={u.id}
+                  onSelect={() => {
+                    addMember.mutate({ ministryId: ministry.id, userId: u.id })
+                    setSearch("")
+                    setAddingMember(false)
+                  }}
+                >
+                  {u.name}
+                </CommandItem>
+              ))}
+            </CommandList>
+          </Command>
+        ) : (
+          <Button variant="outline" size="sm" onClick={() => setAddingMember(true)}>
+            <Plus className="w-3 h-3 mr-1" />Adicionar pessoa
+          </Button>
+        )}
       </div>
+      <ConfirmDeleteDialog
+        open={removingMemberId !== null}
+        onOpenChange={(o) => { if (!o) setRemovingMemberId(null) }}
+        entityName="membro do ministério"
+        onConfirm={() => {
+          removeMember.mutate({ ministryId: ministry.id, userId: removingMemberId! })
+          setRemovingMemberId(null)
+        }}
+      />
     </div>
   )
 }

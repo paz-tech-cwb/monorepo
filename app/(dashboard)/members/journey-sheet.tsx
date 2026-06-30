@@ -5,8 +5,10 @@ import { format } from "date-fns"
 import { toast } from "sonner"
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
@@ -266,15 +268,15 @@ export function JourneySheet({ member, open, onOpenChange }: JourneySheetProps) 
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md flex flex-col">
-        <SheetHeader className="mb-4 shrink-0">
+      <SheetContent>
+        <SheetHeader>
           <SheetTitle>{member.name} — Jornada</SheetTitle>
           <SheetDescription>
             Life Group: {member.life_groups.map((g) => g.name).join(", ") || "—"}
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-4 py-2 pr-3">
+        <SheetBody>
           {!journey && !isLoading && (
             <div className="mb-4 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800">
               Etapas estimadas com base no cadastro
@@ -311,9 +313,9 @@ export function JourneySheet({ member, open, onOpenChange }: JourneySheetProps) 
               })}
             </div>
           )}
-        </div>
+        </SheetBody>
 
-        <div className="shrink-0 border-t px-4 pt-4 pb-2 space-y-2">
+        <SheetFooter className="flex-col space-y-2">
           <Button
             variant="outline"
             size="sm"
@@ -328,7 +330,7 @@ export function JourneySheet({ member, open, onOpenChange }: JourneySheetProps) 
               onSuccess={() => setShowUpdateForm(false)}
             />
           )}
-        </div>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   )

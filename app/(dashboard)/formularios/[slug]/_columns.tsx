@@ -11,7 +11,9 @@ const fmt = {
   money: (v: unknown) =>
     v ? `R$ ${Number(v).toFixed(2).replace(".", ",")}` : "R$ 0,00",
   by: (_: unknown, row: Record<string, unknown>) =>
-    (row.submitted_by as { name?: string })?.name ?? "—",
+    (row.submittedBy as { name?: string })?.name ??
+    (row.submitted_by as { name?: string })?.name ??
+    "—",
 }
 
 export const COLUMNS: Record<FormSlug, ColumnDef[]> = {
@@ -52,9 +54,16 @@ export const COLUMNS: Record<FormSlug, ColumnDef[]> = {
   ],
   "service-reports": [
     { key: "date", label: "Data", format: fmt.date },
-    { key: "service_type", label: "Tipo" },
-    { key: "total_attendance", label: "Presentes" },
-    { key: "offering", label: "Oferta", format: fmt.money },
+    { key: "reportType", label: "Tipo" },
+    {
+      key: "atmosphereTeam",
+      label: "Equipe Atmosfera",
+      format: (v, row) =>
+        (v as { name?: string })?.name ??
+        (row.atmosphereTeamOther as string | null) ??
+        "—",
+    },
+    { key: "submittedBy", label: "Registrado por", format: fmt.by },
   ],
   "form-guests": [
     { key: "full_name", label: "Nome" },

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { PhoneInput } from "@/components/ui/phone-input"
-import { DateInput } from "@/components/ui/date-input"
+import { DatePickerInput } from "@/components/ui/date-picker-input"
 import {
   Select,
   SelectContent,
@@ -157,17 +157,17 @@ export function MemberRegistrationsForm({ defaultValues }: { defaultValues?: Par
       className="space-y-4"
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
+        <div className="space-y-1.5">
           <Label>Nome completo *</Label>
           <Input {...register("full_name")} />
           {errors.full_name && <p className="text-sm text-destructive mt-1">{errors.full_name.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>E-mail *</Label>
           <Input {...register("email")} type="email" />
           {errors.email && <p className="text-sm text-destructive mt-1">{errors.email.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>WhatsApp *</Label>
           <Controller
             control={control}
@@ -176,16 +176,16 @@ export function MemberRegistrationsForm({ defaultValues }: { defaultValues?: Par
           />
           {errors.phone && <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Data de nascimento *</Label>
           <Controller
             control={control}
             name="birth_date"
-            render={({ field }) => <DateInput value={field.value} onChange={field.onChange} />}
+            render={({ field }) => <DatePickerInput value={field.value} onChange={field.onChange} className="w-full" />}
           />
           {errors.birth_date && <p className="text-sm text-destructive mt-1">{errors.birth_date.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Gênero *</Label>
           <Controller
             control={control}
@@ -202,7 +202,7 @@ export function MemberRegistrationsForm({ defaultValues }: { defaultValues?: Par
           />
           {errors.gender && <p className="text-sm text-destructive mt-1">{errors.gender.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Estado civil *</Label>
           <Controller
             control={control}
@@ -223,7 +223,7 @@ export function MemberRegistrationsForm({ defaultValues }: { defaultValues?: Par
           {errors.civil_state && <p className="text-sm text-destructive mt-1">{errors.civil_state.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Setor *</Label>
           <Select
             value={selectedSectorId?.toString() ?? ""}
@@ -239,7 +239,7 @@ export function MemberRegistrationsForm({ defaultValues }: { defaultValues?: Par
           {errors.sector_id && <p className="text-sm text-destructive mt-1">{errors.sector_id.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Life Group</Label>
           <Select
             value={selectedLifeGroupId?.toString() ?? ""}
@@ -257,7 +257,7 @@ export function MemberRegistrationsForm({ defaultValues }: { defaultValues?: Par
           </Select>
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Líder</Label>
           <Select
             value={selectedLeaderId?.toString() ?? ""}
@@ -275,31 +275,31 @@ export function MemberRegistrationsForm({ defaultValues }: { defaultValues?: Par
 
       <h3 className="font-medium pt-2">Endereço</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
+        <div className="space-y-1.5">
           <Label>CEP</Label>
           <Input {...register("cep")} placeholder="00000-000" />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Logradouro</Label>
           <Input {...register("street")} />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Número</Label>
           <Input {...register("address_number")} />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Complemento</Label>
           <Input {...register("complement")} />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Bairro</Label>
           <Input {...register("neighborhood")} />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Cidade</Label>
           <Input {...register("city")} />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Estado (UF)</Label>
           <Input {...register("state")} maxLength={2} />
         </div>

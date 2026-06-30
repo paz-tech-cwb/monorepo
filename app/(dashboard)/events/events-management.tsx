@@ -614,12 +614,12 @@ export function EventsManagement() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditEvent(event)}>
+                            <DropdownMenuItem onClick={() => setTimeout(() => handleEditEvent(event), 0)}>
                               <Edit className="mr-2 h-4 w-4" />
                               Editar
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => setDeletingEvent(event)}
+                              onClick={() => setTimeout(() => setDeletingEvent(event), 0)}
                               className="text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />

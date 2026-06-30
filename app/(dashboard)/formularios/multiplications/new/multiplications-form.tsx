@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { PhoneInput } from "@/components/ui/phone-input"
-import { DateInput } from "@/components/ui/date-input"
+import { DatePickerInput } from "@/components/ui/date-picker-input"
 import {
   Select,
   SelectContent,
@@ -56,6 +56,7 @@ const CHECKBOXES: { key: keyof FormValues; label: string }[] = [
 ]
 
 export function MultiplicationsForm({ defaultValues }: { defaultValues?: Partial<FormValues> }) {
+  const todayIso = new Date().toISOString().slice(0, 10)
   const {
     register,
     handleSubmit,
@@ -63,7 +64,19 @@ export function MultiplicationsForm({ defaultValues }: { defaultValues?: Partial
     setValue,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues })
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      date: todayIso,
+      completed_leadership_track: false,
+      legally_married: false,
+      faithful_tither: false,
+      evangelizing_and_consolidating: false,
+      good_testimony: false,
+      single_living_in_purity: false,
+      ...defaultValues,
+    },
+  })
   const create = useCreateFormSubmission<unknown, FormValues>("multiplications")
   const { data: areas = [] } = useAreas()
   const { data: sectors = [] } = useSectors()
@@ -190,17 +203,17 @@ export function MultiplicationsForm({ defaultValues }: { defaultValues?: Partial
       className="space-y-4"
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
+        <div className="space-y-1.5">
           <Label>Data *</Label>
           <Controller
             control={control}
             name="date"
-            render={({ field }) => <DateInput value={field.value} onChange={field.onChange} />}
+            render={({ field }) => <DatePickerInput value={field.value} onChange={field.onChange} className="w-full" />}
           />
           {errors.date && <p className="text-sm text-destructive mt-1">{errors.date.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Área *</Label>
           <Select value={selectedAreaId?.toString() ?? ""} onValueChange={handleAreaChange}>
             <SelectTrigger><SelectValue placeholder="Selecione uma área" /></SelectTrigger>
@@ -213,7 +226,7 @@ export function MultiplicationsForm({ defaultValues }: { defaultValues?: Partial
           {errors.area_id && <p className="text-sm text-destructive mt-1">{errors.area_id.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Setor *</Label>
           <Select
             value={selectedSectorId?.toString() ?? ""}
@@ -232,7 +245,7 @@ export function MultiplicationsForm({ defaultValues }: { defaultValues?: Partial
           {errors.sector_id && <p className="text-sm text-destructive mt-1">{errors.sector_id.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>LG de origem *</Label>
           <Select
             value={selectedSourceLgId?.toString() ?? ""}
@@ -251,13 +264,13 @@ export function MultiplicationsForm({ defaultValues }: { defaultValues?: Partial
           {errors.source_life_group_id && <p className="text-sm text-destructive mt-1">{errors.source_life_group_id.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Nome do novo LG *</Label>
           <Input {...register("new_life_group_name")} />
           {errors.new_life_group_name && <p className="text-sm text-destructive mt-1">{errors.new_life_group_name.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Novo líder *</Label>
           <Select value={selectedNewLeaderId?.toString() ?? ""} onValueChange={handleNewLeaderChange}>
             <SelectTrigger><SelectValue placeholder="Selecione um líder" /></SelectTrigger>
@@ -270,13 +283,13 @@ export function MultiplicationsForm({ defaultValues }: { defaultValues?: Partial
           {errors.new_leader_id && <p className="text-sm text-destructive mt-1">{errors.new_leader_id.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>ID do anfitrião *</Label>
           <Input {...register("host_id")} type="number" />
           {errors.host_id && <p className="text-sm text-destructive mt-1">{errors.host_id.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Telefone do líder *</Label>
           <Controller
             control={control}
@@ -286,19 +299,19 @@ export function MultiplicationsForm({ defaultValues }: { defaultValues?: Partial
           {errors.leader_phone && <p className="text-sm text-destructive mt-1">{errors.leader_phone.message}</p>}
         </div>
 
-        <div className="sm:col-span-2">
+        <div className="space-y-1.5 sm:col-span-2">
           <Label>Endereço *</Label>
           <Input {...register("address")} />
           {errors.address && <p className="text-sm text-destructive mt-1">{errors.address.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Dia e horário da reunião *</Label>
           <Input {...register("meeting_day_time")} type="datetime-local" />
           {errors.meeting_day_time && <p className="text-sm text-destructive mt-1">{errors.meeting_day_time.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Novo LG (se já criado)</Label>
           <Select
             value={selectedNewLgId?.toString() ?? ""}
@@ -316,11 +329,11 @@ export function MultiplicationsForm({ defaultValues }: { defaultValues?: Partial
           </Select>
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Membros a transferir (IDs, vírgula)</Label>
           <Input {...register("members_to_move")} />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Novos membros (nomes, vírgula)</Label>
           <Input {...register("new_members")} />
         </div>

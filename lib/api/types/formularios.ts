@@ -31,7 +31,8 @@ export interface AuditLogEntry {
   actor: { id: number; name: string }
   action: 'create' | 'update' | 'delete'
   diff: Record<string, unknown> | null
-  created_at: string
+  created_at?: string
+  createdAt?: string
 }
 
 export interface FormCourse {

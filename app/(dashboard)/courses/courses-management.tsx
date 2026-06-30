@@ -377,12 +377,12 @@ export function CoursesManagement() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEditCourse(course)}>
+                        <DropdownMenuItem onClick={() => setTimeout(() => handleEditCourse(course), 0)}>
                           <Edit className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => setDeletingCourseId(course.id)}
+                          onClick={() => setTimeout(() => setDeletingCourseId(course.id), 0)}
                           className="text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />

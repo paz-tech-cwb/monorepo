@@ -25,6 +25,8 @@ export interface MinistryTeam {
 export interface Ministry {
   id: number
   name: string
+  slug: string | null
+  is_permanent: boolean
   description: string | null
   membership_mode: MembershipMode
   leader: LeaderRef | null

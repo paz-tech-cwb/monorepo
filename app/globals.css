@@ -56,7 +56,7 @@
   --muted: #142035;      /* PazColors.DarkSurface2 */
   --muted-foreground: #97A6BC; /* PazColors.DarkSlate */
   --accent: #5B9BD5;     /* PazColors.Accent */
-  --accent-foreground: #070E1A;
+  --accent-foreground: #E3EEFF;
   --destructive: #FF6B6B; /* PazColors.DarkError */
   --destructive-foreground: #FFFFFF;
   --border: rgba(91, 155, 213, 0.13); /* PazColors.DarkBorder */

@@ -21,7 +21,7 @@ export function AuditLog({ slug, id }: { slug: FormSlug; id: string }) {
               </Badge>
               <span>{e.actor.name}</span>
               <span className="text-muted-foreground">
-                {new Date(e.created_at).toLocaleString("pt-BR")}
+                {new Date(e.createdAt ?? e.created_at).toLocaleString("pt-BR")}
               </span>
             </li>
           ))}

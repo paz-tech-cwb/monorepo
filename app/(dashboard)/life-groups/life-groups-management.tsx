@@ -533,18 +533,18 @@ export function LifeGroupsManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleManageMembers(group)}>
+                          <DropdownMenuItem onClick={() => setTimeout(() => handleManageMembers(group), 0)}>
                             <Users2 className="mr-2 h-4 w-4" />
                             Gerenciar Membros
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openEdit(group)}>
+                          <DropdownMenuItem onClick={() => setTimeout(() => openEdit(group), 0)}>
                             <Pencil className="mr-2 h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
-                            onClick={() => setDeletingGroup(group)}
+                            onClick={() => setTimeout(() => setDeletingGroup(group), 0)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Excluir

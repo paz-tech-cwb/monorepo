@@ -54,14 +54,14 @@ export function FormGuestsForm({ defaultValues, onSubmit: onSubmitProp }: Props)
       })}
       className="space-y-4"
     >
-      <div>
+      <div className="space-y-1.5">
         <Label>Nome completo *</Label>
         <Input {...register("full_name")} />
         {errors.full_name && (
           <p className="text-sm text-destructive mt-1">{errors.full_name.message}</p>
         )}
       </div>
-      <div>
+      <div className="space-y-1.5">
         <Label>WhatsApp</Label>
         <Controller
           control={control}
@@ -72,19 +72,19 @@ export function FormGuestsForm({ defaultValues, onSubmit: onSubmitProp }: Props)
           <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>
         )}
       </div>
-      <div>
+      <div className="space-y-1.5">
         <Label>Convidado por</Label>
         <Input {...register("invited_by")} />
       </div>
-      <div>
+      <div className="space-y-1.5">
         <Label>Como conheceu a igreja</Label>
         <Input {...register("how_met_church")} />
       </div>
-      <div>
+      <div className="space-y-1.5">
         <Label>Preenchido por</Label>
         <Input {...register("filled_by")} />
       </div>
-      <div>
+      <div className="space-y-1.5">
         <Label>Observações</Label>
         <Textarea {...register("notes")} />
       </div>

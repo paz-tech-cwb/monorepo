@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { PhoneInput } from "@/components/ui/phone-input"
-import { DateInput } from "@/components/ui/date-input"
+import { DatePickerInput } from "@/components/ui/date-picker-input"
 import {
   Select,
   SelectContent,
@@ -58,16 +58,16 @@ export function FormConversionsForm({ defaultValues }: { defaultValues?: Partial
       className="space-y-4"
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
+        <div className="space-y-1.5">
           <Label>Nome completo *</Label>
           <Input {...register("full_name")} />
           {errors.full_name && <p className="text-sm text-destructive mt-1">{errors.full_name.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>E-mail</Label>
           <Input {...register("email")} type="email" />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>WhatsApp *</Label>
           <Controller
             control={control}
@@ -76,7 +76,7 @@ export function FormConversionsForm({ defaultValues }: { defaultValues?: Partial
           />
           {errors.phone && <p className="text-sm text-destructive mt-1">{errors.phone.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Tipo de decisão *</Label>
           <Controller
             control={control}
@@ -93,12 +93,12 @@ export function FormConversionsForm({ defaultValues }: { defaultValues?: Partial
           />
           {errors.decision_type && <p className="text-sm text-destructive mt-1">{errors.decision_type.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Como conheceu a igreja *</Label>
           <Input {...register("how_met_church")} />
           {errors.how_met_church && <p className="text-sm text-destructive mt-1">{errors.how_met_church.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Gênero *</Label>
           <Controller
             control={control}
@@ -115,16 +115,16 @@ export function FormConversionsForm({ defaultValues }: { defaultValues?: Partial
           />
           {errors.gender && <p className="text-sm text-destructive mt-1">{errors.gender.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Data de nascimento *</Label>
           <Controller
             control={control}
             name="birth_date"
-            render={({ field }) => <DateInput value={field.value} onChange={field.onChange} />}
+            render={({ field }) => <DatePickerInput value={field.value} onChange={field.onChange} className="w-full" />}
           />
           {errors.birth_date && <p className="text-sm text-destructive mt-1">{errors.birth_date.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Estado civil *</Label>
           <Controller
             control={control}
@@ -144,31 +144,31 @@ export function FormConversionsForm({ defaultValues }: { defaultValues?: Partial
           />
           {errors.civil_state && <p className="text-sm text-destructive mt-1">{errors.civil_state.message}</p>}
         </div>
-        <div className="sm:col-span-2">
+        <div className="space-y-1.5 sm:col-span-2">
           <Label>Endereço *</Label>
           <Input {...register("address")} />
           {errors.address && <p className="text-sm text-destructive mt-1">{errors.address.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Quantas vezes já veio *</Label>
           <Input {...register("attendance_count")} />
           {errors.attendance_count && <p className="text-sm text-destructive mt-1">{errors.attendance_count.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Status no Life Group *</Label>
           <Input {...register("life_group_status")} />
           {errors.life_group_status && <p className="text-sm text-destructive mt-1">{errors.life_group_status.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Líder / nome do LG</Label>
           <Input {...register("life_group_leader_or_name")} />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Convidado por</Label>
           <Input {...register("invited_by")} />
         </div>
       </div>
-      <div>
+      <div className="space-y-1.5">
         <Label>Observações</Label>
         <Textarea {...register("notes")} />
       </div>

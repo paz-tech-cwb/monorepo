@@ -1,7 +1,6 @@
 "use client"
 import Link from "next/link"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,6 +12,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { Plus } from "lucide-react"
 import type { FormSlug, FormSubmissionFilters } from "@/lib/api/types/formularios"
 import { useFormsCatalog } from "@/lib/hooks/use-forms-catalog"
@@ -20,9 +25,9 @@ import { useFormSubmissions } from "@/lib/hooks/use-form-submissions"
 import { SubmissionFilters } from "../_components/submission-filters"
 import { COLUMNS } from "./_columns"
 import { CoursesManager } from "./courses-manager"
+import { SubmissionDetail } from "./[id]/submission-detail"
 
 export function FormListView({ slug }: { slug: FormSlug }) {
-  const router = useRouter()
   const { data: catalog = [] } = useFormsCatalog()
   const meta = catalog.find((f) => f.slug === slug)
   const [filters, setFilters] = useState<FormSubmissionFilters>({})
@@ -30,6 +35,7 @@ export function FormListView({ slug }: { slug: FormSlug }) {
     Record<string, unknown> & { id: string }
   >(slug, filters)
   const cols = COLUMNS[slug] ?? []
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   return (
     <div className="p-6 space-y-4">
@@ -82,7 +88,7 @@ export function FormListView({ slug }: { slug: FormSlug }) {
                 <TableRow
                   key={r.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => router.push(`/formularios/${slug}/${r.id}`)}
+                  onClick={() => setSelectedId(r.id)}
                 >
                   {cols.map((c) => (
                     <TableCell key={c.key}>
@@ -98,6 +104,21 @@ export function FormListView({ slug }: { slug: FormSlug }) {
           </Table>
         )}
       </Card>
+
+      <Sheet open={!!selectedId} onOpenChange={(open) => !open && setSelectedId(null)}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Detalhes</SheetTitle>
+          </SheetHeader>
+          {selectedId && (
+            <SubmissionDetail
+              slug={slug}
+              id={selectedId}
+              onClose={() => setSelectedId(null)}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

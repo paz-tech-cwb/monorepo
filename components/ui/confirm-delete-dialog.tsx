@@ -24,7 +24,6 @@ export function ConfirmDeleteDialog({
   onOpenChange,
   entityName,
   onConfirm,
-  isLoading = false,
 }: ConfirmDeleteDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -43,9 +42,8 @@ export function ConfirmDeleteDialog({
           <AlertDialogAction
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             onClick={onConfirm}
-            disabled={isLoading}
           >
-            {isLoading ? "Excluindo..." : "Excluir"}
+            Excluir
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

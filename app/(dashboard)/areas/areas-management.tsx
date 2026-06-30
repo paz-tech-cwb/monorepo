@@ -229,12 +229,12 @@ export function AreasManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(area)}>
+                          <DropdownMenuItem onClick={() => setTimeout(() => handleEdit(area), 0)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Editar
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => setDeletingAreaId(area.id)}
+                            onClick={() => setTimeout(() => setDeletingAreaId(area.id), 0)}
                             className="text-destructive"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />

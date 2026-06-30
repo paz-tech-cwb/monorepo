@@ -6,7 +6,7 @@ import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { DateInput } from "@/components/ui/date-input"
+import { DatePickerInput } from "@/components/ui/date-picker-input"
 import {
   Select,
   SelectContent,
@@ -42,13 +42,29 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 
 export function LifeGroupReportsForm({ defaultValues }: { defaultValues?: Partial<FormValues> }) {
+  const todayIso = new Date().toISOString().slice(0, 10)
   const {
     register,
     control,
     handleSubmit,
     setValue,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues })
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      date: todayIso,
+      committed_members: 0,
+      committed_members_present: 0,
+      kids_0_to_11: 0,
+      guests: 0,
+      mdas: 0,
+      committed_at_tadel: 0,
+      committed_at_culto: 0,
+      disciples_count: 0,
+      disciples_discipled_this_week: 0,
+      ...defaultValues,
+    },
+  })
   const create = useCreateFormSubmission<unknown, FormValues>("life-group-reports")
   const { data: areas = [] } = useAreas()
   const { data: sectors = [] } = useSectors()
@@ -136,17 +152,17 @@ export function LifeGroupReportsForm({ defaultValues }: { defaultValues?: Partia
       className="space-y-4"
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
+        <div className="space-y-1.5">
           <Label>Data *</Label>
           <Controller
             control={control}
             name="date"
-            render={({ field }) => <DateInput value={field.value} onChange={field.onChange} />}
+            render={({ field }) => <DatePickerInput value={field.value} onChange={field.onChange} className="w-full" />}
           />
           {errors.date && <p className="text-sm text-destructive mt-1">{errors.date.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Área *</Label>
           <Select value={selectedAreaId?.toString() ?? ""} onValueChange={handleAreaChange}>
             <SelectTrigger><SelectValue placeholder="Selecione uma área" /></SelectTrigger>
@@ -159,7 +175,7 @@ export function LifeGroupReportsForm({ defaultValues }: { defaultValues?: Partia
           {errors.area_id && <p className="text-sm text-destructive mt-1">{errors.area_id.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Setor *</Label>
           <Select
             value={selectedSectorId?.toString() ?? ""}
@@ -178,7 +194,7 @@ export function LifeGroupReportsForm({ defaultValues }: { defaultValues?: Partia
           {errors.sector_id && <p className="text-sm text-destructive mt-1">{errors.sector_id.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Life Group *</Label>
           <Select
             value={selectedLifeGroupId?.toString() ?? ""}
@@ -197,55 +213,55 @@ export function LifeGroupReportsForm({ defaultValues }: { defaultValues?: Partia
           {errors.life_group_id && <p className="text-sm text-destructive mt-1">{errors.life_group_id.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Comprometidos *</Label>
           <Input {...register("committed_members")} type="number" min={0} />
           {errors.committed_members && <p className="text-sm text-destructive mt-1">{errors.committed_members.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Comprometidos presentes *</Label>
           <Input {...register("committed_members_present")} type="number" min={0} />
           {errors.committed_members_present && <p className="text-sm text-destructive mt-1">{errors.committed_members_present.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Crianças (0-11)</Label>
           <Input {...register("kids_0_to_11")} type="number" min={0} defaultValue={0} />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Convidados</Label>
           <Input {...register("guests")} type="number" min={0} defaultValue={0} />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>MDAs</Label>
           <Input {...register("mdas")} type="number" min={0} defaultValue={0} />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Oferta *</Label>
           <Input {...register("offering")} placeholder="0.00" />
           {errors.offering && <p className="text-sm text-destructive mt-1">{errors.offering.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Comprometidos no Tadel</Label>
           <Input {...register("committed_at_tadel")} type="number" min={0} defaultValue={0} />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Comprometidos no culto</Label>
           <Input {...register("committed_at_culto")} type="number" min={0} defaultValue={0} />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Discípulos</Label>
           <Input {...register("disciples_count")} type="number" min={0} defaultValue={0} />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Discipulados esta semana</Label>
           <Input {...register("disciples_discipled_this_week")} type="number" min={0} defaultValue={0} />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Tipo atividade pastoreio *</Label>
           <Input {...register("pastoring_activity_type")} />
           {errors.pastoring_activity_type && <p className="text-sm text-destructive mt-1">{errors.pastoring_activity_type.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Tipo atividade treinamento *</Label>
           <Input {...register("training_activity_type")} />
           {errors.training_activity_type && <p className="text-sm text-destructive mt-1">{errors.training_activity_type.message}</p>}

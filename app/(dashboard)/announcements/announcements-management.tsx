@@ -77,11 +77,11 @@ export function AnnouncementsManagement() {
   const handleEditAnnouncement = (announcement: Announcement) => {
     setEditingAnnouncement(announcement)
     setFormData({
-      title: announcement.title,
-      subtitle: announcement.subtitle,
-      image_url: announcement.image_url,
-      markdown_content: announcement.markdown_content,
-      action_url: announcement.action_url || "",
+      title: announcement.title ?? "",
+      subtitle: announcement.subtitle ?? "",
+      image_url: announcement.image_url ?? "",
+      markdown_content: announcement.markdown_content ?? "",
+      action_url: announcement.action_url ?? "",
       is_active: announcement.is_active ?? true,
     })
   }
@@ -281,7 +281,7 @@ export function AnnouncementsManagement() {
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => setDeletingAnnouncementId(announcement.id)}
+                          onClick={() => setTimeout(() => setDeletingAnnouncementId(announcement.id), 0)}
                           className="text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />

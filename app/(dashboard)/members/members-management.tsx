@@ -372,16 +372,16 @@ export function MembersManagement() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEdit(member)}>
+                                <DropdownMenuItem onClick={() => setTimeout(() => handleEdit(member), 0)}>
                                   <Edit className="mr-2 h-4 w-4" />
                                   Editar
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setJourneyMember(member)}>
+                                <DropdownMenuItem onClick={() => setTimeout(() => setJourneyMember(member), 0)}>
                                   <GitMerge className="mr-2 h-4 w-4" />
                                   Ver Jornada
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => setDeletingMemberId(member.id)}
+                                  onClick={() => setTimeout(() => setDeletingMemberId(member.id), 0)}
                                   className="text-destructive"
                                 >
                                   <Trash2 className="mr-2 h-4 w-4" />

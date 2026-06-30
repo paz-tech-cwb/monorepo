@@ -267,12 +267,12 @@ export function ContributionsManagement() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEditContribution(contribution)}>
+                        <DropdownMenuItem onClick={() => setTimeout(() => handleEditContribution(contribution), 0)}>
                           <Edit className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => setDeletingContributionId(contribution.id)}
+                          onClick={() => setTimeout(() => setDeletingContributionId(contribution.id), 0)}
                           className="text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />

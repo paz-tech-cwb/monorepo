@@ -6,7 +6,7 @@ import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { DateInput } from "@/components/ui/date-input"
+import { DatePickerInput } from "@/components/ui/date-picker-input"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
@@ -39,13 +39,24 @@ export function SectorSupervisorReportsForm({
 }: {
   defaultValues?: Partial<FormValues>
 }) {
+  const todayIso = new Date().toISOString().slice(0, 10)
   const {
     register,
     control,
     handleSubmit,
     setValue,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues })
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      date: todayIso,
+      meetings_held: 0,
+      trainings_conducted: 0,
+      leaders_pastored: 0,
+      multiplication_candidates: 0,
+      ...defaultValues,
+    },
+  })
   const create = useCreateFormSubmission<unknown, FormValues>("sector-supervisor-reports")
   const { data: areas = [] } = useAreas()
   const { data: sectors = [] } = useSectors()
@@ -101,17 +112,17 @@ export function SectorSupervisorReportsForm({
       className="space-y-4"
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
+        <div className="space-y-1.5">
           <Label>Data *</Label>
           <Controller
             control={control}
             name="date"
-            render={({ field }) => <DateInput value={field.value} onChange={field.onChange} />}
+            render={({ field }) => <DatePickerInput value={field.value} onChange={field.onChange} className="w-full" />}
           />
           {errors.date && <p className="text-sm text-destructive mt-1">{errors.date.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Área</Label>
           <Select value={selectedAreaId?.toString() ?? ""} onValueChange={handleAreaChange}>
             <SelectTrigger><SelectValue placeholder="Filtrar por área (opcional)" /></SelectTrigger>
@@ -123,7 +134,7 @@ export function SectorSupervisorReportsForm({
           </Select>
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Setor *</Label>
           <Select value={selectedSectorId?.toString() ?? ""} onValueChange={handleSectorChange}>
             <SelectTrigger><SelectValue placeholder="Selecione um setor" /></SelectTrigger>
@@ -136,30 +147,30 @@ export function SectorSupervisorReportsForm({
           {errors.sector_id && <p className="text-sm text-destructive mt-1">{errors.sector_id.message}</p>}
         </div>
 
-        <div>
+        <div className="space-y-1.5">
           <Label>Reuniões realizadas *</Label>
           <Input {...register("meetings_held")} type="number" min={0} />
           {errors.meetings_held && <p className="text-sm text-destructive mt-1">{errors.meetings_held.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Treinamentos realizados *</Label>
           <Input {...register("trainings_conducted")} type="number" min={0} />
           {errors.trainings_conducted && <p className="text-sm text-destructive mt-1">{errors.trainings_conducted.message}</p>}
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>LGs visitados (IDs separados por vírgula)</Label>
           <Input {...register("life_groups_visited")} placeholder="1,2,3" />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Líderes pastoreados</Label>
           <Input {...register("leaders_pastored")} type="number" min={0} />
         </div>
-        <div>
+        <div className="space-y-1.5">
           <Label>Candidatos à multiplicação</Label>
           <Input {...register("multiplication_candidates")} type="number" min={0} />
         </div>
       </div>
-      <div>
+      <div className="space-y-1.5">
         <Label>Observações</Label>
         <Textarea {...register("notes")} />
       </div>

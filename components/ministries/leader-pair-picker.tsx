@@ -14,20 +14,21 @@ interface LeaderPairPickerProps {
   onCoLeaderChange: (id: number | null) => void
   leaderLabel?: string
   coLeaderLabel?: string
+  leaderRequired?: boolean
 }
 
 const NONE = "none"
 
 export function LeaderPairPicker({
   users, leaderId, coLeaderId, onLeaderChange, onCoLeaderChange,
-  leaderLabel = "Líder", coLeaderLabel = "Co-líder (cônjuge)",
+  leaderLabel = "Líder", coLeaderLabel = "Co-líder (cônjuge)", leaderRequired = false,
 }: LeaderPairPickerProps) {
   const toVal = (id: number | null) => (id == null ? NONE : String(id))
   const parse = (v: string) => (v === NONE ? null : Number(v))
   return (
     <div className="grid grid-cols-2 gap-3">
       <div className="space-y-1">
-        <Label>{leaderLabel}</Label>
+        <Label>{leaderLabel}{leaderRequired && <span className="text-destructive ml-1">*</span>}</Label>
         <Select value={toVal(leaderId)} onValueChange={(v) => onLeaderChange(parse(v))}>
           <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
           <SelectContent>

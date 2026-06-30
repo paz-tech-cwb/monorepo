@@ -22,7 +22,9 @@ import {
 } from '@/components/ui/select'
 import {
   Sheet,
+  SheetBody,
   SheetContent,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -181,7 +183,7 @@ function ReminderRow({ rule }: { rule: ReminderRule }) {
               <Settings2 className="h-4 w-4" />
             </Button>
           </SheetTrigger>
-          <SheetContent className="w-full sm:max-w-xl overflow-y-auto px-6">
+          <SheetContent>
             <ReminderSheetContent rule={rule} enabled={enabled} onClose={() => setOpen(false)} />
           </SheetContent>
         </Sheet>
@@ -218,11 +220,11 @@ function ReminderSheetContent({
 
   return (
     <>
-      <SheetHeader className="pb-4">
+      <SheetHeader>
         <SheetTitle>{RULE_TITLES[rule.type]}</SheetTitle>
       </SheetHeader>
 
-      <div className="space-y-6 pb-6">
+      <SheetBody className="space-y-6">
         {rule.type === 'form_report' && (
           <FormReportControls
             config={config as FormReportReminderConfig}
@@ -244,13 +246,13 @@ function ReminderSheetContent({
             disabled={!enabled}
           />
         )}
-      </div>
+      </SheetBody>
 
-      <div className="border-t pt-4">
+      <SheetFooter>
         <Button onClick={onSave} disabled={update.isPending} className="w-full">
           Salvar
         </Button>
-      </div>
+      </SheetFooter>
     </>
   )
 }
