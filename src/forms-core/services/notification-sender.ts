@@ -16,13 +16,26 @@ export abstract class NotificationSender {
 @Injectable()
 export class ResendNotificationSender extends NotificationSender {
   private readonly logger = new Logger(ResendNotificationSender.name);
-  private readonly resend = new Resend(process.env.RESEND_API_KEY);
+  private readonly resend: Resend | null;
 
   constructor(private readonly settings: ChurchSettingsService) {
     super();
+
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      this.logger.warn('RESEND_API_KEY not configured — email delivery disabled');
+      this.resend = null;
+      return;
+    }
+
+    this.resend = new Resend(apiKey);
   }
 
   async sendEmail({ to, subject, html }: EmailPayload): Promise<void> {
+    if (!this.resend) {
+      return;
+    }
+
     const from = await this.settings.getContactEmail();
     try {
       await this.resend.emails.send({ from, to, subject, html });

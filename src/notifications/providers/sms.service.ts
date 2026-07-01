@@ -4,12 +4,20 @@ import twilio, { Twilio } from 'twilio';
 @Injectable()
 export class SmsService {
   private readonly logger = new Logger(SmsService.name);
-  private readonly client: Twilio;
+  private readonly client: Twilio | null;
 
   constructor() {
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    if (!accountSid || !authToken || !process.env.TWILIO_FROM_NUMBER) {
+      this.logger.warn('Twilio env vars not configured — SMS delivery disabled');
+      this.client = null;
+      return;
+    }
+
     this.client = twilio(
-      process.env.TWILIO_ACCOUNT_SID,
-      process.env.TWILIO_AUTH_TOKEN,
+      accountSid,
+      authToken,
     );
   }
 
@@ -18,6 +26,7 @@ export class SmsService {
     payload: { title: string; body: string },
   ): Promise<boolean> {
     if (!phoneNumber) return false;
+    if (!this.client) return false;
     try {
       await this.client.messages.create({
         body: `${payload.title}\n\n${payload.body}`,
