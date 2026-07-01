@@ -121,20 +121,32 @@ flutter run   # requires a connected device or emulator
 
 ---
 
-### Docker (all services containerized)
+### Docker / Coolify
 
-To run the backend and admin-ui fully containerized (e.g. for staging):
+The root [docker-compose.yaml](/Users/jonathalima/Developer/church/docker-compose.yaml:1) is the deployment entrypoint for containerized environments such as Coolify. It keeps `postgres`, `backend`, and `admin-ui` on the internal Docker network and expects public routing to be provided by Coolify instead of fixed host port bindings.
+
+Before deploying, fill in the root `.env` with the normal secrets plus the public URL contract:
+
+```bash
+API_BASE_URL=https://church-api.<your-domain>/api
+ADMIN_BASE_URL=https://church-admin.<your-domain>
+CORS_ORIGIN=https://church-admin.<your-domain>
+```
+
+Then deploy from the repository root:
 
 ```bash
 cp .env.example .env   # fill in all vars including Firebase
 docker compose up --build
 ```
 
-Services start at the same URLs. Run migrations after the first boot:
+After the first healthy backend boot, run migrations:
 
 ```bash
 docker compose exec backend npm run migration:run
 ```
+
+For local development, prefer `npm run dev` from the root and `backend/docker-compose.yaml` for the database. That local workflow still uses `http://localhost:3000` and `http://localhost:3001/api`.
 
 ---
 

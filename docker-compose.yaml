@@ -7,8 +7,8 @@ services:
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
-    ports:
-      - "${DB_PORT:-5432}:5432"
+    expose:
+      - "5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -37,15 +37,15 @@ services:
       REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       PORT: 3001
-      CORS_ORIGIN: http://localhost:3000
-    ports:
-      - "3001:3001"
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    expose:
+      - "3001"
 
   admin-ui:
     build:
       context: ./admin-ui
       args:
-        NEXT_PUBLIC_API_BASE_URL: http://localhost:3001/api
+        NEXT_PUBLIC_API_BASE_URL: ${API_BASE_URL:-http://localhost:3001/api}
         NEXT_PUBLIC_FIREBASE_API_KEY: ${NEXT_PUBLIC_FIREBASE_API_KEY}
         NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}
         NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${NEXT_PUBLIC_FIREBASE_PROJECT_ID}
@@ -57,8 +57,8 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
 
 volumes:
   pgdata:
