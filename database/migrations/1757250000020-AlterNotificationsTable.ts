@@ -42,9 +42,11 @@ export class AlterNotificationsTable1757250000020 implements MigrationInterface 
           SELECT 1 FROM information_schema.columns
           WHERE table_name='notifications' AND column_name='status' AND udt_name='varchar'
         ) THEN
+          ALTER TABLE "notifications" ALTER COLUMN "status" DROP DEFAULT;
           ALTER TABLE "notifications"
             ALTER COLUMN "status" TYPE "notification_status_enum"
             USING "status"::"notification_status_enum";
+          ALTER TABLE "notifications" ALTER COLUMN "status" SET DEFAULT 'pending';
         END IF;
       END $$
     `);
