@@ -5,12 +5,6 @@ export class UpdateUserNotificationPreferences1749470000002
 {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-      ALTER TABLE user_notification_preferences
-        ADD COLUMN IF NOT EXISTS member_journey_enabled boolean NOT NULL DEFAULT true,
-        ADD COLUMN IF NOT EXISTS contributions_enabled boolean NOT NULL DEFAULT true
-    `);
-
-    await queryRunner.query(`
       DO $$
       BEGIN
         IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notification_os_permission_enum') THEN
@@ -21,8 +15,21 @@ export class UpdateUserNotificationPreferences1749470000002
     `);
 
     await queryRunner.query(`
-      ALTER TABLE user_notification_preferences
-        ADD COLUMN IF NOT EXISTS os_permission_status notification_os_permission_enum NOT NULL DEFAULT 'not_determined'
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.tables
+          WHERE table_schema = 'public' AND table_name = 'user_notification_preferences'
+        ) THEN
+          ALTER TABLE user_notification_preferences
+            ADD COLUMN IF NOT EXISTS member_journey_enabled boolean NOT NULL DEFAULT true,
+            ADD COLUMN IF NOT EXISTS contributions_enabled boolean NOT NULL DEFAULT true;
+
+          ALTER TABLE user_notification_preferences
+            ADD COLUMN IF NOT EXISTS os_permission_status notification_os_permission_enum NOT NULL DEFAULT 'not_determined';
+        END IF;
+      END
+      $$
     `);
   }
 

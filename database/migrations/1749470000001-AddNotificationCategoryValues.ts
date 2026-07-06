@@ -4,18 +4,30 @@ export class AddNotificationCategoryValues1749470000001
   implements MigrationInterface
 {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `ALTER TYPE notification_category_enum ADD VALUE IF NOT EXISTS 'forms'`,
-    );
-    await queryRunner.query(
-      `ALTER TYPE notification_category_enum ADD VALUE IF NOT EXISTS 'member_journey'`,
-    );
-    await queryRunner.query(
-      `ALTER TYPE notification_category_enum ADD VALUE IF NOT EXISTS 'contributions'`,
-    );
-    await queryRunner.query(
-      `ALTER TYPE notification_category_enum ADD VALUE IF NOT EXISTS 'meeting_reports'`,
-    );
+    await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notification_category_enum') THEN
+          CREATE TYPE notification_category_enum AS ENUM (
+            'events',
+            'announcements',
+            'life_group',
+            'academy',
+            'admin_alerts',
+            'forms',
+            'member_journey',
+            'contributions',
+            'meeting_reports'
+          );
+        ELSE
+          ALTER TYPE notification_category_enum ADD VALUE IF NOT EXISTS 'forms';
+          ALTER TYPE notification_category_enum ADD VALUE IF NOT EXISTS 'member_journey';
+          ALTER TYPE notification_category_enum ADD VALUE IF NOT EXISTS 'contributions';
+          ALTER TYPE notification_category_enum ADD VALUE IF NOT EXISTS 'meeting_reports';
+        END IF;
+      END
+      $$
+    `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
