@@ -46,6 +46,7 @@ export class User {
   picture: string | null;
 
   @ManyToOne(() => Role, { nullable: false, eager: true })
+  @JoinColumn({ name: 'role_id' })
   role: Role;
 
   @ManyToOne(() => Sector, { nullable: true })
