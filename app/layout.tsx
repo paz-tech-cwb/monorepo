@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
-import { Analytics } from '@vercel/analytics/next'
 import { QueryProvider } from '@/providers/query-provider'
 import { AuthProvider } from '@/contexts/auth-context'
 import { AnalyticsProvider } from '@/providers/analytics-provider'
@@ -13,6 +12,9 @@ export const metadata: Metadata = {
   title: 'Igreja da Paz - Admin',
   description: 'Painel administrativo da Igreja da Paz',
   generator: 'v0.app',
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({
@@ -37,7 +39,6 @@ export default function RootLayout({
             </AuthProvider>
           </QueryProvider>
           <Toaster />
-          <Analytics />
         </ThemeProvider>
       </body>
     </html>
