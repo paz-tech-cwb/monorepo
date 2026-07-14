@@ -25,6 +25,7 @@ import { MeetingReportsModule } from './meeting-reports/meeting-reports.module';
 import { ConversionsModule } from './conversions/conversions.module';
 import { FormCoursesModule } from './form-courses/form-courses.module';
 import { FormsCatalogModule } from './forms-catalog/forms-catalog.module';
+import { HealthModule } from './health/health.module';
 import { MemberRegistrationsModule } from './member-registrations/member-registrations.module';
 import { FormConversionsModule } from './form-conversions/form-conversions.module';
 import { LifeGroupReportsModule } from './life-group-reports/life-group-reports.module';
@@ -81,6 +82,7 @@ import ormconfig from './configs/orm.config';
     ConversionsModule,
     FormCoursesModule,
     FormsCatalogModule,
+    HealthModule,
     MemberRegistrationsModule,
     FormConversionsModule,
     LifeGroupReportsModule,
