@@ -10,7 +10,10 @@ import {
   ArrayMinSize,
 } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
-import type { NotificationCategory } from '../entities/notification.entity';
+import {
+  NOTIFICATION_CATEGORIES,
+  type NotificationCategory,
+} from '../notification-category';
 
 export class SegmentFiltersDto {
   @Expose() @IsOptional() @IsArray() roles?: string[];
@@ -45,17 +48,7 @@ export class CreateNotificationDto {
   message: string;
 
   @Expose()
-  @IsEnum([
-    'events',
-    'announcements',
-    'life_group',
-    'academy',
-    'admin_alerts',
-    'forms',
-    'member_journey',
-    'contributions',
-    'meeting_reports',
-  ])
+  @IsEnum(NOTIFICATION_CATEGORIES)
   category: NotificationCategory;
 
   @Expose()

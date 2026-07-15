@@ -8,17 +8,12 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import {
+  NOTIFICATION_CATEGORIES,
+  type NotificationCategory,
+} from '../notification-category';
 
-export type NotificationCategory =
-  | 'events'
-  | 'announcements'
-  | 'life_group'
-  | 'academy'
-  | 'admin_alerts'
-  | 'forms'
-  | 'member_journey'
-  | 'contributions'
-  | 'meeting_reports';
+export type { NotificationCategory } from '../notification-category';
 
 export type NotificationStatus =
   | 'pending'
@@ -52,17 +47,7 @@ export class Notification {
 
   @Column({
     type: 'enum',
-    enum: [
-      'events',
-      'announcements',
-      'life_group',
-      'academy',
-      'admin_alerts',
-      'forms',
-      'member_journey',
-      'contributions',
-      'meeting_reports',
-    ],
+    enum: NOTIFICATION_CATEGORIES,
     enumName: 'notification_category_enum',
   })
   category: NotificationCategory;

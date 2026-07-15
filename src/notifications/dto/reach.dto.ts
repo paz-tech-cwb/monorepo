@@ -1,7 +1,10 @@
 import { IsArray, IsEnum, IsIn, IsObject, ArrayMinSize } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
 import { SegmentDto } from './create-notification.dto';
-import type { NotificationCategory } from '../entities/notification.entity';
+import {
+  NOTIFICATION_CATEGORIES,
+  type NotificationCategory,
+} from '../notification-category';
 
 export class ReachDto {
   @Expose()
@@ -16,6 +19,6 @@ export class ReachDto {
   segment: SegmentDto;
 
   @Expose()
-  @IsEnum(['events', 'announcements', 'life_group', 'academy', 'admin_alerts'])
+  @IsEnum(NOTIFICATION_CATEGORIES)
   category: NotificationCategory;
 }
