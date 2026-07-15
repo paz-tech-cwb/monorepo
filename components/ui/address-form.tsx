@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -19,12 +19,14 @@ export interface AddressFormData {
   reference?: string | null
 }
 
-interface AddressFormProps {
+export interface AddressFormProps {
   value: AddressFormData
   onChange: (data: AddressFormData) => void
   idPrefix?: string
   showUseChurchAddress?: boolean
   onUseChurchAddress?: () => void
+  required?: boolean
+  error?: string | null
 }
 
 const EMPTY_ADDRESS: AddressFormData = {
@@ -44,48 +46,88 @@ export function AddressForm({
   idPrefix = "",
   showUseChurchAddress = false,
   onUseChurchAddress,
+  required = false,
+  error = null,
 }: AddressFormProps) {
   const [isLoadingCEP, setIsLoadingCEP] = useState(false)
   const [cepError, setCepError] = useState<string | null>(null)
   // Whether full address fields are visible (true once CEP resolves or church address used)
   const [usingChurchAddress, setUsingChurchAddress] = useState(false)
+  const [resolvedCEP, setResolvedCEP] = useState<string | null>(null)
+  const latestCEPRef = useRef(value.zip_code.replace(/\D/g, ""))
+  const requestSequenceRef = useRef(0)
+  const generatedId = useId()
 
-  const hasFullAddress = value.street.trim().length > 0
+  const currentCEP = value.zip_code.replace(/\D/g, "")
+  const resolvedCurrentCEP = resolvedCEP !== null && resolvedCEP === currentCEP
+  const hasExistingAddress = [
+    value.street,
+    value.neighborhood,
+    value.city,
+    value.state,
+    value.number,
+    value.complement ?? "",
+  ].some((field) => field.trim().length > 0)
+  const errorId = `${idPrefix || generatedId}-address-error`
+  const hasInlineError = Boolean(cepError || error)
+  const describedBy = hasInlineError ? errorId : undefined
+  const hasFullAddress = resolvedCurrentCEP || hasExistingAddress
+
+  useEffect(() => {
+    latestCEPRef.current = currentCEP
+  }, [currentCEP])
 
   const handleCEPChange = (cep: string) => {
     const formatted = formatCEP(cep)
     onChange({ ...EMPTY_ADDRESS, zip_code: formatted })
     setCepError(null)
     setUsingChurchAddress(false)
+    setResolvedCEP(null)
   }
 
   const handleCEPBlur = async () => {
-    const clean = value.zip_code.replace(/\D/g, "")
+    const clean = latestCEPRef.current
     if (clean.length !== 8) return
 
+    const requestSequence = requestSequenceRef.current + 1
+    requestSequenceRef.current = requestSequence
     setIsLoadingCEP(true)
     setCepError(null)
     try {
       const data = await fetchAddressByCEP(clean)
-      if (data) {
+      const isLatestRequest = requestSequenceRef.current === requestSequence
+      const cepDidNotChange = latestCEPRef.current === clean
+
+      if (data && isLatestRequest && cepDidNotChange) {
         onChange({
-          ...value,
+          ...EMPTY_ADDRESS,
+          zip_code: formatCEP(clean),
           street: data.street,
-          neighborhood: data.neighborhood || value.neighborhood,
+          neighborhood: data.neighborhood,
           city: data.city,
           state: data.state,
           country: data.country,
         })
+        setResolvedCEP(clean)
       }
     } catch (err) {
-      setCepError(err instanceof Error ? err.message : "Erro ao buscar CEP")
+      const isLatestRequest = requestSequenceRef.current === requestSequence
+      const cepDidNotChange = latestCEPRef.current === clean
+
+      if (isLatestRequest && cepDidNotChange) {
+        setCepError(err instanceof Error ? err.message : "Erro ao buscar CEP")
+        setResolvedCEP(null)
+      }
     } finally {
-      setIsLoadingCEP(false)
+      if (requestSequenceRef.current === requestSequence) {
+        setIsLoadingCEP(false)
+      }
     }
   }
 
   const handleUseChurch = () => {
     setUsingChurchAddress(true)
+    setResolvedCEP(null)
     setCepError(null)
     onChange(EMPTY_ADDRESS)
     onUseChurchAddress?.()
@@ -93,6 +135,7 @@ export function AddressForm({
 
   const handleClearChurch = () => {
     setUsingChurchAddress(false)
+    setResolvedCEP(null)
     onChange(EMPTY_ADDRESS)
   }
 
@@ -121,13 +164,15 @@ export function AddressForm({
               onBlur={handleCEPBlur}
               placeholder="00000-000"
               maxLength={9}
+              required={required}
               className={cepError ? "border-destructive" : ""}
+              aria-invalid={hasInlineError}
+              aria-describedby={describedBy}
             />
             {isLoadingCEP && (
               <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
             )}
           </div>
-          {cepError && <p className="text-xs text-destructive mt-1">{cepError}</p>}
         </div>
 
         {showUseChurchAddress && (
@@ -137,6 +182,16 @@ export function AddressForm({
           </Button>
         )}
       </div>
+      {hasInlineError && (
+        <p
+          id={errorId}
+          className="text-sm text-destructive"
+          role="alert"
+          aria-live="polite"
+        >
+          {cepError ?? error}
+        </p>
+      )}
 
       {/* Full address — only shown once CEP resolves */}
       {hasFullAddress && (
@@ -149,6 +204,9 @@ export function AddressForm({
               onChange={(e) => onChange({ ...value, state: e.target.value })}
               placeholder="SP"
               maxLength={2}
+              required={required}
+              aria-invalid={hasInlineError}
+              aria-describedby={describedBy}
             />
           </div>
 
@@ -159,6 +217,9 @@ export function AddressForm({
               value={value.city}
               onChange={(e) => onChange({ ...value, city: e.target.value })}
               placeholder="São Paulo"
+              required={required}
+              aria-invalid={hasInlineError}
+              aria-describedby={describedBy}
             />
           </div>
 
@@ -169,6 +230,9 @@ export function AddressForm({
               value={value.neighborhood}
               onChange={(e) => onChange({ ...value, neighborhood: e.target.value })}
               placeholder="Centro"
+              required={required}
+              aria-invalid={hasInlineError}
+              aria-describedby={describedBy}
             />
           </div>
 
@@ -179,6 +243,9 @@ export function AddressForm({
               value={value.street}
               onChange={(e) => onChange({ ...value, street: e.target.value })}
               placeholder="Rua das Flores"
+              required={required}
+              aria-invalid={hasInlineError}
+              aria-describedby={describedBy}
             />
           </div>
 
@@ -189,6 +256,9 @@ export function AddressForm({
               value={value.number}
               onChange={(e) => onChange({ ...value, number: e.target.value })}
               placeholder="123"
+              required={required}
+              aria-invalid={hasInlineError}
+              aria-describedby={describedBy}
             />
           </div>
 
@@ -199,6 +269,9 @@ export function AddressForm({
               value={value.complement || ""}
               onChange={(e) => onChange({ ...value, complement: e.target.value || null })}
               placeholder="Apto 101"
+              required={required}
+              aria-invalid={hasInlineError}
+              aria-describedby={describedBy}
             />
           </div>
         </div>

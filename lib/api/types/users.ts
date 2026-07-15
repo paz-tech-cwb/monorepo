@@ -32,11 +32,22 @@ export interface AdminUser {
   updated_at: string
 }
 
+export interface UserAddressRequest {
+  zip_code: string
+  country: string
+  state: string
+  city: string
+  neighborhood: string
+  street: string
+  number: string
+  complement: string
+}
+
 export interface CreateUserRequest {
   name: string
   email: string
-  phone_number?: string
-  address?: string
+  phone?: string
+  address?: UserAddressRequest
   birth_date?: string
   role: UserRole
   sector_id?: number | null
@@ -46,8 +57,7 @@ export interface CreateUserRequest {
 export interface UpdateUserRequest {
   name?: string
   email?: string
-  phone_number?: string
-  address?: string
+  phone?: string
   birth_date?: string
   role?: UserRole
   status?: UserStatus

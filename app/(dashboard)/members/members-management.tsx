@@ -28,12 +28,12 @@ import {
 } from "@/components/ui/select"
 import { FormDrawer } from "@/components/ui/form-drawer"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
+import { AddressForm, type AddressFormData } from "@/components/ui/address-form"
 import { Search, Plus, MoreHorizontal, Edit, Trash2, GitMerge } from "lucide-react"
 import { useUsers, useCreateUser, useUpdateUser, useUpdateUserRole, useDeleteUser } from "@/lib/hooks/use-users"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
 import { JourneySheet } from "./journey-sheet"
 import type { AdminUser, UserRole } from "@/lib/api/types"
-import { WipOverlay } from "@/components/ui/wip-overlay"
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "member", label: "Membro" },
@@ -50,6 +50,17 @@ function getRoleLabel(role: string): string {
 
 type RoleTab = "all" | "life_group_leader" | "member"
 
+const EMPTY_CREATE_ADDRESS: AddressFormData = {
+  zip_code: "",
+  country: "Brasil",
+  state: "",
+  city: "",
+  neighborhood: "",
+  street: "",
+  number: "",
+  complement: null,
+}
+
 export function MembersManagement() {
   const { data: members = [], isLoading, error } = useUsers()
   const createMutation = useCreateUser()
@@ -62,6 +73,9 @@ export function MembersManagement() {
   const [editingMember, setEditingMember] = useState<AdminUser | null>(null)
   const [deletingMemberId, setDeletingMemberId] = useState<number | null>(null)
   const [journeyMember, setJourneyMember] = useState<AdminUser | null>(null)
+  const [createAddress, setCreateAddress] = useState<AddressFormData>(EMPTY_CREATE_ADDRESS)
+  const [createAddressError, setCreateAddressError] = useState<string | null>(null)
+  const [addressFormResetKey, setAddressFormResetKey] = useState(0)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -91,18 +105,58 @@ export function MembersManagement() {
     setFormData({ name: "", email: "", phone_number: "", address: "", birth_date: "", role: "member" })
   }
 
+  const resetCreateAddress = () => {
+    setCreateAddress(EMPTY_CREATE_ADDRESS)
+    setCreateAddressError(null)
+    setAddressFormResetKey((key) => key + 1)
+  }
+
+  const validateCreateAddress = () => {
+    const cleanCEP = createAddress.zip_code.replace(/\D/g, "")
+    const requiredFields = [
+      createAddress.street,
+      createAddress.neighborhood,
+      createAddress.city,
+      createAddress.state,
+      createAddress.number,
+      createAddress.complement ?? "",
+    ]
+
+    if (cleanCEP.length !== 8 || requiredFields.some((field) => field.trim().length === 0)) {
+      return "Informe um endereco completo: CEP valido, rua, bairro, cidade, estado, numero e complemento."
+    }
+
+    return null
+  }
+
   const handleAdd = async () => {
+    const addressError = validateCreateAddress()
+    if (addressError) {
+      setCreateAddressError(addressError)
+      return
+    }
+
     try {
       await createMutation.mutateAsync({
         name: formData.name,
         email: formData.email,
-        phone_number: formData.phone_number || undefined,
-        address: formData.address || undefined,
+        phone: formData.phone_number || undefined,
+        address: {
+          zip_code: createAddress.zip_code,
+          country: "Brasil",
+          state: createAddress.state.trim(),
+          city: createAddress.city.trim(),
+          neighborhood: createAddress.neighborhood.trim(),
+          street: createAddress.street.trim(),
+          number: createAddress.number.trim(),
+          complement: (createAddress.complement ?? "").trim(),
+        },
         birth_date: formData.birth_date || undefined,
         role: formData.role,
       })
       toast.success("Membro adicionado com sucesso!")
       resetForm()
+      resetCreateAddress()
       setIsAddDrawerOpen(false)
     } catch {
       toast.error("Erro ao adicionar membro. Tente novamente.")
@@ -138,8 +192,7 @@ export function MembersManagement() {
         data: {
           name: formData.name,
           email: formData.email,
-          phone_number: formData.phone_number || undefined,
-          address: formData.address || undefined,
+          phone: formData.phone_number || undefined,
           birth_date: formData.birth_date || undefined,
         },
       })
@@ -172,7 +225,7 @@ export function MembersManagement() {
 
   const isSaving = updateMutation.isPending || updateRoleMutation.isPending
 
-  const memberFormFields = (
+  const renderMemberFormFields = (includeStructuredAddress: boolean) => (
     <div className="grid grid-cols-2 gap-4">
       <div>
         <Label htmlFor="name">Nome</Label>
@@ -211,33 +264,47 @@ export function MembersManagement() {
       </div>
       <div>
         <Label htmlFor="role">Funcao</Label>
-        <WipOverlay>
-          <Select
-            value={formData.role}
-            onValueChange={(v) => setFormData({ ...formData, role: v as UserRole })}
-          >
-            <SelectTrigger id="role">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ROLE_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </WipOverlay>
+        <Select
+          value={formData.role}
+          onValueChange={(v) => setFormData({ ...formData, role: v as UserRole })}
+        >
+          <SelectTrigger id="role">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {ROLE_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-      <div className="col-span-2">
-        <Label htmlFor="address">Endereco</Label>
-        <Input
-          id="address"
-          value={formData.address}
-          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-          placeholder="Endereco completo"
-        />
-      </div>
+      {includeStructuredAddress ? (
+        <div className="col-span-2">
+          <AddressForm
+            key={addressFormResetKey}
+            value={createAddress}
+            onChange={(address) => {
+              setCreateAddress(address)
+              setCreateAddressError(null)
+            }}
+            idPrefix="member-create-"
+            required
+            error={createAddressError}
+          />
+        </div>
+      ) : (
+        <div className="col-span-2">
+          <Label htmlFor="address">Endereco</Label>
+          <Input
+            id="address"
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            placeholder="Endereco completo"
+          />
+        </div>
+      )}
     </div>
   )
 
@@ -255,7 +322,7 @@ export function MembersManagement() {
               <CardTitle>Lista de Membros</CardTitle>
               <CardDescription>{displayedMembers.length} membro(s) encontrado(s)</CardDescription>
             </div>
-            <Button onClick={() => { resetForm(); setIsAddDrawerOpen(true) }}>
+            <Button onClick={() => { resetForm(); resetCreateAddress(); setIsAddDrawerOpen(true) }}>
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Membro
             </Button>
@@ -405,7 +472,15 @@ export function MembersManagement() {
       <FormDrawer
         open={isAddDrawerOpen}
         onOpenChange={(open) => {
-          if (!open) { resetForm(); setIsAddDrawerOpen(false) }
+          if (open) {
+            resetForm()
+            resetCreateAddress()
+            setIsAddDrawerOpen(true)
+          } else {
+            resetForm()
+            resetCreateAddress()
+            setIsAddDrawerOpen(false)
+          }
         }}
         title="Adicionar Novo Membro"
         description="Preencha os dados do novo membro"
@@ -413,7 +488,7 @@ export function MembersManagement() {
         isLoading={createMutation.isPending}
         submitLabel="Adicionar"
       >
-        {memberFormFields}
+        {renderMemberFormFields(true)}
       </FormDrawer>
 
       {/* Edit Member Drawer */}
@@ -428,7 +503,7 @@ export function MembersManagement() {
         isLoading={isSaving}
         submitLabel="Salvar"
       >
-        {memberFormFields}
+        {renderMemberFormFields(false)}
       </FormDrawer>
 
       {/* Journey Sheet */}
