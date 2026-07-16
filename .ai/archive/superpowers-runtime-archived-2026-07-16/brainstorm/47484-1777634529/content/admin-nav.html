@@ -1,0 +1,29 @@
+<h2>Admin: how should Formulários be organized?</h2>
+<p class="subtitle">Eight forms with role-scoped visibility. Pick the navigation model.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Single "Formulários" section, hub page lists all forms</h3>
+      <p>Sidebar has one entry: <b>Formulários</b>. Clicking it shows a hub with cards for each of the 8 forms (Cadastro do Membro, Conversão, Relatório de LG, etc.). Each card → list view of that form's submissions. Cursos lives as its own sidebar entry under Configurações.</p>
+      <p><i>Pros:</i> sidebar stays clean; scales if more forms come.<br><i>Cons:</i> one extra click to reach any form's list.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>"Formulários" expandable group with each form as sub-item</h3>
+      <p>Sidebar has <b>Formulários</b> as a collapsible group; expanding shows the 8 forms as sub-entries. One click to any form's list.</p>
+      <p><i>Pros:</i> fastest access; clear at-a-glance inventory.<br><i>Cons:</i> long sidebar; visually heavy when expanded.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Grouped by purpose: Cadastros / Relatórios / Outros</h3>
+      <p>Sidebar shows three groups under Formulários: <b>Cadastros</b> (Membro, Conversão, Convidado), <b>Relatórios</b> (LG semanal, Setor, Área, Culto), <b>Outros</b> (Multiplicação). Each group expands to its forms.</p>
+      <p><i>Pros:</i> matches mental model (capturing data vs reporting activity); easier to scan.<br><i>Cons:</i> two-level nav; group taxonomy is opinionated.</p>
+    </div>
+  </div>
+</div>

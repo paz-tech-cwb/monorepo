@@ -1,0 +1,49 @@
+<h2>Mobile: Conta → Formulários screen layout</h2>
+<p class="subtitle">User sees only forms their role permits. Where does "Histórico" live?</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">A — One list, history per form (drilldown)</div>
+    <div class="mockup-body">
+      <div class="mock-nav">← Conta &nbsp;·&nbsp; <b>Formulários</b></div>
+      <div style="padding:12px;display:flex;flex-direction:column;gap:8px">
+        <div class="placeholder" style="padding:12px;text-align:left">📋 <b>Relatório de Life Group</b><br><small>Semanal · 3 enviados</small></div>
+        <div class="placeholder" style="padding:12px;text-align:left">🙏 <b>Conversão e Reconciliação</b><br><small>1 enviado</small></div>
+        <div class="placeholder" style="padding:12px;text-align:left">👤 <b>Cadastro do Membro</b><br><small>Nenhum enviado</small></div>
+        <div class="placeholder" style="padding:12px;text-align:left">🎉 <b>Convidado</b><br><small>2 enviados</small></div>
+      </div>
+      <p style="font-size:12px;padding:0 12px"><i>Tap a card → form detail screen with two tabs: "Novo" (form) and "Histórico" (your submissions). Big "+ Novo" button.</i></p>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">B — Two tabs at top: Formulários / Histórico</div>
+    <div class="mockup-body">
+      <div class="mock-nav">← Conta &nbsp;·&nbsp; <b>Formulários</b></div>
+      <div style="display:flex;border-bottom:1px solid #ccc;margin:8px 0">
+        <div style="padding:8px 16px;border-bottom:2px solid #4f46e5"><b>Disponíveis</b></div>
+        <div style="padding:8px 16px;color:#888">Histórico</div>
+      </div>
+      <div style="padding:12px;display:flex;flex-direction:column;gap:8px">
+        <div class="placeholder" style="padding:12px;text-align:left">📋 Relatório de Life Group</div>
+        <div class="placeholder" style="padding:12px;text-align:left">🙏 Conversão e Reconciliação</div>
+        <div class="placeholder" style="padding:12px;text-align:left">👤 Cadastro do Membro</div>
+        <div class="placeholder" style="padding:12px;text-align:left">🎉 Convidado</div>
+      </div>
+      <p style="font-size:12px;padding:0 12px"><i>"Histórico" tab shows a unified, chronological list of all your submissions across forms.</i></p>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>Drilldown — one list, history scoped per form</h3>
+    <p>Each form has its own page with "Novo" + "Histórico" tabs.</p></div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>Top tabs — Disponíveis / Histórico (global)</h3>
+    <p>One unified history across all forms; browse forms separately.</p></div>
+  </div>
+</div>

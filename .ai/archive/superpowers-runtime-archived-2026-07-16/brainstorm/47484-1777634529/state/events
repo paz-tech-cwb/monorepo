@@ -1,0 +1,4 @@
+{"type":"click","text":"A\n    Drilldown — one list, history scoped per form\n    Each form has its own page with \"Novo\" + \"Histórico\" tabs.","choice":"a","id":null,"timestamp":1777636556124}
+{"type":"click","text":"B\n    Top tabs — Disponíveis / Histórico (global)\n    One unified history across all forms; browse forms separately.","choice":"b","id":null,"timestamp":1777636556691}
+{"type":"click","text":"B\n    Top tabs — Disponíveis / Histórico (global)\n    One unified history across all forms; browse forms separately.","choice":"b","id":null,"timestamp":1777636557041}
+{"type":"click","text":"A\n    Drilldown — one list, history scoped per form\n    Each form has its own page with \"Novo\" + \"Histórico\" tabs.","choice":"a","id":null,"timestamp":1777636557491}

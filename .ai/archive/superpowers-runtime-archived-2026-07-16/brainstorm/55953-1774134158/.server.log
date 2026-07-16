@@ -1,0 +1,4 @@
+{"type":"server-started","port":54710,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:54710","screen_dir":"/Users/jonathalima/Developer/church/.superpowers/brainstorm/55953-1774134158"}
+{"type":"screen-added","file":"/Users/jonathalima/Developer/church/.superpowers/brainstorm/55953-1774134158/admin-ui-composer.html"}
+{"type":"screen-added","file":"/Users/jonathalima/Developer/church/.superpowers/brainstorm/55953-1774134158/mobile-notifications.html"}
+{"type":"server-stopped","reason":"idle timeout"}
