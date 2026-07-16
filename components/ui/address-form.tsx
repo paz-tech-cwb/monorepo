@@ -79,7 +79,10 @@ export function AddressForm({
 
   const handleCEPChange = (cep: string) => {
     const formatted = formatCEP(cep)
+    latestCEPRef.current = formatted.replace(/\D/g, "")
+    requestSequenceRef.current += 1
     onChange({ ...EMPTY_ADDRESS, zip_code: formatted })
+    setIsLoadingCEP(false)
     setCepError(null)
     setUsingChurchAddress(false)
     setResolvedCEP(null)
@@ -154,7 +157,7 @@ export function AddressForm({
     <div className="space-y-4">
       {/* CEP row + church button */}
       <div className="flex gap-3 items-end">
-        <div className="flex-1">
+        <div className="flex-1 space-y-1.5">
           <Label htmlFor={`${idPrefix}zip_code`}>CEP</Label>
           <div className="relative">
             <Input
@@ -196,7 +199,7 @@ export function AddressForm({
       {/* Full address — only shown once CEP resolves */}
       {hasFullAddress && (
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          <div className="space-y-1.5">
             <Label htmlFor={`${idPrefix}state`}>Estado</Label>
             <Input
               id={`${idPrefix}state`}
@@ -210,7 +213,7 @@ export function AddressForm({
             />
           </div>
 
-          <div>
+          <div className="space-y-1.5">
             <Label htmlFor={`${idPrefix}city`}>Cidade</Label>
             <Input
               id={`${idPrefix}city`}
@@ -223,7 +226,7 @@ export function AddressForm({
             />
           </div>
 
-          <div>
+          <div className="space-y-1.5">
             <Label htmlFor={`${idPrefix}neighborhood`}>Bairro</Label>
             <Input
               id={`${idPrefix}neighborhood`}
@@ -236,7 +239,7 @@ export function AddressForm({
             />
           </div>
 
-          <div>
+          <div className="space-y-1.5">
             <Label htmlFor={`${idPrefix}street`}>Rua</Label>
             <Input
               id={`${idPrefix}street`}
@@ -249,7 +252,22 @@ export function AddressForm({
             />
           </div>
 
-          <div>
+          {required && (
+            <div className="space-y-1.5">
+              <Label htmlFor={`${idPrefix}country`}>País</Label>
+              <Input
+                id={`${idPrefix}country`}
+                value={value.country}
+                onChange={(e) => onChange({ ...value, country: e.target.value })}
+                placeholder="Brasil"
+                required
+                aria-invalid={hasInlineError}
+                aria-describedby={describedBy}
+              />
+            </div>
+          )}
+
+          <div className="space-y-1.5">
             <Label htmlFor={`${idPrefix}number`}>Número</Label>
             <Input
               id={`${idPrefix}number`}
@@ -262,7 +280,7 @@ export function AddressForm({
             />
           </div>
 
-          <div>
+          <div className="space-y-1.5">
             <Label htmlFor={`${idPrefix}complement`}>Complemento</Label>
             <Input
               id={`${idPrefix}complement`}
