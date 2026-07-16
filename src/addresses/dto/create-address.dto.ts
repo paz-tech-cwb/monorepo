@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { IsNotEmpty, IsString, Matches } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 
 export class CreateAddressDto {
   @Expose()
@@ -39,14 +39,14 @@ export class CreateAddressDto {
   street: string;
 
   @Expose()
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @Matches(/\S/)
-  number: string;
+  number?: string | null;
 
   @Expose()
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @Matches(/\S/)
-  complement: string;
+  complement?: string | null;
 }

@@ -99,8 +99,8 @@ export class UsersService {
           newAddress.city = dto.address.city;
           newAddress.neighborhood = dto.address.neighborhood;
           newAddress.street = dto.address.street;
-          newAddress.number = dto.address.number;
-          newAddress.complement = dto.address.complement;
+          newAddress.number = dto.address.number?.trim() || null;
+          newAddress.complement = dto.address.complement?.trim() || null;
           address = await manager.save(Address, newAddress);
         }
 

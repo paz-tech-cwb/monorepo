@@ -72,7 +72,20 @@ describe('CreateUserDto', () => {
     expect(errors).toHaveLength(0);
   });
 
-  it('rejects invalid zip codes and whitespace-only required address fields', () => {
+  it('accepts null number and complement', () => {
+    const { errors } = validatePayload({
+      ...validPayload,
+      address: {
+        ...validPayload.address,
+        number: null,
+        complement: null,
+      },
+    });
+
+    expect(errors).toHaveLength(0);
+  });
+
+  it('rejects invalid zip codes and whitespace-only optional address fields when provided', () => {
     const { errors } = validatePayload({
       ...validPayload,
       address: {
