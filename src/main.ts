@@ -2,8 +2,12 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { BackendErrorMonitoringFilter } from './common/filters/backend-error-monitoring.filter';
+import { initializeErrorMonitoring } from './common/monitoring/error-monitoring';
 
 async function bootstrap() {
+  initializeErrorMonitoring();
+
   const app = await NestFactory.create(AppModule);
 
   app.use(helmet());
@@ -30,6 +34,13 @@ async function bootstrap() {
       excludeExtraneousValues: true,
     }),
   );
+
+  app.use((req: { startTime?: number }, _res: unknown, next: () => void) => {
+    req.startTime = Date.now();
+    next();
+  });
+
+  app.useGlobalFilters(new BackendErrorMonitoringFilter());
 
   app.setGlobalPrefix('api');
 
