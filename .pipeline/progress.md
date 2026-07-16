@@ -1,41 +1,46 @@
-# Progress: AI Project Context Architecture
+# Progress
 
 ## Request
 
-Create a reusable `.ai/` documentation architecture, archive old docs, and update the user-level ship pipeline to use `.ai/`, create spec/progress, and open PRs after the first commit.
+Implement GlitchTip/Sentry-compatible backend error monitoring for Paz Church from Trello card `bIOZSEWu`.
 
 ## Status
 
 - [x] Context reviewed
-- [x] Spec created
-- [x] Progress created
-- [x] `.ai/` architecture created
-- [x] Root agent docs updated
-- [x] Old docs archived/removed from active paths
-- [x] User-level ship pipeline updated
-- [x] First branch commit created
-- [x] Branch pushed
-- [x] Draft PR opened
-- [x] PR URL recorded
+- [x] Trello card read
+- [x] Root pending work committed before branch work
+- [x] Backend remotes fetched
+- [x] Backend feature branch created
+- [x] Spec updated
+- [x] Implementation complete
+- [x] Tests complete
 - [x] Review complete
+- [ ] Final approval received
+- [ ] Commit created
+- [ ] Branch pushed
+- [ ] Merged to main/master
 
 ## Timeline
 
-- 2026-07-16 — Reviewed existing root docs, old docs/superpowers, package scripts, and user-level ship pipeline files.
-- 2026-07-16 — Proposed reusable `.ai/` architecture and received approval for approach 1.
-- 2026-07-16 — Created `.ai/` project, architecture, conventions, commands, feature, app, and handoff docs.
-- 2026-07-16 — Archived old planning/superpowers docs and removed active stale docs.
-- 2026-07-16 — Updated user-level ship pipeline definitions to require `.ai/`, progress tracking, and PR creation after the first commit.
-- 2026-07-16 — Created branch `docs/ai-project-context`; `origin/develop` was unavailable, so PR target will be `main` unless changed later.
-- 2026-07-16 — Created first commit `367b1a7` and pushed branch to origin.
-- 2026-07-16 — Opened draft PR #1 against `main`.
-- 2026-07-16 — Completed docs-only review with verdict `SHIP`.
+- 2026-07-16 — Read `.ai/` context, backend app docs, ship pipeline, and Trello card `bIOZSEWu`.
+- 2026-07-16 — Found dirty root working tree; user requested committing pending changes before continuing.
+- 2026-07-16 — Committed pending `kmp-mobile` changes as `53d2256 Update mobile development endpoints`.
+- 2026-07-16 — Committed root ship pipeline handoff changes as `4187153 Update ship pipeline handoff files`.
+- 2026-07-16 — Ignored local `.pnpm-store/` cache and committed `d5d2af2 Ignore local pnpm store`.
+- 2026-07-16 — Fetched root and backend remotes; backend branch created from updated `origin/master`.
+- 2026-07-16 — Implemented optional GlitchTip/Sentry-compatible monitoring via `SENTRY_DSN`.
+- 2026-07-16 — Added global backend error-monitoring exception filter and focused tests.
+- 2026-07-16 — Documented runtime env and Telegram alert bridge guidance.
+- 2026-07-16 — Focused Jest spec and backend build passed.
+- 2026-07-16 — Review completed with verdict `SHIP`.
 
 ## Current branch / PR
 
-- Branch: `docs/ai-project-context`
-- PR: https://github.com/paz-tech-cwb/monorepo/pull/1
+- Root branch: `docs/ai-project-context` (ahead of origin with committed pending work)
+- Backend branch: `feature/bIOZSEWu-implement-error-monitoring`
+- PR: pending user approval/ship
 
-## Blockers
+## Notes
 
-- `origin/develop` does not exist; using `main` as PR base.
+- Backend default branch is `master` in the submodule, not `main`.
+- Root `origin/main` advanced while this work was in progress; backend implementation was intentionally scoped to the backend submodule branch.
