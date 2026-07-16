@@ -1,202 +1,85 @@
 # Paz Church Curitiba — Platform
 
-A monorepo for the Paz Church Curitiba digital platform, organized as git submodules.
+A git-submodule monorepo for the Paz Church Curitiba digital platform.
 
----
+## Apps
 
-## Submodules
+| Path | Stack | Purpose |
+|---|---|---|
+| `backend/` | NestJS, TypeORM, PostgreSQL | REST API consumed by all clients |
+| `admin-ui/` | Next.js, React, TypeScript | Staff/admin dashboard |
+| `mobile-app/` | Flutter, Dart | Member-facing mobile app |
+| `kmp-mobile/` | Kotlin Multiplatform | Cross-platform mobile workstream |
+| `postman-files/` | Postman | API collections and environments |
 
-| Repo | Stack | Description |
-|------|-------|-------------|
-| [`admin-ui`](https://github.com/paz-tech-cwb/admin-ui) | Next.js 15 · React 19 · TypeScript · shadcn/ui | Web dashboard for church staff |
-| [`backend`](https://github.com/paz-tech-cwb/backend) | NestJS 11 · TypeORM · PostgreSQL 16 | REST API consumed by all clients |
-| [`mobile-app`](https://github.com/paz-tech-cwb/mobile-app) | Flutter 3.7+ · Dart · GetX | Member-facing iOS & Android app |
-| [`postman-files`](https://github.com/paz-tech-cwb/postman-files) | Postman | API collections and environments |
+## AI/project documentation
 
----
+Canonical agent-facing documentation lives in `.ai/`.
 
-## Getting Started
+Start here:
 
-### Clone everything at once
+```txt
+.ai/README.md
+.ai/project.md
+.ai/architecture.md
+.ai/feature-map.md
+```
+
+Feature docs live in `.ai/features/`; app docs live in `.ai/apps/`.
+
+## Getting started
 
 ```bash
 git clone --recurse-submodules <root-repo-url>
-```
-
-### Or initialize submodules after a plain clone
-
-```bash
-git submodule update --init --recursive
-```
-
----
-
-## Running locally
-
-### All at once (recommended)
-
-Start all services from the root with a single command:
-
-```bash
-# 1. Install root dev tooling (first time only)
+cd church
 npm install
-
-# 2. Copy and fill in secrets
 cp .env.example .env
-
-# 3. Start an iOS Simulator or Android emulator, then:
+npm run setup
 npm run dev
 ```
 
-This starts PostgreSQL (Docker), the backend, admin-ui, and the Flutter app concurrently with labeled, colored output. Each service auto-restarts on file changes.
+Services:
 
-| Service | URL / target |
-|---------|-------------|
-| admin-ui | http://localhost:3000 |
-| backend API | http://localhost:3001/api |
+| Service | Default target |
+|---|---|
+| admin-ui | `http://localhost:3000` |
+| backend API | `http://localhost:3001/api` |
 | mobile app | connected device / emulator |
 
-> **Flutter prerequisite:** a simulator or physical device must be running before `npm run dev`. Start one first:
-> ```bash
-> open -a Simulator                              # iOS
-> flutter emulators --launch <emulator-id>       # Android
-> ```
-> To target a specific device, edit `dev:mobile` in the root `package.json`.
-
-Individual service scripts are also available:
+## Common commands
 
 ```bash
-npm run dev:backend   # backend only
-npm run dev:admin     # admin-ui only
-npm run dev:mobile    # Flutter only
-npm run db            # PostgreSQL only (detached Docker)
+npm run db          # Start PostgreSQL
+npm run dev         # Start local backend/admin stack
+npm run dev:backend # Backend only
+npm run dev:admin   # Admin UI only
+npm run dev:mobile  # Flutter mobile only
+npm run setup       # Start DB and run migrations
 ```
 
-### First-time database setup
+## Submodule workflow
 
-After the backend container is running, apply migrations once:
-
-```bash
-docker compose exec backend npm run migration:run
-# or locally:
-cd backend && npm run migration:run
-```
-
----
-
-### Running services individually
-
-<details>
-<summary>Expand for per-service setup</summary>
-
-#### Backend
+Each app folder is an independent git repository. Commit app changes inside the relevant submodule, then update the root submodule pointer if needed.
 
 ```bash
 cd backend
-cp .env.example .env   # fill in secrets
-docker compose up -d   # start PostgreSQL
-npm install
-npm run migration:run
-npm run start:dev      # http://localhost:3001/api
-```
-
-#### Admin UI
-
-```bash
-cd admin-ui
-cp .env.local.example .env.local   # fill in Firebase + API keys
-npm install
-npm run dev   # http://localhost:3000
-```
-
-#### Mobile App
-
-```bash
-cd mobile-app
-flutter pub get
-flutter run   # requires a connected device or emulator
-```
-
-</details>
-
----
-
-### Docker / Coolify
-
-The root [docker-compose.yaml](/Users/jonathalima/Developer/church/docker-compose.yaml:1) is the deployment entrypoint for containerized environments such as Coolify. It keeps `postgres`, `backend`, and `admin-ui` on the internal Docker network and expects public routing to be provided by Coolify instead of fixed host port bindings.
-
-Before deploying, fill in the root `.env` with the normal secrets plus the public URL contract:
-
-```bash
-API_BASE_URL=https://church-api.<your-domain>/api
-ADMIN_BASE_URL=https://church-admin.<your-domain>
-CORS_ORIGIN=https://church-admin.<your-domain>
-```
-
-Then deploy from the repository root:
-
-```bash
-cp .env.example .env   # fill in all vars including Firebase
-docker compose up --build
-```
-
-After the first healthy backend boot, run migrations:
-
-```bash
-docker compose exec backend npm run migration:run
-```
-
-For local development, prefer `npm run dev` from the root and `backend/docker-compose.yaml` for the database. That local workflow still uses `http://localhost:3000` and `http://localhost:3001/api`.
-
----
-
-## Architecture Overview
-
-```
-┌─────────────────────────────────────────────┐
-│              Firebase Auth                   │
-│         (Google & Apple OAuth)               │
-└────────────────────┬────────────────────────┘
-                     │ ID token exchange
-                     ▼
-┌─────────────────────────────────────────────┐
-│                 backend                      │
-│          NestJS REST API (/api)              │
-│        PostgreSQL · JWT · TypeORM            │
-└──────────┬──────────────────┬───────────────┘
-           │                  │
-           ▼                  ▼
-┌──────────────────┐  ┌───────────────────────┐
-│    admin-ui      │  │      mobile-app        │
-│  Next.js 15      │  │      Flutter 3.7+      │
-│  (staff portal)  │  │   (member app)         │
-└──────────────────┘  └───────────────────────┘
-```
-
-Authentication works the same way across all clients: Firebase issues an ID token → backend exchanges it for a JWT access token (24 h) and refresh token (30 d) → clients use the JWT for all subsequent requests.
-
----
-
-## Working with Submodules
-
-Each submodule is an independent git repository. Changes must be committed and pushed from within the submodule's folder.
-
-```bash
-# Make changes inside a submodule
-cd backend
-git checkout -b feat/my-feature
-# ... make changes ...
-git commit -am "feat: my change"
+git checkout -b feat/example
+# make changes
+git commit -am "feat: example"
 git push
 
-# Record the updated submodule pointer in the root repo
 cd ..
 git add backend
 git commit -m "chore: update backend submodule"
 ```
 
-To pull the latest from all submodule remotes:
+## Architecture summary
 
-```bash
-git submodule update --remote
-```
+Authentication is shared across clients:
+
+1. Firebase Auth issues an ID token.
+2. Client exchanges it with backend `/api/auth/social-login`.
+3. Backend returns JWT access and refresh tokens.
+4. Clients use JWTs for API requests and refresh through `/api/auth/refresh`.
+
+For the full architecture, read `.ai/architecture.md`.

@@ -1,0 +1,382 @@
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e2e8f0; }
+
+  .page { max-width: 900px; margin: 0 auto; padding: 24px; }
+
+  h2 { font-size: 20px; font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid #1e293b; margin-bottom: 24px; }
+  .tab { padding: 10px 18px; font-size: 13px; font-weight: 500; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.active { color: #818cf8; border-bottom-color: #818cf8; }
+
+  .composer { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+
+  .form-section { background: #1e293b; border-radius: 12px; padding: 20px; }
+  .form-section + .form-section { margin-top: 16px; }
+  .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #475569; margin-bottom: 14px; }
+
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 500; color: #94a3b8; margin-bottom: 6px; }
+  .field input, .field textarea, .field select {
+    width: 100%; background: #0f1117; border: 1px solid #334155; border-radius: 8px;
+    padding: 9px 12px; font-size: 13px; color: #e2e8f0; outline: none;
+  }
+  .field textarea { resize: vertical; min-height: 80px; }
+  .field select { cursor: pointer; }
+
+  /* Channel selector - card style */
+  .channels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .channel-card {
+    background: #0f1117; border: 1.5px solid #334155; border-radius: 10px;
+    padding: 12px 14px; cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .channel-card:hover { border-color: #475569; }
+  .channel-card.selected { border-color: #818cf8; background: #1e1b4b; }
+  .channel-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .channel-icon.push { background: #1e3a5f; }
+  .channel-icon.email { background: #1e3b2f; }
+  .channel-icon.sms { background: #3b1e2f; }
+  .channel-icon.whatsapp { background: #1a3b1e; }
+  .channel-label { font-size: 13px; font-weight: 500; color: #cbd5e1; }
+  .channel-sub { font-size: 11px; color: #475569; margin-top: 1px; }
+  .channel-check { margin-left: auto; width: 18px; height: 18px; border-radius: 50%; border: 2px solid #334155; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .channel-card.selected .channel-check { background: #818cf8; border-color: #818cf8; }
+  .channel-card.selected .channel-check::after { content: '✓'; font-size: 10px; color: white; font-weight: 700; }
+
+  /* Category badge row */
+  .categories { display: flex; gap: 6px; flex-wrap: wrap; }
+  .cat-badge {
+    padding: 5px 12px; border-radius: 99px; font-size: 12px; font-weight: 500;
+    border: 1.5px solid #334155; color: #64748b; cursor: pointer; transition: all 0.15s;
+  }
+  .cat-badge:hover { border-color: #475569; color: #94a3b8; }
+  .cat-badge.selected { border-color: #818cf8; color: #818cf8; background: #1e1b4b; }
+
+  /* Segment builder */
+  .segment-filter { background: #0f1117; border: 1px solid #1e293b; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .segment-filter select { background: transparent; border: none; color: #94a3b8; font-size: 12px; flex: 1; outline: none; cursor: pointer; }
+  .segment-filter .remove { color: #475569; cursor: pointer; font-size: 14px; margin-left: auto; }
+  .segment-filter .remove:hover { color: #ef4444; }
+  .add-filter { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #818cf8; cursor: pointer; padding: 6px 0; }
+  .add-filter:hover { color: #a5b4fc; }
+
+  /* Right sidebar */
+  .sidebar { display: flex; flex-direction: column; gap: 16px; }
+
+  /* Reach counter */
+  .reach-box {
+    background: #1e293b; border-radius: 12px; padding: 20px; text-align: center;
+    border: 1px solid #334155;
+  }
+  .reach-number { font-size: 48px; font-weight: 700; color: #818cf8; line-height: 1; }
+  .reach-label { font-size: 12px; color: #64748b; margin-top: 6px; }
+  .reach-breakdown { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .reach-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+  .reach-row .dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; flex-shrink: 0; }
+  .reach-row-left { display: flex; align-items: center; color: #64748b; }
+  .reach-row-count { font-weight: 600; color: #94a3b8; }
+
+  /* Schedule box */
+  .schedule-box { background: #1e293b; border-radius: 12px; padding: 16px; }
+  .schedule-toggle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .schedule-toggle span { font-size: 13px; font-weight: 500; color: #cbd5e1; }
+  .toggle { width: 36px; height: 20px; background: #475569; border-radius: 99px; cursor: pointer; position: relative; transition: background 0.2s; }
+  .toggle.on { background: #818cf8; }
+  .toggle::after { content: ''; position: absolute; width: 16px; height: 16px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: left 0.2s; }
+  .toggle.on::after { left: 18px; }
+  .schedule-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .schedule-fields input { width: 100%; background: #0f1117; border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; font-size: 12px; color: #e2e8f0; outline: none; }
+
+  /* Send button */
+  .send-btn {
+    width: 100%; padding: 13px; background: #818cf8; border-radius: 10px;
+    font-size: 14px; font-weight: 600; color: white; cursor: pointer; border: none;
+    transition: background 0.15s;
+  }
+  .send-btn:hover { background: #6366f1; }
+
+  /* History table */
+  .history { display: none; }
+  .history.active { display: block; }
+  .composer-wrap.active { display: grid; }
+  .composer-wrap { display: none; }
+  .composer-wrap.active { display: grid; }
+
+  table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 12px; overflow: hidden; }
+  th { text-align: left; padding: 12px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #475569; border-bottom: 1px solid #334155; }
+  td { padding: 13px 16px; font-size: 13px; color: #cbd5e1; border-bottom: 1px solid #1e293b; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #243447; }
+
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .badge.sent { background: #14532d; color: #4ade80; }
+  .badge.pending { background: #1e3a5f; color: #60a5fa; }
+  .badge.scheduled { background: #3b2f1e; color: #fb923c; }
+  .badge.failed { background: #450a0a; color: #f87171; }
+
+  .action-btn { padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid #334155; background: transparent; color: #94a3b8; margin-right: 4px; }
+  .action-btn:hover { background: #334155; color: #e2e8f0; }
+  .action-btn.duplicate { border-color: #818cf8; color: #818cf8; }
+  .action-btn.duplicate:hover { background: #1e1b4b; }
+
+  .channel-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+  .cpill { padding: 2px 7px; border-radius: 99px; font-size: 10px; font-weight: 600; background: #1e293b; border: 1px solid #334155; color: #64748b; }
+</style>
+
+<h2>Notifications</h2>
+<p class="subtitle">Send and manage church notifications</p>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('compose')">Compose</div>
+  <div class="tab" onclick="showTab('history')">History</div>
+</div>
+
+<!-- COMPOSER -->
+<div class="composer-wrap active" id="compose-tab">
+  <div class="left-col">
+
+    <!-- Category -->
+    <div class="form-section">
+      <div class="section-title">Category</div>
+      <div class="categories">
+        <div class="cat-badge selected" onclick="toggleCat(this)">Announcements</div>
+        <div class="cat-badge" onclick="toggleCat(this)">Events</div>
+        <div class="cat-badge" onclick="toggleCat(this)">Life Group</div>
+        <div class="cat-badge" onclick="toggleCat(this)">Academy</div>
+        <div class="cat-badge" onclick="toggleCat(this)">Admin Alerts</div>
+      </div>
+    </div>
+
+    <!-- Channels -->
+    <div class="form-section">
+      <div class="section-title">Channels</div>
+      <div class="channels">
+        <div class="channel-card selected" onclick="toggleCard(this)">
+          <div class="channel-icon push">🔔</div>
+          <div>
+            <div class="channel-label">Push</div>
+            <div class="channel-sub">Android &amp; iOS</div>
+          </div>
+          <div class="channel-check"></div>
+        </div>
+        <div class="channel-card selected" onclick="toggleCard(this)">
+          <div class="channel-icon email">✉️</div>
+          <div>
+            <div class="channel-label">Email</div>
+            <div class="channel-sub">via Resend</div>
+          </div>
+          <div class="channel-check"></div>
+        </div>
+        <div class="channel-card" onclick="toggleCard(this)">
+          <div class="channel-icon sms">💬</div>
+          <div>
+            <div class="channel-label">SMS</div>
+            <div class="channel-sub">via Twilio</div>
+          </div>
+          <div class="channel-check"></div>
+        </div>
+        <div class="channel-card" onclick="toggleCard(this)">
+          <div class="channel-icon whatsapp">📱</div>
+          <div>
+            <div class="channel-label">WhatsApp</div>
+            <div class="channel-sub">via Meta API</div>
+          </div>
+          <div class="channel-check"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Segment -->
+    <div class="form-section">
+      <div class="section-title">Audience Segment</div>
+      <div class="segment-filter">
+        <span style="color:#64748b;font-size:12px">All members</span>
+        <select style="max-width:120px">
+          <option>All members</option>
+          <option>Active only</option>
+          <option>Inactive only</option>
+        </select>
+      </div>
+      <div class="segment-filter">
+        <span style="color:#64748b;font-size:12px;white-space:nowrap">Role is</span>
+        <select>
+          <option>Member</option>
+          <option>Life Group Leader</option>
+          <option>Sector Leader</option>
+          <option>Area Leader</option>
+          <option>Pastor</option>
+          <option>Admin</option>
+        </select>
+        <span class="remove">✕</span>
+      </div>
+      <div class="segment-filter">
+        <span style="color:#64748b;font-size:12px;white-space:nowrap">Sector is</span>
+        <select>
+          <option>Setor Norte</option>
+          <option>Setor Sul</option>
+          <option>Setor Centro</option>
+        </select>
+        <span class="remove">✕</span>
+      </div>
+      <div class="add-filter" onclick="void(0)">
+        <span style="font-size:16px;font-weight:300">+</span> Add filter (Life Group, Role, Sector, Status)
+      </div>
+    </div>
+
+    <!-- Message -->
+    <div class="form-section">
+      <div class="section-title">Message</div>
+      <div class="field">
+        <label>Title</label>
+        <input type="text" placeholder="e.g. Sunday Service This Week" value="Sunday Service — March 22">
+      </div>
+      <div class="field">
+        <label>Message</label>
+        <textarea placeholder="Write your notification message...">Join us this Sunday at 10am for our special worship service. Doors open at 9:30am.</textarea>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- Reach counter -->
+    <div class="reach-box">
+      <div class="label" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#475569;margin-bottom:12px">Estimated Reach</div>
+      <div class="reach-number">247</div>
+      <div class="reach-label">people will receive this</div>
+      <div class="reach-breakdown">
+        <div class="reach-row">
+          <div class="reach-row-left"><div class="dot" style="background:#818cf8"></div>Push</div>
+          <div class="reach-row-count">198</div>
+        </div>
+        <div class="reach-row">
+          <div class="reach-row-left"><div class="dot" style="background:#34d399"></div>Email</div>
+          <div class="reach-row-count">247</div>
+        </div>
+        <div class="reach-row" style="opacity:0.4">
+          <div class="reach-row-left"><div class="dot" style="background:#f87171"></div>SMS</div>
+          <div class="reach-row-count">—</div>
+        </div>
+        <div class="reach-row" style="opacity:0.4">
+          <div class="reach-row-left"><div class="dot" style="background:#4ade80"></div>WhatsApp</div>
+          <div class="reach-row-count">—</div>
+        </div>
+        <div style="border-top:1px solid #1e293b;margin-top:8px;padding-top:8px">
+          <div class="reach-row" style="font-size:11px;color:#475569">
+            <span>49 users have push disabled</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Schedule -->
+    <div class="schedule-box">
+      <div class="schedule-toggle">
+        <span>Schedule for later</span>
+        <div class="toggle" id="sched-toggle" onclick="this.classList.toggle('on');document.getElementById('sched-fields').style.display=this.classList.contains('on')?'grid':'none'"></div>
+      </div>
+      <div class="schedule-fields" id="sched-fields" style="display:none">
+        <input type="date" value="2026-03-25">
+        <input type="time" value="09:00">
+      </div>
+    </div>
+
+    <!-- Send -->
+    <button class="send-btn">Send Now</button>
+
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="history" id="history-tab">
+  <table>
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Category</th>
+        <th>Channels</th>
+        <th>Segment</th>
+        <th>Recipients</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="font-weight:500">Sunday Service — Mar 22</td>
+        <td><span style="color:#94a3b8;font-size:12px">Announcements</span></td>
+        <td><div class="channel-pills"><span class="cpill">push</span><span class="cpill">email</span></div></td>
+        <td style="font-size:12px;color:#64748b">All active</td>
+        <td>247</td>
+        <td><span class="badge sent">● Sent</span></td>
+        <td>
+          <button class="action-btn duplicate">Duplicate</button>
+          <button class="action-btn">Delete</button>
+        </td>
+      </tr>
+      <tr>
+        <td style="font-weight:500">Life Group Meeting Reminder</td>
+        <td><span style="color:#94a3b8;font-size:12px">Life Group</span></td>
+        <td><div class="channel-pills"><span class="cpill">push</span><span class="cpill">whatsapp</span></div></td>
+        <td style="font-size:12px;color:#64748b">LG Leaders</td>
+        <td>34</td>
+        <td><span class="badge scheduled">● Scheduled</span></td>
+        <td>
+          <button class="action-btn duplicate">Duplicate</button>
+          <button class="action-btn">Delete</button>
+        </td>
+      </tr>
+      <tr>
+        <td style="font-weight:500">Academy Course: Week 3</td>
+        <td><span style="color:#94a3b8;font-size:12px">Academy</span></td>
+        <td><div class="channel-pills"><span class="cpill">push</span><span class="cpill">email</span><span class="cpill">sms</span></div></td>
+        <td style="font-size:12px;color:#64748b">All members</td>
+        <td>312</td>
+        <td><span class="badge failed">● Failed</span></td>
+        <td>
+          <button class="action-btn duplicate">Duplicate</button>
+          <button class="action-btn">Delete</button>
+        </td>
+      </tr>
+      <tr>
+        <td style="font-weight:500">Easter Event Registration</td>
+        <td><span style="color:#94a3b8;font-size:12px">Events</span></td>
+        <td><div class="channel-pills"><span class="cpill">push</span></div></td>
+        <td style="font-size:12px;color:#64748b">Setor Norte</td>
+        <td>89</td>
+        <td><span class="badge pending">● Pending</span></td>
+        <td>
+          <button class="action-btn duplicate">Duplicate</button>
+          <button class="action-btn">Delete</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  function showTab(tab) {
+    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (tab==='compose'&&i===0)||(tab==='history'&&i===1)));
+    document.getElementById('compose-tab').style.display = tab==='compose' ? 'grid' : 'none';
+    document.getElementById('history-tab').style.display = tab==='history' ? 'block' : 'none';
+  }
+  document.getElementById('compose-tab').style.display = 'grid';
+
+  function toggleCard(el) {
+    el.classList.toggle('selected');
+    updateReach();
+  }
+  function toggleCat(el) {
+    document.querySelectorAll('.cat-badge').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+  function updateReach() {
+    const selected = document.querySelectorAll('.channel-card.selected').length;
+    document.querySelector('.reach-number').textContent = selected > 0 ? [247,198,89,247][selected-1] || 247 : 0;
+  }
+</script>
