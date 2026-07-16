@@ -176,7 +176,7 @@ export function AddressForm({
       {/* CEP row + church button */}
       <div className="flex gap-3 items-end">
         <div className="flex-1 space-y-1.5">
-          <Label htmlFor={`${idPrefix}zip_code`}>CEP</Label>
+          <Label htmlFor={`${idPrefix}zip_code`} required={required}>CEP</Label>
           <div className="relative">
             <Input
               id={`${idPrefix}zip_code`}
@@ -217,7 +217,7 @@ export function AddressForm({
       {hasFullAddress && (
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor={`${idPrefix}state`}>Estado</Label>
+            <Label htmlFor={`${idPrefix}state`} required={required}>Estado</Label>
             <Input
               id={`${idPrefix}state`}
               value={value.state}
@@ -231,7 +231,7 @@ export function AddressForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor={`${idPrefix}city`}>Cidade</Label>
+            <Label htmlFor={`${idPrefix}city`} required={required}>Cidade</Label>
             <Input
               id={`${idPrefix}city`}
               value={value.city}
@@ -244,7 +244,7 @@ export function AddressForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor={`${idPrefix}neighborhood`}>Bairro</Label>
+            <Label htmlFor={`${idPrefix}neighborhood`} required={required}>Bairro</Label>
             <Input
               id={`${idPrefix}neighborhood`}
               value={value.neighborhood}
@@ -257,7 +257,7 @@ export function AddressForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor={`${idPrefix}street`}>Rua</Label>
+            <Label htmlFor={`${idPrefix}street`} required={required}>Rua</Label>
             <Input
               id={`${idPrefix}street`}
               value={value.street}
@@ -271,7 +271,7 @@ export function AddressForm({
 
           {required && (
             <div className="space-y-1.5">
-              <Label htmlFor={`${idPrefix}country`}>País</Label>
+              <Label htmlFor={`${idPrefix}country`} required>País</Label>
               <Input
                 id={`${idPrefix}country`}
                 value={value.country}
@@ -291,7 +291,6 @@ export function AddressForm({
               value={value.number}
               onChange={(e) => onChange({ ...value, number: e.target.value })}
               placeholder="123"
-              required={required}
               aria-invalid={hasInlineError}
               aria-describedby={describedBy}
             />
@@ -304,7 +303,6 @@ export function AddressForm({
               value={value.complement || ""}
               onChange={(e) => onChange({ ...value, complement: e.target.value || null })}
               placeholder="Apto 101"
-              required={required}
               aria-invalid={hasInlineError}
               aria-describedby={describedBy}
             />

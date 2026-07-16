@@ -119,12 +119,10 @@ export function MembersManagement() {
       createAddress.city,
       createAddress.state,
       createAddress.country,
-      createAddress.number,
-      createAddress.complement ?? "",
     ]
 
     if (cleanCEP.length !== 8 || requiredFields.some((field) => field.trim().length === 0)) {
-      return "Informe um endereco completo: CEP valido, rua, bairro, cidade, estado, pais, numero e complemento."
+      return "Informe um endereco completo: CEP valido, rua, bairro, cidade, estado e pais."
     }
 
     return null
@@ -149,8 +147,8 @@ export function MembersManagement() {
           city: createAddress.city.trim(),
           neighborhood: createAddress.neighborhood.trim(),
           street: createAddress.street.trim(),
-          number: createAddress.number.trim(),
-          complement: (createAddress.complement ?? "").trim(),
+          number: createAddress.number.trim() || null,
+          complement: (createAddress.complement ?? "").trim() || null,
         },
         birth_date: formData.birth_date || undefined,
         role: formData.role,

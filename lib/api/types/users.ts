@@ -39,8 +39,8 @@ export interface UserAddressRequest {
   city: string
   neighborhood: string
   street: string
-  number: string
-  complement: string
+  number?: string | null
+  complement?: string | null
 }
 
 export interface CreateUserRequest {
