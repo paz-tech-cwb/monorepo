@@ -3,5 +3,6 @@
 .vscode/
 *.swp
 node_modules/
+.pnpm-store/
 .env
 .superpowers/
