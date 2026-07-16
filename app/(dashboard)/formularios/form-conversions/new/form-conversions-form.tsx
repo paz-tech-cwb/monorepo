@@ -1,10 +1,12 @@
 "use client"
+import { useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { AddressForm, EMPTY_ADDRESS, addressFormDataToLine, type AddressFormData } from "@/components/ui/address-form"
 import { Textarea } from "@/components/ui/textarea"
 import { PhoneInput } from "@/components/ui/phone-input"
 import { DatePickerInput } from "@/components/ui/date-picker-input"
@@ -42,11 +44,18 @@ export function FormConversionsForm({ defaultValues }: { defaultValues?: Partial
   const {
     register,
     handleSubmit,
+    setValue,
     control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues })
+  const [addressValue, setAddressValue] = useState<AddressFormData>(EMPTY_ADDRESS)
   const create = useCreateFormSubmission<unknown, FormValues>("form-conversions")
   const router = useRouter()
+
+  const handleAddressChange = (address: AddressFormData) => {
+    setAddressValue(address)
+    setValue("address", addressFormDataToLine(address))
+  }
 
   return (
     <form
@@ -146,7 +155,7 @@ export function FormConversionsForm({ defaultValues }: { defaultValues?: Partial
         </div>
         <div className="space-y-1.5 sm:col-span-2">
           <Label>Endereço *</Label>
-          <Input {...register("address")} />
+          <AddressForm value={addressValue} onChange={handleAddressChange} idPrefix="form-conversion-" required />
           {errors.address && <p className="text-sm text-destructive mt-1">{errors.address.message}</p>}
         </div>
         <div className="space-y-1.5">

@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -20,7 +20,7 @@ import { useCreateFormSubmission } from "@/lib/hooks/use-form-submissions"
 import { useFormCourses } from "@/lib/hooks/use-form-courses"
 import { useSectors } from "@/lib/hooks/use-sectors"
 import { useLifeGroups } from "@/lib/hooks/use-life-groups"
-import { lookupCep } from "@/lib/api/endpoints/cep"
+import { AddressForm, EMPTY_ADDRESS, addressFormDataToLine, type AddressFormData } from "@/components/ui/address-form"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -63,8 +63,8 @@ export function MemberRegistrationsForm({ defaultValues }: { defaultValues?: Par
   const { data: sectors = [] } = useSectors()
   const { data: lifeGroups = [] } = useLifeGroups()
   const router = useRouter()
-  const cepValue = watch("cep")
 
+  const [addressValue, setAddressValue] = useState<AddressFormData>(EMPTY_ADDRESS)
   const [selectedSectorId, setSelectedSectorId] = useState<number | null>(
     defaultValues?.sector_id ?? null
   )
@@ -100,19 +100,6 @@ export function MemberRegistrationsForm({ defaultValues }: { defaultValues?: Par
       .sort((a, b) => a.name.localeCompare(b.name))
   }, [lifeGroups])
 
-  useEffect(() => {
-    if (!cepValue) return
-    const digits = cepValue.replace(/\D/g, "")
-    if (digits.length !== 8) return
-    lookupCep(digits).then((result) => {
-      if (!result) return
-      setValue("street", result.logradouro)
-      setValue("neighborhood", result.bairro)
-      setValue("city", result.localidade)
-      setValue("state", result.uf)
-    })
-  }, [cepValue, setValue])
-
   const completedCourses = watch("completed_courses") ?? []
 
   const handleSectorChange = (value: string) => {
@@ -145,6 +132,18 @@ export function MemberRegistrationsForm({ defaultValues }: { defaultValues?: Par
     const id = parseInt(value)
     setSelectedLeaderId(id)
     setValue("leader_id", id)
+  }
+
+  const handleAddressChange = (address: AddressFormData) => {
+    setAddressValue(address)
+    setValue("cep", address.zip_code)
+    setValue("street", address.street)
+    setValue("address_number", address.number)
+    setValue("complement", address.complement ?? "")
+    setValue("neighborhood", address.neighborhood)
+    setValue("city", address.city)
+    setValue("state", address.state)
+    setValue("address", addressFormDataToLine(address))
   }
 
   return (
@@ -274,36 +273,7 @@ export function MemberRegistrationsForm({ defaultValues }: { defaultValues?: Par
       </div>
 
       <h3 className="font-medium pt-2">Endereço</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label>CEP</Label>
-          <Input {...register("cep")} placeholder="00000-000" />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Logradouro</Label>
-          <Input {...register("street")} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Número</Label>
-          <Input {...register("address_number")} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Complemento</Label>
-          <Input {...register("complement")} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Bairro</Label>
-          <Input {...register("neighborhood")} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Cidade</Label>
-          <Input {...register("city")} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Estado (UF)</Label>
-          <Input {...register("state")} maxLength={2} />
-        </div>
-      </div>
+      <AddressForm value={addressValue} onChange={handleAddressChange} idPrefix="member-registration-form-" />
 
       {courses.length > 0 && (
         <div>

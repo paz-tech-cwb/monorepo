@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { AddressForm, EMPTY_ADDRESS, addressFormDataToLine, type AddressFormData } from "@/components/ui/address-form"
 import { PhoneInput } from "@/components/ui/phone-input"
 import { DatePickerInput } from "@/components/ui/date-picker-input"
 import {
@@ -98,6 +99,7 @@ export function MultiplicationsForm({ defaultValues }: { defaultValues?: Partial
   const [selectedNewLgId, setSelectedNewLgId] = useState<number | null>(
     defaultValues?.new_life_group_id ?? null
   )
+  const [addressValue, setAddressValue] = useState<AddressFormData>(EMPTY_ADDRESS)
 
   const sortedAreas = useMemo(
     () => [...areas].sort((a, b) => a.name.localeCompare(b.name)),
@@ -191,6 +193,11 @@ export function MultiplicationsForm({ defaultValues }: { defaultValues?: Partial
     const id = parseInt(value)
     setSelectedNewLgId(id)
     setValue("new_life_group_id", id)
+  }
+
+  const handleAddressChange = (address: AddressFormData) => {
+    setAddressValue(address)
+    setValue("address", addressFormDataToLine(address))
   }
 
   return (
@@ -301,7 +308,7 @@ export function MultiplicationsForm({ defaultValues }: { defaultValues?: Partial
 
         <div className="space-y-1.5 sm:col-span-2">
           <Label>Endereço *</Label>
-          <Input {...register("address")} />
+          <AddressForm value={addressValue} onChange={handleAddressChange} idPrefix="multiplication-" required />
           {errors.address && <p className="text-sm text-destructive mt-1">{errors.address.message}</p>}
         </div>
 

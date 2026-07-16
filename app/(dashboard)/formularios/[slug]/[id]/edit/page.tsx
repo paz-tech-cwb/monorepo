@@ -1,4 +1,5 @@
 "use client"
+import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useFormSubmission, useUpdateFormSubmission } from "@/lib/hooks/use-form-submissions"
 import type { FormSlug } from "@/lib/api/types/formularios"
@@ -55,6 +56,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { AddressForm, EMPTY_ADDRESS, addressFormDataToLine, type AddressFormData } from "@/components/ui/address-form"
 import { Textarea } from "@/components/ui/textarea"
 import { PhoneInput } from "@/components/ui/phone-input"
 
@@ -84,11 +86,18 @@ function FormGuestsEditShell({
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<GuestValues>({
     resolver: zodResolver(guestSchema),
     defaultValues: submission as Partial<GuestValues>,
   })
+  const [addressValue, setAddressValue] = useState<AddressFormData>(EMPTY_ADDRESS)
+
+  const handleAddressChange = (address: AddressFormData) => {
+    setAddressValue(address)
+    setValue("address", addressFormDataToLine(address))
+  }
 
   return (
     <div className="p-6 max-w-2xl space-y-4">
@@ -119,7 +128,7 @@ function FormGuestsEditShell({
         </div>
         <div>
           <Label>Endereço</Label>
-          <Input {...register("address")} />
+          <AddressForm value={addressValue} onChange={handleAddressChange} idPrefix="form-guest-edit-" />
         </div>
         <div>
           <Label>Convidado por *</Label>

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { AddressForm, EMPTY_ADDRESS, addressFormDataToLine, type AddressFormData } from "@/components/ui/address-form"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
@@ -76,6 +77,7 @@ export function ConversionForm() {
   const createMutation = useCreateConversion()
 
   const [phoneValue, setPhoneValue] = useState("")
+  const [addressValue, setAddressValue] = useState<AddressFormData>(EMPTY_ADDRESS)
   const [showOtherField, setShowOtherField] = useState(false)
   const [showLeaderField, setShowLeaderField] = useState(false)
 
@@ -97,6 +99,11 @@ export function ConversionForm() {
     const formatted = formatPhoneBR(e.target.value)
     setPhoneValue(formatted)
     setValue("cellphone", formatted)
+  }
+
+  const handleAddressChange = (address: AddressFormData) => {
+    setAddressValue(address)
+    setValue("address", addressFormDataToLine(address))
   }
 
   const onSubmit = async (data: ConversionFormData) => {
@@ -352,12 +359,8 @@ export function ConversionForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address">Endereco</Label>
-              <Input
-                id="address"
-                {...register("address")}
-                placeholder="Endereco completo"
-              />
+              <Label>Endereco</Label>
+              <AddressForm value={addressValue} onChange={handleAddressChange} idPrefix="conversion-" />
             </div>
 
             <div className="space-y-2">

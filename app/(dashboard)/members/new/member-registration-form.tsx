@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { AddressForm, EMPTY_ADDRESS, addressFormDataToLine, type AddressFormData } from "@/components/ui/address-form"
 import {
   Select,
   SelectContent,
@@ -55,6 +56,7 @@ export function MemberRegistrationForm() {
   const { data: lifeGroups = [] } = useLifeGroups()
 
   const [phoneValue, setPhoneValue] = useState("")
+  const [addressValue, setAddressValue] = useState<AddressFormData>(EMPTY_ADDRESS)
   const [selectedCourses, setSelectedCourses] = useState<number[]>([])
   const [selectedSectorId, setSelectedSectorId] = useState<number | null>(null)
   const [selectedLifeGroupId, setSelectedLifeGroupId] = useState<number | null>(null)
@@ -129,6 +131,11 @@ export function MemberRegistrationForm() {
     const formatted = formatPhoneBR(e.target.value)
     setPhoneValue(formatted)
     setValue("cellphone", formatted)
+  }
+
+  const handleAddressChange = (address: AddressFormData) => {
+    setAddressValue(address)
+    setValue("address", addressFormDataToLine(address))
   }
 
   const handleCourseToggle = (courseId: number) => {
@@ -228,12 +235,8 @@ export function MemberRegistrationForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="address">Endereco</Label>
-                <Input
-                  id="address"
-                  {...register("address")}
-                  placeholder="Endereco completo"
-                />
+                <Label>Endereco</Label>
+                <AddressForm value={addressValue} onChange={handleAddressChange} idPrefix="member-registration-" />
               </div>
             </div>
 

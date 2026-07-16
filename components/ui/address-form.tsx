@@ -29,7 +29,7 @@ export interface AddressFormProps {
   error?: string | null
 }
 
-const EMPTY_ADDRESS: AddressFormData = {
+export const EMPTY_ADDRESS: AddressFormData = {
   zip_code: "",
   country: "Brasil",
   state: "",
@@ -38,6 +38,21 @@ const EMPTY_ADDRESS: AddressFormData = {
   street: "",
   number: "",
   complement: null,
+}
+
+export function addressFormDataToLine(address: AddressFormData): string {
+  return [
+    address.street,
+    address.number,
+    address.complement ?? "",
+    address.neighborhood,
+    address.city,
+    address.state,
+    address.zip_code,
+  ]
+    .map((field) => field.trim())
+    .filter(Boolean)
+    .join(", ")
 }
 
 export function AddressForm({
@@ -77,25 +92,12 @@ export function AddressForm({
     latestCEPRef.current = currentCEP
   }, [currentCEP])
 
-  const handleCEPChange = (cep: string) => {
-    const formatted = formatCEP(cep)
-    latestCEPRef.current = formatted.replace(/\D/g, "")
-    requestSequenceRef.current += 1
-    onChange({ ...EMPTY_ADDRESS, zip_code: formatted })
-    setIsLoadingCEP(false)
-    setCepError(null)
-    setUsingChurchAddress(false)
-    setResolvedCEP(null)
-  }
-
-  const handleCEPBlur = async () => {
-    const clean = latestCEPRef.current
-    if (clean.length !== 8) return
-
+  const lookupCEP = async (clean: string) => {
     const requestSequence = requestSequenceRef.current + 1
     requestSequenceRef.current = requestSequence
     setIsLoadingCEP(true)
     setCepError(null)
+
     try {
       const data = await fetchAddressByCEP(clean)
       const isLatestRequest = requestSequenceRef.current === requestSequence
@@ -125,6 +127,22 @@ export function AddressForm({
       if (requestSequenceRef.current === requestSequence) {
         setIsLoadingCEP(false)
       }
+    }
+  }
+
+  const handleCEPChange = (cep: string) => {
+    const formatted = formatCEP(cep)
+    const clean = formatted.replace(/\D/g, "")
+    latestCEPRef.current = clean
+    requestSequenceRef.current += 1
+    onChange({ ...EMPTY_ADDRESS, zip_code: formatted })
+    setIsLoadingCEP(false)
+    setCepError(null)
+    setUsingChurchAddress(false)
+    setResolvedCEP(null)
+
+    if (clean.length === 8) {
+      void lookupCEP(clean)
     }
   }
 
@@ -164,7 +182,6 @@ export function AddressForm({
               id={`${idPrefix}zip_code`}
               value={value.zip_code}
               onChange={(e) => handleCEPChange(e.target.value)}
-              onBlur={handleCEPBlur}
               placeholder="00000-000"
               maxLength={9}
               required={required}
