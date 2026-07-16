@@ -1,56 +1,44 @@
-# Spec: AI Project Context Architecture
+# Spec: Log Every Backend Error
 
 ## Request
 
-Create a reusable AI documentation architecture so agents and harnesses can understand the project by project context, architecture, features, apps, commands, and pipeline expectations. Archive/remove older active docs, agent files, superpowers, planning files, and update the user-level ship pipeline to use this architecture.
+Implement Trello ticket `bIOZSEWu` for the Paz Church backend by ensuring backend errors are logged consistently with safe, useful diagnostic context.
 
 ## Context files read
 
-- `CLAUDE.md`
-- `AGENTS.md`
-- `README.md`
-- `docs/design-system.md`
-- `docs/formularios.md`
-- `docs/member-journey-steps.md`
-- `docs/notification-navigation.md`
-- `docs/wip-features.md`
-- `package.json`
-- `.gitmodules`
-- `/Users/jonathalima/.claude/commands/ship.md`
-- `/Users/jonathalima/.codex/prompts/ship.md`
-- `/Users/jonathalima/.agents/skills/ship-pipeline/SKILL.md`
+- `.ai/README.md`
+- `.ai/project.md`
+- `.ai/architecture.md`
+- `.ai/conventions.md`
+- `.ai/commands.md`
+- `.ai/feature-map.md`
+- `.ai/apps/backend.md`
+- `.ai/pipelines/handoff-template.md`
+- Trello card `bIOZSEWu`
 
-## Affected areas
+## Affected apps/features
 
-- Root repo documentation.
-- Agent entrypoint files.
-- Historical docs archive.
-- User-level ship pipeline definitions.
-- Pipeline handoff expectations.
+- `backend/` NestJS API
+- Cross-cutting backend error handling/logging
 
 ## Implementation plan
 
-1. Create `.ai/` as the canonical AI context folder.
-2. Add project-level docs: project, architecture, conventions, commands, feature map.
-3. Add feature docs for auth, membership, life groups, forms, notifications, ministries, admin dashboard, mobile, and deployment.
-4. Add app docs for root, backend, admin-ui, mobile, and postman-files.
-5. Add `.ai/pipelines/handoff-template.md` only, not a repo-local executable ship pipeline, because execution lives at user level.
-6. Replace root `AGENTS.md` and `CLAUDE.md` with thin pointers to `.ai/README.md`.
-7. Simplify `README.md` for human onboarding and link to `.ai/`.
-8. Archive historical docs and remove them from active docs paths.
-9. Update user-level ship pipeline files to require `.ai/` context, `.pipeline/progress.md`, and draft PR creation after the first branch commit.
+1. Inspect existing backend bootstrap, modules, filters, and logging usage.
+2. Add a global HTTP exception filter that logs every backend API error before preserving Nest's existing HTTP response behavior.
+3. Include safe structured context: timestamp, request id/correlation id, method, path, status code, duration, environment, service, error type/message, sanitized stack, and pseudonymous user id when available.
+4. Avoid sensitive data: no request/response bodies, auth headers, cookies, tokens, or full headers.
+5. Add focused unit tests for the filter behavior and sanitization.
+6. Register the filter globally in backend bootstrap.
+7. Run focused tests and backend build, then record pipeline handoff results.
 
 ## API/data/auth impacts
 
-None. Documentation-only change.
+- API response contracts should remain unchanged.
+- No database schema changes.
+- Auth behavior unchanged.
+- Logs will include sanitized error diagnostics only.
 
 ## Validation plan
 
-- Verify `.ai/` files exist.
-- Verify old active docs were archived.
-- Verify user-level ship pipeline references `.ai/`, `.pipeline/progress.md`, and first-commit PR creation.
-- No app tests required because no product code changed.
-
-## Open questions
-
-None.
+- `cd backend && npx jest src/common/filters/backend-error-logging.filter.spec.ts --runInBand`
+- `cd backend && npm run build`
