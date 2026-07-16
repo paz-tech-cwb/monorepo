@@ -8,6 +8,15 @@ export class Address {
   @Column({ type: 'varchar', length: 255 })
   street: string;
 
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  number: string | null;
+
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  complement: string | null;
+
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  neighborhood: string | null;
+
   @Column({ type: 'varchar', length: 255 })
   city: string;
 

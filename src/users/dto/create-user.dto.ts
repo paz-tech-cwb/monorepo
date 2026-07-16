@@ -1,4 +1,4 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import {
   IsString,
   IsOptional,
@@ -7,8 +7,11 @@ import {
   IsIn,
   IsNumber,
   IsArray,
+  IsObject,
+  ValidateNested,
 } from 'class-validator';
 import { VALID_ROLE_SLUGS } from './update-user-role.dto';
+import { CreateAddressDto } from '../../addresses/dto/create-address.dto';
 
 export class CreateUserDto {
   @Expose()
@@ -44,4 +47,11 @@ export class CreateUserDto {
   @IsOptional()
   @IsIn(VALID_ROLE_SLUGS)
   role?: string;
+
+  @Expose()
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => CreateAddressDto)
+  address?: CreateAddressDto;
 }

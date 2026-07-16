@@ -37,7 +37,7 @@ export class User {
   phoneNumber: string | null;
 
   @ManyToOne(() => Address, { nullable: true })
-  address: Address;
+  address: Address | null;
 
   @Column({ name: 'birth_date', type: 'date', nullable: true })
   birthDate: Date | null;

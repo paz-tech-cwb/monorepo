@@ -13,6 +13,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { Address } from '../addresses/entities/address.entity';
 
 @Injectable()
 export class UsersService {
@@ -59,59 +60,73 @@ export class UsersService {
 
   async create(dto: CreateUserDto) {
     try {
-      // Resolve role by slug or default to 'member'
-      const roleSlug = dto.role ?? 'member';
-      const role = await this.entityManager.findOne(Role, {
-        where: { slug: roleSlug },
-      });
-      if (!role) {
-        throw new BadRequestException(`Invalid role: ${roleSlug}`);
-      }
-
-      // Resolve sector if provided
-      let sector: Sector | null = null;
-      if (dto.sectorId) {
-        sector = await this.entityManager.findOne(Sector, {
-          where: { id: dto.sectorId },
+      return await this.entityManager.transaction(async (manager) => {
+        // Resolve role by slug or default to 'member'
+        const roleSlug = dto.role ?? 'member';
+        const role = await manager.findOne(Role, {
+          where: { slug: roleSlug },
         });
-        if (!sector) {
-          throw new BadRequestException(`Invalid sector_id: ${dto.sectorId}`);
+        if (!role) {
+          throw new BadRequestException(`Invalid role: ${roleSlug}`);
         }
-      }
 
-      // Resolve courses if provided
-      let courses: Course[] = [];
-      if (dto.completedCourses && dto.completedCourses.length > 0) {
-        courses = await this.entityManager.findByIds(
-          Course,
-          dto.completedCourses,
-        );
-        if (courses.length !== dto.completedCourses.length) {
-          throw new BadRequestException('One or more invalid course IDs');
+        // Resolve sector if provided
+        let sector: Sector | null = null;
+        if (dto.sectorId) {
+          sector = await manager.findOne(Sector, {
+            where: { id: dto.sectorId },
+          });
+          if (!sector) {
+            throw new BadRequestException(`Invalid sector_id: ${dto.sectorId}`);
+          }
         }
-      }
 
-      const user = new User();
-      user.name = dto.name;
-      user.email = dto.email;
-      user.phoneNumber = dto.phone ?? null;
-      user.birthDate = dto.birth_date ? new Date(dto.birth_date) : null;
-      user.sector = sector;
-      user.lifeGroups = [];
-      user.completedCourses = courses;
-      user.role = role;
-      user.status = 'active';
-      user.membershipDate = new Date();
+        // Resolve courses if provided
+        let courses: Course[] = [];
+        if (dto.completedCourses && dto.completedCourses.length > 0) {
+          courses = await manager.findByIds(Course, dto.completedCourses);
+          if (courses.length !== dto.completedCourses.length) {
+            throw new BadRequestException('One or more invalid course IDs');
+          }
+        }
 
-      const saved = await this.entityManager.save(User, user);
+        let address: Address | null = null;
+        if (dto.address) {
+          const newAddress = new Address();
+          newAddress.zipCode = dto.address.zip_code;
+          newAddress.country = dto.address.country;
+          newAddress.state = dto.address.state;
+          newAddress.city = dto.address.city;
+          newAddress.neighborhood = dto.address.neighborhood;
+          newAddress.street = dto.address.street;
+          newAddress.number = dto.address.number;
+          newAddress.complement = dto.address.complement;
+          address = await manager.save(Address, newAddress);
+        }
 
-      // Reload with relations for response
-      const reloaded = await this.entityManager.findOne(User, {
-        where: { id: saved.id },
-        relations: ['sector', 'lifeGroups', 'completedCourses'],
+        const user = new User();
+        user.name = dto.name;
+        user.email = dto.email;
+        user.phoneNumber = dto.phone ?? null;
+        user.address = address;
+        user.birthDate = dto.birth_date ? new Date(dto.birth_date) : null;
+        user.sector = sector;
+        user.lifeGroups = [];
+        user.completedCourses = courses;
+        user.role = role;
+        user.status = 'active';
+        user.membershipDate = new Date();
+
+        const saved = await manager.save(User, user);
+
+        // Reload with relations for response
+        const reloaded = await manager.findOne(User, {
+          where: { id: saved.id },
+          relations: ['sector', 'lifeGroups', 'completedCourses'],
+        });
+
+        return this.toResponse(reloaded!);
       });
-
-      return this.toResponse(reloaded!);
     } catch (error: unknown) {
       if (error instanceof BadRequestException) throw error;
       throw new BadRequestException(
