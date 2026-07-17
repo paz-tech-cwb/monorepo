@@ -1,4 +1,4 @@
-# Review: Reusable GlitchTip Observability Bridge
+# Review: Backend address schema drift fix
 
 ## Verdict
 
@@ -6,15 +6,14 @@ SHIP
 
 ## Evidence reviewed
 
-- `observability-bridge/src/app.ts` protects non-health routes with the bridge bearer token, applies rate limiting, and exposes only requested read-only routes.
-- `observability-bridge/src/scope.ts` enforces project allowlist, environment allowlist, defaults, and max time ranges before GlitchTip queries.
-- `observability-bridge/src/sanitize.ts` omits sensitive keys, redacts common PII values, and size-limits strings, arrays, objects, and stack frames.
-- `observability-bridge/src/glitchtip-client.ts` keeps the GlitchTip token in outbound server-side requests only and returns sanitized results.
-- `observability-bridge/config.example.json` includes Paz Church plus a future-project example without hardcoding behavior in code.
-- `observability-bridge/README.md` documents API, Coolify deployment, OpenHarness usage examples, and security notes.
-- `docker-compose.yaml` adds the bridge behind an explicit `observability` profile.
-- `.env.example` and `.ai/features/deployment.md` document optional runtime variables/deployment context.
-- `observability-bridge/__tests__/bridge.test.ts` covers auth, allowlist rejection, environment rejection, range rejection, safe defaults, sanitization, and query formatting.
+- `backend/src/addresses/entities/address.entity.ts` includes `number`, `complement`, and `neighborhood` columns.
+- `backend/src/users/users.service.ts` saves address `number` during user creation.
+- `backend/database/migrations/1784073600000-AddUserAddressDetails.ts` already adds the missing address detail columns with `ADD COLUMN IF NOT EXISTS`.
+- `backend/Dockerfile` previously started `node dist/src/main.js` directly, which allowed pending migrations to remain unapplied in deployed databases.
+- `backend/package.json` now includes `migration:run:prod` using the compiled `dist/db/data-source.js`, avoiding a rebuild at container startup.
+- `backend/Dockerfile` now runs `npm run start:prod:migrate`, applying pending migrations before serving the API.
+- `cd backend && npm run build` passed.
+- `cd backend && npm run migration:run:prod` reached TypeORM migration execution and failed only because local Postgres was unavailable.
 
 ## Blocking issues
 
@@ -22,13 +21,10 @@ None.
 
 ## Non-blocking issues
 
-- A concrete OpenHarness MCP server wrapper is documented as suggested tool mappings but not implemented; the ticket allowed either HTTP API plus documented OpenHarness/client configuration or MCP wrapper.
-- Dev dependency audit reports issues from local test/build tooling, but production dependency audit passes with zero vulnerabilities.
+- Running migrations from app container startup is suitable for the current single-backend deployment pattern. A dedicated migration job would be cleaner if deployments later run multiple replicas or require stricter rollout orchestration.
 
 ## Security review notes
 
-- Bridge credential and GlitchTip credential are separate.
-- GlitchTip token is never returned by the API.
-- Raw event payloads are not exposed by default.
-- Request/response bodies, headers, cookies, auth fields, tokens, passwords, CPF/payment/name/email/phone-like fields are omitted/redacted.
-- Cross-project and non-allowlisted environment requests are rejected before querying GlitchTip.
+- No secrets were added or changed.
+- No API/auth behavior changed.
+- No user input handling was changed.

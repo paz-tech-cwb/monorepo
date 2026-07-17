@@ -2,32 +2,27 @@
 
 ## Changed files
 
-- `observability-bridge/package.json` — new bridge service dependencies/scripts.
-- `observability-bridge/package-lock.json` — reproducible service dependency lockfile.
-- `observability-bridge/tsconfig.json` — TypeScript build config.
-- `observability-bridge/Dockerfile` — container build/runtime image.
-- `observability-bridge/config.example.json` — reusable project/environment allowlist example including Paz Church and a future project.
-- `observability-bridge/README.md` — API, Coolify deployment, OpenHarness usage, and security notes.
-- `observability-bridge/src/*` — bridge runtime, configuration, GlitchTip client, auth/rate limiting, audit logging, scoping, and sanitization.
-- `observability-bridge/__tests__/bridge.test.ts` — focused tests.
-- `docker-compose.yaml` — optional `observability` profile service.
-- `.env.example` — optional bridge runtime variables.
-- `.ai/features/deployment.md` — deployment context for the optional bridge.
-- `.pipeline/*` — ship pipeline handoff updates.
+- `backend/package.json` — added production scripts for running compiled TypeORM migrations and then starting the API.
+- `backend/Dockerfile` — changed container command from direct Node startup to `npm run start:prod:migrate`.
+- `.ai/features/deployment.md` — documented that production backend containers run pending migrations before serving.
+- `.pipeline/*` — updated ship pipeline handoff for this fix.
 
 ## Behavior changes
 
-- Adds an optional standalone read-only bridge for sanitized GlitchTip queries.
-- Requires bridge bearer token for all non-health routes.
-- Enforces project aliases, per-project environment allowlists, default/max ranges, and simple in-memory rate limits.
-- Returns sanitized issue/event/stack summaries only.
+- Backend production containers now run pending TypeORM migrations before starting `dist/src/main.js`.
+- Pending migration `1784073600000-AddUserAddressDetails` will add `addresses.number`, `addresses.complement`, and `addresses.neighborhood` in environments where it has not run yet.
+- `POST /api/users` can insert address details without failing on missing `addresses.number` once the updated container starts successfully.
+
+## Docs updated
+
+- `.ai/features/deployment.md`
 
 ## Migration/deployment notes
 
-- Existing app services are unchanged.
-- Root Compose bridge service is behind profile `observability`; opt in with `--profile observability` or Coolify service configuration.
-- Configure `OBSERVABILITY_BRIDGE_TOKEN`, `GLITCHTIP_API_TOKEN`, `GLITCHTIP_BASE_URL`, and `OBSERVABILITY_BRIDGE_CONFIG` in deployment secrets/runtime settings.
+- No new migration was added; the existing migration already covers the missing columns.
+- Deployment must rebuild/redeploy the backend image so the new Docker command runs.
+- If multiple backend replicas are started simultaneously, TypeORM migration locking/metadata handles already-applied migrations; prefer rolling out with a single backend replica during migration if the hosting setup allows it.
 
 ## Follow-ups
 
-- Add a concrete OpenHarness MCP wrapper once the target OpenHarness MCP deployment convention is selected.
+- Consider adding an explicit deployment job/service for migrations if the platform grows beyond a single backend container pattern.
