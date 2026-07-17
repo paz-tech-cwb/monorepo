@@ -53,9 +53,10 @@ OBSERVABILITY_BRIDGE_TOKEN=<separate token for OpenHarness/MCP clients>
 OBSERVABILITY_BRIDGE_CONFIG=/app/config.json
 GLITCHTIP_BASE_URL=https://app.glitchtip.com/api/0
 GLITCHTIP_API_TOKEN=<read-only GlitchTip API token>
+GLITCHTIP_AUTH_SCHEME=Bearer # or Token for self-hosted GlitchTip API tokens
 ```
 
-Use a read-only GlitchTip token scoped to the allowlisted projects when possible.
+Use a read-only GlitchTip token scoped to the allowlisted projects when possible. Hosted GlitchTip typically uses `Bearer`; some self-hosted GlitchTip API tokens require `GLITCHTIP_AUTH_SCHEME=Token`.
 
 ## Coolify deployment
 

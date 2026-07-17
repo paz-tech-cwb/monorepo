@@ -4,6 +4,7 @@ import { sanitizeEventSummary, sanitizeIssue, sanitizeStack } from './sanitize.j
 export interface GlitchtipClientOptions {
   baseUrl: string;
   token: string;
+  authScheme?: 'Bearer' | 'Token';
 }
 
 export interface IssueSearchParams {
@@ -63,7 +64,6 @@ export class GlitchtipClient {
     const search = new URLSearchParams({
       environment: params.environment,
       sort: 'freq',
-      statsPeriod: '',
       limit: String(params.limit ?? 10),
     });
 
@@ -97,7 +97,7 @@ export class GlitchtipClient {
   private async fetchJson<T>(url: string): Promise<T> {
     const response = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${this.options.token}`,
+        Authorization: `${this.options.authScheme ?? 'Bearer'} ${this.options.token}`,
         Accept: 'application/json',
       },
     });

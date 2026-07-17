@@ -14,7 +14,11 @@ export interface ObservabilityClient {
   getRepresentativeStack(params: Parameters<GlitchtipClient['getRepresentativeStack']>[0]): ReturnType<GlitchtipClient['getRepresentativeStack']>;
 }
 
-export function createApp(runtime: RuntimeConfig, client: ObservabilityClient = new GlitchtipClient({ baseUrl: runtime.glitchtipBaseUrl, token: runtime.glitchtipToken })) {
+export function createApp(runtime: RuntimeConfig, client: ObservabilityClient = new GlitchtipClient({
+  baseUrl: runtime.glitchtipBaseUrl,
+  token: runtime.glitchtipToken,
+  authScheme: runtime.glitchtipAuthScheme,
+})) {
   const app = express();
 
   app.disable('x-powered-by');
