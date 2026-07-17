@@ -34,6 +34,7 @@ const runtime: RuntimeConfig = {
   bridgeToken: 'bridge-token',
   glitchtipBaseUrl: 'https://glitchtip.example/api/0',
   glitchtipToken: 'glitchtip-token',
+  glitchtipAuthScheme: 'Bearer',
   config,
 };
 
@@ -124,6 +125,7 @@ describe('GlitchTip query formatting', () => {
     expect(url).toContain('environment=production');
     expect(url).toContain('since=2026-07-16T18%3A00%3A00.000Z');
     expect(url).toContain('query=release%3A%22backend%401%22');
+    expect(url).not.toContain('statsPeriod=');
   });
 });
 

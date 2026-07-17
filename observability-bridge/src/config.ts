@@ -32,6 +32,7 @@ export interface RuntimeConfig {
   bridgeToken: string;
   glitchtipBaseUrl: string;
   glitchtipToken: string;
+  glitchtipAuthScheme: 'Bearer' | 'Token';
   config: BridgeConfig;
 }
 
@@ -43,6 +44,7 @@ export function loadBridgeConfig(path = process.env.OBSERVABILITY_BRIDGE_CONFIG 
 export function loadRuntimeConfig(): RuntimeConfig {
   const bridgeToken = process.env.OBSERVABILITY_BRIDGE_TOKEN;
   const glitchtipToken = process.env.GLITCHTIP_API_TOKEN;
+  const glitchtipAuthScheme = parseGlitchtipAuthScheme(process.env.GLITCHTIP_AUTH_SCHEME);
 
   if (!bridgeToken) {
     throw new Error('OBSERVABILITY_BRIDGE_TOKEN is required');
@@ -56,9 +58,22 @@ export function loadRuntimeConfig(): RuntimeConfig {
     port: Number(process.env.PORT ?? 3015),
     bridgeToken,
     glitchtipToken,
+    glitchtipAuthScheme,
     glitchtipBaseUrl: process.env.GLITCHTIP_BASE_URL ?? 'https://app.glitchtip.com/api/0',
     config: loadBridgeConfig(),
   };
+}
+
+function parseGlitchtipAuthScheme(value: string | undefined): 'Bearer' | 'Token' {
+  if (!value) {
+    return 'Bearer';
+  }
+
+  if (value === 'Bearer' || value === 'Token') {
+    return value;
+  }
+
+  throw new Error('GLITCHTIP_AUTH_SCHEME must be Bearer or Token');
 }
 
 export function durationToMs(duration: string): number {

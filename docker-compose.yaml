@@ -54,6 +54,7 @@ services:
       OBSERVABILITY_BRIDGE_CONFIG: ${OBSERVABILITY_BRIDGE_CONFIG:-/app/config.example.json}
       GLITCHTIP_BASE_URL: ${GLITCHTIP_BASE_URL:-https://app.glitchtip.com/api/0}
       GLITCHTIP_API_TOKEN: ${GLITCHTIP_API_TOKEN}
+      GLITCHTIP_AUTH_SCHEME: ${GLITCHTIP_AUTH_SCHEME:-Bearer}
     expose:
       - "3015"
 
