@@ -1,64 +1,54 @@
 # Tester Results
 
-Status: PASS
+Status: PASS with local DB caveat
 
-Date: 2026-07-16
+Date: 2026-07-17
 
 ## Summary
 
-Focused observability bridge tests, TypeScript build, and production dependency audit passed. The first validation attempt failed because dependencies were not installed locally, then revealed two implementation issues: a sanitizer key pattern did not drop camelCase `userPhone`, and the test fake client type was narrower than `GlitchtipClient`. Both were fixed and the final validation passed.
+Backend build passed. The new production migration command resolves to the compiled TypeORM data source and starts migration execution. It failed locally only because no PostgreSQL server was listening on localhost:5432, which is expected in this session and not a command wiring failure.
 
 ## Commands and Results
 
-### Focused bridge tests
+### Backend build
 
 Command:
 
 ```bash
-cd observability-bridge && npm test
+cd backend && npm run build
 ```
 
 Result: PASS
 
 ```text
-Test Files  1 passed (1)
-Tests  7 passed (7)
+> backend@0.0.1 build
+> nest build
 ```
 
-### TypeScript build
+### Production migration command wiring
 
 Command:
 
 ```bash
-cd observability-bridge && npm run build
+cd backend && npm run migration:run:prod
 ```
 
-Result: PASS
+Result: EXPECTED LOCAL FAILURE — DB unavailable
 
 ```text
-> @paz-church/observability-bridge@0.1.0 build
-> tsc -p tsconfig.json
+> backend@0.0.1 migration:run:prod
+> npm run typeorm:prod -- migration:run
+
+> backend@0.0.1 typeorm:prod
+> npx typeorm -d dist/db/data-source.js migration:run
+
+Error during migration run:
+AggregateError [ECONNREFUSED]: connect ECONNREFUSED ::1:5432 / 127.0.0.1:5432
 ```
 
-### Production dependency audit
-
-Command:
-
-```bash
-cd observability-bridge && npm audit --omit=dev
-```
-
-Result: PASS
-
-```text
-found 0 vulnerabilities
-```
+This verifies the script invokes `dist/db/data-source.js` without rebuilding. The local environment did not have Postgres running on `localhost:5432`.
 
 ## Commands not run
 
-- Live GlitchTip API calls were not run because they require real deployment secrets and should not be executed from local validation.
-- Full root compose startup was not run because the bridge service is optional and requires real `OBSERVABILITY_BRIDGE_TOKEN` and `GLITCHTIP_API_TOKEN` secrets.
-
-## Notes
-
-- `npm install` reports dev dependency audit findings from test/build tooling; production dependency audit passes with zero vulnerabilities.
+- Full `npm run test`: not run because the change is deployment command wiring, not backend business logic.
+- Live production migration: not run from this local session to avoid directly mutating production data outside the deployment pipeline.

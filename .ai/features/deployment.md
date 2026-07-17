@@ -27,7 +27,8 @@ CORS_ORIGIN=https://church-admin.<domain>
 
 ## Database
 
-- Run migrations after backend is healthy.
+- The backend production container runs pending TypeORM migrations before starting the API process.
+- For local/manual workflows, use `cd backend && npm run migration:run` when applying pending migrations directly.
 - Keep `DB_SYNCHRONIZE=false` outside disposable local/dev contexts.
 
 ## Observability bridge

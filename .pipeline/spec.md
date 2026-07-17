@@ -1,8 +1,12 @@
-# Spec: Reusable OpenHarness-safe GlitchTip Error Bridge
+# Spec: Fix backend address insert schema drift
 
 ## Request
 
-Implement Trello ticket `ZE9mcEl3`: create a reusable, project-agnostic bridge that lets OpenHarness/AI agents safely query sanitized GlitchTip error data without exposing secrets, raw payloads, or cross-project data.
+Fix production backend error on `POST /api/users`:
+
+```text
+QueryFailedError: column "number" of relation "addresses" does not exist
+```
 
 ## Context files read
 
@@ -12,41 +16,50 @@ Implement Trello ticket `ZE9mcEl3`: create a reusable, project-agnostic bridge t
 - `.ai/conventions.md`
 - `.ai/commands.md`
 - `.ai/feature-map.md`
-- `.ai/apps/root.md`
+- `.ai/features/people-and-membership.md`
 - `.ai/features/deployment.md`
+- `.ai/apps/backend.md`
 - `.ai/pipelines/handoff-template.md`
-- `.claude/agents/ship-pipeline.md`
-- Trello card `ZE9mcEl3`
+- `backend/CLAUDE.md`
+- `backend/src/addresses/entities/address.entity.ts`
+- `backend/database/migrations/1694000000000-InitialSchema.ts`
+- `backend/database/migrations/1784073600000-AddUserAddressDetails.ts`
+- `backend/src/users/users.service.ts`
+- `backend/src/users/dto/create-user.dto.ts`
+- `backend/src/addresses/dto/create-address.dto.ts`
+- `backend/package.json`
+- `backend/Dockerfile`
+- root `docker-compose.yaml`
 
 ## Affected apps/features
 
-- Root deployment configuration
-- New reusable `observability-bridge/` service
+- `backend/` deployment startup
+- People & membership user creation with addresses
 - Deployment/runtime documentation
+
+## Root cause
+
+The backend entity and user creation flow already write `addresses.number`, `addresses.complement`, and `addresses.neighborhood`. The migration `1784073600000-AddUserAddressDetails` already exists to add those columns. The production container starts the compiled API directly and does not run pending migrations, so deployed databases can miss those columns while the app code expects them.
 
 ## Implementation plan
 
-1. Add a standalone root-level Node/TypeScript HTTP service in `observability-bridge/`.
-2. Expose read-only routes for health, projects, top errors, new errors since release, request/correlation ID lookup, issue summary, and representative stack trace.
-3. Require a separate bridge bearer token and keep the GlitchTip API token server-side only.
-4. Load project/environment mappings from JSON configuration, including Paz Church and a future-project example.
-5. Enforce project allowlist, environment allowlist, required/default project scope, default/max time ranges, and simple rate limiting.
-6. Sanitize returned issue/event/stack data and omit raw request/response bodies, headers, cookies, auth tokens, secrets, PII, and raw payloads.
-7. Add Coolify/OpenHarness usage docs and optional root Compose profile wiring.
-8. Add focused tests for auth, allowlists, range limits, sanitization, and GlitchTip query formatting.
+1. Keep the existing address entity and migration unchanged.
+2. Add production-safe package scripts that can run compiled TypeORM migrations without rebuilding at container startup.
+3. Change the backend Docker command to run pending migrations before starting the API process.
+4. Document the deployment behavior in `.ai/features/deployment.md`.
+5. Validate with backend build and migration command wiring.
 
 ## API/data/auth impacts
 
-- Adds a separate optional bridge service; no backend/admin/mobile API contract changes.
-- Bridge auth is independent from church app auth and uses `OBSERVABILITY_BRIDGE_TOKEN`.
-- GlitchTip token is stored only as server-side `GLITCHTIP_API_TOKEN`.
-- No database changes.
+- No API contract changes.
+- No auth behavior changes.
+- No new migration is needed because `1784073600000-AddUserAddressDetails` already adds the missing address columns.
+- Deployment behavior changes: backend container applies pending migrations before serving traffic.
 
 ## Validation plan
 
-- `cd observability-bridge && npm test`
-- `cd observability-bridge && npm run build`
-- `cd observability-bridge && npm audit --omit=dev`
+- `cd backend && npm run build`
+- `cd backend && npm run migration:run:prod` to verify command wiring; local DB may be unavailable, in which case record the connection failure.
 
 ## OPEN QUESTIONS
 

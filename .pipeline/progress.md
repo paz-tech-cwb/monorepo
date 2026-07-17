@@ -2,39 +2,29 @@
 
 ## Request
 
-Implement Trello ticket `ZE9mcEl3`: reusable OpenHarness-safe GlitchTip observability bridge.
+Fix backend `POST /api/users` address insert failure: missing `addresses.number` column in production.
 
 ## Status
 
 - [x] Context reviewed
-- [x] Trello card read
-- [x] Feature branch created
 - [x] Spec updated
-- [x] Plan approved
+- [x] Root cause identified
 - [x] Implementation complete
 - [x] Tests complete
 - [x] Review complete
-- [x] Final approval received
-- [x] Commit created
-- [x] Branch pushed
-- [x] PR opened
-- [ ] Merged to main
+- [ ] Branch pushed
+- [ ] PR opened
 
 ## Timeline
 
-- 2026-07-16 — Read `.ai/` context, ship pipeline, root/deployment docs, and Trello card `ZE9mcEl3`.
-- 2026-07-16 — Updated local `main` from origin and created branch `feature/ZE9mcEl3-glitchtip-observability-bridge`.
-- 2026-07-16 — Received user approval for standalone root-level Node/TypeScript HTTP bridge plan.
-- 2026-07-16 — Implemented `observability-bridge/` service with auth, allowlists, range limits, sanitization, rate limiting, GlitchTip client, tests, Dockerfile, and docs.
-- 2026-07-16 — Added optional root Docker Compose profile wiring and environment template variables.
-- 2026-07-17 — Opened PR https://github.com/paz-tech-cwb/monorepo/pull/2 instead of pushing/merging directly to main.
+- 2026-07-17 — Read `.ai/` context, backend instructions, people/membership docs, deployment docs, and pipeline handoff expectations.
+- 2026-07-17 — Confirmed backend submodule was clean before changes; root had unrelated pre-existing `kmp-mobile` and `.pnpm-store/` changes.
+- 2026-07-17 — Found `Address` entity writes `number`, `complement`, and `neighborhood`; existing migration `1784073600000-AddUserAddressDetails` adds those columns.
+- 2026-07-17 — Identified deployment startup drift: Docker command started API directly without running pending migrations.
+- 2026-07-17 — Added production migration startup scripts and changed backend Docker command to run migrations before serving.
+- 2026-07-17 — Backend build passed; production migration command reached DB connection and failed locally because no Postgres was listening on localhost:5432.
 
 ## Current branch / PR
 
-- Branch: `feature/ZE9mcEl3-glitchtip-observability-bridge`
-- PR: https://github.com/paz-tech-cwb/monorepo/pull/2
-
-## Notes
-
-- Root branch had pre-existing submodule pointer changes for `backend` and `kmp-mobile` plus an untracked `.pnpm-store/` cache; these were intentionally not part of the bridge implementation.
-- `npm install --package-lock-only` reported dev dependency audit findings, while production audit with `npm audit --omit=dev` passed.
+- Branch: `main` working tree
+- PR: pending
