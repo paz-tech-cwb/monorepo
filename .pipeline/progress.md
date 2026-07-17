@@ -14,9 +14,10 @@ Implement Trello ticket `ZE9mcEl3`: reusable OpenHarness-safe GlitchTip observab
 - [x] Implementation complete
 - [x] Tests complete
 - [x] Review complete
-- [ ] Final approval received
-- [ ] Commit created
-- [ ] Branch pushed
+- [x] Final approval received
+- [x] Commit created
+- [x] Branch pushed
+- [x] PR opened
 - [ ] Merged to main
 
 ## Timeline
@@ -26,11 +27,12 @@ Implement Trello ticket `ZE9mcEl3`: reusable OpenHarness-safe GlitchTip observab
 - 2026-07-16 — Received user approval for standalone root-level Node/TypeScript HTTP bridge plan.
 - 2026-07-16 — Implemented `observability-bridge/` service with auth, allowlists, range limits, sanitization, rate limiting, GlitchTip client, tests, Dockerfile, and docs.
 - 2026-07-16 — Added optional root Docker Compose profile wiring and environment template variables.
+- 2026-07-17 — Opened PR https://github.com/paz-tech-cwb/monorepo/pull/2 instead of pushing/merging directly to main.
 
 ## Current branch / PR
 
 - Branch: `feature/ZE9mcEl3-glitchtip-observability-bridge`
-- PR: pending final approval/ship
+- PR: https://github.com/paz-tech-cwb/monorepo/pull/2
 
 ## Notes
 
