@@ -1,56 +1,53 @@
-# Spec: AI Project Context Architecture
+# Spec: Reusable OpenHarness-safe GlitchTip Error Bridge
 
 ## Request
 
-Create a reusable AI documentation architecture so agents and harnesses can understand the project by project context, architecture, features, apps, commands, and pipeline expectations. Archive/remove older active docs, agent files, superpowers, planning files, and update the user-level ship pipeline to use this architecture.
+Implement Trello ticket `ZE9mcEl3`: create a reusable, project-agnostic bridge that lets OpenHarness/AI agents safely query sanitized GlitchTip error data without exposing secrets, raw payloads, or cross-project data.
 
 ## Context files read
 
-- `CLAUDE.md`
-- `AGENTS.md`
-- `README.md`
-- `docs/design-system.md`
-- `docs/formularios.md`
-- `docs/member-journey-steps.md`
-- `docs/notification-navigation.md`
-- `docs/wip-features.md`
-- `package.json`
-- `.gitmodules`
-- `/Users/jonathalima/.claude/commands/ship.md`
-- `/Users/jonathalima/.codex/prompts/ship.md`
-- `/Users/jonathalima/.agents/skills/ship-pipeline/SKILL.md`
+- `.ai/README.md`
+- `.ai/project.md`
+- `.ai/architecture.md`
+- `.ai/conventions.md`
+- `.ai/commands.md`
+- `.ai/feature-map.md`
+- `.ai/apps/root.md`
+- `.ai/features/deployment.md`
+- `.ai/pipelines/handoff-template.md`
+- `.claude/agents/ship-pipeline.md`
+- Trello card `ZE9mcEl3`
 
-## Affected areas
+## Affected apps/features
 
-- Root repo documentation.
-- Agent entrypoint files.
-- Historical docs archive.
-- User-level ship pipeline definitions.
-- Pipeline handoff expectations.
+- Root deployment configuration
+- New reusable `observability-bridge/` service
+- Deployment/runtime documentation
 
 ## Implementation plan
 
-1. Create `.ai/` as the canonical AI context folder.
-2. Add project-level docs: project, architecture, conventions, commands, feature map.
-3. Add feature docs for auth, membership, life groups, forms, notifications, ministries, admin dashboard, mobile, and deployment.
-4. Add app docs for root, backend, admin-ui, mobile, and postman-files.
-5. Add `.ai/pipelines/handoff-template.md` only, not a repo-local executable ship pipeline, because execution lives at user level.
-6. Replace root `AGENTS.md` and `CLAUDE.md` with thin pointers to `.ai/README.md`.
-7. Simplify `README.md` for human onboarding and link to `.ai/`.
-8. Archive historical docs and remove them from active docs paths.
-9. Update user-level ship pipeline files to require `.ai/` context, `.pipeline/progress.md`, and draft PR creation after the first branch commit.
+1. Add a standalone root-level Node/TypeScript HTTP service in `observability-bridge/`.
+2. Expose read-only routes for health, projects, top errors, new errors since release, request/correlation ID lookup, issue summary, and representative stack trace.
+3. Require a separate bridge bearer token and keep the GlitchTip API token server-side only.
+4. Load project/environment mappings from JSON configuration, including Paz Church and a future-project example.
+5. Enforce project allowlist, environment allowlist, required/default project scope, default/max time ranges, and simple rate limiting.
+6. Sanitize returned issue/event/stack data and omit raw request/response bodies, headers, cookies, auth tokens, secrets, PII, and raw payloads.
+7. Add Coolify/OpenHarness usage docs and optional root Compose profile wiring.
+8. Add focused tests for auth, allowlists, range limits, sanitization, and GlitchTip query formatting.
 
 ## API/data/auth impacts
 
-None. Documentation-only change.
+- Adds a separate optional bridge service; no backend/admin/mobile API contract changes.
+- Bridge auth is independent from church app auth and uses `OBSERVABILITY_BRIDGE_TOKEN`.
+- GlitchTip token is stored only as server-side `GLITCHTIP_API_TOKEN`.
+- No database changes.
 
 ## Validation plan
 
-- Verify `.ai/` files exist.
-- Verify old active docs were archived.
-- Verify user-level ship pipeline references `.ai/`, `.pipeline/progress.md`, and first-commit PR creation.
-- No app tests required because no product code changed.
+- `cd observability-bridge && npm test`
+- `cd observability-bridge && npm run build`
+- `cd observability-bridge && npm audit --omit=dev`
 
-## Open questions
+## OPEN QUESTIONS
 
 None.
