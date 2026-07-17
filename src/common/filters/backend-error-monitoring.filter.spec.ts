@@ -62,7 +62,8 @@ describe('BackendErrorMonitoringFilter', () => {
       statusCode: 400,
       message: 'Invalid token',
     });
-    expect(loggerErrorSpy).toHaveBeenCalledWith(
+    const logContext = JSON.parse(loggerErrorSpy.mock.calls[0][0]);
+    expect(logContext).toEqual(
       expect.objectContaining({
         service: 'paz-church-backend',
         request_id: 'req-123',
@@ -72,9 +73,15 @@ describe('BackendErrorMonitoringFilter', () => {
         error_type: 'HttpException',
         error_message: 'Invalid token',
         user_id: 'user-123',
+        request_body: {
+          password: '[REDACTED]',
+        },
+        response_body: {
+          statusCode: 400,
+          message: 'Invalid token',
+        },
       }),
     );
-    const logContext = loggerErrorSpy.mock.calls[0][0];
     expect(JSON.stringify(logContext)).not.toContain('secret-token');
     expect(JSON.stringify(logContext)).not.toContain('secret-cookie');
     expect(JSON.stringify(logContext)).not.toContain('secret-password');
@@ -103,22 +110,37 @@ describe('BackendErrorMonitoringFilter', () => {
       statusCode: 500,
       message: 'Internal server error',
     });
-    expect(loggerErrorSpy).toHaveBeenCalledWith(
+    expect(JSON.parse(loggerErrorSpy.mock.calls[0][0])).toEqual(
       expect.objectContaining({
         status_code: 500,
         error_type: 'Error',
         error_message: 'Database unavailable',
+        response_body: {
+          statusCode: 500,
+          message: 'Internal server error',
+        },
       }),
     );
   });
 
   it('captures errors in Sentry-compatible monitoring when enabled', () => {
-    const exception = new Error('Dependency failed');
+    const exception = new Error('Dependency failed', {
+      cause: new Error('Connection refused'),
+    });
     isMonitoringEnabledSpy.mockReturnValue(true);
 
     filter.catch(exception, createHost(request, response));
 
-    expect(captureErrorSpy).toHaveBeenCalledWith(exception, expect.any(Function));
+    expect(captureErrorSpy).toHaveBeenCalledWith(
+      exception,
+      expect.any(Function),
+    );
+    expect(JSON.parse(loggerErrorSpy.mock.calls[0][0])).toEqual(
+      expect.objectContaining({
+        cause_type: 'Error',
+        cause_message: 'Connection refused',
+      }),
+    );
   });
 
   it('does not send events to monitoring when disabled', () => {

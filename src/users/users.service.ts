@@ -131,6 +131,7 @@ export class UsersService {
       if (error instanceof BadRequestException) throw error;
       throw new BadRequestException(
         'An error occurred while creating the user.',
+        { cause: error },
       );
     }
   }

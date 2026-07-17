@@ -32,8 +32,29 @@ type ErrorLogContext = {
   error_type: string;
   error_message: string;
   stack?: string;
+  cause_type?: string;
+  cause_message?: string;
+  cause_stack?: string;
   user_id?: string;
+  request_body?: unknown;
+  response_body?: unknown;
 };
+
+const SENSITIVE_FIELD_NAMES = new Set([
+  'authorization',
+  'access_token',
+  'accessToken',
+  'refresh_token',
+  'refreshToken',
+  'token',
+  'id_token',
+  'idToken',
+  'password',
+  'secret',
+]);
+
+const REDACTED_VALUE = '[REDACTED]';
+const MAX_LOG_BODY_LENGTH = 10_000;
 
 const CORRELATION_HEADERS = [
   'x-request-id',
@@ -52,9 +73,14 @@ export class BackendErrorMonitoringFilter implements ExceptionFilter {
     const statusCode = this.getStatusCode(exception);
     const responseBody = this.getResponseBody(exception, statusCode);
     const error = this.toError(exception);
-    const logContext = this.buildLogContext(request, statusCode, error);
+    const logContext = this.buildLogContext(
+      request,
+      statusCode,
+      error,
+      responseBody,
+    );
 
-    this.logger.error(logContext);
+    this.logger.error(JSON.stringify(logContext));
     this.captureInErrorMonitoring(error, logContext);
 
     response.status(statusCode).json(responseBody);
@@ -100,6 +126,7 @@ export class BackendErrorMonitoringFilter implements ExceptionFilter {
     request: RequestWithUser,
     statusCode: number,
     error: Error,
+    responseBody: unknown,
   ): ErrorLogContext {
     return {
       service: 'paz-church-backend',
@@ -113,7 +140,10 @@ export class BackendErrorMonitoringFilter implements ExceptionFilter {
       error_type: error.name,
       error_message: error.message,
       stack: this.sanitizeStack(error.stack),
+      ...this.getCauseContext(error),
       user_id: this.getUserId(request),
+      request_body: this.sanitizeBody(request.body),
+      response_body: this.sanitizeBody(responseBody),
     };
   }
 
@@ -151,6 +181,65 @@ export class BackendErrorMonitoringFilter implements ExceptionFilter {
     return stack.split('\n').slice(0, 20).join('\n');
   }
 
+  private getCauseContext(error: Error): Partial<ErrorLogContext> {
+    const cause = error.cause;
+
+    if (cause instanceof Error) {
+      return {
+        cause_type: cause.name,
+        cause_message: cause.message,
+        cause_stack: this.sanitizeStack(cause.stack),
+      };
+    }
+
+    if (cause !== undefined) {
+      return {
+        cause_type: typeof cause,
+        cause_message:
+          typeof cause === 'string' ? cause : JSON.stringify(this.sanitizeBody(cause)),
+      };
+    }
+
+    return {};
+  }
+
+  private sanitizeBody(value: unknown): unknown {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    return this.truncateForLog(this.redactSensitiveFields(value));
+  }
+
+  private redactSensitiveFields(value: unknown): unknown {
+    if (Array.isArray(value)) {
+      return value.map((item) => this.redactSensitiveFields(item));
+    }
+
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, item]) => [
+          key,
+          SENSITIVE_FIELD_NAMES.has(key)
+            ? REDACTED_VALUE
+            : this.redactSensitiveFields(item),
+        ]),
+      );
+    }
+
+    return value;
+  }
+
+  private truncateForLog(value: unknown): unknown {
+    const serialized = JSON.stringify(value);
+
+    if (!serialized || serialized.length <= MAX_LOG_BODY_LENGTH) {
+      return value;
+    }
+
+    return `${serialized.slice(0, MAX_LOG_BODY_LENGTH)}...[TRUNCATED]`;
+  }
+
   private captureInErrorMonitoring(error: Error, context: ErrorLogContext) {
     if (!isErrorMonitoringEnabled()) {
       return;
@@ -183,6 +272,11 @@ export class BackendErrorMonitoringFilter implements ExceptionFilter {
         method: context.method,
         path: context.path,
         duration_ms: context.duration_ms,
+        body: context.request_body,
+      });
+      scope.setContext('response', {
+        status_code: context.status_code,
+        body: context.response_body,
       });
     });
   }
