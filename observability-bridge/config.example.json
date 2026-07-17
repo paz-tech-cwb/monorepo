@@ -1,0 +1,28 @@
+{
+  "defaults": {
+    "range": "1h",
+    "maxRange": "24h",
+    "rateLimit": {
+      "windowMs": 60000,
+      "maxRequests": 60
+    }
+  },
+  "projects": {
+    "paz-church-BE-prod": {
+      "organizationSlug": "paz-church",
+      "projectSlug": "paz-church-BE-prod",
+      "defaultEnvironment": "production",
+      "allowedEnvironments": ["production"],
+      "defaultRange": "1h",
+      "maxRange": "24h"
+    },
+    "future-project-prod": {
+      "organizationSlug": "future-org",
+      "projectSlug": "future-project-api",
+      "defaultEnvironment": "production",
+      "allowedEnvironments": ["production", "staging"],
+      "defaultRange": "1h",
+      "maxRange": "12h"
+    }
+  }
+}

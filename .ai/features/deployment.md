@@ -30,6 +30,12 @@ CORS_ORIGIN=https://church-admin.<domain>
 - Run migrations after backend is healthy.
 - Keep `DB_SYNCHRONIZE=false` outside disposable local/dev contexts.
 
+## Observability bridge
+
+The optional `observability-bridge/` service provides read-only, sanitized GlitchTip summaries for OpenHarness/debugging. It is reusable across projects through JSON config aliases, enforces project/environment allowlists and range limits, and keeps the GlitchTip API token server-side.
+
+Root Docker Compose keeps the bridge behind the `observability` profile so deployments must opt in explicitly. Coolify deployments should configure `OBSERVABILITY_BRIDGE_TOKEN`, `GLITCHTIP_API_TOKEN`, `GLITCHTIP_BASE_URL`, and `OBSERVABILITY_BRIDGE_CONFIG` as secrets/runtime variables.
+
 ## Change checklist
 
 - Update `.env.example` when runtime variables change.

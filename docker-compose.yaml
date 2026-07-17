@@ -41,6 +41,22 @@ services:
     expose:
       - "3001"
 
+  observability-bridge:
+    profiles:
+      - observability
+    build:
+      context: ./observability-bridge
+    container_name: church_observability_bridge
+    restart: unless-stopped
+    environment:
+      PORT: 3015
+      OBSERVABILITY_BRIDGE_TOKEN: ${OBSERVABILITY_BRIDGE_TOKEN}
+      OBSERVABILITY_BRIDGE_CONFIG: ${OBSERVABILITY_BRIDGE_CONFIG:-/app/config.example.json}
+      GLITCHTIP_BASE_URL: ${GLITCHTIP_BASE_URL:-https://app.glitchtip.com/api/0}
+      GLITCHTIP_API_TOKEN: ${GLITCHTIP_API_TOKEN}
+    expose:
+      - "3015"
+
   admin-ui:
     build:
       context: ./admin-ui
