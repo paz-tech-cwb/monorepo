@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,6 +31,10 @@ import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { AddressForm, type AddressFormData } from "@/components/ui/address-form"
 import { Search, Plus, MoreHorizontal, Edit, Trash2, GitMerge } from "lucide-react"
 import { useUsers, useUser, useCreateUser, useUpdateUser, useUpdateUserRole, useDeleteUser } from "@/lib/hooks/use-users"
+import { useAreas } from "@/lib/hooks/use-areas"
+import { useSectors } from "@/lib/hooks/use-sectors"
+import { useLifeGroups } from "@/lib/hooks/use-life-groups"
+import { useMinistries } from "@/lib/hooks/use-ministries"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
 import { JourneySheet } from "./journey-sheet"
 import type { AdminUser, UserRole } from "@/lib/api/types"
@@ -61,6 +65,13 @@ const EMPTY_CREATE_ADDRESS: AddressFormData = {
   complement: null,
 }
 
+const ALL_FILTER_VALUE = "all"
+
+type FilterOption = {
+  value: string
+  label: string
+}
+
 function getAddressFormData(member: AdminUser): AddressFormData {
   return {
     zip_code: member.address_details?.zip_code ?? "",
@@ -76,6 +87,10 @@ function getAddressFormData(member: AdminUser): AddressFormData {
 
 export function MembersManagement() {
   const { data: members = [], isLoading, error } = useUsers()
+  const { data: areas = [] } = useAreas()
+  const { data: sectors = [] } = useSectors()
+  const { data: lifeGroups = [] } = useLifeGroups()
+  const { data: ministries = [] } = useMinistries()
   const createMutation = useCreateUser()
   const updateMutation = useUpdateUser()
   const updateRoleMutation = useUpdateUserRole()
@@ -105,13 +120,93 @@ export function MembersManagement() {
   const [roleTab, setRoleTab] = useState<RoleTab>("all")
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const [sectorFilter, setSectorFilter] = useState("")
+  const [sectorFilter, setSectorFilter] = useState(ALL_FILTER_VALUE)
+  const [areaFilter, setAreaFilter] = useState(ALL_FILTER_VALUE)
+  const [lifeGroupFilter, setLifeGroupFilter] = useState(ALL_FILTER_VALUE)
+  const [ministryFilter, setMinistryFilter] = useState(ALL_FILTER_VALUE)
+  const [roleFilter, setRoleFilter] = useState(ALL_FILTER_VALUE)
 
-  const filteredMembers = members.filter(
-    (member) =>
-      (member.name ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (member.email ?? "").toLowerCase().includes(searchTerm.toLowerCase()),
+  const sectorOptions = useMemo<FilterOption[]>(
+    () => sectors.map((sector) => ({ value: String(sector.id), label: sector.name })),
+    [sectors],
   )
+
+  const areaOptions = useMemo<FilterOption[]>(
+    () => areas.map((area) => ({ value: String(area.id), label: area.name })),
+    [areas],
+  )
+
+  const lifeGroupOptions = useMemo<FilterOption[]>(
+    () => lifeGroups.map((group) => ({ value: String(group.id), label: group.name })),
+    [lifeGroups],
+  )
+
+  const ministryOptions = useMemo<FilterOption[]>(
+    () => ministries.map((ministry) => ({ value: String(ministry.id), label: ministry.name })),
+    [ministries],
+  )
+
+  const ministryMemberIds = useMemo(() => {
+    const byMinistry = new Map<string, Set<number>>()
+
+    ministries.forEach((ministry) => {
+      const memberIds = new Set<number>()
+      ministry.members.forEach((member) => memberIds.add(member.id))
+      ministry.teams.forEach((team) => {
+        team.members.forEach((member) => memberIds.add(member.id))
+      })
+      byMinistry.set(String(ministry.id), memberIds)
+    })
+
+    return byMinistry
+  }, [ministries])
+
+  const roleOptions = useMemo<FilterOption[]>(
+    () => ROLE_OPTIONS.map((role) => ({ value: role.value, label: role.label })),
+    [],
+  )
+
+  const renderFilterSelect = (
+    label: string,
+    value: string,
+    onValueChange: (value: string) => void,
+    options: FilterOption[],
+    placeholder: string,
+  ) => (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <Select value={value} onValueChange={onValueChange} disabled={options.length === 0}>
+        <SelectTrigger>
+          <SelectValue placeholder={options.length === 0 ? "Sem opcoes" : placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL_FILTER_VALUE}>Todos</SelectItem>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+
+  const filteredMembers = members.filter((member) => {
+    const matchesSearch =
+      (member.name ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (member.email ?? "").toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSector = sectorFilter === ALL_FILTER_VALUE || member.sector_id === Number(sectorFilter)
+    const matchesArea =
+      areaFilter === ALL_FILTER_VALUE ||
+      sectors.some((sector) => sector.id === member.sector_id && sector.area_id === Number(areaFilter))
+    const matchesLifeGroup =
+      lifeGroupFilter === ALL_FILTER_VALUE || member.life_group_ids.includes(Number(lifeGroupFilter))
+    const matchesMinistry =
+      ministryFilter === ALL_FILTER_VALUE || ministryMemberIds.get(ministryFilter)?.has(member.id) === true
+    const matchesRole = roleFilter === ALL_FILTER_VALUE || member.role === roleFilter
+
+    return matchesSearch && matchesSector && matchesArea && matchesLifeGroup && matchesMinistry && matchesRole
+  })
 
   const displayedMembers = filteredMembers.filter(
     (m) => roleTab === "all" || m.role === roleTab,
@@ -410,15 +505,12 @@ export function MembersManagement() {
             <CollapsibleTrigger asChild>
               <Button variant="outline" size="sm">Filtros avançados</Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="mt-3 grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Setor</Label>
-                <Input
-                  placeholder="Filtrar por setor"
-                  value={sectorFilter}
-                  onChange={(e) => setSectorFilter(e.target.value)}
-                />
-              </div>
+            <CollapsibleContent className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3">
+              {renderFilterSelect("Setor", sectorFilter, setSectorFilter, sectorOptions, "Filtrar por setor")}
+              {renderFilterSelect("Area", areaFilter, setAreaFilter, areaOptions, "Filtrar por area")}
+              {renderFilterSelect("Life Group", lifeGroupFilter, setLifeGroupFilter, lifeGroupOptions, "Filtrar por Life Group")}
+              {renderFilterSelect("Ministerio", ministryFilter, setMinistryFilter, ministryOptions, "Filtrar por ministerio")}
+              {renderFilterSelect("Funcao", roleFilter, setRoleFilter, roleOptions, "Filtrar por funcao")}
             </CollapsibleContent>
           </Collapsible>
 
