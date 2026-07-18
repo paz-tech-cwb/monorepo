@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,7 +30,7 @@ import { FormDrawer } from "@/components/ui/form-drawer"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { AddressForm, type AddressFormData } from "@/components/ui/address-form"
 import { Search, Plus, MoreHorizontal, Edit, Trash2, GitMerge } from "lucide-react"
-import { useUsers, useCreateUser, useUpdateUser, useUpdateUserRole, useDeleteUser } from "@/lib/hooks/use-users"
+import { useUsers, useUser, useCreateUser, useUpdateUser, useUpdateUserRole, useDeleteUser } from "@/lib/hooks/use-users"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
 import { JourneySheet } from "./journey-sheet"
 import type { AdminUser, UserRole } from "@/lib/api/types"
@@ -61,6 +61,19 @@ const EMPTY_CREATE_ADDRESS: AddressFormData = {
   complement: null,
 }
 
+function getAddressFormData(member: AdminUser): AddressFormData {
+  return {
+    zip_code: member.address_details?.zip_code ?? "",
+    country: member.address_details?.country ?? "Brasil",
+    state: member.address_details?.state ?? "",
+    city: member.address_details?.city ?? "",
+    neighborhood: member.address_details?.neighborhood ?? "",
+    street: member.address_details?.street ?? "",
+    number: member.address_details?.number ?? "",
+    complement: member.address_details?.complement ?? null,
+  }
+}
+
 export function MembersManagement() {
   const { data: members = [], isLoading, error } = useUsers()
   const createMutation = useCreateUser()
@@ -71,10 +84,13 @@ export function MembersManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false)
   const [editingMember, setEditingMember] = useState<AdminUser | null>(null)
+  const { data: editingMemberDetails, isFetching: isFetchingEditingMember } = useUser(editingMember?.id ?? null)
   const [deletingMemberId, setDeletingMemberId] = useState<number | null>(null)
   const [journeyMember, setJourneyMember] = useState<AdminUser | null>(null)
   const [createAddress, setCreateAddress] = useState<AddressFormData>(EMPTY_CREATE_ADDRESS)
+  const [editAddress, setEditAddress] = useState<AddressFormData>(EMPTY_CREATE_ADDRESS)
   const [createAddressError, setCreateAddressError] = useState<string | null>(null)
+  const [editAddressError, setEditAddressError] = useState<string | null>(null)
   const [addressFormResetKey, setAddressFormResetKey] = useState(0)
   const [formData, setFormData] = useState({
     name: "",
@@ -111,14 +127,20 @@ export function MembersManagement() {
     setAddressFormResetKey((key) => key + 1)
   }
 
-  const validateCreateAddress = () => {
-    const cleanCEP = createAddress.zip_code.replace(/\D/g, "")
+  const resetEditAddress = () => {
+    setEditAddress(EMPTY_CREATE_ADDRESS)
+    setEditAddressError(null)
+    setAddressFormResetKey((key) => key + 1)
+  }
+
+  const validateAddress = (address: AddressFormData) => {
+    const cleanCEP = address.zip_code.replace(/\D/g, "")
     const requiredFields = [
-      createAddress.street,
-      createAddress.neighborhood,
-      createAddress.city,
-      createAddress.state,
-      createAddress.country,
+      address.street,
+      address.neighborhood,
+      address.city,
+      address.state,
+      address.country,
     ]
 
     if (cleanCEP.length !== 8 || requiredFields.some((field) => field.trim().length === 0)) {
@@ -127,6 +149,31 @@ export function MembersManagement() {
 
     return null
   }
+
+  const validateCreateAddress = () => validateAddress(createAddress)
+
+  const validateEditAddress = () => validateAddress(editAddress)
+
+  const applyMemberToForm = (member: AdminUser) => {
+    setFormData({
+      name: member.name,
+      email: member.email,
+      phone_number: member.phone_number || member.phone || "",
+      address: member.address || "",
+      birth_date: member.birth_date || "",
+      role: member.role,
+    })
+    setEditAddress(getAddressFormData(member))
+    setEditAddressError(null)
+    setAddressFormResetKey((key) => key + 1)
+  }
+
+  useEffect(() => {
+    if (editingMemberDetails) {
+      setEditingMember(editingMemberDetails)
+      applyMemberToForm(editingMemberDetails)
+    }
+  }, [editingMemberDetails])
 
   const handleAdd = async () => {
     const addressError = validateCreateAddress()
@@ -164,18 +211,17 @@ export function MembersManagement() {
 
   const handleEdit = (member: AdminUser) => {
     setEditingMember(member)
-    setFormData({
-      name: member.name,
-      email: member.email,
-      phone_number: member.phone_number || member.phone || "",
-      address: member.address || "",
-      birth_date: member.birth_date || "",
-      role: member.role,
-    })
+    applyMemberToForm(member)
   }
 
   const handleUpdate = async () => {
     if (!editingMember) return
+
+    const addressError = validateEditAddress()
+    if (addressError) {
+      setEditAddressError(addressError)
+      return
+    }
 
     try {
       // If role changed, fire the dedicated role endpoint
@@ -192,12 +238,23 @@ export function MembersManagement() {
           name: formData.name,
           email: formData.email,
           phone: formData.phone_number || undefined,
+          address: {
+            zip_code: editAddress.zip_code,
+            country: editAddress.country.trim(),
+            state: editAddress.state.trim(),
+            city: editAddress.city.trim(),
+            neighborhood: editAddress.neighborhood.trim(),
+            street: editAddress.street.trim(),
+            number: editAddress.number.trim() || null,
+            complement: (editAddress.complement ?? "").trim() || null,
+          },
           birth_date: formData.birth_date || undefined,
         },
       })
       toast.success("Membro atualizado com sucesso!")
       setEditingMember(null)
       resetForm()
+      resetEditAddress()
     } catch {
       toast.error("Erro ao atualizar membro. Tente novamente.")
     }
@@ -224,7 +281,13 @@ export function MembersManagement() {
 
   const isSaving = updateMutation.isPending || updateRoleMutation.isPending
 
-  const renderMemberFormFields = (includeStructuredAddress: boolean) => (
+  const renderMemberFormFields = (
+    includeStructuredAddress: boolean,
+    addressValue = createAddress,
+    onAddressChange = setCreateAddress,
+    addressError = createAddressError,
+    idPrefix = "member-create-",
+  ) => (
     <div className="grid grid-cols-2 gap-4">
       <div>
         <Label htmlFor="name">Nome</Label>
@@ -283,14 +346,18 @@ export function MembersManagement() {
         <div className="col-span-2">
           <AddressForm
             key={addressFormResetKey}
-            value={createAddress}
+            value={addressValue}
             onChange={(address) => {
-              setCreateAddress(address)
-              setCreateAddressError(null)
+              onAddressChange(address)
+              if (idPrefix === "member-edit-") {
+                setEditAddressError(null)
+              } else {
+                setCreateAddressError(null)
+              }
             }}
-            idPrefix="member-create-"
+            idPrefix={idPrefix}
             required
-            error={createAddressError}
+            error={addressError}
           />
         </div>
       ) : (
@@ -494,15 +561,15 @@ export function MembersManagement() {
       <FormDrawer
         open={!!editingMember}
         onOpenChange={(open) => {
-          if (!open) { setEditingMember(null); resetForm() }
+          if (!open) { setEditingMember(null); resetForm(); resetEditAddress() }
         }}
         title="Editar Membro"
         description="Atualize os dados do membro"
         onSubmit={handleUpdate}
-        isLoading={isSaving}
+        isLoading={isSaving || isFetchingEditingMember}
         submitLabel="Salvar"
       >
-        {renderMemberFormFields(false)}
+        {renderMemberFormFields(true, editAddress, setEditAddress, editAddressError, "member-edit-")}
       </FormDrawer>
 
       {/* Journey Sheet */}

@@ -11,6 +11,17 @@ export type UserRole =
 
 export type UserStatus = "active" | "inactive"
 
+export interface UserAddress {
+  zip_code: string
+  country: string
+  state: string
+  city: string
+  neighborhood: string
+  street: string
+  number?: string | null
+  complement?: string | null
+}
+
 export interface AdminUser {
   id: number
   name: string
@@ -18,7 +29,8 @@ export interface AdminUser {
   phone_number?: string
   /** Legacy field — some responses may still use `phone` */
   phone?: string
-  address?: string
+  address?: string | null
+  address_details?: UserAddress | null
   birth_date?: string
   role: UserRole
   status: UserStatus
@@ -58,6 +70,7 @@ export interface UpdateUserRequest {
   name?: string
   email?: string
   phone?: string
+  address?: UserAddressRequest
   birth_date?: string
   role?: UserRole
   status?: UserStatus
