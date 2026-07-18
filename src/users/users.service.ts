@@ -22,12 +22,44 @@ export class UsersService {
     private readonly entityManager: EntityManager,
   ) {}
 
+  private toAddressResponse(address: Address | null) {
+    if (!address) return { address: null, address_details: null };
+
+    const line1 = [address.street, address.number].filter(Boolean).join(', ');
+    const line2 = [address.complement, address.neighborhood]
+      .filter(Boolean)
+      .join(' - ');
+    const location = [address.city, address.state, address.country]
+      .filter(Boolean)
+      .join(' - ');
+
+    return {
+      address: [line1, line2, location, address.zipCode]
+        .filter(Boolean)
+        .join('\n'),
+      address_details: {
+        zip_code: address.zipCode,
+        country: address.country,
+        state: address.state,
+        city: address.city,
+        neighborhood: address.neighborhood,
+        street: address.street,
+        number: address.number,
+        complement: address.complement,
+      },
+    };
+  }
+
   private toResponse(user: User) {
+    const address = this.toAddressResponse(user.address);
+
     return {
       id: user.id,
       name: user.name,
       email: user.email ?? null,
       phone: user.phoneNumber ?? null,
+      address: address.address,
+      address_details: address.address_details,
       birth_date: user.birthDate
         ? new Date(user.birthDate).toISOString().split('T')[0]
         : null,
@@ -122,7 +154,7 @@ export class UsersService {
         // Reload with relations for response
         const reloaded = await manager.findOne(User, {
           where: { id: saved.id },
-          relations: ['sector', 'lifeGroups', 'completedCourses'],
+          relations: ['sector', 'lifeGroups', 'completedCourses', 'address'],
         });
 
         return this.toResponse(reloaded!);
@@ -162,7 +194,7 @@ export class UsersService {
   async findAll() {
     try {
       const users = await this.entityManager.find(User, {
-        relations: ['sector', 'lifeGroups', 'completedCourses'],
+        relations: ['sector', 'lifeGroups', 'completedCourses', 'address'],
         order: { name: 'ASC' },
       });
       return users.map((u) => this.toResponse(u));
@@ -176,7 +208,7 @@ export class UsersService {
   async findOne(id: number) {
     const user = await this.entityManager.findOne(User, {
       where: { id },
-      relations: ['sector', 'lifeGroups', 'completedCourses'],
+      relations: ['sector', 'lifeGroups', 'completedCourses', 'address'],
     });
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
@@ -187,7 +219,7 @@ export class UsersService {
   async findOneEntity(id: number): Promise<User> {
     const user = await this.entityManager.findOne(User, {
       where: { id },
-      relations: ['sector', 'lifeGroups', 'completedCourses'],
+      relations: ['sector', 'lifeGroups', 'completedCourses', 'address'],
     });
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
@@ -204,6 +236,19 @@ export class UsersService {
       if (dto.phone !== undefined) user.phoneNumber = dto.phone ?? null;
       if (dto.birth_date !== undefined)
         user.birthDate = dto.birth_date ? new Date(dto.birth_date) : null;
+
+      if (dto.address !== undefined) {
+        const address = user.address ?? new Address();
+        address.zipCode = dto.address.zip_code;
+        address.country = dto.address.country;
+        address.state = dto.address.state;
+        address.city = dto.address.city;
+        address.neighborhood = dto.address.neighborhood;
+        address.street = dto.address.street;
+        address.number = dto.address.number?.trim() || null;
+        address.complement = dto.address.complement?.trim() || null;
+        user.address = await this.entityManager.save(Address, address);
+      }
 
       if (dto.sectorId !== undefined) {
         if (dto.sectorId === null) {
@@ -251,7 +296,7 @@ export class UsersService {
       // Reload with relations for response
       const reloaded = await this.entityManager.findOne(User, {
         where: { id: saved.id },
-        relations: ['sector', 'lifeGroups', 'completedCourses'],
+        relations: ['sector', 'lifeGroups', 'completedCourses', 'address'],
       });
 
       return this.toResponse(reloaded!);
@@ -277,7 +322,7 @@ export class UsersService {
       const saved = await this.entityManager.save(User, user);
       const reloaded = await this.entityManager.findOne(User, {
         where: { id: saved.id },
-        relations: ['sector', 'lifeGroups', 'completedCourses'],
+        relations: ['sector', 'lifeGroups', 'completedCourses', 'address'],
       });
       return this.toResponse(reloaded!);
     } catch (error: unknown) {
@@ -301,7 +346,7 @@ export class UsersService {
       const saved = await this.entityManager.save(User, user);
       const reloaded = await this.entityManager.findOne(User, {
         where: { id: saved.id },
-        relations: ['sector', 'lifeGroups', 'completedCourses'],
+        relations: ['sector', 'lifeGroups', 'completedCourses', 'address'],
       });
       return this.toResponse(reloaded!);
     } catch (error: unknown) {
