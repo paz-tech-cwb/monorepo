@@ -214,12 +214,12 @@ function ThemeToggle() {
   )
 }
 
-export const SidebarContent = memo(function SidebarContent() {
+export const SidebarContent = memo(function SidebarContent({ className }: { className?: string }) {
   const pathname = usePathname()
 
   return (
-    <div className="flex h-full flex-col bg-sidebar border-r border-sidebar-border">
-      <div className="flex h-14 items-center border-b border-sidebar-border px-4">
+    <div className={cn("flex h-full flex-col bg-sidebar border-r border-sidebar-border", className)}>
+      <div data-sidebar-header className="flex h-14 items-center border-b border-sidebar-border px-4">
         <h2 className="flex-1 text-lg font-bold text-sidebar-primary tracking-tight">Painel Admin</h2>
         <ThemeToggle />
       </div>

@@ -173,10 +173,10 @@ export function MembersManagement() {
     options: FilterOption[],
     placeholder: string,
   ) => (
-    <div className="space-y-1.5">
+    <div className="min-w-0 space-y-1.5">
       <Label>{label}</Label>
       <Select value={value} onValueChange={onValueChange} disabled={options.length === 0}>
-        <SelectTrigger>
+        <SelectTrigger className="min-w-0">
           <SelectValue placeholder={options.length === 0 ? "Sem opcoes" : placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -470,33 +470,33 @@ export function MembersManagement() {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Membros</h1>
+        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Membros</h1>
         <p className="text-muted-foreground">Gerencie os membros da igreja</p>
       </div>
 
-      <Card>
+      <Card className="min-w-0 max-w-full overflow-hidden">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <CardTitle>Lista de Membros</CardTitle>
               <CardDescription>{displayedMembers.length} membro(s) encontrado(s)</CardDescription>
             </div>
-            <Button onClick={() => { resetForm(); resetCreateAddress(); setIsAddDrawerOpen(true) }}>
+            <Button className="w-full sm:w-auto" onClick={() => { resetForm(); resetCreateAddress(); setIsAddDrawerOpen(true) }}>
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Membro
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-2 mb-3">
+        <CardContent className="min-w-0 overflow-hidden">
+          <div className="mb-3 flex min-w-0 items-center space-x-2">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar membros..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
+              className="min-w-0 max-w-sm"
             />
           </div>
 
@@ -505,7 +505,7 @@ export function MembersManagement() {
             <CollapsibleTrigger asChild>
               <Button variant="outline" size="sm">Filtros avançados</Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3">
+            <CollapsibleContent className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
               {renderFilterSelect("Setor", sectorFilter, setSectorFilter, sectorOptions, "Filtrar por setor")}
               {renderFilterSelect("Area", areaFilter, setAreaFilter, areaOptions, "Filtrar por area")}
               {renderFilterSelect("Life Group", lifeGroupFilter, setLifeGroupFilter, lifeGroupOptions, "Filtrar por Life Group")}
@@ -519,13 +519,15 @@ export function MembersManagement() {
           ) : error ? (
             <p className="text-destructive text-center py-8">Erro ao carregar membros. Tente novamente mais tarde.</p>
           ) : (
-            <Tabs value={roleTab} onValueChange={(v) => setRoleTab(v as RoleTab)}>
-              <TabsList className="mb-4">
+            <Tabs value={roleTab} onValueChange={(v) => setRoleTab(v as RoleTab)} className="min-w-0">
+              <div className="max-w-full overflow-x-auto">
+                <TabsList className="mb-4">
                 <TabsTrigger value="all">Todos</TabsTrigger>
                 <TabsTrigger value="life_group_leader">Líderes</TabsTrigger>
                 <TabsTrigger value="member">Membros</TabsTrigger>
-              </TabsList>
-              <TabsContent value={roleTab}>
+                </TabsList>
+              </div>
+              <TabsContent value={roleTab} className="min-w-0">
                 {displayedMembers.length === 0 ? (
                   <p className="text-muted-foreground text-center py-8">Nenhum membro encontrado.</p>
                 ) : (
