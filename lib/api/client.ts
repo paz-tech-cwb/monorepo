@@ -13,10 +13,23 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     public statusText: string,
-    public data?: unknown
+    public data?: unknown,
+    message = `API Error: ${status} ${statusText}`
   ) {
-    super(`API Error: ${status} ${statusText}`)
+    super(message)
     this.name = "ApiError"
+  }
+}
+
+export class AuthSessionExpiredError extends ApiError {
+  constructor(data?: unknown) {
+    super(
+      401,
+      "Unauthorized",
+      data,
+      "Sua sessão expirou. Faça login novamente para continuar."
+    )
+    this.name = "AuthSessionExpiredError"
   }
 }
 
@@ -149,14 +162,30 @@ function refreshTokenOnce(): Promise<boolean> {
 }
 
 // ---------------------------------------------------------------------------
-// Redirect helper
+// Expired session handling
 // ---------------------------------------------------------------------------
+
+function getCurrentPathWithSearch(): string {
+  if (!isBrowser()) return "/dashboard"
+  return `${window.location.pathname}${window.location.search}`
+}
 
 function redirectToLogin() {
   clearTokens()
   if (isBrowser()) {
-    window.location.href = "/"
+    const redirect = getCurrentPathWithSearch()
+    const loginUrl = new URL("/", window.location.origin)
+    loginUrl.searchParams.set("session_expired", "1")
+    if (redirect !== "/") {
+      loginUrl.searchParams.set("redirect", redirect)
+    }
+    window.location.assign(loginUrl.toString())
   }
+}
+
+function expireSession(data?: unknown): never {
+  redirectToLogin()
+  throw new AuthSessionExpiredError(data)
 }
 
 // ---------------------------------------------------------------------------
@@ -267,13 +296,13 @@ export async function apiClient<T>(
             retryError instanceof ApiError &&
             retryError.status === 401
           ) {
-            redirectToLogin()
+            expireSession(retryError.data)
           }
           throw retryError
         }
       } else {
         // Refresh failed -- session is dead
-        redirectToLogin()
+        expireSession(error.data)
       }
     }
     throw error

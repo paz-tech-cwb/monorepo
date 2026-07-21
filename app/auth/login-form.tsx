@@ -15,6 +15,13 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null)
 
   const redirectTo = searchParams.get("redirect") || "/dashboard"
+  const sessionExpired = searchParams.get("session_expired") === "1"
+
+  useEffect(() => {
+    if (sessionExpired) {
+      setError("Sua sessão expirou. Faça login novamente para continuar.")
+    }
+  }, [sessionExpired])
 
   useEffect(() => {
     if (isAuthenticated) {
