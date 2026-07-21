@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 import {
   Select,
   SelectContent,
@@ -25,23 +26,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { CheckCircle2, Circle, Loader2, Copy } from "lucide-react"
+import { CheckCircle2, Circle, Loader2 } from "lucide-react"
 import { useMemberJourney, useUpdateMemberStage } from "@/lib/hooks/use-member-journey"
 import { JOURNEY_STAGES } from "@/lib/api/types/member-journey"
 import type { AdminUser } from "@/lib/api/types"
-import type { JourneyStageId, JourneyStageKey } from "@/lib/api/types"
-import { WipOverlay } from "@/components/ui/wip-overlay"
-
-const STAGE_MESSAGES: Record<JourneyStageKey, { title: string; message: string }> = {
-  salvation:      { title: "Bem-vindo!",                    message: "Estamos felizes em ter você conosco. Deus tem um plano lindo para sua vida!" },
-  registration:   { title: "Cadastro confirmado",           message: "Seu cadastro está completo. Bem-vindo à família Paz!" },
-  first_courses:  { title: "Comece sua jornada",            message: "Você tem cursos esperando. Cada passo importa — vamos juntos!" },
-  discovery:      { title: "Conheça nossa igreja",          message: "Participe do próximo Evento de Descoberta e conheça nossa história e pastores." },
-  life_group:     { title: "Entre em um Life Group",        message: "Comunidade é fundamental. Encontre o seu grupo e cresça junto!" },
-  discipleship:   { title: "Próximo passo: discipulado",    message: "Seu líder de life group quer caminhar com você. Aceite esse convite!" },
-  water_baptism:  { title: "Batismo nas Águas",             message: "Este é um passo público de fé. O próximo batismo está chegando — você vai dar esse passo?" },
-  disciple_maker: { title: "Parabéns, líder!",              message: "Você chegou à etapa mais impactante: discipular outros. A missão continua em você." },
-}
+import type { JourneyProgress, JourneyStageId, JourneyStageKey } from "@/lib/api/types"
 
 function inferStagesFromMember(member: AdminUser): Partial<Record<JourneyStageKey, string>> {
   const inferred: Partial<Record<JourneyStageKey, string>> = {}
@@ -50,97 +39,66 @@ function inferStagesFromMember(member: AdminUser): Partial<Record<JourneyStageKe
   return inferred
 }
 
-interface StepperItemProps {
-  stageId: JourneyStageId
+interface ProgressStepItemProps {
   stageKey: JourneyStageKey
   label: string
+  optional: boolean
   completed: boolean
   completedAt?: string
   note?: string
   isInferred?: boolean
-  isCurrent: boolean
 }
 
-function StepperItem({
-  stageKey,
+function ProgressStepItem({
   label,
+  optional,
   completed,
   completedAt,
   note,
   isInferred,
-  isCurrent,
-}: StepperItemProps) {
+}: ProgressStepItemProps) {
   return (
-    <div className="flex gap-3">
-      <div className="flex flex-col items-center">
+    <div className="rounded-lg border bg-card px-3 py-3">
+      <div className="flex items-start gap-3">
         {completed ? (
-          <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-        ) : isCurrent ? (
-          <div className="relative mt-0.5">
-            <Circle className="h-5 w-5 text-primary shrink-0" />
-            <span className="absolute inset-0 rounded-full animate-ping bg-primary/20" />
-          </div>
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
         ) : (
-          <Circle className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+          <Circle className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
         )}
-        <div className="w-px flex-1 bg-border mt-1" />
-      </div>
-      <div className="pb-5 min-w-0 flex-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span
-            className={`text-sm font-medium ${
-              completed
-                ? "text-foreground"
-                : isCurrent
-                ? "text-primary"
-                : "text-muted-foreground"
-            }`}
-          >
-            {label}
-          </span>
-          {isCurrent && !completed && (
-            <Badge variant="outline" className="text-xs text-primary border-primary/40">
-              Em andamento
-            </Badge>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`text-sm font-medium ${completed ? "text-foreground" : "text-muted-foreground"}`}>
+              {label}
+            </span>
+            {completed ? (
+              <Badge variant="outline" className="border-primary/40 text-xs text-primary">
+                Concluído
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="text-xs">
+                Pendente
+              </Badge>
+            )}
+            {optional && (
+              <Badge variant="outline" className="text-xs">
+                Opcional
+              </Badge>
+            )}
+            {isInferred && completed && (
+              <Badge variant="secondary" className="text-xs">
+                Estimado
+              </Badge>
+            )}
+          </div>
+          {completed && completedAt && (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {format(new Date(completedAt), "dd/MM/yyyy")}
+            </p>
           )}
-          {isInferred && completed && (
-            <Badge variant="secondary" className="text-xs">
-              Estimado
-            </Badge>
+          {note && (
+            <p className="mt-0.5 text-xs italic text-muted-foreground">&ldquo;{note}&rdquo;</p>
           )}
         </div>
-        {completed && completedAt && (
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {format(new Date(completedAt), "dd/MM/yyyy")}
-          </p>
-        )}
-        {note && (
-          <p className="text-xs text-muted-foreground italic mt-0.5">&ldquo;{note}&rdquo;</p>
-        )}
-        {!completed && !isCurrent && (
-          <p className="text-xs text-muted-foreground mt-0.5">—</p>
-        )}
-        {/* Message suggestion for current incomplete stage */}
-        {isCurrent && !completed && (
-          <WipOverlay>
-            <div className="mt-2 rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground mb-0.5">{STAGE_MESSAGES[stageKey].title}</p>
-              <p className="leading-relaxed">{STAGE_MESSAGES[stageKey].message}</p>
-              <Button
-                variant="link"
-                size="sm"
-                className="mt-1.5 h-auto p-0 text-primary"
-                onClick={() => {
-                  navigator.clipboard.writeText(STAGE_MESSAGES[stageKey].message)
-                  toast.success("Mensagem copiada!")
-                }}
-              >
-                <Copy className="h-3 w-3" />
-                Copiar mensagem
-              </Button>
-            </div>
-          </WipOverlay>
-        )}
       </div>
     </div>
   )
@@ -185,7 +143,7 @@ function UpdateStageForm({ memberId, onSuccess }: UpdateStageFormProps) {
     <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
       <p className="text-sm font-medium">Atualizar Etapa</p>
       <div>
-        <Label className="text-xs mb-1 block">Etapa</Label>
+        <Label className="mb-1 block text-xs">Etapa</Label>
         <Select value={stageId} onValueChange={setStageId}>
           <SelectTrigger>
             <SelectValue placeholder="Selecione uma etapa..." />
@@ -193,14 +151,14 @@ function UpdateStageForm({ memberId, onSuccess }: UpdateStageFormProps) {
           <SelectContent>
             {JOURNEY_STAGES.map((s) => (
               <SelectItem key={s.id} value={String(s.id)}>
-                {s.label}
+                {s.label}{s.optional ? " (opcional)" : ""}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <div>
-        <Label className="text-xs mb-1 block">Data de conclusão</Label>
+        <Label className="mb-1 block text-xs">Data de conclusão</Label>
         <Input
           type="date"
           value={completedAt}
@@ -208,7 +166,7 @@ function UpdateStageForm({ memberId, onSuccess }: UpdateStageFormProps) {
         />
       </div>
       <div>
-        <Label className="text-xs mb-1 block">Nota (opcional)</Label>
+        <Label className="mb-1 block text-xs">Nota (opcional)</Label>
         <Textarea
           placeholder="Observações..."
           value={note}
@@ -235,6 +193,15 @@ interface JourneySheetProps {
   onOpenChange: (open: boolean) => void
 }
 
+const EMPTY_PROGRESS: JourneyProgress = {
+  completion_percentage: 0,
+  completed_required_steps: 0,
+  total_required_steps: JOURNEY_STAGES.filter((stage) => !stage.optional).length,
+  completed_optional_steps: 0,
+  total_optional_steps: JOURNEY_STAGES.filter((stage) => stage.optional).length,
+  is_complete: false,
+}
+
 export function JourneySheet({ member, open, onOpenChange }: JourneySheetProps) {
   const [showUpdateForm, setShowUpdateForm] = useState(false)
   const { data: journey, isLoading } = useMemberJourney(member?.id ?? null)
@@ -244,7 +211,6 @@ export function JourneySheet({ member, open, onOpenChange }: JourneySheetProps) 
   const inferred = inferStagesFromMember(member)
 
   const getStageState = (stageId: JourneyStageId, stageKey: JourneyStageKey) => {
-    // Prefer API data when available
     if (journey) {
       const apiStage = journey.stages.find((s) => s.stage_id === stageId)
       if (apiStage) {
@@ -256,7 +222,7 @@ export function JourneySheet({ member, open, onOpenChange }: JourneySheetProps) 
         }
       }
     }
-    // Fall back to local inference
+
     const inferredDate = inferred[stageKey]
     if (inferredDate) {
       return { completed: true, completedAt: inferredDate, note: undefined, isInferred: true }
@@ -264,7 +230,20 @@ export function JourneySheet({ member, open, onOpenChange }: JourneySheetProps) 
     return { completed: false, completedAt: undefined, note: undefined, isInferred: false }
   }
 
-  const currentStageId: JourneyStageId = journey?.current_stage_id ?? 2
+  const localStages = JOURNEY_STAGES.map((stage) => ({
+    stage,
+    state: getStageState(stage.id, stage.key),
+  }))
+  const localProgress = {
+    ...EMPTY_PROGRESS,
+    completed_required_steps: localStages.filter(({ stage, state }) => !stage.optional && state.completed).length,
+    completed_optional_steps: localStages.filter(({ stage, state }) => stage.optional && state.completed).length,
+  }
+  localProgress.completion_percentage = Math.round(
+    (localProgress.completed_required_steps / localProgress.total_required_steps) * 100
+  )
+  localProgress.is_complete = localProgress.completion_percentage === 100
+  const progress = journey?.progress ?? localProgress
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -285,32 +264,46 @@ export function JourneySheet({ member, open, onOpenChange }: JourneySheetProps) 
 
           {isLoading ? (
             <div className="space-y-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 rounded-md" />
+              <Skeleton className="h-24 rounded-lg" />
+              {Array.from({ length: JOURNEY_STAGES.length }).map((_, i) => (
+                <Skeleton key={i} className="h-16 rounded-md" />
               ))}
             </div>
           ) : (
-            <div>
-              {JOURNEY_STAGES.map((stage) => {
-                const { completed, completedAt, note, isInferred } = getStageState(
-                  stage.id as JourneyStageId,
-                  stage.key
-                )
-                const isCurrent = !completed && stage.id === currentStageId
-                return (
-                  <StepperItem
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/20 p-4">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">Progresso da jornada</p>
+                    <p className="text-xs text-muted-foreground">
+                      {progress.completed_required_steps} de {progress.total_required_steps} etapas obrigatórias concluídas
+                    </p>
+                  </div>
+                  <span className="text-2xl font-bold text-primary">
+                    {progress.completion_percentage}%
+                  </span>
+                </div>
+                <Progress value={progress.completion_percentage} />
+                <p className="mt-2 text-xs text-muted-foreground">
+                  O Trilho do Líder de Life Group é opcional e não bloqueia a conclusão geral.
+                  {progress.total_optional_steps > 0 && ` Opcional: ${progress.completed_optional_steps}/${progress.total_optional_steps}.`}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {localStages.map(({ stage, state }) => (
+                  <ProgressStepItem
                     key={stage.id}
-                    stageId={stage.id as JourneyStageId}
                     stageKey={stage.key}
                     label={stage.label}
-                    completed={completed}
-                    completedAt={completedAt}
-                    note={note}
-                    isInferred={isInferred}
-                    isCurrent={isCurrent}
+                    optional={stage.optional}
+                    completed={state.completed}
+                    completedAt={state.completedAt}
+                    note={state.note}
+                    isInferred={state.isInferred}
                   />
-                )
-              })}
+                ))}
+              </div>
             </div>
           )}
         </SheetBody>

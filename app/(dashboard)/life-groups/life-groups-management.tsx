@@ -73,7 +73,6 @@ import { useUsers } from "@/lib/hooks/use-users"
 import { useSectors } from "@/lib/hooks/use-sectors"
 import type { LifeGroup, CreateLifeGroupRequest } from "@/lib/api/types"
 import type { AdminUser } from "@/lib/api/types"
-import { WipOverlay } from "@/components/ui/wip-overlay"
 import { LeaderPairPicker } from "@/components/ministries/leader-pair-picker"
 
 // ---------------------------------------------------------------------------
@@ -611,7 +610,6 @@ export function LifeGroupsManagement() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label>Dia da Reunião</Label>
-              <WipOverlay>
                 <Select
                   value={form.meeting_day}
                   onValueChange={(v) => setForm((f) => ({ ...f, meeting_day: v }))}
@@ -625,7 +623,6 @@ export function LifeGroupsManagement() {
                     ))}
                   </SelectContent>
                 </Select>
-              </WipOverlay>
             </div>
 
             <div className="space-y-1">

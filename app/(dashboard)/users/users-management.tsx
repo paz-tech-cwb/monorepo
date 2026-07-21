@@ -25,7 +25,6 @@ import { Search, Plus, MoreHorizontal, Edit, Trash2 } from "lucide-react"
 import { useUsers, useCreateUser, useUpdateUser, useUpdateUserRole, useDeleteUser } from "@/lib/hooks/use-users"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
 import type { AdminUser, UserRole } from "@/lib/api/types"
-import { WipOverlay } from "@/components/ui/wip-overlay"
 
 const ROLE_OPTIONS: { value: UserRole; label: string; badgeVariant: "destructive" | "default" | "outline" | "secondary" }[] = [
   { value: "member",            label: "Membro",              badgeVariant: "secondary" },
@@ -266,18 +265,16 @@ export function UsersManagement() {
           <Separator />
           <div className="space-y-1.5">
             <Label htmlFor="user-role">Funcao</Label>
-            <WipOverlay>
-              <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v as UserRole })}>
-                <SelectTrigger id="user-role">
-                  <SelectValue placeholder="Selecione uma funcao" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </WipOverlay>
+            <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v as UserRole })}>
+              <SelectTrigger id="user-role">
+                <SelectValue placeholder="Selecione uma funcao" />
+              </SelectTrigger>
+              <SelectContent>
+                {ROLE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </FormDrawer>
@@ -315,18 +312,16 @@ export function UsersManagement() {
           <Separator />
           <div className="space-y-1.5">
             <Label htmlFor="edit-role">Funcao</Label>
-            <WipOverlay>
-              <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v as UserRole })}>
-                <SelectTrigger id="edit-role">
-                  <SelectValue placeholder="Selecione uma funcao" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </WipOverlay>
+            <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v as UserRole })}>
+              <SelectTrigger id="edit-role">
+                <SelectValue placeholder="Selecione uma funcao" />
+              </SelectTrigger>
+              <SelectContent>
+                {ROLE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </FormDrawer>

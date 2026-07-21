@@ -28,7 +28,6 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useCreateConversion } from "@/lib/hooks/use-conversions"
 import { formatPhoneBR, validatePhoneBR } from "@/lib/utils/phone"
-import { WipOverlay } from "@/components/ui/wip-overlay"
 import type {
   ConversionType,
   HowMetChurch,
@@ -189,7 +188,6 @@ export function ConversionForm() {
                 name="type"
                 control={control}
                 render={({ field }) => (
-                  <WipOverlay>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o tipo" />
@@ -199,7 +197,6 @@ export function ConversionForm() {
                         <SelectItem value="reconciliacao">Reconciliacao</SelectItem>
                       </SelectContent>
                     </Select>
-                  </WipOverlay>
                 )}
               />
               {errors.type && (
@@ -215,7 +212,6 @@ export function ConversionForm() {
                 name="how_met_church"
                 control={control}
                 render={({ field }) => (
-                  <WipOverlay>
                     <RadioGroup
                       onValueChange={(value) => {
                         field.onChange(value)
@@ -257,7 +253,6 @@ export function ConversionForm() {
                         </Label>
                       </div>
                     </RadioGroup>
-                  </WipOverlay>
                 )}
               />
               {errors.how_met_church && (
@@ -287,8 +282,7 @@ export function ConversionForm() {
                   name="sex"
                   control={control}
                   render={({ field }) => (
-                    <WipOverlay>
-                      <RadioGroup onValueChange={field.onChange} value={field.value}>
+                    <RadioGroup onValueChange={field.onChange} value={field.value}>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="feminino" id="feminino" />
                           <Label htmlFor="feminino" className="font-normal">
@@ -301,8 +295,7 @@ export function ConversionForm() {
                             Masculino
                           </Label>
                         </div>
-                      </RadioGroup>
-                    </WipOverlay>
+                    </RadioGroup>
                   )}
                 />
                 {errors.sex && (
@@ -335,8 +328,7 @@ export function ConversionForm() {
                   name="civil_status"
                   control={control}
                   render={({ field }) => (
-                    <WipOverlay>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
@@ -346,8 +338,7 @@ export function ConversionForm() {
                           <SelectItem value="divorciado">Divorciado</SelectItem>
                           <SelectItem value="viuvo">Viuvo</SelectItem>
                         </SelectContent>
-                      </Select>
-                    </WipOverlay>
+                    </Select>
                   )}
                 />
                 {errors.civil_status && (
