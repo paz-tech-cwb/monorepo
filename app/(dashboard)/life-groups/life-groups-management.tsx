@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/collapsible"
 import { FormDrawer } from "@/components/ui/form-drawer"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
+import { AddressForm, EMPTY_ADDRESS, addressFormDataToLine, type AddressFormData } from "@/components/ui/address-form"
 import {
   Search,
   MoreHorizontal,
@@ -202,6 +203,7 @@ export function LifeGroupsManagement() {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingGroup, setEditingGroup] = useState<LifeGroup | null>(null)
   const [form, setForm] = useState<LifeGroupFormData>(EMPTY_FORM)
+  const [addressValue, setAddressValue] = useState<AddressFormData>(EMPTY_ADDRESS)
 
   // Members dialog state
   const [managingGroupId, setManagingGroupId] = useState<number | null>(null)
@@ -262,13 +264,20 @@ export function LifeGroupsManagement() {
   function openCreate() {
     setEditingGroup(null)
     setForm(EMPTY_FORM)
+    setAddressValue(EMPTY_ADDRESS)
     setIsFormOpen(true)
   }
 
   function openEdit(group: LifeGroup) {
     setEditingGroup(group)
     setForm(groupToForm(group))
+    setAddressValue({ ...EMPTY_ADDRESS, street: group.location ?? "" })
     setIsFormOpen(true)
+  }
+
+  function handleAddressChange(address: AddressFormData) {
+    setAddressValue(address)
+    setForm((f) => ({ ...f, location: addressFormDataToLine(address) }))
   }
 
   function handleFormSubmit() {
@@ -589,12 +598,11 @@ export function LifeGroupsManagement() {
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="lg-location">Local</Label>
-            <Input
-              id="lg-location"
-              value={form.location}
-              onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-              placeholder="Ex: Rua das Flores, 123"
+            <Label>Local</Label>
+            <AddressForm
+              value={addressValue}
+              onChange={handleAddressChange}
+              idPrefix="life-group-"
             />
           </div>
 
