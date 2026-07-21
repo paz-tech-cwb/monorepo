@@ -12,7 +12,7 @@ export class UpdateMemberStageDto {
   @Expose()
   @IsInt()
   @Min(1)
-  @Max(8)
+  @Max(10)
   stage_id: number;
 
   @Expose()

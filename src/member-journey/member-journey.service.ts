@@ -14,15 +14,52 @@ import { Sector } from '../sectors/entities/sector.entity';
 import { Area } from '../areas/entities/area.entity';
 import { Role } from '../roles/entities/role.entity';
 
-const JOURNEY_STAGES = [
-  { id: 1, key: 'salvation', label: 'Salvação' },
-  { id: 2, key: 'registration', label: 'Cadastro' },
-  { id: 3, key: 'first_courses', label: 'Primeiros Cursos' },
-  { id: 4, key: 'discovery', label: 'Evento de Descoberta' },
-  { id: 5, key: 'life_group', label: 'Life Group' },
-  { id: 6, key: 'discipleship', label: 'Discipulado' },
-  { id: 7, key: 'water_baptism', label: 'Batismo nas Águas' },
-  { id: 8, key: 'disciple_maker', label: 'Fazedor de Discípulos' },
+export const JOURNEY_STAGES = [
+  {
+    id: 1,
+    key: 'salvation',
+    label: 'Culto de Celebração e Novo Nascimento',
+    optional: false,
+  },
+  {
+    id: 2,
+    key: 'registration',
+    label: 'Café com Pastor / Tornar-se Membro',
+    optional: false,
+  },
+  { id: 3, key: 'first_courses', label: 'Estação DNA', optional: false },
+  {
+    id: 4,
+    key: 'serving_ministry',
+    label: 'Servir em um Ministério',
+    optional: false,
+  },
+  { id: 5, key: 'life_group', label: 'Life Group', optional: false },
+  {
+    id: 6,
+    key: 'new_creature_course',
+    label: 'Curso Nova Criatura',
+    optional: false,
+  },
+  {
+    id: 7,
+    key: 'initial_discipleship_book',
+    label: 'Livro de Discipulado do Acompanhamento Inicial',
+    optional: false,
+  },
+  { id: 8, key: 'water_baptism', label: 'Batismo nas Águas', optional: false },
+  {
+    id: 9,
+    key: 'discipler_track',
+    label: 'Trilho do Discipulador',
+    optional: false,
+  },
+  {
+    id: 10,
+    key: 'life_group_leader_track',
+    label: 'Trilho do Líder de Life Group',
+    optional: true,
+  },
 ] as const;
 
 type JourneyFeedParams = {
@@ -64,23 +101,29 @@ export class MemberJourneyService {
     }
   }
 
-  private buildMemberJourneyResponse(user: User, stages: MemberJourneyStage[]) {
+  buildMemberJourneyResponse(user: User, stages: MemberJourneyStage[]) {
     const orderedStages = JOURNEY_STAGES.map((def) => {
       const stage = stages.find((s) => s.stageId === def.id);
       return {
         stage_id: def.id,
         stage_key: def.key,
+        stage_label: def.label,
+        optional: def.optional,
         completed: stage?.completed ?? false,
         completed_at: stage?.completedAt ?? null,
         note: stage?.note ?? null,
       };
     });
 
-    const completedStages = orderedStages.filter((s) => s.completed);
-    const currentStageId =
-      completedStages.length > 0
-        ? completedStages[completedStages.length - 1].stage_id
-        : 1;
+    const requiredStages = orderedStages.filter((s) => !s.optional);
+    const completedRequiredStages = requiredStages.filter((s) => s.completed);
+    const completedOptionalStages = orderedStages.filter(
+      (s) => s.optional && s.completed,
+    );
+    const completionPercentage = Math.round(
+      (completedRequiredStages.length / requiredStages.length) * 100,
+    );
+    const nextRequiredStage = requiredStages.find((s) => !s.completed);
 
     const lastUpdated = stages.reduce((latest, s) => {
       return s.updatedAt > latest ? s.updatedAt : latest;
@@ -92,7 +135,17 @@ export class MemberJourneyService {
       member_email: user.email,
       life_groups:
         user.lifeGroups?.map((lg) => ({ id: lg.id, name: lg.name })) ?? [],
-      current_stage_id: currentStageId,
+      current_stage_id:
+        nextRequiredStage?.stage_id ??
+        requiredStages[requiredStages.length - 1].stage_id,
+      progress: {
+        completion_percentage: completionPercentage,
+        completed_required_steps: completedRequiredStages.length,
+        total_required_steps: requiredStages.length,
+        completed_optional_steps: completedOptionalStages.length,
+        total_optional_steps: orderedStages.length - requiredStages.length,
+        is_complete: completionPercentage === 100,
+      },
       stages: orderedStages,
       last_updated_at: lastUpdated,
     };
@@ -218,6 +271,7 @@ export class MemberJourneyService {
       });
     }
 
+    stage.stageKey = stageDef.key;
     stage.completed = dto.completed;
     stage.completedAt = dto.completed
       ? dto.completed_at
@@ -255,6 +309,7 @@ export class MemberJourneyService {
           stage_id: def.id,
           stage_key: def.key,
           stage_label: def.label,
+          optional: def.optional,
           count: found ? Number(found.count) : 0,
         };
       });
@@ -441,8 +496,9 @@ export class MemberJourneyService {
           member_id: row.member_id,
           member_name: row.member_name,
           stage_id: Number(row.stage_id),
-          stage_key: row.stage_key,
+          stage_key: stageDef?.key ?? row.stage_key,
           stage_label: stageDef?.label ?? row.stage_key,
+          optional: stageDef?.optional ?? false,
           completed_at: row.completed_at,
           note: row.note ?? null,
         };
