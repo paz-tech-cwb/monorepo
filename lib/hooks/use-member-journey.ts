@@ -7,6 +7,7 @@ import { trackEvent } from "@/lib/firebase/analytics"
 
 const FEED_KEY   = ["member-journey", "feed"]
 const STATS_KEY  = ["member-journey", "stats"]
+const FILTERS_KEY = ["member-journey", "filters"]
 
 export function useMemberJourneyFeed(params?: JourneyFeedParams) {
   return useQuery({
@@ -19,6 +20,13 @@ export function useMemberJourneyStats() {
   return useQuery({
     queryKey: STATS_KEY,
     queryFn: () => memberJourneyApi.getStats(),
+  })
+}
+
+export function useMemberJourneyFilterOptions() {
+  return useQuery({
+    queryKey: FILTERS_KEY,
+    queryFn: () => memberJourneyApi.getFilterOptions(),
   })
 }
 

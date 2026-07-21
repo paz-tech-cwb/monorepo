@@ -63,9 +63,29 @@ export interface UpdateMemberStageRequest {
   note?: string
 }
 
+export interface JourneyFilterOption {
+  id?: number
+  value: string
+  label: string
+  count: number
+}
+
+export interface JourneyFilterOptions {
+  stages: JourneyFilterOption[]
+  life_groups: JourneyFilterOption[]
+  ministries: JourneyFilterOption[]
+  sectors: JourneyFilterOption[]
+  areas: JourneyFilterOption[]
+  roles: JourneyFilterOption[]
+}
+
 export interface JourneyFeedParams {
   stage_id?: JourneyStageId
-  life_group?: string
+  life_group_id?: number
+  ministry_id?: number
+  sector_id?: number
+  area_id?: number
+  role?: string
   from?: string
   to?: string
   page?: number

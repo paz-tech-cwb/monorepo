@@ -27,10 +27,10 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Bell, X, ArrowRight, Users } from "lucide-react"
-import { useMemberJourneyFeed, useMemberJourneyStats } from "@/lib/hooks/use-member-journey"
+import { useMemberJourneyFeed, useMemberJourneyFilterOptions, useMemberJourneyStats } from "@/lib/hooks/use-member-journey"
 import { useCreateNotification } from "@/lib/hooks/use-notifications"
 import { JOURNEY_STAGES } from "@/lib/api/types/member-journey"
-import type { JourneyStageId, JourneyActivity } from "@/lib/api/types"
+import type { JourneyStageId, JourneyActivity, JourneyFilterOption } from "@/lib/api/types"
 
 function stageColor(stageId: JourneyStageId): string {
   const colors: Record<JourneyStageId, string> = {
@@ -128,6 +128,45 @@ function NotificationDialog({ open, onOpenChange, stageLabel, memberCount }: Not
   )
 }
 
+interface JourneyDropdownFilterProps {
+  label: string
+  value: string
+  placeholder: string
+  disabledPlaceholder: string
+  options: JourneyFilterOption[]
+  onChange: (value: string) => void
+}
+
+function JourneyDropdownFilter({
+  label,
+  value,
+  placeholder,
+  disabledPlaceholder,
+  options,
+  onChange,
+}: JourneyDropdownFilterProps) {
+  const disabled = options.length === 0
+
+  return (
+    <div className="w-44">
+      <Label className="text-xs mb-1 block">{label}</Label>
+      <Select value={value || "all"} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger className="h-9">
+          <SelectValue placeholder={disabled ? disabledPlaceholder : placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{placeholder}</SelectItem>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label} ({option.count})
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
 function ActivityCard({ activity }: { activity: JourneyActivity }) {
   return (
     <Card className="transition-shadow hover:shadow-sm">
@@ -172,6 +211,10 @@ function ActivityCard({ activity }: { activity: JourneyActivity }) {
 export function MemberJourneyManagement() {
   const [activeStageFilter, setActiveStageFilter] = useState<JourneyStageId | undefined>()
   const [lifeGroupFilter, setLifeGroupFilter] = useState("")
+  const [ministryFilter, setMinistryFilter] = useState("")
+  const [sectorFilter, setSectorFilter] = useState("")
+  const [areaFilter, setAreaFilter] = useState("")
+  const [roleFilter, setRoleFilter] = useState("")
   const [fromFilter, setFromFilter] = useState("")
   const [toFilter, setToFilter] = useState("")
   const [page, setPage] = useState(1)
@@ -179,7 +222,11 @@ export function MemberJourneyManagement() {
 
   const feedParams = {
     stage_id: activeStageFilter,
-    life_group: lifeGroupFilter || undefined,
+    life_group_id: lifeGroupFilter ? Number(lifeGroupFilter) : undefined,
+    ministry_id: ministryFilter ? Number(ministryFilter) : undefined,
+    sector_id: sectorFilter ? Number(sectorFilter) : undefined,
+    area_id: areaFilter ? Number(areaFilter) : undefined,
+    role: roleFilter || undefined,
     from: fromFilter || undefined,
     to: toFilter || undefined,
     page,
@@ -188,6 +235,7 @@ export function MemberJourneyManagement() {
 
   const { data: feed, isLoading: feedLoading } = useMemberJourneyFeed(feedParams)
   const { data: stats = [], isLoading: statsLoading } = useMemberJourneyStats()
+  const { data: filterOptions } = useMemberJourneyFilterOptions()
 
   const activeStageInfo = activeStageFilter
     ? JOURNEY_STAGES.find((s) => s.id === activeStageFilter)
@@ -199,6 +247,10 @@ export function MemberJourneyManagement() {
   const clearFilters = () => {
     setActiveStageFilter(undefined)
     setLifeGroupFilter("")
+    setMinistryFilter("")
+    setSectorFilter("")
+    setAreaFilter("")
+    setRoleFilter("")
     setFromFilter("")
     setToFilter("")
     setPage(1)
@@ -207,6 +259,10 @@ export function MemberJourneyManagement() {
   const hasFilters =
     activeStageFilter !== undefined ||
     lifeGroupFilter !== "" ||
+    ministryFilter !== "" ||
+    sectorFilter !== "" ||
+    areaFilter !== "" ||
+    roleFilter !== "" ||
     fromFilter !== "" ||
     toFilter !== ""
 
@@ -250,38 +306,62 @@ export function MemberJourneyManagement() {
       {/* Filters bar */}
       <Card>
         <CardContent className="flex flex-wrap items-end gap-3 pt-4 pb-4">
-          <div className="w-44">
-            <Label className="text-xs mb-1 block">Etapa</Label>
-            <Select
-              value={activeStageFilter ? String(activeStageFilter) : "all"}
-              onValueChange={(v) => {
-                setActiveStageFilter(v === "all" ? undefined : (Number(v) as JourneyStageId))
-                setPage(1)
-              }}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="Todas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                {JOURNEY_STAGES.map((s) => (
-                  <SelectItem key={s.id} value={String(s.id)}>
-                    {s.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <JourneyDropdownFilter
+            label="Etapa"
+            value={activeStageFilter ? String(activeStageFilter) : ""}
+            placeholder="Todas"
+            disabledPlaceholder="Sem etapas"
+            options={filterOptions?.stages ?? []}
+            onChange={(v) => {
+              setActiveStageFilter(v === "all" ? undefined : (Number(v) as JourneyStageId))
+              setPage(1)
+            }}
+          />
 
-          <div className="w-44">
-            <Label className="text-xs mb-1 block">Life Group</Label>
-            <Input
-              className="h-9"
-              placeholder="Nome do grupo..."
-              value={lifeGroupFilter}
-              onChange={(e) => { setLifeGroupFilter(e.target.value); setPage(1) }}
-            />
-          </div>
+          <JourneyDropdownFilter
+            label="Life Group"
+            value={lifeGroupFilter}
+            placeholder="Todos"
+            disabledPlaceholder="Sem life groups"
+            options={filterOptions?.life_groups ?? []}
+            onChange={(v) => { setLifeGroupFilter(v === "all" ? "" : v); setPage(1) }}
+          />
+
+          <JourneyDropdownFilter
+            label="Ministério"
+            value={ministryFilter}
+            placeholder="Todos"
+            disabledPlaceholder="Sem ministérios"
+            options={filterOptions?.ministries ?? []}
+            onChange={(v) => { setMinistryFilter(v === "all" ? "" : v); setPage(1) }}
+          />
+
+          <JourneyDropdownFilter
+            label="Setor"
+            value={sectorFilter}
+            placeholder="Todos"
+            disabledPlaceholder="Sem setores"
+            options={filterOptions?.sectors ?? []}
+            onChange={(v) => { setSectorFilter(v === "all" ? "" : v); setPage(1) }}
+          />
+
+          <JourneyDropdownFilter
+            label="Área"
+            value={areaFilter}
+            placeholder="Todas"
+            disabledPlaceholder="Sem áreas"
+            options={filterOptions?.areas ?? []}
+            onChange={(v) => { setAreaFilter(v === "all" ? "" : v); setPage(1) }}
+          />
+
+          <JourneyDropdownFilter
+            label="Função"
+            value={roleFilter}
+            placeholder="Todas"
+            disabledPlaceholder="Sem funções"
+            options={filterOptions?.roles ?? []}
+            onChange={(v) => { setRoleFilter(v === "all" ? "" : v); setPage(1) }}
+          />
 
           <div className="w-36">
             <Label className="text-xs mb-1 block">De</Label>
