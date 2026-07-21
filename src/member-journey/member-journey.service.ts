@@ -4,10 +4,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager } from 'typeorm';
+import { EntityManager, SelectQueryBuilder } from 'typeorm';
 import { MemberJourneyStage } from './entities/member-journey-stage.entity';
 import { User } from '../users/entities/user.entity';
 import { UpdateMemberStageDto } from './dto/update-member-stage.dto';
+import { LifeGroup } from '../life-groups/entities/life-group.entity';
+import { Ministry } from '../ministries/entities/ministry.entity';
+import { Sector } from '../sectors/entities/sector.entity';
+import { Area } from '../areas/entities/area.entity';
+import { Role } from '../roles/entities/role.entity';
 
 const JOURNEY_STAGES = [
   { id: 1, key: 'salvation', label: 'Salvação' },
@@ -19,6 +24,19 @@ const JOURNEY_STAGES = [
   { id: 7, key: 'water_baptism', label: 'Batismo nas Águas' },
   { id: 8, key: 'disciple_maker', label: 'Fazedor de Discípulos' },
 ] as const;
+
+type JourneyFeedParams = {
+  stage_id?: number;
+  life_group_id?: number;
+  ministry_id?: number;
+  sector_id?: number;
+  area_id?: number;
+  role?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+  per_page?: number;
+};
 
 @Injectable()
 export class MemberJourneyService {
@@ -78,6 +96,77 @@ export class MemberJourneyService {
       stages: orderedStages,
       last_updated_at: lastUpdated,
     };
+  }
+
+  private applyFeedFilters(
+    qb: SelectQueryBuilder<MemberJourneyStage>,
+    params: JourneyFeedParams,
+  ) {
+    if (params.stage_id !== undefined) {
+      qb = qb.andWhere('mjs.stage_id = :stageId', {
+        stageId: params.stage_id,
+      });
+    }
+
+    if (params.life_group_id !== undefined) {
+      qb = qb.andWhere(
+        `EXISTS (
+          SELECT 1 FROM user_life_groups ulg
+          WHERE ulg.user_id = u.id AND ulg.life_group_id = :lifeGroupId
+        )`,
+        { lifeGroupId: params.life_group_id },
+      );
+    }
+
+    if (params.ministry_id !== undefined) {
+      qb = qb.andWhere(
+        `EXISTS (
+          SELECT 1 FROM ministry_members mm
+          WHERE mm.user_id = u.id AND mm.ministry_id = :ministryId
+        )`,
+        { ministryId: params.ministry_id },
+      );
+    }
+
+    if (params.sector_id !== undefined) {
+      qb = qb.andWhere('u.sector_id = :sectorId', {
+        sectorId: params.sector_id,
+      });
+    }
+
+    if (params.area_id !== undefined) {
+      qb = qb.andWhere(
+        `EXISTS (
+          SELECT 1 FROM sectors s
+          WHERE s.id = u.sector_id AND s.area_id = :areaId
+        )`,
+        { areaId: params.area_id },
+      );
+    }
+
+    if (params.role) {
+      qb = qb.andWhere(
+        `EXISTS (
+          SELECT 1 FROM roles r
+          WHERE r.id = u.role_id AND r.slug = :role
+        )`,
+        { role: params.role },
+      );
+    }
+
+    if (params.from) {
+      qb = qb.andWhere('mjs.completed_at >= :from', {
+        from: new Date(params.from),
+      });
+    }
+
+    if (params.to) {
+      qb = qb.andWhere('mjs.completed_at <= :to', {
+        to: new Date(params.to),
+      });
+    }
+
+    return qb;
   }
 
   async getMemberJourney(userId: number) {
@@ -169,21 +258,143 @@ export class MemberJourneyService {
           count: found ? Number(found.count) : 0,
         };
       });
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving journey stats.',
       );
     }
   }
 
-  async getFeed(params: {
-    stage_id?: number;
-    life_group?: string;
-    from?: string;
-    to?: string;
-    page?: number;
-    per_page?: number;
-  }) {
+  async getFilterOptions() {
+    try {
+      const completedMemberIds = this.entityManager
+        .createQueryBuilder(MemberJourneyStage, 'mjs')
+        .select('DISTINCT mjs.member_id')
+        .where('mjs.completed = :completed', { completed: true });
+
+      const stages = await this.entityManager
+        .createQueryBuilder(MemberJourneyStage, 'mjs')
+        .select('mjs.stage_id', 'id')
+        .addSelect('mjs.stage_key', 'key')
+        .addSelect('COUNT(mjs.id)::int', 'count')
+        .where('mjs.completed = :completed', { completed: true })
+        .groupBy('mjs.stage_id')
+        .addGroupBy('mjs.stage_key')
+        .getRawMany<{ id: number; key: string; count: number }>();
+
+      const lifeGroups = await this.entityManager
+        .createQueryBuilder(LifeGroup, 'lg')
+        .innerJoin('user_life_groups', 'ulg', 'ulg.life_group_id = lg.id')
+        .where(`ulg.user_id IN (${completedMemberIds.getQuery()})`)
+        .setParameters(completedMemberIds.getParameters())
+        .select('lg.id', 'id')
+        .addSelect('lg.name', 'label')
+        .addSelect('COUNT(DISTINCT ulg.user_id)::int', 'count')
+        .groupBy('lg.id')
+        .addGroupBy('lg.name')
+        .orderBy('lg.name', 'ASC')
+        .getRawMany<{ id: number; label: string; count: number }>();
+
+      const ministries = await this.entityManager
+        .createQueryBuilder(Ministry, 'm')
+        .innerJoin('ministry_members', 'mm', 'mm.ministry_id = m.id')
+        .where(`mm.user_id IN (${completedMemberIds.getQuery()})`)
+        .setParameters(completedMemberIds.getParameters())
+        .select('m.id', 'id')
+        .addSelect('m.name', 'label')
+        .addSelect('COUNT(DISTINCT mm.user_id)::int', 'count')
+        .groupBy('m.id')
+        .addGroupBy('m.name')
+        .orderBy('m.name', 'ASC')
+        .getRawMany<{ id: number; label: string; count: number }>();
+
+      const sectors = await this.entityManager
+        .createQueryBuilder(Sector, 's')
+        .innerJoin(User, 'u', 'u.sector_id = s.id')
+        .where(`u.id IN (${completedMemberIds.getQuery()})`)
+        .setParameters(completedMemberIds.getParameters())
+        .select('s.id', 'id')
+        .addSelect('s.name', 'label')
+        .addSelect('COUNT(DISTINCT u.id)::int', 'count')
+        .groupBy('s.id')
+        .addGroupBy('s.name')
+        .orderBy('s.name', 'ASC')
+        .getRawMany<{ id: number; label: string; count: number }>();
+
+      const areas = await this.entityManager
+        .createQueryBuilder(Area, 'a')
+        .innerJoin(Sector, 's', 's.area_id = a.id')
+        .innerJoin(User, 'u', 'u.sector_id = s.id')
+        .where(`u.id IN (${completedMemberIds.getQuery()})`)
+        .setParameters(completedMemberIds.getParameters())
+        .select('a.id', 'id')
+        .addSelect('a.name', 'label')
+        .addSelect('COUNT(DISTINCT u.id)::int', 'count')
+        .groupBy('a.id')
+        .addGroupBy('a.name')
+        .orderBy('a.name', 'ASC')
+        .getRawMany<{ id: number; label: string; count: number }>();
+
+      const roles = await this.entityManager
+        .createQueryBuilder(Role, 'r')
+        .innerJoin(User, 'u', 'u.role_id = r.id')
+        .where(`u.id IN (${completedMemberIds.getQuery()})`)
+        .setParameters(completedMemberIds.getParameters())
+        .select('r.slug', 'value')
+        .addSelect('r.name', 'label')
+        .addSelect('COUNT(DISTINCT u.id)::int', 'count')
+        .groupBy('r.slug')
+        .addGroupBy('r.name')
+        .orderBy('r.name', 'ASC')
+        .getRawMany<{ value: string; label: string; count: number }>();
+
+      return {
+        stages: JOURNEY_STAGES.map((def) => {
+          const found = stages.find((s) => Number(s.id) === def.id);
+          return {
+            id: def.id,
+            value: String(def.id),
+            label: def.label,
+            count: found ? Number(found.count) : 0,
+          };
+        }).filter((option) => option.count > 0),
+        life_groups: lifeGroups.map((option) => ({
+          ...option,
+          id: Number(option.id),
+          value: String(option.id),
+          count: Number(option.count),
+        })),
+        ministries: ministries.map((option) => ({
+          ...option,
+          id: Number(option.id),
+          value: String(option.id),
+          count: Number(option.count),
+        })),
+        sectors: sectors.map((option) => ({
+          ...option,
+          id: Number(option.id),
+          value: String(option.id),
+          count: Number(option.count),
+        })),
+        areas: areas.map((option) => ({
+          ...option,
+          id: Number(option.id),
+          value: String(option.id),
+          count: Number(option.count),
+        })),
+        roles: roles.map((option) => ({
+          ...option,
+          count: Number(option.count),
+        })),
+      };
+    } catch {
+      throw new BadRequestException(
+        'An error occurred while retrieving journey filter options.',
+      );
+    }
+  }
+
+  async getFeed(params: JourneyFeedParams) {
     try {
       const page = params.page ?? 1;
       const perPage = params.per_page ?? 20;
@@ -203,34 +414,7 @@ export class MemberJourneyService {
         ])
         .where('mjs.completed = :completed', { completed: true });
 
-      if (params.stage_id !== undefined) {
-        qb = qb.andWhere('mjs.stage_id = :stageId', {
-          stageId: params.stage_id,
-        });
-      }
-
-      if (params.life_group) {
-        qb = qb.andWhere(
-          `EXISTS (
-            SELECT 1 FROM user_life_groups ulg
-            JOIN life_groups lg ON lg.id = ulg.life_group_id
-            WHERE ulg.user_id = u.id AND lg.name = :lifeGroup
-          )`,
-          { lifeGroup: params.life_group },
-        );
-      }
-
-      if (params.from) {
-        qb = qb.andWhere('mjs.completed_at >= :from', {
-          from: new Date(params.from),
-        });
-      }
-
-      if (params.to) {
-        qb = qb.andWhere('mjs.completed_at <= :to', {
-          to: new Date(params.to),
-        });
-      }
+      qb = this.applyFeedFilters(qb, params);
 
       const total = await qb.getCount();
 
@@ -270,7 +454,7 @@ export class MemberJourneyService {
         page,
         per_page: perPage,
       };
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving the journey feed.',
       );
