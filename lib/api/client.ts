@@ -46,6 +46,8 @@ function isBrowser(): boolean {
   return typeof window !== "undefined"
 }
 
+const TOKEN_REFRESH_SKEW_SECONDS = 60
+
 let memoryAccessToken: string | null = null
 
 export function setAccessToken(token: string | null) {
@@ -114,6 +116,43 @@ export function setSessionCookie() {
 // ---------------------------------------------------------------------------
 
 let refreshPromise: Promise<boolean> | null = null
+
+function getJwtExpiresAt(token: string): number | null {
+  try {
+    const [, payload] = token.split(".")
+    if (!payload) return null
+
+    const normalizedPayload = payload.replace(/-/g, "+").replace(/_/g, "/")
+    const paddedPayload = normalizedPayload.padEnd(
+      normalizedPayload.length + ((4 - (normalizedPayload.length % 4)) % 4),
+      "="
+    )
+    const decodedPayload = atob(paddedPayload)
+    const parsed = JSON.parse(decodedPayload) as { exp?: unknown }
+
+    return typeof parsed.exp === "number" ? parsed.exp : null
+  } catch {
+    return null
+  }
+}
+
+function isAccessTokenExpiredOrExpiring(token: string): boolean {
+  const expiresAt = getJwtExpiresAt(token)
+  if (!expiresAt) return false
+
+  const now = Math.floor(Date.now() / 1000)
+  return expiresAt <= now + TOKEN_REFRESH_SKEW_SECONDS
+}
+
+async function ensureFreshAccessToken(skipAuth: boolean): Promise<boolean> {
+  if (skipAuth) return true
+
+  const accessToken = getAccessToken()
+  if (!accessToken) return true
+  if (!isAccessTokenExpiredOrExpiring(accessToken)) return true
+
+  return refreshTokenOnce()
+}
 
 async function refreshAccessToken(): Promise<boolean> {
   const refresh_token = getRefreshToken()
@@ -270,6 +309,11 @@ export async function apiClient<T>(
       h["Authorization"] = `Bearer ${token}`
     }
     return h
+  }
+
+  const hasValidSession = await ensureFreshAccessToken(skipAuth)
+  if (!hasValidSession) {
+    expireSession()
   }
 
   try {
