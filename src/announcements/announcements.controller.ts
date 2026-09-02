@@ -8,20 +8,16 @@ import {
   Param,
   Delete,
   UseGuards,
-  SerializeOptions,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { plainToInstance } from 'class-transformer';
 import { AnnouncementsService } from './announcements.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
-import { Announcement } from './entities/announcement.entity';
+import { AnnouncementResponseDto } from './dto/announcement-response.dto';
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('announcements')
-@SerializeOptions({
-  strategy: 'exposeAll',
-  excludeExtraneousValues: false,
-})
 export class AnnouncementsController {
   constructor(private readonly announcementsService: AnnouncementsService) {}
 
@@ -31,29 +27,47 @@ export class AnnouncementsController {
   }
 
   @Get()
-  findAll(): Promise<Announcement[]> {
-    return this.announcementsService.findAll();
+  async findAll(): Promise<AnnouncementResponseDto[]> {
+    const announcements = await this.announcementsService.findAll();
+    return plainToInstance(AnnouncementResponseDto, announcements, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Promise<Announcement> {
-    return this.announcementsService.findOne(+id);
+  async findOne(@Param('id') id: string): Promise<AnnouncementResponseDto> {
+    const announcement = await this.announcementsService.findOne(+id);
+    return plainToInstance(AnnouncementResponseDto, announcement, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updateAnnouncementDto: UpdateAnnouncementDto,
-  ): Promise<Announcement> {
-    return this.announcementsService.update(+id, updateAnnouncementDto);
+  ): Promise<AnnouncementResponseDto> {
+    const announcement = await this.announcementsService.update(
+      +id,
+      updateAnnouncementDto,
+    );
+    return plainToInstance(AnnouncementResponseDto, announcement, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @Put(':id')
-  replace(
+  async replace(
     @Param('id') id: string,
     @Body() updateAnnouncementDto: UpdateAnnouncementDto,
-  ): Promise<Announcement> {
-    return this.announcementsService.update(+id, updateAnnouncementDto);
+  ): Promise<AnnouncementResponseDto> {
+    const announcement = await this.announcementsService.update(
+      +id,
+      updateAnnouncementDto,
+    );
+    return plainToInstance(AnnouncementResponseDto, announcement, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @Delete(':id')
