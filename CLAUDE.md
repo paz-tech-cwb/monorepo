@@ -250,5 +250,11 @@ DevTools enabled in development.
 ## User Roles
 
 ```typescript
-type UserRole = "admin" | "pastor" | "supervisor" | "lg-leader" | "member"
+type UserRole =
+  | "admin"
+  | "pastor"
+  | "area_leader"
+  | "sector_leader"
+  | "life_group_leader"
+  | "member"
 ```

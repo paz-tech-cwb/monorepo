@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { AddressForm, EMPTY_ADDRESS, addressFormDataToLine, type AddressFormData } from "@/components/ui/address-form"
+import { AddressForm, EMPTY_ADDRESS, type AddressFormData } from "@/components/ui/address-form"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
@@ -56,14 +56,16 @@ const conversionSchema = z.object({
   sex: z.enum(["feminino", "masculino"]),
   age: z.number().min(1, "Idade e obrigatoria").max(150),
   civil_status: z.enum(["solteiro", "casado", "divorciado", "viuvo"]),
-  address: z.string().optional(),
+  street: z.string().optional(),
+  neighborhood: z.string().optional(),
+  city: z.string().optional(),
   church_attendance_history: z.enum([
     "primeira_vez",
     "segunda_vez",
     "terceira_vez",
     "mais_uma_vez",
   ]),
-  life_group_experience: z.enum(["sim", "nao", "ja_convidado"]),
+  life_group_experience: z.enum(["sim", "nao", "ja_foi_convidado"]),
   life_group_leader_name: z.string().optional(),
   who_invited: z.string().optional(),
   observations: z.string().optional(),
@@ -102,7 +104,9 @@ export function ConversionForm() {
 
   const handleAddressChange = (address: AddressFormData) => {
     setAddressValue(address)
-    setValue("address", addressFormDataToLine(address))
+    setValue("street", address.street)
+    setValue("neighborhood", address.neighborhood)
+    setValue("city", address.city)
   }
 
   const onSubmit = async (data: ConversionFormData) => {
@@ -411,7 +415,7 @@ export function ConversionForm() {
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="ja_convidado" id="lg_convidado" />
+                      <RadioGroupItem value="ja_foi_convidado" id="lg_convidado" />
                       <Label htmlFor="lg_convidado" className="font-normal">
                         Ja foi convidado
                       </Label>

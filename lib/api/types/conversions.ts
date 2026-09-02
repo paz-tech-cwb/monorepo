@@ -17,7 +17,7 @@ export type ChurchAttendance =
   | "terceira_vez"
   | "mais_uma_vez"
 
-export type LifeGroupExperience = "sim" | "nao" | "ja_convidado"
+export type LifeGroupExperience = "sim" | "nao" | "ja_foi_convidado"
 
 export interface Conversion {
   id: number
@@ -29,7 +29,9 @@ export interface Conversion {
   sex: Sex
   age: number
   civil_status: CivilStatus
-  address?: string
+  street?: string
+  neighborhood?: string
+  city?: string
   church_attendance_history: ChurchAttendance
   life_group_experience: LifeGroupExperience
   life_group_leader_name?: string
@@ -48,7 +50,9 @@ export interface CreateConversionRequest {
   sex: Sex
   age: number
   civil_status: CivilStatus
-  address?: string
+  street?: string
+  neighborhood?: string
+  city?: string
   church_attendance_history: ChurchAttendance
   life_group_experience: LifeGroupExperience
   life_group_leader_name?: string

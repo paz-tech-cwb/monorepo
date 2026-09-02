@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { AddressForm, EMPTY_ADDRESS, addressFormDataToLine, type AddressFormData } from "@/components/ui/address-form"
+import { AddressForm, EMPTY_ADDRESS, type AddressFormData } from "@/components/ui/address-form"
 import {
   Select,
   SelectContent,
@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useCreateMemberUser } from "@/lib/hooks/use-users"
+import { ApiError } from "@/lib/api/client"
+import type { UserAddressRequest } from "@/lib/api/types"
 import { useSectors } from "@/lib/hooks/use-sectors"
 import { useCourses } from "@/lib/hooks/use-courses"
 import { useLifeGroups } from "@/lib/hooks/use-life-groups"
@@ -33,17 +35,17 @@ import { formatPhoneBR, validatePhoneBR } from "@/lib/utils/phone"
 
 const memberSchema = z.object({
   full_name: z.string().min(3, "Nome completo e obrigatorio"),
+  email: z.string().email("E-mail invalido"),
   birthday_date: z.string().min(1, "Data de nascimento e obrigatoria"),
   cellphone: z.string().refine(validatePhoneBR, {
     message: "Telefone invalido",
   }),
-  address: z.string().optional(),
   sector_id: z.number({
     required_error: "Setor e obrigatorio",
   }),
   life_group_ids: z.array(z.number()).min(1, "Life Group e obrigatorio"),
   leader_name: z.string().optional(),
-  completed_courses: z.array(z.number()).optional(),
+  completed_courses: z.array(z.string()).optional(),
 })
 
 type MemberFormData = z.infer<typeof memberSchema>
@@ -57,7 +59,8 @@ export function MemberRegistrationForm() {
 
   const [phoneValue, setPhoneValue] = useState("")
   const [addressValue, setAddressValue] = useState<AddressFormData>(EMPTY_ADDRESS)
-  const [selectedCourses, setSelectedCourses] = useState<number[]>([])
+  const [addressError, setAddressError] = useState<string | null>(null)
+  const [selectedCourses, setSelectedCourses] = useState<string[]>([])
   const [selectedSectorId, setSelectedSectorId] = useState<number | null>(null)
   const [selectedLifeGroupId, setSelectedLifeGroupId] = useState<number | null>(null)
   const [selectedLeaderName, setSelectedLeaderName] = useState<string | null>(null)
@@ -135,10 +138,10 @@ export function MemberRegistrationForm() {
 
   const handleAddressChange = (address: AddressFormData) => {
     setAddressValue(address)
-    setValue("address", addressFormDataToLine(address))
+    setAddressError(null)
   }
 
-  const handleCourseToggle = (courseId: number) => {
+  const handleCourseToggle = (courseId: string) => {
     setSelectedCourses((prev) => {
       const next = prev.includes(courseId)
         ? prev.filter((id) => id !== courseId)
@@ -148,16 +151,73 @@ export function MemberRegistrationForm() {
     })
   }
 
+  // The address is optional, but the backend requires it as a whole object
+  // (zip_code/country/state/city/neighborhood/street all non-empty) — it
+  // can't be sent partially filled. Build the request payload only when
+  // every required field is present; block submission if the operator
+  // filled in some fields but not others.
+  const buildAddressRequest = (): UserAddressRequest | undefined | "invalid" => {
+    const requiredFields = [
+      addressValue.zip_code,
+      addressValue.state,
+      addressValue.city,
+      addressValue.neighborhood,
+      addressValue.street,
+    ]
+    const filledCount = requiredFields.filter((field) => field.trim().length > 0).length
+
+    if (filledCount === 0) return undefined
+    if (filledCount < requiredFields.length) return "invalid"
+
+    return {
+      zip_code: addressValue.zip_code,
+      country: addressValue.country,
+      state: addressValue.state,
+      city: addressValue.city,
+      neighborhood: addressValue.neighborhood,
+      street: addressValue.street,
+      number: addressValue.number || null,
+      complement: addressValue.complement ?? null,
+    }
+  }
+
   const onSubmit = async (data: MemberFormData) => {
+    const address = buildAddressRequest()
+    if (address === "invalid") {
+      setAddressError("Preencha todos os campos de endereco ou deixe todos em branco")
+      toast.error("Endereco incompleto. Preencha todos os campos ou deixe todos em branco.")
+      return
+    }
+    setAddressError(null)
+
     try {
-      await createMutation.mutateAsync({
+      const { lifeGroupError } = await createMutation.mutateAsync({
         ...data,
+        address,
         completed_courses: selectedCourses.length > 0 ? selectedCourses : undefined,
       })
-      toast.success("Usuario cadastrado com sucesso!")
+
+      if (lifeGroupError) {
+        toast.warning(
+          "Membro criado, mas houve um erro ao vincula-lo ao Life Group. Tente vincular manualmente."
+        )
+      } else {
+        toast.success("Usuario cadastrado com sucesso!")
+      }
       router.push("/members")
-    } catch {
-      toast.error("Erro ao cadastrar membro. Tente novamente.")
+    } catch (err) {
+      if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
+        const backendMessage =
+          err.data && typeof err.data === "object" && "message" in err.data
+            ? String((err.data as { message?: unknown }).message)
+            : null
+        toast.error(
+          backendMessage ??
+            "Nao foi possivel cadastrar o membro. Verifique os dados (o e-mail pode ja estar em uso) e tente novamente."
+        )
+      } else {
+        toast.error("Erro ao cadastrar membro. Tente novamente.")
+      }
     }
   }
 
@@ -217,6 +277,23 @@ export function MemberRegistrationForm() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label htmlFor="email">
+                  E-mail <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  {...register("email")}
+                  placeholder="email@exemplo.com"
+                />
+                {errors.email && (
+                  <p className="text-sm text-destructive">
+                    {errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="cellphone">
                   Celular <span className="text-destructive">*</span>
                 </Label>
@@ -233,11 +310,16 @@ export function MemberRegistrationForm() {
                   </p>
                 )}
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label>Endereco</Label>
-                <AddressForm value={addressValue} onChange={handleAddressChange} idPrefix="member-registration-" />
-              </div>
+            <div className="space-y-2">
+              <Label>Endereco</Label>
+              <AddressForm
+                value={addressValue}
+                onChange={handleAddressChange}
+                idPrefix="member-registration-"
+                error={addressError}
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -334,10 +416,8 @@ export function MemberRegistrationForm() {
                       <div key={course.id} className="flex items-center space-x-2">
                         <Checkbox
                           id={`course-${course.id}`}
-                          checked={selectedCourses.includes(parseInt(course.id))}
-                          onCheckedChange={() =>
-                            handleCourseToggle(parseInt(course.id))
-                          }
+                          checked={selectedCourses.includes(course.id)}
+                          onCheckedChange={() => handleCourseToggle(course.id)}
                         />
                         <Label
                           htmlFor={`course-${course.id}`}
