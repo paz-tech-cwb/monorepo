@@ -1,4 +1,4 @@
-import { api } from "../client"
+import { api, getRefreshToken } from "../client"
 import type {
   AuthResponse,
   SocialLoginRequest,
@@ -13,5 +13,5 @@ export const authApi = {
   refresh: (data: RefreshTokenRequest) =>
     api.post<RefreshTokenResponse>("/auth/refresh", data, { skipAuth: true }),
 
-  logout: () => api.post<void>("/auth/logout"),
+  logout: () => api.post<void>("/auth/logout", { refresh_token: getRefreshToken() }),
 }
