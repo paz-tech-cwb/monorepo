@@ -5,9 +5,6 @@ export type UserRole =
   | "sector_leader"
   | "life_group_leader"
   | "member"
-  // Legacy aliases kept for backwards compatibility with existing data
-  | "supervisor"
-  | "lg-leader"
 
 export type UserStatus = "active" | "inactive"
 
@@ -87,6 +84,7 @@ export interface UpdateUserRoleRequest {
 export interface MemberUser {
   id: number
   full_name: string
+  email: string
   birthday_date: string
   cellphone: string
   address?: string
@@ -101,6 +99,7 @@ export interface MemberUser {
 
 export interface CreateMemberUserRequest {
   full_name: string
+  email: string
   birthday_date: string
   cellphone: string
   address?: string
@@ -112,6 +111,7 @@ export interface CreateMemberUserRequest {
 
 export interface UpdateMemberUserRequest {
   full_name?: string
+  email?: string
   birthday_date?: string
   cellphone?: string
   address?: string

@@ -33,6 +33,7 @@ import { formatPhoneBR, validatePhoneBR } from "@/lib/utils/phone"
 
 const memberSchema = z.object({
   full_name: z.string().min(3, "Nome completo e obrigatorio"),
+  email: z.string().email("E-mail invalido"),
   birthday_date: z.string().min(1, "Data de nascimento e obrigatoria"),
   cellphone: z.string().refine(validatePhoneBR, {
     message: "Telefone invalido",
@@ -217,6 +218,23 @@ export function MemberRegistrationForm() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label htmlFor="email">
+                  E-mail <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  {...register("email")}
+                  placeholder="email@exemplo.com"
+                />
+                {errors.email && (
+                  <p className="text-sm text-destructive">
+                    {errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="cellphone">
                   Celular <span className="text-destructive">*</span>
                 </Label>
@@ -233,11 +251,11 @@ export function MemberRegistrationForm() {
                   </p>
                 )}
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label>Endereco</Label>
-                <AddressForm value={addressValue} onChange={handleAddressChange} idPrefix="member-registration-" />
-              </div>
+            <div className="space-y-2">
+              <Label>Endereco</Label>
+              <AddressForm value={addressValue} onChange={handleAddressChange} idPrefix="member-registration-" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
