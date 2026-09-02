@@ -159,7 +159,6 @@ export function MemberRegistrationForm() {
   const buildAddressRequest = (): UserAddressRequest | undefined | "invalid" => {
     const requiredFields = [
       addressValue.zip_code,
-      addressValue.country,
       addressValue.state,
       addressValue.city,
       addressValue.neighborhood,

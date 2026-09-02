@@ -202,3 +202,33 @@ scope.
 - Try creating a member with an email that already exists and confirm the error toast reflects
   the backend's actual error text (or the duplicate-email-aware fallback) instead of the blanket
   "Tente novamente" message.
+
+---
+
+# Round 3: fix R2-B1 (country default made address de-facto mandatory)
+
+Addresses `.pipeline/review.md` Round 2 finding R2-B1. New commit on top of the prior ones,
+nothing amended.
+
+## R2-B1 — `buildAddressRequest()` counted `country` in the empty/partial/complete probe
+- `app/(dashboard)/members/new/member-registration-form.tsx`: `buildAddressRequest()`'s
+  `requiredFields` array (used only to decide empty vs. partial vs. complete) no longer includes
+  `addressValue.country`. It now checks only `zip_code`, `state`, `city`, `neighborhood`, `street`
+  — the fields `EMPTY_ADDRESS` (`components/ui/address-form.tsx`) leaves genuinely blank by
+  default. `country` (pre-filled `"Brasil"` by `EMPTY_ADDRESS`) is no longer part of the
+  emptiness check, so a pristine, untouched address block is correctly detected as fully empty
+  and `address` is omitted from the payload, instead of being flagged "partial" and blocking
+  submission.
+- The returned payload object (sent when the address is determined to be filled) is unchanged —
+  it still includes `country`, `number`, and `complement` alongside the five required fields.
+
+**Tester focus for round 3:**
+- Submit the member form with the address section completely untouched (default `country:
+  "Brasil"`, everything else blank) — should submit successfully with no `address` key in the
+  `/users` POST body, and no "Preencha todos os campos de endereco..." error.
+- Fill in only some of `zip_code`/`state`/`city`/`neighborhood`/`street` (leave `country` at its
+  default) — should still block with the inline "partial address" error as before.
+- Fill in all five required fields (leaving `country` at "Brasil" or overriding it) — should
+  submit with a complete `address` object including `country`, matching Round 2 test coverage.
+- Re-run the Round 2 address test cases (full address via CEP lookup, fully blank, partial) to
+  confirm no regression from this narrower change.

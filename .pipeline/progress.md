@@ -13,6 +13,14 @@
 - [x] Tester — all three fixes verified; test results in `.pipeline/test-results.md`
 - [x] Reviewer — verdict **NEEDS WORK**, see `.pipeline/review.md`. Fix 3 + Fix 4 correct; Fix 1 has 4 blocking items (member address dropped, completed_courses dropped, orphaned-user partial-failure trap, swallowed API errors).
 - [x] Coder round 2 — Fix 1 blocking items (B1-B4) addressed on top of prior commits; see `.pipeline/changes.md`. Fix 3/Fix 4 untouched.
+- [x] Tester round 2 — All round 2 fixes verified: B1 (address wired through with all-or-nothing validation), B2 (completed_courses wired through as string[]), B3 (orphaned-user trap closed, partial failure handled gracefully), B4 (ApiError-aware error handling). TypeScript + ESLint pass. Test results in `.pipeline/test-results.md` Round 2 section. **VERDICT: PASS ✓**
+- [x] Reviewer round 2 — verdict **NEEDS WORK** (one item), see `.pipeline/review.md` Round 2 section. B1-B4 all genuinely resolved and independently verified against source + backend DTOs; `package-lock.json` not committed; only baseline tsc errors. **New regression R2-B1**: `buildAddressRequest()` counts `country` in its all-or-nothing check, but `EMPTY_ADDRESS` pre-fills `country: "Brasil"`, so a pristine form can never return `undefined` — address is now de-facto mandatory and the operator gets an impossible-to-satisfy error. ~3-line fix in `member-registration-form.tsx`.
+- [x] Coder round 3 — fix R2-B1 only: `buildAddressRequest()` empty/partial/complete probe no
+  longer includes `country` (pre-filled `"Brasil"` by `EMPTY_ADDRESS`), so a pristine address
+  block is correctly treated as empty instead of blocking submission; payload sent when filled
+  still includes `country`. `tsc --noEmit` and `eslint` clean for the changed file. See
+  `.pipeline/changes.md` Round 3 section.
+- [ ] Tester round 3 — pending
 - [ ] PR push / draft PR open
 
 ## Notes
