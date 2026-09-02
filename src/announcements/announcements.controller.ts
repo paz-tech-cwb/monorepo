@@ -4,15 +4,19 @@ import {
   Post,
   Body,
   Patch,
+  Put,
   Param,
   Delete,
+  UseGuards,
   SerializeOptions,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { AnnouncementsService } from './announcements.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
 import { Announcement } from './entities/announcement.entity';
 
+@UseGuards(AuthGuard('jwt'))
 @Controller('announcements')
 @SerializeOptions({
   strategy: 'exposeAll',
@@ -38,6 +42,14 @@ export class AnnouncementsController {
 
   @Patch(':id')
   update(
+    @Param('id') id: string,
+    @Body() updateAnnouncementDto: UpdateAnnouncementDto,
+  ): Promise<Announcement> {
+    return this.announcementsService.update(+id, updateAnnouncementDto);
+  }
+
+  @Put(':id')
+  replace(
     @Param('id') id: string,
     @Body() updateAnnouncementDto: UpdateAnnouncementDto,
   ): Promise<Announcement> {
