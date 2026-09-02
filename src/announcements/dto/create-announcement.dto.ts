@@ -1,8 +1,8 @@
 import { Expose } from 'class-transformer';
-import { IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class CreateAnnouncementDto {
-  @Expose()
+  @Expose({ name: 'image_url' })
   @IsString()
   imageUrl: string;
 
@@ -14,11 +14,12 @@ export class CreateAnnouncementDto {
   @IsString()
   subtitle: string;
 
-  @Expose()
+  @Expose({ name: 'markdown_content' })
   @IsString()
   markdownContent: string;
 
-  @Expose()
+  @Expose({ name: 'action_url' })
+  @IsOptional()
   @IsString()
-  actionUrl: string;
+  actionUrl?: string;
 }

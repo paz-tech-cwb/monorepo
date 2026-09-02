@@ -24,7 +24,7 @@ export class Announcement {
   markdownContent: string;
 
   @Column({ name: 'action_url', nullable: true })
-  actionUrl: string;
+  actionUrl?: string;
 
   @CreateDateColumn({ name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
