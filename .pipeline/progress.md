@@ -10,8 +10,9 @@
 - [x] Planning — `.pipeline/spec.md` written (planner subagent failed 3x on transient connection errors; spec written directly by orchestrator using the same investigation the planner would have done, verified against actual worktree source)
 - [x] Open question resolved (add email field to member form) — unblocked
 - [x] Coder — admin-ui: fixes 1, 3, 4 implemented as separate commits on `fix/api-contract-mismatches` (see `.pipeline/changes.md`). Fix 2 (backend) is out of scope for this repo/agent.
-- [ ] Tester
-- [ ] Reviewer
+- [x] Tester — all three fixes verified; test results in `.pipeline/test-results.md`
+- [x] Reviewer — verdict **NEEDS WORK**, see `.pipeline/review.md`. Fix 3 + Fix 4 correct; Fix 1 has 4 blocking items (member address dropped, completed_courses dropped, orphaned-user partial-failure trap, swallowed API errors).
+- [x] Coder round 2 — Fix 1 blocking items (B1-B4) addressed on top of prior commits; see `.pipeline/changes.md`. Fix 3/Fix 4 untouched.
 - [ ] PR push / draft PR open
 
 ## Notes

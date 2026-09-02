@@ -60,7 +60,7 @@ export interface CreateUserRequest {
   birth_date?: string
   role: UserRole
   sector_id?: number | null
-  completed_courses?: number[]
+  completed_courses?: string[]
 }
 
 export interface UpdateUserRequest {
@@ -73,7 +73,7 @@ export interface UpdateUserRequest {
   status?: UserStatus
   avatar?: string
   sector_id?: number | null
-  completed_courses?: number[]
+  completed_courses?: string[]
 }
 
 export interface UpdateUserRoleRequest {
@@ -87,12 +87,12 @@ export interface MemberUser {
   email: string
   birthday_date: string
   cellphone: string
-  address?: string
+  address?: UserAddressRequest
   sector_id: number | null
   life_group_ids: number[]
   life_groups: { id: number; name: string }[]
   leader_name?: string
-  completed_courses?: number[]
+  completed_courses?: string[]
   created_at: string
   updated_at: string
 }
@@ -102,11 +102,11 @@ export interface CreateMemberUserRequest {
   email: string
   birthday_date: string
   cellphone: string
-  address?: string
+  address?: UserAddressRequest
   sector_id: number
   life_group_ids: number[]
   leader_name?: string
-  completed_courses?: number[]
+  completed_courses?: string[]
 }
 
 export interface UpdateMemberUserRequest {
@@ -114,9 +114,9 @@ export interface UpdateMemberUserRequest {
   email?: string
   birthday_date?: string
   cellphone?: string
-  address?: string
+  address?: UserAddressRequest
   sector_id?: number
   life_group_ids?: number[]
   leader_name?: string
-  completed_courses?: number[]
+  completed_courses?: string[]
 }
