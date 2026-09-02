@@ -8,8 +8,8 @@
 ## Stage status
 - [x] Branches/worktrees created
 - [x] Planning — `.pipeline/spec.md` written (planner subagent failed 3x on transient connection errors; spec written directly by orchestrator using the same investigation the planner would have done, verified against actual worktree source)
-- [ ] **STOPPED: spec.md has an OPEN QUESTION (fix #1 email requirement gap) — awaiting user answer before proceeding to coder stage**
-- [ ] Coder (fixes 2, 3, 4 can start independently of the fix #1 answer)
+- [x] Open question resolved (add email field to member form) — unblocked
+- [x] Coder — admin-ui: fixes 1, 3, 4 implemented as separate commits on `fix/api-contract-mismatches` (see `.pipeline/changes.md`). Fix 2 (backend) is out of scope for this repo/agent.
 - [ ] Tester
 - [ ] Reviewer
 - [ ] PR push / draft PR open
