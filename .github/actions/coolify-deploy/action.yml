@@ -1,0 +1,30 @@
+name: 'Coolify Guarded Deploy'
+description: 'SSH into the VPS and run coolify-guarded-deploy for a given app'
+inputs:
+  app-name:
+    description: 'Coolify application name or UUID to deploy'
+    required: true
+  ssh-private-key:
+    description: 'SSH private key with access to the VPS'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Configure SSH
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        printf '%s\n' "${{ inputs.ssh-private-key }}" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        ssh-keyscan -H 62.238.45.195 >> ~/.ssh/known_hosts
+
+    - name: Run coolify-guarded-deploy
+      shell: bash
+      run: |
+        ssh -i ~/.ssh/deploy_key root@62.238.45.195 \
+          "coolify-guarded-deploy '${{ inputs.app-name }}'"
+
+    - name: Clean up SSH key
+      if: always()
+      shell: bash
+      run: rm -f ~/.ssh/deploy_key
