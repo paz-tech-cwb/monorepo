@@ -1,0 +1,388 @@
+import { apiConfig } from "./config"
+
+type RequestMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
+
+interface RequestOptions {
+  method?: RequestMethod
+  body?: unknown
+  headers?: Record<string, string>
+  skipAuth?: boolean
+}
+
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    public statusText: string,
+    public data?: unknown,
+    message = `API Error: ${status} ${statusText}`
+  ) {
+    super(message)
+    this.name = "ApiError"
+  }
+}
+
+export class AuthSessionExpiredError extends ApiError {
+  constructor(data?: unknown) {
+    super(
+      401,
+      "Unauthorized",
+      data,
+      "Sua sessão expirou. Faça login novamente para continuar."
+    )
+    this.name = "AuthSessionExpiredError"
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Token storage
+// ---------------------------------------------------------------------------
+
+const TOKEN_KEYS = {
+  access: "access_token",
+  refresh: "refresh_token",
+} as const
+
+function isBrowser(): boolean {
+  return typeof window !== "undefined"
+}
+
+const TOKEN_REFRESH_SKEW_SECONDS = 60
+
+let memoryAccessToken: string | null = null
+
+export function setAccessToken(token: string | null) {
+  memoryAccessToken = token
+  if (isBrowser()) {
+    if (token) {
+      localStorage.setItem(TOKEN_KEYS.access, token)
+    } else {
+      localStorage.removeItem(TOKEN_KEYS.access)
+    }
+  }
+}
+
+export function getAccessToken(): string | null {
+  if (memoryAccessToken) return memoryAccessToken
+  if (isBrowser()) {
+    const stored = localStorage.getItem(TOKEN_KEYS.access)
+    if (stored) {
+      memoryAccessToken = stored
+    }
+    return stored
+  }
+  return null
+}
+
+export function setRefreshToken(token: string | null) {
+  if (isBrowser()) {
+    if (token) {
+      localStorage.setItem(TOKEN_KEYS.refresh, token)
+    } else {
+      localStorage.removeItem(TOKEN_KEYS.refresh)
+    }
+  }
+}
+
+export function getRefreshToken(): string | null {
+  if (isBrowser()) {
+    return localStorage.getItem(TOKEN_KEYS.refresh)
+  }
+  return null
+}
+
+export function clearTokens() {
+  memoryAccessToken = null
+  if (isBrowser()) {
+    localStorage.removeItem(TOKEN_KEYS.access)
+    localStorage.removeItem(TOKEN_KEYS.refresh)
+    localStorage.removeItem("auth_user")
+    // Remove the session cookie used by middleware
+    document.cookie = "auth_session=; path=/; max-age=0"
+  }
+}
+
+/** Sets a lightweight cookie so the Next.js middleware knows a session exists. */
+export function setSessionCookie() {
+  if (isBrowser()) {
+    // Cookie lives for 30 days -- it is just a flag, not a secret.
+    const secure =
+      window.location.protocol === "https:" ? "; Secure" : ""
+    document.cookie = `auth_session=1; path=/; max-age=2592000; SameSite=Lax${secure}`
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Token refresh logic (mutex to prevent concurrent refreshes)
+// ---------------------------------------------------------------------------
+
+let refreshPromise: Promise<boolean> | null = null
+
+function getJwtExpiresAt(token: string): number | null {
+  try {
+    const [, payload] = token.split(".")
+    if (!payload) return null
+
+    const normalizedPayload = payload.replace(/-/g, "+").replace(/_/g, "/")
+    const paddedPayload = normalizedPayload.padEnd(
+      normalizedPayload.length + ((4 - (normalizedPayload.length % 4)) % 4),
+      "="
+    )
+    const decodedPayload = atob(paddedPayload)
+    const parsed = JSON.parse(decodedPayload) as { exp?: unknown }
+
+    return typeof parsed.exp === "number" ? parsed.exp : null
+  } catch {
+    return null
+  }
+}
+
+function isAccessTokenExpiredOrExpiring(token: string): boolean {
+  const expiresAt = getJwtExpiresAt(token)
+  if (!expiresAt) return false
+
+  const now = Math.floor(Date.now() / 1000)
+  return expiresAt <= now + TOKEN_REFRESH_SKEW_SECONDS
+}
+
+async function ensureFreshAccessToken(skipAuth: boolean): Promise<boolean> {
+  if (skipAuth) return true
+
+  const accessToken = getAccessToken()
+  if (!accessToken) return true
+  if (!isAccessTokenExpiredOrExpiring(accessToken)) return true
+
+  return refreshTokenOnce()
+}
+
+async function refreshAccessToken(): Promise<boolean> {
+  const refresh_token = getRefreshToken()
+  if (!refresh_token) return false
+
+  try {
+    const url = `${apiConfig.apiBaseUrl}/auth/refresh`
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token }),
+    })
+
+    if (!response.ok) {
+      // Refresh token is dead -- clear it so we don't keep retrying
+      clearTokens()
+      return false
+    }
+
+    const data: { access_token: string; refresh_token: string } =
+      await response.json()
+
+    setAccessToken(data.access_token)
+    setRefreshToken(data.refresh_token)
+    setSessionCookie()
+
+    return true
+  } catch {
+    // Network error during refresh -- clear tokens to force re-login
+    clearTokens()
+    return false
+  }
+}
+
+/**
+ * Ensures only one refresh request is in-flight at a time.
+ * All concurrent callers share the same promise.
+ */
+function refreshTokenOnce(): Promise<boolean> {
+  if (!refreshPromise) {
+    refreshPromise = refreshAccessToken().finally(() => {
+      refreshPromise = null
+    })
+  }
+  return refreshPromise
+}
+
+// ---------------------------------------------------------------------------
+// Expired session handling
+// ---------------------------------------------------------------------------
+
+function getCurrentPathWithSearch(): string {
+  if (!isBrowser()) return "/dashboard"
+  return `${window.location.pathname}${window.location.search}`
+}
+
+function redirectToLogin() {
+  clearTokens()
+  if (isBrowser()) {
+    const redirect = getCurrentPathWithSearch()
+    const loginUrl = new URL("/", window.location.origin)
+    loginUrl.searchParams.set("session_expired", "1")
+    if (redirect !== "/") {
+      loginUrl.searchParams.set("redirect", redirect)
+    }
+    window.location.assign(loginUrl.toString())
+  }
+}
+
+function expireSession(data?: unknown): never {
+  redirectToLogin()
+  throw new AuthSessionExpiredError(data)
+}
+
+// ---------------------------------------------------------------------------
+// Response body helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true only when the response actually carries a JSON body worth
+ * parsing.  We skip parsing when:
+ *   • status is 204 or 205 (semantically "no content")
+ *   • Content-Length header is explicitly "0"
+ *   • Content-Type header is absent or does not include "application/json"
+ *
+ * This prevents a JSON.parse() failure on empty bodies (e.g. when the backend
+ * returns 204 for DELETE/PUT) which would otherwise cause mutateAsync to
+ * reject and show a false error toast even though the HTTP request succeeded.
+ */
+function hasJsonBody(response: Response): boolean {
+  if (response.status === 204 || response.status === 205) return false
+  if (response.headers.get("content-length") === "0") return false
+  const contentType = response.headers.get("content-type") ?? ""
+  return contentType.includes("application/json")
+}
+
+// ---------------------------------------------------------------------------
+// Core fetch wrapper
+// ---------------------------------------------------------------------------
+
+async function executeFetch<T>(
+  url: string,
+  method: RequestMethod,
+  headers: Record<string, string>,
+  body?: unknown
+): Promise<{ response: Response; data: T | undefined }> {
+  const response = await fetch(url, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  })
+
+  if (!response.ok) {
+    let errorData: unknown
+    try {
+      errorData = await response.json()
+    } catch {
+      errorData = null
+    }
+    throw new ApiError(response.status, response.statusText, errorData)
+  }
+
+  // Do not attempt to parse a body when there is none.
+  // Covers: 204 No Content, 205 Reset Content, and any response whose
+  // Content-Type is not JSON (or whose Content-Length is explicitly "0").
+  const hasBody = hasJsonBody(response)
+  if (!hasBody) {
+    return { response, data: undefined }
+  }
+
+  const data = (await response.json()) as T
+  return { response, data }
+}
+
+// ---------------------------------------------------------------------------
+// Public API client
+// ---------------------------------------------------------------------------
+
+export async function apiClient<T>(
+  endpoint: string,
+  options: RequestOptions = {}
+): Promise<T> {
+  const { method = "GET", body, headers = {}, skipAuth = false } = options
+
+  const url = `${apiConfig.apiBaseUrl}${endpoint}`
+
+  const buildHeaders = (): Record<string, string> => {
+    const h: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...headers,
+    }
+    const token = getAccessToken()
+    if (!skipAuth && token) {
+      h["Authorization"] = `Bearer ${token}`
+    }
+    return h
+  }
+
+  const hasValidSession = await ensureFreshAccessToken(skipAuth)
+  if (!hasValidSession) {
+    expireSession()
+  }
+
+  try {
+    const { data } = await executeFetch<T>(url, method, buildHeaders(), body)
+    return data as T
+  } catch (error) {
+    // Only attempt refresh on 401 for authenticated requests
+    if (error instanceof ApiError && error.status === 401 && !skipAuth) {
+      const refreshed = await refreshTokenOnce()
+
+      if (refreshed) {
+        // Retry the original request with the new access token
+        try {
+          const { data } = await executeFetch<T>(
+            url,
+            method,
+            buildHeaders(),
+            body
+          )
+          return data as T
+        } catch (retryError) {
+          // If retry also returns 401, give up and redirect
+          if (
+            retryError instanceof ApiError &&
+            retryError.status === 401
+          ) {
+            expireSession(retryError.data)
+          }
+          throw retryError
+        }
+      } else {
+        // Refresh failed -- session is dead
+        expireSession(error.data)
+      }
+    }
+    throw error
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Convenience methods
+// ---------------------------------------------------------------------------
+
+export const api = {
+  get: <T>(
+    endpoint: string,
+    options?: Omit<RequestOptions, "method" | "body">
+  ) => apiClient<T>(endpoint, { ...options, method: "GET" }),
+
+  post: <T>(
+    endpoint: string,
+    body?: unknown,
+    options?: Omit<RequestOptions, "method" | "body">
+  ) => apiClient<T>(endpoint, { ...options, method: "POST", body }),
+
+  put: <T>(
+    endpoint: string,
+    body?: unknown,
+    options?: Omit<RequestOptions, "method" | "body">
+  ) => apiClient<T>(endpoint, { ...options, method: "PUT", body }),
+
+  patch: <T>(
+    endpoint: string,
+    body?: unknown,
+    options?: Omit<RequestOptions, "method" | "body">
+  ) => apiClient<T>(endpoint, { ...options, method: "PATCH", body }),
+
+  delete: <T>(
+    endpoint: string,
+    options?: Omit<RequestOptions, "method" | "body">
+  ) => apiClient<T>(endpoint, { ...options, method: "DELETE" }),
+}

@@ -10,7 +10,7 @@
 | Notifications | `features/notifications.md` | backend, admin-ui, mobile | Active domain |
 | Ministries | `features/ministries.md` | backend, admin-ui, mobile | Active domain |
 | Admin dashboard | `features/admin-dashboard.md` | admin-ui, backend | Active domain |
-| Mobile app | `features/mobile-app.md` | mobile-app, kmp-mobile, backend | Active/migration-aware |
+| Mobile app | `features/mobile-app.md` | kmp-mobile, backend | Active/migration-aware |
 | Deployment | `features/deployment.md` | root, backend, admin-ui | Active domain |
 
 ## Known WIP / hardcoded areas

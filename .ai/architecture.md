@@ -10,7 +10,6 @@ backend/ NestJS REST API (/api)
   │ JWT access + refresh tokens
   ├── PostgreSQL via TypeORM
   ├── admin-ui/ Next.js staff dashboard
-  ├── mobile-app/ Flutter client
   └── kmp-mobile/ Kotlin Multiplatform client
 ```
 
@@ -18,8 +17,7 @@ backend/ NestJS REST API (/api)
 
 - **backend** owns business rules, persistence, authorization, migrations, and API contracts.
 - **admin-ui** owns staff workflows and uses the backend API directly.
-- **mobile clients** own member UX and use backend APIs plus platform push/deep-link integrations.
-- **postman-files** mirrors API behavior for manual testing/documentation.
+- **kmp-mobile** owns member UX and uses backend APIs plus platform push/deep-link integrations.
 
 ## Authentication contract
 

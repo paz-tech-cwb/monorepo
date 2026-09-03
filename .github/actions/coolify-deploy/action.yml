@@ -1,0 +1,44 @@
+name: 'Coolify Guarded Deploy'
+description: 'SSH into the VPS and run coolify-guarded-deploy for a given app'
+inputs:
+  app-name:
+    description: 'Coolify application name or UUID to deploy'
+    required: true
+  ssh-private-key:
+    description: 'SSH private key with access to the VPS. Callers MUST source this from a repository secret (e.g. secrets.VPS_SSH_KEY), never a literal value.'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Configure SSH
+      shell: bash
+      env:
+        SSH_KEY: ${{ inputs.ssh-private-key }}
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        # Known limitation: ssh-keyscan trusts whatever host key is presented on
+        # first connect (TOFU), since we don't have the VPS's real host key
+        # fingerprint available to pin in this pipeline. Once a human obtains it
+        # from the VPS operator, replace this with a committed/pinned known_hosts
+        # entry. StrictHostKeyChecking=yes below still hard-fails on any mismatch
+        # against whatever is recorded here.
+        ssh-keyscan -H 62.238.45.195 >> ~/.ssh/known_hosts
+
+    - name: Run coolify-guarded-deploy
+      shell: bash
+      env:
+        APP_NAME: ${{ inputs.app-name }}
+      run: |
+        case "$APP_NAME" in
+          *[!a-zA-Z0-9._-]*) echo "invalid app name: $APP_NAME" >&2; exit 1 ;;
+        esac
+        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes root@62.238.45.195 \
+          coolify-guarded-deploy "$APP_NAME"
+
+    - name: Clean up SSH key
+      if: always()
+      shell: bash
+      run: rm -f ~/.ssh/deploy_key

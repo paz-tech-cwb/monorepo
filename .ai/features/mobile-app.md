@@ -4,12 +4,9 @@
 
 Member-facing mobile experience for account, journey, forms, notifications, ministries, academy, and life group flows.
 
-## Current mobile workstreams
+## Current mobile workstream
 
-- `mobile-app/`: Flutter app.
 - `kmp-mobile/`: Kotlin Multiplatform mobile app workstream.
-
-Before editing mobile code, identify which mobile app the task targets.
 
 ## Design system summary
 
@@ -31,6 +28,5 @@ Keep platform implementations visually aligned unless intentionally redesigning.
 
 ## Agent notes
 
-- Do not assume Flutter and KMP share implementation details.
-- Read the target submodule files before proposing mobile changes.
+- Read kmp-mobile's local files before proposing mobile changes.
 - Keep auth refresh behavior consistent with backend contract.

@@ -3,9 +3,8 @@
 ## Before editing
 
 - Read `.ai/README.md` and the relevant feature/app files.
-- Read submodule-specific instructions if editing inside a submodule.
+- Read that app folder's own local instructions (if any) before editing inside it.
 - Check git status and avoid overwriting unrelated user work.
-- In submodules, commit/push from inside the submodule repository when requested.
 
 ## Implementation boundaries
 
@@ -39,9 +38,8 @@ Update `.ai/` when a change affects:
 - deployment/runtime commands;
 - major data model decisions.
 
-## Git/submodule workflow
+## Git workflow
 
-- Root repository tracks submodule pointers.
-- App changes belong inside their submodule repositories.
-- Root-level documentation changes belong in the root repository.
+- This is a single repository; app code and root-level documentation changes are ordinary commits in this one repository.
+- Work on `develop`, then merge to `main`.
 - Do not push to `main` or `develop` directly.

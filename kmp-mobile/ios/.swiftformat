@@ -1,0 +1,43 @@
+# SwiftFormat configuration for PazChurch iOS
+# https://github.com/nicklockwood/SwiftFormat
+
+--swiftversion 5.9
+--indent 4
+--maxwidth 120
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--closingparen balanced
+--decimalgrouping 3,6
+--hexgrouping 4,8
+--octalgrouping 4,8
+--binarygrouping 4,8
+--exponentcase lowercase
+--exponentgrouping disabled
+--fractiongrouping disabled
+--hexliteralcase uppercase
+--ifdef no-indent
+--importgrouping testable-last
+--linebreaks lf
+--semicolons inline
+--commas always
+--trimwhitespace always
+--empty void
+--operatorfunc spaced
+--ranges no-space
+--stripunusedargs closure-only
+--self remove
+--selfrequired
+--patternlet hoist
+--modifierorder
+--elseposition same-line
+--guardelse auto
+--xcodeindentation disabled
+--smarttabs enabled
+--tabwidth 4
+--allman false
+--nospaceoperators ...,..<
+
+# Disable rules that conflict with existing style
+--disable redundantSelf
+--disable wrapMultilineStatementBraces
