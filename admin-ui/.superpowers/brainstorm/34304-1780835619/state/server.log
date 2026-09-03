@@ -1,0 +1,10 @@
+{"type":"server-started","port":52776,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:52776","screen_dir":"/Users/jonathalima/Developer/church/admin-ui/.superpowers/brainstorm/34304-1780835619/content","state_dir":"/Users/jonathalima/Developer/church/admin-ui/.superpowers/brainstorm/34304-1780835619/state"}
+{"type":"screen-added","file":"/Users/jonathalima/Developer/church/admin-ui/.superpowers/brainstorm/34304-1780835619/content/scope.html"}
+{"source":"user-event","type":"click","text":"B\n    \n      Component coverage first\n      Audit every installed shadcn component and ensure each appears at least once in the admin — even if it means finding creative spots to introduce Collapsible, Tabs, Switch, Avatar, etc. alongside the Drawer/Dialog migration.","choice":"b","id":null,"timestamp":1780835665390}
+{"type":"screen-added","file":"/Users/jonathalima/Developer/church/admin-ui/.superpowers/brainstorm/34304-1780835619/content/drawer-direction.html"}
+{"source":"user-event","type":"click","text":"A\n    \n      Right-side panel\n      Slides in from the right. More vertical space — great for long forms with markdown editors. Feels like a detail panel.","choice":"right","id":null,"timestamp":1780835709937}
+{"type":"screen-added","file":"/Users/jonathalima/Developer/church/admin-ui/.superpowers/brainstorm/34304-1780835619/content/waiting-1.html"}
+{"type":"screen-added","file":"/Users/jonathalima/Developer/church/admin-ui/.superpowers/brainstorm/34304-1780835619/content/component-map.html"}
+{"type":"screen-added","file":"/Users/jonathalima/Developer/church/admin-ui/.superpowers/brainstorm/34304-1780835619/content/migration-map.html"}
+{"type":"screen-added","file":"/Users/jonathalima/Developer/church/admin-ui/.superpowers/brainstorm/34304-1780835619/content/audit.html"}
+{"type":"server-stopped","reason":"idle timeout"}

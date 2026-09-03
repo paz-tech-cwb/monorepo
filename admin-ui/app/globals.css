@@ -1,0 +1,123 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Updated color palette to match church design system (PazColors.kt) */
+  --background: #EEF3FB; /* PazColors.Background */
+  --foreground: #0A1929; /* PazColors.OnSurface */
+  --card: #FFFFFF;       /* PazColors.Surface */
+  --card-foreground: #0A1929; /* PazColors.OnSurface */
+  --popover: #FFFFFF;
+  --popover-foreground: #0A1929;
+  --primary: #032E58;    /* PazColors.Primary */
+  --primary-foreground: #FFFFFF;
+  --secondary: #D0E4F7;  /* PazColors.PrimaryContainer */
+  --secondary-foreground: #032E58;
+  --muted: #F4F7FD;      /* PazColors.Surface2 */
+  --muted-foreground: #5A6B82; /* PazColors.Slate */
+  --accent: #1565C0;     /* PazColors.PrimaryLight */
+  --accent-foreground: #FFFFFF;
+  --destructive: #C62828; /* PazColors.Error */
+  --destructive-foreground: #FFFFFF;
+  --border: rgba(3, 46, 88, 0.08); /* PazColors.Border (approx) */
+  --input: #FFFFFF;
+  --ring: #032E58;
+  --chart-1: #032E58;
+  --chart-2: #0B4D8C;
+  --chart-3: #FFB300;    /* PazColors.Gold */
+  --chart-4: #C62828;
+  --chart-5: #1565C0;
+  --radius: 0.75rem;     /* Increased to match mobile rounded style */
+  
+  /* Sidebar styled after the App's menu/drawer */
+  --sidebar: #EEF3FB;    /* PazColors.Background */
+  --sidebar-foreground: #37526D; /* PazColors.OnSurface2 */
+  --sidebar-primary: #032E58;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #D0E4F7;
+  --sidebar-accent-foreground: #032E58;
+  --sidebar-border: rgba(3, 46, 88, 0.08);
+  --sidebar-ring: #032E58;
+}
+
+.dark {
+  --background: #070E1A; /* PazColors.DarkBackground */
+  --foreground: #E3EEFF; /* PazColors.DarkOnBackground */
+  --card: #0D1826;       /* PazColors.DarkSurface */
+  --card-foreground: #E3EEFF;
+  --popover: #0D1826;
+  --popover-foreground: #E3EEFF;
+  --primary: #1565C0;    /* Using PrimaryLight for better visibility in dark mode */
+  --primary-foreground: #FFFFFF;
+  --secondary: #0D3A60;  /* PazColors.DarkSecondaryContainer */
+  --secondary-foreground: #E3EEFF;
+  --muted: #142035;      /* PazColors.DarkSurface2 */
+  --muted-foreground: #97A6BC; /* PazColors.DarkSlate */
+  --accent: #5B9BD5;     /* PazColors.Accent */
+  --accent-foreground: #E3EEFF;
+  --destructive: #FF6B6B; /* PazColors.DarkError */
+  --destructive-foreground: #FFFFFF;
+  --border: rgba(91, 155, 213, 0.13); /* PazColors.DarkBorder */
+  --input: #142035;
+  --ring: #1565C0;
+  --sidebar: #070E1A;
+  --sidebar-foreground: #6EA0C8; /* PazColors.DarkOnSurface */
+  --sidebar-primary: #1565C0;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #0D3A60;
+  --sidebar-accent-foreground: #E3EEFF;
+  --sidebar-border: rgba(91, 155, 213, 0.13);
+  --sidebar-ring: #1565C0;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
