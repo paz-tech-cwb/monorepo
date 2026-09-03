@@ -47,8 +47,9 @@ export class ResendNotificationSender extends NotificationSender {
   }
 
   sendWhatsApp(to: string, body: string): Promise<void> {
+    const maskedTo = to.length > 4 ? `***${to.slice(-4)}` : '***';
     this.logger.warn(
-      `WhatsApp deferred to v2 — noop (to=${to}, body length=${body.length})`,
+      `WhatsApp deferred to v2 — noop (to=${maskedTo}, body length=${body.length})`,
     );
     return Promise.resolve();
   }
