@@ -16,7 +16,6 @@ Root scripts:
 | `npm run db` | Start local PostgreSQL using backend compose file |
 | `npm run dev:backend` | Start backend dev server |
 | `npm run dev:admin` | Start admin-ui dev server |
-| `npm run dev:mobile` | Start Flutter mobile app |
 | `npm run dev` | Start DB, backend, and admin-ui concurrently |
 | `npm run setup` | Start DB and run backend migrations |
 
