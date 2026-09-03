@@ -15,7 +15,7 @@ This folder is the canonical project map for AI agents and automation. Read it b
 ## Agent operating rules
 
 - Treat `.ai/` as the highest-level documentation source for this repo.
-- If a submodule contains its own agent instructions, read those after this folder and before editing that submodule.
+- If an app folder (backend/, admin-ui/, kmp-mobile/) contains its own local agent instructions, read those after this folder and before editing that folder.
 - Do not infer architecture from stale plans if it conflicts with `.ai/`.
 - When behavior changes, update the matching `.ai/features/*.md` or `.ai/apps/*.md` file in the same branch.
 - Pipeline handoff files live in `.pipeline/`; the user-level ship pipeline controls execution.

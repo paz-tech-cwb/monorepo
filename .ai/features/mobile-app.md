@@ -28,5 +28,5 @@ Keep platform implementations visually aligned unless intentionally redesigning.
 
 ## Agent notes
 
-- Read the target submodule files before proposing mobile changes.
+- Read kmp-mobile's local files before proposing mobile changes.
 - Keep auth refresh behavior consistent with backend contract.

@@ -43,7 +43,7 @@ npm run lint
 
 ## KMP mobile
 
-Read `kmp-mobile` local docs/build files before running commands. Use Gradle/Xcode commands already established in that submodule.
+Read `kmp-mobile` local docs/build files before running commands. Use Gradle/Xcode commands already established in that app folder.
 
 ## Deployment
 

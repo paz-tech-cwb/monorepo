@@ -18,7 +18,7 @@ Paz Church Curitiba is a digital platform for church operations and member engag
 
 ## Repository model
 
-This root repository is a git-submodule monorepo. Each app folder is an independent repository.
+This is a single monorepo. All app folders (`backend/`, `admin-ui/`, `kmp-mobile/`) are ordinary tracked directories in one repository, not submodules.
 
 | Path | Purpose |
 |---|---|
@@ -47,5 +47,5 @@ This root repository is a git-submodule monorepo. Each app folder is an independ
 
 - `.ai/` is the agent-facing architecture source.
 - `README.md` is the human onboarding source.
-- Submodule docs are source of truth for app-specific implementation details.
+- Each app folder's own local docs (if any) are source of truth for app-specific implementation details.
 - Historical plans are archived and should not override current `.ai/` docs.

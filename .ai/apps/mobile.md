@@ -21,4 +21,4 @@
 
 KMP:
 
-Read the submodule docs/build files first, then run the smallest relevant Gradle/Xcode checks.
+Read kmp-mobile's docs/build files first, then run the smallest relevant Gradle/Xcode checks.

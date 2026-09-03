@@ -13,4 +13,4 @@ The canonical project context is now organized under `.ai/`:
 - `.ai/apps/`
 - `.ai/pipelines/handoff-template.md`
 
-If working inside a submodule, read that submodule's local instructions after reading the root `.ai/` context.
+If working inside an app folder (backend/, admin-ui/, kmp-mobile/) that has its own local agent instructions, read those after this root `.ai/` context.
