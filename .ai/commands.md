@@ -42,16 +42,6 @@ npm run build
 npm run lint
 ```
 
-## Mobile app
-
-```bash
-cd mobile-app
-flutter pub get
-flutter run
-flutter analyze
-flutter test
-```
-
 ## KMP mobile
 
 Read `kmp-mobile` local docs/build files before running commands. Use Gradle/Xcode commands already established in that submodule.
