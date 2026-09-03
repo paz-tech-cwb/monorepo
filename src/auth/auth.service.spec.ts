@@ -26,6 +26,7 @@ function hashToken(token: string): string {
 
 const adminRole: Partial<Role> = { id: 1, slug: 'admin' };
 const memberRole: Partial<Role> = { id: 6, slug: 'member' };
+const sectorLeaderRole: Partial<Role> = { id: 4, slug: 'sector_leader' };
 
 const mockAdminUser: Partial<User> = {
   id: 1,
@@ -41,6 +42,14 @@ const mockMemberUser: Partial<User> = {
   email: 'member@example.com',
   picture: null,
   role: memberRole as Role,
+};
+
+const mockSectorLeaderUser: Partial<User> = {
+  id: 3,
+  name: 'Sector Leader User',
+  email: 'sectorleader@example.com',
+  picture: null,
+  role: sectorLeaderRole as Role,
 };
 
 describe('AuthService', () => {
@@ -156,6 +165,25 @@ describe('AuthService', () => {
       );
     });
 
+    it('should allow a sector_leader (non-admin leadership role) to log in', async () => {
+      jest.spyOn(service as any, 'verifyGoogleToken').mockResolvedValue({
+        username: 'google-uid',
+        name: 'Sector Leader User',
+        email: 'sectorleader@example.com',
+        photo: null,
+      });
+
+      userRepo.findOne.mockResolvedValue(mockSectorLeaderUser);
+      userAccountRepo.create.mockReturnValue({});
+      userAccountRepo.save.mockResolvedValue({});
+
+      const result = await service.socialLogin('google', 'valid-google-token');
+
+      expect(result.access_token).toBeDefined();
+      expect(result.refresh_token).toBeDefined();
+      expect(result.user.email).toBe('sectorleader@example.com');
+    });
+
     it('should reject non-admin user with Google token (403)', async () => {
       jest.spyOn(service as any, 'verifyGoogleToken').mockResolvedValue({
         username: 'google-uid',
@@ -170,7 +198,7 @@ describe('AuthService', () => {
         service.socialLogin('google', 'valid-google-token'),
       ).rejects.toMatchObject({
         status: HttpStatus.FORBIDDEN,
-        message: 'Admin access required',
+        message: 'Leadership access required',
       });
 
       expect(auditLoggerMock.logAuthAttempt).toHaveBeenCalledWith(
@@ -268,7 +296,7 @@ describe('AuthService', () => {
       expect(userRepo.create).not.toHaveBeenCalled();
     });
 
-    it('should link an existing user found by name + birth date instead of creating a duplicate', async () => {
+    it('should link an unclaimed profile (no email yet) found by name + birth date instead of creating a duplicate', async () => {
       jest.spyOn(service as any, 'verifyGoogleToken').mockResolvedValue({
         username: 'google-uid',
         name: '  Admin User  ',
@@ -276,11 +304,8 @@ describe('AuthService', () => {
         photo: null,
       });
 
-      const existingUser = {
-        ...mockAdminUser,
-        email: 'old-admin-email@example.com',
-      };
-      const getMany = jest.fn().mockResolvedValue([existingUser]);
+      const unclaimedUser = { ...mockAdminUser, email: null };
+      const getMany = jest.fn().mockResolvedValue([unclaimedUser]);
       const queryBuilder = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
@@ -304,6 +329,47 @@ describe('AuthService', () => {
       );
       expect(userRepo.create).not.toHaveBeenCalled();
       expect(result.user.email).toBe('new-admin-email@example.com');
+    });
+
+    it('should NOT rebind an already-claimed account via name + birth date match (account takeover prevention)', async () => {
+      // name + birthDate are not secret; an attacker who knows a leader's
+      // name and birthdate must not be able to hijack that leader's
+      // already-claimed account by logging in with a different email.
+      jest.spyOn(service as any, 'verifyGoogleToken').mockResolvedValue({
+        username: 'attacker-google-uid',
+        name: '  Admin User  ',
+        email: 'attacker@example.com',
+        photo: null,
+      });
+
+      const claimedUser = {
+        ...mockAdminUser,
+        email: 'real-admin-email@example.com',
+      };
+      const getMany = jest.fn().mockResolvedValue([claimedUser]);
+      const queryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany,
+      };
+      userRepo.createQueryBuilder = jest.fn().mockReturnValue(queryBuilder);
+      userRepo.findOne.mockResolvedValue(null); // no user with attacker's email
+      roleRepo.findOne.mockResolvedValue(memberRole);
+      const createdUser = { ...mockMemberUser, email: 'attacker@example.com' };
+      userRepo.create.mockReturnValue(createdUser);
+      userRepo.save.mockResolvedValue(createdUser);
+
+      await expect(
+        service.socialLogin('google', 'valid-google-token', '1990-01-01'),
+      ).rejects.toMatchObject({ status: HttpStatus.FORBIDDEN });
+
+      // The claimed admin account must never be mutated or linked.
+      expect(userRepo.save).not.toHaveBeenCalledWith(
+        expect.objectContaining({ id: claimedUser.id }),
+      );
+      // Falls through to the new-member-registration path instead.
+      expect(userRepo.create).toHaveBeenCalled();
     });
 
     it('should skip auto-linking and fall back to email match on ambiguous name+birthDate collisions', async () => {

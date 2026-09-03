@@ -144,14 +144,22 @@ export class AuthService implements OnModuleInit {
 
     let user = await this.findUserByNameAndBirthDate(userData.name, birthDate);
 
+    // name + birthDate are not secret — never let a match rebind an
+    // account that has already been claimed (has an email on file).
+    // Only link when the matched record is still unclaimed (first-time
+    // onboarding, e.g. an admin pre-created a member/leader profile with
+    // no email yet). Otherwise fall through to the normal email lookup,
+    // which is safe because emails are Firebase-verified.
+    if (user && user.email) {
+      user = null;
+    }
+
     if (!user) {
       user = await this.userRepo.findOne({
         where: { email: userData.email },
       });
-    } else if (user.email !== userData.email) {
-      // Linking an existing identity match — keep the Firebase-verified
-      // email (and picture, if provided) in sync instead of creating a
-      // duplicate account.
+    } else {
+      // Claiming a previously unclaimed identity match.
       user.email = userData.email;
       if (userData.photo) {
         user.picture = userData.photo;
@@ -186,9 +194,17 @@ export class AuthService implements OnModuleInit {
       await this.userRepo.save(user);
     }
 
-    // Role-based access check — admin only
-    if (!user.role || user.role.slug !== 'admin') {
-      const reason = `User role is '${user.role?.slug ?? 'unknown'}', not 'admin'`;
+    // Role-based access check — admin-ui is for leadership roles only;
+    // 'member' (and any other role) is not permitted to log in here.
+    const allowedRoles = [
+      'admin',
+      'pastor',
+      'area_leader',
+      'sector_leader',
+      'life_group_leader',
+    ];
+    if (!user.role || !allowedRoles.includes(user.role.slug)) {
+      const reason = `User role is '${user.role?.slug ?? 'unknown'}', not a leadership role`;
       try {
         await this.auditLogger.logAuthAttempt(
           userData.email,
@@ -200,7 +216,10 @@ export class AuthService implements OnModuleInit {
       } catch {
         /* audit failure must not surface to caller */
       }
-      throw new HttpException('Admin access required', HttpStatus.FORBIDDEN);
+      throw new HttpException(
+        'Leadership access required',
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     const tokens = await this.issueTokens(user);
