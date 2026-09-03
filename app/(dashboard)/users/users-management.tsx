@@ -25,6 +25,7 @@ import { Search, Plus, MoreHorizontal, Edit, Trash2 } from "lucide-react"
 import { useUsers, useCreateUser, useUpdateUser, useUpdateUserRole, useDeleteUser } from "@/lib/hooks/use-users"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
 import type { AdminUser, UserRole } from "@/lib/api/types"
+import { useAuthContext } from "@/contexts/auth-context"
 
 const ROLE_OPTIONS: { value: UserRole; label: string; badgeVariant: "destructive" | "default" | "outline" | "secondary" }[] = [
   { value: "member",            label: "Membro",              badgeVariant: "secondary" },
@@ -43,6 +44,8 @@ function getRoleBadge(role: string) {
 }
 
 export function UsersManagement() {
+  const { user: currentUser } = useAuthContext()
+  const isAdmin = currentUser?.role === "admin"
   const { data: users = [], isLoading, error } = useUsers()
   const createMutation = useCreateUser()
   const updateMutation = useUpdateUser()
@@ -138,6 +141,24 @@ export function UsersManagement() {
   }
 
   const isSaving = updateMutation.isPending || updateRoleMutation.isPending
+
+  if (!isAdmin) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Usuarios</h1>
+          <p className="text-muted-foreground">Gerencie os usuarios do sistema</p>
+        </div>
+        <Card>
+          <CardContent className="py-8">
+            <p className="text-muted-foreground text-center">
+              Acesso restrito. Apenas administradores podem gerenciar contas de usuario.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
