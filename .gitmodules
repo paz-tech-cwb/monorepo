@@ -1,6 +1,3 @@
-[submodule "admin-ui"]
-	path = admin-ui
-	url = https://github.com/paz-tech-cwb/admin-ui
 [submodule "kmp-mobile"]
 	path = kmp-mobile
 	url = https://github.com/paz-tech-cwb/kmp-mobile.git
