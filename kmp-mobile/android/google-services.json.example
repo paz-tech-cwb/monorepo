@@ -1,0 +1,23 @@
+{
+  "project_info": {
+    "project_number": "REPLACE",
+    "project_id": "REPLACE",
+    "storage_bucket": "REPLACE"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "REPLACE",
+        "android_client_info": {
+          "package_name": "br.church.paz.android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [{ "current_key": "REPLACE" }],
+      "services": {
+        "appinvite_service": { "other_platform_oauth_client": [] }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

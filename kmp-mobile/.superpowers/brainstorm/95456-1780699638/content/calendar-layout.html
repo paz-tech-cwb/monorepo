@@ -1,0 +1,144 @@
+<h2>Agenda Section — Calendar Layout</h2>
+<p class="subtitle">How should the week strip and event list be structured? Pick the layout that feels right.</p>
+
+<div class="cards">
+
+  <!-- Option A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f4f6fa;padding:16px;border-radius:8px;font-family:system-ui,sans-serif">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-weight:800;font-size:15px;color:#111">Agenda</span>
+        <span style="font-size:11px;color:#3b5bdb;font-weight:600">Mês completo →</span>
+      </div>
+      <!-- sticky week strip -->
+      <div style="display:flex;gap:5px;margin-bottom:12px;background:#f4f6fa;padding-bottom:8px;border-bottom:1px solid #e5e7eb">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;background:#fff;border:1px solid #e5e7eb">
+          <span style="font-size:8px;color:#94a3b8;font-weight:600">SEG</span>
+          <span style="font-size:14px;font-weight:700;color:#111">2</span>
+          <div style="width:4px;height:4px;border-radius:50%;background:transparent"></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;background:#fff;border:1px solid #e5e7eb">
+          <span style="font-size:8px;color:#94a3b8;font-weight:600">TER</span>
+          <span style="font-size:14px;font-weight:700;color:#111">3</span>
+          <div style="width:4px;height:4px;border-radius:50%;background:transparent"></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;background:linear-gradient(160deg,#3b5bdb,#1a3fbd);box-shadow:0 6px 12px rgba(59,91,219,0.4)">
+          <span style="font-size:8px;color:rgba(255,255,255,0.7);font-weight:600">QUA</span>
+          <span style="font-size:14px;font-weight:700;color:#fff">4</span>
+          <div style="width:4px;height:4px;border-radius:50%;background:#f5c518"></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;background:#fff;border:1px solid #e5e7eb">
+          <span style="font-size:8px;color:#94a3b8;font-weight:600">QUI</span>
+          <span style="font-size:14px;font-weight:700;color:#111">5</span>
+          <div style="width:4px;height:4px;border-radius:50%;background:#3b5bdb"></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;background:#fff;border:1px solid #e5e7eb">
+          <span style="font-size:8px;color:#94a3b8;font-weight:600">SEX</span>
+          <span style="font-size:14px;font-weight:700;color:#111">6</span>
+          <div style="width:4px;height:4px;border-radius:50%;background:transparent"></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;background:#fff;border:1px solid #e5e7eb">
+          <span style="font-size:8px;color:#94a3b8;font-weight:600">SÁB</span>
+          <span style="font-size:14px;font-weight:700;color:#111">7</span>
+          <div style="width:4px;height:4px;border-radius:50%;background:transparent"></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;background:#fff;border:1px solid #e5e7eb">
+          <span style="font-size:8px;color:#94a3b8;font-weight:600">DOM</span>
+          <span style="font-size:14px;font-weight:700;color:#111">8</span>
+          <div style="width:4px;height:4px;border-radius:50%;background:#3b5bdb"></div>
+        </div>
+      </div>
+      <!-- event list (always visible) -->
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <div style="background:#fff;border-radius:12px;padding:10px 12px;border:1px solid #e5e7eb;box-shadow:0 3px 8px rgba(0,0,0,0.06)">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;font-weight:700;color:#3b5bdb;width:36px">12:00</span>
+            <div style="width:8px;height:8px;border-radius:50%;background:#3b5bdb;flex-shrink:0"></div>
+            <span style="font-size:12px;font-weight:700;color:#111">Culto Domingo Manhã</span>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:10px 12px;border:1px solid #e5e7eb;box-shadow:0 3px 8px rgba(0,0,0,0.06)">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;font-weight:700;color:#3b5bdb;width:36px">22:30</span>
+            <div style="width:8px;height:8px;border-radius:50%;background:#3b5bdb;flex-shrink:0"></div>
+            <span style="font-size:12px;font-weight:700;color:#111">Grupo de Vida — Zona Sul</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Sticky week strip, always-visible list</h3>
+      <p>Week strip sits above the scroll and stays put. Tap a day to filter the event list below. Today = filled pill, events = dot below the number. Simplest to implement and use.</p>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f4f6fa;padding:16px;border-radius:8px;font-family:system-ui,sans-serif">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-weight:800;font-size:15px;color:#111">Agenda</span>
+        <span style="font-size:11px;color:#3b5bdb;font-weight:600">Mês completo →</span>
+      </div>
+      <!-- week strip same as A -->
+      <div style="display:flex;gap:5px;margin-bottom:12px;background:#f4f6fa;padding-bottom:8px;border-bottom:1px solid #e5e7eb">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;background:#fff;border:1px solid #e5e7eb">
+          <span style="font-size:8px;color:#94a3b8;font-weight:600">SEG</span><span style="font-size:14px;font-weight:700;color:#111">2</span><div style="width:4px;height:4px;border-radius:50%;background:transparent"></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;background:#fff;border:1px solid #e5e7eb">
+          <span style="font-size:8px;color:#94a3b8;font-weight:600">TER</span><span style="font-size:14px;font-weight:700;color:#111">3</span><div style="width:4px;height:4px;border-radius:50%;background:transparent"></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;background:linear-gradient(160deg,#3b5bdb,#1a3fbd);box-shadow:0 6px 12px rgba(59,91,219,0.4)">
+          <span style="font-size:8px;color:rgba(255,255,255,0.7);font-weight:600">QUA</span><span style="font-size:14px;font-weight:700;color:#fff">4</span><div style="width:4px;height:4px;border-radius:50%;background:#f5c518"></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;background:#fff;border:1px solid #e5e7eb">
+          <span style="font-size:8px;color:#94a3b8;font-weight:600">QUI</span><span style="font-size:14px;font-weight:700;color:#111">5</span><div style="width:4px;height:4px;border-radius:50%;background:#3b5bdb"></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;background:#fff;border:1px solid #e5e7eb">
+          <span style="font-size:8px;color:#94a3b8;font-weight:600">SEX</span><span style="font-size:14px;font-weight:700;color:#111">6</span><div style="width:4px;height:4px;border-radius:50%;background:transparent"></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;background:#fff;border:1px solid #e5e7eb">
+          <span style="font-size:8px;color:#94a3b8;font-weight:600">SÁB</span><span style="font-size:14px;font-weight:700;color:#111">7</span><div style="width:4px;height:4px;border-radius:50%;background:transparent"></div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:6px 2px;border-radius:10px;background:#fff;border:1px solid #e5e7eb">
+          <span style="font-size:8px;color:#94a3b8;font-weight:600">DOM</span><span style="font-size:14px;font-weight:700;color:#111">8</span><div style="width:4px;height:4px;border-radius:50%;background:#3b5bdb"></div>
+        </div>
+      </div>
+      <!-- collapsed days — tap to expand -->
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <!-- Wednesday (today) — expanded -->
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#3b5bdb;margin-bottom:5px;padding-left:4px;text-transform:uppercase;letter-spacing:0.05em">Quarta-feira, 4 jun — hoje</div>
+          <div style="background:#fff;border-radius:12px;padding:10px 12px;border:1px solid #e5e7eb;box-shadow:0 3px 8px rgba(0,0,0,0.06);margin-bottom:5px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:11px;font-weight:700;color:#3b5bdb;width:36px">22:30</span>
+              <span style="font-size:12px;font-weight:700;color:#111">Grupo de Vida — Zona Sul</span>
+            </div>
+          </div>
+        </div>
+        <!-- Thursday — collapsed, shows dot hint -->
+        <div style="background:#fff;border-radius:12px;padding:10px 12px;border:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <span style="font-size:11px;font-weight:600;color:#111">Quinta-feira, 5 jun</span>
+            <div style="font-size:10px;color:#94a3b8;margin-top:2px">1 evento — toque para ver</div>
+          </div>
+          <span style="font-size:16px;color:#ccc">›</span>
+        </div>
+        <!-- Sunday — collapsed -->
+        <div style="background:#fff;border-radius:12px;padding:10px 12px;border:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <span style="font-size:11px;font-weight:600;color:#111">Domingo, 8 jun</span>
+            <div style="font-size:10px;color:#94a3b8;margin-top:2px">1 evento — toque para ver</div>
+          </div>
+          <span style="font-size:16px;color:#ccc">›</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Sticky strip + collapsible day groups</h3>
+      <p>Same sticky week strip, but the list below groups events by day. Today auto-expands; other days show a summary row that taps to expand. More information density, slightly more complex interaction.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px">Both options: today gets a gold dot + filled pill. Days with events get a small blue dot. Days with no events show nothing.</p>
