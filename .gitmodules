@@ -4,12 +4,6 @@
 [submodule "backend"]
 	path = backend
 	url = https://github.com/paz-tech-cwb/backend
-[submodule "mobile-app"]
-	path = mobile-app
-	url = https://github.com/paz-tech-cwb/mobile-app
-[submodule "postman-files"]
-	path = postman-files
-	url = https://github.com/paz-tech-cwb/postman-files
 [submodule "kmp-mobile"]
 	path = kmp-mobile
 	url = https://github.com/paz-tech-cwb/kmp-mobile.git
