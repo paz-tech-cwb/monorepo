@@ -205,7 +205,7 @@ export class UsersService {
         order: { name: 'ASC' },
       });
       return users.map((u) => this.toResponse(u));
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving users.',
       );

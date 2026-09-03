@@ -11,6 +11,10 @@ import { UserNotificationPreferencesService } from './user-notification-preferen
     UserDeviceTokensService,
     UserNotificationPreferencesService,
   ],
-  exports: [UsersService, UserDeviceTokensService, UserNotificationPreferencesService],
+  exports: [
+    UsersService,
+    UserDeviceTokensService,
+    UserNotificationPreferencesService,
+  ],
 })
 export class UsersModule {}

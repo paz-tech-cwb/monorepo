@@ -36,8 +36,10 @@ function stripPrivilegedFields<T extends { role?: string; status?: string }>(
   actor: User,
 ): T {
   if (actor.role?.slug === 'admin') return dto;
-  const { role: _role, status: _status, ...rest } = dto;
-  return rest as T;
+  const rest = { ...dto };
+  delete rest.role;
+  delete rest.status;
+  return rest;
 }
 
 @UseGuards(AuthGuard('jwt'))
@@ -56,10 +58,7 @@ export class UsersController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles('admin', 'pastor', 'area_leader', 'sector_leader', 'life_group_leader')
-  create(
-    @Request() req: { user: User },
-    @Body() createUserDto: CreateUserDto,
-  ) {
+  create(@Request() req: { user: User }, @Body() createUserDto: CreateUserDto) {
     return this.usersService.create(
       stripPrivilegedFields(createUserDto, req.user),
     );

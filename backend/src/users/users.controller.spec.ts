@@ -15,9 +15,20 @@ const mockUserResponse = {
   role: 'member',
 };
 
+type MockedUsersService = {
+  findOne: jest.Mock;
+  updateProfile: jest.Mock;
+  findAll: jest.Mock;
+  create: jest.Mock;
+  update: jest.Mock;
+  updateRole: jest.Mock;
+  remove: jest.Mock;
+  deleteSelf: jest.Mock;
+};
+
 describe('UsersController', () => {
   let controller: UsersController;
-  let usersService: jest.Mocked<UsersService>;
+  let usersService: MockedUsersService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import { UserDeviceToken } from './entities/user-device-token.entity';
+import { User } from './entities/user.entity';
 import { RegisterDeviceTokenDto } from './dto/register-device-token.dto';
 
 @Injectable()
@@ -17,7 +18,7 @@ export class UserDeviceTokensService {
     });
 
     if (existing) {
-      existing.user = { id: userId } as any;
+      existing.user = { id: userId } as Pick<User, 'id'> as User;
       existing.platform = dto.platform;
       await this.entityManager.save(existing);
       return;

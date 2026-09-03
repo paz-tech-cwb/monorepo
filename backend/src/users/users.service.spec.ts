@@ -37,22 +37,31 @@ describe('UsersService', () => {
 
   function createService(managerOverrides: Partial<EntityManager> = {}) {
     const txManager = {
-      findOne: jest.fn(async (entity) => {
-        if (entity === Role) return role;
-        if (entity === User) return makeUser();
-        return null;
-      }),
+      findOne: jest.fn(
+        (entity: typeof Role | typeof User): Promise<Role | User | null> => {
+          if (entity === Role) return Promise.resolve(role);
+          if (entity === User) return Promise.resolve(makeUser());
+          return Promise.resolve(null);
+        },
+      ),
       findByIds: jest.fn(),
-      save: jest.fn(async (entity, value) => {
-        if (entity === Address) return { ...value, id: 20 };
-        if (entity === User) return { ...value, id: 10 };
-        return value;
-      }),
+      save: jest.fn(
+        (
+          entity: typeof Address | typeof User,
+          value: Record<string, unknown>,
+        ) => {
+          if (entity === Address) return Promise.resolve({ ...value, id: 20 });
+          if (entity === User) return Promise.resolve({ ...value, id: 10 });
+          return Promise.resolve(value);
+        },
+      ),
       ...managerOverrides,
     };
 
     const entityManager = {
-      transaction: jest.fn((callback) => callback(txManager)),
+      transaction: jest.fn((callback: (manager: typeof txManager) => unknown) =>
+        callback(txManager),
+      ),
     } as unknown as EntityManager;
 
     return {
@@ -102,7 +111,7 @@ describe('UsersService', () => {
         address: expect.objectContaining({
           id: 20,
           zipCode: '80000-000',
-        }),
+        }) as unknown,
       }),
     );
   });
@@ -127,19 +136,29 @@ describe('UsersService', () => {
 
   it('uses the transaction for address and user saves so failed user creation rolls back the address', async () => {
     const txManager = {
-      findOne: jest.fn(async (entity) => {
-        if (entity === Role) return role;
-        return null;
-      }),
+      findOne: jest.fn(
+        (entity: typeof Role | typeof User): Promise<Role | User | null> => {
+          if (entity === Role) return Promise.resolve(role);
+          return Promise.resolve(null);
+        },
+      ),
       findByIds: jest.fn(),
-      save: jest.fn(async (entity, value) => {
-        if (entity === Address) return { ...value, id: 20 };
-        if (entity === User) throw new Error('user save failed');
-        return value;
-      }),
+      save: jest.fn(
+        (
+          entity: typeof Address | typeof User,
+          value: Record<string, unknown>,
+        ) => {
+          if (entity === Address) return Promise.resolve({ ...value, id: 20 });
+          if (entity === User) throw new Error('user save failed');
+          return Promise.resolve(value);
+        },
+      ),
     };
+    const transactionMock = jest.fn(
+      (callback: (manager: typeof txManager) => unknown) => callback(txManager),
+    );
     const entityManager = {
-      transaction: jest.fn((callback) => callback(txManager)),
+      transaction: transactionMock,
     } as unknown as EntityManager;
     const service = new UsersService(entityManager);
 
@@ -159,7 +178,7 @@ describe('UsersService', () => {
       }),
     ).rejects.toThrow(BadRequestException);
 
-    expect(entityManager.transaction).toHaveBeenCalledTimes(1);
+    expect(transactionMock).toHaveBeenCalledTimes(1);
     expect(txManager.save).toHaveBeenCalledWith(Address, expect.any(Address));
     expect(txManager.save).toHaveBeenCalledWith(User, expect.any(User));
   });
@@ -170,37 +189,38 @@ describe('UsersService', () => {
         query: jest.fn().mockResolvedValue(undefined),
         delete: jest.fn().mockResolvedValue(undefined),
       };
+      const transactionMock = jest.fn(
+        (callback: (manager: typeof txManager) => unknown) =>
+          callback(txManager),
+      );
       const entityManager = {
         findOne: jest
           .fn()
           .mockResolvedValue(userExists ? makeUser({ id: 10 }) : null),
-        transaction: jest.fn((callback) => callback(txManager)),
+        transaction: transactionMock,
       } as unknown as EntityManager;
 
       return {
         service: new UsersService(entityManager),
         entityManager,
+        transactionMock,
         txManager,
       };
     }
 
     it('throws NotFoundException when the user does not exist', async () => {
-      const { service, entityManager } = createDeleteService(false);
+      const { service, transactionMock } = createDeleteService(false);
 
       await expect(service.deleteSelf(10)).rejects.toThrow();
-      expect(
-        (entityManager as unknown as { transaction: jest.Mock }).transaction,
-      ).not.toHaveBeenCalled();
+      expect(transactionMock).not.toHaveBeenCalled();
     });
 
     it('runs all cleanup queries and the final user delete inside a single transaction', async () => {
-      const { service, entityManager, txManager } = createDeleteService();
+      const { service, transactionMock, txManager } = createDeleteService();
 
       await service.deleteSelf(10);
 
-      expect(
-        (entityManager as unknown as { transaction: jest.Mock }).transaction,
-      ).toHaveBeenCalledTimes(1);
+      expect(transactionMock).toHaveBeenCalledTimes(1);
 
       // Org-unit leadership references are cleared, not deleted.
       expect(txManager.query).toHaveBeenCalledWith(
@@ -276,7 +296,10 @@ describe('UsersService', () => {
       };
       const entityManager = {
         findOne: jest.fn().mockResolvedValue(makeUser({ id: 10 })),
-        transaction: jest.fn((callback) => callback(txManager)),
+        transaction: jest.fn(
+          (callback: (manager: typeof txManager) => unknown) =>
+            callback(txManager),
+        ),
       } as unknown as EntityManager;
       const service = new UsersService(entityManager);
 
