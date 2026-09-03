@@ -26,6 +26,19 @@ import { UserDeviceTokensService } from './user-device-tokens.service';
 import { UserNotificationPreferencesService } from './user-notification-preferences.service';
 import { RegisterDeviceTokenDto } from './dto/register-device-token.dto';
 import { UpdateNotificationPreferencesDto } from './dto/update-notification-preferences.dto';
+import { User } from './entities/user.entity';
+
+// Only admins may set role/status through the general create/update routes;
+// role changes for everyone else must go through the admin-only
+// PATCH /:id/role route, and status changes are not exposed to leaders.
+function stripPrivilegedFields<T extends { role?: string; status?: string }>(
+  dto: T,
+  actor: User,
+): T {
+  if (actor.role?.slug === 'admin') return dto;
+  const { role: _role, status: _status, ...rest } = dto;
+  return rest as T;
+}
 
 @UseGuards(AuthGuard('jwt'))
 @SerializeOptions({
@@ -41,11 +54,20 @@ export class UsersController {
   ) {}
 
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'pastor', 'area_leader', 'sector_leader', 'life_group_leader')
+  create(
+    @Request() req: { user: User },
+    @Body() createUserDto: CreateUserDto,
+  ) {
+    return this.usersService.create(
+      stripPrivilegedFields(createUserDto, req.user),
+    );
   }
 
   @Get()
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'pastor', 'area_leader', 'sector_leader', 'life_group_leader')
   findAll(@Query('q') q?: string) {
     if (q?.trim()) return this.usersService.search(q);
     return this.usersService.findAll();
@@ -100,6 +122,13 @@ export class UsersController {
     return this.usersService.updateProfile(req.user.id, dto);
   }
 
+  // Self-service account deletion — MUST be before /:id routes
+  @Delete('me')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteMe(@Request() req: { user: { id: number } }) {
+    return this.usersService.deleteSelf(req.user.id);
+  }
+
   @Get('lookup')
   @UseGuards(RolesGuard)
   @Roles('admin', 'pastor', 'area_leader', 'sector_leader', 'life_group_leader')
@@ -111,13 +140,24 @@ export class UsersController {
   }
 
   @Get(':id')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'pastor', 'area_leader', 'sector_leader', 'life_group_leader')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'pastor', 'area_leader', 'sector_leader', 'life_group_leader')
+  update(
+    @Request() req: { user: User },
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return this.usersService.update(
+      +id,
+      stripPrivilegedFields(updateUserDto, req.user),
+    );
   }
 
   // Admin-only: update a single user's role
@@ -132,6 +172,8 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);

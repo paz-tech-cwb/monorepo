@@ -163,4 +163,124 @@ describe('UsersService', () => {
     expect(txManager.save).toHaveBeenCalledWith(Address, expect.any(Address));
     expect(txManager.save).toHaveBeenCalledWith(User, expect.any(User));
   });
+
+  describe('deleteSelf', () => {
+    function createDeleteService(userExists = true) {
+      const txManager = {
+        query: jest.fn().mockResolvedValue(undefined),
+        delete: jest.fn().mockResolvedValue(undefined),
+      };
+      const entityManager = {
+        findOne: jest
+          .fn()
+          .mockResolvedValue(userExists ? makeUser({ id: 10 }) : null),
+        transaction: jest.fn((callback) => callback(txManager)),
+      } as unknown as EntityManager;
+
+      return {
+        service: new UsersService(entityManager),
+        entityManager,
+        txManager,
+      };
+    }
+
+    it('throws NotFoundException when the user does not exist', async () => {
+      const { service, entityManager } = createDeleteService(false);
+
+      await expect(service.deleteSelf(10)).rejects.toThrow();
+      expect(
+        (entityManager as unknown as { transaction: jest.Mock }).transaction,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('runs all cleanup queries and the final user delete inside a single transaction', async () => {
+      const { service, entityManager, txManager } = createDeleteService();
+
+      await service.deleteSelf(10);
+
+      expect(
+        (entityManager as unknown as { transaction: jest.Mock }).transaction,
+      ).toHaveBeenCalledTimes(1);
+
+      // Org-unit leadership references are cleared, not deleted.
+      expect(txManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('UPDATE "ministries" SET "leader_id" = NULL'),
+        [10],
+      );
+      expect(txManager.query).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'UPDATE "ministries" SET "co_leader_id" = NULL',
+        ),
+        [10],
+      );
+      expect(txManager.query).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'UPDATE "ministry_teams" SET "leader_id" = NULL',
+        ),
+        [10],
+      );
+
+      // Personal submissions/reports authored by the user are deleted.
+      expect(txManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM "form_submission_audit_log"'),
+        [10],
+      );
+      expect(txManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM "member_registrations"'),
+        [10],
+      );
+      expect(txManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM "form_conversions"'),
+        [10],
+      );
+      expect(txManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM "life_group_reports"'),
+        [10],
+      );
+      expect(txManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM "sector_supervisor_reports"'),
+        [10],
+      );
+      expect(txManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM "area_supervisor_reports"'),
+        [10],
+      );
+      expect(txManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM "multiplications"'),
+        [10],
+      );
+      expect(txManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM "service_reports"'),
+        [10],
+      );
+      expect(txManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM "form_guests"'),
+        [10],
+      );
+      expect(txManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM "meeting_reports"'),
+        [10],
+      );
+
+      // The user row itself is hard-deleted last; cascading FKs
+      // (accounts, device tokens, notification preferences, user_courses,
+      // user_life_groups, member_journey_stages, ministry rosters) are
+      // handled by the database.
+      expect(txManager.delete).toHaveBeenCalledWith(User, 10);
+    });
+
+    it('rolls back all cleanup when the final delete fails', async () => {
+      const txManager = {
+        query: jest.fn().mockResolvedValue(undefined),
+        delete: jest.fn().mockRejectedValue(new Error('fk violation')),
+      };
+      const entityManager = {
+        findOne: jest.fn().mockResolvedValue(makeUser({ id: 10 })),
+        transaction: jest.fn((callback) => callback(txManager)),
+      } as unknown as EntityManager;
+      const service = new UsersService(entityManager);
+
+      await expect(service.deleteSelf(10)).rejects.toThrow('fk violation');
+    });
+  });
 });

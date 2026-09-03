@@ -27,6 +27,7 @@ export class AuthController {
     return this.authService.socialLogin(
       socialLoginDto.provider,
       socialLoginDto.idToken,
+      socialLoginDto.birthDate,
     );
   }
 

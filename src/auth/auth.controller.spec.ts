@@ -38,6 +38,7 @@ describe('AuthController', () => {
       expect(authService.socialLogin).toHaveBeenCalledWith(
         'google',
         'test-token',
+        undefined,
       );
       expect(result).toEqual(expected);
     });

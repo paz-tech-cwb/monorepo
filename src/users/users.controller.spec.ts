@@ -33,6 +33,7 @@ describe('UsersController', () => {
             update: jest.fn(),
             updateRole: jest.fn(),
             remove: jest.fn(),
+            deleteSelf: jest.fn(),
           },
         },
         {
@@ -92,6 +93,17 @@ describe('UsersController', () => {
       await controller.updateMe({ user: { id: 1 } }, dto);
 
       expect(usersService.updateProfile).toHaveBeenCalledWith(1, dto);
+    });
+  });
+
+  describe('DELETE /users/me', () => {
+    it('calls usersService.deleteSelf with the authenticated user id', async () => {
+      usersService.deleteSelf.mockResolvedValue(undefined);
+      const req = { user: { id: 1 } };
+
+      await controller.deleteMe(req);
+
+      expect(usersService.deleteSelf).toHaveBeenCalledWith(1);
     });
   });
 });

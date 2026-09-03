@@ -100,7 +100,7 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-  async socialLogin(provider: string, idToken: string) {
+  async socialLogin(provider: string, idToken: string, birthDate?: string) {
     let userData: {
       username: string;
       name: string;
@@ -134,17 +134,39 @@ export class AuthService implements OnModuleInit {
           message,
           null,
         );
-      } catch { /* audit failure must not surface to caller */ }
+      } catch {
+        /* audit failure must not surface to caller */
+      }
       throw error;
     }
 
     userData.email = userData.email.toLowerCase();
 
-    let user = await this.userRepo.findOne({
-      where: { email: userData.email },
-    });
+    let user = await this.findUserByNameAndBirthDate(userData.name, birthDate);
 
     if (!user) {
+      user = await this.userRepo.findOne({
+        where: { email: userData.email },
+      });
+    } else if (user.email !== userData.email) {
+      // Linking an existing identity match — keep the Firebase-verified
+      // email (and picture, if provided) in sync instead of creating a
+      // duplicate account.
+      user.email = userData.email;
+      if (userData.photo) {
+        user.picture = userData.photo;
+      }
+      await this.userRepo.save(user);
+    }
+
+    if (!user) {
+      if (!birthDate) {
+        throw new HttpException(
+          'birth_date is required to register a new user',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       const memberRole = await this.roleRepo.findOne({
         where: { slug: 'member' },
       });
@@ -157,6 +179,7 @@ export class AuthService implements OnModuleInit {
       user = this.userRepo.create({
         name: userData.name,
         email: userData.email,
+        birthDate: new Date(birthDate),
         picture: userData.photo ?? undefined,
         role: memberRole,
       });
@@ -174,7 +197,9 @@ export class AuthService implements OnModuleInit {
           reason,
           null,
         );
-      } catch { /* audit failure must not surface to caller */ }
+      } catch {
+        /* audit failure must not surface to caller */
+      }
       throw new HttpException('Admin access required', HttpStatus.FORBIDDEN);
     }
 
@@ -188,7 +213,9 @@ export class AuthService implements OnModuleInit {
         null,
         null,
       );
-    } catch { /* audit failure must not surface to caller */ }
+    } catch {
+      /* audit failure must not surface to caller */
+    }
 
     return {
       user: {
@@ -201,6 +228,54 @@ export class AuthService implements OnModuleInit {
       access_token: tokens.accessToken,
       refresh_token: tokens.refreshToken,
     };
+  }
+
+  /**
+   * Matches an existing User by case-insensitive, trimmed name + exact
+   * birth date. Returns null (without erroring) when:
+   * - birthDate is missing/invalid (existing rows may also have a null
+   *   birth_date, which is excluded from matching on both sides), or
+   * - more than one user matches (ambiguous collision) — auto-linking a
+   *   collision could merge two different people's identities, so instead
+   *   we log a warning for admin review and fall back to email matching /
+   *   creating a new, unlinked identity.
+   */
+  private async findUserByNameAndBirthDate(
+    name: string,
+    birthDate: string | undefined,
+  ): Promise<User | null> {
+    if (!birthDate) {
+      return null;
+    }
+
+    const parsedBirthDate = new Date(birthDate);
+    if (Number.isNaN(parsedBirthDate.getTime())) {
+      return null;
+    }
+
+    const normalizedBirthDate = parsedBirthDate.toISOString().split('T')[0];
+
+    const candidates = await this.userRepo
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.role', 'role')
+      .where('LOWER(TRIM(user.name)) = LOWER(TRIM(:name))', { name })
+      .andWhere('user.birthDate = :birthDate', {
+        birthDate: normalizedBirthDate,
+      })
+      .getMany();
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    if (candidates.length > 1) {
+      this.logger.warn(
+        `Ambiguous name+birthDate match during social login: ${candidates.length} users matched name="${name}" birthDate="${normalizedBirthDate}" — skipping auto-link, admin review recommended.`,
+      );
+      return null;
+    }
+
+    return candidates[0];
   }
 
   private hashToken(token: string): string {

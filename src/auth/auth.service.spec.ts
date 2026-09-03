@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
-import { HttpException, HttpStatus, UnauthorizedException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  UnauthorizedException,
+} from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 import { AuthService } from './auth.service';
@@ -53,6 +57,12 @@ describe('AuthService', () => {
       findOne: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue({
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      }),
     };
 
     userAccountRepo = {
@@ -97,7 +107,10 @@ describe('AuthService', () => {
         { provide: getRepositoryToken(User), useValue: userRepo },
         { provide: getRepositoryToken(UserAccount), useValue: userAccountRepo },
         { provide: getRepositoryToken(Role), useValue: roleRepo },
-        { provide: getRepositoryToken(UserDeviceToken), useValue: userDeviceTokenRepo },
+        {
+          provide: getRepositoryToken(UserDeviceToken),
+          useValue: userDeviceTokenRepo,
+        },
         { provide: getRepositoryToken(AuditLog), useValue: auditLogRepo },
         { provide: ConfigService, useValue: configServiceMock },
         { provide: AuditLogger, useValue: auditLoggerMock },
@@ -198,9 +211,9 @@ describe('AuthService', () => {
         .spyOn(service as any, 'verifyGoogleToken')
         .mockRejectedValue(new UnauthorizedException('Invalid Google token'));
 
-      await expect(
-        service.socialLogin('google', 'bad-token'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.socialLogin('google', 'bad-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
 
       expect(auditLoggerMock.logAuthAttempt).toHaveBeenCalledWith(
         'unknown',
@@ -219,14 +232,14 @@ describe('AuthService', () => {
         photo: null,
       });
 
-      userRepo.findOne.mockResolvedValue(null); // user not found
+      userRepo.findOne.mockResolvedValue(null); // user not found by email
       roleRepo.findOne.mockResolvedValue(memberRole);
       const createdUser = { ...mockMemberUser, email: 'newuser@example.com' };
       userRepo.create.mockReturnValue(createdUser);
       userRepo.save.mockResolvedValue(createdUser);
 
       await expect(
-        service.socialLogin('google', 'valid-google-token'),
+        service.socialLogin('google', 'valid-google-token', '1990-01-01'),
       ).rejects.toMatchObject({ status: HttpStatus.FORBIDDEN });
 
       expect(auditLoggerMock.logAuthAttempt).toHaveBeenCalledWith(
@@ -236,6 +249,95 @@ describe('AuthService', () => {
         expect.any(String),
         null,
       );
+    });
+
+    it('should require birth_date to register a brand new user', async () => {
+      jest.spyOn(service as any, 'verifyGoogleToken').mockResolvedValue({
+        username: 'google-uid',
+        name: 'New User',
+        email: 'newuser@example.com',
+        photo: null,
+      });
+
+      userRepo.findOne.mockResolvedValue(null); // no email match
+
+      await expect(
+        service.socialLogin('google', 'valid-google-token'),
+      ).rejects.toMatchObject({ status: HttpStatus.BAD_REQUEST });
+
+      expect(userRepo.create).not.toHaveBeenCalled();
+    });
+
+    it('should link an existing user found by name + birth date instead of creating a duplicate', async () => {
+      jest.spyOn(service as any, 'verifyGoogleToken').mockResolvedValue({
+        username: 'google-uid',
+        name: '  Admin User  ',
+        email: 'new-admin-email@example.com',
+        photo: null,
+      });
+
+      const existingUser = {
+        ...mockAdminUser,
+        email: 'old-admin-email@example.com',
+      };
+      const getMany = jest.fn().mockResolvedValue([existingUser]);
+      const queryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany,
+      };
+      userRepo.createQueryBuilder = jest.fn().mockReturnValue(queryBuilder);
+      userRepo.save.mockImplementation((u) => Promise.resolve(u));
+      userAccountRepo.create.mockReturnValue({});
+      userAccountRepo.save.mockResolvedValue({});
+
+      const result = await service.socialLogin(
+        'google',
+        'valid-google-token',
+        '1990-01-01',
+      );
+
+      expect(userRepo.findOne).not.toHaveBeenCalled();
+      expect(userRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'new-admin-email@example.com' }),
+      );
+      expect(userRepo.create).not.toHaveBeenCalled();
+      expect(result.user.email).toBe('new-admin-email@example.com');
+    });
+
+    it('should skip auto-linking and fall back to email match on ambiguous name+birthDate collisions', async () => {
+      jest.spyOn(service as any, 'verifyGoogleToken').mockResolvedValue({
+        username: 'google-uid',
+        name: 'Admin User',
+        email: 'admin@example.com',
+        photo: null,
+      });
+
+      const getMany = jest
+        .fn()
+        .mockResolvedValue([mockAdminUser, { ...mockAdminUser, id: 99 }]);
+      const queryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany,
+      };
+      userRepo.createQueryBuilder = jest.fn().mockReturnValue(queryBuilder);
+      userRepo.findOne.mockResolvedValue(mockAdminUser);
+      userAccountRepo.create.mockReturnValue({});
+      userAccountRepo.save.mockResolvedValue({});
+
+      const result = await service.socialLogin(
+        'google',
+        'valid-google-token',
+        '1990-01-01',
+      );
+
+      expect(userRepo.findOne).toHaveBeenCalledWith({
+        where: { email: 'admin@example.com' },
+      });
+      expect(result.user.email).toBe('admin@example.com');
     });
 
     it('should not surface audit logging errors to the caller', async () => {
@@ -382,7 +484,9 @@ describe('AuthService', () => {
   describe('onModuleInit', () => {
     it('should not throw during initialization when Firebase is already initialized', () => {
       // Simulate Firebase already initialized (admin.apps.length > 0 skips initializeApp)
-      jest.spyOn(require('firebase-admin'), 'apps', 'get').mockReturnValue([{}]);
+      jest
+        .spyOn(require('firebase-admin'), 'apps', 'get')
+        .mockReturnValue([{}]);
       expect(() => service.onModuleInit()).not.toThrow();
     });
   });

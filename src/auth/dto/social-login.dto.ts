@@ -1,5 +1,11 @@
 import { Expose, Transform } from 'class-transformer';
-import { IsIn, IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsDateString,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class SocialLoginDto {
   @Expose()
@@ -14,4 +20,12 @@ export class SocialLoginDto {
   @IsString({ message: 'ID token must be a string.' })
   @IsNotEmpty({ message: 'ID token must not be empty.' })
   idToken: string;
+
+  // Firebase tokens never carry birth date. Clients that have already
+  // collected it (e.g. during onboarding) may pass it along so the backend
+  // can identity-match by name + birth date instead of email alone.
+  @Expose({ name: 'birth_date' })
+  @IsOptional()
+  @IsDateString({}, { message: 'birth_date must be a valid date string.' })
+  birthDate?: string;
 }

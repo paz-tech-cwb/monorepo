@@ -168,10 +168,14 @@ export class UsersService {
     }
   }
 
-  async search(
-    q: string,
-  ): Promise<
-    { id: number; name: string; phone: string | null; email: string | null }[]
+  async search(q: string): Promise<
+    {
+      id: number;
+      name: string;
+      phone: string | null;
+      email: string | null;
+      birth_date: string | null;
+    }[]
   > {
     const term = `%${q.trim().toLowerCase()}%`;
     const users = await this.entityManager
@@ -188,6 +192,9 @@ export class UsersService {
       name: u.name,
       phone: u.phoneNumber ?? null,
       email: u.email ?? null,
+      birth_date: u.birthDate
+        ? new Date(u.birthDate).toISOString().slice(0, 10)
+        : null,
     }));
   }
 
@@ -388,5 +395,105 @@ export class UsersService {
   async remove(id: number): Promise<void> {
     const user = await this.findOneEntity(id);
     await this.entityManager.remove(User, user);
+  }
+
+  /**
+   * Self-service account deletion (DELETE /api/users/me).
+   *
+   * Hard-deletes the user and all directly linked personal data. Tables
+   * with an `ON DELETE CASCADE` foreign key to `users` (user_accounts /
+   * refresh tokens, user_device_tokens, user_notification_preferences,
+   * user_courses, user_life_groups, member_journey_stages, and the
+   * ministry/team member roster join tables) are cleaned up automatically
+   * by the database when the user row is deleted.
+   *
+   * Tables where the user is referenced as the author/submitter of an
+   * operational record (form submissions, journey/ministry reports, the
+   * form-submission audit trail) do not cascade — those rows are personal
+   * submissions tied to this account, so they are explicitly deleted here,
+   * inside the same transaction, before the user row itself is removed.
+   *
+   * Tables where the user is only referenced as a leader/co-leader of an
+   * org unit (ministries, ministry teams) are NOT deleted — the ministry
+   * itself is not personal data — the leader/co-leader reference is
+   * cleared instead so the FK does not block deletion.
+   */
+  async deleteSelf(id: number): Promise<void> {
+    const user = await this.entityManager.findOne(User, { where: { id } });
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+
+    await this.entityManager.transaction(async (manager) => {
+      // Clear leader/co-leader references on org units the user leads —
+      // these records are not personal data and must survive deletion.
+      await manager.query(
+        `UPDATE "ministries" SET "leader_id" = NULL WHERE "leader_id" = $1`,
+        [id],
+      );
+      await manager.query(
+        `UPDATE "ministries" SET "co_leader_id" = NULL WHERE "co_leader_id" = $1`,
+        [id],
+      );
+      await manager.query(
+        `UPDATE "ministry_teams" SET "leader_id" = NULL WHERE "leader_id" = $1`,
+        [id],
+      );
+      await manager.query(
+        `UPDATE "ministry_teams" SET "co_leader_id" = NULL WHERE "co_leader_id" = $1`,
+        [id],
+      );
+
+      // Delete personal submissions/reports authored by this user that are
+      // not already covered by an ON DELETE CASCADE constraint.
+      await manager.query(
+        `DELETE FROM "form_submission_audit_log" WHERE "actorId" = $1`,
+        [id],
+      );
+      await manager.query(
+        `DELETE FROM "member_registrations" WHERE "submittedById" = $1`,
+        [id],
+      );
+      await manager.query(
+        `DELETE FROM "form_conversions" WHERE "submittedById" = $1`,
+        [id],
+      );
+      await manager.query(
+        `DELETE FROM "life_group_reports" WHERE "submittedById" = $1`,
+        [id],
+      );
+      await manager.query(
+        `DELETE FROM "sector_supervisor_reports" WHERE "submittedById" = $1`,
+        [id],
+      );
+      await manager.query(
+        `DELETE FROM "area_supervisor_reports" WHERE "submittedById" = $1`,
+        [id],
+      );
+      await manager.query(
+        `DELETE FROM "multiplications" WHERE "submittedById" = $1`,
+        [id],
+      );
+      await manager.query(
+        `DELETE FROM "service_reports" WHERE "submitted_by_id" = $1`,
+        [id],
+      );
+      await manager.query(
+        `DELETE FROM "form_guests" WHERE "submittedById" = $1`,
+        [id],
+      );
+      await manager.query(
+        `DELETE FROM "meeting_reports" WHERE "leaderId" = $1`,
+        [id],
+      );
+
+      // Hard-delete the user. Cascading FKs (user_accounts,
+      // user_device_tokens, user_notification_preferences, user_courses,
+      // user_life_groups, member_journey_stages, ministry_members,
+      // ministry_team_members) are removed by the database automatically;
+      // notifications.created_by and life_groups.leader_id/co_leader_id are
+      // set to NULL by their existing ON DELETE SET NULL constraints.
+      await manager.delete(User, id);
+    });
   }
 }
