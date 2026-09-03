@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PeopleAutocomplete } from "@/components/ui/people-autocomplete"
 import { AddressForm, EMPTY_ADDRESS, type AddressFormData } from "@/components/ui/address-form"
 import {
   Select,
@@ -32,6 +33,7 @@ import { useSectors } from "@/lib/hooks/use-sectors"
 import { useCourses } from "@/lib/hooks/use-courses"
 import { useLifeGroups } from "@/lib/hooks/use-life-groups"
 import { formatPhoneBR, validatePhoneBR } from "@/lib/utils/phone"
+import type { UserSearchResult } from "@/lib/api/types"
 
 const memberSchema = z.object({
   full_name: z.string().min(3, "Nome completo e obrigatorio"),
@@ -57,6 +59,7 @@ export function MemberRegistrationForm() {
   const { data: courses = [] } = useCourses()
   const { data: lifeGroups = [] } = useLifeGroups()
 
+  const [nameValue, setNameValue] = useState("")
   const [phoneValue, setPhoneValue] = useState("")
   const [addressValue, setAddressValue] = useState<AddressFormData>(EMPTY_ADDRESS)
   const [addressError, setAddressError] = useState<string | null>(null)
@@ -134,6 +137,24 @@ export function MemberRegistrationForm() {
     const formatted = formatPhoneBR(e.target.value)
     setPhoneValue(formatted)
     setValue("cellphone", formatted)
+  }
+
+  const handleNameChange = (value: string) => {
+    setNameValue(value)
+    setValue("full_name", value)
+  }
+
+  const handlePersonSelect = (person: UserSearchResult) => {
+    setNameValue(person.name)
+    setValue("full_name", person.name)
+    if (person.birth_date) {
+      setValue("birthday_date", person.birth_date)
+    }
+    if (person.phone) {
+      const formatted = formatPhoneBR(person.phone)
+      setPhoneValue(formatted)
+      setValue("cellphone", formatted)
+    }
   }
 
   const handleAddressChange = (address: AddressFormData) => {
@@ -246,9 +267,11 @@ export function MemberRegistrationForm() {
                 <Label htmlFor="full_name">
                   Nome Completo <span className="text-destructive">*</span>
                 </Label>
-                <Input
+                <PeopleAutocomplete
                   id="full_name"
-                  {...register("full_name")}
+                  value={nameValue}
+                  onChange={handleNameChange}
+                  onSelect={handlePersonSelect}
                   placeholder="Nome completo do membro"
                 />
                 {errors.full_name && (

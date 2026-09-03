@@ -11,6 +11,7 @@ import type {
   CreateMemberUserRequest,
   UpdateMemberUserRequest
 } from "@/lib/api/types"
+import { useEffect, useState } from "react"
 import { trackEvent } from "@/lib/firebase/analytics"
 
 const QUERY_KEY = ["users"]
@@ -162,6 +163,25 @@ export function useCreateMemberUser() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
       trackEvent("user_created", { user_id: user.id })
     },
+  })
+}
+
+// Debounced typeahead search for existing people (avoids creating duplicates)
+export function useUserSearch(query: string, delay = 300) {
+  const [debouncedQuery, setDebouncedQuery] = useState(query)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), delay)
+    return () => clearTimeout(timer)
+  }, [query, delay])
+
+  const trimmed = debouncedQuery.trim()
+
+  return useQuery({
+    queryKey: [...QUERY_KEY, "search", trimmed],
+    queryFn: () => usersApi.search(trimmed),
+    enabled: trimmed.length >= 2,
+    staleTime: 30_000,
   })
 }
 

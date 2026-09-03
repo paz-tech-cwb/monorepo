@@ -80,6 +80,16 @@ export interface UpdateUserRoleRequest {
   role: UserRole
 }
 
+// User search (typeahead / duplicate-avoidance lookups)
+export interface UserSearchResult {
+  id: number
+  name: string
+  phone?: string | null
+  email?: string | null
+  /** Not guaranteed by the search endpoint yet — render only when present. */
+  birth_date?: string | null
+}
+
 // Member-specific types (using /api/users endpoint)
 export interface MemberUser {
   id: number

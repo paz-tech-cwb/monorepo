@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PeopleAutocomplete } from "@/components/ui/people-autocomplete"
 import { AddressForm, EMPTY_ADDRESS, type AddressFormData } from "@/components/ui/address-form"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -35,6 +36,7 @@ import type {
   CivilStatus,
   ChurchAttendance,
   LifeGroupExperience,
+  UserSearchResult,
 } from "@/lib/api/types"
 
 const conversionSchema = z.object({
@@ -77,6 +79,7 @@ export function ConversionForm() {
   const router = useRouter()
   const createMutation = useCreateConversion()
 
+  const [nameValue, setNameValue] = useState("")
   const [phoneValue, setPhoneValue] = useState("")
   const [addressValue, setAddressValue] = useState<AddressFormData>(EMPTY_ADDRESS)
   const [showOtherField, setShowOtherField] = useState(false)
@@ -95,6 +98,29 @@ export function ConversionForm() {
 
   const howMetChurch = watch("how_met_church")
   const lifeGroupExperience = watch("life_group_experience")
+
+  const handleNameChange = (value: string) => {
+    setNameValue(value)
+    setValue("full_name", value)
+  }
+
+  const handlePersonSelect = (person: UserSearchResult) => {
+    setNameValue(person.name)
+    setValue("full_name", person.name)
+    if (person.phone) {
+      const formatted = formatPhoneBR(person.phone)
+      setPhoneValue(formatted)
+      setValue("cellphone", formatted)
+    }
+    if (person.birth_date) {
+      const birthDate = new Date(person.birth_date)
+      if (!Number.isNaN(birthDate.getTime())) {
+        const ageDiffMs = Date.now() - birthDate.getTime()
+        const age = Math.floor(ageDiffMs / (1000 * 60 * 60 * 24 * 365.25))
+        setValue("age", age)
+      }
+    }
+  }
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhoneBR(e.target.value)
@@ -153,9 +179,11 @@ export function ConversionForm() {
                 <Label htmlFor="full_name">
                   Nome Completo <span className="text-destructive">*</span>
                 </Label>
-                <Input
+                <PeopleAutocomplete
                   id="full_name"
-                  {...register("full_name")}
+                  value={nameValue}
+                  onChange={handleNameChange}
+                  onSelect={handlePersonSelect}
                   placeholder="Nome completo"
                 />
                 {errors.full_name && (
