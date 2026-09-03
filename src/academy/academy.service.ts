@@ -21,6 +21,7 @@ export class AcademyService {
         title: c.title,
         description: c.description ?? null,
         thumbnail_url: c.thumbnailUrl ?? null,
+        url: c.url ?? null,
       })),
     };
   }
