@@ -24,9 +24,7 @@ This root repository is a git-submodule monorepo. Each app folder is an independ
 |---|---|
 | `backend/` | NestJS REST API and database access |
 | `admin-ui/` | Next.js admin dashboard |
-| `mobile-app/` | Legacy/current Flutter mobile app where present |
 | `kmp-mobile/` | Kotlin Multiplatform mobile app workstream |
-| `postman-files/` | API collections and environments |
 
 ## Canonical language
 
