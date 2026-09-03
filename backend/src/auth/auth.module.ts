@@ -14,7 +14,13 @@ import { AuditLogger } from './audit.logger';
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([User, UserAccount, Role, UserDeviceToken, AuditLog]),
+    TypeOrmModule.forFeature([
+      User,
+      UserAccount,
+      Role,
+      UserDeviceToken,
+      AuditLog,
+    ]),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, AuditLogger],

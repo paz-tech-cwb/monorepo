@@ -23,7 +23,9 @@ export class ResendNotificationSender extends NotificationSender {
 
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      this.logger.warn('RESEND_API_KEY not configured — email delivery disabled');
+      this.logger.warn(
+        'RESEND_API_KEY not configured — email delivery disabled',
+      );
       this.resend = null;
       return;
     }
@@ -44,7 +46,10 @@ export class ResendNotificationSender extends NotificationSender {
     }
   }
 
-  async sendWhatsApp(_to: string, _body: string): Promise<void> {
-    this.logger.warn('WhatsApp deferred to v2 — noop');
+  sendWhatsApp(to: string, body: string): Promise<void> {
+    this.logger.warn(
+      `WhatsApp deferred to v2 — noop (to=${to}, body length=${body.length})`,
+    );
+    return Promise.resolve();
   }
 }

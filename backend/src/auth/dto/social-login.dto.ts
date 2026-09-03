@@ -7,6 +7,10 @@ import {
   IsString,
 } from 'class-validator';
 
+interface RawSocialLoginBody {
+  id_token?: unknown;
+}
+
 export class SocialLoginDto {
   @Expose()
   @IsString({ message: 'Provider must be a string.' })
@@ -16,7 +20,7 @@ export class SocialLoginDto {
   provider: string;
 
   @Expose()
-  @Transform(({ obj }) => obj.id_token)
+  @Transform(({ obj }: { obj: RawSocialLoginBody }) => obj.id_token)
   @IsString({ message: 'ID token must be a string.' })
   @IsNotEmpty({ message: 'ID token must not be empty.' })
   idToken: string;

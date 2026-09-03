@@ -120,7 +120,7 @@ export class AuthService implements OnModuleInit {
     } catch (error) {
       if (
         error instanceof HttpException &&
-        error.getStatus() === HttpStatus.BAD_REQUEST
+        (error.getStatus() as HttpStatus) === HttpStatus.BAD_REQUEST
       ) {
         throw error;
       }
@@ -408,10 +408,12 @@ export class AuthService implements OnModuleInit {
         throw new Error('Missing email in Firebase token payload');
       }
 
+      const decodedName: string | undefined =
+        typeof decoded.name === 'string' ? decoded.name : undefined;
+
       return {
         username: decoded.uid,
-        name:
-          decoded.name || this.getUsernameFromEmail(decoded.email) || 'User',
+        name: decodedName || this.getUsernameFromEmail(decoded.email) || 'User',
         email: decoded.email,
         photo: decoded.picture || null,
       };

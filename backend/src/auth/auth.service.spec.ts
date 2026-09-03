@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
+import * as firebaseAdmin from 'firebase-admin';
 import { AuthService } from './auth.service';
 import { User } from 'src/users/entities/user.entity';
 import { UserAccount } from 'src/users/entities/account.entity';
@@ -551,8 +552,8 @@ describe('AuthService', () => {
     it('should not throw during initialization when Firebase is already initialized', () => {
       // Simulate Firebase already initialized (admin.apps.length > 0 skips initializeApp)
       jest
-        .spyOn(require('firebase-admin'), 'apps', 'get')
-        .mockReturnValue([{}]);
+        .spyOn(firebaseAdmin, 'apps', 'get')
+        .mockReturnValue([{}] as unknown as typeof firebaseAdmin.apps);
       expect(() => service.onModuleInit()).not.toThrow();
     });
   });

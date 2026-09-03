@@ -1,13 +1,16 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { LifeGroup } from '../../life-groups/entities/life-group.entity';
 import { ScopeResolverService } from './scope-resolver.service';
 
+type MockRepo<T> = { [K in keyof Repository<T>]?: jest.Mock };
+
 describe('ScopeResolverService', () => {
   let service: ScopeResolverService;
-  let userRepo: any;
-  let lifeRepo: any;
+  let userRepo: MockRepo<User>;
+  let lifeRepo: MockRepo<LifeGroup>;
 
   beforeEach(async () => {
     userRepo = { findOne: jest.fn() };
