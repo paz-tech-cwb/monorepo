@@ -1,0 +1,23 @@
+name: Deploy Admin UI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'admin-ui/**'
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: vars.DEPLOYS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Coolify
+        uses: ./.github/actions/coolify-deploy
+        with:
+          app-name: paz-curitiba-admin-ui
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
