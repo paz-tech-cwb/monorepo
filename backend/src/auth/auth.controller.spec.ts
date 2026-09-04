@@ -71,7 +71,11 @@ describe('AuthController', () => {
 
       const result = await controller.logout(req, dto);
 
-      expect(authService.logout).toHaveBeenCalledWith('my-refresh-token', 5);
+      expect(authService.logout).toHaveBeenCalledWith(
+        'my-refresh-token',
+        5,
+        undefined,
+      );
       expect(result).toEqual({ success: true });
     });
   });

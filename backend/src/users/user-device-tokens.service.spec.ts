@@ -48,15 +48,16 @@ describe('UserDeviceTokensService', () => {
       user: { id: 2 },
     };
     mockEntityManager.findOne.mockResolvedValue(existing);
-    mockEntityManager.update.mockResolvedValue({ affected: 1 });
+    mockEntityManager.save.mockResolvedValue({
+      ...existing,
+      platform: 'android',
+    });
 
     await service.register(1, { token: 'fcm-token-abc', platform: 'android' });
-    expect(mockEntityManager.update).toHaveBeenCalledWith(
-      expect.anything(),
-      existing.id,
+    expect(mockEntityManager.save).toHaveBeenCalledWith(
       expect.objectContaining({ platform: 'android' }),
     );
-    expect(mockEntityManager.save).not.toHaveBeenCalled();
+    expect(mockEntityManager.update).not.toHaveBeenCalled();
   });
 
   it('remove() deletes token belonging to user', async () => {

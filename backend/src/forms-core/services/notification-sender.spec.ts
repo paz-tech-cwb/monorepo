@@ -10,7 +10,10 @@ import { ResendNotificationSender } from './notification-sender';
 describe('ResendNotificationSender', () => {
   let sender: ResendNotificationSender;
 
+  const originalApiKey = process.env.RESEND_API_KEY;
+
   beforeEach(async () => {
+    process.env.RESEND_API_KEY = 'test-api-key';
     sendMock.mockClear();
     const m = await Test.createTestingModule({
       providers: [
@@ -26,6 +29,10 @@ describe('ResendNotificationSender', () => {
       ],
     }).compile();
     sender = m.get(ResendNotificationSender);
+  });
+
+  afterAll(() => {
+    process.env.RESEND_API_KEY = originalApiKey;
   });
 
   it('sends email using the church contact email as from', async () => {

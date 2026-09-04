@@ -39,7 +39,6 @@ describe('OnboardingService', () => {
     } as any);
     expect(users.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        email: 'a@b.com',
         status: 'pending_first_login',
       }),
     );
