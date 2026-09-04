@@ -65,6 +65,9 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Create placeholder GoogleService-Info.plist for CI build
+        run: cp ios/GoogleService-Info.plist.example ios/PazChurch/GoogleService-Info.plist
+
       - name: Build KMP XCFramework
         run: ./gradlew :shared:assembleSharedDebugXCFramework
 
