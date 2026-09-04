@@ -7,7 +7,11 @@ import { FormGuestsController } from './form-guests.controller';
 import { UsersModule } from '../users/users.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([FormGuest]), FormsCoreModule, UsersModule],
+  imports: [
+    TypeOrmModule.forFeature([FormGuest]),
+    FormsCoreModule,
+    UsersModule,
+  ],
   controllers: [FormGuestsController],
   providers: [FormGuestsService],
 })

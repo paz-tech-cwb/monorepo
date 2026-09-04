@@ -14,7 +14,10 @@ import {
   Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { MeetingReportsService } from './meeting-reports.service';
+import {
+  MeetingReportsFilters,
+  MeetingReportsService,
+} from './meeting-reports.service';
 import { CreateMeetingReportDto } from './dto/create-meeting-report.dto';
 import { UpdateMeetingReportDto } from './dto/update-meeting-report.dto';
 
@@ -41,7 +44,7 @@ export class MeetingReportsController {
     @Query('start_date') startDate?: string,
     @Query('end_date') endDate?: string,
   ) {
-    const filters: any = {};
+    const filters: MeetingReportsFilters = {};
     if (lifeGroupId) filters.life_group_id = parseInt(lifeGroupId, 10);
     if (leaderId) filters.leader_id = parseInt(leaderId, 10);
     if (areaId) filters.area_id = parseInt(areaId, 10);

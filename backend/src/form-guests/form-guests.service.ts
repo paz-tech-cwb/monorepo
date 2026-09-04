@@ -51,7 +51,7 @@ export class FormGuestsService {
         phone: dto.phone,
       });
       if (existing) {
-        createdUserId = existing.id as number;
+        createdUserId = existing.id;
       } else if (dto.fullName && (dto.email || dto.phone)) {
         const memberRole = await this.em.findOne(Role, {
           where: { slug: 'member' },

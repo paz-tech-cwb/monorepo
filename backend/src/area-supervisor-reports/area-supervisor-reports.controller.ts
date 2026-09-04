@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ScopeGuard } from '../forms-core/guards/scope.guard';
+import type { RequestWithScope } from '../forms-core/guards/scope.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { AreaSupervisorReportsService } from './area-supervisor-reports.service';
@@ -23,8 +24,8 @@ export class AreaSupervisorReportsController {
   constructor(private readonly svc: AreaSupervisorReportsService) {}
 
   @Get()
-  list(@Req() req: any) {
-    return this.svc.list(req.formScope);
+  list(@Req() req: RequestWithScope) {
+    return this.svc.list(req.formScope!);
   }
 
   @Get(':id')
@@ -40,27 +41,30 @@ export class AreaSupervisorReportsController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles('admin', 'pastor', 'area_leader')
-  create(@Body() dto: CreateAreaSupervisorReportDto, @Req() req: any) {
-    return this.svc.create(dto, req.user.id);
+  create(
+    @Body() dto: CreateAreaSupervisorReportDto,
+    @Req() req: RequestWithScope,
+  ) {
+    return this.svc.create(dto, req.user!.id);
   }
 
   @Patch(':id')
   update(
     @Param('id') id: string,
     @Body() dto: UpdateAreaSupervisorReportDto,
-    @Req() req: any,
+    @Req() req: RequestWithScope,
   ) {
     return this.svc.update(id, dto, {
-      id: req.user.id,
-      roleSlug: req.user.role?.slug ?? 'member',
+      id: req.user!.id,
+      roleSlug: req.user!.role?.slug ?? 'member',
     });
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
+  remove(@Param('id') id: string, @Req() req: RequestWithScope) {
     return this.svc.softDelete(id, {
-      id: req.user.id,
-      roleSlug: req.user.role?.slug ?? 'member',
+      id: req.user!.id,
+      roleSlug: req.user!.role?.slug ?? 'member',
     });
   }
 }

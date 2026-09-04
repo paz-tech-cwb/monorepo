@@ -119,7 +119,9 @@ export class BackendErrorMonitoringFilter implements ExceptionFilter {
       return exception;
     }
 
-    return new Error(typeof exception === 'string' ? exception : 'Unknown error');
+    return new Error(
+      typeof exception === 'string' ? exception : 'Unknown error',
+    );
   }
 
   private buildLogContext(
@@ -130,7 +132,8 @@ export class BackendErrorMonitoringFilter implements ExceptionFilter {
   ): ErrorLogContext {
     return {
       service: 'paz-church-backend',
-      environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || 'development',
+      environment:
+        process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || 'development',
       timestamp: new Date().toISOString(),
       request_id: this.getCorrelationId(request),
       method: request.method,
@@ -196,7 +199,9 @@ export class BackendErrorMonitoringFilter implements ExceptionFilter {
       return {
         cause_type: typeof cause,
         cause_message:
-          typeof cause === 'string' ? cause : JSON.stringify(this.sanitizeBody(cause)),
+          typeof cause === 'string'
+            ? cause
+            : JSON.stringify(this.sanitizeBody(cause)),
       };
     }
 

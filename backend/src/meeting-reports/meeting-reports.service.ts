@@ -8,6 +8,19 @@ import { EntityManager } from 'typeorm';
 import { MeetingReport } from './entities/meeting-report.entity';
 import { CreateMeetingReportDto } from './dto/create-meeting-report.dto';
 import { UpdateMeetingReportDto } from './dto/update-meeting-report.dto';
+import { User } from '../users/entities/user.entity';
+import { LifeGroup } from '../life-groups/entities/life-group.entity';
+import { Area } from '../areas/entities/area.entity';
+import { Sector } from '../sectors/entities/sector.entity';
+
+export interface MeetingReportsFilters {
+  life_group_id?: number;
+  leader_id?: number;
+  area_id?: number;
+  sector_id?: number;
+  start_date?: string;
+  end_date?: string;
+}
 
 @Injectable()
 export class MeetingReportsService {
@@ -40,11 +53,11 @@ export class MeetingReportsService {
   async create(dto: CreateMeetingReportDto) {
     try {
       const report = this.entityManager.create(MeetingReport, {
-        leader: { id: dto.leader_id } as any,
-        lifeGroup: { id: dto.life_group_id } as any,
+        leader: { id: dto.leader_id } as User,
+        lifeGroup: { id: dto.life_group_id } as LifeGroup,
         meetingDate: new Date(dto.meeting_date),
-        area: { id: dto.area_id } as any,
-        sector: { id: dto.sector_id } as any,
+        area: { id: dto.area_id } as Area,
+        sector: { id: dto.sector_id } as Sector,
         totalMembers: dto.total_members,
         membersPresent: dto.members_present,
         children0To11: dto.children_0_11 ?? 0,
@@ -60,21 +73,14 @@ export class MeetingReportsService {
         relations: ['leader', 'lifeGroup', 'area', 'sector'],
       });
       return this.toResponse(loaded!);
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while creating the meeting report.',
       );
     }
   }
 
-  async findAll(filters?: {
-    life_group_id?: number;
-    leader_id?: number;
-    area_id?: number;
-    sector_id?: number;
-    start_date?: string;
-    end_date?: string;
-  }) {
+  async findAll(filters?: MeetingReportsFilters) {
     try {
       const queryBuilder = this.entityManager
         .createQueryBuilder(MeetingReport, 'report')
@@ -124,7 +130,7 @@ export class MeetingReportsService {
         .getMany();
 
       return reports.map((r) => this.toResponse(r));
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving meeting reports.',
       );
@@ -158,14 +164,14 @@ export class MeetingReportsService {
       const report = await this.findOneEntity(id);
 
       if (dto.leader_id !== undefined)
-        report.leader = { id: dto.leader_id } as any;
+        report.leader = { id: dto.leader_id } as User;
       if (dto.life_group_id !== undefined)
-        report.lifeGroup = { id: dto.life_group_id } as any;
+        report.lifeGroup = { id: dto.life_group_id } as LifeGroup;
       if (dto.meeting_date !== undefined)
         report.meetingDate = new Date(dto.meeting_date);
-      if (dto.area_id !== undefined) report.area = { id: dto.area_id } as any;
+      if (dto.area_id !== undefined) report.area = { id: dto.area_id } as Area;
       if (dto.sector_id !== undefined)
-        report.sector = { id: dto.sector_id } as any;
+        report.sector = { id: dto.sector_id } as Sector;
       if (dto.total_members !== undefined)
         report.totalMembers = dto.total_members;
       if (dto.members_present !== undefined)

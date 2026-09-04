@@ -12,7 +12,7 @@ import {
 } from './ministry-access.service';
 import { MINISTRY_FORM_KEY } from './ministry-form.decorator';
 
-interface RequestWithMinistryAccess {
+export interface RequestWithMinistryAccess {
   user?: User;
   ministryAccess?: MinistryAccessResult;
 }

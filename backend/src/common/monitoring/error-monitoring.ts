@@ -13,7 +13,8 @@ export function initializeErrorMonitoring() {
 
   Sentry.init({
     dsn,
-    environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || 'development',
+    environment:
+      process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || 'development',
     release: process.env.SENTRY_RELEASE,
     serverName: process.env.SENTRY_SERVER_NAME || 'paz-church-backend',
     sendDefaultPii: false,
@@ -39,7 +40,10 @@ export function isErrorMonitoringEnabled() {
   return initialized;
 }
 
-export function captureError(error: Error, configureScope: (scope: Sentry.Scope) => void) {
+export function captureError(
+  error: Error,
+  configureScope: (scope: Sentry.Scope) => void,
+) {
   Sentry.withScope((scope) => {
     configureScope(scope);
     Sentry.captureException(error);

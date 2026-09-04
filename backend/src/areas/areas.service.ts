@@ -32,7 +32,7 @@ export class AreasService {
       });
       const saved = await this.entityManager.save(area);
       return this.toResponse(saved);
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while creating the area.',
       );
@@ -45,7 +45,7 @@ export class AreasService {
         order: { name: 'ASC' },
       });
       return areas.map((a) => this.toResponse(a));
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving areas.',
       );

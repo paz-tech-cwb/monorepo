@@ -33,7 +33,7 @@ export class SectorsService {
       });
       const saved = await this.entityManager.save(sector);
       return this.toResponse(saved);
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while creating the sector.',
       );
@@ -47,7 +47,7 @@ export class SectorsService {
         order: { name: 'ASC' },
       });
       return sectors.map((s) => this.toResponse(s));
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving sectors.',
       );

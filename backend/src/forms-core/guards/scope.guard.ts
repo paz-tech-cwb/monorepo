@@ -6,7 +6,7 @@ import {
   ScopeResolverService,
 } from '../services/scope-resolver.service';
 
-interface RequestWithScope {
+export interface RequestWithScope {
   user?: User;
   formScope?: ResolvedScope;
 }

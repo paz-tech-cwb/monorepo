@@ -9,7 +9,9 @@ export class EmailService {
   constructor() {
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
-      this.logger.warn('RESEND_API_KEY not configured — email delivery disabled');
+      this.logger.warn(
+        'RESEND_API_KEY not configured — email delivery disabled',
+      );
       this.resend = null;
       return;
     }

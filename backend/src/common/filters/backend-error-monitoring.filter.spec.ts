@@ -1,4 +1,9 @@
-import { ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { BackendErrorMonitoringFilter } from './backend-error-monitoring.filter';
 import * as monitoring from '../monitoring/error-monitoring';
 
@@ -105,7 +110,9 @@ describe('BackendErrorMonitoringFilter', () => {
 
     filter.catch(exception, createHost(request, response));
 
-    expect(response.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    expect(response.status).toHaveBeenCalledWith(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
     expect(response.json).toHaveBeenCalledWith({
       statusCode: 500,
       message: 'Internal server error',
