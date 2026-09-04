@@ -1,15 +1,15 @@
 {
   "project_info": {
-    "project_number": "REPLACE",
+    "project_number": "000000000000",
     "project_id": "REPLACE",
     "storage_bucket": "REPLACE"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "REPLACE",
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
         "android_client_info": {
-          "package_name": "br.church.paz.android"
+          "package_name": "com.cwb.pazchurch.app"
         }
       },
       "oauth_client": [],
