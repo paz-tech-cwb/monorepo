@@ -1,18 +1,21 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { FormCourse } from './entities/form-course.entity';
 import { FormCourseLink } from './entities/form-course-link.entity';
 import { FormCoursesService } from './form-courses.service';
 
+type MockRepo<T> = { [K in keyof Repository<T>]?: jest.Mock };
+
 describe('FormCoursesService', () => {
   let service: FormCoursesService;
-  let coursesRepo: any;
-  let linksRepo: any;
+  let coursesRepo: MockRepo<FormCourse>;
+  let linksRepo: MockRepo<FormCourseLink>;
 
   beforeEach(async () => {
     coursesRepo = {
       save: jest.fn(),
-      create: jest.fn((x) => x),
+      create: jest.fn((x: Partial<FormCourse>) => x),
       findBy: jest.fn(),
       findOneBy: jest.fn(),
     };

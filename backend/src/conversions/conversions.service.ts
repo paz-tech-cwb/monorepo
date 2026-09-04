@@ -76,7 +76,7 @@ export class ConversionsService {
       });
       const saved = await this.entityManager.save(conversion);
       return this.toResponse(saved);
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while creating the conversion.',
       );
@@ -97,7 +97,7 @@ export class ConversionsService {
 
       const conversions = await queryBuilder.getMany();
       return conversions.map((c) => this.toResponse(c));
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving conversions.',
       );

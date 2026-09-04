@@ -50,7 +50,7 @@ export class CoursesService {
       });
       const saved = await this.entityManager.save(course);
       return this.toResponse(saved);
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while creating the course.',
       );
@@ -63,7 +63,7 @@ export class CoursesService {
         order: { createdAt: 'DESC' },
       });
       return courses.map((c) => this.toResponse(c));
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving courses.',
       );

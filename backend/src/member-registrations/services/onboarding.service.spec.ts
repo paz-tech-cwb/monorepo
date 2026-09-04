@@ -1,19 +1,22 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { NotificationSender } from '../../forms-core/services/notification-sender';
 import { OnboardingService } from './onboarding.service';
 
+type MockRepo<T> = { [K in keyof Repository<T>]?: jest.Mock };
+
 describe('OnboardingService', () => {
   let service: OnboardingService;
-  let users: any;
-  let notifications: any;
+  let users: MockRepo<User>;
+  let notifications: { sendEmail: jest.Mock };
 
   beforeEach(async () => {
     users = {
       findOne: jest.fn(),
-      create: jest.fn((x) => x),
-      save: jest.fn((x) => x),
+      create: jest.fn((x: Partial<User>) => x),
+      save: jest.fn((x: Partial<User>) => x),
     };
     notifications = { sendEmail: jest.fn().mockResolvedValue(undefined) };
     const m = await Test.createTestingModule({

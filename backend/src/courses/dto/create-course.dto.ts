@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { IsString, IsOptional, IsInt, IsIn, IsUrl, Min } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsIn, Min } from 'class-validator';
 
 export class CreateCourseDto {
   @Expose()

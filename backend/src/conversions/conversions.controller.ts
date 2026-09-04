@@ -34,7 +34,7 @@ export class ConversionsController {
 
   @Get()
   findAll(@Query('type') type?: string) {
-    const filters: any = {};
+    const filters: { type?: string } = {};
     if (type) filters.type = type;
     return this.conversionsService.findAll(filters);
   }
