@@ -82,13 +82,7 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             build
 
-      - name: Run iOS unit tests
-        run: |
-          xcodebuild \
-            -project ios/PazChurch.xcodeproj \
-            -scheme PazChurch \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
-            -configuration Debug \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            test
+      # No unit-test step: the PazChurch scheme has no test target configured
+      # (empty <Testables> in the shared scheme, no unit-test bundle target in
+      # the project) — there is nothing to run yet. Add one back here once a
+      # real XCTest target exists in the Xcode project.
