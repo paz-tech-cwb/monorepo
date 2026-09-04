@@ -27,6 +27,9 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Provide placeholder google-services.json
+        run: cp android/google-services.json.example android/google-services.json
+
       - name: Build shared (all targets)
         run: ./gradlew :shared:assemble
 
@@ -63,7 +66,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build KMP XCFramework
-        run: ./gradlew :shared:assembleXCFramework
+        run: ./gradlew :shared:assembleSharedXCFramework
 
       - name: Build iOS app
         run: |
