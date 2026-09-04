@@ -23,6 +23,7 @@ import {
   Sun,
   Moon,
   Waves,
+  BookMarked,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -58,6 +59,7 @@ const sidebarSections = [
     items: [
       { name: "Trilhos", href: "/course-tracks", icon: Route },
       { name: "Cursos", href: "/courses", icon: BookOpen },
+      { name: "Estudo do Life", href: "/estudo-do-life", icon: BookMarked },
     ],
   },
   {

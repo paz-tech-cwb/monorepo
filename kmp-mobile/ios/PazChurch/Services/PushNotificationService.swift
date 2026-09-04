@@ -43,7 +43,6 @@ class PushNotificationService: NSObject {
             }
         }
         UNUserNotificationCenter.current().delegate = self
-
     }
 
     /// Called by AppDelegate.application(_:didRegisterForRemoteNotificationsWithDeviceToken:)
@@ -88,6 +87,9 @@ class PushNotificationService: NSObject {
 
         case deepLink.hasPrefix("paz://lifegroup/"):
             "lifegroup/\(deepLink.dropFirst("paz://lifegroup/".count))"
+
+        case deepLink.hasPrefix("paz://estudo-do-life/"):
+            "estudo-do-life/\(deepLink.dropFirst("paz://estudo-do-life/".count))"
 
         case deepLink == "paz://formularios":
             "formularios"

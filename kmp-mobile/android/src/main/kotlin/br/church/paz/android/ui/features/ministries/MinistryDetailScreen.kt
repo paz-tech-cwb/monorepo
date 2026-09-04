@@ -1,6 +1,7 @@
 package br.church.paz.android.ui.features.ministries
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,10 +16,12 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -167,12 +170,22 @@ fun LifeGroupDetailScreen(
         error = uiState.error,
         onBack = viewModel::onBack,
     ) {
-        uiState.lifeGroup?.let { LifeGroupContent(lifeGroup = it) }
+        uiState.lifeGroup?.let {
+            LifeGroupContent(
+                lifeGroup = it,
+                onStudyTap = {
+                    navController.navigate(br.church.paz.android.navigation.Screen.LifeGroupStudyList.route)
+                },
+            )
+        }
     }
 }
 
 @Composable
-private fun LifeGroupContent(lifeGroup: LifeGroup) {
+private fun LifeGroupContent(
+    lifeGroup: LifeGroup,
+    onStudyTap: () -> Unit,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding =
@@ -241,6 +254,33 @@ private fun LifeGroupContent(lifeGroup: LifeGroup) {
                 lifeGroup.address?.let {
                     InfoRow(icon = Icons.Default.LocationOn, label = "Endereço", value = it.fullAddress)
                 }
+            }
+        }
+
+        item {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(PazShapes.large)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .clickable(onClick = onStudyTap)
+                        .padding(PazSpacing.Lg),
+                horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Outlined.MenuBook,
+                    contentDescription = null,
+                    tint = PazColors.Primary,
+                    modifier = Modifier.size(22.dp),
+                )
+                Text("Estudo do Life", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                )
             }
         }
 

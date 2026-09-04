@@ -27,6 +27,9 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Provide placeholder google-services.json
+        run: cp android/google-services.json.example android/google-services.json
+
       - name: Build shared (all targets)
         run: ./gradlew :shared:assemble
 
@@ -62,8 +65,11 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Provide placeholder GoogleService-Info.plist
+        run: cp ios/PazChurch/GoogleService-Info.plist.example ios/PazChurch/GoogleService-Info.plist
+
       - name: Build KMP XCFramework
-        run: ./gradlew :shared:assembleXCFramework
+        run: ./gradlew :shared:assembleSharedXCFramework
 
       - name: Build iOS app
         run: |
@@ -76,13 +82,18 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             build
 
-      - name: Run iOS unit tests
-        run: |
-          xcodebuild \
-            -project ios/PazChurch.xcodeproj \
-            -scheme PazChurch \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
-            -configuration Debug \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            test
+      # No iOS test target exists in this project yet (PazChurch.xcscheme's
+      # TestAction has an empty Testables list), so `xcodebuild ... test`
+      # always fails with "Scheme PazChurch is not currently configured for
+      # the test action" regardless of what changed. Re-enable this step
+      # once a test target is added.
+      # - name: Run iOS unit tests
+      #   run: |
+      #     xcodebuild \
+      #       -project ios/PazChurch.xcodeproj \
+      #       -scheme PazChurch \
+      #       -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+      #       -configuration Debug \
+      #       CODE_SIGN_IDENTITY="" \
+      #       CODE_SIGNING_REQUIRED=NO \
+      #       test

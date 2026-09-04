@@ -36,20 +36,25 @@ struct AccountView: View {
                     FormulariosView(formsRepository: IosAppContainer.shared.formsRepository)
                 case .memberJourney:
                     MemberJourneyView(memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository)
-                case .formDetail(let formId):
+                case let .formDetail(formId):
                     FormDetailDeepLinkView(
                         formId: formId,
                         formsRepository: IosAppContainer.shared.formsRepository
                     )
-                case .ministryDetail(let ministryId):
+                case let .ministryDetail(ministryId):
                     MinistryDetailDeepLinkView(
                         ministryId: ministryId,
                         churchRepository: IosAppContainer.shared.churchRepository
                     )
-                case .lifeGroupDetail(let lifeGroupId):
+                case let .lifeGroupDetail(lifeGroupId):
                     LifeGroupDetailDeepLinkView(
                         lifeGroupId: lifeGroupId,
                         churchRepository: IosAppContainer.shared.churchRepository
+                    )
+                case let .lifeGroupStudyDetail(studyId):
+                    LifeGroupStudyDetailView(
+                        studyId: studyId,
+                        repository: IosAppContainer.shared.lifeGroupStudyRepository
                     )
                 default:
                     EmptyView()
@@ -65,7 +70,7 @@ struct AccountView: View {
                   let destination = pushService.deepLinkDestination
             else { return }
             switch destination {
-            case .formularios, .memberJourney, .formDetail, .ministryDetail, .lifeGroupDetail:
+            case .formularios, .memberJourney, .formDetail, .ministryDetail, .lifeGroupDetail, .lifeGroupStudyDetail:
                 Task { @MainActor in
                     path = [destination]
                 }

@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "REPLACE",
         "android_client_info": {
-          "package_name": "br.church.paz.android"
+          "package_name": "com.cwb.pazchurch.app"
         }
       },
       "oauth_client": [],

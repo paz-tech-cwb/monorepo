@@ -47,7 +47,8 @@ struct MainTabView: View {
         case .agendaDetail:
             selectedTab = 0
             agendaPath = [destination]
-        case .formDetail, .ministryDetail, .lifeGroupDetail, .formularios, .memberJourney, .account:
+        case .formDetail, .ministryDetail, .lifeGroupDetail, .lifeGroupStudyDetail, .formularios, .memberJourney,
+             .account:
             // Switch tab only — AccountView observes pendingDeepLink and pushes its own path
             selectedTab = 2
         }
@@ -57,25 +58,30 @@ struct MainTabView: View {
     @ViewBuilder
     private func deepLinkView(for destination: DeepLinkDestination) -> some View {
         switch destination {
-        case .agendaDetail(let eventId):
+        case let .agendaDetail(eventId):
             AgendaDetailDeepLinkView(
                 eventId: eventId,
                 agendaRepository: IosAppContainer.shared.agendaRepository
             )
-        case .formDetail(let formId):
+        case let .formDetail(formId):
             FormDetailDeepLinkView(
                 formId: formId,
                 formsRepository: IosAppContainer.shared.formsRepository
             )
-        case .ministryDetail(let ministryId):
+        case let .ministryDetail(ministryId):
             MinistryDetailDeepLinkView(
                 ministryId: ministryId,
                 churchRepository: IosAppContainer.shared.churchRepository
             )
-        case .lifeGroupDetail(let lifeGroupId):
+        case let .lifeGroupDetail(lifeGroupId):
             LifeGroupDetailDeepLinkView(
                 lifeGroupId: lifeGroupId,
                 churchRepository: IosAppContainer.shared.churchRepository
+            )
+        case let .lifeGroupStudyDetail(studyId):
+            LifeGroupStudyDetailView(
+                studyId: studyId,
+                repository: IosAppContainer.shared.lifeGroupStudyRepository
             )
         default:
             EmptyView()
@@ -126,7 +132,6 @@ private struct AgendaDetailDeepLinkView: View {
         isLoading = false
     }
 }
-
 
 #Preview {
     MainTabView()

@@ -12,6 +12,9 @@ import br.church.paz.android.ui.features.formularios.FormDetailScreen
 import br.church.paz.android.ui.features.formularios.FormSubmissionDetailScreen
 import br.church.paz.android.ui.features.formularios.FormSubmissionsListScreen
 import br.church.paz.android.ui.features.formularios.FormulariosScreen
+import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailScreen
+import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorScreen
+import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListScreen
 import br.church.paz.android.ui.features.memberjourney.MemberJourneyScreen
 import br.church.paz.android.ui.features.ministries.LifeGroupDetailScreen
 import br.church.paz.android.ui.features.ministries.MinistriesScreen
@@ -115,6 +118,26 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         ) { backStackEntry ->
             val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
             LifeGroupDetailScreen(navController = navController, lifeGroupId = lifeGroupId)
+        }
+        composable(Screen.LifeGroupStudyList.route) {
+            LifeGroupStudyListScreen(navController = navController)
+        }
+        composable(
+            route = Screen.LifeGroupStudyDetail.route,
+            arguments = listOf(androidx.navigation.navArgument("studyId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val studyId = backStackEntry.arguments?.getString("studyId") ?: return@composable
+            LifeGroupStudyDetailScreen(navController = navController, studyId = studyId)
+        }
+        composable(Screen.LifeGroupStudyCreate.route) {
+            LifeGroupStudyEditorScreen(navController = navController, studyId = null)
+        }
+        composable(
+            route = Screen.LifeGroupStudyEdit.route,
+            arguments = listOf(androidx.navigation.navArgument("studyId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val studyId = backStackEntry.arguments?.getString("studyId") ?: return@composable
+            LifeGroupStudyEditorScreen(navController = navController, studyId = studyId)
         }
     }
 }

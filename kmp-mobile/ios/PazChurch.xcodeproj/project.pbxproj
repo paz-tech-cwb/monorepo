@@ -45,6 +45,10 @@
 		8BBB7655494EE2891298CD78 /* PazPillChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62DDEA0026352360D73E873 /* PazPillChip.swift */; };
 		96BF8A72553894BA74F6934B /* PazIconContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC853F6E892CF7A2AE4283F /* PazIconContainer.swift */; };
 		9B9A6148AFFD0C8167085DD0 /* MinistryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDD6B4FBC968ED037D73EAA9 /* MinistryDetailView.swift */; };
+		EC47F67C306E4116B92C805C /* LifeGroupStudyListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81F5F9C4D6F647AB9C4522FC /* LifeGroupStudyListView.swift */; };
+		EBE6B3F681DC476EBACABABD /* LifeGroupStudyDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F688FE786E3B4822974AA197 /* LifeGroupStudyDetailView.swift */; };
+		B49A8A26EB2141E1BDCD0884 /* LifeGroupStudyEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F0377C328A34AD89473C459 /* LifeGroupStudyEditorView.swift */; };
+		F7A8CC9281B943B1B4BD7B15 /* LifeGroupStudyViewModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8525FE5A2F894ED0966D903D /* LifeGroupStudyViewModels.swift */; };
 		A0CCE565617A81DD9C6404A9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = F04B442417CCD3B5A58BC0DF /* FirebaseAuth */; };
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* DeepLinkDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7B8C9D0E1F2A3 /* DeepLinkDestination.swift */; };
 		A98EE8C9CC199B26F49D75EB /* AgendaDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE4B8D8AE9B398AA3A77DA29 /* AgendaDetailView.swift */; };
@@ -125,6 +129,10 @@
 		E8ED14052DB30DEC694C772C /* PazChurchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazChurchApp.swift; sourceTree = "<group>"; };
 		EA7936BCA1C57C580876AD98 /* EditProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfileView.swift; sourceTree = "<group>"; };
 		EDD6B4FBC968ED037D73EAA9 /* MinistryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinistryDetailView.swift; sourceTree = "<group>"; };
+		81F5F9C4D6F647AB9C4522FC /* LifeGroupStudyListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupStudyListView.swift; sourceTree = "<group>"; };
+		F688FE786E3B4822974AA197 /* LifeGroupStudyDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupStudyDetailView.swift; sourceTree = "<group>"; };
+		9F0377C328A34AD89473C459 /* LifeGroupStudyEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupStudyEditorView.swift; sourceTree = "<group>"; };
+		8525FE5A2F894ED0966D903D /* LifeGroupStudyViewModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupStudyViewModels.swift; sourceTree = "<group>"; };
 		EF907E68FA85FA69FAE6B591 /* playfair_display_extrabold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = playfair_display_extrabold.ttf; sourceTree = "<group>"; };
 		F62DDEA0026352360D73E873 /* PazPillChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazPillChip.swift; sourceTree = "<group>"; };
 		F8BEE46E84E5D0C0BE0786C7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -206,6 +214,7 @@
 				9583323C0C4D778E6E30C67E /* Home */,
 				F1CD9530F50CB5214AE5DF32 /* MemberJourney */,
 				36D27ED148027B3DCC6FD3CF /* Ministries */,
+				E9FE6AF5F9D64FC999C08A53 /* LifeGroupStudy */,
 				23C7D2740D252722209A1DB5 /* Notifications */,
 				D693032B5B8C44453E934096 /* Profile */,
 				E4B1DED23E50E129CCA71F73 /* Search */,
@@ -366,6 +375,17 @@
 			path = Search;
 			sourceTree = "<group>";
 		};
+		E9FE6AF5F9D64FC999C08A53 /* LifeGroupStudy */ = {
+			isa = PBXGroup;
+			children = (
+				81F5F9C4D6F647AB9C4522FC /* LifeGroupStudyListView.swift */,
+				F688FE786E3B4822974AA197 /* LifeGroupStudyDetailView.swift */,
+				9F0377C328A34AD89473C459 /* LifeGroupStudyEditorView.swift */,
+				8525FE5A2F894ED0966D903D /* LifeGroupStudyViewModels.swift */,
+			);
+			path = LifeGroupStudy;
+			sourceTree = "<group>";
+		};
 		F1CD9530F50CB5214AE5DF32 /* MemberJourney */ = {
 			isa = PBXGroup;
 			children = (
@@ -510,6 +530,10 @@
 				D801CBE1B82319E0DA01E3CF /* MemberJourneyView.swift in Sources */,
 				1F3D35E5FF143FC6C08A16BC /* MinistriesView.swift in Sources */,
 				9B9A6148AFFD0C8167085DD0 /* MinistryDetailView.swift in Sources */,
+				EC47F67C306E4116B92C805C /* LifeGroupStudyListView.swift in Sources */,
+				EBE6B3F681DC476EBACABABD /* LifeGroupStudyDetailView.swift in Sources */,
+				B49A8A26EB2141E1BDCD0884 /* LifeGroupStudyEditorView.swift in Sources */,
+				F7A8CC9281B943B1B4BD7B15 /* LifeGroupStudyViewModels.swift in Sources */,
 				09EDC02009417BFD3B3FA3BC /* NotificationPrefsView.swift in Sources */,
 				DBED4836D8DD1B07E3FBB55E /* PazChurchApp.swift in Sources */,
 				21F50B565FBD16CF5729BD56 /* PazColors.swift in Sources */,

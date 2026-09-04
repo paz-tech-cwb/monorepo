@@ -56,4 +56,16 @@ sealed class Screen(
     data object NotificationPrefs : Screen("notification_prefs")
 
     data object AgendaList : Screen("agenda_list")
+
+    data object LifeGroupStudyList : Screen("life_group_study_list")
+
+    data object LifeGroupStudyDetail : Screen("life_group_study_detail/{studyId}") {
+        fun createRoute(studyId: String) = "life_group_study_detail/$studyId"
+    }
+
+    data object LifeGroupStudyCreate : Screen("life_group_study_create")
+
+    data object LifeGroupStudyEdit : Screen("life_group_study_edit/{studyId}") {
+        fun createRoute(studyId: String) = "life_group_study_edit/$studyId"
+    }
 }

@@ -2,12 +2,14 @@ import {
   IsArray,
   IsEnum,
   IsIn,
+  IsInt,
   IsISO8601,
   IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
   ArrayMinSize,
+  ValidateNested,
 } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
 import {
@@ -22,6 +24,11 @@ export class SegmentFiltersDto {
   @Expose() @IsOptional() @IsIn(['active', 'inactive']) status?:
     | 'active'
     | 'inactive';
+  @Expose()
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  user_ids?: number[];
 }
 
 export class SegmentDto {
@@ -32,6 +39,7 @@ export class SegmentDto {
   @Expose()
   @IsOptional()
   @IsObject()
+  @ValidateNested()
   @Type(() => SegmentFiltersDto)
   filters?: SegmentFiltersDto;
 }
@@ -59,6 +67,7 @@ export class CreateNotificationDto {
 
   @Expose()
   @IsObject()
+  @ValidateNested()
   @Type(() => SegmentDto)
   segment: SegmentDto;
 
