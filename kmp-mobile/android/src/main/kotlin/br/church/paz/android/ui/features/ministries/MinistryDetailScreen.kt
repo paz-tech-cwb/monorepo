@@ -16,10 +16,12 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -268,14 +270,14 @@ private fun LifeGroupContent(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
-                    androidx.compose.material.icons.Icons.Outlined.MenuBook,
+                    Icons.Outlined.MenuBook,
                     contentDescription = null,
                     tint = PazColors.Primary,
                     modifier = Modifier.size(22.dp),
                 )
                 Text("Estudo do Life", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                 Icon(
-                    androidx.compose.material.icons.Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                 )

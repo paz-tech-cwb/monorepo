@@ -20,7 +20,7 @@ import br.church.paz.android.ui.theme.PazSpacing
 /**
  * Minimal, hand-rolled Markdown renderer for study content ([bodyMarkdown]).
  * Supports paragraphs, headings (#, ##, ###), unordered lists ("- "/"* "),
- * bold (**text**) and italic (*text*/_text_). This intentionally does not aim
+ * bold (**text**) and italic (*text* or _text_). This intentionally does not aim
  * to be a full CommonMark implementation — the project stores plain Markdown
  * and this covers the formatting produced by the in-app authoring toolbar.
  */
