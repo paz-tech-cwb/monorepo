@@ -76,8 +76,12 @@ jobs:
           GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.IOS_GOOGLE_SERVICE_INFO_PLIST }}
         run: echo "$GOOGLE_SERVICE_INFO_PLIST" > ios/PazChurch/GoogleService-Info.plist
 
-      - name: Build KMP XCFramework (release)
-        run: ./gradlew :shared:assembleSharedReleaseXCFramework
+      # The Xcode project's FRAMEWORK_SEARCH_PATHS is hardcoded to the debug
+      # XCFramework output for both Debug and Release configs (pre-existing,
+      # not specific to this pipeline), so both variants must exist even
+      # though we're archiving Release.
+      - name: Build KMP XCFramework (debug + release)
+        run: ./gradlew :shared:assembleSharedXCFramework
 
       - name: Import signing certificate into a temporary keychain
         env:
@@ -113,8 +117,24 @@ jobs:
           PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" | plutil -extract Name raw -)
           cp "$PROFILE_PATH" "$PROFILES_DIR/$PROFILE_UUID.mobileprovision"
 
-          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
+          # PROVISIONING_PROFILE_SPECIFIER is hardcoded in the Xcode project
+          # (Release config) rather than passed at the command line — see the
+          # Archive step. Fail loudly here if the installed profile's actual
+          # name doesn't match what the project expects, instead of letting
+          # xcodebuild fail later with a less obvious signing error.
+          EXPECTED_PROFILE_NAME="PazChurch AppStore Distribution"
+          if [ "$PROFILE_NAME" != "$EXPECTED_PROFILE_NAME" ]; then
+            echo "::error::Installed provisioning profile is named '$PROFILE_NAME', but the Xcode project's Release config expects '$EXPECTED_PROFILE_NAME'. Update PROVISIONING_PROFILE_SPECIFIER in project.pbxproj to match, or reissue the profile with the expected name."
+            exit 1
+          fi
 
+      # Signing settings (CODE_SIGN_STYLE, identity, provisioning profile) are
+      # baked into the Release build configuration in the Xcode project
+      # itself, not passed here. Passing them as xcodebuild command-line
+      # overrides applies them to EVERY target in the build graph, including
+      # SPM package dependencies (Firebase, Kingfisher, etc.), which fails
+      # with "does not support provisioning profiles" since those targets
+      # can't be manually signed.
       - name: Archive
         run: |
           xcodebuild archive \
@@ -122,11 +142,7 @@ jobs:
             -scheme PazChurch \
             -configuration Release \
             -destination 'generic/platform=iOS' \
-            -archivePath "$RUNNER_TEMP/PazChurch.xcarchive" \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            DEVELOPMENT_TEAM=NMCA95DPCN \
-            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME"
+            -archivePath "$RUNNER_TEMP/PazChurch.xcarchive"
 
       - name: Export IPA
         run: |
