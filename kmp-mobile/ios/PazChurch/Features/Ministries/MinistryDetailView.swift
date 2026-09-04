@@ -99,12 +99,32 @@ struct LifeGroupDetailView: View {
                     .background(PazColors.surface)
                     .cornerRadius(16)
 
+                    NavigationLink {
+                        LifeGroupStudyListView(repository: IosAppContainer.shared.lifeGroupStudyRepository)
+                    } label: {
+                        HStack(spacing: PazSpacing.md) {
+                            Image(systemName: "book.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(PazColors.primary)
+                            Text("Estudo do Life")
+                                .font(PazTypography.titleSmall)
+                                .foregroundColor(PazColors.ink)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                        }
+                        .padding(PazSpacing.lg)
+                        .background(PazColors.surface)
+                        .cornerRadius(16)
+                    }
+                    .buttonStyle(.plain)
+
                     Spacer().frame(height: PazSpacing.xl)
                 }
                 .padding(.horizontal, PazSpacing.lg)
             }
             .background(PazColors.background)
-
         }
         .background(PazColors.background)
         .navigationTitle(lifeGroup.name)

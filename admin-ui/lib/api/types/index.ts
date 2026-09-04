@@ -15,3 +15,4 @@ export * from "./sectors"
 
 export * from "./conversions"
 export * from './reminder-rules'
+export * from "./life-group-studies"

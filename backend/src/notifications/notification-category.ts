@@ -8,6 +8,7 @@ export const NOTIFICATION_CATEGORIES = [
   'member_journey',
   'contributions',
   'meeting_reports',
+  'life_group_study',
 ] as const;
 
 export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];

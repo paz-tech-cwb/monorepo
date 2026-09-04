@@ -8,6 +8,9 @@ struct AccountView: View {
     @Environment(AppThemeManager.self) private var themeManager
     @Environment(PushNotificationService.self) private var pushService
     @State private var path: [DeepLinkDestination] = []
+    @State private var showDeleteAccountConfirm = false
+    @State private var isDeletingAccount = false
+    @State private var deleteAccountError: String?
 
     init(userRepository: UserRepository, authRepository: AuthRepository) {
         _viewModel = State(initialValue: AccountViewModel(
@@ -36,20 +39,25 @@ struct AccountView: View {
                     FormulariosView(formsRepository: IosAppContainer.shared.formsRepository)
                 case .memberJourney:
                     MemberJourneyView(memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository)
-                case .formDetail(let formId):
+                case let .formDetail(formId):
                     FormDetailDeepLinkView(
                         formId: formId,
                         formsRepository: IosAppContainer.shared.formsRepository
                     )
-                case .ministryDetail(let ministryId):
+                case let .ministryDetail(ministryId):
                     MinistryDetailDeepLinkView(
                         ministryId: ministryId,
                         churchRepository: IosAppContainer.shared.churchRepository
                     )
-                case .lifeGroupDetail(let lifeGroupId):
+                case let .lifeGroupDetail(lifeGroupId):
                     LifeGroupDetailDeepLinkView(
                         lifeGroupId: lifeGroupId,
                         churchRepository: IosAppContainer.shared.churchRepository
+                    )
+                case let .lifeGroupStudyDetail(studyId):
+                    LifeGroupStudyDetailView(
+                        studyId: studyId,
+                        repository: IosAppContainer.shared.lifeGroupStudyRepository
                     )
                 default:
                     EmptyView()
@@ -60,12 +68,45 @@ struct AccountView: View {
         .onChange(of: authCoordinator.isAuthenticated) { _, isAuth in
             if isAuth { Task { await viewModel.reload() } }
         }
+        .confirmationDialog(
+            "Excluir minha conta",
+            isPresented: $showDeleteAccountConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Excluir permanentemente", role: .destructive) {
+                Task {
+                    isDeletingAccount = true
+                    let success = await authCoordinator.deleteAccount()
+                    isDeletingAccount = false
+                    if !success {
+                        deleteAccountError = authCoordinator.error
+                    }
+                }
+            }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text(
+                "Esta ação é permanente e não pode ser desfeita. Todos os seus dados " +
+                    "(perfil, jornada, formulários e histórico) serão excluídos definitivamente."
+            )
+        }
+        .alert(
+            "Erro ao excluir conta",
+            isPresented: Binding(
+                get: { deleteAccountError != nil },
+                set: { if !$0 { deleteAccountError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { deleteAccountError = nil }
+        } message: {
+            Text(deleteAccountError ?? "")
+        }
         .onChange(of: pushService.pendingDeepLink) { _, newValue in
             guard newValue != nil,
                   let destination = pushService.deepLinkDestination
             else { return }
             switch destination {
-            case .formularios, .memberJourney, .formDetail, .ministryDetail, .lifeGroupDetail:
+            case .formularios, .memberJourney, .formDetail, .ministryDetail, .lifeGroupDetail, .lifeGroupStudyDetail:
                 Task { @MainActor in
                     path = [destination]
                 }
@@ -148,6 +189,29 @@ struct AccountView: View {
                             .padding(.horizontal, 16).padding(.vertical, 12)
                         }
                         .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+
+                    menuCard {
+                        Button(action: { showDeleteAccountConfirm = true }) {
+                            HStack(spacing: 16) {
+                                if isDeletingAccount {
+                                    ProgressView().tint(PazColors.error)
+                                        .frame(width: 32, height: 32)
+                                } else {
+                                    PazIconContainer(icon: "trash", tint: PazColors.error)
+                                }
+                                Text("Excluir minha conta").font(PazTypography.bodyMedium)
+                                    .foregroundStyle(PazColors.error)
+                                Spacer()
+                                Image(systemName: "chevron.right").font(.system(size: 13))
+                                    .foregroundStyle(PazColors.slateLight)
+                            }
+                            .padding(.horizontal, 16).padding(.vertical, 12)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isDeletingAccount)
                     }
                     .padding(.horizontal, 20)
                 }

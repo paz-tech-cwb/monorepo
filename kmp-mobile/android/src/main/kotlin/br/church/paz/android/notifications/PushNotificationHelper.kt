@@ -61,6 +61,8 @@ object PushNotificationHelper {
             deepLink.startsWith("paz://form/") -> "form_detail/${deepLink.removePrefix("paz://form/")}"
             deepLink.startsWith("paz://ministry/") -> "ministry_detail/${deepLink.removePrefix("paz://ministry/")}"
             deepLink.startsWith("paz://lifegroup/") -> "life_group_detail/${deepLink.removePrefix("paz://lifegroup/")}"
+            deepLink.startsWith("paz://estudo-do-life/") ->
+                "life_group_study_detail/${deepLink.removePrefix("paz://estudo-do-life/")}"
             deepLink.startsWith("paz://formularios") -> "formularios"
             deepLink.startsWith("paz://journey") -> "member_journey"
             deepLink.startsWith("paz://account") -> "account"

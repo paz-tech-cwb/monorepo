@@ -8,6 +8,7 @@ import br.church.paz.shared.data.repository.AuthRepositoryImpl
 import br.church.paz.shared.data.repository.ChurchRepositoryImpl
 import br.church.paz.shared.data.repository.FormsRepositoryImpl
 import br.church.paz.shared.data.repository.HomeRepositoryImpl
+import br.church.paz.shared.data.repository.LifeGroupStudyRepositoryImpl
 import br.church.paz.shared.data.repository.MemberJourneyRepositoryImpl
 import br.church.paz.shared.data.repository.UserRepositoryImpl
 import br.church.paz.shared.data.repository.createUserStore
@@ -18,13 +19,14 @@ import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.FormsRepository
 import br.church.paz.shared.domain.repository.HomeRepository
+import br.church.paz.shared.domain.repository.LifeGroupStudyRepository
 import br.church.paz.shared.domain.repository.MemberJourneyRepository
 import br.church.paz.shared.domain.repository.UserRepository
 import io.ktor.client.engine.darwin.Darwin
 
 object IosAppContainer {
 
-    var baseUrl: String = "http://192.168.15.10:3001/api"
+    var baseUrl: String = "http://znzcybe6t18zwapiy9hytma5.62.238.45.195.sslip.io"
 
     private val tokenStorage by lazy { createTokenStorage() }
     private val userStore by lazy { createUserStore() }
@@ -49,6 +51,7 @@ object IosAppContainer {
     val churchRepository: ChurchRepository by lazy { ChurchRepositoryImpl(httpClient) }
     val memberJourneyRepository: MemberJourneyRepository by lazy { MemberJourneyRepositoryImpl(httpClient) }
     val formsRepository: FormsRepository by lazy { FormsRepositoryImpl(httpClient) }
+    val lifeGroupStudyRepository: LifeGroupStudyRepository by lazy { LifeGroupStudyRepositoryImpl(httpClient) }
 
     // iOS-friendly wrappers that throw on failure instead of returning Result<T>
     @Throws(Exception::class)
@@ -58,5 +61,10 @@ object IosAppContainer {
     @Throws(Exception::class)
     suspend fun logout(fcmToken: String?) {
         authRepository.logout(fcmToken).getOrThrow()
+    }
+
+    @Throws(Exception::class)
+    suspend fun deleteAccount() {
+        authRepository.deleteAccount().getOrThrow()
     }
 }

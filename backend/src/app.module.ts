@@ -37,6 +37,7 @@ import { FormGuestsModule } from './form-guests/form-guests.module';
 import { MinistriesModule } from './ministries/ministries.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { MinistryAccessModule } from './ministry-access/ministry-access.module';
+import { LifeGroupStudiesModule } from './life-group-studies/life-group-studies.module';
 
 import ormconfig from './configs/orm.config';
 
@@ -94,6 +95,7 @@ import ormconfig from './configs/orm.config';
     MinistriesModule,
     RemindersModule,
     MinistryAccessModule,
+    LifeGroupStudiesModule,
   ],
   providers: [
     {

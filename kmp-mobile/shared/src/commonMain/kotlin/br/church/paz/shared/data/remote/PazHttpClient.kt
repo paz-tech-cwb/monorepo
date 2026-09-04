@@ -4,8 +4,11 @@ import br.church.paz.shared.auth.TokenPair
 import br.church.paz.shared.auth.TokenStorage
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.HttpCallValidator
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.ServerResponseException
+import io.ktor.client.statement.bodyAsText
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.authProvider
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
@@ -102,6 +105,35 @@ fun createPazHttpClient(
  */
 fun HttpClient.clearBearerTokenCache() {
     authProvider<BearerAuthProvider>()?.clearToken()
+}
+
+/**
+ * Returns the HTTP status code carried by a Ktor client-error exception (e.g. a 403
+ * from a permission check), or `null` if this throwable is not a Ktor
+ * [ClientRequestException]. Prefer this over string-matching on [Throwable.message]
+ * when a caller needs to branch on a specific status code.
+ */
+fun Throwable.httpStatusCodeOrNull(): Int? = (this as? ClientRequestException)?.response?.status?.value
+
+/**
+ * Explicitly raises a [ClientRequestException]/[ServerResponseException] for a non-2xx
+ * [HttpResponse].
+ *
+ * The shared [HttpClient] intentionally keeps Ktor's default `expectSuccess = false` because
+ * other call sites (e.g. [br.church.paz.shared.data.repository.AuthRepositoryImpl] and the
+ * token-refresh flow above) read the raw response body/status on non-2xx responses to extract a
+ * server-provided error message, which only works when Ktor does *not* throw. Flipping
+ * `expectSuccess` globally would break that behavior. Call sites that instead want status-code
+ * based error handling (e.g. detecting a 403) should call this right after receiving the
+ * [HttpResponse] and before decoding its body.
+ */
+suspend fun HttpResponse.throwOnClientOrServerError() {
+    if (status.isSuccess()) return
+    val text = runCatching { bodyAsText() }.getOrDefault("")
+    when (status.value) {
+        in 400..499 -> throw ClientRequestException(this, text)
+        in 500..599 -> throw ServerResponseException(this, text)
+    }
 }
 
 /**
