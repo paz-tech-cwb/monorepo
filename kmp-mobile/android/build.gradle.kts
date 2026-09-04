@@ -5,6 +5,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.gms.google-services")
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.firebase.appdistribution)
 }
 
 android {
@@ -18,6 +19,23 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
+    }
+
+    // Release signing reads from env vars so the real keystore/passwords never
+    // need to be committed. CI decodes the ANDROID_KEYSTORE_BASE64 secret to a
+    // file and sets ANDROID_KEYSTORE_PATH before invoking Gradle. Locally,
+    // `signingConfigs.release` is left with a null path and release builds
+    // that need real signing simply aren't runnable without these env vars set.
+    val releaseKeystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+    signingConfigs {
+        if (releaseKeystorePath != null) {
+            create("release") {
+                storeFile = file(releaseKeystorePath)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -37,6 +55,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            if (releaseKeystorePath != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             buildConfigField("String", "BASE_URL", "\"https://api.paz.church/api\"")
             buildConfigField(
                 "String",
@@ -44,6 +65,16 @@ android {
                 "\"139667803306-l99mi58j9d2ovncd4frvh4j2tpjaq2ei.apps.googleusercontent.com\"",
             )
         }
+    }
+
+    // Firebase App Distribution: `./gradlew appDistributionUploadRelease` in CI.
+    // Tester group and release notes are passed at invocation time via CI env,
+    // not hardcoded, so different pipelines (e.g. future ad-hoc QA builds) can
+    // reuse this config with different targets.
+    firebaseAppDistribution {
+        serviceCredentialsFile = System.getenv("FIREBASE_SERVICE_ACCOUNT_PATH") ?: ""
+        groups = System.getenv("FIREBASE_DISTRIBUTION_GROUPS") ?: "internal-testers"
+        releaseNotes = System.getenv("FIREBASE_RELEASE_NOTES") ?: "Automated build from develop"
     }
 
     compileOptions {
