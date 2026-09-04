@@ -68,7 +68,7 @@ export class AnnouncementsService {
       }
 
       return announcement;
-    } catch (error) {
+    } catch {
       throw new NotFoundException(`Announcement with ID ${id} not found`);
     }
   }
@@ -85,7 +85,7 @@ export class AnnouncementsService {
 
       // save changes
       return await this.entityManager.save(Announcement, announcement);
-    } catch (error) {
+    } catch {
       throw new NotFoundException(
         `It was not possible to update the Announcement.`,
       );

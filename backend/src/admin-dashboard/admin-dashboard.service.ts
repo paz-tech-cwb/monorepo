@@ -43,14 +43,14 @@ export class AdminDashboardService {
         new_members_this_month: newMembersThisMonth,
         contributions_this_month: 0,
       };
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving dashboard stats.',
       );
     }
   }
 
-  async getAccessTrends() {
+  getAccessTrends() {
     try {
       // Returns the last 7 days with zero counts as placeholder
       // Future: integrate with Firebase Analytics or access log table
@@ -64,7 +64,7 @@ export class AdminDashboardService {
         });
       }
       return trends;
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving access trends.',
       );
@@ -93,7 +93,7 @@ export class AdminDashboardService {
           total_members: running,
         };
       });
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving member growth data.',
       );
@@ -116,7 +116,7 @@ export class AdminDashboardService {
         name: row.name,
         member_count: Number(row.member_count),
       }));
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving life group distribution.',
       );

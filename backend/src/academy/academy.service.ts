@@ -34,7 +34,7 @@ export class AcademyService {
       return {
         tracks: tracks.map((t) => this.trackToResponse(t)),
       };
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving academy data.',
       );

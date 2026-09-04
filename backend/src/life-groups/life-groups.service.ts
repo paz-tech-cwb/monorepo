@@ -9,6 +9,7 @@ import { LifeGroup } from './entities/life-group.entity';
 import { CreateLifeGroupDto } from './dto/create-life-group.dto';
 import { UpdateLifeGroupDto } from './dto/update-life-group.dto';
 import { User } from '../users/entities/user.entity';
+import { Sector } from '../sectors/entities/sector.entity';
 
 @Injectable()
 export class LifeGroupsService {
@@ -16,6 +17,10 @@ export class LifeGroupsService {
     @InjectEntityManager()
     private readonly entityManager: EntityManager,
   ) {}
+
+  private ref<T extends { id: number }>(id?: number | null): T | null {
+    return id ? ({ id } as T) : null;
+  }
 
   private toResponse(lifeGroup: LifeGroup) {
     return {
@@ -46,7 +51,7 @@ export class LifeGroupsService {
       const lifeGroup = this.entityManager.create(LifeGroup, {
         name: dto.name,
         leader: dto.leader_id ? { id: dto.leader_id } : null,
-        coLeader: dto.co_leader_id ? ({ id: dto.co_leader_id } as any) : null,
+        coLeader: this.ref<User>(dto.co_leader_id),
         sector: dto.sector_id ? { id: dto.sector_id } : null,
         location: dto.location ?? null,
         meetingDay: dto.meeting_day ?? null,
@@ -58,7 +63,7 @@ export class LifeGroupsService {
         relations: ['leader', 'coLeader', 'sector', 'users'],
       });
       return this.toResponse(loaded!);
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while creating the life group.',
       );
@@ -72,7 +77,7 @@ export class LifeGroupsService {
         order: { name: 'ASC' },
       });
       return lifeGroups.map((lg) => this.toResponse(lg));
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving life groups.',
       );
@@ -118,17 +123,11 @@ export class LifeGroupsService {
 
       if (dto.name !== undefined) lifeGroup.name = dto.name;
       if (dto.leader_id !== undefined)
-        lifeGroup.leader = dto.leader_id
-          ? ({ id: dto.leader_id } as any)
-          : null;
+        lifeGroup.leader = this.ref<User>(dto.leader_id);
       if (dto.co_leader_id !== undefined)
-        lifeGroup.coLeader = dto.co_leader_id
-          ? ({ id: dto.co_leader_id } as any)
-          : null;
+        lifeGroup.coLeader = this.ref<User>(dto.co_leader_id);
       if (dto.sector_id !== undefined)
-        lifeGroup.sector = dto.sector_id
-          ? ({ id: dto.sector_id } as any)
-          : null;
+        lifeGroup.sector = this.ref<Sector>(dto.sector_id);
       if (dto.location !== undefined) lifeGroup.location = dto.location;
       if (dto.meeting_day !== undefined) lifeGroup.meetingDay = dto.meeting_day;
       if (dto.meeting_time !== undefined)

@@ -7,11 +7,21 @@ import {
 import { BackendErrorMonitoringFilter } from './backend-error-monitoring.filter';
 import * as monitoring from '../monitoring/error-monitoring';
 
+interface MockRequest {
+  method: string;
+  originalUrl: string;
+  url: string;
+  headers: Record<string, string>;
+  body: Record<string, unknown>;
+  user: { id: string; email: string };
+  startTime: number;
+}
+
 describe('BackendErrorMonitoringFilter', () => {
   let filter: BackendErrorMonitoringFilter;
   let response: { status: jest.Mock; json: jest.Mock };
-  let request: any;
-  let loggerErrorSpy: jest.SpyInstance;
+  let request: MockRequest;
+  let loggerErrorSpy: jest.SpyInstance<undefined, [message: string]>;
   let captureErrorSpy: jest.SpyInstance;
   let isMonitoringEnabledSpy: jest.SpyInstance;
 
@@ -67,7 +77,10 @@ describe('BackendErrorMonitoringFilter', () => {
       statusCode: 400,
       message: 'Invalid token',
     });
-    const logContext = JSON.parse(loggerErrorSpy.mock.calls[0][0]);
+    const logContext = JSON.parse(loggerErrorSpy.mock.calls[0][0]) as Record<
+      string,
+      unknown
+    >;
     expect(logContext).toEqual(
       expect.objectContaining({
         service: 'paz-church-backend',
@@ -157,7 +170,10 @@ describe('BackendErrorMonitoringFilter', () => {
   });
 });
 
-function createHost(request: any, response: any): ArgumentsHost {
+function createHost(
+  request: MockRequest,
+  response: { status: jest.Mock; json: jest.Mock },
+): ArgumentsHost {
   return {
     switchToHttp: () => ({
       getRequest: () => request,
