@@ -20,7 +20,9 @@ export type MembershipMode = 'teams' | 'direct';
 export class Ministry {
   @Expose() @PrimaryGeneratedColumn() id: number;
   @Expose() @Column({ type: 'varchar', length: 180 }) name: string;
-  @Expose() @Column({ type: 'varchar', length: 80, nullable: true, unique: true }) slug: string | null;
+  @Expose()
+  @Column({ type: 'varchar', length: 80, nullable: true, unique: true })
+  slug: string | null;
   @Expose({ name: 'is_permanent' })
   @Column({ name: 'is_permanent', type: 'boolean', default: false })
   isPermanent: boolean;
@@ -58,6 +60,10 @@ export class Ministry {
     inverseJoinColumn: { name: 'user_id' },
   })
   members: User[];
-  @Expose({ name: 'created_at' }) @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
-  @Expose({ name: 'updated_at' }) @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
+  @Expose({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+  @Expose({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 }

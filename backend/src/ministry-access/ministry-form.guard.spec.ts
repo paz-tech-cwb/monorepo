@@ -1,11 +1,19 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { MinistryFormGuard } from './ministry-form.guard';
-import { MinistryAccessService } from './ministry-access.service';
-import { MINISTRY_FORM_KEY } from './ministry-form.decorator';
+import {
+  MinistryAccessResult,
+  MinistryAccessService,
+} from './ministry-access.service';
+import { User } from '../users/entities/user.entity';
 
-function makeContext(user: any) {
-  const req: any = { user };
+interface FakeRequest {
+  user?: Partial<User>;
+  ministryAccess?: MinistryAccessResult;
+}
+
+function makeContext(user: Partial<User> | undefined) {
+  const req: FakeRequest = { user };
   return {
     switchToHttp: () => ({ getRequest: () => req }),
     getHandler: () => ({}),
@@ -21,7 +29,10 @@ describe('MinistryFormGuard', () => {
   beforeEach(() => {
     reflector = new Reflector();
     access = { resolve: jest.fn() };
-    guard = new MinistryFormGuard(reflector, access as unknown as MinistryAccessService);
+    guard = new MinistryFormGuard(
+      reflector,
+      access as unknown as MinistryAccessService,
+    );
   });
 
   it('bypasses to full access for admin without querying ministry tables', async () => {
@@ -31,10 +42,12 @@ describe('MinistryFormGuard', () => {
     const allowed = await guard.canActivate(ctx);
 
     expect(allowed).toBe(true);
-    expect((ctx.switchToHttp().getRequest() as any).ministryAccess).toEqual({
-      isLeader: true,
-      isMember: true,
-    });
+    expect(ctx.switchToHttp().getRequest<FakeRequest>().ministryAccess).toEqual(
+      {
+        isLeader: true,
+        isMember: true,
+      },
+    );
     expect(access.resolve).not.toHaveBeenCalled();
   });
 
@@ -45,10 +58,12 @@ describe('MinistryFormGuard', () => {
     const allowed = await guard.canActivate(ctx);
 
     expect(allowed).toBe(true);
-    expect((ctx.switchToHttp().getRequest() as any).ministryAccess).toEqual({
-      isLeader: true,
-      isMember: true,
-    });
+    expect(ctx.switchToHttp().getRequest<FakeRequest>().ministryAccess).toEqual(
+      {
+        isLeader: true,
+        isMember: true,
+      },
+    );
   });
 
   it('delegates to MinistryAccessService for non-admin/pastor roles', async () => {
@@ -60,10 +75,12 @@ describe('MinistryFormGuard', () => {
 
     expect(allowed).toBe(true);
     expect(access.resolve).toHaveBeenCalledWith(10, 'atmosfera');
-    expect((ctx.switchToHttp().getRequest() as any).ministryAccess).toEqual({
-      isLeader: false,
-      isMember: true,
-    });
+    expect(ctx.switchToHttp().getRequest<FakeRequest>().ministryAccess).toEqual(
+      {
+        isLeader: false,
+        isMember: true,
+      },
+    );
   });
 
   it('allows the request through with no ministry slug metadata (no-op)', async () => {

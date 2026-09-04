@@ -1,13 +1,18 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
 import { RemindersService } from './reminders.service';
 import { ReminderRule } from './entities/reminder-rule.entity';
 
+type MockReminderRuleRepo = {
+  find: jest.Mock;
+  findOne: jest.Mock;
+  save: jest.Mock;
+};
+
 describe('RemindersService', () => {
   let service: RemindersService;
-  let repo: jest.Mocked<Repository<ReminderRule>>;
+  let repo: MockReminderRuleRepo;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -18,7 +23,7 @@ describe('RemindersService', () => {
           useValue: {
             find: jest.fn(),
             findOne: jest.fn(),
-            save: jest.fn((x) => Promise.resolve(x)),
+            save: jest.fn((x: ReminderRule) => Promise.resolve(x)),
           },
         },
       ],

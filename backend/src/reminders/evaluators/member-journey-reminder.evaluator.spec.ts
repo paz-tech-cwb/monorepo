@@ -1,5 +1,19 @@
+import { EntityManager } from 'typeorm';
 import { MemberJourneyReminderEvaluator } from './member-journey-reminder.evaluator';
 import { ReminderRule } from '../entities/reminder-rule.entity';
+import { NotificationDispatchService } from '../../notifications/notification-dispatch.service';
+
+interface MockEntityManager {
+  createQueryBuilder: jest.Mock;
+  findOne: jest.Mock;
+  insert: jest.Mock;
+  create: jest.Mock;
+  save: jest.Mock;
+}
+
+interface MockDispatchService {
+  dispatch: jest.Mock;
+}
 
 describe('MemberJourneyReminderEvaluator', () => {
   const rule = {
@@ -15,7 +29,7 @@ describe('MemberJourneyReminderEvaluator', () => {
 
   it('dispatches once per stuck member and logs dedupe', async () => {
     const now = new Date('2026-06-10T20:00:00');
-    const em = {
+    const em: MockEntityManager = {
       createQueryBuilder: jest.fn().mockReturnValue({
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
@@ -32,20 +46,23 @@ describe('MemberJourneyReminderEvaluator', () => {
         .fn()
         .mockResolvedValueOnce(null)
         .mockResolvedValue({ id: 7 }),
-      create: jest.fn((_e, v) => v),
-      save: jest.fn((x) => Promise.resolve({ id: 40, ...x })),
-    } as never;
-    const dispatch = { dispatch: jest.fn() } as never;
+      create: jest.fn((_e, v: object) => v),
+      save: jest.fn((x: object) => Promise.resolve({ id: 40, ...x })),
+    };
+    const dispatch: MockDispatchService = { dispatch: jest.fn() };
 
-    const evaluator = new MemberJourneyReminderEvaluator(em, dispatch);
+    const evaluator = new MemberJourneyReminderEvaluator(
+      em as unknown as EntityManager,
+      dispatch as unknown as NotificationDispatchService,
+    );
     await evaluator.run(rule, now);
-    expect((dispatch as any).dispatch).toHaveBeenCalledTimes(1);
-    expect((em as any).insert).toHaveBeenCalled();
+    expect(dispatch.dispatch).toHaveBeenCalledTimes(1);
+    expect(em.insert).toHaveBeenCalled();
   });
 
   it('skips when a dedupe row already exists (no re-nudge)', async () => {
     const now = new Date('2026-06-10T20:00:00');
-    const em = {
+    const em: MockEntityManager = {
       createQueryBuilder: jest.fn().mockReturnValue({
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
@@ -60,14 +77,17 @@ describe('MemberJourneyReminderEvaluator', () => {
       findOne: jest
         .fn()
         .mockResolvedValue({ id: 1, dedupeKey: 'journey:7:baptism' }),
-      create: jest.fn((_e, v) => v),
+      create: jest.fn((_e, v: object) => v),
       save: jest.fn(),
-    } as never;
-    const dispatch = { dispatch: jest.fn() } as never;
+    };
+    const dispatch: MockDispatchService = { dispatch: jest.fn() };
 
-    const evaluator = new MemberJourneyReminderEvaluator(em, dispatch);
+    const evaluator = new MemberJourneyReminderEvaluator(
+      em as unknown as EntityManager,
+      dispatch as unknown as NotificationDispatchService,
+    );
     await evaluator.run(rule, now);
-    expect((dispatch as any).dispatch).not.toHaveBeenCalled();
-    expect((em as any).insert).not.toHaveBeenCalled();
+    expect(dispatch.dispatch).not.toHaveBeenCalled();
+    expect(em.insert).not.toHaveBeenCalled();
   });
 });

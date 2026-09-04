@@ -23,7 +23,9 @@ export class MinistryTeam {
   @ManyToOne(() => Ministry, (m) => m.teams, { nullable: false })
   @JoinColumn({ name: 'ministry_id' })
   ministry: Ministry;
-  @Expose({ name: 'ministry_id' }) @RelationId((t: MinistryTeam) => t.ministry) ministryId: number;
+  @Expose({ name: 'ministry_id' })
+  @RelationId((t: MinistryTeam) => t.ministry)
+  ministryId: number;
   @Expose()
   @Type(() => User)
   @ManyToOne(() => User, { nullable: true })
@@ -43,6 +45,10 @@ export class MinistryTeam {
     inverseJoinColumn: { name: 'user_id' },
   })
   members: User[];
-  @Expose({ name: 'created_at' }) @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
-  @Expose({ name: 'updated_at' }) @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
+  @Expose({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+  @Expose({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 }

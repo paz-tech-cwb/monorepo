@@ -1,5 +1,19 @@
+import { EntityManager } from 'typeorm';
 import { EventReminderEvaluator } from './event-reminder.evaluator';
 import { ReminderRule } from '../entities/reminder-rule.entity';
+import { NotificationDispatchService } from '../../notifications/notification-dispatch.service';
+
+interface MockEntityManager {
+  createQueryBuilder: jest.Mock;
+  findOne: jest.Mock;
+  insert: jest.Mock;
+  create: jest.Mock;
+  save: jest.Mock;
+}
+
+interface MockDispatchService {
+  dispatch: jest.Mock;
+}
 
 describe('EventReminderEvaluator', () => {
   const rule = {
@@ -12,7 +26,7 @@ describe('EventReminderEvaluator', () => {
   it('fires for an event whose start is within the 24h lead window', async () => {
     const now = new Date('2026-06-10T20:00:00');
     const eventStart = new Date('2026-06-11T20:30:00'); // ~24h ahead
-    const em = {
+    const em: MockEntityManager = {
       createQueryBuilder: jest.fn().mockReturnValue({
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -25,22 +39,25 @@ describe('EventReminderEvaluator', () => {
       }),
       findOne: jest.fn().mockResolvedValue(null), // no dedupe row yet
       insert: jest.fn().mockResolvedValue(undefined),
-      create: jest.fn((_e, v) => v),
-      save: jest.fn((x) => Promise.resolve({ id: 30, ...x })),
-    } as never;
-    const dispatch = { dispatch: jest.fn() } as never;
+      create: jest.fn((_e, v: object) => v),
+      save: jest.fn((x: object) => Promise.resolve({ id: 30, ...x })),
+    };
+    const dispatch: MockDispatchService = { dispatch: jest.fn() };
 
-    const evaluator = new EventReminderEvaluator(em, dispatch);
+    const evaluator = new EventReminderEvaluator(
+      em as unknown as EntityManager,
+      dispatch as unknown as NotificationDispatchService,
+    );
     await evaluator.run(rule, now);
-    expect((dispatch as any).dispatch).toHaveBeenCalledTimes(1);
+    expect(dispatch.dispatch).toHaveBeenCalledTimes(1);
     // dedupe row recorded only after a successful dispatch
-    expect((em as any).insert).toHaveBeenCalledTimes(1);
+    expect(em.insert).toHaveBeenCalledTimes(1);
   });
 
   it('skips when a dedupe row already exists (no re-send)', async () => {
     const now = new Date('2026-06-10T20:00:00');
     const eventStart = new Date('2026-06-11T20:30:00');
-    const em = {
+    const em: MockEntityManager = {
       createQueryBuilder: jest.fn().mockReturnValue({
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -52,14 +69,17 @@ describe('EventReminderEvaluator', () => {
       }),
       findOne: jest.fn().mockResolvedValue({ id: 1, dedupeKey: 'event:5:24h' }),
       insert: jest.fn(),
-      create: jest.fn((_e, v) => v),
+      create: jest.fn((_e, v: object) => v),
       save: jest.fn(),
-    } as never;
-    const dispatch = { dispatch: jest.fn() } as never;
+    };
+    const dispatch: MockDispatchService = { dispatch: jest.fn() };
 
-    const evaluator = new EventReminderEvaluator(em, dispatch);
+    const evaluator = new EventReminderEvaluator(
+      em as unknown as EntityManager,
+      dispatch as unknown as NotificationDispatchService,
+    );
     await evaluator.run(rule, now);
-    expect((dispatch as any).dispatch).not.toHaveBeenCalled();
-    expect((em as any).insert).not.toHaveBeenCalled();
+    expect(dispatch.dispatch).not.toHaveBeenCalled();
+    expect(em.insert).not.toHaveBeenCalled();
   });
 });

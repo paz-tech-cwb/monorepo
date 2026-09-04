@@ -12,6 +12,7 @@ import { CreateMinistryDto } from './dto/create-ministry.dto';
 import { UpdateMinistryDto } from './dto/update-ministry.dto';
 import { CreateMinistryTeamDto } from './dto/create-ministry-team.dto';
 import { UpdateMinistryTeamDto } from './dto/update-ministry-team.dto';
+import { User } from '../users/entities/user.entity';
 
 const MINISTRY_RELATIONS = [
   'leader',
@@ -32,8 +33,8 @@ export class MinistriesService {
     private readonly teamRepo: Repository<MinistryTeam>,
   ) {}
 
-  private ref(id?: number) {
-    return id ? ({ id } as any) : null;
+  private ref<T extends { id: number }>(id?: number): T | null {
+    return id ? ({ id } as T) : null;
   }
 
   findAllMinistries() {
@@ -77,7 +78,8 @@ export class MinistriesService {
   async deleteMinistry(id: number) {
     const m = await this.ministryRepo.findOne({ where: { id } });
     if (!m) throw new NotFoundException();
-    if (m.isPermanent) throw new ForbiddenException('Este ministério não pode ser excluído');
+    if (m.isPermanent)
+      throw new ForbiddenException('Este ministério não pode ser excluído');
     await this.ministryRepo.delete(id);
   }
 
@@ -103,7 +105,7 @@ export class MinistriesService {
     return this.teamRepo.save(
       this.teamRepo.create({
         name: dto.name,
-        ministry: this.ref(dto.ministryId),
+        ministry: this.ref<Ministry>(dto.ministryId) as Ministry,
         ministryId: dto.ministryId,
         leader: this.ref(dto.leaderId),
         coLeader: this.ref(dto.coLeaderId),
@@ -141,7 +143,7 @@ export class MinistriesService {
       );
     }
     if (!m.members.some((u) => u.id === userId)) {
-      m.members = [...m.members, this.ref(userId)];
+      m.members = [...m.members, this.ref(userId) as User];
       await this.ministryRepo.save(m);
     }
     return this.findMinistry(ministryId);
@@ -164,7 +166,7 @@ export class MinistriesService {
     });
     if (!t) throw new NotFoundException();
     if (!t.members.some((u) => u.id === userId)) {
-      t.members = [...t.members, this.ref(userId)];
+      t.members = [...t.members, this.ref(userId) as User];
       await this.teamRepo.save(t);
     }
     return this.teamRepo.findOne({

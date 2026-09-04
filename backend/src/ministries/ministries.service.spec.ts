@@ -4,6 +4,7 @@ import { BadRequestException } from '@nestjs/common';
 import { MinistriesService } from './ministries.service';
 import { Ministry } from './entities/ministry.entity';
 import { MinistryTeam } from './entities/ministry-team.entity';
+import { CreateMinistryDto } from './dto/create-ministry.dto';
 
 describe('MinistriesService', () => {
   let service: MinistriesService;
@@ -13,12 +14,12 @@ describe('MinistriesService', () => {
     ministryRepo = {
       findOne: jest.fn(),
       save: jest.fn(),
-      create: jest.fn((x) => x),
+      create: jest.fn((x: Partial<Ministry>) => x),
     };
     const teamRepo = {
       findOne: jest.fn(),
       save: jest.fn(),
-      create: jest.fn((x) => x),
+      create: jest.fn((x: Partial<MinistryTeam>) => x),
       find: jest.fn(),
     };
     const module: TestingModule = await Test.createTestingModule({
@@ -53,12 +54,12 @@ describe('MinistriesService', () => {
   });
 
   it('sets both leader and co_leader on create', async () => {
-    ministryRepo.save.mockImplementation((x) => x);
-    const result: any = await service.createMinistry({
+    ministryRepo.save.mockImplementation((x: Ministry) => x);
+    const result = await service.createMinistry({
       name: 'Louvor',
       leaderId: 2,
       coLeaderId: 3,
-    } as any);
+    } as CreateMinistryDto);
     expect(result.leader).toEqual({ id: 2 });
     expect(result.coLeader).toEqual({ id: 3 });
   });

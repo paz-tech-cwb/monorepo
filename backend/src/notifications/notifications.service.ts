@@ -46,7 +46,9 @@ export class NotificationsService implements OnApplicationBootstrap {
       .getMany();
 
     for (const n of missed) {
-      setImmediate(() => this.runDispatch(n));
+      setImmediate(() => {
+        void this.runDispatch(n);
+      });
     }
   }
 
@@ -89,7 +91,9 @@ export class NotificationsService implements OnApplicationBootstrap {
     if (isScheduled) {
       this.scheduleTimer(saved);
     } else {
-      setImmediate(() => this.runDispatch(saved));
+      setImmediate(() => {
+        void this.runDispatch(saved);
+      });
     }
 
     return this.toResponse(saved);
@@ -227,7 +231,12 @@ export class NotificationsService implements OnApplicationBootstrap {
 
   private scheduleTimer(notification: Notification): void {
     const delay = notification.scheduledAt!.getTime() - Date.now();
-    setTimeout(() => this.runDispatch(notification), Math.max(delay, 0));
+    setTimeout(
+      () => {
+        void this.runDispatch(notification);
+      },
+      Math.max(delay, 0),
+    );
   }
 
   private async resolveSegment(segment: NotificationSegment): Promise<User[]> {

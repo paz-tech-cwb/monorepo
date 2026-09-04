@@ -5,8 +5,17 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { MinistryAccessService } from './ministry-access.service';
+import { User } from '../users/entities/user.entity';
+import {
+  MinistryAccessResult,
+  MinistryAccessService,
+} from './ministry-access.service';
 import { MINISTRY_FORM_KEY } from './ministry-form.decorator';
+
+interface RequestWithMinistryAccess {
+  user?: User;
+  ministryAccess?: MinistryAccessResult;
+}
 
 @Injectable()
 export class MinistryFormGuard implements CanActivate {
@@ -24,7 +33,9 @@ export class MinistryFormGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request = context
+      .switchToHttp()
+      .getRequest<RequestWithMinistryAccess>();
 
     if (!request.user) {
       throw new UnauthorizedException();
