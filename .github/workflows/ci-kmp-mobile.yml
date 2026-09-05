@@ -50,7 +50,7 @@ jobs:
           path: 'kmp-mobile/**/build/reports/tests/**'
 
   ios:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 45
     defaults:
       run:
