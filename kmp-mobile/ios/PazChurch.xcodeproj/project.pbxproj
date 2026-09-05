@@ -618,7 +618,6 @@
 		27CFDCB1063057C5DF1E2494 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				APS_ENVIRONMENT = development;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = PazChurch/PazChurch.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -643,9 +642,8 @@
 		980A46BA3727C96D632E557F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				APS_ENVIRONMENT = production;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = PazChurch/PazChurch.entitlements;
+				CODE_SIGN_ENTITLEMENTS = PazChurch/PazChurch-Release.entitlements;
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGN_IDENTITY = "iPhone Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
