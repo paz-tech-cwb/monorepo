@@ -291,7 +291,10 @@ describe('AuthService', () => {
 
       await expect(
         service.socialLogin('google', 'valid-google-token'),
-      ).rejects.toMatchObject({ status: HttpStatus.BAD_REQUEST });
+      ).rejects.toMatchObject({
+        status: HttpStatus.BAD_REQUEST,
+        response: expect.objectContaining({ error: 'BIRTH_DATE_REQUIRED' }),
+      });
 
       expect(userRepo.create).not.toHaveBeenCalled();
     });

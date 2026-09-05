@@ -124,6 +124,32 @@ struct LoginView: View {
                 .stroke(.white.opacity(0.25), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 12)
+        .sheet(isPresented: $showBirthDateSheet) {
+            BirthDateSheet(
+                onConfirm: { date in
+                    Task {
+                        await authCoordinator.confirmBirthDate(isoDateString(from: date))
+                        if authCoordinator.isAuthenticated { onDismiss?() }
+                    }
+                },
+                onCancel: { authCoordinator.dismissBirthDatePrompt() }
+            )
+        }
+    }
+
+    private var showBirthDateSheet: Binding<Bool> {
+        Binding(
+            get: { authCoordinator.needsBirthDate },
+            set: { if !$0 { authCoordinator.dismissBirthDatePrompt() } }
+        )
+    }
+
+    private func isoDateString(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
     }
 
     // MARK: - Auth Buttons
@@ -233,6 +259,58 @@ struct LoginView: View {
         let inputData = Data(input.utf8)
         let hashedData = SHA256.hash(data: inputData)
         return hashedData.compactMap { String(format: "%02x", $0) }.joined()
+    }
+}
+
+/// First-time sign-in for an identity the backend doesn't recognize requires a birth date
+/// so it can be matched against a pre-created member record (see BirthDateRequiredException
+/// in shared code).
+private struct BirthDateSheet: View {
+    var onConfirm: (Date) -> Void
+    var onCancel: () -> Void
+
+    @State private var selectedDate = Date()
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 20) {
+                Text("Para confirmar sua identidade pela primeira vez, informe sua data de nascimento.")
+                    .font(PazTypography.bodyMedium)
+                    .foregroundStyle(PazColors.slate)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+
+                DatePicker(
+                    "Data de nascimento",
+                    selection: $selectedDate,
+                    in: ...Date(),
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.wheel)
+                .labelsHidden()
+
+                Spacer()
+            }
+            .padding(.top, 24)
+            .navigationTitle("Data de nascimento")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancelar") {
+                        onCancel()
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Confirmar") {
+                        onConfirm(selectedDate)
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 }
 

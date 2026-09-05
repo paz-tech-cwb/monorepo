@@ -30,14 +30,17 @@ class AuthRepositoryImpl(
     private val userStore: UserStore,
 ) : AuthRepository {
 
-    override suspend fun socialLogin(idToken: String, provider: String): Result<User> {
+    override suspend fun socialLogin(idToken: String, provider: String, birthDate: String?): Result<User> {
         return safeRunCatching {
             val httpResponse = httpClient.post("api/auth/social-login") {
                 contentType(ContentType.Application.Json)
-                setBody(SocialLoginRequest(idToken = idToken, provider = provider))
+                setBody(SocialLoginRequest(idToken = idToken, provider = provider, birthDate = birthDate))
             }
             val responseText = httpResponse.bodyAsText()
             if (!httpResponse.status.isSuccess()) {
+                if (extractErrorCode(responseText) == "BIRTH_DATE_REQUIRED") {
+                    throw BirthDateRequiredException()
+                }
                 throw IllegalStateException(
                     extractErrorMessage(responseText) ?: "Login failed (${httpResponse.status.value})"
                 )
@@ -82,6 +85,7 @@ private data class LogoutRequest(
 private data class SocialLoginRequest(
     @SerialName("id_token") val idToken: String,
     val provider: String,
+    @SerialName("birth_date") val birthDate: String? = null,
 )
 
 @Serializable
@@ -111,5 +115,12 @@ private fun extractErrorMessage(responseText: String): String? {
             is JsonArray -> message.joinToString("; ") { it.jsonPrimitive.contentOrNull ?: it.toString() }
             else -> null
         }
+    }.getOrNull()
+}
+
+private fun extractErrorCode(responseText: String): String? {
+    return runCatching {
+        val root = authJson.parseToJsonElement(responseText).jsonObject
+        (root["error"] as? JsonPrimitive)?.contentOrNull
     }.getOrNull()
 }
