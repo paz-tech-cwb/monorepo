@@ -10,6 +10,7 @@ import {
   Post,
   Query,
   Req,
+  SerializeOptions,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -80,6 +81,7 @@ export class LifeGroupStudiesController {
   }
 
   @Get()
+  @SerializeOptions({ strategy: 'exposeAll', excludeExtraneousValues: false })
   async findAll(
     @Req() req: AuthenticatedRequest,
     @Query('page') page?: string,

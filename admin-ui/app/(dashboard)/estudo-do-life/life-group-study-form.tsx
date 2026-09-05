@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { MarkdownEditor } from "@/components/markdown-editor"
+import { ImageField } from "@/components/ui/image-field"
 import { ApiError } from "@/lib/api/client"
 import {
   useCreateLifeGroupStudy,
@@ -92,10 +93,12 @@ export function LifeGroupStudyForm({ study }: { study?: LifeGroupStudy }) {
         {errors.author && <p className="text-sm text-destructive mt-1">{errors.author.message}</p>}
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="study-image_url">URL da imagem (opcional)</Label>
-        <Input id="study-image_url" {...register("image_url")} placeholder="https://..." />
-      </div>
+      <ImageField
+        value={watch("image_url") ?? ""}
+        onChange={(url) => setValue("image_url", url, { shouldValidate: true })}
+        category="life-group-studies"
+        label="Imagem (opcional)"
+      />
 
       <div className="space-y-1.5 flex flex-col">
         <Label>Conteúdo (Markdown) *</Label>
