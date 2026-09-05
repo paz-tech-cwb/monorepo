@@ -50,13 +50,19 @@ jobs:
           path: 'kmp-mobile/**/build/reports/tests/**'
 
   ios:
-    runs-on: macos-26
+    runs-on: macos-15
     timeout-minutes: 45
     defaults:
       run:
         working-directory: kmp-mobile
     steps:
       - uses: actions/checkout@v4
+
+      # See the equivalent step in deploy-kmp-mobile.yml for why: macos-26
+      # isn't a recognized runner label yet, so select Xcode 26 explicitly
+      # on macos-15 instead, where it's available as a non-default alternate.
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app
 
       - uses: actions/setup-java@v4
         with:
