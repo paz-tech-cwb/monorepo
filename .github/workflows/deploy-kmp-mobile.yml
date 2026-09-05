@@ -128,6 +128,8 @@ jobs:
             exit 1
           fi
 
+          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
+
       # Signing settings (CODE_SIGN_STYLE, identity, provisioning profile) are
       # baked into the Release build configuration in the Xcode project
       # itself, not passed here. Passing them as xcodebuild command-line
