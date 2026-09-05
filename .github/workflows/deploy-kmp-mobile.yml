@@ -50,7 +50,7 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           FIREBASE_SERVICE_ACCOUNT_PATH: ${{ runner.temp }}/firebase-service-account.json
-          FIREBASE_DISTRIBUTION_GROUPS: internal-testers
+          FIREBASE_DISTRIBUTION_GROUPS: pilot
           FIREBASE_RELEASE_NOTES: Automated build from develop (${{ github.sha }})
         run: ./gradlew :android:assembleRelease :android:appDistributionUploadRelease
 
