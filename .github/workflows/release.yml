@@ -1,0 +1,79 @@
+name: Release
+
+# Production deploys are still triggered only by merge-to-develop via the
+# existing Trello/Harness automation (see docs/environment/vps-deployment.md).
+# This workflow only creates a tagged, versioned release with notes and a
+# rollback reference — it does not deploy anything.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve previous tag
+        id: prev_tag
+        run: |
+          current="${GITHUB_REF_NAME}"
+          previous="$(git describe --tags --abbrev=0 "${current}^" 2>/dev/null || echo "")"
+          echo "current=${current}" >> "$GITHUB_OUTPUT"
+          echo "previous=${previous}" >> "$GITHUB_OUTPUT"
+
+      - name: Record submodule/component versions
+        id: versions
+        run: |
+          {
+            echo "backend_ref=$(git ls-tree HEAD backend | awk '{print $3}')"
+            echo "admin_ui_ref=$(git ls-tree HEAD admin-ui | awk '{print $3}')"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          {
+            echo "notes<<EOF"
+            echo "## ${{ steps.prev_tag.outputs.current }}"
+            echo ""
+            echo "### Changes"
+            if [ -n "${{ steps.prev_tag.outputs.previous }}" ]; then
+              git log "${{ steps.prev_tag.outputs.previous }}..${{ steps.prev_tag.outputs.current }}" --pretty=format:"- %s (%h)" --no-merges
+            else
+              git log --pretty=format:"- %s (%h)" --no-merges
+            fi
+            echo ""
+            echo ""
+            echo "### Component versions"
+            echo "- backend submodule: \`${{ steps.versions.outputs.backend_ref }}\`"
+            echo "- admin-ui submodule: \`${{ steps.versions.outputs.admin_ui_ref }}\`"
+            echo ""
+            echo "### Rollback"
+            if [ -n "${{ steps.prev_tag.outputs.previous }}" ]; then
+              echo "To roll back, redeploy the previous release tag: \`${{ steps.prev_tag.outputs.previous }}\`"
+              echo ""
+              echo "\`\`\`sh"
+              echo "ssh root@<vps-host> 'coolify-guarded-deploy <app-name-or-uuid>'  # after pointing the app at ${{ steps.prev_tag.outputs.previous }}"
+              echo "\`\`\`"
+            else
+              echo "No previous tag found — this is the first tracked release."
+            fi
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.prev_tag.outputs.current }}
+          name: ${{ steps.prev_tag.outputs.current }}
+          body: ${{ steps.notes.outputs.notes }}
+          generate_release_notes: false

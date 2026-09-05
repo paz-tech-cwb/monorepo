@@ -1,0 +1,59 @@
+{
+  "generated_at": 1784304847.584094,
+  "repo_name": "church",
+  "repo_path": "/Users/jonathalima/Developer/church",
+  "focus": null,
+  "counts": {
+    "queued": 0,
+    "accepted": 0,
+    "preparing": 0,
+    "running": 0,
+    "verifying": 0,
+    "pr_open": 0,
+    "waiting_ci": 0,
+    "repairing": 0,
+    "completed": 0,
+    "merged": 0,
+    "failed": 0,
+    "rejected": 0,
+    "superseded": 0
+  },
+  "status_order": [
+    "queued",
+    "accepted",
+    "preparing",
+    "running",
+    "verifying",
+    "pr_open",
+    "waiting_ci",
+    "repairing",
+    "completed",
+    "merged",
+    "failed",
+    "rejected",
+    "superseded"
+  ],
+  "columns": {
+    "queued": [],
+    "accepted": [],
+    "preparing": [],
+    "running": [],
+    "verifying": [],
+    "pr_open": [],
+    "waiting_ci": [],
+    "repairing": [],
+    "completed": [],
+    "merged": [],
+    "failed": [],
+    "rejected": [],
+    "superseded": []
+  },
+  "cards": [],
+  "journal": [],
+  "policies": {
+    "autopilot": "/Users/jonathalima/Developer/church/.openharness/autopilot/autopilot_policy.yaml",
+    "verification": "/Users/jonathalima/Developer/church/.openharness/autopilot/verification_policy.yaml",
+    "release": "/Users/jonathalima/Developer/church/.openharness/autopilot/release_policy.yaml"
+  },
+  "active_context": "# Active Repo Context\n\nGenerated at: 2026-07-17 16:14:07 UTC\n\n## Current Task Focus\n- No active repo task focus yet.\n\n## In Progress\n- None.\n\n## Next Up\n- No queued items.\n\n## Recently Completed\n- None yet.\n\n## Recent Failures\n- None.\n\n## Recent Repo Journal\n- Journal is empty.\n\n## Policies\n- Autopilot: /Users/jonathalima/Developer/church/.openharness/autopilot/autopilot_policy.yaml\n- Verification: /Users/jonathalima/Developer/church/.openharness/autopilot/verification_policy.yaml\n- Release: /Users/jonathalima/Developer/church/.openharness/autopilot/release_policy.yaml"
+}

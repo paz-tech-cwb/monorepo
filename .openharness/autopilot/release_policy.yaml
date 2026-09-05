@@ -1,0 +1,3 @@
+merge_requires_human: true
+release_requires_human: true
+auto_revert_on_failed_verification: false

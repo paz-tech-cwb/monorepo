@@ -54,7 +54,7 @@ ON CONFLICT DO NOTHING;
 -- ─────────────────────────────────────────
 -- HOME TAB — Events / Agenda
 -- ─────────────────────────────────────────
-INSERT INTO events (title, date, image_url)
+INSERT INTO events (title, initial_date, image_url)
 VALUES
   (
     'Culto Domingo Manhã',
