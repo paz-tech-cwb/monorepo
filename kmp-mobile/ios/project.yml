@@ -1,0 +1,68 @@
+name: PazChurch
+options:
+  bundleIdPrefix: com.cwb.pazchurch
+  deploymentTarget:
+    iOS: "19.0"
+  xcodeVersion: "15.0"
+  generateEmptyDirectories: true
+
+packages:
+  FirebaseAuth:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: "10.0.0"
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: "7.0.0"
+  Kingfisher:
+    url: https://github.com/onevcat/Kingfisher.git
+    from: "8.0.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "19.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+
+targets:
+  PazChurch:
+    type: application
+    platform: iOS
+    sources:
+      - path: PazChurch
+        excludes:
+          - "**/*.md"
+    dependencies:
+      # KMP shared framework — built by ./gradlew :shared:assembleSharedXCFramework
+      - framework: ../shared/build/XCFrameworks/debug/Shared.xcframework
+        embed: true
+      # Firebase via SPM
+      - package: FirebaseAuth
+        product: FirebaseAuth
+      - package: FirebaseAuth
+        product: FirebaseMessaging
+      # Google Sign-In via SPM
+      - package: GoogleSignIn
+        product: GoogleSignIn
+      # Kingfisher for image caching
+      - package: Kingfisher
+        product: Kingfisher
+    settings:
+      base:
+        INFOPLIST_FILE: PazChurch/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.cwb.pazchurch.app
+        CODE_SIGN_ENTITLEMENTS: PazChurch/PazChurch.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GOOGLE_REVERSED_CLIENT_ID: com.googleusercontent.apps.139667803306-vbo7nbgufjpr464k2ko91gnbvodjo9v7
+    capabilities:
+      - pushNotifications
+      - signInWithApple
+    prebuildScripts:
+      - name: Build KMP Shared Framework
+        script: |
+          cd "$SRCROOT/.."
+          ./gradlew :shared:assembleSharedXCFramework
+        basedOnDependencyAnalysis: false

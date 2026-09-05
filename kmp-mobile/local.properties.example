@@ -1,0 +1,3 @@
+# Copy this file to local.properties and fill in your values.
+# local.properties is gitignored — never commit it.
+sdk.dir=/Users/YOUR_USERNAME/Library/Android/sdk

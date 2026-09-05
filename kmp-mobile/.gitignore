@@ -1,0 +1,50 @@
+# Gradle
+.gradle/
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Android
+*.apk
+*.aab
+*.ap_
+local.properties
+# google-services.json is committed as a placeholder (no real secrets).
+# Replace REPLACE_WITH_REAL_KEY with actual values from Firebase Console.
+
+# Kotlin
+*.class
+*.kotlin_module
+!gradle-wrapper.jar
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+
+# iOS
+ios/DerivedData/
+ios/*.xcworkspace/xcuserdata/
+ios/Pods/
+ios/*.xcframework
+*.dSYM.zip
+*.dSYM
+
+# KMP XCFramework build outputs
+shared/build/
+
+# Environment
+.env
+.env.local
+google-services.json
+GoogleService-Info.plist

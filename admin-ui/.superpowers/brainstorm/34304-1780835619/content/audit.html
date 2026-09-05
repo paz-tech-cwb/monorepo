@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>shadcn/UI Audit — Admin UI</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #fafafa; color: #18181b; padding: 32px 24px; }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #71717a; font-size: 13px; margin-bottom: 28px; }
+  .section-title { font-size: 15px; font-weight: 700; color: #3f3f46; margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #e4e4e7; }
+  .row { display: grid; grid-template-columns: 200px 1fr 1fr 140px; gap: 0; border: 1px solid #e4e4e7; border-radius: 8px; overflow: hidden; margin-bottom: 10px; background: #fff; }
+  .row-header { display: grid; grid-template-columns: 200px 1fr 1fr 140px; gap: 0; margin-bottom: 6px; padding: 0 0 6px; }
+  .row-header > div { font-size: 11px; font-weight: 700; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.05em; padding: 0 14px; }
+  .cell { padding: 14px; border-right: 1px solid #f4f4f5; font-size: 12px; }
+  .cell:last-child { border-right: none; }
+  .file { font-size: 11px; font-weight: 700; color: #52525b; line-height: 1.4; }
+  .file span { display: block; font-weight: 400; color: #a1a1aa; font-size: 10px; margin-top: 2px; }
+  .current { background: #fef2f2; }
+  .current code { display: block; background: #fee2e2; border: 1px solid #fecaca; border-radius: 4px; padding: 6px 8px; font-size: 11px; color: #991b1b; font-family: 'SF Mono', monospace; line-height: 1.5; white-space: pre; }
+  .shadcn { background: #f0fdf4; }
+  .shadcn code { display: block; background: #dcfce7; border: 1px solid #bbf7d0; border-radius: 4px; padding: 6px 8px; font-size: 11px; color: #166534; font-family: 'SF Mono', monospace; line-height: 1.5; white-space: pre; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 700; }
+  .tag-select { background: #fef3c7; color: #92400e; }
+  .tag-button { background: #ede9fe; color: #5b21b6; }
+  .tag-input { background: #e0f2fe; color: #075985; }
+  .tag-checkbox { background: #fce7f3; color: #9d174d; }
+  .impact { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px; font-size: 11px; }
+  .pill { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+  .high { background: #fee2e2; color: #991b1b; }
+  .med { background: #fef3c7; color: #92400e; }
+  .low { background: #f0fdf4; color: #166534; }
+  .note { color: #71717a; font-size: 10px; margin-top: 4px; line-height: 1.4; }
+  summary { cursor: pointer; font-size: 12px; font-weight: 600; color: #3b82f6; padding: 4px 0; }
+  details { margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<h1>shadcn/UI Audit — Admin Dashboard</h1>
+<p class="subtitle">Every place a raw HTML element is used instead of a shadcn/UI component. Current (red) → Replacement (green).</p>
+
+<!-- RAW SELECTS -->
+<div class="section-title">🔴 Raw &lt;select&gt; → shadcn &lt;Select&gt;</div>
+
+<div class="row-header">
+  <div style="padding:0 14px;">File / Context</div>
+  <div style="padding:0 14px;">Current (raw HTML)</div>
+  <div style="padding:0 14px;">Replacement (shadcn)</div>
+  <div style="padding:0 14px;">Impact</div>
+</div>
+
+<div class="row">
+  <div class="cell file">calendar-management.tsx<span>recurrence_type select</span></div>
+  <div class="cell current"><code>&lt;select
+  className="w-full p-2 border
+  border-input rounded-md
+  bg-background"
+  value={newEvent.recurrence_type}
+  onChange={...}
+&gt;</code></div>
+  <div class="cell shadcn"><code>&lt;Select
+  value={formData.recurrence_type}
+  onValueChange={(v) =&gt;
+    setFormData({...formData,
+      recurrence_type: v})
+  }
+&gt;
+  &lt;SelectTrigger /&gt;
+  &lt;SelectContent&gt;
+    &lt;SelectItem value="none"&gt;
+      Sem recorrência
+    &lt;/SelectItem&gt;
+    ...
+  &lt;/SelectContent&gt;
+&lt;/Select&gt;</code></div>
+  <div class="impact"><span class="pill high">Visual</span><span class="pill high">Styling</span><span class="note">Breaks theme consistency — raw select ignores dark mode & design tokens</span></div>
+</div>
+
+<div class="row">
+  <div class="cell file">courses-management.tsx<span>category select (add + edit)</span></div>
+  <div class="cell current"><code>&lt;select
+  className="w-full p-2 border
+  border-input rounded-md
+  bg-background"
+  value={formData.category}
+  onChange={...}
+&gt;</code></div>
+  <div class="cell shadcn"><code>&lt;Select
+  value={formData.category}
+  onValueChange={(v) =&gt;
+    setFormData({...formData,
+      category: v as CourseCategory})
+  }
+&gt;
+  &lt;SelectTrigger /&gt;
+  &lt;SelectContent&gt;...&lt;/SelectContent&gt;
+&lt;/Select&gt;</code></div>
+  <div class="impact"><span class="pill high">Visual</span><span class="note">Same in both add and edit dialog — fix both instances</span></div>
+</div>
+
+<div class="row">
+  <div class="cell file">events-management.tsx<span>recurrence_type select inside Drawer</span></div>
+  <div class="cell current"><code>&lt;select
+  id="recurrence_type"
+  value={formData.recurrence_type}
+  onChange={...}
+  className="w-full p-2 border
+  border-input rounded-md
+  bg-background"
+&gt;</code></div>
+  <div class="cell shadcn"><code>&lt;Select
+  value={formData.recurrence_type}
+  onValueChange={(v) =&gt;
+    onChange({...formData,
+      recurrence_type: v})
+  }
+&gt;
+  &lt;SelectTrigger /&gt;
+  &lt;SelectContent&gt;...&lt;/SelectContent&gt;
+&lt;/Select&gt;</code></div>
+  <div class="impact"><span class="pill high">Visual</span><span class="note">Already in a Drawer — this raw select is the only unstyled element</span></div>
+</div>
+
+<div class="row">
+  <div class="cell file">users-management.tsx<span>role select (add + edit dialog)</span></div>
+  <div class="cell current"><code>&lt;select
+  id="role"
+  value={newUser.role}
+  onChange={...}
+  className="w-full p-2 border
+  border-input rounded-md
+  bg-background"
+&gt;</code></div>
+  <div class="cell shadcn"><code>&lt;Select
+  value={newUser.role}
+  onValueChange={(v) =&gt;
+    setNewUser({...newUser,
+      role: v as UserRole})
+  }
+&gt;
+  &lt;SelectTrigger /&gt;
+  &lt;SelectContent&gt;
+    &lt;SelectItem value="admin"&gt;
+      Admin
+    &lt;/SelectItem&gt;
+    ...
+  &lt;/SelectContent&gt;
+&lt;/Select&gt;</code></div>
+  <div class="impact"><span class="pill high">Visual</span><span class="note">Two instances — add dialog (line 199) and edit dialog (line 318)</span></div>
+</div>
+
+<div class="row">
+  <div class="cell file">members-management.tsx<span>role + sector selects (add + edit)</span></div>
+  <div class="cell current"><code>&lt;select
+  id="role"
+  value={formData.role}
+  onChange={...}
+  className="w-full p-2 border
+  border-input rounded-md
+  bg-background"
+&gt;</code></div>
+  <div class="cell shadcn"><code>&lt;Select
+  value={formData.role}
+  onValueChange={(v) =&gt;
+    setFormData({...formData,
+      role: v as UserRole})
+  }
+&gt;
+  &lt;SelectTrigger /&gt;
+  &lt;SelectContent&gt;...&lt;/SelectContent&gt;
+&lt;/Select&gt;</code></div>
+  <div class="impact"><span class="pill high">Visual</span><span class="note">4 instances total: role + sector in both add (line 230) and edit (line 382)</span></div>
+</div>
+
+<!-- RAW CHECKBOXES -->
+<div class="section-title">🔴 Raw &lt;input type="checkbox"&gt; → shadcn &lt;Checkbox&gt;</div>
+
+<div class="row">
+  <div class="cell file">member-registrations-form.tsx<span>completed courses checklist</span></div>
+  <div class="cell current"><code>&lt;input
+  type="checkbox"
+  value={c.id}
+  checked={completedCourses
+    .includes(c.id)}
+  onChange={...}
+/&gt;</code></div>
+  <div class="cell shadcn"><code>&lt;Checkbox
+  id={`course-${c.id}`}
+  checked={completedCourses
+    .includes(c.id)}
+  onCheckedChange={(checked) =&gt; {
+    const next = checked
+      ? [...completedCourses, c.id]
+      : completedCourses
+          .filter(id =&gt; id !== c.id)
+    setCompletedCourses(next)
+  }}
+/&gt;
+&lt;Label htmlFor={`course-${c.id}`}&gt;
+  {c.title}
+&lt;/Label&gt;</code></div>
+  <div class="impact"><span class="pill med">Styling</span><span class="note">No shadcn styling — loses focus ring, dark mode, and accessible label pairing</span></div>
+</div>
+
+<div class="row">
+  <div class="cell file">multiplications-form.tsx<span>react-hook-form checkbox fields</span></div>
+  <div class="cell current"><code>&lt;input
+  type="checkbox"
+  {...register(key as never)}
+/&gt;
+{label}</code></div>
+  <div class="cell shadcn"><code>&lt;Checkbox
+  id={key}
+  checked={!!watch(key as never)}
+  onCheckedChange={(checked) =&gt;
+    setValue(key as never,
+      checked as never)
+  }
+/&gt;
+&lt;Label htmlFor={key}&gt;
+  {label}
+&lt;/Label&gt;</code></div>
+  <div class="impact"><span class="pill med">Styling</span><span class="note">RHF register() doesn't bind cleanly to shadcn Checkbox — use watch+setValue pattern instead</span></div>
+</div>
+
+<!-- RAW BUTTONS -->
+<div class="section-title">🟡 Raw &lt;button&gt; → shadcn &lt;Button&gt;</div>
+
+<div class="row">
+  <div class="cell file">notification-system.tsx<span>category toggle buttons (×3)</span></div>
+  <div class="cell current"><code>&lt;button
+  type="button"
+  onClick={() =&gt;
+    toggleChannel(ch.value)}
+  className="..."
+&gt;
+  {ch.label}
+&lt;/button&gt;</code></div>
+  <div class="cell shadcn"><code>&lt;Button
+  type="button"
+  variant={isActive
+    ? "default"
+    : "outline"}
+  size="sm"
+  onClick={() =&gt;
+    toggleChannel(ch.value)}
+&gt;
+  {ch.label}
+&lt;/Button&gt;</code></div>
+  <div class="impact"><span class="pill med">Styling</span><span class="note">3 raw buttons for category/channel toggles and filter removal. Toggle state via variant prop.</span></div>
+</div>
+
+<div class="row">
+  <div class="cell file">member-journey-management.tsx<span>stage filter button</span></div>
+  <div class="cell current"><code>&lt;button
+  onClick={() =&gt; setActiveStageFilter(
+    isActive ? undefined : stage.id
+  )}
+  className="..."
+&gt;
+  {stage.label}
+&lt;/button&gt;</code></div>
+  <div class="cell shadcn"><code>&lt;Button
+  variant={isActive
+    ? "default"
+    : "outline"}
+  size="sm"
+  onClick={() =&gt; setActiveStageFilter(
+    isActive ? undefined : stage.id
+  )}
+&gt;
+  {stage.label}
+&lt;/Button&gt;</code></div>
+  <div class="impact"><span class="pill low">Minor</span><span class="note">Stage filter pill — use Button variant to express selected state</span></div>
+</div>
+
+<div class="row">
+  <div class="cell file">journey-sheet.tsx<span>copy-to-clipboard button</span></div>
+  <div class="cell current"><code>&lt;button
+  className="mt-1.5 inline-flex
+  items-center gap-1 text-primary
+  hover:underline"
+  onClick={() =&gt;
+    navigator.clipboard
+      .writeText(msg)}
+&gt;
+  Copiar mensagem
+&lt;/button&gt;</code></div>
+  <div class="cell shadcn"><code>&lt;Button
+  variant="link"
+  size="sm"
+  className="mt-1.5 h-auto p-0
+  text-primary"
+  onClick={() =&gt;
+    navigator.clipboard
+      .writeText(msg)}
+&gt;
+  Copiar mensagem
+&lt;/Button&gt;</code></div>
+  <div class="impact"><span class="pill low">Minor</span><span class="note">Use variant="link" to replicate the underline-on-hover style with proper focus ring</span></div>
+</div>
+
+<!-- CUSTOM STYLED DIVS -->
+<div class="section-title">🟡 Custom-styled divs → shadcn components</div>
+
+<div class="row">
+  <div class="cell file">dashboard-home.tsx<span>chart legend color dot</span></div>
+  <div class="cell current"><code>&lt;div
+  className="w-3 h-3 rounded-full"
+  style={{
+    backgroundColor: item.color
+  }}
+/&gt;</code></div>
+  <div class="cell shadcn"><code>Keep as-is.
+Chart legend dots are
+data-driven colors (not design
+tokens) — no shadcn replacement
+makes sense here.
+
+✅ Acceptable exception.</code></div>
+  <div class="impact"><span class="pill low">OK</span><span class="note">Inline color is intentional for charting — design token not applicable</span></div>
+</div>
+
+<div class="row">
+  <div class="cell file">events-management.tsx<span>event type color dot in table</span></div>
+  <div class="cell current"><code>&lt;div
+  style={{
+    backgroundColor:
+      getTypeColor(event.recurrence_type)
+  }}
+  className="w-2 h-2 rounded-full"
+/&gt;</code></div>
+  <div class="cell shadcn"><code>Replace with &lt;Badge&gt; per type:
+
+&lt;Badge variant="outline"
+  className={getTypeBadgeClass(
+    event.recurrence_type)
+  }
+&gt;
+  {getTypeLabel(
+    event.recurrence_type)
+  }
+&lt;/Badge&gt;</code></div>
+  <div class="impact"><span class="pill med">UX</span><span class="note">Badge is more readable than a color dot alone — adds label alongside color</span></div>
+</div>
+
+<div style="margin-top:32px;padding:16px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;font-size:12px;color:#0369a1;">
+  <strong>Summary:</strong>
+  14 raw HTML elements across 8 files need replacement.
+  5× <code>&lt;select&gt;</code> → <code>&lt;Select&gt;</code> &nbsp;|&nbsp;
+  2× <code>&lt;input type="checkbox"&gt;</code> → <code>&lt;Checkbox&gt;</code> &nbsp;|&nbsp;
+  4× <code>&lt;button&gt;</code> → <code>&lt;Button&gt;</code> &nbsp;|&nbsp;
+  1× color dot → <code>&lt;Badge&gt;</code> &nbsp;|&nbsp;
+  1× color dot OK to keep.
+</div>
+
+</body>
+</html>

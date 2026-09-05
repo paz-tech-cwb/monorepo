@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+.gitignore
+.env.local
+.env.*
+!.env.local.example
+pnpm-debug.log
+npm-debug.log
+.DS_Store
+tsconfig.tsbuildinfo
