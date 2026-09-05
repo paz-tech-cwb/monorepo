@@ -131,6 +131,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (hasTokens && cachedUser && !loginInProgressRef.current) {
         setUser(cachedUser)
         setIsLoading(false)
+        // The cached user (including role) can go stale if an admin changes
+        // it after this session started — refresh in the background so a
+        // demoted/promoted user's permissions update without requiring a
+        // manual re-login. Best-effort: a transient failure here shouldn't
+        // interrupt an otherwise-valid session.
+        authApi
+          .me()
+          .then((me) => {
+            const refreshed: User = {
+              ...cachedUser,
+              name: me.name,
+              email: me.email ?? cachedUser.email,
+              picture: me.avatar ?? cachedUser.picture,
+              role: (me.role as User["role"]) ?? null,
+            }
+            setUser(refreshed)
+            persistUser(refreshed)
+          })
+          .catch(() => {
+            /* keep the cached session; normal 401 handling covers real auth failures */
+          })
         return
       }
 
