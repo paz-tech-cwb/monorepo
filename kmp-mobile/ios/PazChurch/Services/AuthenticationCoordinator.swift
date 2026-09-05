@@ -14,8 +14,14 @@ class AuthenticationCoordinator {
     var isLoading = false
     var isInitializing = true
     var error: String?
+    /// True when a first-time sign-in needs a birth date to identity-match against
+    /// a pre-created member record (see BirthDateRequiredException in shared code).
+    var needsBirthDate = false
 
     private let authRepository: AuthRepository
+    // Held only long enough to retry with a birth date once the user confirms one.
+    private var pendingIdToken: String?
+    private var pendingProvider: String?
 
     init(authRepository: AuthRepository) {
         self.authRepository = authRepository
@@ -55,7 +61,7 @@ class AuthenticationCoordinator {
         let provider = rawProvider == "google.com" ? "google" : "apple"
         do {
             let idToken = try await firebaseUser.getIDToken()
-            let user = try await IosAppContainer.shared.socialLogin(idToken: idToken, provider: provider)
+            let user = try await IosAppContainer.shared.socialLogin(idToken: idToken, provider: provider, birthDate: nil)
             self.currentUser = user
             self.isAuthenticated = true
         } catch {
@@ -64,25 +70,43 @@ class AuthenticationCoordinator {
     }
 
     func signInWithGoogle(idToken: String) async {
-        isLoading = true
-        error = nil
-        do {
-            let user = try await IosAppContainer.shared.socialLogin(idToken: idToken, provider: "google")
-            self.currentUser = user
-            self.isAuthenticated = true
-        } catch {
-            self.error = error.localizedDescription
-        }
-        isLoading = false
+        await signIn(idToken: idToken, provider: "google")
     }
 
     func signInWithApple(idToken: String, nonce: String) async {
+        await signIn(idToken: idToken, provider: "apple")
+    }
+
+    /// Called once the user picks a birth date in response to `needsBirthDate`.
+    func confirmBirthDate(_ birthDate: String) async {
+        guard let idToken = pendingIdToken, let provider = pendingProvider else { return }
+        needsBirthDate = false
+        await signIn(idToken: idToken, provider: provider, birthDate: birthDate)
+    }
+
+    func dismissBirthDatePrompt() {
+        pendingIdToken = nil
+        pendingProvider = nil
+        needsBirthDate = false
+    }
+
+    private func signIn(idToken: String, provider: String, birthDate: String? = nil) async {
         isLoading = true
         error = nil
         do {
-            let user = try await IosAppContainer.shared.socialLogin(idToken: idToken, provider: "apple")
+            let user = try await IosAppContainer.shared.socialLogin(
+                idToken: idToken,
+                provider: provider,
+                birthDate: birthDate
+            )
+            pendingIdToken = nil
+            pendingProvider = nil
             self.currentUser = user
             self.isAuthenticated = true
+        } catch is BirthDateRequiredException {
+            pendingIdToken = idToken
+            pendingProvider = provider
+            self.needsBirthDate = true
         } catch {
             self.error = error.localizedDescription
         }

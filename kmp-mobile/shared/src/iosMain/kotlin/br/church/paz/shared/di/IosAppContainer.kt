@@ -55,8 +55,8 @@ object IosAppContainer {
 
     // iOS-friendly wrappers that throw on failure instead of returning Result<T>
     @Throws(Exception::class)
-    suspend fun socialLogin(idToken: String, provider: String): User =
-        authRepository.socialLogin(idToken, provider).getOrThrow()
+    suspend fun socialLogin(idToken: String, provider: String, birthDate: String? = null): User =
+        authRepository.socialLogin(idToken, provider, birthDate).getOrThrow()
 
     @Throws(Exception::class)
     suspend fun logout(fcmToken: String?) {

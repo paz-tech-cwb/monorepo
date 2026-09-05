@@ -170,7 +170,11 @@ export class AuthService implements OnModuleInit {
     if (!user) {
       if (!birthDate) {
         throw new HttpException(
-          'birth_date is required to register a new user',
+          {
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: 'birth_date is required to register a new user',
+            error: 'BIRTH_DATE_REQUIRED',
+          },
           HttpStatus.BAD_REQUEST,
         );
       }
