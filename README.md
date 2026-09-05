@@ -1,6 +1,6 @@
 # Paz Church Curitiba — Platform
 
-A git-submodule monorepo for the Paz Church Curitiba digital platform.
+A single monorepo for the Paz Church Curitiba digital platform.
 
 ## Apps
 
@@ -8,9 +8,7 @@ A git-submodule monorepo for the Paz Church Curitiba digital platform.
 |---|---|---|
 | `backend/` | NestJS, TypeORM, PostgreSQL | REST API consumed by all clients |
 | `admin-ui/` | Next.js, React, TypeScript | Staff/admin dashboard |
-| `mobile-app/` | Flutter, Dart | Member-facing mobile app |
 | `kmp-mobile/` | Kotlin Multiplatform | Cross-platform mobile workstream |
-| `postman-files/` | Postman | API collections and environments |
 
 ## AI/project documentation
 
@@ -30,7 +28,7 @@ Feature docs live in `.ai/features/`; app docs live in `.ai/apps/`.
 ## Getting started
 
 ```bash
-git clone --recurse-submodules <root-repo-url>
+git clone <root-repo-url>
 cd church
 npm install
 cp .env.example .env
@@ -44,7 +42,7 @@ Services:
 |---|---|
 | admin-ui | `http://localhost:3000` |
 | backend API | `http://localhost:3001/api` |
-| mobile app | connected device / emulator |
+| kmp-mobile | Android/iOS via Gradle/Xcode |
 
 ## Common commands
 
@@ -53,25 +51,12 @@ npm run db          # Start PostgreSQL
 npm run dev         # Start local backend/admin stack
 npm run dev:backend # Backend only
 npm run dev:admin   # Admin UI only
-npm run dev:mobile  # Flutter mobile only
 npm run setup       # Start DB and run migrations
 ```
 
-## Submodule workflow
+## Branching
 
-Each app folder is an independent git repository. Commit app changes inside the relevant submodule, then update the root submodule pointer if needed.
-
-```bash
-cd backend
-git checkout -b feat/example
-# make changes
-git commit -am "feat: example"
-git push
-
-cd ..
-git add backend
-git commit -m "chore: update backend submodule"
-```
+This is a single repository — `backend/`, `admin-ui/`, and `kmp-mobile/` are ordinary tracked directories, not submodules. Work on `develop`, then merge to `main`. There are no submodule pointers to update; app changes and root-level documentation changes are committed together in the same repository history.
 
 ## Architecture summary
 

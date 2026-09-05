@@ -1,0 +1,208 @@
+name: Deploy KMP Mobile
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'kmp-mobile/**'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Which platform(s) to deploy'
+        type: choice
+        default: both
+        options:
+          - both
+          - android
+          - ios
+
+permissions:
+  contents: read
+
+jobs:
+  android-firebase-distribution:
+    if: |
+      vars.DEPLOYS_ENABLED == 'true' &&
+      (github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'both' || github.event.inputs.platform == 'android')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: kmp-mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Provide real google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON }}
+        run: echo "$GOOGLE_SERVICES_JSON" > android/google-services.json
+
+      - name: Decode release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+
+      - name: Decode Firebase service account
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: echo "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-service-account.json"
+
+      - name: Build and upload release to Firebase App Distribution
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          FIREBASE_SERVICE_ACCOUNT_PATH: ${{ runner.temp }}/firebase-service-account.json
+          FIREBASE_DISTRIBUTION_GROUPS: pilot
+          FIREBASE_RELEASE_NOTES: Automated build from develop (${{ github.sha }})
+        run: ./gradlew :android:assembleRelease :android:appDistributionUploadRelease
+
+  ios-testflight:
+    if: |
+      vars.DEPLOYS_ENABLED == 'true' &&
+      (github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'both' || github.event.inputs.platform == 'ios')
+    runs-on: macos-15
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: kmp-mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Provide real GoogleService-Info.plist
+        env:
+          GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.IOS_GOOGLE_SERVICE_INFO_PLIST }}
+        run: echo "$GOOGLE_SERVICE_INFO_PLIST" > ios/PazChurch/GoogleService-Info.plist
+
+      # The Xcode project's FRAMEWORK_SEARCH_PATHS is hardcoded to the debug
+      # XCFramework output for both Debug and Release configs (pre-existing,
+      # not specific to this pipeline), so both variants must exist even
+      # though we're archiving Release.
+      - name: Build KMP XCFramework (debug + release)
+        run: ./gradlew :shared:assembleSharedXCFramework
+
+      - name: Import signing certificate into a temporary keychain
+        env:
+          IOS_DIST_CERTIFICATE_P12: ${{ secrets.IOS_DIST_CERTIFICATE_P12 }}
+          IOS_DIST_CERTIFICATE_PASSWORD: ${{ secrets.IOS_DIST_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          KEYCHAIN_PASSWORD=$(uuidgen)
+          CERT_PATH="$RUNNER_TEMP/dist_certificate.p12"
+
+          echo "$IOS_DIST_CERTIFICATE_P12" | base64 --decode > "$CERT_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$IOS_DIST_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | sed 's/"//g')
+
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+
+      - name: Install provisioning profile
+        env:
+          IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+        run: |
+          PROFILE_PATH="$RUNNER_TEMP/profile.mobileprovision"
+          echo "$IOS_PROVISIONING_PROFILE" | base64 --decode > "$PROFILE_PATH"
+
+          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$PROFILES_DIR"
+
+          PROFILE_UUID=$(security cms -D -i "$PROFILE_PATH" | plutil -extract UUID raw -)
+          PROFILE_NAME=$(security cms -D -i "$PROFILE_PATH" | plutil -extract Name raw -)
+          cp "$PROFILE_PATH" "$PROFILES_DIR/$PROFILE_UUID.mobileprovision"
+
+          # PROVISIONING_PROFILE_SPECIFIER is hardcoded in the Xcode project
+          # (Release config) rather than passed at the command line — see the
+          # Archive step. Fail loudly here if the installed profile's actual
+          # name doesn't match what the project expects, instead of letting
+          # xcodebuild fail later with a less obvious signing error.
+          EXPECTED_PROFILE_NAME="PazChurch AppStore Distribution"
+          if [ "$PROFILE_NAME" != "$EXPECTED_PROFILE_NAME" ]; then
+            echo "::error::Installed provisioning profile is named '$PROFILE_NAME', but the Xcode project's Release config expects '$EXPECTED_PROFILE_NAME'. Update PROVISIONING_PROFILE_SPECIFIER in project.pbxproj to match, or reissue the profile with the expected name."
+            exit 1
+          fi
+
+          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
+
+      # Signing settings (CODE_SIGN_STYLE, identity, provisioning profile) are
+      # baked into the Release build configuration in the Xcode project
+      # itself, not passed here. Passing them as xcodebuild command-line
+      # overrides applies them to EVERY target in the build graph, including
+      # SPM package dependencies (Firebase, Kingfisher, etc.), which fails
+      # with "does not support provisioning profiles" since those targets
+      # can't be manually signed.
+      - name: Archive
+        run: |
+          xcodebuild archive \
+            -project ios/PazChurch.xcodeproj \
+            -scheme PazChurch \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/PazChurch.xcarchive"
+
+      - name: Export IPA
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>NMCA95DPCN</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.cwb.pazchurch.app</key>
+              <string>$PROFILE_NAME</string>
+            </dict>
+          </dict>
+          </plist>
+          EOF
+
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/PazChurch.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
+
+      - name: Find exported IPA
+        run: |
+          IPA_PATH=$(find "$RUNNER_TEMP/export" -maxdepth 1 -name '*.ipa' | head -n1)
+          if [ -z "$IPA_PATH" ]; then
+            echo "::error::No .ipa found in $RUNNER_TEMP/export"
+            exit 1
+          fi
+          echo "IPA_PATH=$IPA_PATH" >> "$GITHUB_ENV"
+
+      - name: Upload to TestFlight
+        uses: apple-actions/upload-testflight-build@v1
+        with:
+          app-path: ${{ env.IPA_PATH }}
+          api-key-id: ${{ secrets.IOS_APPSTORE_API_KEY_ID }}
+          issuer-id: ${{ secrets.IOS_APPSTORE_ISSUER_ID }}
+          api-private-key: ${{ secrets.IOS_APPSTORE_API_KEY_P8 }}
+
+      - name: Clean up keychain
+        if: always()
+        run: security delete-keychain "$KEYCHAIN_PATH" || true

@@ -1,0 +1,99 @@
+name: KMP Mobile CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'kmp-mobile/**'
+      - '.github/workflows/ci-kmp-mobile.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: kmp-mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Provide placeholder google-services.json
+        run: cp android/google-services.json.example android/google-services.json
+
+      - name: Build shared (all targets)
+        run: ./gradlew :shared:assemble
+
+      - name: Build Android debug APK
+        run: ./gradlew :android:assembleDebug
+
+      - name: Run shared unit tests
+        run: ./gradlew :shared:allTests
+
+      - name: Run Android unit tests
+        run: ./gradlew :android:testDebugUnitTest
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-test-results
+          path: 'kmp-mobile/**/build/reports/tests/**'
+
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: kmp-mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Provide placeholder GoogleService-Info.plist
+        run: cp ios/PazChurch/GoogleService-Info.plist.example ios/PazChurch/GoogleService-Info.plist
+
+      - name: Build KMP XCFramework
+        run: ./gradlew :shared:assembleSharedXCFramework
+
+      - name: Build iOS app
+        run: |
+          xcodebuild \
+            -project ios/PazChurch.xcodeproj \
+            -scheme PazChurch \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      # No iOS test target exists in this project yet (PazChurch.xcscheme's
+      # TestAction has an empty Testables list), so `xcodebuild ... test`
+      # always fails with "Scheme PazChurch is not currently configured for
+      # the test action" regardless of what changed. Re-enable this step
+      # once a test target is added.
+      # - name: Run iOS unit tests
+      #   run: |
+      #     xcodebuild \
+      #       -project ios/PazChurch.xcodeproj \
+      #       -scheme PazChurch \
+      #       -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+      #       -configuration Debug \
+      #       CODE_SIGN_IDENTITY="" \
+      #       CODE_SIGNING_REQUIRED=NO \
+      #       test

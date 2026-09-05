@@ -4,8 +4,7 @@
     "db": "docker compose -f backend/docker-compose.yaml up -d",
     "dev:backend": "cd backend && npm run start:dev",
     "dev:admin": "cd admin-ui && npm run dev",
-    "dev:mobile": "cd mobile-app && flutter run",
-    "dev": "npm run db && concurrently --kill-others-on-fail --names \"backend,admin-ui,flutter\" --prefix-colors \"blue,green,cyan\" \"npm run dev:backend\" \"npm run dev:admin\"",
+    "dev": "npm run db && concurrently --kill-others-on-fail --names \"backend,admin-ui\" --prefix-colors \"blue,green\" \"npm run dev:backend\" \"npm run dev:admin\"",
     "setup": "npm run db && cd backend && npm run migration:run",
     "setup:backend": "cd backend && npm run migration:run"
   },

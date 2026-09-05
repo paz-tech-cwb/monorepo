@@ -10,16 +10,21 @@ backend/ NestJS REST API (/api)
   │ JWT access + refresh tokens
   ├── PostgreSQL via TypeORM
   ├── admin-ui/ Next.js staff dashboard
-  ├── mobile-app/ Flutter client
   └── kmp-mobile/ Kotlin Multiplatform client
 ```
+
+## Repository and deployment topology
+
+- Single monorepo (`paz-tech-cwb/monorepo`, checked out locally as `church`) — `backend/`, `admin-ui/`, and `kmp-mobile/` are ordinary tracked folders, not git submodules.
+- Branch model: `develop` is the integration branch; `main` is the single production branch for the whole repo. There is no separate per-app production branch (backend's old `master` and the apps' separate `main` branches, from before consolidation, are retired).
+- CI/CD is path-filtered per app folder in root `.github/workflows/`: a PR touching only `admin-ui/**` never runs backend's or kmp-mobile's checks, and vice versa. Merges to `main` can trigger a Coolify deploy for `admin-ui` or `backend` specifically, scoped the same way — gated off by default via the `DEPLOYS_ENABLED` repo variable. See `features/deployment.md` for the full CI/CD contract.
+- `kmp-mobile` has CI (build/test) but no deploy workflow — mobile release remains a separate, manual process.
 
 ## Application boundaries
 
 - **backend** owns business rules, persistence, authorization, migrations, and API contracts.
 - **admin-ui** owns staff workflows and uses the backend API directly.
-- **mobile clients** own member UX and use backend APIs plus platform push/deep-link integrations.
-- **postman-files** mirrors API behavior for manual testing/documentation.
+- **kmp-mobile** owns member UX and uses backend APIs plus platform push/deep-link integrations.
 
 ## Authentication contract
 
