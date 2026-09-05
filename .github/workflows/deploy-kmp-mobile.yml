@@ -173,12 +173,21 @@ jobs:
             -exportPath "$RUNNER_TEMP/export" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
 
+      - name: Find exported IPA
+        run: |
+          IPA_PATH=$(find "$RUNNER_TEMP/export" -maxdepth 1 -name '*.ipa' | head -n1)
+          if [ -z "$IPA_PATH" ]; then
+            echo "::error::No .ipa found in $RUNNER_TEMP/export"
+            exit 1
+          fi
+          echo "IPA_PATH=$IPA_PATH" >> "$GITHUB_ENV"
+
       - name: Upload to TestFlight
         uses: apple-actions/upload-testflight-build@v1
         with:
-          app-path: ${{ runner.temp }}/export/PazChurch.ipa
+          app-path: ${{ env.IPA_PATH }}
           api-key-id: ${{ secrets.IOS_APPSTORE_API_KEY_ID }}
-          api-key-issuer-id: ${{ secrets.IOS_APPSTORE_ISSUER_ID }}
+          issuer-id: ${{ secrets.IOS_APPSTORE_ISSUER_ID }}
           api-private-key: ${{ secrets.IOS_APPSTORE_API_KEY_P8 }}
 
       - name: Clean up keychain
