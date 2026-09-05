@@ -5,14 +5,25 @@ on:
     branches: [develop]
     paths:
       - 'kmp-mobile/**'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Which platform(s) to deploy'
+        type: choice
+        default: both
+        options:
+          - both
+          - android
+          - ios
 
 permissions:
   contents: read
 
 jobs:
   android-firebase-distribution:
-    if: vars.DEPLOYS_ENABLED == 'true'
+    if: |
+      vars.DEPLOYS_ENABLED == 'true' &&
+      (github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'both' || github.event.inputs.platform == 'android')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -55,7 +66,9 @@ jobs:
         run: ./gradlew :android:assembleRelease :android:appDistributionUploadRelease
 
   ios-testflight:
-    if: vars.DEPLOYS_ENABLED == 'true'
+    if: |
+      vars.DEPLOYS_ENABLED == 'true' &&
+      (github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'both' || github.event.inputs.platform == 'ios')
     runs-on: macos-15
     timeout-minutes: 45
     defaults:
