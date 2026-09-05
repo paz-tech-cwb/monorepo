@@ -1,0 +1,11 @@
+gates:
+- fast_gate
+- repo_gate
+- harness_gate
+commands:
+- uv run pytest -q
+- uv run ruff check src tests scripts
+- command: cd frontend/terminal && ([ -x ./node_modules/.bin/tsc ] || npm ci --no-audit
+    --no-fund) && ./node_modules/.bin/tsc --noEmit
+  shell: true
+require_tests_before_merge: true

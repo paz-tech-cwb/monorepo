@@ -1,0 +1,35 @@
+intake:
+  mode: unified_queue
+  max_visible_candidates: 12
+  dedupe_strategy: source_ref_then_fingerprint
+decision:
+  default_human_gate: true
+  prefer_small_safe_steps: true
+execution:
+  default_model: ''
+  max_turns: 12
+  permission_mode: full_auto
+  host_mode: self_hosted
+  use_worktree: true
+  base_branch: main
+  max_attempts: 3
+github:
+  issue_comment_style: bilingual
+  pr_branch_prefix: autopilot/
+  ci_poll_interval_seconds: 20
+  ci_timeout_seconds: 1800
+  no_checks_grace_seconds: 60
+  checks_settle_seconds: 20
+  auto_merge:
+    mode: label_gated
+    required_label: autopilot:merge
+repair:
+  max_rounds: 2
+  retry_on:
+  - local_verification_failed
+  - remote_ci_failed
+  stop_on:
+  - agent_runtime_error
+  - git_error
+  - permission_error
+  - merge_conflict

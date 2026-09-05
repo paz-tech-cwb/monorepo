@@ -1,30 +1,20 @@
-# Progress
+# Progress: Fix admin-ui <-> backend API contract mismatches
 
-## Request
+## Repos / branches / worktrees
+- admin-ui: branch `fix/api-contract-mismatches`, worktree `/Users/jonathalima/Developer/church-worktrees/admin-ui-fix-api-contracts`, cut from `develop` (a082cbd at cut time)
+- backend: branch `fix/api-contract-mismatches`, worktree `/Users/jonathalima/Developer/church-worktrees/backend-fix-api-contracts`, cut from `develop` (9710066 at cut time)
+- Neither worktree has been pushed yet — no PRs opened yet.
 
-Fix backend `POST /api/users` address insert failure: missing `addresses.number` column in production.
+## Stage status
+- [x] Branches/worktrees created
+- [x] Planning — `.pipeline/spec.md` written (planner subagent failed 3x on transient connection errors; spec written directly by orchestrator using the same investigation the planner would have done, verified against actual worktree source)
+- [ ] **STOPPED: spec.md has an OPEN QUESTION (fix #1 email requirement gap) — awaiting user answer before proceeding to coder stage**
+- [ ] Coder (fixes 2, 3, 4 can start independently of the fix #1 answer)
+- [ ] Tester
+- [ ] Reviewer
+- [ ] PR push / draft PR open
 
-## Status
-
-- [x] Context reviewed
-- [x] Spec updated
-- [x] Root cause identified
-- [x] Implementation complete
-- [x] Tests complete
-- [x] Review complete
-- [ ] Branch pushed
-- [ ] PR opened
-
-## Timeline
-
-- 2026-07-17 — Read `.ai/` context, backend instructions, people/membership docs, deployment docs, and pipeline handoff expectations.
-- 2026-07-17 — Confirmed backend submodule was clean before changes; root had unrelated pre-existing `kmp-mobile` and `.pnpm-store/` changes.
-- 2026-07-17 — Found `Address` entity writes `number`, `complement`, and `neighborhood`; existing migration `1784073600000-AddUserAddressDetails` adds those columns.
-- 2026-07-17 — Identified deployment startup drift: Docker command started API directly without running pending migrations.
-- 2026-07-17 — Added production migration startup scripts and changed backend Docker command to run migrations before serving.
-- 2026-07-17 — Backend build passed; production migration command reached DB connection and failed locally because no Postgres was listening on localhost:5432.
-
-## Current branch / PR
-
-- Branch: `main` working tree
-- PR: pending
+## Notes
+- Fix #5 (member-journey life_group_id) turned out to already be fixed on `develop` — no work needed, confirmed by reading source directly.
+- Fix #1 (users createMember/updateMember) is blocked on a product decision (see spec.md OPEN QUESTIONS) — the registration form has no email field but backend requires email to create a User.
+- Fixes #2 (announcements), #3 (conversions), #4 (auth logout) are unblocked and scoped in spec.md; ready for the coder stage once approved to proceed.
