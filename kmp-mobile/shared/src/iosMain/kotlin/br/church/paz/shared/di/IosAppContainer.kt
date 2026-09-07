@@ -16,6 +16,7 @@ import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.repository.AcademyRepository
 import br.church.paz.shared.domain.repository.AgendaRepository
 import br.church.paz.shared.domain.repository.AuthRepository
+import br.church.paz.shared.domain.repository.BirthDateRequiredException
 import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.FormsRepository
 import br.church.paz.shared.domain.repository.HomeRepository
@@ -58,7 +59,10 @@ object IosAppContainer {
     val lifeGroupStudyRepository: LifeGroupStudyRepository by lazy { LifeGroupStudyRepositoryImpl(httpClient) }
 
     // iOS-friendly wrappers that throw on failure instead of returning Result<T>
-    @Throws(Exception::class)
+    // BirthDateRequiredException must be listed explicitly (not just Exception::class) for
+    // Kotlin/Native to export it as a distinctly-catchable Swift type — a generic @Throws(Exception::class)
+    // only bridges failures as an opaque NSError that `catch let e as BirthDateRequiredException` can't match.
+    @Throws(BirthDateRequiredException::class, Exception::class)
     suspend fun socialLogin(idToken: String, provider: String, birthDate: String? = null): User =
         authRepository.socialLogin(idToken, provider, birthDate).getOrThrow()
 
