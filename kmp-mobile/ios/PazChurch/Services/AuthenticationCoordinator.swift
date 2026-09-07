@@ -103,12 +103,19 @@ class AuthenticationCoordinator {
             pendingProvider = nil
             self.currentUser = user
             self.isAuthenticated = true
-        } catch is BirthDateRequiredException {
-            pendingIdToken = idToken
-            pendingProvider = provider
-            self.needsBirthDate = true
         } catch {
-            self.error = error.localizedDescription
+            // Suspend-function failures bridge to Swift as a generic NSError, not the
+            // original Kotlin exception type — `catch is BirthDateRequiredException` never
+            // matches. The real exception is reachable via the NSError.kotlinException
+            // property Kotlin/Native generates (see LifeGroupStudyViewModels.swift for the
+            // same pattern).
+            if (error as NSError).kotlinException is BirthDateRequiredException {
+                pendingIdToken = idToken
+                pendingProvider = provider
+                self.needsBirthDate = true
+            } else {
+                self.error = error.localizedDescription
+            }
         }
         isLoading = false
     }
