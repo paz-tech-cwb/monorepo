@@ -127,12 +127,9 @@ struct LoginView: View {
         .sheet(isPresented: showBirthDateSheet) {
             BirthDateSheet(
                 onConfirm: { date in
-                    Task {
-                        await authCoordinator.confirmBirthDate(isoDateString(from: date))
-                        if authCoordinator.isAuthenticated { onDismiss?() }
-                    }
-                },
-                onCancel: { authCoordinator.dismissBirthDatePrompt() }
+                    await authCoordinator.confirmBirthDate(isoDateString(from: date))
+                    if authCoordinator.isAuthenticated { onDismiss?() }
+                }
             )
         }
     }
@@ -266,11 +263,9 @@ struct LoginView: View {
 /// so it can be matched against a pre-created member record (see BirthDateRequiredException
 /// in shared code).
 private struct BirthDateSheet: View {
-    var onConfirm: (Date) -> Void
-    var onCancel: () -> Void
+    var onConfirm: (Date) async -> Void
 
     @State private var selectedDate = Date()
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
@@ -293,19 +288,15 @@ private struct BirthDateSheet: View {
                 Spacer()
             }
             .padding(.top, 24)
-            .navigationTitle("Data de nascimento")
+            .navigationTitle("Nascimento")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancelar") {
-                        onCancel()
-                        dismiss()
-                    }
-                }
+                // The sheet dismisses reactively once `needsBirthDate` flips false inside
+                // confirmBirthDate — calling dismiss() here directly would race with (and
+                // wipe) the pending idToken/provider before the retry request reads them.
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Confirmar") {
-                        onConfirm(selectedDate)
-                        dismiss()
+                        Task { await onConfirm(selectedDate) }
                     }
                 }
             }
