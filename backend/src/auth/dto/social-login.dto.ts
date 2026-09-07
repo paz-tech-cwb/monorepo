@@ -28,4 +28,12 @@ export class SocialLoginDto {
   @IsOptional()
   @IsDateString({}, { message: 'birth_date must be a valid date string.' })
   birthDate?: string;
+
+  // Distinguishes admin-ui (leadership roles only) from the mobile app
+  // (open to all members) — both share this same endpoint.
+  @Expose()
+  @IsIn(['admin', 'mobile'], {
+    message: 'client must be either "admin" or "mobile".',
+  })
+  client: 'admin' | 'mobile';
 }

@@ -25,7 +25,11 @@ describe('AuthController', () => {
 
   describe('socialLogin', () => {
     it('should call authService.socialLogin with correct args', async () => {
-      const dto = { provider: 'google' as const, idToken: 'test-token' };
+      const dto = {
+        provider: 'google' as const,
+        idToken: 'test-token',
+        client: 'admin' as const,
+      };
       const expected = {
         user: { id: 1, name: 'Test', email: 'test@test.com', picture: null },
         accessToken: 'at',
@@ -39,6 +43,7 @@ describe('AuthController', () => {
         'google',
         'test-token',
         undefined,
+        'admin',
       );
       expect(result).toEqual(expected);
     });

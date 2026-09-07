@@ -164,6 +164,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const response = await authApi.socialLogin({
           id_token: idToken,
           provider,
+          client: "admin",
         })
 
         setUser(response.user)

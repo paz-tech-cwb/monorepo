@@ -28,6 +28,7 @@ export class AuthController {
       socialLoginDto.provider,
       socialLoginDto.idToken,
       socialLoginDto.birthDate,
+      socialLoginDto.client,
     );
   }
 

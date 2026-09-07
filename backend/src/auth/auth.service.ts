@@ -100,7 +100,12 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-  async socialLogin(provider: string, idToken: string, birthDate?: string) {
+  async socialLogin(
+    provider: string,
+    idToken: string,
+    birthDate?: string,
+    client: 'admin' | 'mobile' = 'admin',
+  ) {
     let userData: {
       username: string;
       name: string;
@@ -199,7 +204,9 @@ export class AuthService implements OnModuleInit {
     }
 
     // Role-based access check — admin-ui is for leadership roles only;
-    // 'member' (and any other role) is not permitted to log in here.
+    // 'member' (and any other role) is not permitted to log in there. The
+    // mobile app is open to all members, so this gate is skipped entirely
+    // for client === 'mobile'.
     const allowedRoles = [
       'admin',
       'pastor',
@@ -207,7 +214,10 @@ export class AuthService implements OnModuleInit {
       'sector_leader',
       'life_group_leader',
     ];
-    if (!user.role || !allowedRoles.includes(user.role.slug)) {
+    if (
+      client === 'admin' &&
+      (!user.role || !allowedRoles.includes(user.role.slug))
+    ) {
       const reason = `User role is '${user.role?.slug ?? 'unknown'}', not a leadership role`;
       try {
         await this.auditLogger.logAuthAttempt(

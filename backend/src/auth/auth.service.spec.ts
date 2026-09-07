@@ -210,6 +210,27 @@ describe('AuthService', () => {
       );
     });
 
+    it('should allow a plain member to log in via the mobile app (leadership gate is admin-ui only)', async () => {
+      jest.spyOn(service as any, 'verifyGoogleToken').mockResolvedValue({
+        username: 'google-uid',
+        name: 'Member User',
+        email: 'member@example.com',
+        photo: null,
+      });
+
+      userRepo.findOne.mockResolvedValue(mockMemberUser);
+
+      const result = await service.socialLogin(
+        'google',
+        'valid-google-token',
+        undefined,
+        'mobile',
+      );
+
+      expect(result.access_token).toBeDefined();
+      expect(result.user.email).toBe('member@example.com');
+    });
+
     it('should still accept admin user with Apple token', async () => {
       jest.spyOn(service as any, 'verifyAppleToken').mockResolvedValue({
         username: 'apple-uid',

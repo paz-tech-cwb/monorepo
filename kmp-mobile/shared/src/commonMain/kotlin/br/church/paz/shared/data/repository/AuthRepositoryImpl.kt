@@ -87,6 +87,9 @@ private data class SocialLoginRequest(
     @SerialName("id_token") val idToken: String,
     val provider: String,
     @SerialName("birth_date") val birthDate: String? = null,
+    // The mobile app is open to all members — distinguishes from admin-ui,
+    // which restricts this same endpoint to leadership roles.
+    val client: String = "mobile",
 )
 
 @Serializable
