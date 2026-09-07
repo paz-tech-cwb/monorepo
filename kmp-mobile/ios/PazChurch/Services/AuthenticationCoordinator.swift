@@ -132,10 +132,14 @@ class AuthenticationCoordinator {
 // MARK: - Firebase Integration Helpers
 
 enum GoogleSignInHelper {
-    /// CLIENT_ID from GoogleService-Info.plist (iOS client ID, not the web client ID)
-    private static let clientID = "139667803306-vbo7nbgufjpr464k2ko91gnbvodjo9v7.apps.googleusercontent.com"
-
     static func getIdToken(completion: @escaping (String?, Error?) -> Void) {
+        // Read CLIENT_ID from the bundled GoogleService-Info.plist (matches whichever
+        // Firebase project FirebaseApp.configure() loaded) instead of hardcoding it,
+        // so Debug (staging) and Release (prod) each pick up their own client ID.
+        guard let clientID = FirebaseApp.app()?.options.clientID else {
+            completion(nil, AuthError.missingViewController)
+            return
+        }
         let config = GIDConfiguration(clientID: clientID)
         GIDSignIn.sharedInstance.configuration = config
 

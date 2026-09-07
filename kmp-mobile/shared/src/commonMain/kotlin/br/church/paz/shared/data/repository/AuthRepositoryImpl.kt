@@ -5,6 +5,7 @@ import br.church.paz.shared.auth.TokenStorage
 import br.church.paz.shared.data.remote.clearBearerTokenCache
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.repository.AuthRepository
+import br.church.paz.shared.domain.repository.BirthDateRequiredException
 import br.church.paz.shared.util.safeRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.request.post

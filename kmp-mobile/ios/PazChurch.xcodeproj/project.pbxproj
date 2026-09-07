@@ -626,14 +626,14 @@
 					"$(inherited)",
 					"\"../shared/build/XCFrameworks/debug\"",
 				);
-				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.139667803306-vbo7nbgufjpr464k2ko91gnbvodjo9v7";
+				GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.454955850434-hcge1g96aeh77ecesvrjk3ol35k23jl5";
 				INFOPLIST_FILE = PazChurch/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.cwb.pazchurch.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cwb.pazchurch.app.dev;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

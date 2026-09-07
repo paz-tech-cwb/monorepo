@@ -67,6 +67,27 @@ Quick summary:
 - **UDF** — `UiState` data class + `UiEffect` sealed class per screen; `StateFlow` + `Channel`
 - **No `Modifier.clickable` on non-interactive containers** — use `Button` or `Surface(onClick=)`
 
+## Environments (staging vs production)
+
+Both platforms switch environment automatically based on the standard build variant — there is no separate flag to remember:
+
+| | **Debug** (staging) | **Release** (production) |
+|---|---|---|
+| Backend | local (`http://localhost:3001/api` iOS Simulator · `http://10.0.2.2:3001/api` Android emulator) | VPS (`https://api.paz.church/api`) |
+| Firebase project | `paz-church-curitiba-staging` | prod project |
+| iOS bundle ID | `com.cwb.pazchurch.app.dev` | `com.cwb.pazchurch.app` |
+| Android applicationId | `com.cwb.pazchurch.app.dev` (`applicationIdSuffix = ".dev"`) | `com.cwb.pazchurch.app` |
+
+**To run staging locally:** just build/run the Debug configuration (iOS) or `assembleDebug`/`installDebug` (Android) — nothing else to configure beyond having the local backend running (`backend/`, port 3001) and the staging Firebase config files in place locally (gitignored, not committed — see below).
+
+iOS Simulator reaches the backend via `localhost` since it shares the host Mac's network stack — no IP to keep in sync. Android's emulator alias `10.0.2.2` similarly always points back to the host. **Physical-device testing is the one case that needs a real LAN address** — override `IosAppContainer.shared.baseUrl` / Android's `BASE_URL` locally with your Mac's current LAN IP or `<hostname>.local` for that session; don't hardcode it, since DHCP-assigned IPs change across networks.
+
+**Local Firebase config files** (`ios/PazChurch/GoogleService-Info.plist`, `android/google-services.json`) are gitignored and must be downloaded per-developer from the Firebase Console:
+- For local/staging dev: download from the **`paz-church-curitiba-staging`** project, registered under bundle/package `com.cwb.pazchurch.app.dev`
+- Production builds get the prod files injected by CI from GitHub secrets (`ANDROID_GOOGLE_SERVICES_JSON`, `GOOGLE_SERVICE_INFO_PLIST`) — see `.github/workflows/deploy-kmp-mobile.yml`
+
+`GoogleSignInHelper` (iOS) reads its Google `clientID` from whatever `GoogleService-Info.plist` is bundled at build time (via `FirebaseApp.app()?.options.clientID`), so it never needs to be hardcoded or kept in sync manually — it's automatically correct for whichever environment you built.
+
 ## Design system
 
 Colors, typography, shapes: `android/src/main/kotlin/br/church/paz/android/ui/theme/`

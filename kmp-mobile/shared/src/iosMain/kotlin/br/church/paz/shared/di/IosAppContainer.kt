@@ -26,7 +26,11 @@ import io.ktor.client.engine.darwin.Darwin
 
 object IosAppContainer {
 
-    var baseUrl: String = "http://192.168.15.10:3001/api"
+    // localhost works because iOS Simulator shares the host Mac's network stack.
+    // Physical-device testing needs a LAN-reachable address instead — override
+    // IosAppContainer.shared.baseUrl at launch (e.g. via a scheme env var) rather
+    // than hardcoding a DHCP-assigned IP here, since it will change across networks.
+    var baseUrl: String = "http://localhost:3001/api"
 
     private val tokenStorage by lazy { createTokenStorage() }
     private val userStore by lazy { createUserStore() }

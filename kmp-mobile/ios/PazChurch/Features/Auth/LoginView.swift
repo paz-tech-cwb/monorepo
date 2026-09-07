@@ -124,7 +124,7 @@ struct LoginView: View {
                 .stroke(.white.opacity(0.25), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 12)
-        .sheet(isPresented: $showBirthDateSheet) {
+        .sheet(isPresented: showBirthDateSheet) {
             BirthDateSheet(
                 onConfirm: { date in
                     Task {

@@ -17,7 +17,15 @@ struct PazChurchApp: App {
     init() {
         // Must run before any repository touches token storage.
         IosKeychainProvider.shared.keychain = KmpKeychainBridge()
-        
+
+        // Must run before IosAppContainer.shared.authRepository is first touched below,
+        // since baseUrl is read when the lazy httpClient is created.
+        // Debug keeps IosAppContainer's default (http://localhost:3001/api — the
+        // Simulator shares the host Mac's network stack, so this needs no per-network IP).
+        #if !DEBUG
+        IosAppContainer.shared.baseUrl = "https://api.paz.church/api"
+        #endif
+
         let service = PushNotificationService.shared
         _pushService = State(initialValue: service)
         
