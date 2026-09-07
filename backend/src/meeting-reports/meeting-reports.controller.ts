@@ -14,11 +14,14 @@ import {
   Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 import { MeetingReportsService } from './meeting-reports.service';
 import { CreateMeetingReportDto } from './dto/create-meeting-report.dto';
 import { UpdateMeetingReportDto } from './dto/update-meeting-report.dto';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @SerializeOptions({
   strategy: 'exposeAll',
   excludeExtraneousValues: false,
@@ -28,6 +31,7 @@ export class MeetingReportsController {
   constructor(private readonly meetingReportsService: MeetingReportsService) {}
 
   @Post()
+  @Roles(...LEADERSHIP_ROLES)
   create(@Body() createMeetingReportDto: CreateMeetingReportDto) {
     return this.meetingReportsService.create(createMeetingReportDto);
   }
@@ -58,6 +62,7 @@ export class MeetingReportsController {
   }
 
   @Put(':id')
+  @Roles(...LEADERSHIP_ROLES)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateMeetingReportDto: UpdateMeetingReportDto,
@@ -67,6 +72,7 @@ export class MeetingReportsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(...LEADERSHIP_ROLES)
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.meetingReportsService.remove(id);
   }

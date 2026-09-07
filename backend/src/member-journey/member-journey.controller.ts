@@ -10,11 +10,14 @@ import {
   SerializeOptions,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 import { Request } from 'express';
 import { MemberJourneyService } from './member-journey.service';
 import { UpdateMemberStageDto } from './dto/update-member-stage.dto';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @SerializeOptions({
   strategy: 'exposeAll',
   excludeExtraneousValues: false,
@@ -71,6 +74,7 @@ export class MemberJourneyController {
   }
 
   @Patch(':memberId/stage')
+  @Roles(...LEADERSHIP_ROLES)
   updateStage(
     @Param('memberId') memberId: string,
     @Body() updateMemberStageDto: UpdateMemberStageDto,

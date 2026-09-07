@@ -14,11 +14,14 @@ import {
   Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 import { ConversionsService } from './conversions.service';
 import { CreateConversionDto } from './dto/create-conversion.dto';
 import { UpdateConversionDto } from './dto/update-conversion.dto';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @SerializeOptions({
   strategy: 'exposeAll',
   excludeExtraneousValues: false,
@@ -28,6 +31,7 @@ export class ConversionsController {
   constructor(private readonly conversionsService: ConversionsService) {}
 
   @Post()
+  @Roles(...LEADERSHIP_ROLES)
   create(@Body() createConversionDto: CreateConversionDto) {
     return this.conversionsService.create(createConversionDto);
   }
@@ -45,6 +49,7 @@ export class ConversionsController {
   }
 
   @Put(':id')
+  @Roles(...LEADERSHIP_ROLES)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateConversionDto: UpdateConversionDto,
@@ -54,6 +59,7 @@ export class ConversionsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(...LEADERSHIP_ROLES)
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.conversionsService.remove(id);
   }

@@ -18,8 +18,11 @@ import { CreateMinistryDto } from './dto/create-ministry.dto';
 import { UpdateMinistryDto } from './dto/update-ministry.dto';
 import { CreateMinistryTeamDto } from './dto/create-ministry-team.dto';
 import { UpdateMinistryTeamDto } from './dto/update-ministry-team.dto';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('ministries')
 export class MinistriesController {
   constructor(private readonly svc: MinistriesService) {}
@@ -43,11 +46,13 @@ export class MinistriesController {
   }
 
   @Post()
+  @Roles(...LEADERSHIP_ROLES)
   createMinistry(@Body() dto: CreateMinistryDto) {
     return this.svc.createMinistry(dto);
   }
 
   @Put(':id')
+  @Roles(...LEADERSHIP_ROLES)
   updateMinistry(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateMinistryDto,
@@ -57,16 +62,19 @@ export class MinistriesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(...LEADERSHIP_ROLES)
   deleteMinistry(@Param('id', ParseIntPipe) id: number) {
     return this.svc.deleteMinistry(id);
   }
 
   @Post('teams')
+  @Roles(...LEADERSHIP_ROLES)
   createTeam(@Body() dto: CreateMinistryTeamDto) {
     return this.svc.createTeam(dto);
   }
 
   @Put('teams/:id')
+  @Roles(...LEADERSHIP_ROLES)
   updateTeam(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateMinistryTeamDto,
@@ -76,11 +84,13 @@ export class MinistriesController {
 
   @Delete('teams/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(...LEADERSHIP_ROLES)
   deleteTeam(@Param('id', ParseIntPipe) id: number) {
     return this.svc.deleteTeam(id);
   }
 
   @Post(':id/members/:userId')
+  @Roles(...LEADERSHIP_ROLES)
   addMinistryMember(
     @Param('id', ParseIntPipe) id: number,
     @Param('userId', ParseIntPipe) userId: number,
@@ -90,6 +100,7 @@ export class MinistriesController {
 
   @Delete(':id/members/:userId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(...LEADERSHIP_ROLES)
   removeMinistryMember(
     @Param('id', ParseIntPipe) id: number,
     @Param('userId', ParseIntPipe) userId: number,
@@ -98,6 +109,7 @@ export class MinistriesController {
   }
 
   @Post('teams/:id/members/:userId')
+  @Roles(...LEADERSHIP_ROLES)
   addTeamMember(
     @Param('id', ParseIntPipe) id: number,
     @Param('userId', ParseIntPipe) userId: number,
@@ -107,6 +119,7 @@ export class MinistriesController {
 
   @Delete('teams/:id/members/:userId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(...LEADERSHIP_ROLES)
   removeTeamMember(
     @Param('id', ParseIntPipe) id: number,
     @Param('userId', ParseIntPipe) userId: number,

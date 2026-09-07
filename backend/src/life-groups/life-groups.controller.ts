@@ -14,11 +14,14 @@ import {
   Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 import { LifeGroupsService } from './life-groups.service';
 import { CreateLifeGroupDto } from './dto/create-life-group.dto';
 import { UpdateLifeGroupDto } from './dto/update-life-group.dto';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @SerializeOptions({
   strategy: 'exposeAll',
   excludeExtraneousValues: false,
@@ -28,6 +31,7 @@ export class LifeGroupsController {
   constructor(private readonly lifeGroupsService: LifeGroupsService) {}
 
   @Post()
+  @Roles(...LEADERSHIP_ROLES)
   create(@Body() createLifeGroupDto: CreateLifeGroupDto) {
     return this.lifeGroupsService.create(createLifeGroupDto);
   }
@@ -44,6 +48,7 @@ export class LifeGroupsController {
   }
 
   @Put(':id')
+  @Roles(...LEADERSHIP_ROLES)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateLifeGroupDto: UpdateLifeGroupDto,
@@ -53,12 +58,14 @@ export class LifeGroupsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(...LEADERSHIP_ROLES)
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.lifeGroupsService.remove(id);
   }
 
   @Post(':id/members/:userId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(...LEADERSHIP_ROLES)
   addMember(
     @Param('id', ParseIntPipe) id: number,
     @Param('userId', ParseIntPipe) userId: number,
@@ -68,6 +75,7 @@ export class LifeGroupsController {
 
   @Delete(':id/members/:userId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(...LEADERSHIP_ROLES)
   removeMember(
     @Param('id', ParseIntPipe) id: number,
     @Param('userId', ParseIntPipe) userId: number,

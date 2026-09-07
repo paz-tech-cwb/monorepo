@@ -18,6 +18,7 @@ import { User } from 'src/users/entities/user.entity';
 import { Role } from 'src/roles/entities/role.entity';
 import { UserDeviceToken } from 'src/users/entities/user-device-token.entity';
 import { AuditLogger } from './audit.logger';
+import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 import { Repository } from 'typeorm';
 
 const ACCESS_TOKEN_EXPIRES_IN = '24h';
@@ -207,13 +208,7 @@ export class AuthService implements OnModuleInit {
     // 'member' (and any other role) is not permitted to log in there. The
     // mobile app is open to all members, so this gate is skipped entirely
     // for client === 'mobile'.
-    const allowedRoles = [
-      'admin',
-      'pastor',
-      'area_leader',
-      'sector_leader',
-      'life_group_leader',
-    ];
+    const allowedRoles: readonly string[] = LEADERSHIP_ROLES;
     if (
       client === 'admin' &&
       (!user.role || !allowedRoles.includes(user.role.slug))
