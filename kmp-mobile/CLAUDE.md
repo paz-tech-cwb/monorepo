@@ -73,7 +73,7 @@ Both platforms switch environment automatically based on the standard build vari
 
 | | **Debug** (staging) | **Release** (production) |
 |---|---|---|
-| Backend | local (`http://localhost:3001/api` iOS Simulator · `http://10.0.2.2:3001/api` Android emulator) | VPS (`https://api.paz.church/api`) |
+| Backend | local (`http://localhost:3001/api` iOS Simulator · `http://10.0.2.2:3001/api` Android emulator) | VPS (`http://znzcybe6t18zwapiy9hytma5.62.238.45.195.sslip.io/api`) |
 | Firebase project | `paz-church-curitiba-staging` | prod project |
 | iOS bundle ID | `com.cwb.pazchurch.app.dev` | `com.cwb.pazchurch.app` |
 | Android applicationId | `com.cwb.pazchurch.app.dev` (`applicationIdSuffix = ".dev"`) | `com.cwb.pazchurch.app` |

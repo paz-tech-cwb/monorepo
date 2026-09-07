@@ -59,7 +59,11 @@ android {
             if (releaseKeystorePath != null) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            buildConfigField("String", "BASE_URL", "\"https://api.paz.church/api\"")
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"http://znzcybe6t18zwapiy9hytma5.62.238.45.195.sslip.io/api\"",
+            )
             buildConfigField(
                 "String",
                 "GOOGLE_WEB_CLIENT_ID",
