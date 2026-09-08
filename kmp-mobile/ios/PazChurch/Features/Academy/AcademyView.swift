@@ -246,8 +246,7 @@ private struct LatestStudyBanner: View {
             Image(systemName: "chevron.right").font(.system(size: 14)).foregroundColor(.gray)
         }
         .padding(12)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }
 

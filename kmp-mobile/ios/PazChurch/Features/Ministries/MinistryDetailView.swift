@@ -67,8 +67,7 @@ struct MinistryDetailView: View {
                 }
                 .padding(PazSpacing.lg)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(PazColors.surface)
-                .cornerRadius(16)
+                .glassCard(radius: PazSpacing.cardRadiusCompact)
 
                 Spacer().frame(height: PazSpacing.xl)
             }
@@ -192,8 +191,7 @@ struct LifeGroupDetailView: View {
                         }
                         .padding(PazSpacing.lg)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(PazColors.surface)
-                        .cornerRadius(16)
+                        .glassCard(radius: PazSpacing.cardRadiusCompact)
                     }
 
                     if let members = lifeGroup.members {
@@ -213,8 +211,7 @@ struct LifeGroupDetailView: View {
                         }
                         .padding(PazSpacing.lg)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(PazColors.surface)
-                        .cornerRadius(16)
+                        .glassCard(radius: PazSpacing.cardRadiusCompact)
                     }
 
                     // `members` is only populated when the backend has already
@@ -241,8 +238,7 @@ struct LifeGroupDetailView: View {
                                     .foregroundColor(.gray)
                             }
                             .padding(PazSpacing.lg)
-                            .background(PazColors.surface)
-                            .cornerRadius(16)
+                            .glassCard(radius: PazSpacing.cardRadiusCompact)
                         }
                         .buttonStyle(.plain)
                     }

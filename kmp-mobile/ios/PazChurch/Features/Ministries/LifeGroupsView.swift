@@ -167,8 +167,7 @@ struct LifeGroupCard: View {
             }
         }
         .padding(PazSpacing.lg)
-        .background(PazColors.surface)
-        .cornerRadius(16)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }
 

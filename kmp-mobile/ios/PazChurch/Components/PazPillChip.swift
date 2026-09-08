@@ -13,7 +13,13 @@ struct PazPillChip: View {
                 .foregroundStyle(selected ? .white : PazColors.ink)
                 .padding(.horizontal, 16)
                 .frame(height: 38)
-                .background(selected ? PazColors.pazPrimary : PazColors.surface)
+                .background {
+                    if selected {
+                        PazColors.pazPrimary
+                    } else {
+                        Capsule().fill(.ultraThinMaterial)
+                    }
+                }
                 .clipShape(Capsule())
                 .overlay(Capsule().stroke(PazColors.pazPrimary.opacity(selected ? 0 : 0.18), lineWidth: 1))
         }
