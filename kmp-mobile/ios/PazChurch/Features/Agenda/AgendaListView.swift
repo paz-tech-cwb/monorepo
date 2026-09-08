@@ -73,7 +73,6 @@ struct AgendaListView: View {
             }
             .padding(.horizontal, 20)
         }
-        .background(PazMeshBackground())
     }
 }
 

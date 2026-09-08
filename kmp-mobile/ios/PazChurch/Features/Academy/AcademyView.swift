@@ -187,7 +187,6 @@ struct AcademyView: View {
                 .padding(.horizontal, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(PazMeshBackground())
     }
 
     private func errorState(message: String) -> some View {

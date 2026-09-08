@@ -63,7 +63,6 @@ struct NotificationPrefsView: View {
                 }
                 .padding(.horizontal, PazSpacing.lg)
             }
-            .background(PazMeshBackground())
 
             Button(action: { viewModel.onSave() }) {
                 Text(viewModel.isSaving ? "Salvando..." : "Salvar")
@@ -72,7 +71,6 @@ struct NotificationPrefsView: View {
             .disabled(viewModel.isSaving)
             .padding(.horizontal, PazSpacing.lg)
             .padding(.vertical, PazSpacing.md)
-            .background(PazMeshBackground())
         }
         .background(PazMeshBackground())
         .navigationTitle("Notificações")

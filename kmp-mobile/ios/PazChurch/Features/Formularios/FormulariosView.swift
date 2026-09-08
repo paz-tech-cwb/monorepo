@@ -46,7 +46,6 @@ struct FormulariosView: View {
             }
             .padding(.top, 8)
         }
-        .background(PazMeshBackground())
     }
 
     private var emptyState: some View {
@@ -67,7 +66,6 @@ struct FormulariosView: View {
             ForEach(0..<3, id: \.self) { _ in SkeletonView().frame(height: 72).padding(.horizontal, 20) }
             Spacer()
         }
-        .background(PazMeshBackground())
     }
 }
 

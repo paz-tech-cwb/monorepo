@@ -251,7 +251,6 @@ struct LifeGroupDetailView: View {
                 }
                 .padding(.horizontal, PazSpacing.lg)
             }
-            .background(PazMeshBackground())
         }
         .background(PazMeshBackground())
         .navigationTitle(lifeGroup.name)

@@ -251,7 +251,6 @@ struct SearchView: View {
             }
             .padding(.horizontal, PazSpacing.lg)
         }
-        .background(PazMeshBackground())
     }
 
     private var emptyQueryState: some View {
@@ -269,7 +268,6 @@ struct SearchView: View {
             .padding(.horizontal, PazSpacing.xl)
             Spacer()
         }
-        .background(PazMeshBackground())
     }
 
     private var noResultsState: some View {
@@ -285,7 +283,6 @@ struct SearchView: View {
             }
             Spacer()
         }
-        .background(PazMeshBackground())
     }
 }
 

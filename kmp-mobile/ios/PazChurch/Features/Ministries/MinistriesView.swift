@@ -31,7 +31,6 @@ struct MinistriesView: View {
                     }
                     .padding(.horizontal, PazSpacing.lg)
                 }
-                .background(PazMeshBackground())
             }
         }
         .background(PazMeshBackground())

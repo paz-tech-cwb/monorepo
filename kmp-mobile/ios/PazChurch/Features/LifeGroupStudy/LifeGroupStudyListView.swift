@@ -87,7 +87,6 @@ struct LifeGroupStudyListView: View {
             systemImage: "book.closed",
             description: Text("Os estudos do Life aparecerão aqui assim que forem publicados.")
         )
-        .background(PazMeshBackground())
     }
 
     private func errorState(message: String) -> some View {

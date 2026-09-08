@@ -689,7 +689,6 @@ struct FormDetailView: View {
                 }
                 .padding(.horizontal, PazSpacing.lg)
             }
-            .background(PazMeshBackground())
             .sheet(isPresented: Binding(
                 get: { viewModel.pickerKey != nil && !viewModel.pickerIsLifeGroup },
                 set: { if !$0 { viewModel.closePicker() } }
@@ -710,7 +709,6 @@ struct FormDetailView: View {
             .disabled(!viewModel.canSubmit)
             .padding(.horizontal, PazSpacing.lg)
             .padding(.vertical, PazSpacing.md)
-            .background(PazMeshBackground())
         }
     }
 
@@ -726,7 +724,6 @@ struct FormDetailView: View {
             Spacer()
         }
         .padding(PazSpacing.lg)
-        .background(PazMeshBackground())
     }
 }
 
