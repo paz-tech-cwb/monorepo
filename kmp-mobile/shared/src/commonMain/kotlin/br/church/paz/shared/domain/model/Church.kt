@@ -110,14 +110,21 @@ data class LifeGroup(
     val name: String,
     @SerialName("leader_id") val leaderId: Int? = null,
     @SerialName("leader_name") val leader: String? = null,
+    @SerialName("leader_phone") val leaderPhone: String? = null,
     @SerialName("co_leader_id") val coLeaderId: Int? = null,
     @SerialName("co_leader_name") val coLeaderName: String? = null,
+    @SerialName("co_leader_phone") val coLeaderPhone: String? = null,
     @SerialName("sector_id") val sectorId: Int? = null,
     val location: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     @SerialName("meeting_day") val meetingDay: String? = null,
     @SerialName("meeting_time") val meetingTime: String? = null,
     @SerialName("member_count") val membersCount: Int = 0,
-    val members: List<LifeGroupMember> = emptyList(),
+    @SerialName("kids_count") val kidsCount: Int = 0,
+    // null = viewer isn't allowed to see the roster (not this group's
+    // member/leader/admin); empty list = visible and genuinely has no members.
+    val members: List<LifeGroupMember>? = null,
 )
 
 @Serializable
