@@ -11,6 +11,8 @@ struct PazPillButtonStyle: ButtonStyle {
 
     var variant: Variant
 
+    @Environment(\.isEnabled) private var isEnabled
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 17, weight: .semibold))
@@ -25,7 +27,7 @@ struct PazPillButtonStyle: ButtonStyle {
                 Capsule(style: .continuous)
                     .strokeBorder(borderColor, lineWidth: variant == .secondary ? 1 : 0)
             )
-            .opacity(configuration.isPressed ? 0.85 : 1.0)
+            .opacity(configuration.isPressed ? 0.85 : (isEnabled ? 1.0 : 0.5))
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }

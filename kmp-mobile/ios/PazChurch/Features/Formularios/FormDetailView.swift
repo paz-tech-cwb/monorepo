@@ -706,7 +706,6 @@ struct FormDetailView: View {
                 Text(viewModel.isSubmitting ? "Enviando..." : "Enviar")
             }
             .buttonStyle(.pazPillPrimary)
-            .opacity(viewModel.canSubmit ? 1.0 : 0.5)
             .disabled(!viewModel.canSubmit)
             .padding(.horizontal, PazSpacing.lg)
             .padding(.vertical, PazSpacing.md)
@@ -759,7 +758,8 @@ private struct FieldRow: View {
                     .frame(height: 120)
                     .padding(PazSpacing.sm)
                     .scrollContentBackground(.hidden)
-                    .glassCard(radius: PazSpacing.cardRadiusCompact)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     .disabled(isSubmitting)
 
             case .date:
@@ -784,7 +784,8 @@ private struct FieldRow: View {
                     .autocapitalization(.none)
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
-                    .glassCard(radius: PazSpacing.cardRadiusCompact)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     .disabled(isSubmitting)
 
             case .name:
@@ -794,7 +795,8 @@ private struct FieldRow: View {
                     .autocapitalization(.words)
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
-                    .glassCard(radius: PazSpacing.cardRadiusCompact)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     .disabled(isSubmitting)
 
             case .integer:
@@ -806,7 +808,8 @@ private struct FieldRow: View {
                 .keyboardType(.numberPad)
                 .padding(.horizontal, PazSpacing.md)
                 .frame(height: 56)
-                .glassCard(radius: PazSpacing.cardRadiusCompact)
+                .background(PazColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
                 .disabled(isSubmitting)
 
             case .currency:
@@ -834,7 +837,8 @@ private struct FieldRow: View {
                     .autocapitalization(.sentences)
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
-                    .glassCard(radius: PazSpacing.cardRadiusCompact)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     .disabled(isSubmitting)
 
             case .select:
@@ -861,7 +865,8 @@ private struct FieldRow: View {
                     }
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
-                    .glassCard(radius: PazSpacing.cardRadiusCompact)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .disabled(isSubmitting)
 
@@ -877,7 +882,8 @@ private struct FieldRow: View {
                     }
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
-                    .glassCard(radius: PazSpacing.cardRadiusCompact)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
 
@@ -893,7 +899,8 @@ private struct FieldRow: View {
                     }
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
-                    .glassCard(radius: PazSpacing.cardRadiusCompact)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
 
@@ -920,7 +927,8 @@ private struct FieldRow: View {
                             }
                             .padding(.horizontal, PazSpacing.md)
                             .frame(height: 56)
-                            .glassCard(radius: PazSpacing.cardRadiusCompact)
+                            .background(PazColors.surface)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                         .buttonStyle(.plain)
                     }
@@ -950,7 +958,8 @@ private struct MaskedTextField: View {
             .textContentType(contentType)
             .padding(.horizontal, PazSpacing.md)
             .frame(height: 56)
-            .glassCard(radius: PazSpacing.cardRadiusCompact)
+            .background(PazColors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
             .disabled(disabled)
             .onAppear { text = initialValue }
             .onChange(of: text) { old, new in
@@ -984,7 +993,8 @@ private struct DateFieldRow: View {
                 }
                 .padding(.horizontal, PazSpacing.md)
                 .frame(height: 56)
-                .glassCard(radius: PazSpacing.cardRadiusCompact)
+                .background(PazColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain)
             .onAppear {
@@ -1001,7 +1011,8 @@ private struct DateFieldRow: View {
                         showPicker = false
                     }
                     .padding(PazSpacing.sm)
-                    .glassCard(radius: PazSpacing.cardRadiusCompact)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
     }

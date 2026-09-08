@@ -182,6 +182,11 @@ struct LoginView: View {
             }
         }
         .buttonStyle(isApple ? .pazPillPrimary : .pazPillSecondary)
+        // Google's brand guidelines expect a solid, opaque background — the
+        // secondary pill style's transparent fill disappears over a photo
+        // backdrop, so give this button an explicit solid surface fill.
+        // (pazPillSecondary's foreground is already PazColors.ink, so contrast holds.)
+        .background(isApple ? Color.clear : PazColors.surface, in: Capsule())
         .disabled(isLoading)
     }
 
