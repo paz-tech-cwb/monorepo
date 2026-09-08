@@ -63,7 +63,7 @@ struct NotificationPrefsView: View {
                 }
                 .padding(.horizontal, PazSpacing.lg)
             }
-            .background(PazColors.background)
+            .background(PazMeshBackground())
 
             Button(action: { viewModel.onSave() }) {
                 Text(viewModel.isSaving ? "Salvando..." : "Salvar")
@@ -72,9 +72,9 @@ struct NotificationPrefsView: View {
             .disabled(viewModel.isSaving)
             .padding(.horizontal, PazSpacing.lg)
             .padding(.vertical, PazSpacing.md)
-            .background(PazColors.background)
+            .background(PazMeshBackground())
         }
-        .background(PazColors.background)
+        .background(PazMeshBackground())
         .navigationTitle("Notificações")
         .navigationBarTitleDisplayMode(.large)
         .task { await viewModel.loadPreferences() }

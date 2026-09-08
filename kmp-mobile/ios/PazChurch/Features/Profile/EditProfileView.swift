@@ -23,7 +23,7 @@ struct EditProfileView: View {
                 }
                 .padding(.horizontal, PazSpacing.lg)
             }
-            .background(PazColors.background)
+            .background(PazMeshBackground())
 
             Button(action: { viewModel.onSave() }) {
                 Text(viewModel.isSaving ? "Salvando..." : "Salvar")
@@ -33,9 +33,9 @@ struct EditProfileView: View {
             .disabled(viewModel.isSaving || viewModel.name.trimmingCharacters(in: .whitespaces).isEmpty)
             .padding(.horizontal, PazSpacing.lg)
             .padding(.vertical, PazSpacing.md)
-            .background(PazColors.background)
+            .background(PazMeshBackground())
         }
-        .background(PazColors.background)
+        .background(PazMeshBackground())
         .navigationTitle("Editar Perfil")
         .navigationBarTitleDisplayMode(.large)
         .onChange(of: viewModel.saveSuccess) { _, success in

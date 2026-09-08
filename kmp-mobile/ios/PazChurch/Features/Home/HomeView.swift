@@ -124,7 +124,7 @@ struct HomeView: View {
                     .frame(height: 40)
             }
         }
-        .background(PazColors.background)
+        .background(PazMeshBackground())
         .navigationTitle("Início")
         .navigationBarTitleDisplayMode(.large)
         .navigationDestination(for: AgendaEvent.self) { event in

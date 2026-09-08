@@ -22,7 +22,7 @@ struct AgendaListView: View {
                     eventList
                 }
             }
-            .background(PazColors.background)
+            .background(PazMeshBackground())
             .navigationTitle("Agenda")
             .navigationBarTitleDisplayMode(.large)
         }
@@ -72,7 +72,7 @@ struct AgendaListView: View {
             }
             .padding(.horizontal, 20)
         }
-        .background(PazColors.background)
+        .background(PazMeshBackground())
     }
 }
 

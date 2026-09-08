@@ -12,7 +12,7 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             screenContent
-                .background(PazColors.background)
+                .background(PazMeshBackground())
                 .navigationTitle("Meu Perfil")
                 .navigationBarTitleDisplayMode(.large)
         }

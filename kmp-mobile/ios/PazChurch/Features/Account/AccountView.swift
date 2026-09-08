@@ -43,6 +43,7 @@ struct AccountView: View {
                         formId: formId,
                         formsRepository: IosAppContainer.shared.formsRepository
                     )
+
                 case let .ministryDetail(ministryId):
                     MinistryDetailDeepLinkView(
                         ministryId: ministryId,
@@ -54,11 +55,13 @@ struct AccountView: View {
                         lifeGroupId: lifeGroupId,
                         churchRepository: IosAppContainer.shared.churchRepository
                     )
+
                 case let .lifeGroupStudyDetail(studyId):
                     LifeGroupStudyDetailView(
                         studyId: studyId,
                         repository: IosAppContainer.shared.lifeGroupStudyRepository
                     )
+
                 default:
                     EmptyView()
                 }
@@ -170,7 +173,7 @@ struct AccountView: View {
                 Spacer().frame(height: 32)
             }
         }
-        .background(PazColors.background)
+        .background(PazMeshBackground())
     }
 
     // MARK: - Helpers

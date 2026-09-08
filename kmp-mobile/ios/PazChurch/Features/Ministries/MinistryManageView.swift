@@ -157,6 +157,6 @@ private struct AddMinistryMemberView: View {
             results = []
             return
         }
-        results = (try? await formsRepository.searchUsers(query: text)) ?? []
+        results = await (try? formsRepository.searchUsers(query: text)) ?? []
     }
 }

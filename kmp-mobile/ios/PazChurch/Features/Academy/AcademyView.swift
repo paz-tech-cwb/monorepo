@@ -21,7 +21,7 @@ struct AcademyView: View {
     var body: some View {
         NavigationStack {
             screenContent
-                .background(PazColors.background)
+                .background(PazMeshBackground())
                 .navigationTitle("Academia")
                 .navigationBarTitleDisplayMode(.large)
         }
@@ -186,7 +186,7 @@ struct AcademyView: View {
                 .padding(.horizontal, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(PazColors.background)
+        .background(PazMeshBackground())
     }
 
     private func errorState(message: String) -> some View {
@@ -325,12 +325,18 @@ private extension Array {
 }
 
 #Preview("Logged In — Light") {
-    AcademyView(academyRepository: IosAppContainer.shared.academyRepository, lifeGroupStudyRepository: IosAppContainer.shared.lifeGroupStudyRepository)
-        .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
+    AcademyView(
+        academyRepository: IosAppContainer.shared.academyRepository,
+        lifeGroupStudyRepository: IosAppContainer.shared.lifeGroupStudyRepository
+    )
+    .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
 }
 
 #Preview("Logged In — Dark") {
-    AcademyView(academyRepository: IosAppContainer.shared.academyRepository, lifeGroupStudyRepository: IosAppContainer.shared.lifeGroupStudyRepository)
-        .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
-        .preferredColorScheme(.dark)
+    AcademyView(
+        academyRepository: IosAppContainer.shared.academyRepository,
+        lifeGroupStudyRepository: IosAppContainer.shared.lifeGroupStudyRepository
+    )
+    .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
+    .preferredColorScheme(.dark)
 }

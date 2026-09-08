@@ -7,9 +7,9 @@ import SwiftUI
 struct LifeGroupsMapView: View {
     let lifeGroups: [LifeGroup]
 
-    // Starts centered on the member's own location at a close zoom (a city-wide
-    // `.automatic` fit reads as "empty" when groups are spread out) — falls back
-    // to auto-fitting all markers if location access isn't available.
+    /// Starts centered on the member's own location at a close zoom (a city-wide
+    /// `.automatic` fit reads as "empty" when groups are spread out) — falls back
+    /// to auto-fitting all markers if location access isn't available.
     @State private var cameraPosition: MapCameraPosition = .userLocation(
         fallback: .automatic
     )
@@ -63,6 +63,6 @@ struct LifeGroupsMapView: View {
     }
 }
 
-// LifeGroup already conforms to Hashable via Kotlin's generated equals()/
-// hashCode() bridging — only Identifiable needs adding for Map(selection:).
+/// LifeGroup already conforms to Hashable via Kotlin's generated equals()/
+/// hashCode() bridging — only Identifiable needs adding for Map(selection:).
 extension LifeGroup: Identifiable {}

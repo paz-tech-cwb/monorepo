@@ -36,7 +36,7 @@ struct FormSubmissionsListView: View {
 
     var body: some View {
         screenContent
-            .background(PazColors.background)
+            .background(PazMeshBackground())
             .navigationTitle("Relatório do Culto")
             .navigationBarTitleDisplayMode(.large)
             .task { await viewModel.load() }
@@ -152,7 +152,7 @@ struct FormSubmissionDetailView: View {
             }
             .padding(.horizontal, PazSpacing.lg)
         }
-        .background(PazColors.background)
+        .background(PazMeshBackground())
         .navigationTitle("Detalhe do Registro")
         .navigationBarTitleDisplayMode(.inline)
     }
