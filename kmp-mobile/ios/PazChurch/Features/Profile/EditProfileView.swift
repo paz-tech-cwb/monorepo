@@ -19,75 +19,7 @@ struct EditProfileView: View {
                 VStack(alignment: .leading, spacing: PazSpacing.lg) {
                     Spacer().frame(height: PazSpacing.lg)
 
-                    ProfileField(label: "Nome completo") {
-                        TextField("Seu nome completo", text: $viewModel.name)
-                            .textContentType(.name)
-                            .autocapitalization(.words)
-                            .keyboardType(.default)
-                            .profileFieldStyle()
-                    }
-
-                    ProfileField(label: "Telefone (WhatsApp)") {
-                        TextField("(41) 9 9999-9999", text: $viewModel.phone)
-                            .textContentType(.telephoneNumber)
-                            .keyboardType(.phonePad)
-                            .profileFieldStyle()
-                            .onChange(of: viewModel.phone) { old, new in
-                                viewModel.phone = applyPhoneMask(old: old, new: new)
-                            }
-                    }
-
-                    ProfileField(label: "Data de nascimento") {
-                        Button(action: { showDatePicker.toggle() }) {
-                            HStack {
-                                if let date = viewModel.birthDate {
-                                    Text(date, format: .dateTime.day().month(.wide).year())
-                                        .foregroundStyle(PazColors.ink)
-                                } else {
-                                    Text("Selecionar data")
-                                        .foregroundStyle(PazColors.slate)
-                                }
-                                Spacer()
-                                Image(systemName: "calendar")
-                                    .foregroundStyle(PazColors.pazPrimary)
-                            }
-                            .font(PazTypography.bodyMedium)
-                            .padding(.horizontal, PazSpacing.md)
-                            .frame(height: 56)
-                            .background(PazColors.surface)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                        .buttonStyle(.plain)
-
-                        if showDatePicker {
-                            DatePicker(
-                                "",
-                                selection: Binding(
-                                    get: { viewModel.birthDate ?? Date() },
-                                    set: { viewModel.birthDate = $0 }
-                                ),
-                                in: ...Date(),
-                                displayedComponents: .date
-                            )
-                            .datePickerStyle(.graphical)
-                            .tint(PazColors.pazPrimary)
-                            .onChange(of: viewModel.birthDate) { _, _ in showDatePicker = false }
-                            .background(PazColors.surface)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                    }
-
-                    if let error = viewModel.error {
-                        Text(error)
-                            .font(PazTypography.bodySmall)
-                            .foregroundStyle(.red)
-                            .padding(PazSpacing.md)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.red.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-
-                    Spacer().frame(height: PazSpacing.md)
+                    formCard
                 }
                 .padding(.horizontal, PazSpacing.lg)
             }
@@ -96,12 +28,8 @@ struct EditProfileView: View {
             Button(action: { viewModel.onSave() }) {
                 Text(viewModel.isSaving ? "Salvando..." : "Salvar")
                     .font(PazTypography.titleMedium)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(viewModel.isSaving ? PazColors.slate : PazColors.pazPrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            .buttonStyle(.pazPillPrimary)
             .disabled(viewModel.isSaving || viewModel.name.trimmingCharacters(in: .whitespaces).isEmpty)
             .padding(.horizontal, PazSpacing.lg)
             .padding(.vertical, PazSpacing.md)
@@ -113,6 +41,80 @@ struct EditProfileView: View {
         .onChange(of: viewModel.saveSuccess) { _, success in
             if success { dismiss() }
         }
+    }
+
+    private var formCard: some View {
+        VStack(alignment: .leading, spacing: PazSpacing.lg) {
+            ProfileField(label: "Nome completo") {
+                TextField("Seu nome completo", text: $viewModel.name)
+                    .textContentType(.name)
+                    .autocapitalization(.words)
+                    .keyboardType(.default)
+                    .profileFieldStyle()
+            }
+
+            ProfileField(label: "Telefone (WhatsApp)") {
+                TextField("(41) 9 9999-9999", text: $viewModel.phone)
+                    .textContentType(.telephoneNumber)
+                    .keyboardType(.phonePad)
+                    .profileFieldStyle()
+                    .onChange(of: viewModel.phone) { old, new in
+                        viewModel.phone = applyPhoneMask(old: old, new: new)
+                    }
+            }
+
+            ProfileField(label: "Data de nascimento") {
+                Button(action: { showDatePicker.toggle() }) {
+                    HStack {
+                        if let date = viewModel.birthDate {
+                            Text(date, format: .dateTime.day().month(.wide).year())
+                                .foregroundStyle(PazColors.ink)
+                        } else {
+                            Text("Selecionar data")
+                                .foregroundStyle(PazColors.slate)
+                        }
+                        Spacer()
+                        Image(systemName: "calendar")
+                            .foregroundStyle(PazColors.pazPrimary)
+                    }
+                    .font(PazTypography.bodyMedium)
+                    .padding(.horizontal, PazSpacing.md)
+                    .frame(height: 56)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+
+                if showDatePicker {
+                    DatePicker(
+                        "",
+                        selection: Binding(
+                            get: { viewModel.birthDate ?? Date() },
+                            set: { viewModel.birthDate = $0 }
+                        ),
+                        in: ...Date(),
+                        displayedComponents: .date
+                    )
+                    .datePickerStyle(.graphical)
+                    .tint(PazColors.pazPrimary)
+                    .onChange(of: viewModel.birthDate) { _, _ in showDatePicker = false }
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+            }
+
+            if let error = viewModel.error {
+                Text(error)
+                    .font(PazTypography.bodySmall)
+                    .foregroundStyle(.red)
+                    .padding(PazSpacing.md)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.red.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+        .padding(PazSpacing.lg)
+        .glassCard(radius: PazSpacing.cardRadiusLarge)
     }
 }
 
