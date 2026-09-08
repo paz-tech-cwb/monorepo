@@ -14,11 +14,11 @@ enum FormFieldType {
     case currency
     case multiline
     case toggle
-    case select          // enum: optionValues[i] = API value, label in options[i] displayed
-    case userPicker      // single user → stores id string
+    case select // enum: optionValues[i] = API value, label in options[i] displayed
+    case userPicker // single user → stores id string
     case userMultiPicker // multi user → stores "1,2,3"
-    case lgPicker        // life-group → stores id string
-    case selfOrSearch    // invited_by: "" = self, else searched name
+    case lgPicker // life-group → stores id string
+    case selfOrSearch // invited_by: "" = self, else searched name
 }
 
 struct FormFieldDef {
@@ -27,8 +27,8 @@ struct FormFieldDef {
     let placeholder: String
     let required: Bool
     let fieldType: FormFieldType
-    let options: [String]       // display labels
-    let optionValues: [String]  // API values parallel to options; empty = value IS label
+    let options: [String] // display labels
+    let optionValues: [String] // API values parallel to options; empty = value IS label
 
     init(
         _ key: String,
@@ -55,12 +55,22 @@ extension FormType {
         case .serviceReport:
             [
                 FormFieldDef("date", "Data", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef("report_type", "Tipo de relatório", required: true, fieldType: .select,
+                FormFieldDef(
+                    "report_type",
+                    "Tipo de relatório",
+                    required: true,
+                    fieldType: .select,
                     options: ["Tadel", "Culto de celebração", "Evento"],
-                    optionValues: ["tadel", "culto_celebracao", "evento"]),
-                FormFieldDef("period", "Período", required: true, fieldType: .select,
+                    optionValues: ["tadel", "culto_celebracao", "evento"]
+                ),
+                FormFieldDef(
+                    "period",
+                    "Período",
+                    required: true,
+                    fieldType: .select,
                     options: ["Manhã", "Tarde/Noite"],
-                    optionValues: ["manha", "tarde_noite"]),
+                    optionValues: ["manha", "tarde_noite"]
+                ),
                 FormFieldDef("atmosphere_team_id", "Equipe Atmosfera", fieldType: .integer),
                 FormFieldDef("atmosphere_responsible", "Responsável no dia", required: true),
                 FormFieldDef("tadel_adults", "Adultos (Tadel)", placeholder: "0", required: true, fieldType: .integer),
@@ -75,10 +85,17 @@ extension FormType {
                 FormFieldDef("volunteers_danca", "Voluntários Dança", placeholder: "0", fieldType: .integer),
                 FormFieldDef("notes", "Observação", fieldType: .multiline),
             ]
+
         case .guest:
             [
                 FormFieldDef("date", "Data da Visita", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef("full_name", "Nome do Visitante", placeholder: "Nome completo", required: true, fieldType: .name),
+                FormFieldDef(
+                    "full_name",
+                    "Nome do Visitante",
+                    placeholder: "Nome completo",
+                    required: true,
+                    fieldType: .name
+                ),
                 FormFieldDef("email", "E-mail", placeholder: "email@exemplo.com", required: true, fieldType: .email),
                 FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", fieldType: .phone),
                 FormFieldDef("invited_by", "Convidado por", fieldType: .selfOrSearch),
@@ -86,9 +103,16 @@ extension FormType {
                 FormFieldDef("how_met_church", "Como conheceu a igreja?"),
                 FormFieldDef("address", "Endereço"),
             ]
+
         case .multiplication:
             [
-                FormFieldDef("date", "Data da Multiplicação", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+                FormFieldDef(
+                    "date",
+                    "Data da Multiplicação",
+                    placeholder: "DD/MM/YYYY",
+                    required: true,
+                    fieldType: .date
+                ),
                 FormFieldDef("source_life_group_id", "Grupo de Vida de Origem", required: true, fieldType: .lgPicker),
                 FormFieldDef("new_life_group_name", "Nome do Novo Grupo", placeholder: "Ex: GL Norte", required: true),
                 FormFieldDef("new_leader_id", "Novo Líder", required: true, fieldType: .userPicker),
@@ -105,36 +129,77 @@ extension FormType {
                 FormFieldDef("good_testimony", "Bom Testemunho", fieldType: .toggle),
                 FormFieldDef("single_living_in_purity", "Solteiro Vivendo em Pureza", fieldType: .toggle),
             ]
+
         case .memberRegistration:
             [
                 FormFieldDef("full_name", "Nome Completo", required: true, fieldType: .name),
                 FormFieldDef("email", "E-mail", placeholder: "email@exemplo.com", fieldType: .email),
-                FormFieldDef("birth_date", "Data de Nascimento", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+                FormFieldDef(
+                    "birth_date",
+                    "Data de Nascimento",
+                    placeholder: "DD/MM/YYYY",
+                    required: true,
+                    fieldType: .date
+                ),
                 FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", required: true, fieldType: .phone),
-                FormFieldDef("gender", "Gênero", required: true, fieldType: .select,
-                    options: ["Masculino", "Feminino"], optionValues: ["m", "f"]),
-                FormFieldDef("civil_state", "Estado Civil", required: true, fieldType: .select,
+                FormFieldDef(
+                    "gender",
+                    "Gênero",
+                    required: true,
+                    fieldType: .select,
+                    options: ["Masculino", "Feminino"],
+                    optionValues: ["m", "f"]
+                ),
+                FormFieldDef(
+                    "civil_state",
+                    "Estado Civil",
+                    required: true,
+                    fieldType: .select,
                     options: ["Solteiro", "Casado", "Divorciado", "Viúvo"],
-                    optionValues: ["solteiro", "casado", "divorciado", "viuvo"]),
+                    optionValues: ["solteiro", "casado", "divorciado", "viuvo"]
+                ),
                 FormFieldDef("sector_id", "Setor", required: true, fieldType: .userPicker), // TODO: sector picker
                 FormFieldDef("life_group_id", "Grupo de Vida", fieldType: .lgPicker),
                 FormFieldDef("address", "Endereço"),
             ]
+
         case .conversion:
             [
                 FormFieldDef("full_name", "Nome Completo", required: true, fieldType: .name),
                 FormFieldDef("email", "E-mail", placeholder: "email@exemplo.com", required: true, fieldType: .email),
                 FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", required: true, fieldType: .phone),
-                FormFieldDef("decision_type", "Tipo de Decisão", required: true, fieldType: .select,
+                FormFieldDef(
+                    "decision_type",
+                    "Tipo de Decisão",
+                    required: true,
+                    fieldType: .select,
                     options: ["Primeira vez", "Reconciliação"],
-                    optionValues: ["first_time", "reconciliation"]),
+                    optionValues: ["first_time", "reconciliation"]
+                ),
                 FormFieldDef("how_met_church", "Como conheceu a igreja?", required: true),
-                FormFieldDef("gender", "Gênero", required: true, fieldType: .select,
-                    options: ["Masculino", "Feminino"], optionValues: ["m", "f"]),
-                FormFieldDef("birth_date", "Data de Nascimento", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef("civil_state", "Estado Civil", required: true, fieldType: .select,
+                FormFieldDef(
+                    "gender",
+                    "Gênero",
+                    required: true,
+                    fieldType: .select,
+                    options: ["Masculino", "Feminino"],
+                    optionValues: ["m", "f"]
+                ),
+                FormFieldDef(
+                    "birth_date",
+                    "Data de Nascimento",
+                    placeholder: "DD/MM/YYYY",
+                    required: true,
+                    fieldType: .date
+                ),
+                FormFieldDef(
+                    "civil_state",
+                    "Estado Civil",
+                    required: true,
+                    fieldType: .select,
                     options: ["Solteiro", "Casado", "Divorciado", "Viúvo"],
-                    optionValues: ["solteiro", "casado", "divorciado", "viuvo"]),
+                    optionValues: ["solteiro", "casado", "divorciado", "viuvo"]
+                ),
                 FormFieldDef("address", "Endereço", required: true),
                 FormFieldDef("attendance_count", "Quantidade de visitas", required: true),
                 FormFieldDef("life_group_status", "Status do Grupo de Vida", required: true),
@@ -142,19 +207,34 @@ extension FormType {
                 FormFieldDef("invited_by", "Convidado por"),
                 FormFieldDef("notes", "Observações", fieldType: .multiline),
             ]
+
         case .lifeGroupReport:
             [
                 FormFieldDef("date", "Data da Reunião", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef("attendees", "Quantidade de Participantes", placeholder: "0", required: true, fieldType: .integer),
+                FormFieldDef(
+                    "attendees",
+                    "Quantidade de Participantes",
+                    placeholder: "0",
+                    required: true,
+                    fieldType: .integer
+                ),
                 FormFieldDef("visitors", "Quantidade de Visitantes", placeholder: "0", fieldType: .integer),
                 FormFieldDef("offerings", "Oferta (R$)", placeholder: "0,00", fieldType: .currency),
                 FormFieldDef("observations", "Observações", fieldType: .multiline),
             ]
+
         case .course:
             [
                 FormFieldDef("course_name", "Nome do Curso", placeholder: "Ex: Escola de Membros", required: true),
-                FormFieldDef("enrolled_at", "Data de Inscrição", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+                FormFieldDef(
+                    "enrolled_at",
+                    "Data de Inscrição",
+                    placeholder: "DD/MM/YYYY",
+                    required: true,
+                    fieldType: .date
+                ),
             ]
+
         case .sectorSupervisorReport:
             [
                 FormFieldDef("date", "Data do Relatório", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
@@ -162,19 +242,44 @@ extension FormType {
                 FormFieldDef("life_groups_visited", "Grupos Visitados", fieldType: .lgPicker),
                 FormFieldDef("leaders_pastored", "Líderes Pastoreados", fieldType: .userMultiPicker),
                 FormFieldDef("multiplication_candidates", "Candidatos à Multiplicação", fieldType: .userMultiPicker),
-                FormFieldDef("life_groups_count", "Total de Grupos", placeholder: "0", required: true, fieldType: .integer),
-                FormFieldDef("life_groups_supervised", "Grupos Supervisionados", placeholder: "0", required: true, fieldType: .integer),
+                FormFieldDef(
+                    "life_groups_count",
+                    "Total de Grupos",
+                    placeholder: "0",
+                    required: true,
+                    fieldType: .integer
+                ),
+                FormFieldDef(
+                    "life_groups_supervised",
+                    "Grupos Supervisionados",
+                    placeholder: "0",
+                    required: true,
+                    fieldType: .integer
+                ),
                 FormFieldDef("life_group_observations", "Observações dos Grupos", fieldType: .multiline),
                 FormFieldDef("sector_multiplication_date", "Data de Multiplicação do Setor", fieldType: .date),
                 FormFieldDef("notes", "Observações", fieldType: .multiline),
             ]
+
         default: // areaSupervisorReport
             [
                 FormFieldDef("date", "Data do Relatório", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
                 FormFieldDef("area_id", "Área", required: true, fieldType: .userPicker), // TODO: area picker
                 FormFieldDef("sector_leaders_pastored", "Líderes de Setor Pastoreados", fieldType: .userMultiPicker),
-                FormFieldDef("life_groups_count", "Total de Grupos", placeholder: "0", required: true, fieldType: .integer),
-                FormFieldDef("life_groups_supervised", "Grupos Supervisionados", placeholder: "0", required: true, fieldType: .integer),
+                FormFieldDef(
+                    "life_groups_count",
+                    "Total de Grupos",
+                    placeholder: "0",
+                    required: true,
+                    fieldType: .integer
+                ),
+                FormFieldDef(
+                    "life_groups_supervised",
+                    "Grupos Supervisionados",
+                    placeholder: "0",
+                    required: true,
+                    fieldType: .integer
+                ),
                 FormFieldDef("life_group_observations", "Observações dos Grupos", fieldType: .multiline),
                 FormFieldDef("notes", "Observações", fieldType: .multiline),
             ]
@@ -183,15 +288,15 @@ extension FormType {
 
     var displayName: String {
         switch self {
-        case .memberRegistration: return "Registro de Membro"
-        case .conversion: return "Conversão"
-        case .guest: return "Visitante"
-        case .multiplication: return "Multiplicação"
-        case .serviceReport: return "Relatório de Culto"
-        case .course: return "Curso"
-        case .lifeGroupReport: return "Relatório de Grupo"
-        case .sectorSupervisorReport: return "Rel. Supervisor de Setor"
-        default: return "Rel. Supervisor de Área"
+        case .memberRegistration: "Registro de Membro"
+        case .conversion: "Conversão"
+        case .guest: "Visitante"
+        case .multiplication: "Multiplicação"
+        case .serviceReport: "Relatório de Culto"
+        case .course: "Curso"
+        case .lifeGroupReport: "Relatório de Grupo"
+        case .sectorSupervisorReport: "Rel. Supervisor de Setor"
+        default: "Rel. Supervisor de Área"
         }
     }
 }
@@ -209,14 +314,15 @@ class FormDetailViewModelIOS {
     var submitSuccess = false
 
     // MARK: - Picker state
-    var pickerKey: String? = nil
+
+    var pickerKey: String?
     var pickerLabel: String = ""
     var pickerIsMulti: Bool = false
     var pickerIsLifeGroup: Bool = false
     var pickerQuery: String = ""
     var pickerResults: [Any] = []
     var pickerIsLoading: Bool = false
-    var pickerError: String? = nil
+    var pickerError: String?
     var selfOrSearchModes: [String: Bool] = [:]
 
     private let formsRepository: FormsRepository
@@ -247,11 +353,10 @@ class FormDetailViewModelIOS {
                 self.form = found
                 let today = DateFormatter.brazilianDate.string(from: Date())
                 self.fields = Dictionary(uniqueKeysWithValues: found.type.fieldDefs.map { def in
-                    let initial: String
-                    if def.fieldType == .date {
-                        initial = today
+                    let initial: String = if def.fieldType == .date {
+                        today
                     } else {
-                        initial = ""
+                        ""
                     }
                     return (def.key, initial)
                 })
@@ -278,7 +383,9 @@ class FormDetailViewModelIOS {
         pickerError = nil
     }
 
-    func closePicker() { pickerKey = nil }
+    func closePicker() {
+        pickerKey = nil
+    }
 
     func onPickerQueryChanged(_ query: String) {
         pickerQuery = query
@@ -354,12 +461,16 @@ class FormDetailViewModelIOS {
 
     private func submit(type: FormType, userId: String) async throws {
         let snapshot = fields
-        func req(_ key: String) -> String { snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? "" }
+        func req(_ key: String) -> String {
+            snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? ""
+        }
         func opt(_ key: String) -> String? {
             let v = snapshot[key]?.trimmingCharacters(in: .whitespaces)
             return v?.isEmpty == false ? v : nil
         }
-        func intVal(_ key: String) -> Int32 { Int32(snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0 }
+        func intVal(_ key: String) -> Int32 {
+            Int32(snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0
+        }
         func kdbl(_ key: String) -> KotlinDouble? {
             let raw = snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? ""
             let n = raw.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: ",", with: ".")
@@ -391,6 +502,7 @@ class FormDetailViewModelIOS {
                 volunteersMiddia: intVal("volunteers_midia"), volunteersDanca: intVal("volunteers_danca"),
                 notes: opt("notes")
             ))
+
         case .guest:
             let invitedByRaw = req("invited_by")
             let invitedBy = invitedByRaw.isEmpty ? currentUserName : invitedByRaw
@@ -401,6 +513,7 @@ class FormDetailViewModelIOS {
                 howMetChurch: opt("how_met_church"), address: opt("address"),
                 date: isoDate("date")
             ))
+
         case .multiplication:
             _ = try await formsRepository.submitMultiplication(form: MultiplicationForm(
                 date: isoDate("date"),
@@ -421,6 +534,7 @@ class FormDetailViewModelIOS {
                 goodTestimony: snapshot["good_testimony"] == "true",
                 singleLivingInPurity: snapshot["single_living_in_purity"].map { KotlinBoolean(value: $0 == "true") }
             ))
+
         case .memberRegistration:
             _ = try await formsRepository.submitMemberRegistration(form: MemberRegistrationForm(
                 fullName: req("full_name"),
@@ -435,6 +549,7 @@ class FormDetailViewModelIOS {
                 neighborhood: nil, city: nil, state: nil,
                 address: opt("address")
             ))
+
         case .conversion:
             _ = try await formsRepository.submitConversion(form: ConversionForm(
                 fullName: req("full_name"),
@@ -452,17 +567,20 @@ class FormDetailViewModelIOS {
                 invitedBy: opt("invited_by"),
                 notes: opt("notes")
             ))
+
         case .lifeGroupReport:
             _ = try await formsRepository.submitLifeGroupReport(form: LifeGroupReportForm(
                 lifeGroupId: userId, date: isoDate("date"),
                 attendees: intVal("attendees"), visitors: intVal("visitors"),
                 offerings: kdbl("offerings"), observations: opt("observations")
             ))
+
         case .course:
             _ = try await formsRepository.submitCourse(form: CourseForm(
                 courseName: req("course_name"), memberId: userId,
                 enrolledAt: isoDate("enrolled_at")
             ))
+
         case .sectorSupervisorReport:
             let observations = req("life_group_observations")
                 .split(separator: "\n").map(String.init).filter { !$0.isEmpty }
@@ -479,6 +597,7 @@ class FormDetailViewModelIOS {
                 sectorMultiplicationDate: opt("sector_multiplication_date"),
                 notes: opt("notes")
             ))
+
         default: // areaSupervisorReport
             let observations = req("life_group_observations")
                 .split(separator: "\n").map(String.init).filter { !$0.isEmpty }
@@ -585,13 +704,9 @@ struct FormDetailView: View {
 
             Button(action: { viewModel.onSubmit() }) {
                 Text(viewModel.isSubmitting ? "Enviando..." : "Enviar")
-                    .font(PazTypography.titleMedium)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(viewModel.canSubmit ? PazColors.primary : Color.gray)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            .buttonStyle(.pazPillPrimary)
+            .opacity(viewModel.canSubmit ? 1.0 : 0.5)
             .disabled(!viewModel.canSubmit)
             .padding(.horizontal, PazSpacing.lg)
             .padding(.vertical, PazSpacing.md)
@@ -643,9 +758,8 @@ private struct FieldRow: View {
                     .font(PazTypography.bodyMedium)
                     .frame(height: 120)
                     .padding(PazSpacing.sm)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     .scrollContentBackground(.hidden)
+                    .glassCard(radius: PazSpacing.cardRadiusCompact)
                     .disabled(isSubmitting)
 
             case .date:
@@ -670,8 +784,7 @@ private struct FieldRow: View {
                     .autocapitalization(.none)
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .glassCard(radius: PazSpacing.cardRadiusCompact)
                     .disabled(isSubmitting)
 
             case .name:
@@ -681,8 +794,7 @@ private struct FieldRow: View {
                     .autocapitalization(.words)
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .glassCard(radius: PazSpacing.cardRadiusCompact)
                     .disabled(isSubmitting)
 
             case .integer:
@@ -694,8 +806,7 @@ private struct FieldRow: View {
                 .keyboardType(.numberPad)
                 .padding(.horizontal, PazSpacing.md)
                 .frame(height: 56)
-                .background(PazColors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .glassCard(radius: PazSpacing.cardRadiusCompact)
                 .disabled(isSubmitting)
 
             case .currency:
@@ -723,8 +834,7 @@ private struct FieldRow: View {
                     .autocapitalization(.sentences)
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .glassCard(radius: PazSpacing.cardRadiusCompact)
                     .disabled(isSubmitting)
 
             case .select:
@@ -742,7 +852,8 @@ private struct FieldRow: View {
                     }
                 } label: {
                     HStack {
-                        Text(displayValue.isEmpty ? (def.placeholder.isEmpty ? "Selecionar" : def.placeholder) : displayValue)
+                        Text(displayValue
+                            .isEmpty ? (def.placeholder.isEmpty ? "Selecionar" : def.placeholder) : displayValue)
                             .font(PazTypography.bodyMedium)
                             .foregroundStyle(displayValue.isEmpty ? PazColors.slate : PazColors.ink)
                         Spacer()
@@ -750,8 +861,7 @@ private struct FieldRow: View {
                     }
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .glassCard(radius: PazSpacing.cardRadiusCompact)
                 }
                 .disabled(isSubmitting)
 
@@ -767,8 +877,7 @@ private struct FieldRow: View {
                     }
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .glassCard(radius: PazSpacing.cardRadiusCompact)
                 }
                 .buttonStyle(.plain)
 
@@ -784,8 +893,7 @@ private struct FieldRow: View {
                     }
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .glassCard(radius: PazSpacing.cardRadiusCompact)
                 }
                 .buttonStyle(.plain)
 
@@ -812,8 +920,7 @@ private struct FieldRow: View {
                             }
                             .padding(.horizontal, PazSpacing.md)
                             .frame(height: 56)
-                            .background(PazColors.surface)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .glassCard(radius: PazSpacing.cardRadiusCompact)
                         }
                         .buttonStyle(.plain)
                     }
@@ -823,15 +930,15 @@ private struct FieldRow: View {
     }
 }
 
-// Uses local @State so the mask runs inside onChange(of:) — the only reliable
-// way to intercept and replace text in SwiftUI without cursor/state conflicts.
+/// Uses local @State so the mask runs inside onChange(of:) — the only reliable
+/// way to intercept and replace text in SwiftUI without cursor/state conflicts.
 private struct MaskedTextField: View {
     let placeholder: String
     let initialValue: String
     let disabled: Bool
     var keyboardType: UIKeyboardType = .default
-    var contentType: UITextContentType? = nil
-    let mask: (String, String) -> String  // (old, new) -> masked
+    var contentType: UITextContentType?
+    let mask: (String, String) -> String // (old, new) -> masked
     let onChange: (String) -> Void
 
     @State private var text: String = ""
@@ -843,8 +950,7 @@ private struct MaskedTextField: View {
             .textContentType(contentType)
             .padding(.horizontal, PazSpacing.md)
             .frame(height: 56)
-            .background(PazColors.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .glassCard(radius: PazSpacing.cardRadiusCompact)
             .disabled(disabled)
             .onAppear { text = initialValue }
             .onChange(of: text) { old, new in
@@ -861,9 +967,8 @@ private struct DateFieldRow: View {
     let disabled: Bool
 
     @State private var showPicker = false
-    @State private var selected: Date = {
-        DateFormatter.brazilianDate.date(from: DateFormatter.brazilianDate.string(from: Date())) ?? Date()
-    }()
+    @State private var selected: Date = DateFormatter.brazilianDate
+        .date(from: DateFormatter.brazilianDate.string(from: Date())) ?? Date()
 
     private let display = DateFormatter.brazilianDate
 
@@ -879,8 +984,7 @@ private struct DateFieldRow: View {
                 }
                 .padding(.horizontal, PazSpacing.md)
                 .frame(height: 56)
-                .background(PazColors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .glassCard(radius: PazSpacing.cardRadiusCompact)
             }
             .buttonStyle(.plain)
             .onAppear {
@@ -897,8 +1001,7 @@ private struct DateFieldRow: View {
                         showPicker = false
                     }
                     .padding(PazSpacing.sm)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .glassCard(radius: PazSpacing.cardRadiusCompact)
             }
         }
     }
@@ -916,7 +1019,7 @@ private func applyPhoneMask(old: String, new: String) -> String {
     return formatPhone(String(digits.prefix(11)))
 }
 
-// Separators go BEFORE the digit at boundary positions — no trailing chars at partial input
+/// Separators go BEFORE the digit at boundary positions — no trailing chars at partial input
 private func formatPhone(_ digits: String) -> String {
     let d = Array(digits)
     guard !d.isEmpty else { return "" }
@@ -925,9 +1028,9 @@ private func formatPhone(_ digits: String) -> String {
         switch i {
         case 0: result = "(\(c)"
         case 1: result += "\(c)"
-        case 2: result += ") \(c)"  // ") " inserted before 3rd digit
-        case 3: result += " \(c)"   // " " inserted before 4th digit
-        case 7: result += "-\(c)"   // "-" inserted before 8th digit
+        case 2: result += ") \(c)" // ") " inserted before 3rd digit
+        case 3: result += " \(c)" // " " inserted before 4th digit
+        case 7: result += "-\(c)" // "-" inserted before 8th digit
         default: result += "\(c)"
         }
     }
