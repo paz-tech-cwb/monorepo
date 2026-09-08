@@ -60,13 +60,8 @@ struct MinistriesView: View {
                 .foregroundColor(.gray)
             Button(action: { viewModel.onRetry() }) {
                 Text("Tentar Novamente")
-                    .font(PazTypography.titleMedium)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, PazSpacing.md)
-                    .background(PazColors.primary)
-                    .cornerRadius(12)
             }
+            .buttonStyle(.pazPillPrimary)
             .padding(.horizontal, PazSpacing.lg)
             Spacer()
         }
@@ -89,31 +84,31 @@ struct MinistryCard: View {
     let ministry: Ministry
 
     var body: some View {
-        HStack(spacing: PazSpacing.md) {
-            ZStack {
-                Circle()
-                    .fill(PazColors.primary.opacity(0.1))
-                    .frame(width: 48, height: 48)
-                Image(systemName: "person.3.fill")
-                    .font(.system(size: 18))
-                    .foregroundColor(PazColors.primary)
-            }
-
-            VStack(alignment: .leading, spacing: PazSpacing.xs) {
-                Text(ministry.name)
-                    .font(PazTypography.titleSmall)
-                if let description = ministry.description_ {
-                    Text(description)
-                        .font(PazTypography.bodySmall)
-                        .foregroundColor(.gray)
-                        .lineLimit(2)
+        GlassCard(radius: PazSpacing.cardRadiusCompact) {
+            HStack(spacing: PazSpacing.md) {
+                ZStack {
+                    Circle()
+                        .fill(PazColors.primary.opacity(0.1))
+                        .frame(width: 48, height: 48)
+                    Image(systemName: "person.3.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(PazColors.primary)
                 }
+
+                VStack(alignment: .leading, spacing: PazSpacing.xs) {
+                    Text(ministry.name)
+                        .font(PazTypography.titleSmall)
+                    if let description = ministry.description_ {
+                        Text(description)
+                            .font(PazTypography.bodySmall)
+                            .foregroundColor(.gray)
+                            .lineLimit(2)
+                    }
+                }
+                Spacer()
             }
-            Spacer()
+            .padding(PazSpacing.lg)
         }
-        .padding(PazSpacing.lg)
-        .background(PazColors.surface)
-        .cornerRadius(16)
     }
 }
 
