@@ -181,14 +181,17 @@ struct HomeView: View {
 
     private var featuredSection: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: PazSpacing.xl * 3) {
+            HStack(spacing: PazSpacing.xl * 2) {
                 ForEach(Array(banners.enumerated()), id: \.offset) { index, banner in
                     FeaturedCardView(
                         title: banner.title,
                         imageUrl: banner.imageUrl,
                         isAlt: index % 2 == 1
                     )
-                    .frame(width: UIScreen.main.bounds.width - 64)
+                    // Narrower than the old `- 64` so a sliver of the next/previous
+                    // card still peeks past the scroll content margins, signaling
+                    // there's more to swipe to even with the wider inter-card gap.
+                    .frame(width: UIScreen.main.bounds.width - 96)
                     .frame(height: 180)
                     .id(index)
                 }
