@@ -188,10 +188,12 @@ struct HomeView: View {
                         imageUrl: banner.imageUrl,
                         isAlt: index % 2 == 1
                     )
-                    // Card width matches the horizontal content margin below (4pt)
-                    // on each side, so exactly a sliver of the next/previous card
-                    // peeks in — just enough to signal there's more to swipe to.
-                    .frame(width: UIScreen.main.bounds.width - 8)
+                    // Card width narrower than the scroll content margins below
+                    // (32pt) so a real, visible strip of the next/previous card's
+                    // color and rounded corner stays on-screen at rest — matching
+                    // width to margins exactly (as an earlier attempt did) makes
+                    // the card fill the inset viewport with zero peek.
+                    .frame(width: UIScreen.main.bounds.width - 88)
                     .frame(height: 180)
                     .id(index)
                 }
@@ -199,7 +201,7 @@ struct HomeView: View {
             .scrollTargetLayout()
             .padding(.bottom, 28)
         }
-        .contentMargins(.horizontal, 4, for: .scrollContent)
+        .contentMargins(.horizontal, 32, for: .scrollContent)
         .contentMargins(.vertical, 16, for: .scrollContent)
         .scrollTargetBehavior(.viewAligned)
         .scrollPosition(id: $scrolledFeatureID)
@@ -275,8 +277,8 @@ struct HomeView: View {
                 }
             }
         }
-        .padding(.top, 4)
-        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .padding(.horizontal, 10)
         .padding(.bottom, 16)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
@@ -479,14 +481,18 @@ private struct DizimosPixButton: View {
         } label: {
             Text(copied ? "Copiado!" : "Copiar PIX")
                 .font(PazTypography.titleMedium)
-                .foregroundStyle(PazColors.pazPrimary)
+                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: PazSpacing.pillButtonHeight)
-                // Same material as the card it sits on, just a touch stronger,
-                // so the button reads as part of the frosted surface rather
-                // than a separate solid element.
-                .background(.regularMaterial, in: Capsule())
-                .overlay(Capsule().strokeBorder(PazColors.pazPrimary.opacity(0.18), lineWidth: 1))
+                // Blue-tinted glass: the same material as the card underneath,
+                // with a brand-color tint layered on top so the button reads
+                // as a distinct tappable surface rather than disappearing
+                // into the frosted card behind it.
+                .background {
+                    Capsule().fill(.regularMaterial)
+                    Capsule().fill(PazColors.pazPrimary.opacity(0.78))
+                }
+                .clipShape(Capsule())
         }
         .buttonStyle(.plain)
     }
