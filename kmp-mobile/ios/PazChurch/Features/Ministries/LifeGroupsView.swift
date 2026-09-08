@@ -112,13 +112,20 @@ struct LifeGroupCard: View {
 
                 Spacer()
 
-                Text("\(lifeGroup.membersCount) membros")
-                    .font(PazTypography.labelSmall)
-                    .foregroundColor(PazColors.primary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(PazColors.primary.opacity(0.12))
-                    .cornerRadius(20)
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("\(lifeGroup.membersCount) membros")
+                        .font(PazTypography.labelSmall)
+                        .foregroundColor(PazColors.primary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(PazColors.primary.opacity(0.12))
+                        .cornerRadius(20)
+                    if lifeGroup.kidsCount > 0 {
+                        Text("\(lifeGroup.kidsCount) crianças")
+                            .font(PazTypography.labelSmall)
+                            .foregroundColor(.gray)
+                    }
+                }
             }
 
             if lifeGroup.meetingDay != nil || lifeGroup.meetingTime != nil {
