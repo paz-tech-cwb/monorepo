@@ -80,47 +80,46 @@ struct AgendaListView: View {
 
 private struct AgendaSkeletonRow: View {
     @State private var animating = false
-    
+
     var body: some View {
         HStack(spacing: 12) {
             RoundedRectangle(cornerRadius: 12)
                 .fill(shimmerGradient)
                 .frame(width: 52, height: 52)
-            
+
             VStack(alignment: .leading, spacing: 8) {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(shimmerGradient)
                     .frame(height: 16)
                     .frame(maxWidth: .infinity)
-                
+
                 RoundedRectangle(cornerRadius: 4)
                     .fill(shimmerGradient)
                     .frame(height: 12)
                     .frame(width: 150)
             }
-            
+
             Spacer()
-            
+
             Circle()
                 .fill(shimmerGradient)
                 .frame(width: 8, height: 8)
         }
         .padding(14)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
         .onAppear {
             withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
                 animating.toggle()
             }
         }
     }
-    
+
     private var shimmerGradient: LinearGradient {
         LinearGradient(
             colors: [
                 Color.gray.opacity(0.1),
                 Color.gray.opacity(0.2),
-                Color.gray.opacity(0.1)
+                Color.gray.opacity(0.1),
             ],
             startPoint: animating ? .leading : .trailing,
             endPoint: animating ? .trailing : .leading
@@ -213,8 +212,7 @@ private struct AgendaEventRow: View {
             Circle().fill(PazColors.pazPrimary).frame(width: 8, height: 8)
         }
         .padding(14)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 
     private var dateBox: some View {
