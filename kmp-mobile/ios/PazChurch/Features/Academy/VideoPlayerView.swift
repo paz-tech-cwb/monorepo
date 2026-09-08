@@ -181,30 +181,30 @@ private struct RelatedVideoRow: View {
     let video: AcademyVideo
 
     var body: some View {
-        HStack(spacing: PazSpacing.md) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(PazColors.primary.opacity(0.15))
-                    .frame(width: 80, height: 52)
-                Image(systemName: "play.circle.fill")
-                    .font(.system(size: 24))
-                    .foregroundColor(PazColors.primary)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(video.title)
-                    .font(PazTypography.titleSmall)
-                    .lineLimit(2)
-                if let dur = video.durationFormatted {
-                    Text(dur)
-                        .font(PazTypography.labelSmall)
-                        .foregroundColor(.gray)
+        GlassCard(radius: PazSpacing.cardRadiusCompact) {
+            HStack(spacing: PazSpacing.md) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(PazColors.primary.opacity(0.15))
+                        .frame(width: 80, height: 52)
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(PazColors.primary)
                 }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(video.title)
+                        .font(PazTypography.titleSmall)
+                        .lineLimit(2)
+                    if let dur = video.durationFormatted {
+                        Text(dur)
+                            .font(PazTypography.labelSmall)
+                            .foregroundColor(.gray)
+                    }
+                }
+                Spacer()
             }
-            Spacer()
+            .padding(PazSpacing.sm)
         }
-        .padding(PazSpacing.sm)
-        .background(PazColors.surface)
-        .cornerRadius(12)
     }
 }
 
