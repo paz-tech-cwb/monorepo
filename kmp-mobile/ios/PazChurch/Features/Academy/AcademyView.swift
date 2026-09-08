@@ -120,52 +120,46 @@ struct AcademyView: View {
         ScrollView {
             VStack(spacing: 16) {
                 Spacer().frame(height: 20)
-                VStack(spacing: 16) {
-                    ZStack {
-                        Circle().fill(PazColors.pazPrimary.opacity(0.1)).frame(width: 64, height: 64)
-                        Image(systemName: "lock.fill").font(.system(size: 26)).foregroundStyle(PazColors.pazPrimary)
+                GlassCard(radius: PazSpacing.cardRadiusLarge) {
+                    VStack(spacing: 16) {
+                        ZStack {
+                            Circle().fill(PazColors.pazPrimary.opacity(0.1)).frame(width: 64, height: 64)
+                            Image(systemName: "lock.fill").font(.system(size: 26)).foregroundStyle(PazColors.pazPrimary)
+                        }
+                        Text("Conteúdo exclusivo").font(PazTypography.titleMedium)
+                        Text("Faça login para acessar todos os cursos da Academia Paz Church")
+                            .font(PazTypography.bodySmall)
+                            .foregroundStyle(PazColors.slate)
+                            .multilineTextAlignment(.center)
                     }
-                    Text("Conteúdo exclusivo").font(PazTypography.titleMedium)
-                    Text("Faça login para acessar todos os cursos da Academia Paz Church")
-                        .font(PazTypography.bodySmall)
-                        .foregroundStyle(PazColors.slate)
-                        .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(24)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(24)
-                .background(PazColors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
                 .padding(.horizontal, 20)
 
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("O que você encontra").font(PazTypography.titleMedium).foregroundStyle(.white)
-                    ForEach(
-                        [
-                            ("graduationcap.fill", "Cursos de discipulado"),
-                            ("play.rectangle.fill", "Videoaulas exclusivas"),
-                            ("star.fill", "Trilhas de aprendizado"),
-                        ],
-                        id: \.0
-                    ) { icon, label in
-                        HStack(spacing: 8) {
-                            Image(systemName: icon).foregroundStyle(PazColors.pazGold).font(.system(size: 15))
-                            Text(label).font(PazTypography.bodySmall).foregroundStyle(.white.opacity(0.9))
+                GlassCard(radius: PazSpacing.cardRadiusLarge) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("O que você encontra").font(PazTypography.titleMedium).foregroundStyle(.white)
+                        ForEach(
+                            [
+                                ("graduationcap.fill", "Cursos de discipulado"),
+                                ("play.rectangle.fill", "Videoaulas exclusivas"),
+                                ("star.fill", "Trilhas de aprendizado"),
+                            ],
+                            id: \.0
+                        ) { icon, label in
+                            HStack(spacing: 8) {
+                                Image(systemName: icon).foregroundStyle(PazColors.pazGold).font(.system(size: 15))
+                                Text(label).font(PazTypography.bodySmall).foregroundStyle(.white.opacity(0.9))
+                            }
                         }
+                        Button("Entrar na minha conta") { showLoginSheet = true }
+                            .buttonStyle(.pazPillPrimary)
+                            .padding(.top, 4)
                     }
-                    Button { showLoginSheet = true } label: {
-                        Text("Entrar na minha conta")
-                            .font(PazTypography.titleSmall)
-                            .foregroundStyle(PazColors.pazPrimary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                    }
-                    .padding(.top, 4)
+                    .padding(24)
+                    .background(PazColors.featuredCardGradient)
                 }
-                .padding(24)
-                .background(PazColors.featuredCardGradient)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
                 .padding(.horizontal, 20)
 
                 Spacer().frame(height: 32)
@@ -262,24 +256,24 @@ private struct ResumeBanner: View {
     let course: Course
 
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                PazColors.featuredCardGradient
-                Image(systemName: "play.fill").font(.system(size: 18)).foregroundStyle(.white)
-            }
-            .frame(width: 72, height: 48)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+        GlassCard(radius: PazSpacing.cardRadiusCompact) {
+            HStack(spacing: 12) {
+                ZStack {
+                    PazColors.featuredCardGradient
+                    Image(systemName: "play.fill").font(.system(size: 18)).foregroundStyle(.white)
+                }
+                .frame(width: 72, height: 48)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Continuar assistindo").font(PazTypography.labelSmall).foregroundStyle(PazColors.pazSky)
-                Text(course.title).font(PazTypography.titleSmall).foregroundStyle(PazColors.ink).lineLimit(1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Continuar assistindo").font(PazTypography.labelSmall).foregroundStyle(PazColors.pazSky)
+                    Text(course.title).font(PazTypography.titleSmall).foregroundStyle(PazColors.ink).lineLimit(1)
+                }
+                Spacer()
+                PazGoldBadge(text: "Retomar")
             }
-            Spacer()
-            PazGoldBadge(text: "Retomar")
+            .padding(12)
         }
-        .padding(12)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 }
 
@@ -319,8 +313,7 @@ private struct CourseCard: View {
                 Spacer()
             }
             .padding(12)
-            .background(PazColors.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 18))
+            .glassCard(radius: PazSpacing.cardRadiusCompact)
         }
         .buttonStyle(.plain)
     }
