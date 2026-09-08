@@ -24,6 +24,7 @@ struct MemberJourneyView: View {
         .background(PazColors.background.ignoresSafeArea())
         .navigationTitle("Minha Jornada")
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
     private func errorState(message: String) -> some View {

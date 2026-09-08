@@ -16,6 +16,7 @@ struct LifeGroupStudyListView: View {
             .background(PazMeshBackground())
             .navigationTitle("Estudo do Life")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 if viewModel.canPublish {
                     ToolbarItem(placement: .primaryAction) {

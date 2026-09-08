@@ -38,6 +38,7 @@ struct EditProfileView: View {
         .background(PazMeshBackground())
         .navigationTitle("Editar Perfil")
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .onChange(of: viewModel.saveSuccess) { _, success in
             if success { dismiss() }
         }

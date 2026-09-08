@@ -24,6 +24,7 @@ struct AcademyView: View {
                 .background(PazMeshBackground())
                 .navigationTitle("Academia")
                 .navigationBarTitleDisplayMode(.large)
+                .toolbarBackground(.hidden, for: .navigationBar)
         }
         .sheet(isPresented: $showLoginSheet) {
             LoginView(authCoordinator: authCoordinator, onDismiss: { showLoginSheet = false })

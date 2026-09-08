@@ -30,6 +30,7 @@ struct AccountView: View {
             }
             .navigationTitle(authCoordinator.isAuthenticated ? "Conta" : "")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(for: DeepLinkDestination.self) { destination in
                 switch destination {
                 case .formularios:

@@ -15,6 +15,7 @@ struct ProfileView: View {
                 .background(PazMeshBackground())
                 .navigationTitle("Meu Perfil")
                 .navigationBarTitleDisplayMode(.large)
+                .toolbarBackground(.hidden, for: .navigationBar)
         }
         .task { await viewModel.loadUser() }
     }

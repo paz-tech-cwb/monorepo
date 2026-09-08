@@ -37,6 +37,7 @@ struct MinistriesView: View {
         .background(PazMeshBackground())
         .navigationTitle("Ministérios")
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
     private var loadingState: some View {

@@ -644,6 +644,7 @@ struct FormDetailView: View {
         .background(PazMeshBackground())
         .navigationTitle(form.title)
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .onChange(of: viewModel.submitSuccess) { success in
             if success { dismiss() }
         }

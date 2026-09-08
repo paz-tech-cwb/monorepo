@@ -23,6 +23,7 @@ struct LifeGroupStudyDetailView: View {
             .background(PazMeshBackground())
             .navigationTitle(viewModel.study?.title ?? "Estudo do Life")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 if viewModel.canEdit {
                     ToolbarItem(placement: .primaryAction) {

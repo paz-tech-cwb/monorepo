@@ -127,6 +127,7 @@ struct HomeView: View {
         .background(PazMeshBackground())
         .navigationTitle("Início")
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .navigationDestination(for: AgendaEvent.self) { event in
             AgendaDetailView(event: event)
         }

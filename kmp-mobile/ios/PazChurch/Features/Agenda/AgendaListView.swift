@@ -25,6 +25,7 @@ struct AgendaListView: View {
             .background(PazMeshBackground())
             .navigationTitle("Agenda")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(.hidden, for: .navigationBar)
         }
         .task { await viewModel.loadFirstPage() }
     }

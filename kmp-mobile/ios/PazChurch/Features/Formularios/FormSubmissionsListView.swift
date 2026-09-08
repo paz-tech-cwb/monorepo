@@ -39,6 +39,7 @@ struct FormSubmissionsListView: View {
             .background(PazMeshBackground())
             .navigationTitle("Relatório do Culto")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .task { await viewModel.load() }
     }
 

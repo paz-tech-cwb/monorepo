@@ -77,6 +77,7 @@ struct MinistryDetailView: View {
         .background(PazMeshBackground())
         .navigationTitle(ministry.name)
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             if canManage {
                 ToolbarItem(placement: .primaryAction) {
@@ -255,6 +256,7 @@ struct LifeGroupDetailView: View {
         .background(PazMeshBackground())
         .navigationTitle(lifeGroup.name)
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             if canManage {
                 ToolbarItem(placement: .primaryAction) {

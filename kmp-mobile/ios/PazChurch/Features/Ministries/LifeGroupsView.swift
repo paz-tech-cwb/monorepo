@@ -53,6 +53,7 @@ struct LifeGroupsView: View {
         .background(PazMeshBackground())
         .navigationTitle("Grupos de Vida")
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
     private var loadingState: some View {

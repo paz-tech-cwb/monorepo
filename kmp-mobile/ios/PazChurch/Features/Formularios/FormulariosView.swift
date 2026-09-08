@@ -14,6 +14,7 @@ struct FormulariosView: View {
             .background(PazMeshBackground())
             .navigationTitle("Formulários")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .task { await viewModel.load() }
     }
 

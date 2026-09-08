@@ -77,6 +77,7 @@ struct NotificationPrefsView: View {
         .background(PazMeshBackground())
         .navigationTitle("Notificações")
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .task { await viewModel.loadPreferences() }
     }
 }
