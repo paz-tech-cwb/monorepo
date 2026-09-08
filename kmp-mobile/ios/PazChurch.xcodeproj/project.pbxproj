@@ -46,6 +46,7 @@
 		96BF8A72553894BA74F6934B /* PazIconContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC853F6E892CF7A2AE4283F /* PazIconContainer.swift */; };
 		9B9A6148AFFD0C8167085DD0 /* MinistryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDD6B4FBC968ED037D73EAA9 /* MinistryDetailView.swift */; };
 		F60D6CDD4EA54BE0A561E70D /* LifeGroupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED1E05BCF2C546C9A0DC895A /* LifeGroupsView.swift */; };
+		4F45594E08464136AC489365 /* LifeGroupsMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AC340BD22C41D9A07A3F75 /* LifeGroupsMapView.swift */; };
 		EC47F67C306E4116B92C805C /* LifeGroupStudyListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81F5F9C4D6F647AB9C4522FC /* LifeGroupStudyListView.swift */; };
 		EBE6B3F681DC476EBACABABD /* LifeGroupStudyDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F688FE786E3B4822974AA197 /* LifeGroupStudyDetailView.swift */; };
 		B49A8A26EB2141E1BDCD0884 /* LifeGroupStudyEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F0377C328A34AD89473C459 /* LifeGroupStudyEditorView.swift */; };
@@ -131,6 +132,7 @@
 		EA7936BCA1C57C580876AD98 /* EditProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfileView.swift; sourceTree = "<group>"; };
 		EDD6B4FBC968ED037D73EAA9 /* MinistryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinistryDetailView.swift; sourceTree = "<group>"; };
 		ED1E05BCF2C546C9A0DC895A /* LifeGroupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupsView.swift; sourceTree = "<group>"; };
+		E5AC340BD22C41D9A07A3F75 /* LifeGroupsMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupsMapView.swift; sourceTree = "<group>"; };
 		81F5F9C4D6F647AB9C4522FC /* LifeGroupStudyListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupStudyListView.swift; sourceTree = "<group>"; };
 		F688FE786E3B4822974AA197 /* LifeGroupStudyDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupStudyDetailView.swift; sourceTree = "<group>"; };
 		9F0377C328A34AD89473C459 /* LifeGroupStudyEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupStudyEditorView.swift; sourceTree = "<group>"; };
@@ -239,6 +241,7 @@
 				A10DAE923513B1C91EC22B66 /* MinistriesView.swift */,
 				EDD6B4FBC968ED037D73EAA9 /* MinistryDetailView.swift */,
 				ED1E05BCF2C546C9A0DC895A /* LifeGroupsView.swift */,
+				E5AC340BD22C41D9A07A3F75 /* LifeGroupsMapView.swift */,
 			);
 			path = Ministries;
 			sourceTree = "<group>";
@@ -534,6 +537,7 @@
 				1F3D35E5FF143FC6C08A16BC /* MinistriesView.swift in Sources */,
 				9B9A6148AFFD0C8167085DD0 /* MinistryDetailView.swift in Sources */,
 				F60D6CDD4EA54BE0A561E70D /* LifeGroupsView.swift in Sources */,
+				4F45594E08464136AC489365 /* LifeGroupsMapView.swift in Sources */,
 				EC47F67C306E4116B92C805C /* LifeGroupStudyListView.swift in Sources */,
 				EBE6B3F681DC476EBACABABD /* LifeGroupStudyDetailView.swift in Sources */,
 				B49A8A26EB2141E1BDCD0884 /* LifeGroupStudyEditorView.swift in Sources */,
