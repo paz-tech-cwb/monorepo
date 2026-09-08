@@ -153,20 +153,19 @@ struct HomeView: View {
                 switch type {
                 case "announcements" where !banners.isEmpty:
                     featuredSection
-                        .padding(.top, 24)
+                        .padding(.top, 8)
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(delay), value: banners.count)
 
                 case "agenda" where !(viewModel.homeContent?.agenda ?? []).isEmpty:
                     agendaSection
-                        .padding(.top, 24)
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(delay), value: agendaEvents.count)
 
                 case "contribution":
                     if let bank {
                         dizimosCard(bank: bank)
-                            .padding(.top, 96)
+                            .padding(.top, 32)
                             .transition(.opacity.combined(with: .move(edge: .bottom)))
                             .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(delay), value: banners.count)
                     }
