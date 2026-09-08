@@ -46,6 +46,7 @@ struct AgendaListView: View {
             Text("Nenhum evento disponível").font(PazTypography.bodyMedium).foregroundStyle(PazColors.slate)
             Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var eventList: some View {

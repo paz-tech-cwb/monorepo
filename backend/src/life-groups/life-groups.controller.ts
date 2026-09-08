@@ -6,6 +6,7 @@ import {
   Put,
   Param,
   Delete,
+  Req,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -20,6 +21,11 @@ import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 import { LifeGroupsService } from './life-groups.service';
 import { CreateLifeGroupDto } from './dto/create-life-group.dto';
 import { UpdateLifeGroupDto } from './dto/update-life-group.dto';
+import { User } from '../users/entities/user.entity';
+
+interface AuthenticatedRequest {
+  user: User;
+}
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @SerializeOptions({
@@ -37,14 +43,14 @@ export class LifeGroupsController {
   }
 
   @Get()
-  findAll(@Query('q') q?: string) {
+  findAll(@Req() req: AuthenticatedRequest, @Query('q') q?: string) {
     if (q?.trim()) return this.lifeGroupsService.search(q);
-    return this.lifeGroupsService.findAll();
+    return this.lifeGroupsService.findAll(req.user);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.lifeGroupsService.findOne(id);
+  findOne(@Req() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+    return this.lifeGroupsService.findOne(id, req.user);
   }
 
   @Put(':id')

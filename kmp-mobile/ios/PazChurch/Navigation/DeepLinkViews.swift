@@ -59,8 +59,9 @@ struct MinistryDetailDeepLinkView: View {
         }
         .task {
             do {
-                let church = try await churchRepository.getChurch()
-                ministry = church.ministries.first { $0.id == ministryId }
+                let wantedId = Int32(ministryId)
+                let ministries = try await churchRepository.getAllMinistries()
+                ministry = ministries.first { $0.id == wantedId }
             } catch {}
             isLoading = false
         }
@@ -92,8 +93,9 @@ struct LifeGroupDetailDeepLinkView: View {
         }
         .task {
             do {
+                let wantedId = Int32(lifeGroupId)
                 let groups = try await churchRepository.getAllLifeGroups()
-                lifeGroup = groups.first { $0.id == lifeGroupId }
+                lifeGroup = groups.first { $0.id == wantedId }
             } catch {}
             isLoading = false
         }
