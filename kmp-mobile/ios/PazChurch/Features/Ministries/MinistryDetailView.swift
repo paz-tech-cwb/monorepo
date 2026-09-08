@@ -90,8 +90,8 @@ struct LifeGroupDetailView: View {
                                 .joined(separator: " às ")
                             InfoRowView(icon: "calendar", label: "Reunião", value: meetingStr)
                         }
-                        if let address = lifeGroup.address {
-                            InfoRowView(icon: "mappin.circle.fill", label: "Endereço", value: address.fullAddress)
+                        if let location = lifeGroup.location, !location.isEmpty {
+                            InfoRowView(icon: "mappin.circle.fill", label: "Endereço", value: location)
                         }
                     }
                     .padding(PazSpacing.lg)
@@ -159,11 +159,15 @@ private struct InfoRowView: View {
 
 #Preview {
     MinistryDetailView(ministry: Ministry(
-        id: "1",
+        id: 1,
         name: "Ministério de Louvor",
+        slug: "louvor",
+        isPermanent: true,
         description: "Equipe responsável pela música e adoração nos cultos da igreja.",
-        imageUrl: nil,
-        leader: "João Silva",
-        coLeader: "Maria Santos"
+        membershipMode: "teams",
+        leader: MinistryUser(id: 1, name: "João Silva"),
+        coLeader: MinistryUser(id: 2, name: "Maria Santos"),
+        teams: [],
+        members: []
     ))
 }

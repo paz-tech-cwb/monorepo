@@ -37,7 +37,6 @@ data class Church(
     val contact: ChurchContact? = null,
     val schedule: ChurchSchedule? = null,
     @SerialName("social_media") val socialMedia: ChurchSocialMedia? = null,
-    val ministries: List<Ministry> = emptyList(),
 )
 
 @Serializable
@@ -69,24 +68,56 @@ data class ChurchSocialMedia(
 )
 
 @Serializable
-data class Ministry(
-    val id: String,
+data class MinistryUser(
+    val id: Int,
     val name: String,
+)
+
+@Serializable
+data class MinistryTeam(
+    val id: Int,
+    val name: String,
+    @SerialName("ministry_id") val ministryId: Int,
+    val leader: MinistryUser? = null,
+    @SerialName("co_leader") val coLeader: MinistryUser? = null,
+    val members: List<MinistryUser> = emptyList(),
+)
+
+@Serializable
+data class Ministry(
+    val id: Int,
+    val name: String,
+    val slug: String? = null,
+    @SerialName("is_permanent") val isPermanent: Boolean = false,
     val description: String? = null,
-    @SerialName("image_url") val imageUrl: String? = null,
-    val leader: String? = null,
-    @SerialName("co_leader") val coLeader: String? = null,
+    @SerialName("membership_mode") val membershipMode: String = "teams",
+    val leader: MinistryUser? = null,
+    @SerialName("co_leader") val coLeader: MinistryUser? = null,
+    val teams: List<MinistryTeam> = emptyList(),
+    val members: List<MinistryUser> = emptyList(),
+)
+
+@Serializable
+data class LifeGroupMember(
+    val id: Int,
+    val name: String,
+    val email: String = "",
 )
 
 @Serializable
 data class LifeGroup(
-    val id: String,
+    val id: Int,
     val name: String,
-    val leader: String? = null,
-    val address: Address? = null,
+    @SerialName("leader_id") val leaderId: Int? = null,
+    @SerialName("leader_name") val leader: String? = null,
+    @SerialName("co_leader_id") val coLeaderId: Int? = null,
+    @SerialName("co_leader_name") val coLeaderName: String? = null,
+    @SerialName("sector_id") val sectorId: Int? = null,
+    val location: String? = null,
     @SerialName("meeting_day") val meetingDay: String? = null,
     @SerialName("meeting_time") val meetingTime: String? = null,
-    @SerialName("members_count") val membersCount: Int = 0,
+    @SerialName("member_count") val membersCount: Int = 0,
+    val members: List<LifeGroupMember> = emptyList(),
 )
 
 @Serializable

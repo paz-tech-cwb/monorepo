@@ -3,6 +3,7 @@ package br.church.paz.shared.data.repository
 import br.church.paz.shared.domain.model.Area
 import br.church.paz.shared.domain.model.Church
 import br.church.paz.shared.domain.model.LifeGroup
+import br.church.paz.shared.domain.model.Ministry
 import br.church.paz.shared.domain.model.Sector
 import br.church.paz.shared.domain.repository.ChurchRepository
 import io.ktor.client.HttpClient
@@ -22,6 +23,10 @@ class ChurchRepositoryImpl(private val client: HttpClient) : ChurchRepository {
     @Throws(Exception::class)
     override suspend fun getAllLifeGroups(): List<LifeGroup> =
         client.get("api/life-groups").body()
+
+    @Throws(Exception::class)
+    override suspend fun getAllMinistries(): List<Ministry> =
+        client.get("api/ministries").body()
 
     @Throws(Exception::class)
     override suspend fun getAreas(): List<Area> =
