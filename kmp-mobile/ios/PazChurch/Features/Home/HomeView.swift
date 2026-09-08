@@ -181,7 +181,7 @@ struct HomeView: View {
 
     private var featuredSection: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: PazSpacing.xl * 3) {
+            HStack(spacing: PazSpacing.xl * 2) {
                 ForEach(Array(banners.enumerated()), id: \.offset) { index, banner in
                     FeaturedCardView(
                         title: banner.title,
@@ -246,26 +246,17 @@ struct HomeView: View {
 
     private func dizimosCard(bank: BankInfo) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Solid brand-color block — inset within the outer card's padding,
-            // the way the reference design nests its accent block inside a
-            // frosted container rather than filling it edge-to-edge. Kept
-            // compact (not overly tall) so the whole card's proportions stay
-            // close to the reference's near-square wallet-card shape.
+            // Header sits directly on the frosted card now — no solid
+            // brand-color block behind it.
             VStack(alignment: .leading, spacing: 4) {
                 Text("DÍZIMOS & OFERTAS")
                     .font(PazTypography.labelMedium)
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(PazColors.pazPrimary.opacity(0.7))
 
                 Text("Contribua com a visão")
                     .font(.system(size: 24, weight: .heavy))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(PazColors.ink)
             }
-            .padding(.top, 6)
-            .padding(.horizontal, 6)
-            .padding(.bottom, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(PazColors.pazPrimary)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
             // Subtitle + the single PIX action, on the frosted outer surface.
             VStack(alignment: .leading, spacing: 0) {
