@@ -39,6 +39,7 @@ struct MemberJourneyView: View {
             Spacer()
         }
         .padding(.horizontal, PazSpacing.lg)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var emptyState: some View {
@@ -49,6 +50,7 @@ struct MemberJourneyView: View {
                 .foregroundStyle(PazColors.slate)
             Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var contentState: some View {
