@@ -35,17 +35,17 @@ struct MinistryDetailView: View {
                     .font(PazTypography.headlineSmall)
 
                 if let description = ministry.description_ {
-                    VStack(alignment: .leading, spacing: PazSpacing.sm) {
-                        Text("Sobre")
-                            .font(PazTypography.titleSmall)
-                        Text(description)
-                            .font(PazTypography.bodySmall)
-                            .foregroundColor(.gray)
+                    GlassCard(radius: PazSpacing.cardRadiusCompact) {
+                        VStack(alignment: .leading, spacing: PazSpacing.sm) {
+                            Text("Sobre")
+                                .font(PazTypography.titleSmall)
+                            Text(description)
+                                .font(PazTypography.bodySmall)
+                                .foregroundColor(.gray)
+                        }
+                        .padding(PazSpacing.lg)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(PazSpacing.lg)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(PazColors.surface)
-                    .cornerRadius(16)
                 }
 
                 // Members are visible to everyone (per spec: any member can see
@@ -144,39 +144,39 @@ struct LifeGroupDetailView: View {
                         }
                     }
 
-                    VStack(alignment: .leading, spacing: PazSpacing.md) {
-                        if let leader = lifeGroup.leader {
-                            InfoRowView(icon: "person.fill", label: "Líder", value: leader)
-                        }
-                        if lifeGroup.meetingDay != nil || lifeGroup.meetingTime != nil {
-                            let meetingStr = [lifeGroup.meetingDay, lifeGroup.meetingTime]
-                                .compactMap { $0 }
-                                .joined(separator: " às ")
-                            InfoRowView(icon: "calendar", label: "Reunião", value: meetingStr)
-                        }
-                        if let location = lifeGroup.location, !location.isEmpty {
-                            InfoRowView(icon: "mappin.circle.fill", label: "Endereço", value: location)
-                            if lifeGroup.latitude != nil, lifeGroup.longitude != nil {
-                                Button(action: openInMaps) {
-                                    Text("Como chegar")
-                                        .font(PazTypography.labelSmall)
-                                        .foregroundColor(PazColors.primary)
+                    GlassCard(radius: PazSpacing.cardRadiusCompact) {
+                        VStack(alignment: .leading, spacing: PazSpacing.md) {
+                            if let leader = lifeGroup.leader {
+                                InfoRowView(icon: "person.fill", label: "Líder", value: leader)
+                            }
+                            if lifeGroup.meetingDay != nil || lifeGroup.meetingTime != nil {
+                                let meetingStr = [lifeGroup.meetingDay, lifeGroup.meetingTime]
+                                    .compactMap { $0 }
+                                    .joined(separator: " às ")
+                                InfoRowView(icon: "calendar", label: "Reunião", value: meetingStr)
+                            }
+                            if let location = lifeGroup.location, !location.isEmpty {
+                                InfoRowView(icon: "mappin.circle.fill", label: "Endereço", value: location)
+                                if lifeGroup.latitude != nil, lifeGroup.longitude != nil {
+                                    Button(action: openInMaps) {
+                                        Text("Como chegar")
+                                            .font(PazTypography.labelSmall)
+                                            .foregroundColor(PazColors.primary)
+                                    }
+                                    .padding(.leading, 32)
                                 }
-                                .padding(.leading, 32)
+                            }
+                            if lifeGroup.kidsCount > 0 {
+                                InfoRowView(
+                                    icon: "figure.2.and.child.holdinghands",
+                                    label: "Crianças",
+                                    value: "\(lifeGroup.kidsCount)"
+                                )
                             }
                         }
-                        if lifeGroup.kidsCount > 0 {
-                            InfoRowView(
-                                icon: "figure.2.and.child.holdinghands",
-                                label: "Crianças",
-                                value: "\(lifeGroup.kidsCount)"
-                            )
-                        }
+                        .padding(PazSpacing.lg)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(PazSpacing.lg)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(PazColors.surface)
-                    .cornerRadius(16)
 
                     if lifeGroup.leaderPhone != nil || lifeGroup.coLeaderPhone != nil {
                         VStack(alignment: .leading, spacing: PazSpacing.md) {
