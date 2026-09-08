@@ -181,7 +181,7 @@ struct HomeView: View {
 
     private var featuredSection: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: PazSpacing.xl * 2) {
+            HStack(spacing: PazSpacing.xl * 2.5) {
                 ForEach(Array(banners.enumerated()), id: \.offset) { index, banner in
                     FeaturedCardView(
                         title: banner.title,
@@ -251,7 +251,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("DÍZIMOS & OFERTAS")
                     .font(PazTypography.labelMedium)
-                    .foregroundStyle(PazColors.pazPrimary.opacity(0.7))
+                    .foregroundStyle(isDark ? PazColors.pazSky : PazColors.pazPrimary.opacity(0.7))
 
                 Text("Contribua com a visão")
                     .font(.system(size: 24, weight: .heavy))
@@ -272,7 +272,7 @@ struct HomeView: View {
             }
         }
         .padding(16)
-        .background(.regularMaterial)
+        .background(PazMaterial.glass(for: colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .shadow(color: PazColors.pazPrimary.opacity(0.25), radius: 12, x: 0, y: 10)
         .padding(.horizontal, 16)
@@ -461,6 +461,7 @@ private struct CrossWatermarkView: View {
 private struct DizimosPixButton: View {
     let pixKey: String?
     @State private var copied = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Button {
@@ -481,7 +482,7 @@ private struct DizimosPixButton: View {
                 // as a distinct tappable surface rather than disappearing
                 // into the frosted card behind it.
                 .background {
-                    Capsule().fill(.regularMaterial)
+                    Capsule().fill(PazMaterial.glass(for: colorScheme))
                     Capsule().fill(PazColors.pazPrimary.opacity(0.78))
                 }
                 .clipShape(Capsule())

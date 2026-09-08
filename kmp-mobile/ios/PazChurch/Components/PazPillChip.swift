@@ -5,6 +5,8 @@ struct PazPillChip: View {
     let selected: Bool
     let onTap: () -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         Button(action: onTap) {
             Text(label)
@@ -17,7 +19,7 @@ struct PazPillChip: View {
                     if selected {
                         PazColors.pazPrimary
                     } else {
-                        Capsule().fill(.ultraThinMaterial)
+                        Capsule().fill(PazMaterial.chip(for: colorScheme))
                     }
                 }
                 .clipShape(Capsule())

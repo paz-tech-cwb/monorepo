@@ -29,6 +29,7 @@
 		33943BF3AA2F4343BF694389 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC5A70D94121801DA57AA49 /* ProfileView.swift */; };
 		33EF0CFD5FE19AD891DCC3A6 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E70B0D6A12BA7B5BD464CD5A /* AccountView.swift */; };
 		372C31E22C76E58FF5E8FB83 /* PazSpacing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98DB539009594DE7611D25AA /* PazSpacing.swift */; };
+		C88ADBCD8BE34BD5A0E270DD /* PazMaterial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38E5F63B79AB43A2939189F0 /* PazMaterial.swift */; };
 		391121609552AED4FF2FC082 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AD2DBF8ABF3E564BDA14950 /* PushNotificationService.swift */; };
 		3A40345A216427C276DD32B7 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = D4D3763343A64715B4360CF2 /* FirebaseMessaging */; };
 		3CE51AC613425F8FDCAD49FB /* AcademyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF28DC87154DE4489A6243FF /* AcademyViewModel.swift */; };
@@ -116,6 +117,7 @@
 		9089E1E2EF61D9C3A28227C1 /* Shared.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Shared.xcframework; path = ../shared/build/XCFrameworks/debug/Shared.xcframework; sourceTree = "<group>"; };
 		956C0B652EACA4EB866BDD9C /* PazGoldBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazGoldBadge.swift; sourceTree = "<group>"; };
 		98DB539009594DE7611D25AA /* PazSpacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazSpacing.swift; sourceTree = "<group>"; };
+		38E5F63B79AB43A2939189F0 /* PazMaterial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazMaterial.swift; sourceTree = "<group>"; };
 		A10DAE923513B1C91EC22B66 /* MinistriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinistriesView.swift; sourceTree = "<group>"; };
 		A6CF7432C3804DACAD979BE9 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		B2C3D4E5F6A7B8C9D0E1F2A3 /* DeepLinkDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkDestination.swift; sourceTree = "<group>"; };
@@ -265,6 +267,7 @@
 			children = (
 				19E3E44DBCB2C6495E5BB60D /* PazColors.swift */,
 				98DB539009594DE7611D25AA /* PazSpacing.swift */,
+				38E5F63B79AB43A2939189F0 /* PazMaterial.swift */,
 				82E14328F3FC3C44E1C3AC60 /* PazTypography.swift */,
 			);
 			path = Theme;
@@ -573,6 +576,7 @@
 				3FA1B7D719A12BA02FC3ABA0 /* PazMeshBackground.swift in Sources */,
 				934B20455FFB43C6A5F45EC9 /* PazPillButtonStyle.swift in Sources */,
 				372C31E22C76E58FF5E8FB83 /* PazSpacing.swift in Sources */,
+				C88ADBCD8BE34BD5A0E270DD /* PazMaterial.swift in Sources */,
 				14045D80B33A84CAE8070AC7 /* PazTypography.swift in Sources */,
 				33943BF3AA2F4343BF694389 /* ProfileView.swift in Sources */,
 				133044023D8AFC650E9E9FAB /* ProfileViewModel.swift in Sources */,

@@ -4,19 +4,19 @@ import SwiftUI
 
 /// A frosted, translucent card container used for the 2026-09 glassmorphic restyle.
 /// Floats over `PazColors` gradients/backgrounds using system Material blur.
+/// Material tier is chosen automatically per color scheme (see `PazMaterial`) —
+/// no call site should hardcode a `Material` here.
 struct GlassCard<Content: View>: View {
     var radius: CGFloat = PazSpacing.cardRadiusCompact
-    // A step stronger than .ultraThinMaterial for legibility over the mesh
-    // background, but not as opaque as .regularMaterial (which read as flat
-    // white instead of glass).
-    var material: Material = .thinMaterial
     @ViewBuilder var content: Content
+
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         content
             .background(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(material)
+                    .fill(PazMaterial.glass(for: colorScheme))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
@@ -28,10 +28,7 @@ struct GlassCard<Content: View>: View {
 
 extension View {
     /// Wraps this view in `GlassCard` styling without needing a separate container.
-    func glassCard(
-        radius: CGFloat = PazSpacing.cardRadiusCompact,
-        material: Material = .thinMaterial
-    ) -> some View {
-        GlassCard(radius: radius, material: material) { self }
+    func glassCard(radius: CGFloat = PazSpacing.cardRadiusCompact) -> some View {
+        GlassCard(radius: radius) { self }
     }
 }

@@ -8,6 +8,7 @@ struct AccountView: View {
     @Environment(AppThemeManager.self) private var themeManager
     @Environment(PushNotificationService.self) private var pushService
     @State private var path: [DeepLinkDestination] = []
+    @Environment(\.colorScheme) private var colorScheme
 
     init(userRepository: UserRepository, authRepository: AuthRepository) {
         _viewModel = State(initialValue: AccountViewModel(
@@ -207,7 +208,7 @@ struct AccountView: View {
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(PazColors.pazPrimary)
                 .padding(8)
-                .background(.ultraThinMaterial)
+                .background(PazMaterial.chip(for: colorScheme))
                 .clipShape(Circle())
                 .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
                 .padding(10)
