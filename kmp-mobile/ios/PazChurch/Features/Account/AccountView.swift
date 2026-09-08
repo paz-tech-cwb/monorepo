@@ -34,8 +34,10 @@ struct AccountView: View {
                 switch destination {
                 case .formularios:
                     FormulariosView(formsRepository: IosAppContainer.shared.formsRepository)
+
                 case .memberJourney:
                     MemberJourneyView(memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository)
+
                 case let .formDetail(formId):
                     FormDetailDeepLinkView(
                         formId: formId,
@@ -46,6 +48,7 @@ struct AccountView: View {
                         ministryId: ministryId,
                         churchRepository: IosAppContainer.shared.churchRepository
                     )
+
                 case let .lifeGroupDetail(lifeGroupId):
                     LifeGroupDetailDeepLinkView(
                         lifeGroupId: lifeGroupId,
@@ -75,6 +78,7 @@ struct AccountView: View {
                     path = [destination]
                 }
                 pushService.consumeDeepLink()
+
             default:
                 break
             }
@@ -193,15 +197,13 @@ struct AccountView: View {
                 Spacer()
             }
             .padding(16)
-            .background(PazColors.tint)
-            .clipShape(RoundedRectangle(cornerRadius: 22))
-            .overlay(RoundedRectangle(cornerRadius: 22).stroke(PazColors.pazPrimary.opacity(0.13), lineWidth: 1))
+            .glassCard(radius: PazSpacing.cardRadiusLarge)
 
             Image(systemName: "pencil")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(PazColors.pazPrimary)
                 .padding(8)
-                .background(PazColors.surface)
+                .background(.ultraThinMaterial)
                 .clipShape(Circle())
                 .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
                 .padding(10)
@@ -218,9 +220,9 @@ struct AccountView: View {
     }
 
     private func menuCard(@ViewBuilder content: () -> some View) -> some View {
-        VStack(spacing: 0) { content() }
-            .background(PazColors.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 18))
+        GlassCard(radius: PazSpacing.cardRadiusCompact) {
+            VStack(spacing: 0) { content() }
+        }
     }
 
     private var rowDivider: some View {
