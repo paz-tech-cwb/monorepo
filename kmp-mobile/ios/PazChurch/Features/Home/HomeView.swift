@@ -181,7 +181,7 @@ struct HomeView: View {
 
     private var featuredSection: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: PazSpacing.xl) {
+            HStack(spacing: PazSpacing.xl * 3) {
                 ForEach(Array(banners.enumerated()), id: \.offset) { index, banner in
                     FeaturedCardView(
                         title: banner.title,
