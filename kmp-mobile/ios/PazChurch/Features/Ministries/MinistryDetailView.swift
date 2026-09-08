@@ -5,7 +5,17 @@ import UIKit
 // MARK: - Ministry Detail
 
 struct MinistryDetailView: View {
-    let ministry: Ministry
+    @State private var ministry: Ministry
+    @Environment(AuthenticationCoordinator.self) private var authCoordinator
+    @State private var showManage = false
+
+    init(ministry: Ministry) {
+        _ministry = State(initialValue: ministry)
+    }
+
+    private var canManage: Bool {
+        authCoordinator.currentUser?.role.isLeader == true
+    }
 
     var body: some View {
         ScrollView {
@@ -38,6 +48,28 @@ struct MinistryDetailView: View {
                     .cornerRadius(16)
                 }
 
+                // Members are visible to everyone (per spec: any member can see
+                // who's in each ministry), but only leaders/admin can manage
+                // the roster — see the gear button in the toolbar.
+                VStack(alignment: .leading, spacing: PazSpacing.sm) {
+                    Text("Membros")
+                        .font(PazTypography.titleSmall)
+                    if ministry.members.isEmpty {
+                        Text("Nenhum membro cadastrado ainda.")
+                            .font(PazTypography.bodySmall)
+                            .foregroundColor(.gray)
+                    } else {
+                        ForEach(ministry.members, id: \.id) { member in
+                            Text(member.name)
+                                .font(PazTypography.bodySmall)
+                        }
+                    }
+                }
+                .padding(PazSpacing.lg)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(PazColors.surface)
+                .cornerRadius(16)
+
                 Spacer().frame(height: PazSpacing.xl)
             }
             .padding(.horizontal, PazSpacing.lg)
@@ -45,6 +77,24 @@ struct MinistryDetailView: View {
         .background(PazColors.background)
         .navigationTitle(ministry.name)
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            if canManage {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: { showManage = true }) {
+                        Image(systemName: "gearshape.fill")
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showManage) {
+            MinistryManageView(
+                ministry: ministry,
+                churchRepository: IosAppContainer.shared.churchRepository,
+                formsRepository: IosAppContainer.shared.formsRepository
+            ) { updated in
+                ministry = updated
+            }
+        }
     }
 }
 
