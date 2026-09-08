@@ -22,9 +22,12 @@ struct MainTabView: View {
             .tabItem { Label("Início", systemImage: "house.fill") }
             .tag(0)
 
-            AcademyView(academyRepository: IosAppContainer.shared.academyRepository, lifeGroupStudyRepository: IosAppContainer.shared.lifeGroupStudyRepository)
-                .tabItem { Label("Academia", systemImage: "book.fill") }
-                .tag(1)
+            AcademyView(
+                academyRepository: IosAppContainer.shared.academyRepository,
+                lifeGroupStudyRepository: IosAppContainer.shared.lifeGroupStudyRepository
+            )
+            .tabItem { Label("Academia", systemImage: "book.fill") }
+            .tag(1)
 
             AccountView(
                 userRepository: IosAppContainer.shared.userRepository,
@@ -47,6 +50,7 @@ struct MainTabView: View {
         case .agendaDetail:
             selectedTab = 0
             agendaPath = [destination]
+
         case .formDetail, .ministryDetail, .lifeGroupDetail, .lifeGroupStudyDetail, .formularios, .memberJourney,
              .account:
             // Switch tab only — AccountView observes pendingDeepLink and pushes its own path
@@ -63,26 +67,31 @@ struct MainTabView: View {
                 eventId: eventId,
                 agendaRepository: IosAppContainer.shared.agendaRepository
             )
+
         case let .formDetail(formId):
             FormDetailDeepLinkView(
                 formId: formId,
                 formsRepository: IosAppContainer.shared.formsRepository
             )
+
         case let .ministryDetail(ministryId):
             MinistryDetailDeepLinkView(
                 ministryId: ministryId,
                 churchRepository: IosAppContainer.shared.churchRepository
             )
+
         case let .lifeGroupDetail(lifeGroupId):
             LifeGroupDetailDeepLinkView(
                 lifeGroupId: lifeGroupId,
                 churchRepository: IosAppContainer.shared.churchRepository
             )
+
         case let .lifeGroupStudyDetail(studyId):
             LifeGroupStudyDetailView(
                 studyId: studyId,
                 repository: IosAppContainer.shared.lifeGroupStudyRepository
             )
+
         default:
             EmptyView()
         }
@@ -108,13 +117,11 @@ private struct AgendaDetailDeepLinkView: View {
             } else if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(PazColors.background)
             } else {
                 ContentUnavailableView(
                     "Evento não encontrado",
                     systemImage: "calendar.badge.exclamationmark"
                 )
-                .background(PazColors.background)
             }
         }
         .task {

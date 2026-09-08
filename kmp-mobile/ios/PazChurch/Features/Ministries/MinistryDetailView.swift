@@ -74,7 +74,6 @@ struct MinistryDetailView: View {
             }
             .padding(.horizontal, PazSpacing.lg)
         }
-        .background(PazColors.background)
         .navigationTitle(ministry.name)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
@@ -109,9 +108,9 @@ struct LifeGroupDetailView: View {
         _lifeGroup = State(initialValue: lifeGroup)
     }
 
-    // Matches the backend's actual authorization (RolesGuard checks any
-    // leadership role, not specifically this group's own leader) — the
-    // app only needs to decide when to show the entry point.
+    /// Matches the backend's actual authorization (RolesGuard checks any
+    /// leadership role, not specifically this group's own leader) — the
+    /// app only needs to decide when to show the entry point.
     private var canManage: Bool {
         authCoordinator.currentUser?.role.isLeader == true
     }
@@ -250,9 +249,7 @@ struct LifeGroupDetailView: View {
                 }
                 .padding(.horizontal, PazSpacing.lg)
             }
-            .background(PazColors.background)
         }
-        .background(PazColors.background)
         .navigationTitle(lifeGroup.name)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {

@@ -13,7 +13,6 @@ struct LifeGroupStudyListView: View {
 
     var body: some View {
         screenContent
-            .background(PazColors.background)
             .navigationTitle("Estudo do Life")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -86,7 +85,6 @@ struct LifeGroupStudyListView: View {
             systemImage: "book.closed",
             description: Text("Os estudos do Life aparecerão aqui assim que forem publicados.")
         )
-        .background(PazColors.background)
     }
 
     private func errorState(message: String) -> some View {

@@ -12,7 +12,6 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             screenContent
-                .background(PazColors.background)
                 .navigationTitle("Meu Perfil")
                 .navigationBarTitleDisplayMode(.large)
         }

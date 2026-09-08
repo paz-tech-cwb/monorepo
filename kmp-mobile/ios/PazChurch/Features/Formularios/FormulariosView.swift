@@ -11,7 +11,6 @@ struct FormulariosView: View {
 
     var body: some View {
         screenContent
-            .background(PazColors.background)
             .navigationTitle("Formulários")
             .navigationBarTitleDisplayMode(.large)
             .task { await viewModel.load() }
@@ -45,7 +44,6 @@ struct FormulariosView: View {
             }
             .padding(.top, 8)
         }
-        .background(PazColors.background)
     }
 
     private var emptyState: some View {
@@ -66,7 +64,6 @@ struct FormulariosView: View {
             ForEach(0..<3, id: \.self) { _ in SkeletonView().frame(height: 72).padding(.horizontal, 20) }
             Spacer()
         }
-        .background(PazColors.background)
     }
 }
 
