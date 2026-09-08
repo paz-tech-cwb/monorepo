@@ -245,21 +245,22 @@ struct HomeView: View {
     // MARK: - Dízimos card
 
     private func dizimosCard(bank: BankInfo) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 12) {
             // Solid brand-color block — inset within the outer card's padding,
             // the way the reference design nests its accent block inside a
-            // frosted container rather than filling it edge-to-edge.
-            VStack(alignment: .leading, spacing: 0) {
+            // frosted container rather than filling it edge-to-edge. Kept
+            // compact (not overly tall) so the whole card's proportions stay
+            // close to the reference's near-square wallet-card shape.
+            VStack(alignment: .leading, spacing: 4) {
                 Text("DÍZIMOS & OFERTAS")
                     .font(PazTypography.labelSmall)
                     .foregroundStyle(.white.opacity(0.6))
 
                 Text("Contribua com a visão")
-                    .font(.system(size: 27, weight: .heavy))
+                    .font(.system(size: 21, weight: .heavy))
                     .foregroundStyle(.white)
-                    .padding(.top, 9)
             }
-            .padding(20)
+            .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(PazColors.pazPrimary)
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -267,18 +268,17 @@ struct HomeView: View {
             // Subtitle + the single PIX action, on the frosted outer surface.
             VStack(alignment: .leading, spacing: 0) {
                 Text("Sua oferta transforma vidas na comunidade")
-                    .font(PazTypography.bodyMedium)
+                    .font(PazTypography.bodySmall)
                     .foregroundStyle(PazColors.ink.opacity(0.7))
-                    .lineSpacing(4)
+                    .lineSpacing(2)
 
                 if bank.pixKey != nil {
                     DizimosPixButton(pixKey: bank.pixKey)
-                        .padding(.top, 16)
+                        .padding(.top, 10)
                 }
             }
         }
         .padding(16)
-        .padding(.bottom, 16)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .shadow(color: PazColors.pazPrimary.opacity(0.25), radius: 12, x: 0, y: 10)
