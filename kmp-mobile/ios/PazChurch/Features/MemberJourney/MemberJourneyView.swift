@@ -92,57 +92,57 @@ private struct JourneyStepRow: View {
     let step: JourneyStep
 
     var body: some View {
-        HStack(alignment: .top, spacing: PazSpacing.md) {
-            // Status indicator
-            ZStack {
-                Circle()
-                    .fill(statusColor.opacity(0.12))
-                    .frame(width: 40, height: 40)
-
-                if step.status == .completed {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(PazColors.primary)
-                } else if step.status == .inProgress {
+        GlassCard(radius: PazSpacing.cardRadiusCompact) {
+            HStack(alignment: .top, spacing: PazSpacing.md) {
+                // Status indicator
+                ZStack {
                     Circle()
-                        .fill(PazColors.primary)
-                        .frame(width: 20, height: 20)
-                } else {
-                    Image(systemName: "circle")
-                        .font(.system(size: 24))
-                        .foregroundColor(.gray.opacity(0.5))
+                        .fill(statusColor.opacity(0.12))
+                        .frame(width: 40, height: 40)
+
+                    if step.status == .completed {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(PazColors.primary)
+                    } else if step.status == .inProgress {
+                        Circle()
+                            .fill(PazColors.primary)
+                            .frame(width: 20, height: 20)
+                    } else {
+                        Image(systemName: "circle")
+                            .font(.system(size: 24))
+                            .foregroundColor(.gray.opacity(0.5))
+                    }
                 }
+
+                // Content
+                VStack(alignment: .leading, spacing: PazSpacing.sm) {
+                    HStack {
+                        Text(step.title)
+                            .font(PazTypography.titleSmall)
+                        Spacer()
+                        Text(statusLabel)
+                            .font(PazTypography.labelSmall)
+                            .foregroundColor(statusLabelColor)
+                    }
+
+                    if let description = step.description_ {
+                        Text(description)
+                            .font(PazTypography.bodySmall)
+                            .foregroundColor(.gray)
+                    }
+
+                    if let completedAt = step.completedAt {
+                        Text("Concluído em \(completedAt)")
+                            .font(PazTypography.labelSmall)
+                            .foregroundColor(.gray.opacity(0.7))
+                    }
+                }
+
+                Spacer()
             }
-
-            // Content
-            VStack(alignment: .leading, spacing: PazSpacing.sm) {
-                HStack {
-                    Text(step.title)
-                        .font(PazTypography.titleSmall)
-                    Spacer()
-                    Text(statusLabel)
-                        .font(PazTypography.labelSmall)
-                        .foregroundColor(statusLabelColor)
-                }
-
-                if let description = step.description_ {
-                    Text(description)
-                        .font(PazTypography.bodySmall)
-                        .foregroundColor(.gray)
-                }
-
-                if let completedAt = step.completedAt {
-                    Text("Concluído em \(completedAt)")
-                        .font(PazTypography.labelSmall)
-                        .foregroundColor(.gray.opacity(0.7))
-                }
-            }
-
-            Spacer()
+            .padding(PazSpacing.lg)
         }
-        .padding(PazSpacing.lg)
-        .background(PazColors.surface)
-        .cornerRadius(16)
     }
 
     private var statusColor: Color {
