@@ -67,13 +67,8 @@ struct NotificationPrefsView: View {
 
             Button(action: { viewModel.onSave() }) {
                 Text(viewModel.isSaving ? "Salvando..." : "Salvar")
-                    .font(PazTypography.titleMedium)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(viewModel.isSaving ? Color.gray : PazColors.primary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            .buttonStyle(.pazPillPrimary)
             .disabled(viewModel.isSaving)
             .padding(.horizontal, PazSpacing.lg)
             .padding(.vertical, PazSpacing.md)
@@ -105,8 +100,7 @@ private struct PreferenceToggle: View {
                 .labelsHidden()
         }
         .padding(PazSpacing.lg)
-        .background(PazColors.surface)
-        .cornerRadius(16)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }
 
