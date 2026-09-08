@@ -43,6 +43,9 @@
 		81241EF8344367972B2409AF /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0E0ECD6F71C3A9C1F38E441 /* HomeViewModel.swift */; };
 		8696DCD7837887595806B611 /* SkeletonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36DB133997051B82A7D0D38D /* SkeletonView.swift */; };
 		8BBB7655494EE2891298CD78 /* PazPillChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62DDEA0026352360D73E873 /* PazPillChip.swift */; };
+		3EC9DC430F954B799D549420 /* GlassBlurBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD36BC4FF7F143F2A22DBA8E /* GlassBlurBackground.swift */; };
+		C766B9E46B474ADB9DB011BA /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752528ECC0A4452B81104790 /* GlassCard.swift */; };
+		934B20455FFB43C6A5F45EC9 /* PazPillButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75FC45595FDB4FCE93453A85 /* PazPillButtonStyle.swift */; };
 		96BF8A72553894BA74F6934B /* PazIconContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC853F6E892CF7A2AE4283F /* PazIconContainer.swift */; };
 		9B9A6148AFFD0C8167085DD0 /* MinistryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDD6B4FBC968ED037D73EAA9 /* MinistryDetailView.swift */; };
 		F60D6CDD4EA54BE0A561E70D /* LifeGroupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED1E05BCF2C546C9A0DC895A /* LifeGroupsView.swift */; };
@@ -143,6 +146,9 @@
 		8525FE5A2F894ED0966D903D /* LifeGroupStudyViewModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupStudyViewModels.swift; sourceTree = "<group>"; };
 		EF907E68FA85FA69FAE6B591 /* playfair_display_extrabold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = playfair_display_extrabold.ttf; sourceTree = "<group>"; };
 		F62DDEA0026352360D73E873 /* PazPillChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazPillChip.swift; sourceTree = "<group>"; };
+		BD36BC4FF7F143F2A22DBA8E /* GlassBlurBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassBlurBackground.swift; sourceTree = "<group>"; };
+		752528ECC0A4452B81104790 /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCard.swift; sourceTree = "<group>"; };
+		75FC45595FDB4FCE93453A85 /* PazPillButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazPillButtonStyle.swift; sourceTree = "<group>"; };
 		F8BEE46E84E5D0C0BE0786C7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		FA678CF8F2462F7530E49E46 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		FFCF04B5FB518B8BB0F8B54B /* AccountViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountViewModel.swift; sourceTree = "<group>"; };
@@ -281,6 +287,9 @@
 				956C0B652EACA4EB866BDD9C /* PazGoldBadge.swift */,
 				CAC853F6E892CF7A2AE4283F /* PazIconContainer.swift */,
 				F62DDEA0026352360D73E873 /* PazPillChip.swift */,
+				BD36BC4FF7F143F2A22DBA8E /* GlassBlurBackground.swift */,
+				752528ECC0A4452B81104790 /* GlassCard.swift */,
+				75FC45595FDB4FCE93453A85 /* PazPillButtonStyle.swift */,
 				36DB133997051B82A7D0D38D /* SkeletonView.swift */,
 			);
 			path = Components;
@@ -556,6 +565,9 @@
 				21E6A6FA6FF1C5D57AB1224E /* PazGoldBadge.swift in Sources */,
 				96BF8A72553894BA74F6934B /* PazIconContainer.swift in Sources */,
 				8BBB7655494EE2891298CD78 /* PazPillChip.swift in Sources */,
+				3EC9DC430F954B799D549420 /* GlassBlurBackground.swift in Sources */,
+				C766B9E46B474ADB9DB011BA /* GlassCard.swift in Sources */,
+				934B20455FFB43C6A5F45EC9 /* PazPillButtonStyle.swift in Sources */,
 				372C31E22C76E58FF5E8FB83 /* PazSpacing.swift in Sources */,
 				14045D80B33A84CAE8070AC7 /* PazTypography.swift in Sources */,
 				33943BF3AA2F4343BF694389 /* ProfileView.swift in Sources */,

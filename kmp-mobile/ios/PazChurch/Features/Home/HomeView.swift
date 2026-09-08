@@ -369,10 +369,8 @@ struct HomeView: View {
                 .font(PazTypography.bodySmall).foregroundStyle(.secondary)
             Button(action: { viewModel.onRetry() }) {
                 Text("Tentar Novamente")
-                    .font(PazTypography.titleMedium).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity).padding(.vertical, PazSpacing.md)
-                    .background(PazColors.primary).clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            .buttonStyle(.pazPillPrimary)
             .padding(.top, PazSpacing.md)
         }
         .padding(PazSpacing.lg)
@@ -555,7 +553,8 @@ private struct EmptyAgendaView: View {
                 .foregroundStyle(PazColors.ink)
                 .multilineTextAlignment(.center)
 
-            Text(hasUpcomingEvents ? "Confira todos os eventos clicando no botão abaixo." : "Aguarde novos eventos para o futuro.")
+            Text(hasUpcomingEvents ? "Confira todos os eventos clicando no botão abaixo." :
+                "Aguarde novos eventos para o futuro.")
                 .font(PazTypography.bodyMedium)
                 .foregroundStyle(PazColors.slate)
                 .multilineTextAlignment(.center)
@@ -564,25 +563,14 @@ private struct EmptyAgendaView: View {
             if hasUpcomingEvents {
                 Button(action: onSeeAll) {
                     Text("Ver próximos eventos")
-                        .font(PazTypography.titleMedium)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(PazColors.pazPrimaryLight)
-                        .clipShape(Capsule())
                 }
+                .buttonStyle(.pazPillPrimary)
                 .padding(.horizontal, 20)
             }
         }
         .padding(24)
         .frame(maxWidth: .infinity)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .strokeBorder(PazColors.line, lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }
 
@@ -630,12 +618,7 @@ private struct EventCardView: View {
                 Spacer()
             }
             .padding(15)
-            .background(
-                RoundedRectangle(cornerRadius: 18)
-                    .fill(PazColors.surface)
-                    .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(PazColors.line))
-                    .shadow(color: .black.opacity(0.08), radius: 9, x: 0, y: 4)
-            )
+            .glassCard(radius: PazSpacing.cardRadiusCompact)
         }
         .buttonStyle(.plain)
     }
