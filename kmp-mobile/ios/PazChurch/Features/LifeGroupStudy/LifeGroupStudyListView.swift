@@ -144,7 +144,6 @@ private struct StudyRow: View {
             Spacer()
         }
         .padding(12)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }
