@@ -18,7 +18,7 @@ struct SkeletonView: View {
             )
             .offset(x: isAnimating ? 400 : -400)
         }
-        .cornerRadius(8)
+        .cornerRadius(PazSpacing.cardRadiusCompact)
         .onAppear {
             withAnimation(Animation.linear(duration: 1.5).repeatForever(autoreverses: false)) {
                 isAnimating = true
