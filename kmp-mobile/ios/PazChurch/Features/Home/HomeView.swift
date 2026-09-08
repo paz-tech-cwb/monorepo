@@ -181,7 +181,7 @@ struct HomeView: View {
 
     private var featuredSection: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: PazSpacing.xl * 2) {
+            HStack(spacing: PazSpacing.xl * 3) {
                 ForEach(Array(banners.enumerated()), id: \.offset) { index, banner in
                     FeaturedCardView(
                         title: banner.title,
@@ -277,8 +277,8 @@ struct HomeView: View {
                 }
             }
         }
-        .padding(.top, 10)
-        .padding(.horizontal, 10)
+        .padding(.top, 2)
+        .padding(.horizontal, 2)
         .padding(.bottom, 16)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
