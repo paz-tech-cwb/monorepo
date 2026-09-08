@@ -6,9 +6,18 @@ import br.church.paz.shared.domain.model.LifeGroup
 import br.church.paz.shared.domain.model.Ministry
 import br.church.paz.shared.domain.model.Sector
 import br.church.paz.shared.domain.repository.ChurchRepository
+import br.church.paz.shared.domain.repository.UpdateLifeGroupRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import io.ktor.client.request.delete
+import io.ktor.client.request.post
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 class ChurchRepositoryImpl(private val client: HttpClient) : ChurchRepository {
 
@@ -35,4 +44,38 @@ class ChurchRepositoryImpl(private val client: HttpClient) : ChurchRepository {
     @Throws(Exception::class)
     override suspend fun getSectors(): List<Sector> =
         client.get("api/sectors").body()
+
+    @Throws(Exception::class)
+    override suspend fun updateLifeGroup(id: Int, request: UpdateLifeGroupRequest): LifeGroup =
+        client.put("api/life-groups/$id") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                UpdateLifeGroupBody(
+                    name = request.name,
+                    location = request.location,
+                    meetingDay = request.meetingDay,
+                    meetingTime = request.meetingTime,
+                    kidsCount = request.kidsCount,
+                ),
+            )
+        }.body()
+
+    @Throws(Exception::class)
+    override suspend fun addLifeGroupMember(lifeGroupId: Int, userId: Int) {
+        client.post("api/life-groups/$lifeGroupId/members/$userId")
+    }
+
+    @Throws(Exception::class)
+    override suspend fun removeLifeGroupMember(lifeGroupId: Int, userId: Int) {
+        client.delete("api/life-groups/$lifeGroupId/members/$userId")
+    }
 }
+
+@Serializable
+private data class UpdateLifeGroupBody(
+    val name: String? = null,
+    val location: String? = null,
+    @SerialName("meeting_day") val meetingDay: String? = null,
+    @SerialName("meeting_time") val meetingTime: String? = null,
+    @SerialName("kids_count") val kidsCount: Int? = null,
+)
