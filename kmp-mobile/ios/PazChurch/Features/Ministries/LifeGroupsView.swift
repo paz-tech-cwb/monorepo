@@ -70,6 +70,7 @@ struct LifeGroupsView: View {
             .padding(.horizontal, PazSpacing.lg)
             Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func emptyState(_ message: String) -> some View {
@@ -80,6 +81,7 @@ struct LifeGroupsView: View {
                 .foregroundColor(.gray)
             Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
