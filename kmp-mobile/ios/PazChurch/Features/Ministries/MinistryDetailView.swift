@@ -1,5 +1,6 @@
 import Shared
 import SwiftUI
+import UIKit
 
 // MARK: - Ministry Detail
 
@@ -92,12 +93,65 @@ struct LifeGroupDetailView: View {
                         }
                         if let location = lifeGroup.location, !location.isEmpty {
                             InfoRowView(icon: "mappin.circle.fill", label: "Endereço", value: location)
+                            if lifeGroup.latitude != nil, lifeGroup.longitude != nil {
+                                Button(action: openInMaps) {
+                                    Text("Como chegar")
+                                        .font(PazTypography.labelSmall)
+                                        .foregroundColor(PazColors.primary)
+                                }
+                                .padding(.leading, 32)
+                            }
+                        }
+                        if lifeGroup.kidsCount > 0 {
+                            InfoRowView(
+                                icon: "figure.2.and.child.holdinghands",
+                                label: "Crianças",
+                                value: "\(lifeGroup.kidsCount)"
+                            )
                         }
                     }
                     .padding(PazSpacing.lg)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(PazColors.surface)
                     .cornerRadius(16)
+
+                    if lifeGroup.leaderPhone != nil || lifeGroup.coLeaderPhone != nil {
+                        VStack(alignment: .leading, spacing: PazSpacing.md) {
+                            Text("Falar com a liderança")
+                                .font(PazTypography.titleSmall)
+                            if let leader = lifeGroup.leader, let phone = lifeGroup.leaderPhone {
+                                WhatsAppButton(name: leader, phone: phone)
+                            }
+                            if let coLeader = lifeGroup.coLeaderName, let phone = lifeGroup.coLeaderPhone {
+                                WhatsAppButton(name: coLeader, phone: phone)
+                            }
+                        }
+                        .padding(PazSpacing.lg)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(PazColors.surface)
+                        .cornerRadius(16)
+                    }
+
+                    if let members = lifeGroup.members {
+                        VStack(alignment: .leading, spacing: PazSpacing.md) {
+                            Text("Membros")
+                                .font(PazTypography.titleSmall)
+                            if members.isEmpty {
+                                Text("Nenhum membro cadastrado ainda.")
+                                    .font(PazTypography.bodySmall)
+                                    .foregroundColor(.gray)
+                            } else {
+                                ForEach(members, id: \.id) { member in
+                                    Text(member.name)
+                                        .font(PazTypography.bodySmall)
+                                }
+                            }
+                        }
+                        .padding(PazSpacing.lg)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(PazColors.surface)
+                        .cornerRadius(16)
+                    }
 
                     NavigationLink {
                         LifeGroupStudyListView(repository: IosAppContainer.shared.lifeGroupStudyRepository)
@@ -130,9 +184,47 @@ struct LifeGroupDetailView: View {
         .navigationTitle(lifeGroup.name)
         .navigationBarTitleDisplayMode(.large)
     }
+
+    /// Opens the device's default maps app for turn-by-turn directions —
+    /// lets the user pick Apple Maps/Google Maps/Waze via the system sheet
+    /// rather than hardcoding one provider.
+    private func openInMaps() {
+        guard let lat = lifeGroup.latitude, let lng = lifeGroup.longitude else { return }
+        let name = lifeGroup.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? lifeGroup.name
+        if let url = URL(string: "maps://?daddr=\(lat),\(lng)&q=\(name)") {
+            UIApplication.shared.open(url)
+        }
+    }
 }
 
 // MARK: - Components
+
+private struct WhatsAppButton: View {
+    let name: String
+    let phone: String
+
+    var body: some View {
+        Button(action: openWhatsApp) {
+            HStack(spacing: PazSpacing.sm) {
+                Image(systemName: "message.fill")
+                    .font(.system(size: 14))
+                Text("Falar com \(name) no WhatsApp")
+                    .font(PazTypography.labelSmall)
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, PazSpacing.md)
+            .padding(.vertical, PazSpacing.sm)
+            .background(Color(red: 0.15, green: 0.68, blue: 0.38))
+            .cornerRadius(10)
+        }
+    }
+
+    private func openWhatsApp() {
+        let digits = phone.filter(\.isNumber)
+        guard !digits.isEmpty, let url = URL(string: "https://wa.me/\(digits)") else { return }
+        UIApplication.shared.open(url)
+    }
+}
 
 private struct InfoRowView: View {
     let icon: String
