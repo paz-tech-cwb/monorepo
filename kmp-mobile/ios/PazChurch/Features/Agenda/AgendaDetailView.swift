@@ -140,13 +140,8 @@ struct AgendaDetailView: View {
                 Image(systemName: "heart.fill")
                 Text("Confirmar presença").font(PazTypography.titleMedium)
             }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity).frame(height: 56)
-            .background(PazColors.heroGradient)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: PazColors.pazPrimaryMid.opacity(0.4), radius: 12, y: 6)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pazPillPrimary)
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .background(PazColors.background)
@@ -188,8 +183,7 @@ private struct MetaChip: View {
             Text(label).font(PazTypography.labelSmall).foregroundStyle(PazColors.ink)
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(PazColors.surface)
-        .clipShape(Capsule())
+        .glassCard(radius: 16)
     }
 }
 
