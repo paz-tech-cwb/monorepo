@@ -45,6 +45,7 @@
 		8BBB7655494EE2891298CD78 /* PazPillChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62DDEA0026352360D73E873 /* PazPillChip.swift */; };
 		3EC9DC430F954B799D549420 /* GlassBlurBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD36BC4FF7F143F2A22DBA8E /* GlassBlurBackground.swift */; };
 		C766B9E46B474ADB9DB011BA /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752528ECC0A4452B81104790 /* GlassCard.swift */; };
+		3FA1B7D719A12BA02FC3ABA0 /* PazMeshBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = BABD41D3E08C6B07A350D39C /* PazMeshBackground.swift */; };
 		934B20455FFB43C6A5F45EC9 /* PazPillButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75FC45595FDB4FCE93453A85 /* PazPillButtonStyle.swift */; };
 		96BF8A72553894BA74F6934B /* PazIconContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC853F6E892CF7A2AE4283F /* PazIconContainer.swift */; };
 		9B9A6148AFFD0C8167085DD0 /* MinistryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDD6B4FBC968ED037D73EAA9 /* MinistryDetailView.swift */; };
@@ -148,6 +149,7 @@
 		F62DDEA0026352360D73E873 /* PazPillChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazPillChip.swift; sourceTree = "<group>"; };
 		BD36BC4FF7F143F2A22DBA8E /* GlassBlurBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassBlurBackground.swift; sourceTree = "<group>"; };
 		752528ECC0A4452B81104790 /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCard.swift; sourceTree = "<group>"; };
+		BABD41D3E08C6B07A350D39C /* PazMeshBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazMeshBackground.swift; sourceTree = "<group>"; };
 		75FC45595FDB4FCE93453A85 /* PazPillButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazPillButtonStyle.swift; sourceTree = "<group>"; };
 		F8BEE46E84E5D0C0BE0786C7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		FA678CF8F2462F7530E49E46 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -289,6 +291,7 @@
 				F62DDEA0026352360D73E873 /* PazPillChip.swift */,
 				BD36BC4FF7F143F2A22DBA8E /* GlassBlurBackground.swift */,
 				752528ECC0A4452B81104790 /* GlassCard.swift */,
+				BABD41D3E08C6B07A350D39C /* PazMeshBackground.swift */,
 				75FC45595FDB4FCE93453A85 /* PazPillButtonStyle.swift */,
 				36DB133997051B82A7D0D38D /* SkeletonView.swift */,
 			);
@@ -567,6 +570,7 @@
 				8BBB7655494EE2891298CD78 /* PazPillChip.swift in Sources */,
 				3EC9DC430F954B799D549420 /* GlassBlurBackground.swift in Sources */,
 				C766B9E46B474ADB9DB011BA /* GlassCard.swift in Sources */,
+				3FA1B7D719A12BA02FC3ABA0 /* PazMeshBackground.swift in Sources */,
 				934B20455FFB43C6A5F45EC9 /* PazPillButtonStyle.swift in Sources */,
 				372C31E22C76E58FF5E8FB83 /* PazSpacing.swift in Sources */,
 				14045D80B33A84CAE8070AC7 /* PazTypography.swift in Sources */,
