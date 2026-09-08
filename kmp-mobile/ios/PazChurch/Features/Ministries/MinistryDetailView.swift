@@ -51,7 +51,20 @@ struct MinistryDetailView: View {
 // MARK: - Life Group Detail
 
 struct LifeGroupDetailView: View {
-    let lifeGroup: LifeGroup
+    @State private var lifeGroup: LifeGroup
+    @Environment(AuthenticationCoordinator.self) private var authCoordinator
+    @State private var showManage = false
+
+    init(lifeGroup: LifeGroup) {
+        _lifeGroup = State(initialValue: lifeGroup)
+    }
+
+    // Matches the backend's actual authorization (RolesGuard checks any
+    // leadership role, not specifically this group's own leader) — the
+    // app only needs to decide when to show the entry point.
+    private var canManage: Bool {
+        authCoordinator.currentUser?.role.isLeader == true
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -183,6 +196,24 @@ struct LifeGroupDetailView: View {
         .background(PazColors.background)
         .navigationTitle(lifeGroup.name)
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            if canManage {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: { showManage = true }) {
+                        Image(systemName: "gearshape.fill")
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showManage) {
+            LifeGroupManageView(
+                lifeGroup: lifeGroup,
+                churchRepository: IosAppContainer.shared.churchRepository,
+                formsRepository: IosAppContainer.shared.formsRepository
+            ) { updated in
+                lifeGroup = updated
+            }
+        }
     }
 
     /// Opens the device's default maps app for turn-by-turn directions —
