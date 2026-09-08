@@ -859,7 +859,7 @@ private struct FieldRow: View {
                             .font(PazTypography.bodyMedium)
                             .foregroundStyle(displayValue.isEmpty ? PazColors.slate : PazColors.ink)
                         Spacer()
-                        Image(systemName: "chevron.down").foregroundStyle(PazColors.pazPrimary)
+                        Image(systemName: "chevron.down").foregroundStyle(PazColors.accent)
                     }
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
@@ -876,7 +876,7 @@ private struct FieldRow: View {
                             .font(PazTypography.bodyMedium)
                             .foregroundStyle(displayName.isEmpty ? PazColors.slate : PazColors.ink)
                         Spacer()
-                        Image(systemName: "chevron.down").foregroundStyle(PazColors.pazPrimary)
+                        Image(systemName: "chevron.down").foregroundStyle(PazColors.accent)
                     }
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
@@ -893,7 +893,7 @@ private struct FieldRow: View {
                             .font(PazTypography.bodyMedium)
                             .foregroundStyle(displayName.isEmpty ? PazColors.slate : PazColors.ink)
                         Spacer()
-                        Image(systemName: "chevron.down").foregroundStyle(PazColors.pazPrimary)
+                        Image(systemName: "chevron.down").foregroundStyle(PazColors.accent)
                     }
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
@@ -908,10 +908,10 @@ private struct FieldRow: View {
                     HStack(spacing: PazSpacing.sm) {
                         Button("Eu mesmo") { onSelfOrSearchMode(def.key, false) }
                             .buttonStyle(.bordered)
-                            .tint(isSearchMode ? .secondary : PazColors.pazPrimary)
+                            .tint(isSearchMode ? .secondary : PazColors.accent)
                         Button("Buscar pessoa") { onSelfOrSearchMode(def.key, true) }
                             .buttonStyle(.bordered)
-                            .tint(isSearchMode ? PazColors.pazPrimary : .secondary)
+                            .tint(isSearchMode ? PazColors.accent : .secondary)
                     }
                     if isSearchMode {
                         let displayName = extraFields["\(def.key)_name"] ?? ""
@@ -921,7 +921,7 @@ private struct FieldRow: View {
                                     .font(PazTypography.bodyMedium)
                                     .foregroundStyle(displayName.isEmpty ? PazColors.slate : PazColors.ink)
                                 Spacer()
-                                Image(systemName: "chevron.down").foregroundStyle(PazColors.pazPrimary)
+                                Image(systemName: "chevron.down").foregroundStyle(PazColors.accent)
                             }
                             .padding(.horizontal, PazSpacing.md)
                             .frame(height: 56)
@@ -987,7 +987,7 @@ private struct DateFieldRow: View {
                         .font(PazTypography.bodyMedium)
                         .foregroundStyle(value.isEmpty ? PazColors.slate : PazColors.ink)
                     Spacer()
-                    Image(systemName: "calendar").foregroundStyle(PazColors.pazPrimary)
+                    Image(systemName: "calendar").foregroundStyle(PazColors.accent)
                 }
                 .padding(.horizontal, PazSpacing.md)
                 .frame(height: 56)
@@ -1003,7 +1003,7 @@ private struct DateFieldRow: View {
             if showPicker {
                 DatePicker("", selection: $selected, displayedComponents: .date)
                     .datePickerStyle(.graphical)
-                    .tint(PazColors.pazPrimary)
+                    .tint(PazColors.accent)
                     .onChange(of: selected) { _, d in
                         onChange(display.string(from: d))
                         showPicker = false

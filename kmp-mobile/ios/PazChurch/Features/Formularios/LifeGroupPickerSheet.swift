@@ -28,7 +28,7 @@ struct LifeGroupPickerSheet: View {
                             Text(lg.name)
                             Spacer()
                             if String(lg.id) == selectedId {
-                                Image(systemName: "checkmark").foregroundColor(PazColors.pazPrimary)
+                                Image(systemName: "checkmark").foregroundColor(PazColors.accent)
                             }
                         }
                         .contentShape(Rectangle())

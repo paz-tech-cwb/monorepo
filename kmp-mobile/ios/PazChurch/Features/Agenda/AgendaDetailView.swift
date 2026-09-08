@@ -97,9 +97,9 @@ struct AgendaDetailView: View {
                         VStack(spacing: 6) {
                             Text(label)
                                 .font(PazTypography.titleSmall)
-                                .foregroundStyle(selectedTab == key ? PazColors.pazPrimary : PazColors.slate)
+                                .foregroundStyle(selectedTab == key ? PazColors.accent : PazColors.slate)
                             Rectangle()
-                                .fill(selectedTab == key ? PazColors.pazPrimary : Color.clear)
+                                .fill(selectedTab == key ? PazColors.accent : Color.clear)
                                 .frame(height: 2.5)
                         }
                     }
@@ -179,7 +179,7 @@ private struct MetaChip: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: icon).font(.system(size: 12)).foregroundStyle(PazColors.pazPrimary)
+            Image(systemName: icon).font(.system(size: 12)).foregroundStyle(PazColors.accent)
             Text(label).font(PazTypography.labelSmall).foregroundStyle(PazColors.ink)
         }
         .padding(.horizontal, 12).padding(.vertical, 8)

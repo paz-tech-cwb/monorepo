@@ -36,7 +36,7 @@ struct MemberJourneyView: View {
                 .multilineTextAlignment(.center)
             Button("Tentar Novamente") { viewModel.retry() }
                 .font(PazTypography.titleSmall)
-                .foregroundStyle(PazColors.pazPrimary)
+                .foregroundStyle(PazColors.accent)
             Spacer()
         }
         .padding(.horizontal, PazSpacing.lg)

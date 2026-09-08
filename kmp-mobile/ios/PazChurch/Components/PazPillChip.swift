@@ -17,13 +17,13 @@ struct PazPillChip: View {
                 .frame(height: 38)
                 .background {
                     if selected {
-                        PazColors.pazPrimary
+                        PazColors.accent
                     } else {
                         Capsule().fill(PazMaterial.chip(for: colorScheme))
                     }
                 }
                 .clipShape(Capsule())
-                .overlay(Capsule().stroke(PazColors.pazPrimary.opacity(selected ? 0 : 0.18), lineWidth: 1))
+                .overlay(Capsule().stroke(PazColors.accent.opacity(selected ? 0 : 0.18), lineWidth: 1))
         }
         .buttonStyle(.plain)
     }

@@ -124,8 +124,8 @@ struct AcademyView: View {
                 GlassCard(radius: PazSpacing.cardRadiusLarge) {
                     VStack(spacing: 16) {
                         ZStack {
-                            Circle().fill(PazColors.pazPrimary.opacity(0.1)).frame(width: 64, height: 64)
-                            Image(systemName: "lock.fill").font(.system(size: 26)).foregroundStyle(PazColors.pazPrimary)
+                            Circle().fill(PazColors.accent.opacity(0.1)).frame(width: 64, height: 64)
+                            Image(systemName: "lock.fill").font(.system(size: 26)).foregroundStyle(PazColors.accent)
                         }
                         Text("Conteúdo exclusivo").font(PazTypography.titleMedium)
                         Text("Faça login para acessar todos os cursos da Academia Paz Church")
@@ -171,11 +171,11 @@ struct AcademyView: View {
         VStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(PazColors.pazPrimary.opacity(0.1))
+                    .fill(PazColors.accent.opacity(0.1))
                     .frame(width: 64, height: 64)
                 Image(systemName: "books.vertical.fill")
                     .font(.system(size: 26))
-                    .foregroundStyle(PazColors.pazPrimary)
+                    .foregroundStyle(PazColors.accent)
             }
             Text("Nenhum conteúdo disponível")
                 .font(PazTypography.titleMedium)
@@ -197,7 +197,7 @@ struct AcademyView: View {
                 viewModel.onRetry(isAuthenticated: authCoordinator.isAuthenticated)
             }
             .font(PazTypography.titleSmall)
-            .foregroundStyle(PazColors.pazPrimary)
+            .foregroundStyle(PazColors.accent)
             Spacer()
         }
         .padding(.horizontal, 24)

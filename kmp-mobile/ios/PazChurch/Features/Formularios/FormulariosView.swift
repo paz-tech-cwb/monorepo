@@ -80,7 +80,7 @@ private struct FormCard: View {
         if name.contains("GUEST") { return Color(hex: "2E7D32") }
         if name.contains("SERVICE") { return Color(hex: "6A1B9A") }
         if name.contains("REPORT") { return Color(hex: "E65100") }
-        return PazColors.pazPrimary
+        return PazColors.accent
     }
 
     private var icon: String {

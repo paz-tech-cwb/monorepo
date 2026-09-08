@@ -74,7 +74,7 @@ struct EditProfileView: View {
                         }
                         Spacer()
                         Image(systemName: "calendar")
-                            .foregroundStyle(PazColors.pazPrimary)
+                            .foregroundStyle(PazColors.accent)
                     }
                     .font(PazTypography.bodyMedium)
                     .padding(.horizontal, PazSpacing.md)
@@ -95,7 +95,7 @@ struct EditProfileView: View {
                         displayedComponents: .date
                     )
                     .datePickerStyle(.graphical)
-                    .tint(PazColors.pazPrimary)
+                    .tint(PazColors.accent)
                     .onChange(of: viewModel.birthDate) { _, _ in showDatePicker = false }
                     .background(PazColors.surface)
                     .clipShape(RoundedRectangle(cornerRadius: 12))

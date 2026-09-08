@@ -251,7 +251,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("DÍZIMOS & OFERTAS")
                     .font(PazTypography.labelMedium)
-                    .foregroundStyle(isDark ? PazColors.pazSky : PazColors.pazPrimary.opacity(0.7))
+                    .foregroundStyle(PazColors.accent.opacity(0.7))
 
                 Text("Contribua com a visão")
                     .font(.system(size: 24, weight: .heavy))
@@ -274,7 +274,7 @@ struct HomeView: View {
         .padding(16)
         .background(PazMaterial.glass(for: colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .shadow(color: PazColors.pazPrimary.opacity(0.25), radius: 12, x: 0, y: 10)
+        .shadow(color: PazColors.accent.opacity(0.25), radius: 12, x: 0, y: 10)
         .padding(.horizontal, 16)
     }
 
@@ -426,7 +426,7 @@ private struct FeaturedCardView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .contentShape(RoundedRectangle(cornerRadius: 22))
-        .shadow(color: PazColors.pazPrimary.opacity(0.3), radius: 8, x: 0, y: 6)
+        .shadow(color: PazColors.accent.opacity(0.3), radius: 8, x: 0, y: 6)
     }
 }
 
@@ -483,7 +483,7 @@ private struct DizimosPixButton: View {
                 // into the frosted card behind it.
                 .background {
                     Capsule().fill(PazMaterial.glass(for: colorScheme))
-                    Capsule().fill(PazColors.pazPrimary.opacity(0.78))
+                    Capsule().fill(PazColors.accent.opacity(0.78))
                 }
                 .clipShape(Capsule())
         }
@@ -502,7 +502,7 @@ private struct DayPillView: View {
 
     private var dotColor: Color {
         if isToday { return PazColors.pazGold }
-        if hasEvent { return PazColors.pazPrimary }
+        if hasEvent { return PazColors.accent }
         return .clear
     }
 
@@ -530,7 +530,7 @@ private struct DayPillView: View {
                         .fill(PazColors.surface)
                         .overlay(
                             RoundedRectangle(cornerRadius: 18)
-                                .strokeBorder(PazColors.pazPrimary.opacity(0.5), lineWidth: 1.5)
+                                .strokeBorder(PazColors.accent.opacity(0.5), lineWidth: 1.5)
                         )
                 } else {
                     RoundedRectangle(cornerRadius: 18)
@@ -540,7 +540,7 @@ private struct DayPillView: View {
             }
         )
         .shadow(
-            color: isSelected ? PazColors.pazPrimary.opacity(0.4) : Color.black.opacity(0.06),
+            color: isSelected ? PazColors.accent.opacity(0.4) : Color.black.opacity(0.06),
             radius: isSelected ? 8 : 4,
             x: 0,
             y: isSelected ? 6 : 2
@@ -592,7 +592,7 @@ private struct EventCardView: View {
 
                 ZStack {
                     Circle().fill(PazColors.tint).frame(width: 18, height: 18)
-                    Circle().fill(PazColors.pazPrimary).frame(width: 10, height: 10)
+                    Circle().fill(PazColors.accent).frame(width: 10, height: 10)
                 }
 
                 VStack(alignment: .leading, spacing: 3) {

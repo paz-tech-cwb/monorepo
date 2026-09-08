@@ -184,19 +184,19 @@ struct AccountView: View {
         ZStack(alignment: .topTrailing) {
             HStack(spacing: 12) {
                 ZStack {
-                    Circle().fill(PazColors.pazPrimary.opacity(0.15)).frame(width: 56, height: 56)
+                    Circle().fill(PazColors.accent.opacity(0.15)).frame(width: 56, height: 56)
                     Text(user.name.prefix(1).uppercased()).font(PazTypography.headlineSmall)
-                        .foregroundStyle(PazColors.pazPrimary)
+                        .foregroundStyle(PazColors.accent)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(user.name).font(PazTypography.titleMedium).foregroundStyle(PazColors.pazPrimary)
+                    Text(user.name).font(PazTypography.titleMedium).foregroundStyle(PazColors.accent)
                     Text(user.email).font(PazTypography.bodySmall).foregroundStyle(PazColors.pazSky).lineLimit(1)
                     Spacer().frame(height: 2)
                     Text(user.role.displayName)
                         .font(PazTypography.labelSmall)
-                        .foregroundStyle(PazColors.pazPrimary)
+                        .foregroundStyle(PazColors.accent)
                         .padding(.horizontal, 8).padding(.vertical, 2)
-                        .background(PazColors.pazPrimary.opacity(0.12))
+                        .background(PazColors.accent.opacity(0.12))
                         .clipShape(Capsule())
                 }
                 Spacer()
@@ -206,7 +206,7 @@ struct AccountView: View {
 
             Image(systemName: "pencil")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(PazColors.pazPrimary)
+                .foregroundStyle(PazColors.accent)
                 .padding(8)
                 .background(PazMaterial.chip(for: colorScheme))
                 .clipShape(Circle())

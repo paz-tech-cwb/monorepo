@@ -75,7 +75,7 @@ struct LoginView: View {
         VStack(spacing: 0) {
             Text("Paz Church")
                 .font(PazTypography.displayLarge)
-                .foregroundStyle(isDark ? PazColors.pazSky : PazColors.pazPrimary)
+                .foregroundStyle(isDark ? PazColors.pazSky : PazColors.accent)
                 .multilineTextAlignment(.center)
 
             Spacer().frame(height: 14)

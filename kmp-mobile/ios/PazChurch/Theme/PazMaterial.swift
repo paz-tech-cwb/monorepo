@@ -11,12 +11,12 @@ import SwiftUI
 enum PazMaterial {
     /// For card-sized surfaces (GlassCard, hero/nav backgrounds).
     static func glass(for colorScheme: ColorScheme) -> Material {
-        colorScheme == .dark ? .thickMaterial : .thinMaterial
+        colorScheme == .dark ? .regularMaterial : .thinMaterial
     }
 
     /// For small chip/badge-sized surfaces (pill chips, icon badges), which
     /// read fine one tier lighter than full cards.
     static func chip(for colorScheme: ColorScheme) -> Material {
-        colorScheme == .dark ? .regularMaterial : .ultraThinMaterial
+        colorScheme == .dark ? .thinMaterial : .ultraThinMaterial
     }
 }

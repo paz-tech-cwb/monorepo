@@ -115,7 +115,7 @@ struct LifeGroupStudyDetailView: View {
                 Task { await viewModel.load(currentUser: authCoordinator.currentUser) }
             }
             .font(PazTypography.titleSmall)
-            .foregroundStyle(PazColors.pazPrimary)
+            .foregroundStyle(PazColors.accent)
             Spacer()
         }
         .padding(.horizontal, 24)

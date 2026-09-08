@@ -32,10 +32,10 @@ struct ProfileView: View {
                 GlassCard(radius: PazSpacing.cardRadiusLarge) {
                     VStack(spacing: 12) {
                         ZStack(alignment: .bottomTrailing) {
-                            Circle().fill(PazColors.pazPrimary.opacity(0.15)).frame(width: 80, height: 80)
+                            Circle().fill(PazColors.accent.opacity(0.15)).frame(width: 80, height: 80)
                                 .overlay(
                                     Text(viewModel.user?.name.prefix(1).uppercased() ?? "")
-                                        .font(PazTypography.headlineLarge).foregroundStyle(PazColors.pazPrimary)
+                                        .font(PazTypography.headlineLarge).foregroundStyle(PazColors.accent)
                                 )
                             Circle().fill(PazColors.pazGold).frame(width: 26, height: 26)
                                 .overlay(Image(systemName: "pencil").font(.system(size: 11, weight: .bold))
@@ -44,9 +44,9 @@ struct ProfileView: View {
                         Text(viewModel.user?.name ?? "").font(PazTypography.headlineSmall)
                         Text(viewModel.user?.email ?? "").font(PazTypography.bodySmall).foregroundStyle(PazColors.slate)
                         Text(viewModel.user?.role.displayName ?? "")
-                            .font(PazTypography.labelSmall).foregroundStyle(PazColors.pazPrimary)
+                            .font(PazTypography.labelSmall).foregroundStyle(PazColors.accent)
                             .padding(.horizontal, 12).padding(.vertical, 4)
-                            .background(PazColors.pazPrimary.opacity(0.12)).clipShape(Capsule())
+                            .background(PazColors.accent.opacity(0.12)).clipShape(Capsule())
                     }
                     .frame(maxWidth: .infinity)
                     .padding(24)
@@ -88,12 +88,12 @@ struct ProfileView: View {
                 Spacer().frame(height: 24)
                 ZStack {
                     Circle().strokeBorder(
-                        PazColors.pazPrimary.opacity(0.25),
+                        PazColors.accent.opacity(0.25),
                         style: StrokeStyle(lineWidth: 2, dash: [6])
                     )
                     .frame(width: 80, height: 80)
                     Image(systemName: "person.fill").font(.system(size: 32))
-                        .foregroundStyle(PazColors.pazPrimary.opacity(0.4))
+                        .foregroundStyle(PazColors.accent.opacity(0.4))
                 }
                 VStack(spacing: 6) {
                     Text("Bem-vindo(a)!").font(PazTypography.titleMedium)

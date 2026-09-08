@@ -117,6 +117,6 @@ private struct MarkdownToolbar: View {
             }
         }
         .buttonStyle(.borderless)
-        .foregroundStyle(PazColors.pazPrimary)
+        .foregroundStyle(PazColors.accent)
     }
 }
