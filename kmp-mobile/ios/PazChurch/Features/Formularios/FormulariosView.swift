@@ -106,8 +106,7 @@ private struct FormCard: View {
             Image(systemName: "chevron.right").font(.system(size: 13)).foregroundStyle(PazColors.slateLight)
         }
         .padding(14)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }
 
