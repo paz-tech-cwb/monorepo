@@ -137,29 +137,28 @@ struct AcademyView: View {
                 }
                 .padding(.horizontal, 20)
 
-                GlassCard(radius: PazSpacing.cardRadiusLarge) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("O que você encontra").font(PazTypography.titleMedium).foregroundStyle(.white)
-                        ForEach(
-                            [
-                                ("graduationcap.fill", "Cursos de discipulado"),
-                                ("play.rectangle.fill", "Videoaulas exclusivas"),
-                                ("star.fill", "Trilhas de aprendizado"),
-                            ],
-                            id: \.0
-                        ) { icon, label in
-                            HStack(spacing: 8) {
-                                Image(systemName: icon).foregroundStyle(PazColors.pazGold).font(.system(size: 15))
-                                Text(label).font(PazTypography.bodySmall).foregroundStyle(.white.opacity(0.9))
-                            }
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("O que você encontra").font(PazTypography.titleMedium).foregroundStyle(.white)
+                    ForEach(
+                        [
+                            ("graduationcap.fill", "Cursos de discipulado"),
+                            ("play.rectangle.fill", "Videoaulas exclusivas"),
+                            ("star.fill", "Trilhas de aprendizado"),
+                        ],
+                        id: \.0
+                    ) { icon, label in
+                        HStack(spacing: 8) {
+                            Image(systemName: icon).foregroundStyle(PazColors.pazGold).font(.system(size: 15))
+                            Text(label).font(PazTypography.bodySmall).foregroundStyle(.white.opacity(0.9))
                         }
-                        Button("Entrar na minha conta") { showLoginSheet = true }
-                            .buttonStyle(.pazPillPrimary)
-                            .padding(.top, 4)
                     }
-                    .padding(24)
-                    .background(PazColors.featuredCardGradient)
+                    Button("Entrar na minha conta") { showLoginSheet = true }
+                        .buttonStyle(.pazPillPrimary)
+                        .padding(.top, 4)
                 }
+                .padding(24)
+                .background(PazColors.featuredCardGradient)
+                .clipShape(RoundedRectangle(cornerRadius: PazSpacing.cardRadiusLarge))
                 .padding(.horizontal, 20)
 
                 Spacer().frame(height: 32)
