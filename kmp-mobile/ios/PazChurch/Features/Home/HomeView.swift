@@ -240,9 +240,10 @@ struct HomeView: View {
     // MARK: - Dízimos card
 
     private func dizimosCard(bank: BankInfo) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Solid brand-color header block — the card's identity, kept opaque
-            // so the "DÍZIMOS & OFERTAS" label and title stay fully legible.
+        VStack(alignment: .leading, spacing: 18) {
+            // Solid brand-color block — inset within the outer card's padding,
+            // the way the reference design nests its accent block inside a
+            // frosted container rather than filling it edge-to-edge.
             VStack(alignment: .leading, spacing: 0) {
                 Text("DÍZIMOS & OFERTAS")
                     .font(PazTypography.labelSmall)
@@ -253,11 +254,12 @@ struct HomeView: View {
                     .foregroundStyle(.white)
                     .padding(.top, 9)
             }
-            .padding(22)
+            .padding(20)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(PazColors.pazPrimary)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
-            // Frosted lower zone — subtitle + the single PIX action.
+            // Subtitle + the single PIX action, on the frosted outer surface.
             VStack(alignment: .leading, spacing: 0) {
                 Text("Sua oferta transforma vidas na comunidade")
                     .font(PazTypography.bodyMedium)
@@ -269,11 +271,10 @@ struct HomeView: View {
                         .padding(.top, 16)
                 }
             }
-            .padding(22)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.ultraThinMaterial)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .padding(16)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .shadow(color: PazColors.pazPrimary.opacity(0.25), radius: 12, x: 0, y: 10)
         .padding(.horizontal, 16)
     }
@@ -329,8 +330,7 @@ struct HomeView: View {
             // Event list filtered to selected day
             if selectedDayEvents.isEmpty {
                 EmptyAgendaView(
-                    hasUpcomingEvents: !(viewModel.homeContent?.agenda ?? []).isEmpty,
-                    onSeeAll: { showAgendaList = true }
+                    hasUpcomingEvents: !(viewModel.homeContent?.agenda ?? []).isEmpty
                 )
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
@@ -539,7 +539,6 @@ private struct DayPillView: View {
 
 private struct EmptyAgendaView: View {
     let hasUpcomingEvents: Bool
-    let onSeeAll: () -> Void
 
     var body: some View {
         VStack(spacing: 8) {
@@ -548,20 +547,11 @@ private struct EmptyAgendaView: View {
                 .foregroundStyle(PazColors.ink)
                 .multilineTextAlignment(.center)
 
-            Text(hasUpcomingEvents ? "Confira todos os eventos clicando no botão abaixo." :
+            Text(hasUpcomingEvents ? "Confira todos os eventos na agenda." :
                 "Aguarde novos eventos para o futuro.")
                 .font(PazTypography.bodyMedium)
                 .foregroundStyle(PazColors.slate)
                 .multilineTextAlignment(.center)
-                .padding(.bottom, hasUpcomingEvents ? 12 : 0)
-
-            if hasUpcomingEvents {
-                Button(action: onSeeAll) {
-                    Text("Ver próximos eventos")
-                }
-                .buttonStyle(.pazPillPrimary)
-                .padding(.horizontal, 20)
-            }
         }
         .padding(24)
         .frame(maxWidth: .infinity)
