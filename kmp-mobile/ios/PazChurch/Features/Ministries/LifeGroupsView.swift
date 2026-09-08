@@ -46,9 +46,11 @@ struct LifeGroupsView: View {
                         }
                         .padding(.horizontal, PazSpacing.lg)
                     }
+                    .background(PazColors.background)
                 }
             }
         }
+        .background(PazColors.background)
         .navigationTitle("Grupos de Vida")
         .navigationBarTitleDisplayMode(.large)
     }

@@ -127,6 +127,7 @@ struct AgendaDetailView: View {
             Spacer().frame(height: 16)
         }
         .padding(20)
+        .background(PazColors.background)
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
         .offset(y: -20)
     }
@@ -143,6 +144,7 @@ struct AgendaDetailView: View {
         .buttonStyle(.pazPillPrimary)
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
+        .background(PazColors.background)
     }
 
     // MARK: - Date formatting

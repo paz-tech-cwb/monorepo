@@ -31,8 +31,10 @@ struct MinistriesView: View {
                     }
                     .padding(.horizontal, PazSpacing.lg)
                 }
+                .background(PazColors.background)
             }
         }
+        .background(PazColors.background)
         .navigationTitle("Ministérios")
         .navigationBarTitleDisplayMode(.large)
     }

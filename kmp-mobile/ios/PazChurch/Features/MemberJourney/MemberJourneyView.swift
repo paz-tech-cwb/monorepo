@@ -66,6 +66,7 @@ struct MemberJourneyView: View {
             }
             .padding(.horizontal, PazSpacing.lg)
         }
+        .background(PazColors.background)
     }
 
     private var loadingState: some View {
@@ -83,6 +84,7 @@ struct MemberJourneyView: View {
             Spacer()
         }
         .padding(PazSpacing.lg)
+        .background(PazColors.background)
     }
 }
 

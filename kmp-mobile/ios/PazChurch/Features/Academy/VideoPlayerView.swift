@@ -169,6 +169,7 @@ struct VideoPlayerView: View {
                     .padding(.horizontal, PazSpacing.lg)
                     .padding(.top, PazSpacing.lg)
                 }
+                .background(PazColors.background)
             }
         }
         .background(Color.black)
