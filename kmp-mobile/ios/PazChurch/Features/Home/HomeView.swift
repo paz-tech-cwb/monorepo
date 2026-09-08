@@ -253,14 +253,16 @@ struct HomeView: View {
             // close to the reference's near-square wallet-card shape.
             VStack(alignment: .leading, spacing: 4) {
                 Text("DÍZIMOS & OFERTAS")
-                    .font(PazTypography.labelSmall)
+                    .font(PazTypography.labelMedium)
                     .foregroundStyle(.white.opacity(0.6))
 
                 Text("Contribua com a visão")
-                    .font(.system(size: 21, weight: .heavy))
+                    .font(.system(size: 24, weight: .heavy))
                     .foregroundStyle(.white)
             }
-            .padding(14)
+            .padding(.top, 6)
+            .padding(.horizontal, 6)
+            .padding(.bottom, 14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(PazColors.pazPrimary)
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
