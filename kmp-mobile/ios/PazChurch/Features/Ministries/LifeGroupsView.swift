@@ -20,7 +20,6 @@ struct LifeGroupsView: View {
                 .pickerStyle(.segmented)
                 .padding(.horizontal, PazSpacing.lg)
                 .padding(.vertical, PazSpacing.sm)
-                .background(PazColors.surface)
             }
 
             Group {
