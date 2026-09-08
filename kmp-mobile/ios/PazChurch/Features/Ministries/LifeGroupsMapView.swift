@@ -48,6 +48,7 @@ struct LifeGroupsMapView: View {
                 MapUserLocationButton()
                 MapCompass()
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .sheet(item: $selectedGroup) { group in
                 NavigationStack {
                     LifeGroupDetailView(lifeGroup: group)

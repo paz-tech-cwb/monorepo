@@ -45,7 +45,6 @@ struct LifeGroupsView: View {
                         }
                         .padding(.horizontal, PazSpacing.lg)
                     }
-                    .background(PazMeshBackground())
                 }
             }
         }
