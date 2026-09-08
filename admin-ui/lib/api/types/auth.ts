@@ -22,6 +22,7 @@ export interface AuthResponse {
 export interface SocialLoginRequest {
   id_token: string
   provider: "google" | "apple"
+  client: "admin"
 }
 
 export interface RefreshTokenRequest {

@@ -40,12 +40,13 @@ android {
 
     buildTypes {
         debug {
+            applicationIdSuffix = ".dev"
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3001/api\"")
-            // Web client ID from google-services.json → oauth_client[type=3]
+            // Web client ID from google-services.json (staging project) → oauth_client[type=3]
             buildConfigField(
                 "String",
                 "GOOGLE_WEB_CLIENT_ID",
-                "\"139667803306-l99mi58j9d2ovncd4frvh4j2tpjaq2ei.apps.googleusercontent.com\"",
+                "\"454955850434-f7pc5vuibkcujitliqer2i0stlhesiqd.apps.googleusercontent.com\"",
             )
         }
         release {
@@ -58,7 +59,11 @@ android {
             if (releaseKeystorePath != null) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            buildConfigField("String", "BASE_URL", "\"https://api.paz.church/api\"")
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"http://znzcybe6t18zwapiy9hytma5.62.238.45.195.sslip.io/api\"",
+            )
             buildConfigField(
                 "String",
                 "GOOGLE_WEB_CLIENT_ID",

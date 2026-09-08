@@ -9,11 +9,14 @@ class AcademyViewModel {
     var isLoading = true
     var error: String?
     var resumeCourse: Course?
+    var latestStudy: LifeGroupStudy?
 
     private let academyRepository: AcademyRepository
+    private let lifeGroupStudyRepository: LifeGroupStudyRepository
 
-    init(academyRepository: AcademyRepository) {
+    init(academyRepository: AcademyRepository, lifeGroupStudyRepository: LifeGroupStudyRepository) {
         self.academyRepository = academyRepository
+        self.lifeGroupStudyRepository = lifeGroupStudyRepository
     }
 
     func load(isAuthenticated: Bool) async {
@@ -27,6 +30,15 @@ class AcademyViewModel {
             self.error = error.localizedDescription
         }
         isLoading = false
+
+        // Estudo do Life requires life-group membership server-side (canView) — a plain
+        // 403 here (visitor, or a member not yet in a life group) shouldn't surface as a
+        // page-level error, so this failure is silently ignored.
+        guard isAuthenticated else {
+            latestStudy = nil
+            return
+        }
+        latestStudy = try? await lifeGroupStudyRepository.getStudies(page: 1, limit: 1).items.first
     }
 
     func onRetry(isAuthenticated: Bool) {

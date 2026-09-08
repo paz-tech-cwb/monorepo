@@ -8,10 +8,15 @@ import {
   Delete,
   Query,
   SerializeOptions,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 
 @Controller('events')
 @SerializeOptions({
@@ -22,6 +27,8 @@ export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 
   @Post()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(...LEADERSHIP_ROLES)
   create(@Body() createEventDto: CreateEventDto) {
     return this.eventsService.create(createEventDto);
   }
@@ -42,11 +49,15 @@ export class EventsController {
   }
 
   @Patch(':id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(...LEADERSHIP_ROLES)
   update(@Param('id') id: string, @Body() updateEventDto: UpdateEventDto) {
     return this.eventsService.update(+id, updateEventDto);
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(...LEADERSHIP_ROLES)
   remove(@Param('id') id: string) {
     return this.eventsService.remove(+id);
   }

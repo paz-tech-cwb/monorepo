@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Chrome, Loader2 } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { ApiError } from "@/lib/api/client"
 
 export function LoginForm() {
   const router = useRouter()
@@ -42,6 +43,10 @@ export function LoginForm() {
         err instanceof Error && "status" in err
           ? (err as { status?: number }).status
           : (err as { response?: { status?: number } })?.response?.status
+      const errorCode =
+        err instanceof ApiError && err.data && typeof err.data === "object"
+          ? (err.data as { error?: string }).error
+          : undefined
 
       if (status === 403) {
         setError(
@@ -49,6 +54,8 @@ export function LoginForm() {
         )
       } else if (status === 401) {
         setError("Autenticação falhou. Tente novamente.")
+      } else if (status === 400 && errorCode === "BIRTH_DATE_REQUIRED") {
+        setError("Acesso não autorizado. Fale com o administrador.")
       } else {
         setError(
           err instanceof Error

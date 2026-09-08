@@ -13,11 +13,14 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 import { SectorsService } from './sectors.service';
 import { CreateSectorDto } from './dto/create-sector.dto';
 import { UpdateSectorDto } from './dto/update-sector.dto';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @SerializeOptions({
   strategy: 'exposeAll',
   excludeExtraneousValues: false,
@@ -27,6 +30,7 @@ export class SectorsController {
   constructor(private readonly sectorsService: SectorsService) {}
 
   @Post()
+  @Roles(...LEADERSHIP_ROLES)
   create(@Body() createSectorDto: CreateSectorDto) {
     return this.sectorsService.create(createSectorDto);
   }
@@ -42,6 +46,7 @@ export class SectorsController {
   }
 
   @Put(':id')
+  @Roles(...LEADERSHIP_ROLES)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateSectorDto: UpdateSectorDto,
@@ -51,6 +56,7 @@ export class SectorsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(...LEADERSHIP_ROLES)
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.sectorsService.remove(id);
   }
