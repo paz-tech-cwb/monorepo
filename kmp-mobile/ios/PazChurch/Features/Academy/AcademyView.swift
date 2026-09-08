@@ -8,8 +8,14 @@ struct AcademyView: View {
     @State private var showLoginSheet = false
     @State private var selectedTrackIndex = 0
 
-    init(academyRepository: AcademyRepository) {
-        _viewModel = State(initialValue: AcademyViewModel(academyRepository: academyRepository))
+    private let lifeGroupStudyRepository: LifeGroupStudyRepository
+
+    init(academyRepository: AcademyRepository, lifeGroupStudyRepository: LifeGroupStudyRepository) {
+        self.lifeGroupStudyRepository = lifeGroupStudyRepository
+        _viewModel = State(initialValue: AcademyViewModel(
+            academyRepository: academyRepository,
+            lifeGroupStudyRepository: lifeGroupStudyRepository
+        ))
     }
 
     var body: some View {
@@ -48,6 +54,18 @@ struct AcademyView: View {
     private var contentState: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
+                if authCoordinator.isAuthenticated, let study = viewModel.latestStudy {
+                    NavigationLink {
+                        LifeGroupStudyDetailView(studyId: study.id, repository: lifeGroupStudyRepository)
+                    } label: {
+                        LatestStudyBanner(study: study)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 12)
+                }
+
                 if authCoordinator.isAuthenticated, let resume = viewModel.resumeCourse {
                     ResumeBanner(course: resume)
                         .padding(.horizontal, 20)
@@ -206,6 +224,40 @@ struct AcademyView: View {
 
 // MARK: - Sub-views
 
+private struct LatestStudyBanner: View {
+    let study: LifeGroupStudy
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                PazColors.featuredCardGradient
+                if let urlStr = study.imageUrl, !urlStr.isEmpty, let url = URL(string: urlStr) {
+                    KFImage(url)
+                        .resizable()
+                        .placeholder { Color.clear }
+                        .fade(duration: 0.2)
+                        .scaledToFill()
+                        .clipped()
+                } else {
+                    Image(systemName: "book.fill").font(.system(size: 18)).foregroundStyle(.white)
+                }
+            }
+            .frame(width: 72, height: 48)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Estudo do Life").font(PazTypography.labelSmall).foregroundStyle(PazColors.pazSky)
+                Text(study.title).font(PazTypography.titleSmall).foregroundStyle(PazColors.ink).lineLimit(1)
+            }
+            Spacer()
+            Image(systemName: "chevron.right").font(.system(size: 14)).foregroundColor(.gray)
+        }
+        .padding(12)
+        .background(PazColors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+    }
+}
+
 private struct ResumeBanner: View {
     let course: Course
 
@@ -281,12 +333,12 @@ private extension Array {
 }
 
 #Preview("Logged In — Light") {
-    AcademyView(academyRepository: IosAppContainer.shared.academyRepository)
+    AcademyView(academyRepository: IosAppContainer.shared.academyRepository, lifeGroupStudyRepository: IosAppContainer.shared.lifeGroupStudyRepository)
         .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
 }
 
 #Preview("Logged In — Dark") {
-    AcademyView(academyRepository: IosAppContainer.shared.academyRepository)
+    AcademyView(academyRepository: IosAppContainer.shared.academyRepository, lifeGroupStudyRepository: IosAppContainer.shared.lifeGroupStudyRepository)
         .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
         .preferredColorScheme(.dark)
 }

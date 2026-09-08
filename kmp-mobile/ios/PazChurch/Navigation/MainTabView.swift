@@ -22,7 +22,7 @@ struct MainTabView: View {
             .tabItem { Label("Início", systemImage: "house.fill") }
             .tag(0)
 
-            AcademyView(academyRepository: IosAppContainer.shared.academyRepository)
+            AcademyView(academyRepository: IosAppContainer.shared.academyRepository, lifeGroupStudyRepository: IosAppContainer.shared.lifeGroupStudyRepository)
                 .tabItem { Label("Academia", systemImage: "book.fill") }
                 .tag(1)
 
