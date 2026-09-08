@@ -4,7 +4,7 @@ import SwiftUI
 
 struct LifeGroupsView: View {
     @State private var viewModel: LifeGroupsViewModel
-    @State private var showMap = true
+    @State private var showMap = false
 
     init(churchRepository: ChurchRepository) {
         _viewModel = State(initialValue: LifeGroupsViewModel(churchRepository: churchRepository))
@@ -14,8 +14,8 @@ struct LifeGroupsView: View {
         VStack(spacing: 0) {
             if !viewModel.isLoading, viewModel.error == nil, !viewModel.lifeGroups.isEmpty {
                 Picker("", selection: $showMap) {
-                    Text("Mapa").tag(true)
                     Text("Lista").tag(false)
+                    Text("Mapa").tag(true)
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal, PazSpacing.lg)

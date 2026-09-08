@@ -7,7 +7,12 @@ import SwiftUI
 struct LifeGroupsMapView: View {
     let lifeGroups: [LifeGroup]
 
-    @State private var cameraPosition: MapCameraPosition = .automatic
+    // Starts centered on the member's own location at a close zoom (a city-wide
+    // `.automatic` fit reads as "empty" when groups are spread out) — falls back
+    // to auto-fitting all markers if location access isn't available.
+    @State private var cameraPosition: MapCameraPosition = .userLocation(
+        fallback: .automatic
+    )
     @State private var selectedGroup: LifeGroup?
 
     private var groupsWithLocation: [LifeGroup] {

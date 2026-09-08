@@ -57,7 +57,12 @@ struct LifeGroupStudyListView: View {
     private var contentState: some View {
         List {
             ForEach(viewModel.studies, id: \.id) { study in
-                NavigationLink(value: DeepLinkDestination.lifeGroupStudyDetail(studyId: study.id)) {
+                NavigationLink {
+                    LifeGroupStudyDetailView(
+                        studyId: study.id,
+                        repository: IosAppContainer.shared.lifeGroupStudyRepository
+                    )
+                } label: {
                     StudyRow(study: study)
                 }
                 .listRowSeparator(.hidden)

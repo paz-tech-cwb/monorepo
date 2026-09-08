@@ -216,26 +216,35 @@ struct LifeGroupDetailView: View {
                         .cornerRadius(16)
                     }
 
-                    NavigationLink {
-                        LifeGroupStudyListView(repository: IosAppContainer.shared.lifeGroupStudyRepository)
-                    } label: {
-                        HStack(spacing: PazSpacing.md) {
-                            Image(systemName: "book.fill")
-                                .font(.system(size: 18))
-                                .foregroundColor(PazColors.primary)
-                            Text("Estudo do Life")
-                                .font(PazTypography.titleSmall)
-                                .foregroundColor(PazColors.ink)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 14))
-                                .foregroundColor(.gray)
+                    // `members` is only populated when the backend has already
+                    // decided this viewer may see this group's roster (leadership,
+                    // this group's leader/co-leader, or a member) — the same
+                    // population that grants access to its study content, so it
+                    // doubles as a cheap proxy without an extra request. Non-members
+                    // never see this entry point, so they can't hit the dead-end
+                    // permission error.
+                    if lifeGroup.members != nil {
+                        NavigationLink {
+                            LifeGroupStudyListView(repository: IosAppContainer.shared.lifeGroupStudyRepository)
+                        } label: {
+                            HStack(spacing: PazSpacing.md) {
+                                Image(systemName: "book.fill")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(PazColors.primary)
+                                Text("Estudo do Life")
+                                    .font(PazTypography.titleSmall)
+                                    .foregroundColor(PazColors.ink)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(PazSpacing.lg)
+                            .background(PazColors.surface)
+                            .cornerRadius(16)
                         }
-                        .padding(PazSpacing.lg)
-                        .background(PazColors.surface)
-                        .cornerRadius(16)
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
 
                     Spacer().frame(height: PazSpacing.xl)
                 }
