@@ -80,7 +80,10 @@ struct LifeGroupStudyEditorView: View {
                         Text(viewModel.isEditMode ? "Salvar alterações" : "Publicar estudo")
                     }
                 }
+                .buttonStyle(.pazPillPrimary)
                 .disabled(!viewModel.isValid || viewModel.isSaving)
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
             }
         }
         .navigationTitle(viewModel.isEditMode ? "Editar estudo" : "Novo estudo")
