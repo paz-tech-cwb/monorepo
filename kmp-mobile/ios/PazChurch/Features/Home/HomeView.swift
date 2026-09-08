@@ -277,8 +277,8 @@ struct HomeView: View {
                 }
             }
         }
-        .padding(.top, 2)
-        .padding(.horizontal, 2)
+        .padding(.top, 4)
+        .padding(.horizontal, 4)
         .padding(.bottom, 16)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
