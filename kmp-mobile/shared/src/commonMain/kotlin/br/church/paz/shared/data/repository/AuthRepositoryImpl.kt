@@ -35,7 +35,14 @@ class AuthRepositoryImpl(
         return safeRunCatching {
             val httpResponse = httpClient.post("api/auth/social-login") {
                 contentType(ContentType.Application.Json)
-                setBody(SocialLoginRequest(idToken = idToken, provider = provider, birthDate = birthDate))
+                setBody(
+                    SocialLoginRequest(
+                        idToken = idToken,
+                        provider = provider,
+                        birthDate = birthDate,
+                        client = "mobile",
+                    ),
+                )
             }
             val responseText = httpResponse.bodyAsText()
             if (!httpResponse.status.isSuccess()) {
@@ -89,7 +96,11 @@ private data class SocialLoginRequest(
     @SerialName("birth_date") val birthDate: String? = null,
     // The mobile app is open to all members — distinguishes from admin-ui,
     // which restricts this same endpoint to leadership roles.
-    val client: String = "mobile",
+    // No default value: kotlinx.serialization's Json config here has
+    // encodeDefaults = false, which silently omits any field left at its
+    // Kotlin default — the backend requires this field, so it must always
+    // be explicitly supplied by the caller.
+    val client: String,
 )
 
 @Serializable
