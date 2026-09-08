@@ -12,7 +12,9 @@ struct LoginView: View {
     @State private var currentNonce: String?
 
     @Environment(\.colorScheme) private var colorScheme
-    private var isDark: Bool { colorScheme == .dark }
+    private var isDark: Bool {
+        colorScheme == .dark
+    }
 
     // MARK: - Body
 
@@ -62,8 +64,14 @@ struct LoginView: View {
 
     // MARK: - Card
 
-    @ViewBuilder
     private var loginCard: some View {
+        GlassCard(radius: PazSpacing.cardRadiusLarge) {
+            loginCardContent
+        }
+        .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 12)
+    }
+
+    private var loginCardContent: some View {
         VStack(spacing: 0) {
             Text("Paz Church")
                 .font(PazTypography.displayLarge)
@@ -96,6 +104,8 @@ struct LoginView: View {
             Spacer().frame(height: 11)
 
             // Nonce lifecycle: generate raw nonce → send SHA256 to Apple → pass raw to backend
+            // NOTE: SignInWithAppleButton is a system-provided view, not a generic `Button`,
+            // so `.buttonStyle(.pazPill*)` cannot be applied to it — kept as a plain capsule.
             SignInWithAppleButton(.signIn) { request in
                 let nonce = randomNonceString()
                 currentNonce = nonce
@@ -118,12 +128,6 @@ struct LoginView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 26)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26))
-        .overlay(
-            RoundedRectangle(cornerRadius: 26)
-                .stroke(.white.opacity(0.25), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 12)
         .sheet(isPresented: showBirthDateSheet) {
             BirthDateSheet(
                 onConfirm: { date in
@@ -151,7 +155,6 @@ struct LoginView: View {
 
     // MARK: - Auth Buttons
 
-    @ViewBuilder
     private func authButton(
         text: String,
         sfSymbol: String? = nil,
@@ -160,18 +163,10 @@ struct LoginView: View {
         isLoading: Bool,
         action: @escaping () -> Void
     ) -> some View {
-        let bg: Color = isApple
-            ? (isDark ? Color.white.opacity(0.10) : .black)
-            : PazColors.surface2
-        let fg: Color = isApple ? .white : PazColors.ink
-        let border: Color = isApple
-            ? (isDark ? Color.white.opacity(0.20) : .clear)
-            : PazColors.line
-
         Button(action: action) {
             HStack(spacing: 10) {
                 if isLoading {
-                    ProgressView().tint(fg)
+                    ProgressView()
                 } else {
                     if let imageName {
                         Image(imageName)
@@ -183,15 +178,10 @@ struct LoginView: View {
                             .font(.system(size: 19, weight: .medium))
                     }
                     Text(text)
-                        .font(.system(size: 19, weight: .semibold))
                 }
             }
-            .foregroundStyle(fg)
-            .frame(maxWidth: .infinity)
-            .frame(height: 54)
         }
-        .background(bg, in: Capsule())
-        .overlay(Capsule().stroke(border, lineWidth: 1))
+        .buttonStyle(isApple ? .pazPillPrimary : .pazPillSecondary)
         .disabled(isLoading)
     }
 
