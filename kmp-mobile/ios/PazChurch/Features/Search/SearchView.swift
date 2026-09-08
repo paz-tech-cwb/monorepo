@@ -56,13 +56,13 @@ class SearchViewModel {
         async let homeResult = homeRepository.getHomeContent()
         async let academyResult = academyRepository.getAcademyContent()
         async let formsResult = formsRepository.getCatalog()
-        async let churchResult = churchRepository.getChurch()
+        async let ministriesResult = churchRepository.getAllMinistries()
         async let lifeGroupsResult = churchRepository.getAllLifeGroups()
 
         let home = try? await homeResult
         let academy = try? await academyResult
         let catalogRaw = try? await formsResult
-        let church = try? await churchResult
+        let ministriesRaw = try? await ministriesResult
         let lgRaw = try? await lifeGroupsResult
 
         let events = ((home?.agenda as? [AgendaEvent]) ?? []).filter {
@@ -77,7 +77,7 @@ class SearchViewModel {
                 ($0.description_?.lowercased().contains(lowered) == true)
         }
 
-        let ministries = ((church?.ministries as? [Ministry]) ?? []).filter {
+        let ministries = (ministriesRaw ?? []).filter {
             $0.name.lowercased().contains(lowered) ||
                 ($0.description_?.lowercased().contains(lowered) == true)
         }

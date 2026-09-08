@@ -2,11 +2,11 @@ import Observation
 import Shared
 import SwiftUI
 
-struct MinistriesView: View {
-    @State private var viewModel: MinistriesViewModel
+struct LifeGroupsView: View {
+    @State private var viewModel: LifeGroupsViewModel
 
     init(churchRepository: ChurchRepository) {
-        _viewModel = State(initialValue: MinistriesViewModel(churchRepository: churchRepository))
+        _viewModel = State(initialValue: LifeGroupsViewModel(churchRepository: churchRepository))
     }
 
     var body: some View {
@@ -15,15 +15,15 @@ struct MinistriesView: View {
                 loadingState
             } else if let error = viewModel.error {
                 errorState(error: error)
-            } else if viewModel.ministries.isEmpty {
-                emptyState("Nenhum ministério encontrado")
+            } else if viewModel.lifeGroups.isEmpty {
+                emptyState("Nenhum grupo de vida encontrado")
             } else {
                 ScrollView {
                     VStack(spacing: PazSpacing.md) {
                         Spacer().frame(height: PazSpacing.sm)
-                        ForEach(viewModel.ministries, id: \.id) { ministry in
-                            NavigationLink(destination: MinistryDetailView(ministry: ministry)) {
-                                MinistryCard(ministry: ministry)
+                        ForEach(viewModel.lifeGroups, id: \.id) { lifeGroup in
+                            NavigationLink(destination: LifeGroupDetailView(lifeGroup: lifeGroup)) {
+                                LifeGroupCard(lifeGroup: lifeGroup)
                             }
                             .buttonStyle(.plain)
                         }
@@ -35,7 +35,7 @@ struct MinistriesView: View {
             }
         }
         .background(PazColors.background)
-        .navigationTitle("Ministérios")
+        .navigationTitle("Grupos de Vida")
         .navigationBarTitleDisplayMode(.large)
     }
 
@@ -83,31 +83,64 @@ struct MinistriesView: View {
     }
 }
 
-struct MinistryCard: View {
-    let ministry: Ministry
+struct LifeGroupCard: View {
+    let lifeGroup: LifeGroup
 
     var body: some View {
-        HStack(spacing: PazSpacing.md) {
-            ZStack {
-                Circle()
-                    .fill(PazColors.primary.opacity(0.1))
-                    .frame(width: 48, height: 48)
-                Image(systemName: "person.3.fill")
-                    .font(.system(size: 18))
+        VStack(alignment: .leading, spacing: PazSpacing.md) {
+            HStack(spacing: PazSpacing.md) {
+                ZStack {
+                    Circle()
+                        .fill(PazColors.primary.opacity(0.1))
+                        .frame(width: 48, height: 48)
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(PazColors.primary)
+                }
+
+                VStack(alignment: .leading, spacing: PazSpacing.xs) {
+                    Text(lifeGroup.name)
+                        .font(PazTypography.titleSmall)
+                    if let leader = lifeGroup.leader {
+                        Text("Líder: \(leader)")
+                            .font(PazTypography.bodySmall)
+                            .foregroundColor(.gray)
+                    }
+                }
+
+                Spacer()
+
+                Text("\(lifeGroup.membersCount) membros")
+                    .font(PazTypography.labelSmall)
                     .foregroundColor(PazColors.primary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(PazColors.primary.opacity(0.12))
+                    .cornerRadius(20)
             }
 
-            VStack(alignment: .leading, spacing: PazSpacing.xs) {
-                Text(ministry.name)
-                    .font(PazTypography.titleSmall)
-                if let description = ministry.description_ {
-                    Text(description)
-                        .font(PazTypography.bodySmall)
+            if lifeGroup.meetingDay != nil || lifeGroup.meetingTime != nil {
+                HStack(spacing: PazSpacing.sm) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 12))
                         .foregroundColor(.gray)
-                        .lineLimit(2)
+                    Text([lifeGroup.meetingDay, lifeGroup.meetingTime].compactMap { $0 }.joined(separator: " • "))
+                        .font(PazTypography.labelSmall)
+                        .foregroundColor(.gray)
                 }
             }
-            Spacer()
+
+            if let location = lifeGroup.location, !location.isEmpty {
+                HStack(spacing: PazSpacing.sm) {
+                    Image(systemName: "mappin")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                    Text(location)
+                        .font(PazTypography.bodySmall)
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
+                }
+            }
         }
         .padding(PazSpacing.lg)
         .background(PazColors.surface)
@@ -117,8 +150,8 @@ struct MinistryCard: View {
 
 @MainActor
 @Observable
-class MinistriesViewModel {
-    var ministries: [Ministry] = []
+class LifeGroupsViewModel {
+    var lifeGroups: [LifeGroup] = []
     var isLoading = true
     var error: String?
 
@@ -132,7 +165,7 @@ class MinistriesViewModel {
     private func load() {
         Task {
             do {
-                self.ministries = try await churchRepository.getAllMinistries()
+                self.lifeGroups = try await churchRepository.getAllLifeGroups()
                 self.error = nil
             } catch {
                 self.error = "Erro ao carregar dados"
@@ -150,6 +183,6 @@ class MinistriesViewModel {
 
 #Preview {
     NavigationStack {
-        MinistriesView(churchRepository: IosAppContainer.shared.churchRepository)
+        LifeGroupsView(churchRepository: IosAppContainer.shared.churchRepository)
     }
 }
