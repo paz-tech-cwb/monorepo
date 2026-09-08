@@ -164,12 +164,11 @@ struct SearchView: View {
                     }
                     .padding(.horizontal, PazSpacing.md)
                     .padding(.vertical, PazSpacing.sm)
-                    .background(.white.opacity(0.15))
-                    .cornerRadius(12)
+                    .glassCard(radius: PazSpacing.cardRadiusCompact)
                 }
                 .padding(.horizontal, PazSpacing.lg)
                 .padding(.vertical, PazSpacing.md)
-                .background(PazColors.heroGradient)
+                .glassBlurBackground()
 
                 // Results
                 if !viewModel.hasSearched, viewModel.query.isEmpty {
@@ -339,8 +338,7 @@ private struct SearchResultRow: View {
             Spacer()
         }
         .padding(PazSpacing.md)
-        .background(PazColors.surface)
-        .cornerRadius(12)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }
 
