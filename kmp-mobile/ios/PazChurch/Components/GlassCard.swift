@@ -6,7 +6,9 @@ import SwiftUI
 /// Floats over `PazColors` gradients/backgrounds using system Material blur.
 struct GlassCard<Content: View>: View {
     var radius: CGFloat = PazSpacing.cardRadiusCompact
-    var material: Material = .ultraThinMaterial
+    // Stronger than .ultraThinMaterial — plain-blur cards over the mesh
+    // background didn't leave enough contrast for title text underneath.
+    var material: Material = .regularMaterial
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -27,7 +29,7 @@ extension View {
     /// Wraps this view in `GlassCard` styling without needing a separate container.
     func glassCard(
         radius: CGFloat = PazSpacing.cardRadiusCompact,
-        material: Material = .ultraThinMaterial
+        material: Material = .regularMaterial
     ) -> some View {
         GlassCard(radius: radius, material: material) { self }
     }

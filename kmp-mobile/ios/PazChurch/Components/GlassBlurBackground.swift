@@ -9,7 +9,7 @@ extension View {
         background(
             ZStack {
                 gradient
-                Rectangle().fill(.ultraThinMaterial)
+                Rectangle().fill(.regularMaterial)
             }
             .ignoresSafeArea()
         )

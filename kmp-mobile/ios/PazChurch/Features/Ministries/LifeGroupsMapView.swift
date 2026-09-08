@@ -1,6 +1,7 @@
 import MapKit
 import Shared
 import SwiftUI
+import UIKit
 
 /// Map-based discovery view for life groups — the primary way a member finds
 /// a group to join (see LifeGroupsView.swift for the list alternative).
@@ -13,7 +14,11 @@ struct LifeGroupsMapView: View {
     @State private var cameraPosition: MapCameraPosition = .userLocation(
         fallback: .automatic
     )
+    /// Set the instant a marker is tapped — drives the "Como chegar / Ver
+    /// detalhes" action sheet. Separate from `detailGroup` so picking an
+    /// option (or dismissing the dialog) doesn't also open the detail sheet.
     @State private var selectedGroup: LifeGroup?
+    @State private var detailGroup: LifeGroup?
 
     private var groupsWithLocation: [LifeGroup] {
         lifeGroups.filter { $0.latitude != nil && $0.longitude != nil }
@@ -49,17 +54,38 @@ struct LifeGroupsMapView: View {
                 MapCompass()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .sheet(item: $selectedGroup) { group in
+            .confirmationDialog(
+                selectedGroup?.name ?? "",
+                isPresented: Binding(
+                    get: { selectedGroup != nil },
+                    set: { if !$0 { selectedGroup = nil } }
+                ),
+                titleVisibility: .visible,
+                presenting: selectedGroup
+            ) { group in
+                Button("Como chegar") { openInMaps(group) }
+                Button("Ver detalhes") { detailGroup = group }
+                Button("Cancelar", role: .cancel) {}
+            }
+            .sheet(item: $detailGroup) { group in
                 NavigationStack {
                     LifeGroupDetailView(lifeGroup: group)
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
-                                Button("Fechar") { selectedGroup = nil }
+                                Button("Fechar") { detailGroup = nil }
                             }
                         }
                 }
                 .presentationDetents([.medium, .large])
             }
+        }
+    }
+
+    private func openInMaps(_ group: LifeGroup) {
+        guard let lat = group.latitude, let lng = group.longitude else { return }
+        let name = group.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? group.name
+        if let url = URL(string: "maps://?daddr=\(lat),\(lng)&q=\(name)") {
+            UIApplication.shared.open(url)
         }
     }
 }
