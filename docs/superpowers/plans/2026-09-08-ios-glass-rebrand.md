@@ -483,7 +483,7 @@ git push -u origin feature/ios-glass-rebrand
 gh pr create --title "iOS: glassmorphic rebrand (cards, blur, pill buttons)" --body "$(cat <<'EOF'
 ## Summary
 - New glass/pill design-system components (GlassCard, PazPillButtonStyle, GlassBlurBackground)
-- All 21 iOS screens migrated to the new components
+- 18 of 21 iOS screens migrated to the new components; LifeGroupStudy (3 screens: List/Detail/Editor) deferred — that feature isn't present on `main` yet (only on `develop`), follow-up once merged
 - No color palette changes; Android out of scope (follow-up PR)
 
 ## Test plan
