@@ -4,34 +4,50 @@ import SwiftUI
 
 struct LifeGroupsView: View {
     @State private var viewModel: LifeGroupsViewModel
+    @State private var showMap = true
 
     init(churchRepository: ChurchRepository) {
         _viewModel = State(initialValue: LifeGroupsViewModel(churchRepository: churchRepository))
     }
 
     var body: some View {
-        Group {
-            if viewModel.isLoading {
-                loadingState
-            } else if let error = viewModel.error {
-                errorState(error: error)
-            } else if viewModel.lifeGroups.isEmpty {
-                emptyState("Nenhum grupo de vida encontrado")
-            } else {
-                ScrollView {
-                    VStack(spacing: PazSpacing.md) {
-                        Spacer().frame(height: PazSpacing.sm)
-                        ForEach(viewModel.lifeGroups, id: \.id) { lifeGroup in
-                            NavigationLink(destination: LifeGroupDetailView(lifeGroup: lifeGroup)) {
-                                LifeGroupCard(lifeGroup: lifeGroup)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        Spacer().frame(height: PazSpacing.xl)
-                    }
-                    .padding(.horizontal, PazSpacing.lg)
+        VStack(spacing: 0) {
+            if !viewModel.isLoading, viewModel.error == nil, !viewModel.lifeGroups.isEmpty {
+                Picker("", selection: $showMap) {
+                    Text("Mapa").tag(true)
+                    Text("Lista").tag(false)
                 }
-                .background(PazColors.background)
+                .pickerStyle(.segmented)
+                .padding(.horizontal, PazSpacing.lg)
+                .padding(.vertical, PazSpacing.sm)
+                .background(PazColors.surface)
+            }
+
+            Group {
+                if viewModel.isLoading {
+                    loadingState
+                } else if let error = viewModel.error {
+                    errorState(error: error)
+                } else if viewModel.lifeGroups.isEmpty {
+                    emptyState("Nenhum grupo de vida encontrado")
+                } else if showMap {
+                    LifeGroupsMapView(lifeGroups: viewModel.lifeGroups)
+                } else {
+                    ScrollView {
+                        VStack(spacing: PazSpacing.md) {
+                            Spacer().frame(height: PazSpacing.sm)
+                            ForEach(viewModel.lifeGroups, id: \.id) { lifeGroup in
+                                NavigationLink(destination: LifeGroupDetailView(lifeGroup: lifeGroup)) {
+                                    LifeGroupCard(lifeGroup: lifeGroup)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            Spacer().frame(height: PazSpacing.xl)
+                        }
+                        .padding(.horizontal, PazSpacing.lg)
+                    }
+                    .background(PazColors.background)
+                }
             }
         }
         .background(PazColors.background)
