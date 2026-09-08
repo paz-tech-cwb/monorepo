@@ -1,6 +1,7 @@
 import Kingfisher
 import Shared
 import SwiftUI
+import UIKit
 
 // MARK: - HomeView
 
@@ -180,7 +181,7 @@ struct HomeView: View {
 
     private var featuredSection: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: PazSpacing.lg) {
+            HStack(spacing: PazSpacing.xl) {
                 ForEach(Array(banners.enumerated()), id: \.offset) { index, banner in
                     FeaturedCardView(
                         title: banner.title,
@@ -193,13 +194,13 @@ struct HomeView: View {
                 }
             }
             .scrollTargetLayout()
-            .padding(.bottom, 20)
+            .padding(.bottom, 28)
         }
         .contentMargins(.horizontal, 32, for: .scrollContent)
         .contentMargins(.vertical, 16, for: .scrollContent)
         .scrollTargetBehavior(.viewAligned)
         .scrollPosition(id: $scrolledFeatureID)
-        .frame(height: 220)
+        .frame(height: 224)
         .onAppear { startAutoScroll() }
         .onDisappear { stopAutoScroll() }
         .onChange(of: currentFeatureIndex) { _, _ in
@@ -239,14 +240,9 @@ struct HomeView: View {
     // MARK: - Dízimos card
 
     private func dizimosCard(bank: BankInfo) -> some View {
-        ZStack(alignment: .topLeading) {
-            RadialGradient(
-                colors: PazColors.dizimosCardGradientColors,
-                center: UnitPoint(x: 0.82, y: -0.08),
-                startRadius: 0,
-                endRadius: 400
-            )
-
+        VStack(alignment: .leading, spacing: 0) {
+            // Solid brand-color header block — the card's identity, kept opaque
+            // so the "DÍZIMOS & OFERTAS" label and title stay fully legible.
             VStack(alignment: .leading, spacing: 0) {
                 Text("DÍZIMOS & OFERTAS")
                     .font(PazTypography.labelSmall)
@@ -256,25 +252,29 @@ struct HomeView: View {
                     .font(.system(size: 27, weight: .heavy))
                     .foregroundStyle(.white)
                     .padding(.top, 9)
-
-                Text("Sua oferta transforma vidas na comunidade")
-                    .font(PazTypography.bodyMedium)
-                    .foregroundStyle(.white.opacity(0.7))
-                    .lineSpacing(4)
-                    .padding(.top, 7)
-
-                HStack(spacing: 11) {
-                    if bank.pixKey != nil {
-                        DizimosButtonView(label: "PIX", primary: true)
-                    }
-                    DizimosButtonView(label: "Cartão", primary: false)
-                }
-                .padding(.top, 18)
             }
             .padding(22)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(PazColors.pazPrimary)
+
+            // Frosted lower zone — subtitle + the single PIX action.
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Sua oferta transforma vidas na comunidade")
+                    .font(PazTypography.bodyMedium)
+                    .foregroundStyle(PazColors.ink.opacity(0.7))
+                    .lineSpacing(4)
+
+                if bank.pixKey != nil {
+                    DizimosPixButton(pixKey: bank.pixKey)
+                        .padding(.top, 16)
+                }
+            }
+            .padding(22)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.ultraThinMaterial)
         }
         .clipShape(RoundedRectangle(cornerRadius: 24))
-        .shadow(color: PazColors.pazPrimary.opacity(0.65), radius: 21, x: 0, y: 22)
+        .shadow(color: PazColors.pazPrimary.opacity(0.25), radius: 12, x: 0, y: 10)
         .padding(.horizontal, 16)
     }
 
@@ -427,7 +427,7 @@ private struct FeaturedCardView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .contentShape(RoundedRectangle(cornerRadius: 22))
-        .shadow(color: PazColors.pazPrimary.opacity(0.6), radius: 15, x: 0, y: 16)
+        .shadow(color: PazColors.pazPrimary.opacity(0.3), radius: 8, x: 0, y: 6)
     }
 }
 
@@ -457,30 +457,24 @@ private struct CrossWatermarkView: View {
     }
 }
 
-// MARK: - DizimosButtonView
+// MARK: - DizimosPixButton
 
-private struct DizimosButtonView: View {
-    let label: String
-    let primary: Bool
-    @State private var pressed = false
+private struct DizimosPixButton: View {
+    let pixKey: String?
+    @State private var copied = false
 
     var body: some View {
-        Text(label)
-            .font(PazTypography.titleMedium)
-            .foregroundStyle(primary ? PazColors.pazPrimary : .white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(
-                Group {
-                    if primary {
-                        Capsule().fill(.white)
-                            .shadow(color: .black.opacity(0.45), radius: 10, x: 0, y: 8)
-                    } else {
-                        Capsule().fill(.ultraThinMaterial)
-                            .overlay(Capsule().strokeBorder(.white.opacity(0.24), lineWidth: 1))
-                    }
-                }
-            )
+        Button {
+            guard let pixKey else { return }
+            UIPasteboard.general.string = pixKey
+            withAnimation(.easeInOut(duration: 0.2)) { copied = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation(.easeInOut(duration: 0.2)) { copied = false }
+            }
+        } label: {
+            Text(copied ? "Copiado!" : "Copiar PIX")
+        }
+        .buttonStyle(.pazPillPrimary)
     }
 }
 
