@@ -174,7 +174,7 @@ private struct AddLifeGroupMemberView: View {
             return
         }
         isSearching = true
-        results = await (try? formsRepository.searchUsers(query: text)) ?? []
+        results = (try? await formsRepository.searchUsers(query: text)) ?? []
         isSearching = false
     }
 }
