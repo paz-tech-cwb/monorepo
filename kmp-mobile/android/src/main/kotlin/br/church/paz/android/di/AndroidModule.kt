@@ -10,6 +10,8 @@ import br.church.paz.android.ui.features.formularios.FormDetailViewModel
 import br.church.paz.android.ui.features.formularios.FormSubmissionsListViewModel
 import br.church.paz.android.ui.features.formularios.FormulariosViewModel
 import br.church.paz.android.ui.features.home.HomeViewModel
+import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceEditorViewModel
+import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListViewModel
@@ -47,8 +49,12 @@ val androidModule =
         viewModel { SearchViewModel(get(), get(), get(), get()) }
         viewModel { MinistriesViewModel(get()) }
         viewModel { (ministryId: String) -> MinistryDetailViewModel(ministryId, get()) }
-        viewModel { (lifeGroupId: String) -> LifeGroupDetailViewModel(lifeGroupId, get()) }
+        viewModel { (lifeGroupId: String) -> LifeGroupDetailViewModel(lifeGroupId, get(), get()) }
         viewModel { LifeGroupStudyListViewModel(get(), get()) }
         viewModel { (studyId: String) -> LifeGroupStudyDetailViewModel(studyId, get(), get()) }
         viewModel { (studyId: String?) -> LifeGroupStudyEditorViewModel(studyId, get()) }
+        viewModel { (lifeGroupId: Int) -> LifeGroupAttendanceHistoryViewModel(lifeGroupId, get()) }
+        viewModel { (lifeGroupId: Int, date: String) ->
+            LifeGroupAttendanceEditorViewModel(lifeGroupId, date, get())
+        }
     }

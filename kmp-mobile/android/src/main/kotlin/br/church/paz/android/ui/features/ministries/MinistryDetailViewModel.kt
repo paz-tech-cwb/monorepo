@@ -2,6 +2,7 @@ package br.church.paz.android.ui.features.ministries
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.ChurchRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +54,7 @@ class MinistryDetailViewModel(
 class LifeGroupDetailViewModel(
     private val lifeGroupId: String,
     private val churchRepository: ChurchRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(LifeGroupDetailUiState())
     val uiState: StateFlow<LifeGroupDetailUiState> = _uiState.asStateFlow()
@@ -66,14 +68,20 @@ class LifeGroupDetailViewModel(
 
     private fun load() {
         viewModelScope.launch {
+            val currentUserId = runCatching { authRepository.currentUser() }.getOrNull()?.id?.toIntOrNull()
             runCatching { churchRepository.getAllLifeGroups() }
                 .onSuccess { lifeGroups ->
                     val group = lifeGroups.find { it.id == lifeGroupId }
+                    val canManageAttendance =
+                        currentUserId != null &&
+                            group != null &&
+                            (group.leaderId == currentUserId || group.coLeaderId == currentUserId)
                     _uiState.update {
                         it.copy(
                             lifeGroup = group,
                             isLoading = false,
                             error = if (group == null) "Grupo não encontrado" else null,
+                            canManageAttendance = canManageAttendance,
                         )
                     }
                 }.onFailure { e ->

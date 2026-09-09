@@ -116,6 +116,14 @@ struct LifeGroupDetailView: View {
         authCoordinator.currentUser?.role.isLeader == true
     }
 
+    /// Attendance has no dedicated role slug for co-leaders, so unlike
+    /// `canManage` (any leadership role) this checks the current user's id
+    /// against this specific group's leader_id/co_leader_id.
+    private var canManageAttendance: Bool {
+        guard let userId = authCoordinator.currentUser.flatMap({ Int32($0.id) }) else { return false }
+        return lifeGroup.leaderId?.int32Value == userId || lifeGroup.coLeaderId?.int32Value == userId
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
@@ -230,6 +238,31 @@ struct LifeGroupDetailView: View {
                                     .font(.system(size: 18))
                                     .foregroundColor(PazColors.accent)
                                 Text("Estudo do Life")
+                                    .font(PazTypography.titleSmall)
+                                    .foregroundColor(PazColors.ink)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(PazSpacing.lg)
+                            .glassCard(radius: PazSpacing.cardRadiusCompact)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if canManageAttendance {
+                        NavigationLink {
+                            LifeGroupAttendanceHistoryView(
+                                lifeGroupId: Int32(lifeGroup.id),
+                                repository: IosAppContainer.shared.lifeGroupAttendanceRepository
+                            )
+                        } label: {
+                            HStack(spacing: PazSpacing.md) {
+                                Image(systemName: "checklist")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(PazColors.accent)
+                                Text("Presença")
                                     .font(PazTypography.titleSmall)
                                     .foregroundColor(PazColors.ink)
                                 Spacer()

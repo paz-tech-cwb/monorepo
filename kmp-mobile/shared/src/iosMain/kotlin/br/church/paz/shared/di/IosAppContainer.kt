@@ -8,6 +8,7 @@ import br.church.paz.shared.data.repository.AuthRepositoryImpl
 import br.church.paz.shared.data.repository.ChurchRepositoryImpl
 import br.church.paz.shared.data.repository.FormsRepositoryImpl
 import br.church.paz.shared.data.repository.HomeRepositoryImpl
+import br.church.paz.shared.data.repository.LifeGroupAttendanceRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupStudyRepositoryImpl
 import br.church.paz.shared.data.repository.MemberJourneyRepositoryImpl
 import br.church.paz.shared.data.repository.UserRepositoryImpl
@@ -20,6 +21,7 @@ import br.church.paz.shared.domain.repository.BirthDateRequiredException
 import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.FormsRepository
 import br.church.paz.shared.domain.repository.HomeRepository
+import br.church.paz.shared.domain.repository.LifeGroupAttendanceRepository
 import br.church.paz.shared.domain.repository.LifeGroupStudyRepository
 import br.church.paz.shared.domain.repository.MemberJourneyRepository
 import br.church.paz.shared.domain.repository.UserRepository
@@ -57,6 +59,9 @@ object IosAppContainer {
     val memberJourneyRepository: MemberJourneyRepository by lazy { MemberJourneyRepositoryImpl(httpClient) }
     val formsRepository: FormsRepository by lazy { FormsRepositoryImpl(httpClient) }
     val lifeGroupStudyRepository: LifeGroupStudyRepository by lazy { LifeGroupStudyRepositoryImpl(httpClient) }
+    val lifeGroupAttendanceRepository: LifeGroupAttendanceRepository by lazy {
+        LifeGroupAttendanceRepositoryImpl(httpClient)
+    }
 
     // iOS-friendly wrappers that throw on failure instead of returning Result<T>
     // BirthDateRequiredException must be listed explicitly (not just Exception::class) for

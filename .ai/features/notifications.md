@@ -16,6 +16,7 @@ Send push notifications and route users to the correct screen when notifications
 | `member_journey` | Minha Jornada | `paz://journey` |
 | `admin_alerts` | Account/admin alert area | `paz://account` |
 | `contributions` | Account/contributions area | `paz://account` |
+| `life_group_attendance` | Life group attendance editor | `paz://presenca/{lifeGroupId}/{date}` |
 
 Entity-specific notifications must include IDs in the data payload.
 
@@ -26,6 +27,16 @@ Entity-specific notifications must include IDs in the data payload.
 | `form_report` | `forms` |
 | `event` | `events` |
 | `member_journey` | `member_journey` |
+| `life_group_attendance` | `life_group_attendance` |
+
+`forms` and `life_group_attendance` are deliberately absent from `CATEGORY_PREF_MAP`
+(`notification-dispatch.service.ts`), so leaders cannot opt out of them via
+notification preferences — they cover core recurring job duties, not optional
+updates. Recipients for `life_group_attendance` are the group's `leader_id`
+and `co_leader_id` (when set); it fires once, `hours_after_meeting_start`
+hours after the group's `meeting_day`/`meeting_time`, and is skipped entirely
+for groups without a fixed meeting day/time ("Sem dia fixo" or no
+`meeting_time`).
 
 ## Change checklist
 

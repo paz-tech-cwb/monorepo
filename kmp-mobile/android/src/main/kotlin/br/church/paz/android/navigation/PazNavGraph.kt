@@ -12,6 +12,8 @@ import br.church.paz.android.ui.features.formularios.FormDetailScreen
 import br.church.paz.android.ui.features.formularios.FormSubmissionDetailScreen
 import br.church.paz.android.ui.features.formularios.FormSubmissionsListScreen
 import br.church.paz.android.ui.features.formularios.FormulariosScreen
+import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceEditorScreen
+import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListScreen
@@ -138,6 +140,25 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         ) { backStackEntry ->
             val studyId = backStackEntry.arguments?.getString("studyId") ?: return@composable
             LifeGroupStudyEditorScreen(navController = navController, studyId = studyId)
+        }
+        composable(
+            route = Screen.LifeGroupAttendanceHistory.route,
+            arguments = listOf(androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
+            LifeGroupAttendanceHistoryScreen(navController = navController, lifeGroupId = lifeGroupId)
+        }
+        composable(
+            route = Screen.LifeGroupAttendanceEditor.route,
+            arguments =
+                listOf(
+                    androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType },
+                    androidx.navigation.navArgument("date") { type = androidx.navigation.NavType.StringType },
+                ),
+        ) { backStackEntry ->
+            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
+            val date = backStackEntry.arguments?.getString("date") ?: return@composable
+            LifeGroupAttendanceEditorScreen(navController = navController, lifeGroupId = lifeGroupId, date = date)
         }
     }
 }
