@@ -79,7 +79,7 @@ struct LifeGroupsView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, PazSpacing.md)
-                    .background(PazColors.primary)
+                    .background(PazColors.accent)
                     .cornerRadius(12)
             }
             .padding(.horizontal, PazSpacing.lg)
@@ -108,11 +108,11 @@ struct LifeGroupCard: View {
             HStack(spacing: PazSpacing.md) {
                 ZStack {
                     Circle()
-                        .fill(PazColors.primary.opacity(0.1))
+                        .fill(PazColors.accent.opacity(0.1))
                         .frame(width: 48, height: 48)
                     Image(systemName: "person.fill")
                         .font(.system(size: 18))
-                        .foregroundColor(PazColors.primary)
+                        .foregroundColor(PazColors.accent)
                 }
 
                 VStack(alignment: .leading, spacing: PazSpacing.xs) {
@@ -130,10 +130,10 @@ struct LifeGroupCard: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     Text("\(lifeGroup.membersCount) membros")
                         .font(PazTypography.labelSmall)
-                        .foregroundColor(PazColors.primary)
+                        .foregroundColor(PazColors.accent)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
-                        .background(PazColors.primary.opacity(0.12))
+                        .background(PazColors.accent.opacity(0.12))
                         .cornerRadius(20)
                     if lifeGroup.kidsCount > 0 {
                         Text("\(lifeGroup.kidsCount) crianças")

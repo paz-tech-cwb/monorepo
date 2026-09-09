@@ -296,10 +296,10 @@ private struct SectionHeaderView: View {
                 .font(PazTypography.titleSmall)
             Text("\(count)")
                 .font(PazTypography.labelSmall)
-                .foregroundColor(PazColors.primary)
+                .foregroundColor(PazColors.accent)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 2)
-                .background(PazColors.primary.opacity(0.12))
+                .background(PazColors.accent.opacity(0.12))
                 .cornerRadius(20)
         }
         .padding(.vertical, PazSpacing.xs)
@@ -315,11 +315,11 @@ private struct SearchResultRow: View {
         HStack(spacing: PazSpacing.md) {
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(PazColors.primary.opacity(0.1))
+                    .fill(PazColors.accent.opacity(0.1))
                     .frame(width: 40, height: 40)
                 Image(systemName: icon)
                     .font(.system(size: 18))
-                    .foregroundColor(PazColors.primary)
+                    .foregroundColor(PazColors.accent)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)

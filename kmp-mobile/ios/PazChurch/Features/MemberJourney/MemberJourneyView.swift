@@ -104,10 +104,10 @@ private struct JourneyStepRow: View {
                     if step.status == .completed {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 24))
-                            .foregroundColor(PazColors.primary)
+                            .foregroundColor(PazColors.accent)
                     } else if step.status == .inProgress {
                         Circle()
-                            .fill(PazColors.primary)
+                            .fill(PazColors.accent)
                             .frame(width: 20, height: 20)
                     } else {
                         Image(systemName: "circle")
@@ -147,7 +147,7 @@ private struct JourneyStepRow: View {
     }
 
     private var statusColor: Color {
-        step.status == .pending ? .gray : PazColors.primary
+        step.status == .pending ? .gray : PazColors.accent
     }
 
     private var statusLabel: String {
@@ -157,7 +157,7 @@ private struct JourneyStepRow: View {
     }
 
     private var statusLabelColor: Color {
-        step.status == .pending ? .gray.opacity(0.5) : PazColors.primary
+        step.status == .pending ? .gray.opacity(0.5) : PazColors.accent
     }
 }
 

@@ -24,11 +24,11 @@ struct MinistryDetailView: View {
 
                 ZStack {
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(PazColors.primary.opacity(0.12))
+                        .fill(PazColors.accent.opacity(0.12))
                         .frame(width: 72, height: 72)
                     Image(systemName: "person.3.fill")
                         .font(.system(size: 28))
-                        .foregroundColor(PazColors.primary)
+                        .foregroundColor(PazColors.accent)
                 }
 
                 Text(ministry.name)
@@ -125,21 +125,21 @@ struct LifeGroupDetailView: View {
                     HStack(spacing: PazSpacing.lg) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 16)
-                                .fill(PazColors.primary.opacity(0.12))
+                                .fill(PazColors.accent.opacity(0.12))
                                 .frame(width: 72, height: 72)
                             Image(systemName: "person.fill")
                                 .font(.system(size: 28))
-                                .foregroundColor(PazColors.primary)
+                                .foregroundColor(PazColors.accent)
                         }
                         VStack(alignment: .leading, spacing: PazSpacing.xs) {
                             Text(lifeGroup.name)
                                 .font(PazTypography.headlineSmall)
                             Text("\(lifeGroup.membersCount) membros")
                                 .font(PazTypography.labelSmall)
-                                .foregroundColor(PazColors.primary)
+                                .foregroundColor(PazColors.accent)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 4)
-                                .background(PazColors.primary.opacity(0.12))
+                                .background(PazColors.accent.opacity(0.12))
                                 .cornerRadius(20)
                         }
                     }
@@ -161,7 +161,7 @@ struct LifeGroupDetailView: View {
                                     Button(action: openInMaps) {
                                         Text("Como chegar")
                                             .font(PazTypography.labelSmall)
-                                            .foregroundColor(PazColors.primary)
+                                            .foregroundColor(PazColors.accent)
                                     }
                                     .padding(.leading, 32)
                                 }
@@ -228,7 +228,7 @@ struct LifeGroupDetailView: View {
                             HStack(spacing: PazSpacing.md) {
                                 Image(systemName: "book.fill")
                                     .font(.system(size: 18))
-                                    .foregroundColor(PazColors.primary)
+                                    .foregroundColor(PazColors.accent)
                                 Text("Estudo do Life")
                                     .font(PazTypography.titleSmall)
                                     .foregroundColor(PazColors.ink)
@@ -322,7 +322,7 @@ private struct InfoRowView: View {
         HStack(spacing: PazSpacing.md) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundColor(PazColors.primary)
+                .foregroundColor(PazColors.accent)
                 .frame(width: 20)
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)

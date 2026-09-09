@@ -88,11 +88,11 @@ struct MinistryCard: View {
             HStack(spacing: PazSpacing.md) {
                 ZStack {
                     Circle()
-                        .fill(PazColors.primary.opacity(0.1))
+                        .fill(PazColors.accent.opacity(0.1))
                         .frame(width: 48, height: 48)
                     Image(systemName: "person.3.fill")
                         .font(.system(size: 18))
-                        .foregroundColor(PazColors.primary)
+                        .foregroundColor(PazColors.accent)
                 }
 
                 VStack(alignment: .leading, spacing: PazSpacing.xs) {

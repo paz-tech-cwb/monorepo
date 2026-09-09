@@ -121,10 +121,10 @@ struct VideoPlayerView: View {
                                 if let category = video.category {
                                     Text(category)
                                         .font(PazTypography.labelSmall)
-                                        .foregroundColor(PazColors.primary)
+                                        .foregroundColor(PazColors.accent)
                                         .padding(.horizontal, 10)
                                         .padding(.vertical, 4)
-                                        .background(PazColors.primary.opacity(0.12))
+                                        .background(PazColors.accent.opacity(0.12))
                                         .cornerRadius(20)
                                 }
                                 if let duration = video.durationFormatted {
@@ -185,11 +185,11 @@ private struct RelatedVideoRow: View {
             HStack(spacing: PazSpacing.md) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(PazColors.primary.opacity(0.15))
+                        .fill(PazColors.accent.opacity(0.15))
                         .frame(width: 80, height: 52)
                     Image(systemName: "play.circle.fill")
                         .font(.system(size: 24))
-                        .foregroundColor(PazColors.primary)
+                        .foregroundColor(PazColors.accent)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(video.title)

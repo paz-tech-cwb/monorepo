@@ -169,7 +169,7 @@ private struct InfoRowView: View {
             HStack(spacing: PazSpacing.md) {
                 Image(systemName: icon)
                     .font(.system(size: 16))
-                    .foregroundColor(PazColors.primary)
+                    .foregroundColor(PazColors.accent)
                     .frame(width: 20)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(label).font(PazTypography.labelSmall).foregroundColor(.gray)
