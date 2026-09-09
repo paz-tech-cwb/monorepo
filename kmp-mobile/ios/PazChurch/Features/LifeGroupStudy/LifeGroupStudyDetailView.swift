@@ -20,9 +20,10 @@ struct LifeGroupStudyDetailView: View {
 
     var body: some View {
         screenContent
-            .background(PazColors.background)
+            .background(PazMeshBackground())
             .navigationTitle(viewModel.study?.title ?? "Estudo do Life")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 if viewModel.canEdit {
                     ToolbarItem(placement: .primaryAction) {
@@ -114,7 +115,7 @@ struct LifeGroupStudyDetailView: View {
                 Task { await viewModel.load(currentUser: authCoordinator.currentUser) }
             }
             .font(PazTypography.titleSmall)
-            .foregroundStyle(PazColors.pazPrimary)
+            .foregroundStyle(PazColors.accent)
             Spacer()
         }
         .padding(.horizontal, 24)

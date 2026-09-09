@@ -21,9 +21,10 @@ struct AcademyView: View {
     var body: some View {
         NavigationStack {
             screenContent
-                .background(PazColors.background)
+                .background(PazMeshBackground())
                 .navigationTitle("Academia")
                 .navigationBarTitleDisplayMode(.large)
+                .toolbarBackground(.hidden, for: .navigationBar)
         }
         .sheet(isPresented: $showLoginSheet) {
             LoginView(authCoordinator: authCoordinator, onDismiss: { showLoginSheet = false })
@@ -120,21 +121,21 @@ struct AcademyView: View {
         ScrollView {
             VStack(spacing: 16) {
                 Spacer().frame(height: 20)
-                VStack(spacing: 16) {
-                    ZStack {
-                        Circle().fill(PazColors.pazPrimary.opacity(0.1)).frame(width: 64, height: 64)
-                        Image(systemName: "lock.fill").font(.system(size: 26)).foregroundStyle(PazColors.pazPrimary)
+                GlassCard(radius: PazSpacing.cardRadiusLarge) {
+                    VStack(spacing: 16) {
+                        ZStack {
+                            Circle().fill(PazColors.accent.opacity(0.1)).frame(width: 64, height: 64)
+                            Image(systemName: "lock.fill").font(.system(size: 26)).foregroundStyle(PazColors.accent)
+                        }
+                        Text("Conteúdo exclusivo").font(PazTypography.titleMedium)
+                        Text("Faça login para acessar todos os cursos da Academia Paz Church")
+                            .font(PazTypography.bodySmall)
+                            .foregroundStyle(PazColors.slate)
+                            .multilineTextAlignment(.center)
                     }
-                    Text("Conteúdo exclusivo").font(PazTypography.titleMedium)
-                    Text("Faça login para acessar todos os cursos da Academia Paz Church")
-                        .font(PazTypography.bodySmall)
-                        .foregroundStyle(PazColors.slate)
-                        .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(24)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(24)
-                .background(PazColors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
                 .padding(.horizontal, 20)
 
                 VStack(alignment: .leading, spacing: 12) {
@@ -152,20 +153,13 @@ struct AcademyView: View {
                             Text(label).font(PazTypography.bodySmall).foregroundStyle(.white.opacity(0.9))
                         }
                     }
-                    Button { showLoginSheet = true } label: {
-                        Text("Entrar na minha conta")
-                            .font(PazTypography.titleSmall)
-                            .foregroundStyle(PazColors.pazPrimary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                    }
-                    .padding(.top, 4)
+                    Button("Entrar na minha conta") { showLoginSheet = true }
+                        .buttonStyle(.pazPillPrimary)
+                        .padding(.top, 4)
                 }
                 .padding(24)
                 .background(PazColors.featuredCardGradient)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .clipShape(RoundedRectangle(cornerRadius: PazSpacing.cardRadiusLarge))
                 .padding(.horizontal, 20)
 
                 Spacer().frame(height: 32)
@@ -177,11 +171,11 @@ struct AcademyView: View {
         VStack(spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(PazColors.pazPrimary.opacity(0.1))
+                    .fill(PazColors.accent.opacity(0.1))
                     .frame(width: 64, height: 64)
                 Image(systemName: "books.vertical.fill")
                     .font(.system(size: 26))
-                    .foregroundStyle(PazColors.pazPrimary)
+                    .foregroundStyle(PazColors.accent)
             }
             Text("Nenhum conteúdo disponível")
                 .font(PazTypography.titleMedium)
@@ -193,7 +187,6 @@ struct AcademyView: View {
                 .padding(.horizontal, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(PazColors.background)
     }
 
     private func errorState(message: String) -> some View {
@@ -204,7 +197,7 @@ struct AcademyView: View {
                 viewModel.onRetry(isAuthenticated: authCoordinator.isAuthenticated)
             }
             .font(PazTypography.titleSmall)
-            .foregroundStyle(PazColors.pazPrimary)
+            .foregroundStyle(PazColors.accent)
             Spacer()
         }
         .padding(.horizontal, 24)
@@ -253,8 +246,7 @@ private struct LatestStudyBanner: View {
             Image(systemName: "chevron.right").font(.system(size: 14)).foregroundColor(.gray)
         }
         .padding(12)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }
 
@@ -262,24 +254,24 @@ private struct ResumeBanner: View {
     let course: Course
 
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                PazColors.featuredCardGradient
-                Image(systemName: "play.fill").font(.system(size: 18)).foregroundStyle(.white)
-            }
-            .frame(width: 72, height: 48)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+        GlassCard(radius: PazSpacing.cardRadiusCompact) {
+            HStack(spacing: 12) {
+                ZStack {
+                    PazColors.featuredCardGradient
+                    Image(systemName: "play.fill").font(.system(size: 18)).foregroundStyle(.white)
+                }
+                .frame(width: 72, height: 48)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Continuar assistindo").font(PazTypography.labelSmall).foregroundStyle(PazColors.pazSky)
-                Text(course.title).font(PazTypography.titleSmall).foregroundStyle(PazColors.ink).lineLimit(1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Continuar assistindo").font(PazTypography.labelSmall).foregroundStyle(PazColors.pazSky)
+                    Text(course.title).font(PazTypography.titleSmall).foregroundStyle(PazColors.ink).lineLimit(1)
+                }
+                Spacer()
+                PazGoldBadge(text: "Retomar")
             }
-            Spacer()
-            PazGoldBadge(text: "Retomar")
+            .padding(12)
         }
-        .padding(12)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 }
 
@@ -319,8 +311,7 @@ private struct CourseCard: View {
                 Spacer()
             }
             .padding(12)
-            .background(PazColors.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 18))
+            .glassCard(radius: PazSpacing.cardRadiusCompact)
         }
         .buttonStyle(.plain)
     }
@@ -333,12 +324,18 @@ private extension Array {
 }
 
 #Preview("Logged In — Light") {
-    AcademyView(academyRepository: IosAppContainer.shared.academyRepository, lifeGroupStudyRepository: IosAppContainer.shared.lifeGroupStudyRepository)
-        .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
+    AcademyView(
+        academyRepository: IosAppContainer.shared.academyRepository,
+        lifeGroupStudyRepository: IosAppContainer.shared.lifeGroupStudyRepository
+    )
+    .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
 }
 
 #Preview("Logged In — Dark") {
-    AcademyView(academyRepository: IosAppContainer.shared.academyRepository, lifeGroupStudyRepository: IosAppContainer.shared.lifeGroupStudyRepository)
-        .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
-        .preferredColorScheme(.dark)
+    AcademyView(
+        academyRepository: IosAppContainer.shared.academyRepository,
+        lifeGroupStudyRepository: IosAppContainer.shared.lifeGroupStudyRepository
+    )
+    .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
+    .preferredColorScheme(.dark)
 }

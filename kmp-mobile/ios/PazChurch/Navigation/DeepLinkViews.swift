@@ -15,13 +15,13 @@ struct FormDetailDeepLinkView: View {
             } else if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(PazColors.background)
+                    .background(PazMeshBackground())
             } else {
                 ContentUnavailableView(
                     "Formulário não encontrado",
                     systemImage: "doc.badge.exclamationmark"
                 )
-                .background(PazColors.background)
+                .background(PazMeshBackground())
             }
         }
         .task {
@@ -48,13 +48,13 @@ struct MinistryDetailDeepLinkView: View {
             } else if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(PazColors.background)
+                    .background(PazMeshBackground())
             } else {
                 ContentUnavailableView(
                     "Ministério não encontrado",
                     systemImage: "person.3"
                 )
-                .background(PazColors.background)
+                .background(PazMeshBackground())
             }
         }
         .task {
@@ -82,13 +82,13 @@ struct LifeGroupDetailDeepLinkView: View {
             } else if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(PazColors.background)
+                    .background(PazMeshBackground())
             } else {
                 ContentUnavailableView(
                     "Célula não encontrada",
                     systemImage: "person.fill.questionmark"
                 )
-                .background(PazColors.background)
+                .background(PazMeshBackground())
             }
         }
         .task {

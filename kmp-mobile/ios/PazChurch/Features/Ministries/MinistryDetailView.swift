@@ -24,28 +24,28 @@ struct MinistryDetailView: View {
 
                 ZStack {
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(PazColors.primary.opacity(0.12))
+                        .fill(PazColors.accent.opacity(0.12))
                         .frame(width: 72, height: 72)
                     Image(systemName: "person.3.fill")
                         .font(.system(size: 28))
-                        .foregroundColor(PazColors.primary)
+                        .foregroundColor(PazColors.accent)
                 }
 
                 Text(ministry.name)
                     .font(PazTypography.headlineSmall)
 
                 if let description = ministry.description_ {
-                    VStack(alignment: .leading, spacing: PazSpacing.sm) {
-                        Text("Sobre")
-                            .font(PazTypography.titleSmall)
-                        Text(description)
-                            .font(PazTypography.bodySmall)
-                            .foregroundColor(.gray)
+                    GlassCard(radius: PazSpacing.cardRadiusCompact) {
+                        VStack(alignment: .leading, spacing: PazSpacing.sm) {
+                            Text("Sobre")
+                                .font(PazTypography.titleSmall)
+                            Text(description)
+                                .font(PazTypography.bodySmall)
+                                .foregroundColor(.gray)
+                        }
+                        .padding(PazSpacing.lg)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(PazSpacing.lg)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(PazColors.surface)
-                    .cornerRadius(16)
                 }
 
                 // Members are visible to everyone (per spec: any member can see
@@ -67,16 +67,16 @@ struct MinistryDetailView: View {
                 }
                 .padding(PazSpacing.lg)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(PazColors.surface)
-                .cornerRadius(16)
+                .glassCard(radius: PazSpacing.cardRadiusCompact)
 
                 Spacer().frame(height: PazSpacing.xl)
             }
             .padding(.horizontal, PazSpacing.lg)
         }
-        .background(PazColors.background)
+        .background(PazMeshBackground())
         .navigationTitle(ministry.name)
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             if canManage {
                 ToolbarItem(placement: .primaryAction) {
@@ -109,9 +109,9 @@ struct LifeGroupDetailView: View {
         _lifeGroup = State(initialValue: lifeGroup)
     }
 
-    // Matches the backend's actual authorization (RolesGuard checks any
-    // leadership role, not specifically this group's own leader) — the
-    // app only needs to decide when to show the entry point.
+    /// Matches the backend's actual authorization (RolesGuard checks any
+    /// leadership role, not specifically this group's own leader) — the
+    /// app only needs to decide when to show the entry point.
     private var canManage: Bool {
         authCoordinator.currentUser?.role.isLeader == true
     }
@@ -125,58 +125,58 @@ struct LifeGroupDetailView: View {
                     HStack(spacing: PazSpacing.lg) {
                         ZStack {
                             RoundedRectangle(cornerRadius: 16)
-                                .fill(PazColors.primary.opacity(0.12))
+                                .fill(PazColors.accent.opacity(0.12))
                                 .frame(width: 72, height: 72)
                             Image(systemName: "person.fill")
                                 .font(.system(size: 28))
-                                .foregroundColor(PazColors.primary)
+                                .foregroundColor(PazColors.accent)
                         }
                         VStack(alignment: .leading, spacing: PazSpacing.xs) {
                             Text(lifeGroup.name)
                                 .font(PazTypography.headlineSmall)
                             Text("\(lifeGroup.membersCount) membros")
                                 .font(PazTypography.labelSmall)
-                                .foregroundColor(PazColors.primary)
+                                .foregroundColor(PazColors.accent)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 4)
-                                .background(PazColors.primary.opacity(0.12))
+                                .background(PazColors.accent.opacity(0.12))
                                 .cornerRadius(20)
                         }
                     }
 
-                    VStack(alignment: .leading, spacing: PazSpacing.md) {
-                        if let leader = lifeGroup.leader {
-                            InfoRowView(icon: "person.fill", label: "Líder", value: leader)
-                        }
-                        if lifeGroup.meetingDay != nil || lifeGroup.meetingTime != nil {
-                            let meetingStr = [lifeGroup.meetingDay, lifeGroup.meetingTime]
-                                .compactMap { $0 }
-                                .joined(separator: " às ")
-                            InfoRowView(icon: "calendar", label: "Reunião", value: meetingStr)
-                        }
-                        if let location = lifeGroup.location, !location.isEmpty {
-                            InfoRowView(icon: "mappin.circle.fill", label: "Endereço", value: location)
-                            if lifeGroup.latitude != nil, lifeGroup.longitude != nil {
-                                Button(action: openInMaps) {
-                                    Text("Como chegar")
-                                        .font(PazTypography.labelSmall)
-                                        .foregroundColor(PazColors.primary)
+                    GlassCard(radius: PazSpacing.cardRadiusCompact) {
+                        VStack(alignment: .leading, spacing: PazSpacing.md) {
+                            if let leader = lifeGroup.leader {
+                                InfoRowView(icon: "person.fill", label: "Líder", value: leader)
+                            }
+                            if lifeGroup.meetingDay != nil || lifeGroup.meetingTime != nil {
+                                let meetingStr = [lifeGroup.meetingDay, lifeGroup.meetingTime]
+                                    .compactMap { $0 }
+                                    .joined(separator: " às ")
+                                InfoRowView(icon: "calendar", label: "Reunião", value: meetingStr)
+                            }
+                            if let location = lifeGroup.location, !location.isEmpty {
+                                InfoRowView(icon: "mappin.circle.fill", label: "Endereço", value: location)
+                                if lifeGroup.latitude != nil, lifeGroup.longitude != nil {
+                                    Button(action: openInMaps) {
+                                        Text("Como chegar")
+                                            .font(PazTypography.labelSmall)
+                                            .foregroundColor(PazColors.accent)
+                                    }
+                                    .padding(.leading, 32)
                                 }
-                                .padding(.leading, 32)
+                            }
+                            if lifeGroup.kidsCount > 0 {
+                                InfoRowView(
+                                    icon: "figure.2.and.child.holdinghands",
+                                    label: "Crianças",
+                                    value: "\(lifeGroup.kidsCount)"
+                                )
                             }
                         }
-                        if lifeGroup.kidsCount > 0 {
-                            InfoRowView(
-                                icon: "figure.2.and.child.holdinghands",
-                                label: "Crianças",
-                                value: "\(lifeGroup.kidsCount)"
-                            )
-                        }
+                        .padding(PazSpacing.lg)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(PazSpacing.lg)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(PazColors.surface)
-                    .cornerRadius(16)
 
                     if lifeGroup.leaderPhone != nil || lifeGroup.coLeaderPhone != nil {
                         VStack(alignment: .leading, spacing: PazSpacing.md) {
@@ -191,8 +191,7 @@ struct LifeGroupDetailView: View {
                         }
                         .padding(PazSpacing.lg)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(PazColors.surface)
-                        .cornerRadius(16)
+                        .glassCard(radius: PazSpacing.cardRadiusCompact)
                     }
 
                     if let members = lifeGroup.members {
@@ -212,8 +211,7 @@ struct LifeGroupDetailView: View {
                         }
                         .padding(PazSpacing.lg)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(PazColors.surface)
-                        .cornerRadius(16)
+                        .glassCard(radius: PazSpacing.cardRadiusCompact)
                     }
 
                     // `members` is only populated when the backend has already
@@ -230,7 +228,7 @@ struct LifeGroupDetailView: View {
                             HStack(spacing: PazSpacing.md) {
                                 Image(systemName: "book.fill")
                                     .font(.system(size: 18))
-                                    .foregroundColor(PazColors.primary)
+                                    .foregroundColor(PazColors.accent)
                                 Text("Estudo do Life")
                                     .font(PazTypography.titleSmall)
                                     .foregroundColor(PazColors.ink)
@@ -240,8 +238,7 @@ struct LifeGroupDetailView: View {
                                     .foregroundColor(.gray)
                             }
                             .padding(PazSpacing.lg)
-                            .background(PazColors.surface)
-                            .cornerRadius(16)
+                            .glassCard(radius: PazSpacing.cardRadiusCompact)
                         }
                         .buttonStyle(.plain)
                     }
@@ -250,11 +247,11 @@ struct LifeGroupDetailView: View {
                 }
                 .padding(.horizontal, PazSpacing.lg)
             }
-            .background(PazColors.background)
         }
-        .background(PazColors.background)
+        .background(PazMeshBackground())
         .navigationTitle(lifeGroup.name)
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             if canManage {
                 ToolbarItem(placement: .primaryAction) {
@@ -325,7 +322,7 @@ private struct InfoRowView: View {
         HStack(spacing: PazSpacing.md) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundColor(PazColors.primary)
+                .foregroundColor(PazColors.accent)
                 .frame(width: 20)
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)

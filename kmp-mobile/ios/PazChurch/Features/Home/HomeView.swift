@@ -1,6 +1,7 @@
 import Kingfisher
 import Shared
 import SwiftUI
+import UIKit
 
 // MARK: - HomeView
 
@@ -124,9 +125,10 @@ struct HomeView: View {
                     .frame(height: 40)
             }
         }
-        .background(PazColors.background)
+        .background(PazMeshBackground())
         .navigationTitle("Início")
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .navigationDestination(for: AgendaEvent.self) { event in
             AgendaDetailView(event: event)
         }
@@ -179,26 +181,31 @@ struct HomeView: View {
 
     private var featuredSection: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: PazSpacing.lg) {
+            HStack(spacing: PazSpacing.xl * 2.5) {
                 ForEach(Array(banners.enumerated()), id: \.offset) { index, banner in
                     FeaturedCardView(
                         title: banner.title,
                         imageUrl: banner.imageUrl,
                         isAlt: index % 2 == 1
                     )
-                    .frame(width: UIScreen.main.bounds.width - 64)
+                    // Card width narrower than the scroll content margins below
+                    // (32pt) so a real, visible strip of the next/previous card's
+                    // color and rounded corner stays on-screen at rest — matching
+                    // width to margins exactly (as an earlier attempt did) makes
+                    // the card fill the inset viewport with zero peek.
+                    .frame(width: UIScreen.main.bounds.width - 88)
                     .frame(height: 180)
                     .id(index)
                 }
             }
             .scrollTargetLayout()
-            .padding(.bottom, 20)
+            .padding(.bottom, 28)
         }
         .contentMargins(.horizontal, 32, for: .scrollContent)
         .contentMargins(.vertical, 16, for: .scrollContent)
         .scrollTargetBehavior(.viewAligned)
         .scrollPosition(id: $scrolledFeatureID)
-        .frame(height: 220)
+        .frame(height: 224)
         .onAppear { startAutoScroll() }
         .onDisappear { stopAutoScroll() }
         .onChange(of: currentFeatureIndex) { _, _ in
@@ -238,42 +245,36 @@ struct HomeView: View {
     // MARK: - Dízimos card
 
     private func dizimosCard(bank: BankInfo) -> some View {
-        ZStack(alignment: .topLeading) {
-            RadialGradient(
-                colors: PazColors.dizimosCardGradientColors,
-                center: UnitPoint(x: 0.82, y: -0.08),
-                startRadius: 0,
-                endRadius: 400
-            )
-
-            VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header sits directly on the frosted card now — no solid
+            // brand-color block behind it.
+            VStack(alignment: .leading, spacing: 4) {
                 Text("DÍZIMOS & OFERTAS")
-                    .font(PazTypography.labelSmall)
-                    .foregroundStyle(.white.opacity(0.6))
+                    .font(PazTypography.labelMedium)
+                    .foregroundStyle(PazColors.accent.opacity(0.7))
 
                 Text("Contribua com a visão")
-                    .font(.system(size: 27, weight: .heavy))
-                    .foregroundStyle(.white)
-                    .padding(.top, 9)
-
-                Text("Sua oferta transforma vidas na comunidade")
-                    .font(PazTypography.bodyMedium)
-                    .foregroundStyle(.white.opacity(0.7))
-                    .lineSpacing(4)
-                    .padding(.top, 7)
-
-                HStack(spacing: 11) {
-                    if bank.pixKey != nil {
-                        DizimosButtonView(label: "PIX", primary: true)
-                    }
-                    DizimosButtonView(label: "Cartão", primary: false)
-                }
-                .padding(.top, 18)
+                    .font(.system(size: 24, weight: .heavy))
+                    .foregroundStyle(PazColors.ink)
             }
-            .padding(22)
+
+            // Subtitle + the single PIX action, on the frosted outer surface.
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Sua oferta transforma vidas na comunidade")
+                    .font(PazTypography.bodySmall)
+                    .foregroundStyle(PazColors.ink.opacity(0.7))
+                    .lineSpacing(2)
+
+                if bank.pixKey != nil {
+                    DizimosPixButton(pixKey: bank.pixKey)
+                        .padding(.top, 10)
+                }
+            }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .shadow(color: PazColors.pazPrimary.opacity(0.65), radius: 21, x: 0, y: 22)
+        .padding(16)
+        .background(PazMaterial.glass(for: colorScheme))
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .shadow(color: PazColors.accent.opacity(0.25), radius: 12, x: 0, y: 10)
         .padding(.horizontal, 16)
     }
 
@@ -291,7 +292,7 @@ struct HomeView: View {
                         Text("Ver tudo").font(PazTypography.labelSmall)
                         Image(systemName: "arrow.right").font(.system(size: 12, weight: .semibold))
                     }
-                    .foregroundStyle(PazColors.pazPrimaryLight)
+                    .foregroundStyle(PazColors.accent)
                 }
             }
             .padding(.horizontal, 18)
@@ -328,8 +329,7 @@ struct HomeView: View {
             // Event list filtered to selected day
             if selectedDayEvents.isEmpty {
                 EmptyAgendaView(
-                    hasUpcomingEvents: !(viewModel.homeContent?.agenda ?? []).isEmpty,
-                    onSeeAll: { showAgendaList = true }
+                    hasUpcomingEvents: !(viewModel.homeContent?.agenda ?? []).isEmpty
                 )
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
@@ -369,10 +369,8 @@ struct HomeView: View {
                 .font(PazTypography.bodySmall).foregroundStyle(.secondary)
             Button(action: { viewModel.onRetry() }) {
                 Text("Tentar Novamente")
-                    .font(PazTypography.titleMedium).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity).padding(.vertical, PazSpacing.md)
-                    .background(PazColors.primary).clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            .buttonStyle(.pazPillPrimary)
             .padding(.top, PazSpacing.md)
         }
         .padding(PazSpacing.lg)
@@ -428,7 +426,7 @@ private struct FeaturedCardView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .contentShape(RoundedRectangle(cornerRadius: 22))
-        .shadow(color: PazColors.pazPrimary.opacity(0.6), radius: 15, x: 0, y: 16)
+        .shadow(color: PazColors.accent.opacity(0.3), radius: 8, x: 0, y: 6)
     }
 }
 
@@ -458,30 +456,38 @@ private struct CrossWatermarkView: View {
     }
 }
 
-// MARK: - DizimosButtonView
+// MARK: - DizimosPixButton
 
-private struct DizimosButtonView: View {
-    let label: String
-    let primary: Bool
-    @State private var pressed = false
+private struct DizimosPixButton: View {
+    let pixKey: String?
+    @State private var copied = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        Text(label)
-            .font(PazTypography.titleMedium)
-            .foregroundStyle(primary ? PazColors.pazPrimary : .white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(
-                Group {
-                    if primary {
-                        Capsule().fill(.white)
-                            .shadow(color: .black.opacity(0.45), radius: 10, x: 0, y: 8)
-                    } else {
-                        Capsule().fill(.ultraThinMaterial)
-                            .overlay(Capsule().strokeBorder(.white.opacity(0.24), lineWidth: 1))
-                    }
+        Button {
+            guard let pixKey else { return }
+            UIPasteboard.general.string = pixKey
+            withAnimation(.easeInOut(duration: 0.2)) { copied = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation(.easeInOut(duration: 0.2)) { copied = false }
+            }
+        } label: {
+            Text(copied ? "Copiado!" : "Copiar PIX")
+                .font(PazTypography.titleMedium)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: PazSpacing.pillButtonHeight)
+                // Blue-tinted glass: the same material as the card underneath,
+                // with a brand-color tint layered on top so the button reads
+                // as a distinct tappable surface rather than disappearing
+                // into the frosted card behind it.
+                .background {
+                    Capsule().fill(PazMaterial.glass(for: colorScheme))
+                    Capsule().fill(PazColors.accent.opacity(0.78))
                 }
-            )
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -496,7 +502,7 @@ private struct DayPillView: View {
 
     private var dotColor: Color {
         if isToday { return PazColors.pazGold }
-        if hasEvent { return PazColors.pazPrimary }
+        if hasEvent { return PazColors.accent }
         return .clear
     }
 
@@ -524,7 +530,7 @@ private struct DayPillView: View {
                         .fill(PazColors.surface)
                         .overlay(
                             RoundedRectangle(cornerRadius: 18)
-                                .strokeBorder(PazColors.pazPrimary.opacity(0.5), lineWidth: 1.5)
+                                .strokeBorder(PazColors.accent.opacity(0.5), lineWidth: 1.5)
                         )
                 } else {
                     RoundedRectangle(cornerRadius: 18)
@@ -534,7 +540,7 @@ private struct DayPillView: View {
             }
         )
         .shadow(
-            color: isSelected ? PazColors.pazPrimary.opacity(0.4) : Color.black.opacity(0.06),
+            color: isSelected ? PazColors.accent.opacity(0.4) : Color.black.opacity(0.06),
             radius: isSelected ? 8 : 4,
             x: 0,
             y: isSelected ? 6 : 2
@@ -546,7 +552,6 @@ private struct DayPillView: View {
 
 private struct EmptyAgendaView: View {
     let hasUpcomingEvents: Bool
-    let onSeeAll: () -> Void
 
     var body: some View {
         VStack(spacing: 8) {
@@ -555,34 +560,15 @@ private struct EmptyAgendaView: View {
                 .foregroundStyle(PazColors.ink)
                 .multilineTextAlignment(.center)
 
-            Text(hasUpcomingEvents ? "Confira todos os eventos clicando no botão abaixo." : "Aguarde novos eventos para o futuro.")
+            Text(hasUpcomingEvents ? "Confira todos os eventos na agenda." :
+                "Aguarde novos eventos para o futuro.")
                 .font(PazTypography.bodyMedium)
                 .foregroundStyle(PazColors.slate)
                 .multilineTextAlignment(.center)
-                .padding(.bottom, hasUpcomingEvents ? 12 : 0)
-
-            if hasUpcomingEvents {
-                Button(action: onSeeAll) {
-                    Text("Ver próximos eventos")
-                        .font(PazTypography.titleMedium)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(PazColors.pazPrimaryLight)
-                        .clipShape(Capsule())
-                }
-                .padding(.horizontal, 20)
-            }
         }
         .padding(24)
         .frame(maxWidth: .infinity)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .strokeBorder(PazColors.line, lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }
 
@@ -601,12 +587,12 @@ private struct EventCardView: View {
             HStack(spacing: 13) {
                 Text(time)
                     .font(.system(size: 15.5, weight: .bold))
-                    .foregroundStyle(PazColors.pazPrimaryLight)
+                    .foregroundStyle(PazColors.accent)
                     .frame(width: 50, alignment: .leading)
 
                 ZStack {
                     Circle().fill(PazColors.tint).frame(width: 18, height: 18)
-                    Circle().fill(PazColors.pazPrimary).frame(width: 10, height: 10)
+                    Circle().fill(PazColors.accent).frame(width: 10, height: 10)
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -630,12 +616,7 @@ private struct EventCardView: View {
                 Spacer()
             }
             .padding(15)
-            .background(
-                RoundedRectangle(cornerRadius: 18)
-                    .fill(PazColors.surface)
-                    .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(PazColors.line))
-                    .shadow(color: .black.opacity(0.08), radius: 9, x: 0, y: 4)
-            )
+            .glassCard(radius: PazSpacing.cardRadiusCompact)
         }
         .buttonStyle(.plain)
     }

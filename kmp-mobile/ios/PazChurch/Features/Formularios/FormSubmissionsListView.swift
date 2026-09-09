@@ -36,9 +36,10 @@ struct FormSubmissionsListView: View {
 
     var body: some View {
         screenContent
-            .background(PazColors.background)
+            .background(PazMeshBackground())
             .navigationTitle("Relatório do Culto")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .task { await viewModel.load() }
     }
 
@@ -87,6 +88,7 @@ struct FormSubmissionsListView: View {
             Spacer()
             Text(message).font(PazTypography.bodySmall)
             Button("Tentar Novamente") { Task { await viewModel.load() } }
+                .buttonStyle(.pazPillPrimary)
             Spacer()
         }
         .padding(20)
@@ -105,16 +107,16 @@ private struct SubmissionRow: View {
     let submission: ServiceReportSubmission
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("\(submission.date) · \(submission.period)").font(PazTypography.titleSmall)
-            Text(submission.atmosphereResponsible).font(PazTypography.bodySmall).foregroundStyle(PazColors.slate)
-            Text("Adultos: \(submission.tadelAdults) · Crianças: \(submission.tadelKids)")
-                .font(PazTypography.bodySmall).foregroundStyle(PazColors.slate)
+        GlassCard(radius: PazSpacing.cardRadiusCompact) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(submission.date) · \(submission.period)").font(PazTypography.titleSmall)
+                Text(submission.atmosphereResponsible).font(PazTypography.bodySmall).foregroundStyle(PazColors.slate)
+                Text("Adultos: \(submission.tadelAdults) · Crianças: \(submission.tadelKids)")
+                    .font(PazTypography.bodySmall).foregroundStyle(PazColors.slate)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 
@@ -151,7 +153,7 @@ struct FormSubmissionDetailView: View {
             }
             .padding(.horizontal, PazSpacing.lg)
         }
-        .background(PazColors.background)
+        .background(PazMeshBackground())
         .navigationTitle("Detalhe do Registro")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -163,19 +165,19 @@ private struct InfoRowView: View {
     let value: String
 
     var body: some View {
-        HStack(spacing: PazSpacing.md) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(PazColors.primary)
-                .frame(width: 20)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label).font(PazTypography.labelSmall).foregroundColor(.gray)
-                Text(value).font(PazTypography.bodySmall)
+        GlassCard(radius: PazSpacing.cardRadiusCompact) {
+            HStack(spacing: PazSpacing.md) {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(PazColors.accent)
+                    .frame(width: 20)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(label).font(PazTypography.labelSmall).foregroundColor(.gray)
+                    Text(value).font(PazTypography.bodySmall)
+                }
+                Spacer()
             }
-            Spacer()
+            .padding(PazSpacing.md)
         }
-        .padding(PazSpacing.md)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }

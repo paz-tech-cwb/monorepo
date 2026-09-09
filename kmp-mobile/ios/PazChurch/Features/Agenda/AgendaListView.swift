@@ -22,9 +22,10 @@ struct AgendaListView: View {
                     eventList
                 }
             }
-            .background(PazColors.background)
+            .background(PazMeshBackground())
             .navigationTitle("Agenda")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(.hidden, for: .navigationBar)
         }
         .task { await viewModel.loadFirstPage() }
     }
@@ -72,7 +73,6 @@ struct AgendaListView: View {
             }
             .padding(.horizontal, 20)
         }
-        .background(PazColors.background)
     }
 }
 
@@ -80,47 +80,46 @@ struct AgendaListView: View {
 
 private struct AgendaSkeletonRow: View {
     @State private var animating = false
-    
+
     var body: some View {
         HStack(spacing: 12) {
             RoundedRectangle(cornerRadius: 12)
                 .fill(shimmerGradient)
                 .frame(width: 52, height: 52)
-            
+
             VStack(alignment: .leading, spacing: 8) {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(shimmerGradient)
                     .frame(height: 16)
                     .frame(maxWidth: .infinity)
-                
+
                 RoundedRectangle(cornerRadius: 4)
                     .fill(shimmerGradient)
                     .frame(height: 12)
                     .frame(width: 150)
             }
-            
+
             Spacer()
-            
+
             Circle()
                 .fill(shimmerGradient)
                 .frame(width: 8, height: 8)
         }
         .padding(14)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
         .onAppear {
             withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
                 animating.toggle()
             }
         }
     }
-    
+
     private var shimmerGradient: LinearGradient {
         LinearGradient(
             colors: [
                 Color.gray.opacity(0.1),
                 Color.gray.opacity(0.2),
-                Color.gray.opacity(0.1)
+                Color.gray.opacity(0.1),
             ],
             startPoint: animating ? .leading : .trailing,
             endPoint: animating ? .trailing : .leading
@@ -174,7 +173,7 @@ private struct YearSectionView: View {
                     // Date sub-header
                     Text(dateSection.label)
                         .font(PazTypography.labelSmall)
-                        .foregroundStyle(PazColors.pazPrimary)
+                        .foregroundStyle(PazColors.accent)
                         .padding(.top, 16)
                         .padding(.bottom, 8)
 
@@ -210,11 +209,10 @@ private struct AgendaEventRow: View {
                 }
             }
             Spacer()
-            Circle().fill(PazColors.pazPrimary).frame(width: 8, height: 8)
+            Circle().fill(PazColors.accent).frame(width: 8, height: 8)
         }
         .padding(14)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 
     private var dateBox: some View {
@@ -222,17 +220,17 @@ private struct AgendaEventRow: View {
         return Group {
             if let imageUrl = event.imageUrl, !imageUrl.isEmpty, let url = URL(string: imageUrl) {
                 KFImage(url)
-                    .resizable().placeholder { PazColors.pazPrimary.opacity(0.08) }.fade(duration: 0.2)
+                    .resizable().placeholder { PazColors.accent.opacity(0.08) }.fade(duration: 0.2)
                     .scaledToFill().frame(width: 52, height: 52).clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
                 VStack(spacing: 0) {
                     Text(String(parts[safe: 2]?.prefix(2) ?? "--"))
-                        .font(PazTypography.titleMedium).foregroundStyle(PazColors.pazPrimary)
+                        .font(PazTypography.titleMedium).foregroundStyle(PazColors.accent)
                     Text(monthAbbrev(parts[safe: 1]))
                         .font(PazTypography.labelSmall).foregroundStyle(PazColors.pazSky)
                 }
                 .frame(width: 52, height: 52)
-                .background(PazColors.pazPrimary.opacity(0.08))
+                .background(PazColors.accent.opacity(0.08))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }

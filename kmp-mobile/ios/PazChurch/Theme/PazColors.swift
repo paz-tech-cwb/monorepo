@@ -45,6 +45,15 @@ enum PazColors {
             ? UIColor(hex: "0C274A") : UIColor(hex: "E8F0FB")
     })
 
+    /// `pazPrimary`, adapted for legibility: the brand navy is near-black and
+    /// disappears against dark surfaces, so dark mode steps up to the brighter
+    /// `pazSky` tone instead. Use this (not raw `pazPrimary`) for any text,
+    /// icon, or tinted-fill badge that needs to read in both color schemes.
+    static let accent = Color(UIColor {
+        $0.userInterfaceStyle == .dark
+            ? UIColor(hex: "5B9BD5") : UIColor(hex: "032E58")
+    })
+
     // MARK: - Semantic / legacy aliases
 
     static let primary = pazPrimary

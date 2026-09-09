@@ -13,9 +13,10 @@ struct LifeGroupStudyListView: View {
 
     var body: some View {
         screenContent
-            .background(PazColors.background)
+            .background(PazMeshBackground())
             .navigationTitle("Estudo do Life")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 if viewModel.canPublish {
                     ToolbarItem(placement: .primaryAction) {
@@ -86,7 +87,6 @@ struct LifeGroupStudyListView: View {
             systemImage: "book.closed",
             description: Text("Os estudos do Life aparecerão aqui assim que forem publicados.")
         )
-        .background(PazColors.background)
     }
 
     private func errorState(message: String) -> some View {
@@ -97,7 +97,7 @@ struct LifeGroupStudyListView: View {
                 Task { await viewModel.load(currentUser: authCoordinator.currentUser) }
             }
             .font(PazTypography.titleSmall)
-            .foregroundStyle(PazColors.pazPrimary)
+            .foregroundStyle(PazColors.accent)
             Spacer()
         }
         .padding(.horizontal, 24)
@@ -144,7 +144,6 @@ private struct StudyRow: View {
             Spacer()
         }
         .padding(12)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }

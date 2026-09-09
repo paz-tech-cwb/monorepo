@@ -28,10 +28,10 @@ struct PazChurchApp: App {
 
         let service = PushNotificationService.shared
         _pushService = State(initialValue: service)
-        
+
         FirebaseApp.configure()
         Messaging.messaging().delegate = service
-        
+
         _authCoordinator = State(initialValue: AuthenticationCoordinator(
             authRepository: IosAppContainer.shared.authRepository
         ))
@@ -51,6 +51,7 @@ struct PazChurchApp: App {
                         }
                 }
             }
+            .pazMeshBackground()
             .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
             // When the user taps a notification and the app is already running,
             // pendingDeepLink is set; views can observe this to navigate.
@@ -59,7 +60,7 @@ struct PazChurchApp: App {
                 guard phase == .active else { return }
                 Task {
                     let settings = await UNUserNotificationCenter.current().notificationSettings()
-                    let status: String = switch settings.authorizationStatus {
+                    let status = switch settings.authorizationStatus {
                     case .authorized: "granted"
                     case .denied: "denied"
                     default: "not_determined"

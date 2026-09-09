@@ -5,6 +5,8 @@ struct PazPillChip: View {
     let selected: Bool
     let onTap: () -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         Button(action: onTap) {
             Text(label)
@@ -13,9 +15,15 @@ struct PazPillChip: View {
                 .foregroundStyle(selected ? .white : PazColors.ink)
                 .padding(.horizontal, 16)
                 .frame(height: 38)
-                .background(selected ? PazColors.pazPrimary : PazColors.surface)
+                .background {
+                    if selected {
+                        PazColors.accent
+                    } else {
+                        Capsule().fill(PazMaterial.chip(for: colorScheme))
+                    }
+                }
                 .clipShape(Capsule())
-                .overlay(Capsule().stroke(PazColors.pazPrimary.opacity(selected ? 0 : 0.18), lineWidth: 1))
+                .overlay(Capsule().stroke(PazColors.accent.opacity(selected ? 0 : 0.18), lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
