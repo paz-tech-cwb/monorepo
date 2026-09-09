@@ -109,7 +109,7 @@ struct AccountView: View {
                     menuCard {
                         NavigationLink(destination: MemberJourneyView(memberJourneyRepository: IosAppContainer.shared
                                 .memberJourneyRepository)) {
-                            AccountRow(title: "Jornada do Membro", icon: "figure.walk", tint: PazColors.pazPrimaryLight)
+                            AccountRow(title: "Jornada do Membro", icon: "figure.walk", tint: PazColors.accent)
                         }
                         .buttonStyle(.plain)
                         rowDivider
@@ -137,19 +137,19 @@ struct AccountView: View {
                     sectionLabel("PREFERÊNCIAS")
                     menuCard {
                         NavigationLink(destination: NotificationPrefsView()) {
-                            AccountRow(title: "Notificações", icon: "bell", tint: PazColors.pazPrimaryMid)
+                            AccountRow(title: "Notificações", icon: "bell", tint: PazColors.accent)
                         }
                         .buttonStyle(.plain)
                         rowDivider
                         HStack(spacing: 16) {
                             PazIconContainer(
                                 icon: themeManager.isDarkMode ? "moon.fill" : "sun.max.fill",
-                                tint: PazColors.pazPrimaryMid
+                                tint: PazColors.accent
                             )
                             Text("Modo Escuro").font(PazTypography.bodyMedium).foregroundStyle(PazColors.ink)
                             Spacer()
                             Toggle("", isOn: Bindable(themeManager).isDarkMode).labelsHidden()
-                                .tint(PazColors.pazPrimaryLight)
+                                .tint(PazColors.accent)
                         }
                         .padding(.horizontal, 16).padding(.vertical, 12)
                     }

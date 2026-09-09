@@ -36,7 +36,7 @@ struct MainTabView: View {
             .tabItem { Label("Conta", systemImage: "person.fill") }
             .tag(2)
         }
-        .tint(PazColors.pazPrimaryLight)
+        .tint(PazColors.accent)
         .onChange(of: pushService.pendingDeepLink) { _, newValue in
             guard newValue != nil,
                   let destination = pushService.deepLinkDestination

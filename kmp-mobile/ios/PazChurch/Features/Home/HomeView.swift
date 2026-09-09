@@ -292,7 +292,7 @@ struct HomeView: View {
                         Text("Ver tudo").font(PazTypography.labelSmall)
                         Image(systemName: "arrow.right").font(.system(size: 12, weight: .semibold))
                     }
-                    .foregroundStyle(PazColors.pazPrimaryLight)
+                    .foregroundStyle(PazColors.accent)
                 }
             }
             .padding(.horizontal, 18)
@@ -587,7 +587,7 @@ private struct EventCardView: View {
             HStack(spacing: 13) {
                 Text(time)
                     .font(.system(size: 15.5, weight: .bold))
-                    .foregroundStyle(PazColors.pazPrimaryLight)
+                    .foregroundStyle(PazColors.accent)
                     .frame(width: 50, alignment: .leading)
 
                 ZStack {

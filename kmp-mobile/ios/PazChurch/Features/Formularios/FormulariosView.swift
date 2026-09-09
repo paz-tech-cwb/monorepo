@@ -76,7 +76,7 @@ private struct FormCard: View {
 
     private var tint: Color {
         let name = form.type.name.uppercased()
-        if name.contains("CONVERSION") { return PazColors.pazPrimaryLight }
+        if name.contains("CONVERSION") { return PazColors.accent }
         if name.contains("GUEST") { return Color(hex: "2E7D32") }
         if name.contains("SERVICE") { return Color(hex: "6A1B9A") }
         if name.contains("REPORT") { return Color(hex: "E65100") }
