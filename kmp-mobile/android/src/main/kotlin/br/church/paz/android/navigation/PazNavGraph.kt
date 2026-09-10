@@ -12,6 +12,7 @@ import br.church.paz.android.ui.features.formularios.FormDetailScreen
 import br.church.paz.android.ui.features.formularios.FormSubmissionDetailScreen
 import br.church.paz.android.ui.features.formularios.FormSubmissionsListScreen
 import br.church.paz.android.ui.features.formularios.FormulariosScreen
+import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsScreen
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceEditorScreen
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailScreen
@@ -159,6 +160,20 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
             val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
             val date = backStackEntry.arguments?.getString("date") ?: return@composable
             LifeGroupAttendanceEditorScreen(navController = navController, lifeGroupId = lifeGroupId, date = date)
+        }
+        composable(
+            route = Screen.LifeGroupAnalytics.route,
+            arguments =
+                listOf(
+                    androidx.navigation.navArgument("lifeGroupId") {
+                        type = androidx.navigation.NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+        ) { backStackEntry ->
+            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId")
+            LifeGroupAnalyticsScreen(navController = navController, lifeGroupId = lifeGroupId)
         }
     }
 }

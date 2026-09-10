@@ -3,6 +3,7 @@ package br.church.paz.android.ui.features.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import br.church.paz.shared.domain.model.isLeader
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.HomeRepository
 import kotlinx.coroutines.channels.Channel
@@ -53,6 +54,7 @@ class HomeViewModel(
                             bank = content.contribution?.bank,
                             sectionOrder = content.sectionOrder,
                             userName = firstName,
+                            canManage = user?.role?.isLeader == true,
                         )
                     }
                 }.onFailure { e ->

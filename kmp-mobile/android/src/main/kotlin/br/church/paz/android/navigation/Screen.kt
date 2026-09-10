@@ -79,4 +79,9 @@ sealed class Screen(
             date: String,
         ) = "life_group_attendance_editor/$lifeGroupId/$date"
     }
+
+    data object LifeGroupAnalytics : Screen("life_group_analytics?lifeGroupId={lifeGroupId}") {
+        fun createRoute(lifeGroupId: String? = null) =
+            if (lifeGroupId != null) "life_group_analytics?lifeGroupId=$lifeGroupId" else "life_group_analytics"
+    }
 }

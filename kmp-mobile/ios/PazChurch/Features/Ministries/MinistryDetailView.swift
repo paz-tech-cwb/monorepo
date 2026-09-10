@@ -358,6 +358,32 @@ struct LifeGroupDetailView: View {
                         .buttonStyle(.plain)
                     }
 
+                    if canManage || canManageAttendance {
+                        NavigationLink {
+                            LifeGroupAnalyticsView(
+                                lifeGroupId: Int32(lifeGroup.id),
+                                analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository,
+                                churchRepository: IosAppContainer.shared.churchRepository
+                            )
+                        } label: {
+                            HStack(spacing: PazSpacing.md) {
+                                Image(systemName: "chart.bar.fill")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(PazColors.accent)
+                                Text("Relatórios")
+                                    .font(PazTypography.titleSmall)
+                                    .foregroundColor(PazColors.ink)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(PazSpacing.lg)
+                            .glassCard(radius: PazSpacing.cardRadiusCompact)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     Spacer().frame(height: PazSpacing.xl)
                 }
                 .padding(.horizontal, PazSpacing.lg)

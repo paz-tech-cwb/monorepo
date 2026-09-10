@@ -9,6 +9,7 @@ import br.church.paz.shared.data.repository.AuthRepositoryImpl
 import br.church.paz.shared.data.repository.ChurchRepositoryImpl
 import br.church.paz.shared.data.repository.FormsRepositoryImpl
 import br.church.paz.shared.data.repository.HomeRepositoryImpl
+import br.church.paz.shared.data.repository.LifeGroupAnalyticsRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupAttendanceRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupStudyRepositoryImpl
 import br.church.paz.shared.data.repository.MemberJourneyRepositoryImpl
@@ -21,6 +22,7 @@ import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.FormsRepository
 import br.church.paz.shared.domain.repository.HomeRepository
+import br.church.paz.shared.domain.repository.LifeGroupAnalyticsRepository
 import br.church.paz.shared.domain.repository.LifeGroupAttendanceRepository
 import br.church.paz.shared.domain.repository.LifeGroupStudyRepository
 import br.church.paz.shared.domain.repository.MemberJourneyRepository
@@ -55,6 +57,7 @@ val sharedRepositoryModule = module {
     single<FormsRepository>         { FormsRepositoryImpl(get()) }
     single<LifeGroupStudyRepository> { LifeGroupStudyRepositoryImpl(get()) }
     single<LifeGroupAttendanceRepository> { LifeGroupAttendanceRepositoryImpl(get()) }
+    single<LifeGroupAnalyticsRepository>  { LifeGroupAnalyticsRepositoryImpl(get()) }
 }
 
 val sharedModules = listOf(sharedAuthModule, sharedNetworkModule, sharedRepositoryModule)

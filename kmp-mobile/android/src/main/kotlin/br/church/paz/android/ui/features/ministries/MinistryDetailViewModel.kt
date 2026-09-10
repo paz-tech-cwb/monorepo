@@ -2,6 +2,7 @@ package br.church.paz.android.ui.features.ministries
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import br.church.paz.shared.domain.model.isLeader
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.ChurchRepository
 import kotlinx.coroutines.channels.Channel
@@ -68,7 +69,8 @@ class LifeGroupDetailViewModel(
 
     private fun load() {
         viewModelScope.launch {
-            val currentUserId = runCatching { authRepository.currentUser() }.getOrNull()?.id?.toIntOrNull()
+            val currentUser = runCatching { authRepository.currentUser() }.getOrNull()
+            val currentUserId = currentUser?.id?.toIntOrNull()
             runCatching { churchRepository.getAllLifeGroups() }
                 .onSuccess { lifeGroups ->
                     val group = lifeGroups.find { it.id == lifeGroupId }
@@ -82,6 +84,7 @@ class LifeGroupDetailViewModel(
                             isLoading = false,
                             error = if (group == null) "Grupo não encontrado" else null,
                             canManageAttendance = canManageAttendance,
+                            canManage = currentUser?.role?.isLeader == true,
                         )
                     }
                 }.onFailure { e ->

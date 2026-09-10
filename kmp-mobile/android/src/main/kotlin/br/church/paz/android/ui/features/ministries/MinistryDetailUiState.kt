@@ -16,6 +16,10 @@ data class LifeGroupDetailUiState(
     // no dedicated role slug, so it's resolved by comparing the current
     // user's id against the group's leader_id/co_leader_id directly.
     val canManageAttendance: Boolean = false,
+    // Any leadership role (role.isLeader) can view analytics/reports — a
+    // broader gate than canManageAttendance, which is scoped to just this
+    // group's own leader/co-leader.
+    val canManage: Boolean = false,
 )
 
 sealed class MinistryDetailEffect {
