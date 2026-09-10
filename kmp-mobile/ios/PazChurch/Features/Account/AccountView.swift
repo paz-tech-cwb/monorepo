@@ -134,7 +134,7 @@ struct AccountView: View {
                         rowDivider
                         NavigationLink(destination: LifeGroupsView(churchRepository: IosAppContainer.shared
                                 .churchRepository)) {
-                            AccountRow(title: "Grupos de Vida", icon: "person.3.fill", tint: Color(hex: "2E7D32"))
+                            AccountRow(title: "Life Groups", icon: "person.3.fill", tint: Color(hex: "2E7D32"))
                         }
                         .buttonStyle(.plain)
                     }

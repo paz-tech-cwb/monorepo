@@ -78,6 +78,34 @@ export class LifeGroupAnalyticsService {
     return Array.from(new Set([...scope.lifeGroupIds, ...ledGroupIds]));
   }
 
+  /**
+   * The set of life groups (id/name) this actor can see analytics for —
+   * every group when unrestricted (admin/pastor), or exactly the groups
+   * resolveLifeGroupIds would scope queries to otherwise. Backs the mobile
+   * analytics screen's group filter so it never offers a group the actor
+   * has no visibility into, and never limits an area/sector leader or
+   * admin/pastor to only the group(s) they personally lead.
+   */
+  async scope(scope: ResolvedScope, actor: Actor) {
+    const lifeGroupIds = await this.resolveLifeGroupIds(scope, actor);
+    const qb = this.em
+      .createQueryBuilder(LifeGroup, 'lg')
+      .select('lg.id', 'id')
+      .addSelect('lg.name', 'name')
+      .orderBy('lg.name', 'ASC');
+    if (lifeGroupIds !== null) {
+      if (lifeGroupIds.length === 0) {
+        return { unrestricted: false, life_groups: [] };
+      }
+      qb.where('lg.id IN (:...lifeGroupIds)', { lifeGroupIds });
+    }
+    const rows = await qb.getRawMany<{ id: number; name: string }>();
+    return {
+      unrestricted: lifeGroupIds === null,
+      life_groups: rows.map((r) => ({ id: r.id, name: r.name })),
+    };
+  }
+
   async attendance(query: AttendanceQueryDto, scope: ResolvedScope, actor: Actor) {
     const lifeGroupIds = await this.resolveLifeGroupIds(
       scope,

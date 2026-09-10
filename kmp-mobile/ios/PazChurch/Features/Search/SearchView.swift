@@ -234,7 +234,7 @@ struct SearchView: View {
                 }
 
                 if !viewModel.results.lifeGroups.isEmpty {
-                    SectionHeaderView(title: "Grupos de Vida", count: viewModel.results.lifeGroups.count)
+                    SectionHeaderView(title: "Life Groups", count: viewModel.results.lifeGroups.count)
                     ForEach(viewModel.results.lifeGroups, id: \.id) { group in
                         NavigationLink(destination: LifeGroupDetailView(lifeGroup: group)) {
                             SearchResultRow(
@@ -260,7 +260,7 @@ struct SearchView: View {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 48))
                     .foregroundColor(.gray.opacity(0.4))
-                Text("Busque eventos, vídeos, formulários, ministérios e grupos de vida")
+                Text("Search events, videos, forms, ministries, and Life Groups")
                     .font(PazTypography.bodySmall)
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)

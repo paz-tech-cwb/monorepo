@@ -59,7 +59,10 @@ class LifeGroupStudyEditorViewModel(
     // Wraps the current selection of the markdown text with the given prefix/suffix,
     // mirroring a minimal formatting toolbar (bold/italic/heading/list). With no selection,
     // the markers are inserted at the cursor with the cursor left between them.
-    fun applyMarkdownWrap(prefix: String, suffix: String = prefix) {
+    fun applyMarkdownWrap(
+        prefix: String,
+        suffix: String = prefix,
+    ) {
         _uiState.update {
             val field = it.bodyMarkdown
             val selection = field.selection
@@ -124,7 +127,10 @@ class LifeGroupStudyEditorViewModel(
  * Maps a repository failure to a user-facing message, checking the actual HTTP status
  * code (rather than string-matching on the exception message) for the permission case.
  */
-internal fun friendlyErrorMessage(e: Throwable, fallback: String): String =
+internal fun friendlyErrorMessage(
+    e: Throwable,
+    fallback: String,
+): String =
     if (e.httpStatusCodeOrNull() == 403) {
         "Você não tem permissão para acessar este conteúdo."
     } else {

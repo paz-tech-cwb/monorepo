@@ -16,8 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazSpacing
 import kotlin.math.min
@@ -25,6 +28,7 @@ import kotlin.math.min
 data class PazBarChartEntry(
     val label: String,
     val value: Float,
+    val displayValue: String? = null,
 )
 
 /**
@@ -58,6 +62,11 @@ fun PazBarChart(
             }
 
         Column(modifier = Modifier.fillMaxWidth()) {
+            val textColor = MaterialTheme.colorScheme.onSurface
+            val labelTextSizePx = with(density) { 10.sp.toPx() }
+            // Reserve room above the tallest bar for its value label so it's
+            // never clipped by the chart's fixed height.
+            val labelReserveDp = 18.dp
             Canvas(
                 modifier =
                     Modifier
@@ -66,6 +75,8 @@ fun PazBarChart(
             ) {
                 val gap = gapPx
                 val barWidth = barWidthDp.toPx()
+                val labelReservePx = labelReserveDp.toPx()
+                val barAreaHeight = size.height - labelReservePx
 
                 drawLine(
                     color = barColor.copy(alpha = 0.15f),
@@ -74,8 +85,17 @@ fun PazBarChart(
                     strokeWidth = 1.dp.toPx(),
                 )
 
+                val paint =
+                    android.graphics.Paint().apply {
+                        color = textColor.toArgb()
+                        textSize = labelTextSizePx
+                        textAlign = android.graphics.Paint.Align.CENTER
+                        isFakeBoldText = true
+                        isAntiAlias = true
+                    }
+
                 entries.forEachIndexed { index, entry ->
-                    val barHeight = (entry.value / maxValue) * size.height
+                    val barHeight = (entry.value / maxValue) * barAreaHeight
                     val left = index * (barWidth + gap)
                     drawRoundRect(
                         color = barColor,
@@ -84,6 +104,18 @@ fun PazBarChart(
                         cornerRadius =
                             androidx.compose.ui.geometry
                                 .CornerRadius(6.dp.toPx(), 6.dp.toPx()),
+                    )
+                    val valueText =
+                        entry.displayValue ?: if (entry.value == entry.value.toInt().toFloat()) {
+                            entry.value.toInt().toString()
+                        } else {
+                            "%.1f".format(entry.value)
+                        }
+                    drawContext.canvas.nativeCanvas.drawText(
+                        valueText,
+                        left + barWidth / 2f,
+                        size.height - barHeight - labelReservePx / 3f,
+                        paint,
                     )
                 }
             }

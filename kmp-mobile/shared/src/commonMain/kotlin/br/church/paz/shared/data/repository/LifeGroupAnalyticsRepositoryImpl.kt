@@ -1,6 +1,8 @@
 package br.church.paz.shared.data.repository
 
 import br.church.paz.shared.data.remote.throwOnClientOrServerError
+import br.church.paz.shared.domain.model.LifeGroupAnalyticsScope
+import br.church.paz.shared.domain.model.LifeGroupAnalyticsScopeItem
 import br.church.paz.shared.domain.model.LifeGroupAttendanceAnalytics
 import br.church.paz.shared.domain.model.LifeGroupAttendancePoint
 import br.church.paz.shared.domain.model.LifeGroupDistributionAnalytics
@@ -16,6 +18,13 @@ import kotlinx.serialization.Serializable
 class LifeGroupAnalyticsRepositoryImpl(
     private val client: HttpClient,
 ) : LifeGroupAnalyticsRepository {
+
+    @Throws(Exception::class)
+    override suspend fun getScope(): LifeGroupAnalyticsScope {
+        val httpResponse = client.get("api/life-group-analytics/scope")
+        httpResponse.throwOnClientOrServerError()
+        return httpResponse.body<LifeGroupAnalyticsScopeDto>().toDomain()
+    }
 
     @Throws(Exception::class)
     override suspend fun getAttendance(
@@ -44,6 +53,26 @@ class LifeGroupAnalyticsRepositoryImpl(
         httpResponse.throwOnClientOrServerError()
         return httpResponse.body<LifeGroupDistributionAnalyticsDto>().toDomain()
     }
+}
+
+@Serializable
+private data class LifeGroupAnalyticsScopeItemDto(
+    val id: Int,
+    val name: String,
+) {
+    fun toDomain() = LifeGroupAnalyticsScopeItem(id = id, name = name)
+}
+
+@Serializable
+private data class LifeGroupAnalyticsScopeDto(
+    val unrestricted: Boolean = false,
+    @SerialName("life_groups") val lifeGroups: List<LifeGroupAnalyticsScopeItemDto> = emptyList(),
+) {
+    fun toDomain() =
+        LifeGroupAnalyticsScope(
+            unrestricted = unrestricted,
+            lifeGroups = lifeGroups.map { it.toDomain() },
+        )
 }
 
 @Serializable

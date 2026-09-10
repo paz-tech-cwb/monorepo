@@ -8,12 +8,12 @@ struct LifeGroupAnalyticsView: View {
         "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez",
     ]
 
-    init(lifeGroupId: Int32?, analyticsRepository: LifeGroupAnalyticsRepository, churchRepository: ChurchRepository) {
+    init(lifeGroupId: Int32?, lifeGroupName: String? = nil, analyticsRepository: LifeGroupAnalyticsRepository) {
         _viewModel = State(
             initialValue: LifeGroupAnalyticsViewModel(
                 lifeGroupId: lifeGroupId,
-                analyticsRepository: analyticsRepository,
-                churchRepository: churchRepository
+                lifeGroupName: lifeGroupName,
+                analyticsRepository: analyticsRepository
             )
         )
     }
@@ -21,7 +21,7 @@ struct LifeGroupAnalyticsView: View {
     var body: some View {
         screenContent
             .background(PazMeshBackground())
-            .navigationTitle("Relatórios")
+            .navigationTitle(viewModel.lockedGroupName ?? "Relatórios")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
             .task {
@@ -57,64 +57,96 @@ struct LifeGroupAnalyticsView: View {
 
     private var filtersSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+            HStack(spacing: 8) {
+                Menu {
                     ForEach(yearOptions, id: \.self) { year in
-                        FilterChip(label: "\(year)", isSelected: viewModel.year == year) {
+                        Button("\(year)") {
                             viewModel.year = year
                             Task { await viewModel.load() }
                         }
                     }
+                } label: {
+                    filterPickerLabel("\(viewModel.year)")
                 }
-            }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    FilterChip(label: "Todos os meses", isSelected: viewModel.month == nil) {
+                Menu {
+                    Button("Todos os meses") {
                         viewModel.month = nil
                         Task { await viewModel.load() }
                     }
                     ForEach(1...12, id: \.self) { month in
-                        FilterChip(
-                            label: Self.monthLabels[month - 1],
-                            isSelected: viewModel.month == Int32(month)
-                        ) {
+                        Button(Self.monthLabels[month - 1]) {
                             viewModel.month = Int32(month)
                             Task { await viewModel.load() }
                         }
                     }
+                } label: {
+                    filterPickerLabel(viewModel.month.map { Self.monthLabels[Int($0) - 1] } ?? "Todos os meses")
+                }
+
+                if hasActiveFilters {
+                    Button(action: viewModel.clearFilters) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(PazColors.slate)
+                    }
                 }
             }
 
-            Menu {
-                Button("Todos os grupos") {
-                    viewModel.lifeGroupId = nil
-                    Task { await viewModel.load() }
+            // Locked to a single group when opened from that group's own
+            // "Relatórios" entry point — no picker, just its name. Only
+            // shown as a switcher when opened unscoped (Relatórios tab or
+            // Home shortcut) and the viewer can actually see more than one.
+            if viewModel.isLockedToSingleGroup {
+                if let name = viewModel.lockedGroupName {
+                    filterPickerLabel(name, showChevron: false)
                 }
-                ForEach(viewModel.lifeGroups, id: \.id) { group in
-                    Button(group.name) {
-                        viewModel.lifeGroupId = group.id
+            } else if viewModel.lifeGroups.count > 1 {
+                Menu {
+                    Button("All my Life Groups") {
+                        viewModel.lifeGroupId = nil
                         Task { await viewModel.load() }
                     }
+                    ForEach(viewModel.lifeGroups, id: \.id) { group in
+                        Button(group.name) {
+                            viewModel.lifeGroupId = group.id
+                            Task { await viewModel.load() }
+                        }
+                    }
+                } label: {
+                    filterPickerLabel(selectedLifeGroupLabel)
                 }
-            } label: {
-                HStack {
-                    Text(selectedLifeGroupLabel)
-                        .font(PazTypography.bodySmall)
-                        .foregroundStyle(PazColors.ink)
-                    Spacer()
-                    Image(systemName: "chevron.down")
-                        .foregroundStyle(PazColors.slate)
-                }
-                .padding(12)
-                .glassCard(radius: PazSpacing.cardRadiusCompact)
+            } else if let onlyGroup = viewModel.lifeGroups.first {
+                filterPickerLabel(onlyGroup.name, showChevron: false)
             }
         }
     }
 
+    private var hasActiveFilters: Bool {
+        viewModel.month != nil
+            || viewModel.year != Int(Calendar.current.component(.year, from: Date()))
+            || (!viewModel.isLockedToSingleGroup && viewModel.lifeGroupId != nil)
+    }
+
+    private func filterPickerLabel(_ text: String, showChevron: Bool = true) -> some View {
+        HStack {
+            Text(text)
+                .font(PazTypography.bodySmall)
+                .foregroundStyle(PazColors.ink)
+            if showChevron {
+                Spacer()
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 12))
+                    .foregroundStyle(PazColors.slate)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
+    }
+
     private var selectedLifeGroupLabel: String {
-        guard let selectedId = viewModel.lifeGroupId else { return "Todos os grupos" }
-        return viewModel.lifeGroups.first(where: { $0.id == selectedId })?.name ?? "Todos os grupos"
+        guard let selectedId = viewModel.lifeGroupId else { return "All my Life Groups" }
+        return viewModel.lifeGroups.first(where: { $0.id == selectedId })?.name ?? "All my Life Groups"
     }
 
     private var yearOptions: [Int] {
@@ -152,7 +184,8 @@ struct LifeGroupAnalyticsView: View {
             } else {
                 label = point.period
             }
-            return PazBarChartEntry(label: label, value: Double(point.presentCount))
+            let percentage = point.attendanceRate * 100
+            return PazBarChartEntry(label: label, value: percentage, displayValue: "\(Int(percentage.rounded()))%")
         }
     }
 
@@ -160,7 +193,7 @@ struct LifeGroupAnalyticsView: View {
 
     private var distributionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Distribuição dos Grupos de Vida").font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
+            Text("Life Groups Distribution").font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
 
             HStack(spacing: 8) {
                 ForEach(LifeGroupDistributionTab.allCases) { tab in
@@ -172,7 +205,7 @@ struct LifeGroupAnalyticsView: View {
 
             let buckets = viewModel.distributionForSelectedTab
             if buckets.isEmpty {
-                PazBarChartEmptyView(message: "Nenhum grupo de vida com esse dado cadastrado.")
+                PazBarChartEmptyView(message: "No Life Group with this data registered.")
             } else {
                 PazBarChartView(
                     entries: buckets.map { PazBarChartEntry(label: $0.label, value: Double($0.count)) }

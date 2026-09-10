@@ -318,7 +318,7 @@ private fun HomeContent(
                             modifier = Modifier.size(22.dp),
                         )
                         Text(
-                            "Relatórios de Grupos de Vida",
+                            "Life Groups Reports",
                             style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier.weight(1f),
                         )

@@ -10,6 +10,8 @@ data class LifeGroupAnalyticsUiState(
     val year: Int,
     val month: Int? = null,
     val lifeGroupId: Int? = null,
+    val isLockedToSingleGroup: Boolean = false,
+    val lockedGroupName: String? = null,
     val lifeGroups: List<Pair<Int, String>> = emptyList(),
     val attendanceRows: List<LifeGroupAttendancePoint> = emptyList(),
     val distributionTab: DistributionTab = DistributionTab.DAY,

@@ -9,6 +9,9 @@ data class FormSubmissionsListUiState(
 )
 
 sealed class FormSubmissionsListEffect {
-    data class NavigateToDetail(val submissionId: String) : FormSubmissionsListEffect()
+    data class NavigateToDetail(
+        val submissionId: String,
+    ) : FormSubmissionsListEffect()
+
     data object NavigateBack : FormSubmissionsListEffect()
 }

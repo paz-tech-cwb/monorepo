@@ -14,8 +14,6 @@ import br.church.paz.shared.domain.model.SectorSupervisorReportForm
 import br.church.paz.shared.domain.model.ServiceReportForm
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.FormsRepository
-import br.church.paz.shared.domain.model.LifeGroupSummary
-import br.church.paz.shared.domain.model.User
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,12 +50,13 @@ class FormDetailViewModel(
                     val today = brazilianDate.format(Date())
                     val initialFields =
                         form?.type?.fieldDefs()?.associate { def ->
-                            def.key to when {
-                                def.fieldType == FormFieldType.DATE -> today
-                                def.fieldType == FormFieldType.PICKER && def.options.isNotEmpty() -> def.options[0]
-                                def.fieldType == FormFieldType.SELECT && def.optionValues.isNotEmpty() -> def.optionValues[0]
-                                else -> ""
-                            }
+                            def.key to
+                                when {
+                                    def.fieldType == FormFieldType.DATE -> today
+                                    def.fieldType == FormFieldType.PICKER && def.options.isNotEmpty() -> def.options[0]
+                                    def.fieldType == FormFieldType.SELECT && def.optionValues.isNotEmpty() -> def.optionValues[0]
+                                    else -> ""
+                                }
                         } ?: emptyMap()
                     _uiState.update {
                         it.copy(form = form, isLoading = false, fields = initialFields)
@@ -83,12 +82,13 @@ class FormDetailViewModel(
         val isLifeGroup = def.fieldType == FormFieldType.LG_PICKER
         _uiState.update {
             it.copy(
-                pickerState = PickerState(
-                    key = def.key,
-                    label = def.label,
-                    isMulti = def.fieldType == FormFieldType.USER_MULTI_PICKER,
-                    isLifeGroup = isLifeGroup,
-                ),
+                pickerState =
+                    PickerState(
+                        key = def.key,
+                        label = def.label,
+                        isMulti = def.fieldType == FormFieldType.USER_MULTI_PICKER,
+                        isLifeGroup = isLifeGroup,
+                    ),
             )
         }
     }
@@ -102,8 +102,11 @@ class FormDetailViewModel(
         _uiState.update { it.copy(pickerState = state.copy(query = query, isLoading = true, error = null)) }
         viewModelScope.launch {
             runCatching {
-                if (state.isLifeGroup) formsRepository.searchLifeGroups(query)
-                else formsRepository.searchUsers(query)
+                if (state.isLifeGroup) {
+                    formsRepository.searchLifeGroups(query)
+                } else {
+                    formsRepository.searchUsers(query)
+                }
             }.onSuccess { results ->
                 _uiState.update { s ->
                     s.copy(pickerState = s.pickerState?.copy(results = results, isLoading = false))
@@ -116,11 +119,17 @@ class FormDetailViewModel(
         }
     }
 
-    fun onPickerSelect(id: String, name: String) {
+    fun onPickerSelect(
+        id: String,
+        name: String,
+    ) {
         val state = _uiState.value.pickerState ?: return
         if (state.isMulti) {
-            val current = (_uiState.value.fields[state.key] ?: "")
-                .split(",").filter { it.isNotBlank() }.toMutableList()
+            val current =
+                (_uiState.value.fields[state.key] ?: "")
+                    .split(",")
+                    .filter { it.isNotBlank() }
+                    .toMutableList()
             if (id in current) current.remove(id) else current.add(id)
             _uiState.update { it.copy(fields = it.fields + (state.key to current.joinToString(","))) }
         } else {
@@ -133,7 +142,10 @@ class FormDetailViewModel(
         }
     }
 
-    fun setSelfOrSearchMode(key: String, isSearch: Boolean) {
+    fun setSelfOrSearchMode(
+        key: String,
+        isSearch: Boolean,
+    ) {
         _uiState.update {
             val newMap = it.selfOrSearchIsSearch.toMutableMap().also { m -> m[key] = isSearch }
             val newFields = if (!isSearch) it.fields + (key to "") else it.fields
@@ -180,7 +192,12 @@ class FormDetailViewModel(
                         MemberRegistrationForm(
                             fullName = f.req("full_name"),
                             birthDate = f.isoDate("birth_date"),
-                            phone = f.req("phone").filter { it.isDigit() }.let { "+55$it" }.takeIf { it.length > 3 } ?: f.req("phone"),
+                            phone =
+                                f
+                                    .req("phone")
+                                    .filter { it.isDigit() }
+                                    .let { "+55$it" }
+                                    .takeIf { it.length > 3 } ?: f.req("phone"),
                             gender = f.req("gender"),
                             civilState = f.req("civil_state"),
                             sectorId = f.idInt("sector_id"),
@@ -209,11 +226,12 @@ class FormDetailViewModel(
                         ),
                     )
                 FormType.guest -> {
-                    val invitedBy = if (f["invited_by"].isNullOrEmpty()) {
-                        authRepository.currentUser()?.name
-                    } else {
-                        f["invited_by"]
-                    }
+                    val invitedBy =
+                        if (f["invited_by"].isNullOrEmpty()) {
+                            authRepository.currentUser()?.name
+                        } else {
+                            f["invited_by"]
+                        }
                     formsRepository.submitGuest(
                         GuestForm(
                             fullName = f.req("full_name"),
@@ -298,8 +316,10 @@ class FormDetailViewModel(
                             multiplicationCandidates = f.ids("multiplication_candidates"),
                             lifeGroupsCount = f.int("life_groups_count"),
                             lifeGroupsSupervised = f.int("life_groups_supervised"),
-                            lifeGroupObservations = (f.opt("life_group_observations") ?: "")
-                                .split("\n").filter { it.isNotBlank() },
+                            lifeGroupObservations =
+                                (f.opt("life_group_observations") ?: "")
+                                    .split("\n")
+                                    .filter { it.isNotBlank() },
                             notes = f.opt("notes"),
                         ),
                     )
@@ -311,8 +331,10 @@ class FormDetailViewModel(
                             sectorLeadersPastored = f.ids("sector_leaders_pastored"),
                             lifeGroupsCount = f.int("life_groups_count"),
                             lifeGroupsSupervised = f.int("life_groups_supervised"),
-                            lifeGroupObservations = (f.opt("life_group_observations") ?: "")
-                                .split("\n").filter { it.isNotBlank() },
+                            lifeGroupObservations =
+                                (f.opt("life_group_observations") ?: "")
+                                    .split("\n")
+                                    .filter { it.isNotBlank() },
                             notes = f.opt("notes"),
                         ),
                     )
@@ -356,6 +378,5 @@ class FormDetailViewModel(
     private fun Map<String, String>.ids(key: String): List<Int> =
         (get(key) ?: "").split(",").filter { it.isNotBlank() }.mapNotNull { it.trim().toIntOrNull() }
 
-    private fun Map<String, String>.idInt(key: String): Int =
-        get(key)?.trim()?.toIntOrNull() ?: 0
+    private fun Map<String, String>.idInt(key: String): Int = get(key)?.trim()?.toIntOrNull() ?: 0
 }

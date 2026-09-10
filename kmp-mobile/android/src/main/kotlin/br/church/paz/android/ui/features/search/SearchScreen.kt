@@ -194,7 +194,7 @@ private fun ResultsList(
         }
 
         if (uiState.results.lifeGroups.isNotEmpty()) {
-            item { SectionHeader("Grupos de Vida", uiState.results.lifeGroups.size) }
+            item { SectionHeader("Life Groups", uiState.results.lifeGroups.size) }
             items(uiState.results.lifeGroups.size) { i ->
                 val group = uiState.results.lifeGroups[i]
                 ResultRow(
@@ -296,7 +296,7 @@ private fun EmptyQueryState() {
                 modifier = Modifier.size(48.dp),
             )
             Text(
-                "Busque eventos, vídeos, formulários, ministérios e grupos de vida",
+                "Search events, videos, forms, ministries, and Life Groups",
                 style =
                     MaterialTheme.typography.bodySmall.copy(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),

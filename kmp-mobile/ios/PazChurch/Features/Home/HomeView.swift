@@ -189,15 +189,14 @@ struct HomeView: View {
         NavigationLink {
             LifeGroupAnalyticsView(
                 lifeGroupId: nil,
-                analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository,
-                churchRepository: IosAppContainer.shared.churchRepository
+                analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository
             )
         } label: {
             HStack(spacing: PazSpacing.md) {
                 Image(systemName: "chart.bar.fill")
                     .font(.system(size: 18))
                     .foregroundColor(PazColors.accent)
-                Text("Relatórios de Grupos de Vida")
+                Text("Life Groups Reports")
                     .font(PazTypography.titleSmall)
                     .foregroundColor(PazColors.ink)
                 Spacer()

@@ -113,7 +113,7 @@ extension FormType {
                     required: true,
                     fieldType: .date
                 ),
-                FormFieldDef("source_life_group_id", "Grupo de Vida de Origem", required: true, fieldType: .lgPicker),
+                FormFieldDef("source_life_group_id", "Origin Life Group", required: true, fieldType: .lgPicker),
                 FormFieldDef("new_life_group_name", "Nome do Novo Grupo", placeholder: "Ex: GL Norte", required: true),
                 FormFieldDef("new_leader_id", "Novo Líder", required: true, fieldType: .userPicker),
                 FormFieldDef("host_id", "Anfitrião", required: true, fieldType: .userPicker),
@@ -159,7 +159,7 @@ extension FormType {
                     optionValues: ["solteiro", "casado", "divorciado", "viuvo"]
                 ),
                 FormFieldDef("sector_id", "Setor", required: true, fieldType: .userPicker), // TODO: sector picker
-                FormFieldDef("life_group_id", "Grupo de Vida", fieldType: .lgPicker),
+                FormFieldDef("life_group_id", "Life Group", fieldType: .lgPicker),
                 FormFieldDef("address", "Endereço"),
             ]
 
@@ -202,8 +202,8 @@ extension FormType {
                 ),
                 FormFieldDef("address", "Endereço", required: true),
                 FormFieldDef("attendance_count", "Quantidade de visitas", required: true),
-                FormFieldDef("life_group_status", "Status do Grupo de Vida", required: true),
-                FormFieldDef("life_group_leader_or_name", "Líder ou nome do Grupo de Vida"),
+                FormFieldDef("life_group_status", "Life Group Status", required: true),
+                FormFieldDef("life_group_leader_or_name", "Life Group leader or name"),
                 FormFieldDef("invited_by", "Convidado por"),
                 FormFieldDef("notes", "Observações", fieldType: .multiline),
             ]
@@ -889,7 +889,7 @@ private struct FieldRow: View {
                 let displayName = extraFields["\(def.key)_name"] ?? ""
                 Button(action: { if !isSubmitting { onOpenPicker(def) } }) {
                     HStack {
-                        Text(displayName.isEmpty ? "Selecionar grupo de vida" : displayName)
+                        Text(displayName.isEmpty ? "Select Life Group" : displayName)
                             .font(PazTypography.bodyMedium)
                             .foregroundStyle(displayName.isEmpty ? PazColors.slate : PazColors.ink)
                         Spacer()

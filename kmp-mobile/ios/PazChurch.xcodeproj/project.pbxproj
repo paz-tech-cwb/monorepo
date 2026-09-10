@@ -65,6 +65,7 @@
 		AA1100000000000000000021 /* LifeGroupAnalyticsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000004 /* LifeGroupAnalyticsViewModel.swift */; };
 		AA1100000000000000000022 /* PazBarChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000005 /* PazBarChartView.swift */; };
 		AA1100000000000000000023 /* LifeGroupAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000006 /* LifeGroupAnalyticsView.swift */; };
+		AA2200000000000000000013 /* RelatoriosListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2200000000000000000003 /* RelatoriosListView.swift */; };
 		A0CCE565617A81DD9C6404A9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = F04B442417CCD3B5A58BC0DF /* FirebaseAuth */; };
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* DeepLinkDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7B8C9D0E1F2A3 /* DeepLinkDestination.swift */; };
 		A98EE8C9CC199B26F49D75EB /* AgendaDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE4B8D8AE9B398AA3A77DA29 /* AgendaDetailView.swift */; };
@@ -161,6 +162,7 @@
 		AA1100000000000000000004 /* LifeGroupAnalyticsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupAnalyticsViewModel.swift; sourceTree = "<group>"; };
 		AA1100000000000000000005 /* PazBarChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazBarChartView.swift; sourceTree = "<group>"; };
 		AA1100000000000000000006 /* LifeGroupAnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupAnalyticsView.swift; sourceTree = "<group>"; };
+		AA2200000000000000000003 /* RelatoriosListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelatoriosListView.swift; sourceTree = "<group>"; };
 		EF907E68FA85FA69FAE6B591 /* playfair_display_extrabold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = playfair_display_extrabold.ttf; sourceTree = "<group>"; };
 		F62DDEA0026352360D73E873 /* PazPillChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazPillChip.swift; sourceTree = "<group>"; };
 		BD36BC4FF7F143F2A22DBA8E /* GlassBlurBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassBlurBackground.swift; sourceTree = "<group>"; };
@@ -454,6 +456,7 @@
 				AA1100000000000000000004 /* LifeGroupAnalyticsViewModel.swift */,
 				AA1100000000000000000005 /* PazBarChartView.swift */,
 				AA1100000000000000000006 /* LifeGroupAnalyticsView.swift */,
+				AA2200000000000000000003 /* RelatoriosListView.swift */,
 			);
 			path = LifeGroupAnalytics;
 			sourceTree = "<group>";
@@ -617,6 +620,7 @@
 				AA1100000000000000000021 /* LifeGroupAnalyticsViewModel.swift in Sources */,
 				AA1100000000000000000022 /* PazBarChartView.swift in Sources */,
 				AA1100000000000000000023 /* LifeGroupAnalyticsView.swift in Sources */,
+				AA2200000000000000000013 /* RelatoriosListView.swift in Sources */,
 				09EDC02009417BFD3B3FA3BC /* NotificationPrefsView.swift in Sources */,
 				DBED4836D8DD1B07E3FBB55E /* PazChurchApp.swift in Sources */,
 				21F50B565FBD16CF5729BD56 /* PazColors.swift in Sources */,

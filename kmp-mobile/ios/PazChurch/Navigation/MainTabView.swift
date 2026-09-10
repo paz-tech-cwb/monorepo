@@ -29,6 +29,12 @@ struct MainTabView: View {
             .tabItem { Label("Academia", systemImage: "book.fill") }
             .tag(1)
 
+            if authCoordinator.currentUser?.role.isPastorOrAdmin == true {
+                RelatoriosListView()
+                    .tabItem { Label("Relatórios", systemImage: "chart.bar.fill") }
+                    .tag(3)
+            }
+
             AccountView(
                 userRepository: IosAppContainer.shared.userRepository,
                 authRepository: IosAppContainer.shared.authRepository

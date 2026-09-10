@@ -25,12 +25,15 @@ enum class UserRole {
 val UserRole.isLeader: Boolean
     get() = this != UserRole.member
 
+val UserRole.isPastorOrAdmin: Boolean
+    get() = this == UserRole.admin || this == UserRole.pastor
+
 val UserRole.displayName: String
     get() = when (this) {
         UserRole.admin              -> "Admin"
         UserRole.pastor             -> "Pastor"
         UserRole.area_leader        -> "Líder de Área"
         UserRole.sector_leader      -> "Líder de Setor"
-        UserRole.life_group_leader  -> "Líder de Grupo de Vida"
+        UserRole.life_group_leader  -> "Life Group Leader"
         UserRole.member             -> "Membro"
     }

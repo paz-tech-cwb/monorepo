@@ -32,3 +32,15 @@ data class LifeGroupDistributionAnalytics(
     val byNeighborhood: List<LifeGroupDistributionBucket>,
     val byCity: List<LifeGroupDistributionBucket>,
 )
+
+@Serializable
+data class LifeGroupAnalyticsScopeItem(
+    val id: Int,
+    val name: String,
+)
+
+@Serializable
+data class LifeGroupAnalyticsScope(
+    val unrestricted: Boolean,
+    val lifeGroups: List<LifeGroupAnalyticsScopeItem>,
+)

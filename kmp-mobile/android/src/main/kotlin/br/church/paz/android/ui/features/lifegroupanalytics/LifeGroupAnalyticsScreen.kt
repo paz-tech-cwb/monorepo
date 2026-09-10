@@ -13,11 +13,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenu
@@ -56,6 +56,7 @@ import br.church.paz.shared.domain.model.LifeGroupAttendancePoint
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import java.time.LocalDate
+import kotlin.math.roundToInt
 
 private val MONTH_LABELS =
     listOf("Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez")
@@ -64,8 +65,9 @@ private val MONTH_LABELS =
 fun LifeGroupAnalyticsScreen(
     navController: NavController,
     lifeGroupId: String?,
+    lifeGroupName: String? = null,
     viewModel: LifeGroupAnalyticsViewModel =
-        koinViewModel(parameters = { parametersOf(lifeGroupId?.toIntOrNull()) }),
+        koinViewModel(parameters = { parametersOf(lifeGroupId?.toIntOrNull(), lifeGroupName) }),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -88,7 +90,7 @@ fun LifeGroupAnalyticsScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "voltar", tint = Color.White)
                     }
                     Text(
-                        "Relatórios",
+                        uiState.lockedGroupName ?: "Relatórios",
                         style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
                         modifier = Modifier.weight(1f),
                     )
@@ -111,6 +113,7 @@ fun LifeGroupAnalyticsScreen(
                             onMonthSelected = viewModel::onMonthSelected,
                             onLifeGroupSelected = viewModel::onLifeGroupSelected,
                             onDistributionTabSelected = viewModel::onDistributionTabSelected,
+                            onClearFilters = viewModel::clearFilters,
                         )
                 }
             }
@@ -125,6 +128,7 @@ private fun AnalyticsContent(
     onMonthSelected: (Int?) -> Unit,
     onLifeGroupSelected: (Int?) -> Unit,
     onDistributionTabSelected: (DistributionTab) -> Unit,
+    onClearFilters: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -137,6 +141,7 @@ private fun AnalyticsContent(
                 onYearSelected = onYearSelected,
                 onMonthSelected = onMonthSelected,
                 onLifeGroupSelected = onLifeGroupSelected,
+                onClearFilters = onClearFilters,
             )
         }
 
@@ -154,7 +159,7 @@ private fun AnalyticsContent(
         }
 
         item {
-            SectionCard(title = "Distribuição dos Grupos de Vida") {
+            SectionCard(title = "Life Groups Distribution") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(PazSpacing.Xs),
@@ -170,7 +175,7 @@ private fun AnalyticsContent(
                 Spacer(Modifier.height(PazSpacing.Md))
                 val bucketEntries = uiState.distributionForSelectedTab
                 if (bucketEntries.isEmpty()) {
-                    PazBarChartEmpty("Nenhum grupo de vida com esse dado cadastrado.")
+                    PazBarChartEmpty("No Life Group with this data registered.")
                 } else {
                     PazBarChart(
                         entries = bucketEntries.map { PazBarChartEntry(it.label, it.count.toFloat()) },
@@ -204,7 +209,8 @@ private fun List<LifeGroupAttendancePoint>.toChartEntries(perMeeting: Boolean): 
                     ?.let { MONTH_LABELS.getOrNull(it - 1) }
                     ?: point.period
             }
-        PazBarChartEntry(label = label, value = point.presentCount.toFloat())
+        val percentage = point.attendanceRate * 100
+        PazBarChartEntry(label = label, value = percentage.toFloat(), displayValue = "${percentage.roundToInt()}%")
     }
 
 @Composable
@@ -231,43 +237,84 @@ private fun AnalyticsFilters(
     onYearSelected: (Int) -> Unit,
     onMonthSelected: (Int?) -> Unit,
     onLifeGroupSelected: (Int?) -> Unit,
+    onClearFilters: () -> Unit,
 ) {
     val currentYear = remember { LocalDate.now().year }
     val years = remember { (0..4).map { currentYear - it } }
+    val hasActiveFilters =
+        uiState.month != null ||
+            uiState.year != currentYear ||
+            (!uiState.isLockedToSingleGroup && uiState.lifeGroupId != null)
 
     Column(verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(PazSpacing.Xs)) {
-            items(years) { year ->
-                FilterChip(
-                    selected = uiState.year == year,
-                    onClick = { onYearSelected(year) },
-                    label = { Text(year.toString()) },
-                )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(PazSpacing.Xs),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SimpleDropdown(
+                label = uiState.year.toString(),
+                options = years.map { it.toString() to it },
+                onSelected = onYearSelected,
+            )
+            SimpleDropdown(
+                label = uiState.month?.let { MONTH_LABELS[it - 1] } ?: "Todos os meses",
+                options = listOf("Todos os meses" to null) + MONTH_LABELS.mapIndexed { i, l -> l to (i + 1) },
+                onSelected = onMonthSelected,
+            )
+            if (hasActiveFilters) {
+                IconButton(onClick = onClearFilters) {
+                    Icon(Icons.Filled.Close, contentDescription = "Limpar filtros")
+                }
             }
         }
 
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(PazSpacing.Xs)) {
-            item {
-                FilterChip(
-                    selected = uiState.month == null,
-                    onClick = { onMonthSelected(null) },
-                    label = { Text("Todos os meses") },
-                )
+        // Locked to a single group when opened from that group's own
+        // "Relatórios" entry point — no picker, just its name. Only shown
+        // as a switcher when opened unscoped and the viewer can see more
+        // than one group.
+        if (uiState.isLockedToSingleGroup) {
+            uiState.lockedGroupName?.let { name ->
+                Text(name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
             }
-            items(MONTH_LABELS.size) { index ->
-                FilterChip(
-                    selected = uiState.month == index + 1,
-                    onClick = { onMonthSelected(index + 1) },
-                    label = { Text(MONTH_LABELS[index]) },
+        } else if (uiState.lifeGroups.size > 1) {
+            LifeGroupDropdown(
+                lifeGroups = uiState.lifeGroups,
+                selectedId = uiState.lifeGroupId,
+                onSelected = onLifeGroupSelected,
+            )
+        } else {
+            uiState.lifeGroups.firstOrNull()?.let { (_, name) ->
+                Text(
+                    name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 )
             }
         }
+    }
+}
 
-        LifeGroupDropdown(
-            lifeGroups = uiState.lifeGroups,
-            selectedId = uiState.lifeGroupId,
-            onSelected = onLifeGroupSelected,
+@Composable
+private fun <T> SimpleDropdown(
+    label: String,
+    options: List<Pair<String, T>>,
+    onSelected: (T) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        androidx.compose.material3.AssistChip(
+            onClick = { expanded = true },
+            label = { Text(label) },
+            trailingIcon = { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) },
         )
+        androidx.compose.material3.DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { (optionLabel, value) ->
+                DropdownMenuItem(text = { Text(optionLabel) }, onClick = {
+                    onSelected(value)
+                    expanded = false
+                })
+            }
+        }
     }
 }
 
@@ -279,14 +326,14 @@ private fun LifeGroupDropdown(
     onSelected: (Int?) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedLabel = lifeGroups.firstOrNull { it.first == selectedId }?.second ?: "Todos os grupos"
+    val selectedLabel = lifeGroups.firstOrNull { it.first == selectedId }?.second ?: "All my Life Groups"
 
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         TextField(
             value = selectedLabel,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Grupo de Vida") },
+            label = { Text("Life Group") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier =
                 Modifier
@@ -294,7 +341,7 @@ private fun LifeGroupDropdown(
                     .menuAnchor(MenuAnchorType.PrimaryNotEditable, true),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            DropdownMenuItem(text = { Text("Todos os grupos") }, onClick = {
+            DropdownMenuItem(text = { Text("All my Life Groups") }, onClick = {
                 onSelected(null)
                 expanded = false
             })

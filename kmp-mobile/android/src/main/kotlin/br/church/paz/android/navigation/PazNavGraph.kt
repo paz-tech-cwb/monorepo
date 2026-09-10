@@ -170,10 +170,23 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
                         nullable = true
                         defaultValue = null
                     },
+                    androidx.navigation.navArgument("lifeGroupName") {
+                        type = androidx.navigation.NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
                 ),
         ) { backStackEntry ->
             val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId")
-            LifeGroupAnalyticsScreen(navController = navController, lifeGroupId = lifeGroupId)
+            val lifeGroupName =
+                backStackEntry.arguments
+                    ?.getString("lifeGroupName")
+                    ?.let { java.net.URLDecoder.decode(it, "UTF-8") }
+            LifeGroupAnalyticsScreen(
+                navController = navController,
+                lifeGroupId = lifeGroupId,
+                lifeGroupName = lifeGroupName,
+            )
         }
     }
 }

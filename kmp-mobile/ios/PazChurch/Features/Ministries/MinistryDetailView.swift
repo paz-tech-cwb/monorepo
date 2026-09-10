@@ -362,8 +362,8 @@ struct LifeGroupDetailView: View {
                         NavigationLink {
                             LifeGroupAnalyticsView(
                                 lifeGroupId: Int32(lifeGroup.id),
-                                analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository,
-                                churchRepository: IosAppContainer.shared.churchRepository
+                                lifeGroupName: lifeGroup.name,
+                                analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository
                             )
                         } label: {
                             HStack(spacing: PazSpacing.md) {

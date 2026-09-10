@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.FilterChip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -28,6 +27,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -153,8 +153,11 @@ fun FormDetailScreen(
                 onDismiss = viewModel::closePicker,
             )
         } else {
-            val selectedIds = (uiState.fields[pickerState.key] ?: "")
-                .split(",").filter { it.isNotBlank() }.toSet()
+            val selectedIds =
+                (uiState.fields[pickerState.key] ?: "")
+                    .split(",")
+                    .filter { it.isNotBlank() }
+                    .toSet()
             UserPickerSheet(
                 state = pickerState,
                 selectedIds = selectedIds,
@@ -182,12 +185,13 @@ private fun FormContent(
     Column(Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(
-                start = PazSpacing.Lg,
-                end = PazSpacing.Lg,
-                top = PazSpacing.Lg,
-                bottom = if (focusedFieldIndex != null) PazSpacing.Xl else PazSpacing.Xl,
-            ),
+            contentPadding =
+                PaddingValues(
+                    start = PazSpacing.Lg,
+                    end = PazSpacing.Lg,
+                    top = PazSpacing.Lg,
+                    bottom = if (focusedFieldIndex != null) PazSpacing.Xl else PazSpacing.Xl,
+                ),
             verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
         ) {
             item { Spacer(Modifier.height(PazSpacing.Sm)) }
@@ -427,21 +431,23 @@ private fun FieldRow(
                 }
 
             FormFieldType.SELECT -> {
-                val displayValue = if (def.optionValues.isEmpty()) {
-                    value
-                } else {
-                    def.options.getOrElse(def.optionValues.indexOf(value)) { value }
-                }
+                val displayValue =
+                    if (def.optionValues.isEmpty()) {
+                        value
+                    } else {
+                        def.options.getOrElse(def.optionValues.indexOf(value)) { value }
+                    }
                 PickerField(
                     value = displayValue,
                     options = def.options,
                     enabled = !isSubmitting,
                     onValueChange = { label ->
-                        val apiValue = if (def.optionValues.isEmpty()) {
-                            label
-                        } else {
-                            def.optionValues.getOrElse(def.options.indexOf(label)) { label }
-                        }
+                        val apiValue =
+                            if (def.optionValues.isEmpty()) {
+                                label
+                            } else {
+                                def.optionValues.getOrElse(def.options.indexOf(label)) { label }
+                            }
                         onValueChange(apiValue)
                     },
                     onFocusChange = onFocusChange,
@@ -481,7 +487,7 @@ private fun FieldRow(
                         modifier = Modifier.fillMaxWidth(),
                         readOnly = true,
                         enabled = !isSubmitting,
-                        placeholder = { Text(def.placeholder.ifEmpty { "Selecionar grupo de vida" }) },
+                        placeholder = { Text(def.placeholder.ifEmpty { "Select Life Group" }) },
                         trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null) },
                         shape = PazShapes.large,
                         singleLine = true,
@@ -633,17 +639,18 @@ private fun PickerField(
                         expanded = false
                         onFocusChange(false)
                     },
-                    leadingIcon = if (value == option) {
-                        {
-                            Icon(
-                                Icons.Filled.Check,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    } else {
-                        null
-                    },
+                    leadingIcon =
+                        if (value == option) {
+                            {
+                                Icon(
+                                    Icons.Filled.Check,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else {
+                            null
+                        },
                 )
             }
         }

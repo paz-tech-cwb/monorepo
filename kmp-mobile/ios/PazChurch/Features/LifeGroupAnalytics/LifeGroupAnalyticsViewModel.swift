@@ -34,8 +34,15 @@ class LifeGroupAnalyticsViewModel {
     var isLoading = true
     var error: String?
 
+    /// True when this screen was opened from a specific life group's own
+    /// "Relatórios" entry point — locked to that one group, with no picker
+    /// to browse other groups. The picker (and the underlying scope
+    /// fetch) is only meaningful when opened unscoped from the top-level
+    /// Relatórios tab or the Home shortcut.
+    let isLockedToSingleGroup: Bool
+    let lockedGroupName: String?
+
     private let analyticsRepository: LifeGroupAnalyticsRepository
-    private let churchRepository: ChurchRepository
 
     var distributionForSelectedTab: [LifeGroupDistributionBucket] {
         switch distributionTab {
@@ -48,22 +55,38 @@ class LifeGroupAnalyticsViewModel {
 
     init(
         lifeGroupId: Int32?,
-        analyticsRepository: LifeGroupAnalyticsRepository,
-        churchRepository: ChurchRepository
+        lifeGroupName: String? = nil,
+        analyticsRepository: LifeGroupAnalyticsRepository
     ) {
         self.lifeGroupId = lifeGroupId
+        self.isLockedToSingleGroup = lifeGroupId != nil
+        self.lockedGroupName = lifeGroupName
         self.analyticsRepository = analyticsRepository
-        self.churchRepository = churchRepository
         self.year = Int(Calendar.current.component(.year, from: Date()))
     }
 
+    /// Exactly the groups this viewer can see analytics for — their own
+    /// group, their sector/area's groups, or every group when unrestricted
+    /// (admin/pastor) — never the whole church's list for a scoped leader.
+    /// Skipped entirely when locked to a single group — there's nothing to
+    /// pick between and no reason to spend the request.
     func loadLifeGroups() async {
+        guard !isLockedToSingleGroup else { return }
         do {
-            let groups = try await churchRepository.getAllLifeGroups()
-            lifeGroups = groups.map { (id: $0.id, name: $0.name) }
+            let scope = try await analyticsRepository.getScope()
+            lifeGroups = scope.lifeGroups.map { (id: $0.id, name: $0.name) }
         } catch {
             // Best-effort: the filter dropdown just stays empty on failure.
         }
+    }
+
+    /// Resets every filter back to its default (current year, all months,
+    /// all groups the picker can reach) and reloads.
+    func clearFilters() {
+        year = Int(Calendar.current.component(.year, from: Date()))
+        month = nil
+        if !isLockedToSingleGroup { lifeGroupId = nil }
+        Task { await load() }
     }
 
     func load() async {

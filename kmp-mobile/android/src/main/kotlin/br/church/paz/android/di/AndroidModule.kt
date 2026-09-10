@@ -1,5 +1,6 @@
 package br.church.paz.android.di
 
+import br.church.paz.android.navigation.AppShellViewModel
 import br.church.paz.android.ui.features.academy.AcademyViewModel
 import br.church.paz.android.ui.features.academy.VideoPlayerViewModel
 import br.church.paz.android.ui.features.account.AccountViewModel
@@ -32,6 +33,7 @@ import org.koin.dsl.module
 val androidModule =
     module {
         single { AppThemeManager() }
+        viewModel { AppShellViewModel(get()) }
         viewModel { SplashViewModel(get()) }
         viewModel { LoginViewModel(get()) }
         viewModel { HomeViewModel(get(), get()) }
@@ -58,5 +60,7 @@ val androidModule =
         viewModel { (lifeGroupId: Int, date: String) ->
             LifeGroupAttendanceEditorViewModel(lifeGroupId, date, get())
         }
-        viewModel { (lifeGroupId: Int?) -> LifeGroupAnalyticsViewModel(lifeGroupId, get(), get()) }
+        viewModel { (lifeGroupId: Int?, lifeGroupName: String?) ->
+            LifeGroupAnalyticsViewModel(lifeGroupId, lifeGroupName, get())
+        }
     }

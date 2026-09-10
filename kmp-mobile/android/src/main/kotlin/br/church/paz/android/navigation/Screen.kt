@@ -80,8 +80,18 @@ sealed class Screen(
         ) = "life_group_attendance_editor/$lifeGroupId/$date"
     }
 
-    data object LifeGroupAnalytics : Screen("life_group_analytics?lifeGroupId={lifeGroupId}") {
-        fun createRoute(lifeGroupId: String? = null) =
-            if (lifeGroupId != null) "life_group_analytics?lifeGroupId=$lifeGroupId" else "life_group_analytics"
+    data object LifeGroupAnalytics :
+        Screen("life_group_analytics?lifeGroupId={lifeGroupId}&lifeGroupName={lifeGroupName}") {
+        fun createRoute(
+            lifeGroupId: String? = null,
+            lifeGroupName: String? = null,
+        ): String {
+            if (lifeGroupId == null) return "life_group_analytics"
+            val nameParam =
+                lifeGroupName?.let { "&lifeGroupName=${java.net.URLEncoder.encode(it, "UTF-8")}" } ?: ""
+            return "life_group_analytics?lifeGroupId=$lifeGroupId$nameParam"
+        }
     }
+
+    data object Relatorios : Screen("relatorios")
 }

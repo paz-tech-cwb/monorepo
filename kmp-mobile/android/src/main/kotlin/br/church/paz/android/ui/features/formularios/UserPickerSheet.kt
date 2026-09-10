@@ -48,9 +48,10 @@ fun UserPickerSheet(
             Text(
                 state.label,
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .run { this },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .run { this },
             )
             Spacer(Modifier.height(PazSpacing.Md))
             OutlinedTextField(
@@ -62,14 +63,15 @@ fun UserPickerSheet(
             )
             Spacer(Modifier.height(PazSpacing.Sm))
             when {
-                state.isLoading -> Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
+                state.isLoading ->
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 state.error != null -> Text(state.error, color = MaterialTheme.colorScheme.error)
                 state.results.isEmpty() && state.query.isNotBlank() -> Text("Nenhum resultado")
                 else -> {
@@ -81,14 +83,16 @@ fun UserPickerSheet(
                             ListItem(
                                 headlineContent = { Text(user.name) },
                                 supportingContent = user.email.takeIf { it.isNotBlank() }?.let { { Text(it) } },
-                                trailingContent = if (selected) {
-                                    { Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary) }
-                                } else {
-                                    null
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onSelect(user.id, user.name) },
+                                trailingContent =
+                                    if (selected) {
+                                        { Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary) }
+                                    } else {
+                                        null
+                                    },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onSelect(user.id, user.name) },
                             )
                             HorizontalDivider()
                         }

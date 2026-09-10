@@ -1,6 +1,7 @@
 package br.church.paz.android.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.School
@@ -8,6 +9,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,35 +20,42 @@ import br.church.paz.android.ui.components.PazNavItem
 import br.church.paz.android.ui.features.academy.AcademyScreen
 import br.church.paz.android.ui.features.account.AccountScreen
 import br.church.paz.android.ui.features.home.HomeScreen
-
-private val TAB_ITEMS =
-    listOf(
-        PazNavItem(icon = Icons.Outlined.Home, label = "Início"),
-        PazNavItem(icon = Icons.Outlined.School, label = "Academia"),
-        PazNavItem(icon = Icons.Outlined.Person, label = "Conta"),
-    )
-
-private val TAB_ROUTES =
-    listOf(
-        Screen.Home.route,
-        Screen.Academy.route,
-        Screen.Account.route,
-    )
+import br.church.paz.android.ui.features.relatorios.RelatoriosListScreen
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun AppShell(rootNavController: NavController) {
+fun AppShell(
+    rootNavController: NavController,
+    appShellViewModel: AppShellViewModel = koinViewModel(),
+) {
     val tabNavController = rememberNavController()
     val backStack by tabNavController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
+    val showRelatorios by appShellViewModel.showRelatorios.collectAsStateWithLifecycle()
+
+    val tabItems =
+        buildList {
+            add(PazNavItem(icon = Icons.Outlined.Home, label = "Início"))
+            add(PazNavItem(icon = Icons.Outlined.School, label = "Academia"))
+            if (showRelatorios) add(PazNavItem(icon = Icons.Outlined.BarChart, label = "Relatórios"))
+            add(PazNavItem(icon = Icons.Outlined.Person, label = "Conta"))
+        }
+    val tabRoutes =
+        buildList {
+            add(Screen.Home.route)
+            add(Screen.Academy.route)
+            if (showRelatorios) add(Screen.Relatorios.route)
+            add(Screen.Account.route)
+        }
 
     Scaffold(
         bottomBar = {
-            val selectedIndex = TAB_ROUTES.indexOf(currentRoute).coerceAtLeast(0)
+            val selectedIndex = tabRoutes.indexOf(currentRoute).coerceAtLeast(0)
             PazBottomNavBar(
-                items = TAB_ITEMS,
+                items = tabItems,
                 selectedIndex = selectedIndex,
                 onItemSelected = { i ->
-                    tabNavController.navigate(TAB_ROUTES[i]) {
+                    tabNavController.navigate(tabRoutes[i]) {
                         popUpTo(tabNavController.graph.startDestinationId) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
@@ -62,6 +71,9 @@ fun AppShell(rootNavController: NavController) {
         ) {
             composable(Screen.Home.route) { HomeScreen(rootNavController, contentPadding = innerPadding) }
             composable(Screen.Academy.route) { AcademyScreen(navController = rootNavController, contentPadding = innerPadding) }
+            composable(Screen.Relatorios.route) {
+                RelatoriosListScreen(navController = rootNavController, contentPadding = innerPadding)
+            }
             composable(Screen.Account.route) { AccountScreen(rootNavController, contentPadding = innerPadding) }
         }
     }

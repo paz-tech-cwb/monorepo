@@ -32,4 +32,13 @@ export class LifeGroupAnalyticsController {
   distribution(@Query() query: DistributionQueryDto, @Req() req: any) {
     return this.svc.distribution(query, req.formScope, { id: req.user.id });
   }
+
+  // Backs the mobile analytics screen's life-group filter picker — returns
+  // exactly the groups this caller can see analytics for (their own group,
+  // their sector/area's groups, or every group if unrestricted), not every
+  // group in the church and not just groups they're a roster member of.
+  @Get('scope')
+  scope(@Req() req: any) {
+    return this.svc.scope(req.formScope, { id: req.user.id });
+  }
 }

@@ -2,7 +2,6 @@ package br.church.paz.android.ui.features.lifegroupanalytics
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.LifeGroupAnalyticsRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
@@ -16,12 +15,17 @@ import java.time.LocalDate
 
 class LifeGroupAnalyticsViewModel(
     initialLifeGroupId: Int?,
+    initialLifeGroupName: String? = null,
     private val analyticsRepository: LifeGroupAnalyticsRepository,
-    private val churchRepository: ChurchRepository,
 ) : ViewModel() {
     private val _uiState =
         MutableStateFlow(
-            LifeGroupAnalyticsUiState(year = LocalDate.now().year, lifeGroupId = initialLifeGroupId),
+            LifeGroupAnalyticsUiState(
+                year = LocalDate.now().year,
+                lifeGroupId = initialLifeGroupId,
+                isLockedToSingleGroup = initialLifeGroupId != null,
+                lockedGroupName = initialLifeGroupName,
+            ),
         )
     val uiState: StateFlow<LifeGroupAnalyticsUiState> = _uiState.asStateFlow()
 
@@ -33,13 +37,33 @@ class LifeGroupAnalyticsViewModel(
         load()
     }
 
+    // Exactly the groups this viewer can see analytics for — their own
+    // group, their sector/area's groups, or every group when unrestricted
+    // (admin/pastor) — never the whole church's list for a scoped leader.
+    // Skipped entirely when locked to a single group — there's nothing to
+    // pick between and no reason to spend the request.
     private fun loadLifeGroups() {
+        if (_uiState.value.isLockedToSingleGroup) return
         viewModelScope.launch {
-            runCatching { churchRepository.getAllLifeGroups() }
-                .onSuccess { groups ->
-                    _uiState.update { it.copy(lifeGroups = groups.map { g -> g.id to g.name }) }
+            runCatching { analyticsRepository.getScope() }
+                .onSuccess { scope ->
+                    _uiState.update {
+                        it.copy(lifeGroups = scope.lifeGroups.map { g -> g.id to g.name })
+                    }
                 }
         }
+    }
+
+    /** Resets every filter back to its default and reloads. */
+    fun clearFilters() {
+        _uiState.update {
+            it.copy(
+                year = LocalDate.now().year,
+                month = null,
+                lifeGroupId = if (it.isLockedToSingleGroup) it.lifeGroupId else null,
+            )
+        }
+        load()
     }
 
     fun load() {

@@ -48,20 +48,21 @@ fun LifeGroupPickerSheet(
             OutlinedTextField(
                 value = state.query,
                 onValueChange = onQueryChanged,
-                placeholder = { Text("Buscar grupo de vida") },
+                placeholder = { Text("Search Life Group") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
             Spacer(Modifier.height(PazSpacing.Sm))
             when {
-                state.isLoading -> Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
+                state.isLoading ->
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 state.error != null -> Text(state.error, color = MaterialTheme.colorScheme.error)
                 state.results.isEmpty() && state.query.isNotBlank() -> Text("Nenhum resultado")
                 else -> {
@@ -71,14 +72,16 @@ fun LifeGroupPickerSheet(
                         items(groups) { lg ->
                             ListItem(
                                 headlineContent = { Text(lg.name) },
-                                trailingContent = if (lg.id.toString() == selectedId) {
-                                    { Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary) }
-                                } else {
-                                    null
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onSelect(lg.id.toString(), lg.name) },
+                                trailingContent =
+                                    if (lg.id.toString() == selectedId) {
+                                        { Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary) }
+                                    } else {
+                                        null
+                                    },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onSelect(lg.id.toString(), lg.name) },
                             )
                             HorizontalDivider()
                         }
