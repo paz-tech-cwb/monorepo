@@ -10,48 +10,54 @@ struct LifeGroupsView: View {
         _viewModel = State(initialValue: LifeGroupsViewModel(churchRepository: churchRepository))
     }
 
-    var body: some View {
-        VStack(spacing: 0) {
-            if !viewModel.isLoading, viewModel.error == nil, !viewModel.lifeGroups.isEmpty {
-                Picker("", selection: $showMap) {
-                    Text("Lista").tag(false)
-                    Text("Mapa").tag(true)
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, PazSpacing.lg)
-                .padding(.vertical, PazSpacing.sm)
-            }
+    private var showsToggle: Bool {
+        !viewModel.isLoading && viewModel.error == nil && !viewModel.lifeGroups.isEmpty
+    }
 
-            Group {
-                if viewModel.isLoading {
-                    loadingState
-                } else if let error = viewModel.error {
-                    errorState(error: error)
-                } else if viewModel.lifeGroups.isEmpty {
-                    emptyState("Nenhum grupo de vida encontrado")
-                } else if showMap {
-                    LifeGroupsMapView(lifeGroups: viewModel.lifeGroups)
-                } else {
-                    ScrollView {
-                        VStack(spacing: PazSpacing.md) {
-                            Spacer().frame(height: PazSpacing.sm)
-                            ForEach(viewModel.lifeGroups, id: \.id) { lifeGroup in
-                                NavigationLink(destination: LifeGroupDetailView(lifeGroup: lifeGroup)) {
-                                    LifeGroupCard(lifeGroup: lifeGroup)
-                                }
-                                .buttonStyle(.plain)
+    var body: some View {
+        Group {
+            if viewModel.isLoading {
+                loadingState
+            } else if let error = viewModel.error {
+                errorState(error: error)
+            } else if viewModel.lifeGroups.isEmpty {
+                emptyState("Nenhum grupo de vida encontrado")
+            } else if showMap {
+                // Map is edge-to-edge (ignoresSafeArea) so it reads behind the
+                // translucent nav bar.
+                LifeGroupsMapView(lifeGroups: viewModel.lifeGroups)
+            } else {
+                ScrollView {
+                    VStack(spacing: PazSpacing.md) {
+                        Spacer().frame(height: PazSpacing.sm)
+                        ForEach(viewModel.lifeGroups, id: \.id) { lifeGroup in
+                            NavigationLink(destination: LifeGroupDetailView(lifeGroup: lifeGroup)) {
+                                LifeGroupCard(lifeGroup: lifeGroup)
                             }
-                            Spacer().frame(height: PazSpacing.xl)
+                            .buttonStyle(.plain)
                         }
-                        .padding(.horizontal, PazSpacing.lg)
+                        Spacer().frame(height: PazSpacing.xl)
                     }
+                    .padding(.horizontal, PazSpacing.lg)
                 }
             }
         }
         .background(PazMeshBackground())
         .navigationTitle("Grupos de Vida")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(showMap ? .inline : .large)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            if showsToggle {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showMap.toggle()
+                    } label: {
+                        Image(systemName: showMap ? "list.bullet" : "map")
+                    }
+                    .accessibilityLabel(showMap ? "Ver lista" : "Ver mapa")
+                }
+            }
+        }
     }
 
     private var loadingState: some View {
