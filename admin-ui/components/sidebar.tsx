@@ -46,6 +46,7 @@ const sidebarSections = [
       { name: "Relatórios GV", href: "/life-groups/relatorios", icon: BarChart3 },
       { name: "Ministérios", href: "/ministerios", icon: Waves },
       { name: "Formulários", href: "/formularios", icon: ClipboardList },
+      { name: "Relatórios", href: "/relatorios", icon: BarChart3 },
     ],
   },
   {
