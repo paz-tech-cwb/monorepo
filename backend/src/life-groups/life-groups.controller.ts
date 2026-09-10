@@ -48,6 +48,13 @@ export class LifeGroupsController {
     return this.lifeGroupsService.findAll(req.user);
   }
 
+  // Must be declared before `:id` — otherwise Express would match "me" as
+  // an :id path param and this route would never be reached.
+  @Get('me')
+  findMine(@Req() req: AuthenticatedRequest) {
+    return this.lifeGroupsService.findMine(req.user);
+  }
+
   @Get(':id')
   findOne(@Req() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
     return this.lifeGroupsService.findOne(id, req.user);

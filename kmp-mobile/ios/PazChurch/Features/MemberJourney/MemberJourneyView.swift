@@ -68,6 +68,7 @@ struct MemberJourneyView: View {
             .padding(.horizontal, PazSpacing.lg)
         }
         .background(PazMeshBackground())
+        .refreshable { await viewModel.loadJourney() }
     }
 
     private var loadingState: some View {
@@ -172,27 +173,25 @@ class MemberJourneyViewModel {
 
     init(repository: MemberJourneyRepository) {
         self.repository = repository
-        loadJourney()
+        Task { await loadJourney() }
     }
 
-    private func loadJourney() {
-        Task {
-            do {
-                let journey = try await repository.getMemberJourney()
-                self.steps = journey.steps.compactMap { $0 as? JourneyStep }
-                    .sorted { $0.order < $1.order }
-                self.isLoading = false
-            } catch {
-                self.error = "Erro ao carregar jornada"
-                self.isLoading = false
-            }
+    func loadJourney() async {
+        do {
+            let journey = try await repository.getMemberJourney()
+            self.steps = journey.steps.compactMap { $0 as? JourneyStep }
+                .sorted { $0.order < $1.order }
+            self.isLoading = false
+        } catch {
+            self.error = "Erro ao carregar jornada"
+            self.isLoading = false
         }
     }
 
     func retry() {
         isLoading = true
         error = nil
-        loadJourney()
+        Task { await loadJourney() }
     }
 }
 

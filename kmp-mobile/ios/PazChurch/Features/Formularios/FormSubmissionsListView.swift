@@ -109,7 +109,7 @@ private struct SubmissionRow: View {
     var body: some View {
         GlassCard(radius: PazSpacing.cardRadiusCompact) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(submission.date) · \(submission.period)").font(PazTypography.titleSmall)
+                Text("\(brDateString(fromISODate: submission.date)) · \(submission.period)").font(PazTypography.titleSmall)
                 Text(submission.atmosphereResponsible).font(PazTypography.bodySmall).foregroundStyle(PazColors.slate)
                 Text("Adultos: \(submission.tadelAdults) · Crianças: \(submission.tadelKids)")
                     .font(PazTypography.bodySmall).foregroundStyle(PazColors.slate)
@@ -125,7 +125,7 @@ struct FormSubmissionDetailView: View {
 
     private var rows: [(String, String)] {
         [
-            ("Data", submission.date),
+            ("Data", brDateString(fromISODate: submission.date)),
             ("Tipo", submission.reportType),
             ("Período", submission.period),
             ("Responsável", submission.atmosphereResponsible),

@@ -6,6 +6,7 @@ import {
   ParseIntPipe,
   Put,
   Req,
+  SerializeOptions,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -19,6 +20,13 @@ import { UpsertLifeGroupAttendanceDto } from './dto/upsert-life-group-attendance
 // role grants them, and LifeGroupAttendanceService additionally allows the
 // group's own co_leader_id even when scope alone wouldn't. Mirrors the
 // life-group-reports controller's approach.
+//
+// @SerializeOptions is required here: the service returns plain object
+// literals (not @Expose()-decorated DTO classes), and the app's global
+// ClassSerializerInterceptor defaults to excludeExtraneousValues: true,
+// which silently strips every field from a plain object down to `{}`.
+// Matches the same override already used in auth.controller.ts.
+@SerializeOptions({ strategy: 'exposeAll', excludeExtraneousValues: false })
 @UseGuards(AuthGuard('jwt'), ScopeGuard)
 @Controller('life-groups/:lifeGroupId/attendance')
 export class LifeGroupAttendanceController {

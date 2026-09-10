@@ -46,6 +46,7 @@ struct FormulariosView: View {
             }
             .padding(.top, 8)
         }
+        .refreshable { await viewModel.load() }
     }
 
     private var emptyState: some View {

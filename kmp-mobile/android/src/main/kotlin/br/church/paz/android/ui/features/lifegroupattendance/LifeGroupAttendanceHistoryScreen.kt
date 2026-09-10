@@ -48,6 +48,7 @@ import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
+import br.church.paz.android.util.brDateString
 import br.church.paz.shared.domain.model.LifeGroupAttendance
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -175,7 +176,7 @@ private fun AttendanceRecordCard(
     ) {
         Icon(Icons.Outlined.Groups, contentDescription = null, tint = PazColors.Primary)
         Column(Modifier.weight(1f)) {
-            Text(record.meetingDate, style = MaterialTheme.typography.bodyMedium)
+            Text(brDateString(record.meetingDate), style = MaterialTheme.typography.bodyMedium)
             Text(
                 "${record.presentCount} de ${record.membersCount} presentes",
                 style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)),

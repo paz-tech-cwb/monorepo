@@ -136,6 +136,35 @@ export class LifeGroupsService {
     }
   }
 
+  /**
+   * Life groups where the viewer is the leader, the co-leader, or a roster
+   * member — used to default the mobile app's Grupos de Vida tab to "your
+   * group(s)" instead of the entire church's list.
+   */
+  async findMine(viewer: User) {
+    try {
+      const lifeGroups = await this.entityManager
+        .createQueryBuilder(LifeGroup, 'lg')
+        .leftJoinAndSelect('lg.leader', 'leader')
+        .leftJoinAndSelect('lg.coLeader', 'coLeader')
+        .leftJoinAndSelect('lg.sector', 'sector')
+        .leftJoinAndSelect('lg.users', 'users')
+        .where('leader.id = :viewerId', { viewerId: viewer.id })
+        .orWhere('coLeader.id = :viewerId', { viewerId: viewer.id })
+        .orWhere(
+          'lg.id IN (SELECT ulg.life_group_id FROM user_life_groups ulg WHERE ulg.user_id = :viewerId)',
+          { viewerId: viewer.id },
+        )
+        .orderBy('lg.name', 'ASC')
+        .getMany();
+      return lifeGroups.map((lg) => this.toResponse(lg, viewer));
+    } catch (error: unknown) {
+      throw new BadRequestException(
+        'An error occurred while retrieving your life groups.',
+      );
+    }
+  }
+
   async findAll(viewer?: User) {
     try {
       const lifeGroups = await this.entityManager.find(LifeGroup, {

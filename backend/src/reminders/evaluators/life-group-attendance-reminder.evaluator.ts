@@ -16,21 +16,7 @@ import { LifeGroup } from '../../life-groups/entities/life-group.entity';
 import { User } from '../../users/entities/user.entity';
 import { ReminderDispatchLog } from '../entities/reminder-dispatch-log.entity';
 import { LifeGroupAttendance } from '../../life-group-attendance/entities/life-group-attendance.entity';
-
-// Maps the Portuguese weekday labels used by admin-ui/mobile life group
-// forms (see admin-ui MEETING_DAYS) to JS Date#getDay() indices. Any life
-// group whose meeting_day isn't one of these fixed weekdays (i.e. "Sem dia
-// fixo") — or has no meeting_time — has no computable meeting start and is
-// skipped by this evaluator rather than guessed at.
-const WEEKDAY_INDEX: Record<string, number> = {
-  Domingo: 0,
-  'Segunda-feira': 1,
-  'Terça-feira': 2,
-  'Quarta-feira': 3,
-  'Quinta-feira': 4,
-  'Sexta-feira': 5,
-  Sábado: 6,
-};
+import { WEEKDAY_INDEX } from '../../life-group-attendance/meeting-day.util';
 
 // Life group meeting_day/meeting_time are entered by leaders in the
 // church's local timezone, and LifeGroupAttendanceService persists

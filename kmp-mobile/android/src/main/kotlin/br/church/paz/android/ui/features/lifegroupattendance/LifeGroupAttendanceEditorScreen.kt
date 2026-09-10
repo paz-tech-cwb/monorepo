@@ -41,6 +41,7 @@ import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
+import br.church.paz.android.util.brDateString
 import br.church.paz.shared.domain.model.LifeGroupAttendanceEntry
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -79,7 +80,7 @@ fun LifeGroupAttendanceEditorScreen(
                         style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
                     )
                     Text(
-                        uiState.meetingDate,
+                        brDateString(uiState.meetingDate),
                         style = MaterialTheme.typography.bodySmall.copy(color = Color.White.copy(alpha = 0.8f)),
                     )
                 }

@@ -184,7 +184,7 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
                 FormFieldDef("address", "Endereço", required = true),
                 FormFieldDef("attendance_count", "Quantidade de visitas", required = true),
                 FormFieldDef("life_group_status", "Status do Grupo de Vida", required = true),
-                FormFieldDef("life_group_leader_or_name", "Líder ou nome do GV"),
+                FormFieldDef("life_group_leader_or_name", "Líder ou nome do Grupo de Vida"),
                 FormFieldDef("invited_by", "Convidado por"),
                 FormFieldDef("notes", "Observações", fieldType = FormFieldType.MULTILINE),
             )

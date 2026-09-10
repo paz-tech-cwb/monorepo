@@ -27,7 +27,7 @@ struct LifeGroupAttendanceEditorView: View {
     var body: some View {
         screenContent
             .background(PazMeshBackground())
-            .navigationTitle(viewModel.meetingDate)
+            .navigationTitle(brDateString(fromISODate: viewModel.meetingDate))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

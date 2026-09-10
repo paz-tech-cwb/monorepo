@@ -125,10 +125,42 @@ describe('LifeGroupAttendanceService', () => {
       });
 
       expect(result.is_draft).toBe(true);
+      expect(result.present_count).toBe(2);
       expect(result.entries).toEqual([
-        { user_id: 2, name: 'Alice', present: false },
-        { user_id: 1, name: 'Bob', present: false },
+        { user_id: 2, name: 'Alice', present: true },
+        { user_id: 1, name: 'Bob', present: true },
       ]);
+    });
+
+    it('rejects a draft date that does not fall on the group\'s meeting_day', async () => {
+      const saturdayGroup = { ...lifeGroup, meetingDay: 'Sábado' } as unknown as LifeGroup;
+      const { service } = createService({
+        findOne: jest
+          .fn()
+          .mockResolvedValueOnce(saturdayGroup)
+          .mockResolvedValueOnce(null),
+      });
+
+      // 2026-06-10 is a Wednesday, not a Saturday.
+      await expect(
+        service.getByDate(7, '2026-06-10', leaderScope, { id: 10 }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('accepts a draft date that falls on the group\'s meeting_day', async () => {
+      const saturdayGroup = { ...lifeGroup, meetingDay: 'Sábado' } as unknown as LifeGroup;
+      const { service } = createService({
+        findOne: jest
+          .fn()
+          .mockResolvedValueOnce(saturdayGroup)
+          .mockResolvedValueOnce(null),
+      });
+
+      // 2026-06-13 is a Saturday.
+      const result = await service.getByDate(7, '2026-06-13', leaderScope, {
+        id: 10,
+      });
+      expect(result.is_draft).toBe(true);
     });
 
     it('returns the saved record when one exists', async () => {

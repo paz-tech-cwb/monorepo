@@ -13,6 +13,7 @@ import { User } from '../users/entities/user.entity';
 import { UpsertLifeGroupAttendanceDto } from './dto/upsert-life-group-attendance.dto';
 import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
 import { FormSubmissionAuditService } from '../forms-core/services/form-submission-audit.service';
+import { WEEKDAY_INDEX, weekdayOfDateString } from './meeting-day.util';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -62,6 +63,24 @@ export class LifeGroupAttendanceService {
     const todayKey = new Date().toISOString().slice(0, 10);
     if (meetingDate > todayKey) {
       throw new BadRequestException('date cannot be in the future.');
+    }
+  }
+
+  /**
+   * Only enforced when creating a NEW record (no existing row for this
+   * date) — a group's meeting_day can change over time, and a previously
+   * saved record must remain viewable/editable even if it no longer
+   * matches the group's current schedule.
+   */
+  private assertMatchesMeetingDay(lifeGroup: LifeGroup, meetingDate: string): void {
+    const expectedWeekday = lifeGroup.meetingDay
+      ? WEEKDAY_INDEX[lifeGroup.meetingDay]
+      : undefined;
+    if (expectedWeekday === undefined) return;
+    if (weekdayOfDateString(meetingDate) !== expectedWeekday) {
+      throw new BadRequestException(
+        `${meetingDate} is not a ${lifeGroup.meetingDay} — this life group meets on ${lifeGroup.meetingDay}.`,
+      );
     }
   }
 
@@ -137,6 +156,7 @@ export class LifeGroupAttendanceService {
     if (existing) {
       return { ...this.toResponse(existing), is_draft: false };
     }
+    this.assertMatchesMeetingDay(lifeGroup, meetingDate);
 
     const members = [...(lifeGroup.users ?? [])].sort((a, b) =>
       a.name.localeCompare(b.name),
@@ -145,13 +165,13 @@ export class LifeGroupAttendanceService {
       id: null,
       life_group_id: lifeGroupId,
       meeting_date: meetingDate,
-      present_count: 0,
+      present_count: members.length,
       members_count: members.length,
       recorded_by: null,
       entries: members.map((u) => ({
         user_id: u.id,
         name: u.name,
-        present: false,
+        present: true,
       })),
       created_at: null,
       updated_at: null,
@@ -194,13 +214,11 @@ export class LifeGroupAttendanceService {
 
         const attendance =
           existing ??
-          trx.create(LifeGroupAttendance, {
-            lifeGroupId,
-            meetingDate,
-            entries: [],
-          });
+          trx.create(LifeGroupAttendance, { lifeGroupId, meetingDate });
 
         attendance.recordedBy = { id: actor.id } as User;
+
+        let newEntries: LifeGroupAttendanceEntry[] = [];
 
         // Preserve the roster snapshot: only update presence for entries
         // that already exist, and only append brand-new entries when this
@@ -212,12 +230,13 @@ export class LifeGroupAttendanceService {
             const entry = byUserId.get(incoming.userId);
             if (entry) entry.present = incoming.present;
           }
-          attendance.entries = existing.entries;
           attendance.membersCount = existing.entries.length;
           attendance.presentCount = existing.entries.filter(
             (e) => e.present,
           ).length;
         } else {
+          this.assertMatchesMeetingDay(lifeGroup, meetingDate);
+
           // Only the FIRST save for a meeting date creates entries from the
           // submitted payload, so this is the only path where a leader could
           // fabricate members — validate against the group's actual roster.
@@ -231,17 +250,31 @@ export class LifeGroupAttendanceService {
             );
           }
 
-          attendance.entries = dto.entries.map((e) =>
+          attendance.membersCount = dto.entries.length;
+          attendance.presentCount = dto.entries.filter((e) => e.present).length;
+          newEntries = dto.entries.map((e) =>
             trx.create(LifeGroupAttendanceEntry, {
               userId: e.userId,
               present: e.present,
             }),
           );
-          attendance.membersCount = dto.entries.length;
-          attendance.presentCount = dto.entries.filter((e) => e.present).length;
         }
 
+        // Saved without the `entries` relation assigned, then entries are
+        // linked and persisted explicitly below — cascading a fresh child
+        // array through `entries` here left `attendance_id` NULL on insert
+        // (the parent's generated id wasn't backfilled onto the children by
+        // the cascade for this uuid-PK/OneToMany shape), so the FK is set
+        // by hand once the parent's real id is known.
         const saved = await trx.save(LifeGroupAttendance, attendance);
+
+        if (existing) {
+          await trx.save(LifeGroupAttendanceEntry, existing.entries);
+        } else if (newEntries.length > 0) {
+          for (const entry of newEntries) entry.attendance = saved;
+          await trx.save(LifeGroupAttendanceEntry, newEntries);
+        }
+
         const loaded = await trx.findOne(LifeGroupAttendance, {
           where: { id: saved.id },
           relations: ['entries', 'entries.user', 'recordedBy'],

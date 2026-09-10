@@ -125,6 +125,7 @@ struct HomeView: View {
                     .frame(height: 40)
             }
         }
+        .refreshable { await viewModel.load() }
         .background(PazMeshBackground())
         .navigationTitle("Início")
         .navigationBarTitleDisplayMode(.large)

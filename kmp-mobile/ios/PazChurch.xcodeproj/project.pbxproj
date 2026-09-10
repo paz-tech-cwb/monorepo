@@ -60,6 +60,7 @@
 		F7A8CC9281B943B1B4BD7B15 /* LifeGroupStudyViewModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8525FE5A2F894ED0966D903D /* LifeGroupStudyViewModels.swift */; };
 		AA1100000000000000000011 /* LifeGroupAttendanceViewModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000001 /* LifeGroupAttendanceViewModels.swift */; };
 		AA1100000000000000000012 /* LifeGroupAttendanceHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000002 /* LifeGroupAttendanceHistoryView.swift */; };
+		AA2200000000000000000012 /* DateFormatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2200000000000000000002 /* DateFormatting.swift */; };
 		AA1100000000000000000013 /* LifeGroupAttendanceEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1100000000000000000003 /* LifeGroupAttendanceEditorView.swift */; };
 		A0CCE565617A81DD9C6404A9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = F04B442417CCD3B5A58BC0DF /* FirebaseAuth */; };
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* DeepLinkDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7B8C9D0E1F2A3 /* DeepLinkDestination.swift */; };
@@ -152,6 +153,7 @@
 		8525FE5A2F894ED0966D903D /* LifeGroupStudyViewModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupStudyViewModels.swift; sourceTree = "<group>"; };
 		AA1100000000000000000001 /* LifeGroupAttendanceViewModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupAttendanceViewModels.swift; sourceTree = "<group>"; };
 		AA1100000000000000000002 /* LifeGroupAttendanceHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupAttendanceHistoryView.swift; sourceTree = "<group>"; };
+		AA2200000000000000000002 /* DateFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatting.swift; sourceTree = "<group>"; };
 		AA1100000000000000000003 /* LifeGroupAttendanceEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupAttendanceEditorView.swift; sourceTree = "<group>"; };
 		EF907E68FA85FA69FAE6B591 /* playfair_display_extrabold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = playfair_display_extrabold.ttf; sourceTree = "<group>"; };
 		F62DDEA0026352360D73E873 /* PazPillChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazPillChip.swift; sourceTree = "<group>"; };
@@ -353,6 +355,7 @@
 				B8DBE4246EB16A5334D999BD /* PazChurch.entitlements */,
 				E8ED14052DB30DEC694C772C /* PazChurchApp.swift */,
 				6A3874DF13A8A30F5D645BEA /* Components */,
+				AA2200000000000000000099 /* Extensions */,
 				31E49572560B21B7A113C48B /* Features */,
 				8101B69056A184DB1D1724D1 /* Navigation */,
 				23196830AA51B065E0E4FD74 /* Resources */,
@@ -360,6 +363,14 @@
 				5830433A030E9A21D325B7F8 /* Theme */,
 			);
 			path = PazChurch;
+			sourceTree = "<group>";
+		};
+		AA2200000000000000000099 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				AA2200000000000000000002 /* DateFormatting.swift */,
+			);
+			path = Extensions;
 			sourceTree = "<group>";
 		};
 		AC68C8AEEDCEA37529826AD3 /* Academy */ = {
@@ -584,6 +595,7 @@
 				F7A8CC9281B943B1B4BD7B15 /* LifeGroupStudyViewModels.swift in Sources */,
 				AA1100000000000000000011 /* LifeGroupAttendanceViewModels.swift in Sources */,
 				AA1100000000000000000012 /* LifeGroupAttendanceHistoryView.swift in Sources */,
+				AA2200000000000000000012 /* DateFormatting.swift in Sources */,
 				AA1100000000000000000013 /* LifeGroupAttendanceEditorView.swift in Sources */,
 				09EDC02009417BFD3B3FA3BC /* NotificationPrefsView.swift in Sources */,
 				DBED4836D8DD1B07E3FBB55E /* PazChurchApp.swift in Sources */,
