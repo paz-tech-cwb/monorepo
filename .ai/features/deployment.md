@@ -6,6 +6,10 @@ Run the platform locally and deploy containerized services reliably.
 
 ## Local development
 
+There are exactly two backend environments: **production** (deployed via Coolify, `docker-compose.yaml`) and **local/staging** (bare-metal `npm run start:dev`, port 3001, against the shared Postgres container defined in `docker-compose.staging.yaml`: `church_staging_postgres`, host port 5433).
+
+Every local checkout or git worktree that runs the backend must point its `backend/.env` at that same shared `church_staging_postgres` container (start once with `docker compose -f docker-compose.staging.yaml up -d postgres`, leave it running). Never start a second/alternate local Postgres container to test against — since every worktree's backend binds the same port 3001, running two local databases only means whichever backend process is currently up silently serves whichever DB it happens to be configured for, with no indication to the client that it's the wrong one. If port 3001 already answers on `npm run start:dev`, check `lsof -i :3001` for a stale process from a different checkout before assuming your current worktree's code is running.
+
 Root scripts start the common local stack:
 
 - PostgreSQL through Docker.
