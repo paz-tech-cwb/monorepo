@@ -15,6 +15,7 @@ export interface LifeGroup {
   co_leader_id: number | null
   co_leader_name: string | null
   sector_id: number | null
+  kids_count: number
   member_count: number
   members: LifeGroupMember[]
   created_at: string

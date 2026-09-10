@@ -22,6 +22,8 @@ import { useRouter } from "next/navigation"
 import { useDashboardStats, useAccessTrends, useMemberGrowth, useLifeGroupDistribution } from "@/lib/hooks/use-dashboard"
 import { StatsCardSkeleton } from "@/components/ui/skeleton-components"
 import { Skeleton } from "@/components/ui/skeleton"
+import { LifeGroupAttendanceChart } from "@/components/life-group-analytics/life-group-attendance-chart"
+import { LifeGroupDistributionChart } from "@/components/life-group-analytics/life-group-distribution-chart"
 
 const PIE_COLORS = ["#15803d", "#84cc16", "#d97706", "#3b82f6", "#8b5cf6", "#ec4899"]
 
@@ -218,6 +220,12 @@ export function DashboardHome() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Life Group Attendance Analytics */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <LifeGroupAttendanceChart />
+        <LifeGroupDistributionChart />
       </div>
 
       {/* Quick Actions */}

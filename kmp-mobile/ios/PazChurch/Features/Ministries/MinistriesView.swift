@@ -31,6 +31,7 @@ struct MinistriesView: View {
                     }
                     .padding(.horizontal, PazSpacing.lg)
                 }
+                .refreshable { await viewModel.load() }
             }
         }
         .background(PazMeshBackground())
@@ -123,25 +124,23 @@ class MinistriesViewModel {
 
     init(churchRepository: ChurchRepository) {
         self.churchRepository = churchRepository
-        load()
+        Task { await load() }
     }
 
-    private func load() {
-        Task {
-            do {
-                self.ministries = try await churchRepository.getAllMinistries()
-                self.error = nil
-            } catch {
-                self.error = "Erro ao carregar dados"
-            }
-            self.isLoading = false
+    func load() async {
+        do {
+            self.ministries = try await churchRepository.getAllMinistries()
+            self.error = nil
+        } catch {
+            self.error = "Erro ao carregar dados"
         }
+        self.isLoading = false
     }
 
     func onRetry() {
         isLoading = true
         error = nil
-        load()
+        Task { await load() }
     }
 }
 

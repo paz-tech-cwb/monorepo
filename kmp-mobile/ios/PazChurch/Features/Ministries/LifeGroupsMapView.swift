@@ -8,17 +8,21 @@ import UIKit
 struct LifeGroupsMapView: View {
     let lifeGroups: [LifeGroup]
 
-    /// Starts centered on the member's own location at a close zoom (a city-wide
-    /// `.automatic` fit reads as "empty" when groups are spread out) — falls back
-    /// to auto-fitting all markers if location access isn't available.
-    @State private var cameraPosition: MapCameraPosition = .userLocation(
-        fallback: .automatic
-    )
+    /// `.automatic` fits the bounding box of everything drawn on the map —
+    /// the user's own dot (`UserAnnotation`) plus every group marker — so it
+    /// starts zoomed out enough to show them all, rather than the tight,
+    /// user-centered close-up `.userLocation(fallback:)` gave us.
+    @State private var cameraPosition: MapCameraPosition = .automatic
     /// Set the instant a marker is tapped — drives the "Como chegar / Ver
     /// detalhes" action sheet. Separate from `detailGroup` so picking an
     /// option (or dismissing the dialog) doesn't also open the detail sheet.
     @State private var selectedGroup: LifeGroup?
     @State private var detailGroup: LifeGroup?
+    /// Lets us place `MapCompass`/`MapUserLocationButton` ourselves (bottom
+    /// corner, clear of the nav bar) instead of the default top-trailing spot
+    /// `.mapControls` pins them to, which collides with the nav bar once the
+    /// map ignores the top safe area.
+    @Namespace private var mapScope
 
     private var groupsWithLocation: [LifeGroup] {
         lifeGroups.filter { $0.latitude != nil && $0.longitude != nil }
@@ -37,7 +41,8 @@ struct LifeGroupsMapView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            Map(position: $cameraPosition, selection: $selectedGroup) {
+            Map(position: $cameraPosition, selection: $selectedGroup, scope: mapScope) {
+                UserAnnotation()
                 ForEach(groupsWithLocation, id: \.id) { group in
                     Marker(
                         group.name,
@@ -49,11 +54,18 @@ struct LifeGroupsMapView: View {
                     .tag(group)
                 }
             }
-            .mapControls {
-                MapUserLocationButton()
-                MapCompass()
-            }
+            .mapControls {}
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea(edges: .top)
+            .overlay(alignment: .bottomTrailing) {
+                VStack(spacing: PazSpacing.sm) {
+                    MapCompass(scope: mapScope)
+                    MapUserLocationButton(scope: mapScope)
+                }
+                .mapScope(mapScope)
+                .padding(.trailing, PazSpacing.md)
+                .padding(.bottom, PazSpacing.xxxl + PazSpacing.xl)
+            }
             .confirmationDialog(
                 selectedGroup?.name ?? "",
                 isPresented: Binding(

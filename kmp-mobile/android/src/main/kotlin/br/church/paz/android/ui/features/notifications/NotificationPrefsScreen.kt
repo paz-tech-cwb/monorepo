@@ -127,8 +127,8 @@ fun NotificationPrefsScreen(
 
                 item {
                     PreferenceToggle(
-                        title = "Notificações do Grupo de Vida",
-                        description = "Atualizações do seu grupo de vida",
+                        title = "Notificações do Life Group",
+                        description = "Atualizações do seu life group",
                         checked = uiState.lifeGroupNotifications,
                         onCheckedChange = { viewModel.toggleLifeGroup() },
                     )

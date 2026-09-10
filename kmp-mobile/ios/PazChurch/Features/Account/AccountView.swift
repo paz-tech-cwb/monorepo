@@ -97,7 +97,14 @@ struct AccountView: View {
             VStack(spacing: 0) {
                 Spacer().frame(height: 16)
 
-                if let user = viewModel.user {
+                // Falls back to authCoordinator.currentUser (already loaded at
+                // app-launch time via silentReAuth) — viewModel.user is fetched
+                // independently via its own .task, and if isAuthenticated flips
+                // true just before that fetch resolves, viewModel.user can
+                // briefly (or indefinitely, if .onChange doesn't re-fire in
+                // time) be nil while the screen already thinks it's logged in,
+                // rendering completely blank instead of showing content.
+                if let user = viewModel.user ?? authCoordinator.currentUser {
                     NavigationLink(destination: EditProfileView()) {
                         userCard(user: user)
                     }
@@ -127,7 +134,7 @@ struct AccountView: View {
                         rowDivider
                         NavigationLink(destination: LifeGroupsView(churchRepository: IosAppContainer.shared
                                 .churchRepository)) {
-                            AccountRow(title: "Grupos de Vida", icon: "person.3.fill", tint: Color(hex: "2E7D32"))
+                            AccountRow(title: "Life Groups", icon: "person.3.fill", tint: Color(hex: "2E7D32"))
                         }
                         .buttonStyle(.plain)
                     }
@@ -176,6 +183,7 @@ struct AccountView: View {
             }
         }
         .background(PazMeshBackground())
+        .refreshable { await viewModel.reload() }
     }
 
     // MARK: - Helpers

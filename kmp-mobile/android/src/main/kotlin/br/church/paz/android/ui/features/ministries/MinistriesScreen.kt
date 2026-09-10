@@ -103,7 +103,7 @@ fun MinistriesScreen(
             Tab(
                 selected = uiState.selectedTab == MinistriesTab.LifeGroups,
                 onClick = { viewModel.onTabSelected(MinistriesTab.LifeGroups) },
-                text = { Text("Grupos de Vida") },
+                text = { Text("Life Groups") },
             )
         }
 
@@ -161,7 +161,7 @@ private fun LifeGroupsTab(
     onTap: (String) -> Unit,
 ) {
     if (lifeGroups.isEmpty()) {
-        EmptyState(message = "Nenhum grupo de vida encontrado")
+        EmptyState(message = "Nenhum life group encontrado")
         return
     }
     LazyColumn(

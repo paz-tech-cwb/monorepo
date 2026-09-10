@@ -91,6 +91,9 @@ class PushNotificationService: NSObject {
         case deepLink.hasPrefix("paz://estudo-do-life/"):
             "estudo-do-life/\(deepLink.dropFirst("paz://estudo-do-life/".count))"
 
+        case deepLink.hasPrefix("paz://presenca/"):
+            "presenca/\(deepLink.dropFirst("paz://presenca/".count))"
+
         case deepLink == "paz://formularios":
             "formularios"
 

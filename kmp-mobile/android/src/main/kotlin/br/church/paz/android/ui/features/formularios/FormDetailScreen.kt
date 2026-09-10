@@ -481,7 +481,7 @@ private fun FieldRow(
                         modifier = Modifier.fillMaxWidth(),
                         readOnly = true,
                         enabled = !isSubmitting,
-                        placeholder = { Text(def.placeholder.ifEmpty { "Selecionar grupo de vida" }) },
+                        placeholder = { Text(def.placeholder.ifEmpty { "Selecionar life group" }) },
                         trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null) },
                         shape = PazShapes.large,
                         singleLine = true,

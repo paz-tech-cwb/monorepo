@@ -17,6 +17,15 @@ struct MinistryDetailView: View {
         authCoordinator.currentUser?.role.isLeader == true
     }
 
+    /// No single-ministry fetch endpoint exists on the client yet, so refresh
+    /// re-fetches the full list and picks this ministry back out by id.
+    private func refresh() async {
+        guard let refreshed = try? await IosAppContainer.shared.churchRepository.getAllMinistries()
+            .first(where: { $0.id == ministry.id })
+        else { return }
+        ministry = refreshed
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: PazSpacing.lg) {
@@ -51,20 +60,29 @@ struct MinistryDetailView: View {
                 // Members are visible to everyone (per spec: any member can see
                 // who's in each ministry), but only leaders/admin can manage
                 // the roster — see the gear button in the toolbar.
-                VStack(alignment: .leading, spacing: PazSpacing.sm) {
-                    Text("Membros")
-                        .font(PazTypography.titleSmall)
-                    if ministry.members.isEmpty {
-                        Text("Nenhum membro cadastrado ainda.")
-                            .font(PazTypography.bodySmall)
+                // Pushed to its own screen rather than listed inline — a
+                // ministry can have well over 10 members.
+                NavigationLink {
+                    GroupMembersListView(
+                        title: ministry.name,
+                        members: ministry.members.map { GroupMemberItem(id: Int($0.id), name: $0.name) }
+                    )
+                } label: {
+                    HStack(spacing: PazSpacing.md) {
+                        Text("Membros")
+                            .font(PazTypography.titleSmall)
+                            .foregroundColor(PazColors.ink)
+                        Spacer()
+                        Text("\(ministry.members.count)")
+                            .font(PazTypography.labelSmall)
                             .foregroundColor(.gray)
-                    } else {
-                        ForEach(ministry.members, id: \.id) { member in
-                            Text(member.name)
-                                .font(PazTypography.bodySmall)
-                        }
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
                     }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
                 .padding(PazSpacing.lg)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .glassCard(radius: PazSpacing.cardRadiusCompact)
@@ -73,6 +91,7 @@ struct MinistryDetailView: View {
             }
             .padding(.horizontal, PazSpacing.lg)
         }
+        .refreshable { await refresh() }
         .background(PazMeshBackground())
         .navigationTitle(ministry.name)
         .navigationBarTitleDisplayMode(.large)
@@ -104,9 +123,49 @@ struct LifeGroupDetailView: View {
     @State private var lifeGroup: LifeGroup
     @Environment(AuthenticationCoordinator.self) private var authCoordinator
     @State private var showManage = false
+    @State private var showLeadershipPicker = false
 
     init(lifeGroup: LifeGroup) {
         _lifeGroup = State(initialValue: lifeGroup)
+    }
+
+    private struct LeadershipContact {
+        let name: String
+        let phone: String
+    }
+
+    private var leadershipContacts: [LeadershipContact] {
+        var contacts: [LeadershipContact] = []
+        if let leader = lifeGroup.leader, let phone = lifeGroup.leaderPhone {
+            contacts.append(LeadershipContact(name: leader, phone: phone))
+        }
+        if let coLeader = lifeGroup.coLeaderName, let phone = lifeGroup.coLeaderPhone {
+            contacts.append(LeadershipContact(name: coLeader, phone: phone))
+        }
+        return contacts
+    }
+
+    /// No single-life-group fetch endpoint exists on the client yet, so
+    /// refresh re-fetches the full list and picks this group back out by id.
+    private func refresh() async {
+        guard let refreshed = try? await IosAppContainer.shared.churchRepository.getAllLifeGroups()
+            .first(where: { $0.id == lifeGroup.id })
+        else { return }
+        lifeGroup = refreshed
+    }
+
+    private func talkToLeadershipTapped() {
+        guard leadershipContacts.count > 1 else {
+            if let only = leadershipContacts.first { openWhatsApp(phone: only.phone) }
+            return
+        }
+        showLeadershipPicker = true
+    }
+
+    private func openWhatsApp(phone: String) {
+        let digits = phone.filter(\.isNumber)
+        guard !digits.isEmpty, let url = URL(string: "https://wa.me/\(digits)") else { return }
+        UIApplication.shared.open(url)
     }
 
     /// Matches the backend's actual authorization (RolesGuard checks any
@@ -114,6 +173,14 @@ struct LifeGroupDetailView: View {
     /// app only needs to decide when to show the entry point.
     private var canManage: Bool {
         authCoordinator.currentUser?.role.isLeader == true
+    }
+
+    /// Attendance has no dedicated role slug for co-leaders, so unlike
+    /// `canManage` (any leadership role) this checks the current user's id
+    /// against this specific group's leader_id/co_leader_id.
+    private var canManageAttendance: Bool {
+        guard let userId = authCoordinator.currentUser.flatMap({ Int32($0.id) }) else { return false }
+        return lifeGroup.leaderId?.int32Value == userId || lifeGroup.coLeaderId?.int32Value == userId
     }
 
     var body: some View {
@@ -178,37 +245,59 @@ struct LifeGroupDetailView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
 
-                    if lifeGroup.leaderPhone != nil || lifeGroup.coLeaderPhone != nil {
-                        VStack(alignment: .leading, spacing: PazSpacing.md) {
-                            Text("Falar com a liderança")
-                                .font(PazTypography.titleSmall)
-                            if let leader = lifeGroup.leader, let phone = lifeGroup.leaderPhone {
-                                WhatsAppButton(name: leader, phone: phone)
+                    if !leadershipContacts.isEmpty {
+                        Button(action: talkToLeadershipTapped) {
+                            HStack(spacing: PazSpacing.md) {
+                                Image(systemName: "message.fill")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(PazColors.accent)
+                                Text("Falar com a liderança")
+                                    .font(PazTypography.titleSmall)
+                                    .foregroundColor(PazColors.ink)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
                             }
-                            if let coLeader = lifeGroup.coLeaderName, let phone = lifeGroup.coLeaderPhone {
-                                WhatsAppButton(name: coLeader, phone: phone)
+                            .padding(PazSpacing.lg)
+                            .glassCard(radius: PazSpacing.cardRadiusCompact)
+                        }
+                        .buttonStyle(.plain)
+                        .confirmationDialog(
+                            "Falar com a liderança",
+                            isPresented: $showLeadershipPicker,
+                            titleVisibility: .visible
+                        ) {
+                            ForEach(leadershipContacts, id: \.phone) { contact in
+                                Button(contact.name) { openWhatsApp(phone: contact.phone) }
                             }
                         }
-                        .padding(PazSpacing.lg)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .glassCard(radius: PazSpacing.cardRadiusCompact)
                     }
 
                     if let members = lifeGroup.members {
-                        VStack(alignment: .leading, spacing: PazSpacing.md) {
-                            Text("Membros")
-                                .font(PazTypography.titleSmall)
-                            if members.isEmpty {
-                                Text("Nenhum membro cadastrado ainda.")
-                                    .font(PazTypography.bodySmall)
+                        // Pushed to its own screen rather than listed inline —
+                        // a life group can have well over 10 members.
+                        NavigationLink {
+                            GroupMembersListView(
+                                title: lifeGroup.name,
+                                members: members.map { GroupMemberItem(id: Int($0.id), name: $0.name) }
+                            )
+                        } label: {
+                            HStack(spacing: PazSpacing.md) {
+                                Text("Membros")
+                                    .font(PazTypography.titleSmall)
+                                    .foregroundColor(PazColors.ink)
+                                Spacer()
+                                Text("\(members.count)")
+                                    .font(PazTypography.labelSmall)
                                     .foregroundColor(.gray)
-                            } else {
-                                ForEach(members, id: \.id) { member in
-                                    Text(member.name)
-                                        .font(PazTypography.bodySmall)
-                                }
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
                             }
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
                         .padding(PazSpacing.lg)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .glassCard(radius: PazSpacing.cardRadiusCompact)
@@ -243,11 +332,64 @@ struct LifeGroupDetailView: View {
                         .buttonStyle(.plain)
                     }
 
+                    if canManageAttendance {
+                        NavigationLink {
+                            LifeGroupAttendanceHistoryView(
+                                lifeGroupId: Int32(lifeGroup.id),
+                                meetingDay: lifeGroup.meetingDay,
+                                repository: IosAppContainer.shared.lifeGroupAttendanceRepository
+                            )
+                        } label: {
+                            HStack(spacing: PazSpacing.md) {
+                                Image(systemName: "checklist")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(PazColors.accent)
+                                Text("Presença")
+                                    .font(PazTypography.titleSmall)
+                                    .foregroundColor(PazColors.ink)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(PazSpacing.lg)
+                            .glassCard(radius: PazSpacing.cardRadiusCompact)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if canManage || canManageAttendance {
+                        NavigationLink {
+                            LifeGroupAnalyticsView(
+                                lifeGroupId: Int32(lifeGroup.id),
+                                analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository,
+                                churchRepository: IosAppContainer.shared.churchRepository
+                            )
+                        } label: {
+                            HStack(spacing: PazSpacing.md) {
+                                Image(systemName: "chart.bar.fill")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(PazColors.accent)
+                                Text("Relatórios")
+                                    .font(PazTypography.titleSmall)
+                                    .foregroundColor(PazColors.ink)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(PazSpacing.lg)
+                            .glassCard(radius: PazSpacing.cardRadiusCompact)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     Spacer().frame(height: PazSpacing.xl)
                 }
                 .padding(.horizontal, PazSpacing.lg)
             }
         }
+        .refreshable { await refresh() }
         .background(PazMeshBackground())
         .navigationTitle(lifeGroup.name)
         .navigationBarTitleDisplayMode(.large)
@@ -284,34 +426,59 @@ struct LifeGroupDetailView: View {
     }
 }
 
-// MARK: - Components
+// MARK: - Members list (pushed screen)
 
-private struct WhatsAppButton: View {
+struct GroupMemberItem: Identifiable {
+    let id: Int
     let name: String
-    let phone: String
+}
+
+struct GroupMembersListView: View {
+    let title: String
+    let members: [GroupMemberItem]
+    @State private var query = ""
+
+    private var filtered: [GroupMemberItem] {
+        guard !query.isEmpty else { return members }
+        return members.filter { $0.name.localizedCaseInsensitiveContains(query) }
+    }
 
     var body: some View {
-        Button(action: openWhatsApp) {
-            HStack(spacing: PazSpacing.sm) {
-                Image(systemName: "message.fill")
-                    .font(.system(size: 14))
-                Text("Falar com \(name) no WhatsApp")
-                    .font(PazTypography.labelSmall)
+        Group {
+            if members.isEmpty {
+                ContentUnavailableView(
+                    "Nenhum membro cadastrado ainda.",
+                    systemImage: "person.2"
+                )
+            } else {
+                List(filtered) { member in
+                    HStack(spacing: PazSpacing.md) {
+                        Image(systemName: "person.fill")
+                            .foregroundStyle(PazColors.accent)
+                        Text(member.name)
+                            .font(PazTypography.bodyMedium)
+                            .foregroundStyle(PazColors.ink)
+                        Spacer()
+                    }
+                    .padding(PazSpacing.md)
+                    .glassCard(radius: PazSpacing.cardRadiusCompact)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 6, leading: PazSpacing.lg, bottom: 6, trailing: PazSpacing.lg))
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .searchable(text: $query, prompt: "Buscar membro")
             }
-            .foregroundColor(.white)
-            .padding(.horizontal, PazSpacing.md)
-            .padding(.vertical, PazSpacing.sm)
-            .background(Color(red: 0.15, green: 0.68, blue: 0.38))
-            .cornerRadius(10)
         }
-    }
-
-    private func openWhatsApp() {
-        let digits = phone.filter(\.isNumber)
-        guard !digits.isEmpty, let url = URL(string: "https://wa.me/\(digits)") else { return }
-        UIApplication.shared.open(url)
+        .background(PazMeshBackground())
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 }
+
+// MARK: - Components
 
 private struct InfoRowView: View {
     let icon: String

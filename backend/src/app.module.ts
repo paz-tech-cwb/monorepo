@@ -29,6 +29,8 @@ import { HealthModule } from './health/health.module';
 import { MemberRegistrationsModule } from './member-registrations/member-registrations.module';
 import { FormConversionsModule } from './form-conversions/form-conversions.module';
 import { LifeGroupReportsModule } from './life-group-reports/life-group-reports.module';
+import { LifeGroupAttendanceModule } from './life-group-attendance/life-group-attendance.module';
+import { LifeGroupAnalyticsModule } from './life-group-analytics/life-group-analytics.module';
 import { SectorSupervisorReportsModule } from './sector-supervisor-reports/sector-supervisor-reports.module';
 import { AreaSupervisorReportsModule } from './area-supervisor-reports/area-supervisor-reports.module';
 import { MultiplicationsModule } from './multiplications/multiplications.module';
@@ -87,6 +89,8 @@ import ormconfig from './configs/orm.config';
     MemberRegistrationsModule,
     FormConversionsModule,
     LifeGroupReportsModule,
+    LifeGroupAttendanceModule,
+    LifeGroupAnalyticsModule,
     SectorSupervisorReportsModule,
     AreaSupervisorReportsModule,
     MultiplicationsModule,

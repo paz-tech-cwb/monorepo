@@ -51,7 +51,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Câmera necessária para foto de perfil</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Usamos sua localização para mostrar os Grupos de Vida mais próximos de você no mapa.</string>
+	<string>Usamos sua localização para mostrar os Life Groups mais próximos de você no mapa.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>dm_sans_regular.ttf</string>

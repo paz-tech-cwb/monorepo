@@ -27,11 +27,15 @@ export class LifeGroupsService {
    * not per-request). Returns null on any failure; geocoding is best-effort
    * and must never block saving the life group.
    */
-  private async geocodeLocation(
-    location: string,
-  ): Promise<{ latitude: number; longitude: number } | null> {
+  private async geocodeLocation(location: string): Promise<{
+    latitude: number;
+    longitude: number;
+    city: string | null;
+    neighborhood: string | null;
+    state: string | null;
+  } | null> {
     try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(location)}`;
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=${encodeURIComponent(location)}`;
       const response = await fetch(url, {
         headers: { 'User-Agent': 'PazChurchApp/1.0 (contato@igrejapaz.com.br)' },
       });
@@ -39,13 +43,39 @@ export class LifeGroupsService {
       const results = (await response.json()) as Array<{
         lat: string;
         lon: string;
+        address?: {
+          city?: string;
+          town?: string;
+          village?: string;
+          municipality?: string;
+          suburb?: string;
+          neighbourhood?: string;
+          city_district?: string;
+          state?: string;
+        };
       }>;
       const first = results[0];
       if (!first) return null;
       const latitude = parseFloat(first.lat);
       const longitude = parseFloat(first.lon);
       if (Number.isNaN(latitude) || Number.isNaN(longitude)) return null;
-      return { latitude, longitude };
+      const address = first.address ?? {};
+      return {
+        latitude,
+        longitude,
+        city:
+          address.city ??
+          address.town ??
+          address.village ??
+          address.municipality ??
+          null,
+        neighborhood:
+          address.suburb ??
+          address.neighbourhood ??
+          address.city_district ??
+          null,
+        state: address.state ?? null,
+      };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`Geocoding failed for "${location}": ${message}`);
@@ -87,6 +117,9 @@ export class LifeGroupsService {
       location: lifeGroup.location ?? null,
       latitude: lifeGroup.latitude ?? null,
       longitude: lifeGroup.longitude ?? null,
+      city: lifeGroup.city ?? null,
+      neighborhood: lifeGroup.neighborhood ?? null,
+      state: lifeGroup.state ?? null,
       meeting_day: lifeGroup.meetingDay ?? null,
       meeting_time: lifeGroup.meetingTime ?? null,
       member_count: lifeGroup.users?.length ?? 0,
@@ -119,6 +152,9 @@ export class LifeGroupsService {
         location: dto.location ?? null,
         latitude: coords?.latitude ?? null,
         longitude: coords?.longitude ?? null,
+        city: coords?.city ?? null,
+        neighborhood: coords?.neighborhood ?? null,
+        state: coords?.state ?? null,
         kidsCount: dto.kids_count ?? 0,
         meetingDay: dto.meeting_day ?? null,
         meetingTime: dto.meeting_time ?? null,
@@ -132,6 +168,35 @@ export class LifeGroupsService {
     } catch (error: unknown) {
       throw new BadRequestException(
         'An error occurred while creating the life group.',
+      );
+    }
+  }
+
+  /**
+   * Life groups where the viewer is the leader, the co-leader, or a roster
+   * member — used to default the mobile app's Grupos de Vida tab to "your
+   * group(s)" instead of the entire church's list.
+   */
+  async findMine(viewer: User) {
+    try {
+      const lifeGroups = await this.entityManager
+        .createQueryBuilder(LifeGroup, 'lg')
+        .leftJoinAndSelect('lg.leader', 'leader')
+        .leftJoinAndSelect('lg.coLeader', 'coLeader')
+        .leftJoinAndSelect('lg.sector', 'sector')
+        .leftJoinAndSelect('lg.users', 'users')
+        .where('leader.id = :viewerId', { viewerId: viewer.id })
+        .orWhere('coLeader.id = :viewerId', { viewerId: viewer.id })
+        .orWhere(
+          'lg.id IN (SELECT ulg.life_group_id FROM user_life_groups ulg WHERE ulg.user_id = :viewerId)',
+          { viewerId: viewer.id },
+        )
+        .orderBy('lg.name', 'ASC')
+        .getMany();
+      return lifeGroups.map((lg) => this.toResponse(lg, viewer));
+    } catch (error: unknown) {
+      throw new BadRequestException(
+        'An error occurred while retrieving your life groups.',
       );
     }
   }
@@ -207,6 +272,9 @@ export class LifeGroupsService {
           : null;
         lifeGroup.latitude = coords?.latitude ?? null;
         lifeGroup.longitude = coords?.longitude ?? null;
+        lifeGroup.city = coords?.city ?? null;
+        lifeGroup.neighborhood = coords?.neighborhood ?? null;
+        lifeGroup.state = coords?.state ?? null;
       }
       if (dto.kids_count !== undefined) lifeGroup.kidsCount = dto.kids_count;
       if (dto.meeting_day !== undefined) lifeGroup.meetingDay = dto.meeting_day;

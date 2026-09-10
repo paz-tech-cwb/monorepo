@@ -48,7 +48,7 @@ fun LifeGroupPickerSheet(
             OutlinedTextField(
                 value = state.query,
                 onValueChange = onQueryChanged,
-                placeholder = { Text("Buscar grupo de vida") },
+                placeholder = { Text("Buscar life group") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
