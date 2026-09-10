@@ -4,22 +4,14 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts"
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig,
+} from "@/components/ui/chart"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts"
 import { useLifeGroupAttendanceAnalytics } from "@/lib/hooks/use-life-group-analytics"
 import {
   LifeGroupAnalyticsFilters,
@@ -50,23 +42,39 @@ function formatPeriodLabel(period: string, granularity: "month" | "meeting"): st
   return MONTH_LABELS[Number(month) - 1] ?? period
 }
 
+const rateChartConfig = {
+  taxa: { label: "Taxa de presença", color: "var(--color-chart-1)" },
+} satisfies ChartConfig
+
+const countsChartConfig = {
+  presentes: { label: "Presentes", color: "var(--color-chart-1)" },
+  ausentes: { label: "Ausentes", color: "var(--color-chart-4)" },
+} satisfies ChartConfig
+
 interface LifeGroupAttendanceChartProps {
-  showFilters?: boolean
-  defaultFilters?: LifeGroupAnalyticsFilterState
+  /** Locks the chart to a single group and hides the (now year/month-only)
+   * filters' relevance to "all groups" framing — used by the per-group
+   * "Frequência" view opened from a life group's row menu. */
+  lifeGroupId?: number
+  /** "rate" (default) is the church-wide dashboard view — just the
+   * attendance percentage trend. "counts" is the per-group detail view —
+   * raw attendance vs. absence counts, which matter more once you're
+   * looking at one specific group. */
+  metric?: "rate" | "counts"
 }
 
 export function LifeGroupAttendanceChart({
-  showFilters = true,
-  defaultFilters,
+  lifeGroupId,
+  metric = "rate",
 }: LifeGroupAttendanceChartProps) {
-  const [filters, setFilters] = useState<LifeGroupAnalyticsFilterState>(
-    defaultFilters ?? { year: new Date().getFullYear() }
-  )
+  const [filters, setFilters] = useState<LifeGroupAnalyticsFilterState>({
+    year: new Date().getFullYear(),
+  })
 
   const { data, isLoading, isError } = useLifeGroupAttendanceAnalytics({
     year: filters.year,
     month: filters.month,
-    life_group_id: filters.lifeGroupId,
+    life_group_id: lifeGroupId,
     granularity: filters.month ? "meeting" : "month",
   })
 
@@ -74,15 +82,22 @@ export function LifeGroupAttendanceChart({
   const rows = data?.rows ?? []
   const chartData = rows.map((row) => ({
     name: formatPeriodLabel(row.period, granularity),
-    period: row.period,
     presentes: row.present_count,
-    membros: row.members_count,
+    ausentes: Math.max(row.members_count - row.present_count, 0),
     taxa: Math.round(row.attendance_rate * 100),
   }))
   // Monthly rows are always zero-filled for all 12 months, so an empty
   // array never actually happens for that view — detect "no data at all"
   // by checking every row has zero meetings instead.
   const isEmpty = rows.every((row) => row.meetings_count === 0)
+
+  const totals = rows.reduce(
+    (acc, row) => ({
+      presentes: acc.presentes + row.present_count,
+      ausentes: acc.ausentes + Math.max(row.members_count - row.present_count, 0),
+    }),
+    { presentes: 0, ausentes: 0 }
+  )
 
   return (
     <Card>
@@ -95,8 +110,18 @@ export function LifeGroupAttendanceChart({
               : "Presença agregada por mês no ano selecionado"}
           </CardDescription>
         </div>
-        {showFilters && (
-          <LifeGroupAnalyticsFilters value={filters} onChange={setFilters} />
+        <LifeGroupAnalyticsFilters value={filters} onChange={setFilters} />
+        {metric === "counts" && !isLoading && !isError && !isEmpty && (
+          <div className="flex gap-4 text-sm">
+            <span>
+              <span className="font-semibold text-foreground">{totals.presentes}</span>{" "}
+              <span className="text-muted-foreground">presenças</span>
+            </span>
+            <span>
+              <span className="font-semibold text-foreground">{totals.ausentes}</span>{" "}
+              <span className="text-muted-foreground">ausências</span>
+            </span>
+          </div>
         )}
       </CardHeader>
       <CardContent>
@@ -110,51 +135,35 @@ export function LifeGroupAttendanceChart({
           <p className="text-sm text-muted-foreground py-8 text-center">
             Nenhum registro de presença encontrado para o período selecionado.
           </p>
+        ) : metric === "counts" ? (
+          <ChartContainer config={countsChartConfig} className="aspect-auto h-[300px] w-full">
+            <BarChart data={chartData}>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="name" tickLine={false} axisLine={false} />
+              <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Bar dataKey="presentes" fill="var(--color-presentes)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="ausentes" fill="var(--color-ausentes)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
         ) : (
-          <>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="name" className="text-xs" />
-                <YAxis className="text-xs" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                  }}
-                />
-                <Bar dataKey="presentes" fill="#15803d" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-
-            <div className="mt-4 max-h-64 overflow-auto rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Período</TableHead>
-                    <TableHead className="text-right">Reuniões</TableHead>
-                    <TableHead className="text-right">Presentes</TableHead>
-                    <TableHead className="text-right">Membros</TableHead>
-                    <TableHead className="text-right">Taxa</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((row) => (
-                    <TableRow key={row.period}>
-                      <TableCell>{formatPeriodLabel(row.period, granularity)}</TableCell>
-                      <TableCell className="text-right">{row.meetings_count}</TableCell>
-                      <TableCell className="text-right">{row.present_count}</TableCell>
-                      <TableCell className="text-right">{row.members_count}</TableCell>
-                      <TableCell className="text-right">
-                        {Math.round(row.attendance_rate * 100)}%
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </>
+          <ChartContainer config={rateChartConfig} className="aspect-auto h-[300px] w-full">
+            <BarChart data={chartData}>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="name" tickLine={false} axisLine={false} />
+              <YAxis
+                domain={[0, 100]}
+                tickFormatter={(v) => `${v}%`}
+                tickLine={false}
+                axisLine={false}
+              />
+              <ChartTooltip
+                content={<ChartTooltipContent formatter={(value) => `${value}%`} />}
+              />
+              <Bar dataKey="taxa" fill="var(--color-taxa)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
         )}
       </CardContent>
     </Card>

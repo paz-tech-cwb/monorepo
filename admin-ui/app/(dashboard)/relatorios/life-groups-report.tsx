@@ -12,22 +12,20 @@ import {
   ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/chart"
-import { Baby, PieChart as PieChartIcon } from "lucide-react"
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid } from "recharts"
+import { Baby, PieChart as PieChartIcon, Users2, BarChart3 } from "lucide-react"
+import { PieChart, Pie, Cell } from "recharts"
 import { useLifeGroups } from "@/lib/hooks/use-life-groups"
 import { useSectors } from "@/lib/hooks/use-sectors"
+import { useUsers } from "@/lib/hooks/use-users"
 import { LifeGroupAttendanceChart } from "@/components/life-group-analytics/life-group-attendance-chart"
 import { LifeGroupDistributionChart } from "@/components/life-group-analytics/life-group-distribution-chart"
 
 const CHART_COLOR_COUNT = 5
 
-const membersPerGroupChartConfig = {
-  value: { label: "Membros", color: "var(--color-chart-2)" },
-} satisfies ChartConfig
-
 export function LifeGroupsReport() {
   const { data: lifeGroups = [], isLoading: lifeGroupsLoading } = useLifeGroups()
   const { data: sectors = [] } = useSectors()
+  const { data: allUsers = [], isLoading: usersLoading } = useUsers()
 
   const sectorMap = useMemo(() => new Map(sectors.map((s) => [s.id, s.name])), [sectors])
 
@@ -57,24 +55,43 @@ export function LifeGroupsReport() {
     return cfg
   }, [groupsBySector])
 
-  const membersPerGroup = useMemo(
-    () =>
-      [...lifeGroups]
-        .sort((a, b) => b.member_count - a.member_count)
-        .slice(0, 8)
-        .map((g) => ({ name: g.name, value: g.member_count })),
-    [lifeGroups]
-  )
-
   const totalKids = useMemo(
     () => lifeGroups.reduce((sum, g) => sum + (g.kids_count ?? 0), 0),
     [lifeGroups]
   )
 
+  // A per-group bar chart stops being readable well before a church has 60+
+  // groups — the average scales to any number of groups instead.
+  const avgMembersPerGroup = useMemo(
+    () =>
+      lifeGroups.length > 0
+        ? Math.round((lifeGroups.reduce((sum, g) => sum + g.member_count, 0) / lifeGroups.length) * 10) / 10
+        : 0,
+    [lifeGroups]
+  )
+
+  const totalMembers = allUsers.length
+  const membersInGroup = useMemo(
+    () => allUsers.filter((u) => u.life_group_ids?.length > 0).length,
+    [allUsers]
+  )
+  const membersWithoutGroup = totalMembers - membersInGroup
+  const inGroupPercent = totalMembers > 0 ? Math.round((membersInGroup / totalMembers) * 100) : 0
+
+  const membershipChartConfig = {
+    "em-grupo": { label: "Em um grupo", color: "var(--color-chart-1)" },
+    "sem-grupo": { label: "Sem grupo", color: "var(--color-chart-4)" },
+  } satisfies ChartConfig
+
+  const membershipData = [
+    { key: "em-grupo", value: membersInGroup },
+    { key: "sem-grupo", value: membersWithoutGroup },
+  ]
+
   return (
     <div className="space-y-4">
-      {/* Extra stat cards */}
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* Stat cards */}
+      <div className="grid gap-4 md:grid-cols-3">
         {lifeGroupsLoading ? (
           <StatsCardSkeleton />
         ) : (
@@ -86,6 +103,40 @@ export function LifeGroupsReport() {
             <CardContent>
               <div className="text-2xl font-bold">{totalKids}</div>
               <p className="text-xs text-muted-foreground">crianças de 0 a 11 anos cadastradas</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {lifeGroupsLoading ? (
+          <StatsCardSkeleton />
+        ) : (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Média por Grupo</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{avgMembersPerGroup}</div>
+              <p className="text-xs text-muted-foreground">membros por grupo, em média</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {usersLoading ? (
+          <StatsCardSkeleton />
+        ) : (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Membros em Grupos</CardTitle>
+              <Users2 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {membersInGroup} <span className="text-sm font-normal text-muted-foreground">/ {totalMembers}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {inGroupPercent}% em grupo · {membersWithoutGroup} sem grupo
+              </p>
             </CardContent>
           </Card>
         )}
@@ -137,36 +188,38 @@ export function LifeGroupsReport() {
           </CardContent>
         </Card>
 
-        {/* Members per group */}
+        {/* Members in a group vs. not */}
         <Card>
           <CardHeader>
-            <CardTitle>Membros por Grupo</CardTitle>
-            <CardDescription>8 maiores grupos de vida por número de membros</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Users2 className="h-4 w-4" />
+              Membros com e sem Grupo
+            </CardTitle>
+            <CardDescription>Quantos membros da igreja já estão em um grupo de vida</CardDescription>
           </CardHeader>
           <CardContent>
-            {lifeGroupsLoading ? (
+            {usersLoading ? (
               <Skeleton className="h-[260px] w-full" />
-            ) : membersPerGroup.length === 0 ? (
-              <div className="h-[260px] flex items-center justify-center text-sm text-muted-foreground">
-                Nenhum grupo cadastrado ainda.
-              </div>
             ) : (
-              <ChartContainer config={membersPerGroupChartConfig} className="aspect-auto h-[260px] w-full">
-                <BarChart data={membersPerGroup}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    interval={0}
-                    angle={-20}
-                    textAnchor="end"
-                    height={60}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                  <Bar dataKey="value" fill="var(--color-value)" radius={[4, 4, 0, 0]} />
-                </BarChart>
+              <ChartContainer config={membershipChartConfig} className="aspect-auto h-[260px] w-full">
+                <PieChart>
+                  <ChartTooltip content={<ChartTooltipContent nameKey="key" hideLabel />} />
+                  <Pie
+                    data={membershipData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={95}
+                    paddingAngle={4}
+                    dataKey="value"
+                    nameKey="key"
+                  >
+                    {membershipData.map((entry) => (
+                      <Cell key={entry.key} fill={`var(--color-${entry.key})`} />
+                    ))}
+                  </Pie>
+                  <ChartLegend content={<ChartLegendContent nameKey="key" />} />
+                </PieChart>
               </ChartContainer>
             )}
           </CardContent>

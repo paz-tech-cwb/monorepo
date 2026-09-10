@@ -1,28 +1,16 @@
 "use client"
 
-import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts"
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts"
 import { useLifeGroupDistributionAnalytics } from "@/lib/hooks/use-life-group-analytics"
-import {
-  LifeGroupAnalyticsFilters,
-  type LifeGroupAnalyticsFilterState,
-} from "./life-group-analytics-filters"
 import type { LifeGroupDistributionBucket } from "@/lib/api/types"
 
-interface LifeGroupDistributionChartProps {
-  showFilters?: boolean
-}
+const distributionChartConfig = {
+  quantidade: { label: "Grupos", color: "var(--color-chart-2)" },
+} satisfies ChartConfig
 
 function DistributionBarChart({ data }: { data: LifeGroupDistributionBucket[] }) {
   if (data.length === 0) {
@@ -33,50 +21,28 @@ function DistributionBarChart({ data }: { data: LifeGroupDistributionBucket[] })
     )
   }
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ChartContainer config={distributionChartConfig} className="aspect-auto h-[300px] w-full">
       <BarChart data={data.map((d) => ({ name: d.label, quantidade: d.count }))}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-        <XAxis dataKey="name" className="text-xs" interval={0} angle={-20} textAnchor="end" height={60} />
-        <YAxis className="text-xs" allowDecimals={false} />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
-            borderRadius: "8px",
-          }}
-        />
-        <Bar dataKey="quantidade" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+        <CartesianGrid vertical={false} />
+        <XAxis dataKey="name" interval={0} angle={-20} textAnchor="end" height={60} tickLine={false} axisLine={false} />
+        <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+        <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+        <Bar dataKey="quantidade" fill="var(--color-quantidade)" radius={[4, 4, 0, 0]} />
       </BarChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   )
 }
 
-export function LifeGroupDistributionChart({
-  showFilters = true,
-}: LifeGroupDistributionChartProps) {
-  const [filters, setFilters] = useState<LifeGroupAnalyticsFilterState>({
-    year: new Date().getFullYear(),
-  })
-
-  const { data, isLoading, isError } = useLifeGroupDistributionAnalytics({
-    life_group_id: filters.lifeGroupId,
-  })
+// Always scoped to every life group — per-group filtering isn't useful
+// here since the whole point is comparing groups against each other.
+export function LifeGroupDistributionChart() {
+  const { data, isLoading, isError } = useLifeGroupDistributionAnalytics({})
 
   return (
     <Card>
-      <CardHeader className="space-y-3">
-        <div>
-          <CardTitle>Distribuição dos Grupos de Vida</CardTitle>
-          <CardDescription>Dia, horário e localização dos grupos</CardDescription>
-        </div>
-        {showFilters && (
-          <LifeGroupAnalyticsFilters
-            value={filters}
-            onChange={setFilters}
-            showYear={false}
-            showMonth={false}
-          />
-        )}
+      <CardHeader>
+        <CardTitle>Distribuição dos Grupos de Vida</CardTitle>
+        <CardDescription>Dia, horário e localização dos grupos</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
