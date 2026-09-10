@@ -68,4 +68,20 @@ sealed class Screen(
     data object LifeGroupStudyEdit : Screen("life_group_study_edit/{studyId}") {
         fun createRoute(studyId: String) = "life_group_study_edit/$studyId"
     }
+
+    data object LifeGroupAttendanceHistory : Screen("life_group_attendance_history/{lifeGroupId}") {
+        fun createRoute(lifeGroupId: String) = "life_group_attendance_history/$lifeGroupId"
+    }
+
+    data object LifeGroupAttendanceEditor : Screen("life_group_attendance_editor/{lifeGroupId}/{date}") {
+        fun createRoute(
+            lifeGroupId: String,
+            date: String,
+        ) = "life_group_attendance_editor/$lifeGroupId/$date"
+    }
+
+    data object LifeGroupAnalytics : Screen("life_group_analytics?lifeGroupId={lifeGroupId}") {
+        fun createRoute(lifeGroupId: String? = null) =
+            if (lifeGroupId != null) "life_group_analytics?lifeGroupId=$lifeGroupId" else "life_group_analytics"
+    }
 }

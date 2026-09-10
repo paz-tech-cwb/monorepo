@@ -68,6 +68,32 @@ struct MinistryDetailDeepLinkView: View {
     }
 }
 
+struct LifeGroupAttendanceEditorDeepLinkView: View {
+    let lifeGroupId: String
+    let meetingDate: String
+    let repository: LifeGroupAttendanceRepository
+
+    var body: some View {
+        Group {
+            if let id = Int32(lifeGroupId) {
+                LifeGroupAttendanceEditorView(
+                    lifeGroupId: id,
+                    meetingDate: meetingDate,
+                    repository: repository,
+                    onSaved: {},
+                    onCancel: {}
+                )
+            } else {
+                ContentUnavailableView(
+                    "Grupo não encontrado",
+                    systemImage: "person.fill.questionmark"
+                )
+                .background(PazMeshBackground())
+            }
+        }
+    }
+}
+
 struct LifeGroupDetailDeepLinkView: View {
     let lifeGroupId: String
     let churchRepository: ChurchRepository

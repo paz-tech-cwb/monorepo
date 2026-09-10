@@ -73,6 +73,7 @@ struct AgendaListView: View {
             }
             .padding(.horizontal, 20)
         }
+        .refreshable { await viewModel.loadFirstPage() }
     }
 }
 

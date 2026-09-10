@@ -115,6 +115,7 @@ struct AcademyView: View {
                 Spacer().frame(height: 32)
             }
         }
+        .refreshable { await viewModel.load(isAuthenticated: authCoordinator.isAuthenticated) }
     }
 
     private var loggedOutPromo: some View {

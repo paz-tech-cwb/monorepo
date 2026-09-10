@@ -63,6 +63,16 @@ object PushNotificationHelper {
             deepLink.startsWith("paz://lifegroup/") -> "life_group_detail/${deepLink.removePrefix("paz://lifegroup/")}"
             deepLink.startsWith("paz://estudo-do-life/") ->
                 "life_group_study_detail/${deepLink.removePrefix("paz://estudo-do-life/")}"
+            deepLink.startsWith("paz://presenca/") -> {
+                val parts = deepLink.removePrefix("paz://presenca/").split("/", limit = 2)
+                val lifeGroupId = parts.getOrNull(0)
+                val meetingDate = parts.getOrNull(1)
+                if (lifeGroupId.isNullOrBlank() || meetingDate.isNullOrBlank()) {
+                    null
+                } else {
+                    "life_group_attendance_editor/$lifeGroupId/$meetingDate"
+                }
+            }
             deepLink.startsWith("paz://formularios") -> "formularios"
             deepLink.startsWith("paz://journey") -> "member_journey"
             deepLink.startsWith("paz://account") -> "account"

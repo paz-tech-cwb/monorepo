@@ -31,6 +31,6 @@ val UserRole.displayName: String
         UserRole.pastor             -> "Pastor"
         UserRole.area_leader        -> "Líder de Área"
         UserRole.sector_leader      -> "Líder de Setor"
-        UserRole.life_group_leader  -> "Líder de GV"
+        UserRole.life_group_leader  -> "Líder de Grupo de Vida"
         UserRole.member             -> "Membro"
     }

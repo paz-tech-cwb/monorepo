@@ -6,6 +6,7 @@ enum DeepLinkDestination: Hashable {
     case ministryDetail(ministryId: String)
     case lifeGroupDetail(lifeGroupId: String)
     case lifeGroupStudyDetail(studyId: String)
+    case lifeGroupAttendanceEditor(lifeGroupId: String, meetingDate: String)
     case formularios
     case memberJourney
     case account
@@ -37,6 +38,11 @@ extension DeepLinkDestination {
         if parsedRoute.hasPrefix("estudo-do-life/") {
             let id = String(parsedRoute.dropFirst("estudo-do-life/".count))
             return id.isEmpty ? nil : .lifeGroupStudyDetail(studyId: id)
+        }
+        if parsedRoute.hasPrefix("presenca/") {
+            let parts = parsedRoute.dropFirst("presenca/".count).split(separator: "/", maxSplits: 1)
+            guard parts.count == 2 else { return nil }
+            return .lifeGroupAttendanceEditor(lifeGroupId: String(parts[0]), meetingDate: String(parts[1]))
         }
         switch parsedRoute {
         case "formularios": return .formularios

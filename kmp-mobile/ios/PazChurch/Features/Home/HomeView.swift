@@ -125,6 +125,7 @@ struct HomeView: View {
                     .frame(height: 40)
             }
         }
+        .refreshable { await viewModel.load() }
         .background(PazMeshBackground())
         .navigationTitle("Início")
         .navigationBarTitleDisplayMode(.large)
@@ -174,7 +175,41 @@ struct HomeView: View {
                     EmptyView()
                 }
             }
+
+            if viewModel.canManage {
+                lifeGroupAnalyticsShortcut
+                    .padding(.top, 24)
+            }
         }
+    }
+
+    // MARK: - Life Group analytics shortcut
+
+    private var lifeGroupAnalyticsShortcut: some View {
+        NavigationLink {
+            LifeGroupAnalyticsView(
+                lifeGroupId: nil,
+                analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository,
+                churchRepository: IosAppContainer.shared.churchRepository
+            )
+        } label: {
+            HStack(spacing: PazSpacing.md) {
+                Image(systemName: "chart.bar.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(PazColors.accent)
+                Text("Relatórios de Grupos de Vida")
+                    .font(PazTypography.titleSmall)
+                    .foregroundColor(PazColors.ink)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14))
+                    .foregroundColor(.gray)
+            }
+            .padding(PazSpacing.lg)
+            .glassCard(radius: PazSpacing.cardRadiusCompact)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, PazSpacing.lg)
     }
 
     // MARK: - Featured section

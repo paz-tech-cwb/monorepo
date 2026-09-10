@@ -79,6 +79,7 @@ struct LifeGroupStudyListView: View {
             }
         }
         .listStyle(.plain)
+        .refreshable { await viewModel.load(currentUser: authCoordinator.currentUser) }
     }
 
     private var emptyState: some View {

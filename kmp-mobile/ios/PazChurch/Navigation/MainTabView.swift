@@ -51,8 +51,8 @@ struct MainTabView: View {
             selectedTab = 0
             agendaPath = [destination]
 
-        case .formDetail, .ministryDetail, .lifeGroupDetail, .lifeGroupStudyDetail, .formularios, .memberJourney,
-             .account:
+        case .formDetail, .ministryDetail, .lifeGroupDetail, .lifeGroupStudyDetail, .lifeGroupAttendanceEditor,
+             .formularios, .memberJourney, .account:
             // Switch tab only — AccountView observes pendingDeepLink and pushes its own path
             selectedTab = 2
         }
@@ -90,6 +90,13 @@ struct MainTabView: View {
             LifeGroupStudyDetailView(
                 studyId: studyId,
                 repository: IosAppContainer.shared.lifeGroupStudyRepository
+            )
+
+        case let .lifeGroupAttendanceEditor(lifeGroupId, meetingDate):
+            LifeGroupAttendanceEditorDeepLinkView(
+                lifeGroupId: lifeGroupId,
+                meetingDate: meetingDate,
+                repository: IosAppContainer.shared.lifeGroupAttendanceRepository
             )
 
         default:

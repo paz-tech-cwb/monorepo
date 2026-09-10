@@ -9,6 +9,9 @@ class HomeViewModel {
     var userName = ""
     var isLoading = true
     var error: String?
+    // Any leadership role (role.isLeader) — gates the "Relatórios de Grupos
+    // de Vida" shortcut card.
+    var canManage = false
 
     private let homeRepository: HomeRepository
     private let authRepository: AuthRepository
@@ -31,6 +34,7 @@ class HomeViewModel {
             homeContent = content
             let user = try await authRepository.currentUser()
             userName = user?.name.split(separator: " ").first.map(String.init) ?? ""
+            canManage = user?.role.isLeader == true
             isLoading = false
         } catch {
             print("[HomeVM] load() FAILED — \(type(of: error)): \(error)")

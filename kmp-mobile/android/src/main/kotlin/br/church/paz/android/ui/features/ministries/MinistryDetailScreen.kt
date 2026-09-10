@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material3.Icon
@@ -170,11 +171,25 @@ fun LifeGroupDetailScreen(
         error = uiState.error,
         onBack = viewModel::onBack,
     ) {
-        uiState.lifeGroup?.let {
+        uiState.lifeGroup?.let { group ->
             LifeGroupContent(
-                lifeGroup = it,
+                lifeGroup = group,
+                canManageAttendance = uiState.canManageAttendance,
                 onStudyTap = {
                     navController.navigate(br.church.paz.android.navigation.Screen.LifeGroupStudyList.route)
+                },
+                onAttendanceTap = {
+                    navController.navigate(
+                        br.church.paz.android.navigation.Screen.LifeGroupAttendanceHistory
+                            .createRoute(group.id.toString()),
+                    )
+                },
+                canManage = uiState.canManage,
+                onAnalyticsTap = {
+                    navController.navigate(
+                        br.church.paz.android.navigation.Screen.LifeGroupAnalytics
+                            .createRoute(group.id.toString()),
+                    )
                 },
             )
         }
@@ -184,7 +199,11 @@ fun LifeGroupDetailScreen(
 @Composable
 private fun LifeGroupContent(
     lifeGroup: LifeGroup,
+    canManageAttendance: Boolean,
     onStudyTap: () -> Unit,
+    onAttendanceTap: () -> Unit,
+    canManage: Boolean,
+    onAnalyticsTap: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -281,6 +300,64 @@ private fun LifeGroupContent(
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                 )
+            }
+        }
+
+        if (canManageAttendance) {
+            item {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(PazShapes.large)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .clickable(onClick = onAttendanceTap)
+                            .padding(PazSpacing.Lg),
+                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Outlined.Groups,
+                        contentDescription = null,
+                        tint = PazColors.Primary,
+                        modifier = Modifier.size(22.dp),
+                    )
+                    Text("Presença", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Icon(
+                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    )
+                }
+            }
+        }
+
+        if (canManage || canManageAttendance) {
+            item {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(PazShapes.large)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .clickable(onClick = onAnalyticsTap)
+                            .padding(PazSpacing.Lg),
+                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Outlined.BarChart,
+                        contentDescription = null,
+                        tint = PazColors.Primary,
+                        modifier = Modifier.size(22.dp),
+                    )
+                    Text("Relatórios", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Icon(
+                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    )
+                }
             }
         }
 

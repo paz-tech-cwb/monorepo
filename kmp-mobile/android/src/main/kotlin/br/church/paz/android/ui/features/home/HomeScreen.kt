@@ -35,7 +35,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -83,6 +85,7 @@ import br.church.paz.android.ui.theme.LocalPazDarkTheme
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapePill
+import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.AgendaEvent
 import br.church.paz.shared.domain.model.BankInfo
@@ -139,9 +142,11 @@ fun HomeScreen(
                     agendaEvents = uiState.agendaEvents,
                     bank = uiState.bank,
                     sectionOrder = uiState.sectionOrder,
+                    canManage = uiState.canManage,
                     onBannerTap = viewModel::onBannerTapped,
                     onEventTap = viewModel::onEventTapped,
                     onSeeAllEvents = { navController.navigate(Screen.AgendaList.route) },
+                    onLifeGroupAnalyticsTap = { navController.navigate(Screen.LifeGroupAnalytics.createRoute()) },
                     contentPadding = adjustedPadding,
                 )
         }
@@ -236,9 +241,11 @@ private fun HomeContent(
     agendaEvents: List<AgendaEvent>,
     bank: BankInfo?,
     sectionOrder: List<String>,
+    canManage: Boolean,
     onBannerTap: (String?) -> Unit,
     onEventTap: (String) -> Unit,
     onSeeAllEvents: () -> Unit,
+    onLifeGroupAnalyticsTap: () -> Unit,
     contentPadding: PaddingValues,
 ) {
     val weekDays = remember(agendaEvents) { buildWeekDays(agendaEvents) }
@@ -284,6 +291,42 @@ private fun HomeContent(
                                 onSeeAll = onSeeAllEvents,
                             )
                         }
+                    }
+                }
+            }
+        }
+
+        if (canManage) {
+            item(key = "life-group-analytics") {
+                AnimatedSection(index = sectionOrder.size) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Xs)
+                                .clip(PazShapes.large)
+                                .background(MaterialTheme.colorScheme.surface)
+                                .clickable(onClick = onLifeGroupAnalyticsTap)
+                                .padding(PazSpacing.Lg),
+                        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.BarChart,
+                            contentDescription = null,
+                            tint = PazColors.Primary,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Text(
+                            "Relatórios de Grupos de Vida",
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Icon(
+                            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                        )
                     }
                 }
             }
