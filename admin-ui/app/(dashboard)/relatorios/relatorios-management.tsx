@@ -14,7 +14,7 @@ import { LifeGroupsReport } from "./life-groups-report"
 // Report catalog — add an entry here whenever a new report type is built.
 // The selector and the switch below stay in sync with this single list.
 const REPORT_TYPES = [
-  { value: "life-groups", label: "Grupos de Vida", icon: Users2 },
+  { value: "life-groups", label: "Life Group", icon: Users2 },
 ] as const
 
 type ReportType = (typeof REPORT_TYPES)[number]["value"]
