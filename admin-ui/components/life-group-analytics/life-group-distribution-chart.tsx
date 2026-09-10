@@ -16,7 +16,7 @@ function DistributionBarChart({ data }: { data: LifeGroupDistributionBucket[] })
   if (data.length === 0) {
     return (
       <p className="text-sm text-muted-foreground py-8 text-center">
-        Nenhum grupo de vida com esse dado cadastrado ainda.
+        Nenhum life group com esse dado cadastrado ainda.
       </p>
     )
   }
@@ -41,7 +41,7 @@ export function LifeGroupDistributionChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Distribuição dos Grupos de Vida</CardTitle>
+        <CardTitle>Distribuição dos Life Groups</CardTitle>
         <CardDescription>Dia, horário e localização dos grupos</CardDescription>
       </CardHeader>
       <CardContent>

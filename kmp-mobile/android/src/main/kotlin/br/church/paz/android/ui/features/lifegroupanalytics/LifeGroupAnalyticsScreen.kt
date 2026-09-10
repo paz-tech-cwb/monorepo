@@ -154,7 +154,7 @@ private fun AnalyticsContent(
         }
 
         item {
-            SectionCard(title = "Distribuição dos Grupos de Vida") {
+            SectionCard(title = "Distribuição dos Life Groups") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(PazSpacing.Xs),
@@ -170,7 +170,7 @@ private fun AnalyticsContent(
                 Spacer(Modifier.height(PazSpacing.Md))
                 val bucketEntries = uiState.distributionForSelectedTab
                 if (bucketEntries.isEmpty()) {
-                    PazBarChartEmpty("Nenhum grupo de vida com esse dado cadastrado.")
+                    PazBarChartEmpty("Nenhum life group com esse dado cadastrado.")
                 } else {
                     PazBarChart(
                         entries = bucketEntries.map { PazBarChartEntry(it.label, it.count.toFloat()) },
@@ -286,7 +286,7 @@ private fun LifeGroupDropdown(
             value = selectedLabel,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Grupo de Vida") },
+            label = { Text("Life Group") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier =
                 Modifier

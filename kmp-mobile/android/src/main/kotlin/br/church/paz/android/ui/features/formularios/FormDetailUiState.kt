@@ -107,7 +107,7 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
         FormType.multiplication ->
             listOf(
                 FormFieldDef("date", "Data da Multiplicação", "DD/MM/YYYY", required = true, fieldType = FormFieldType.DATE),
-                FormFieldDef("source_life_group_id", "Grupo de Vida de Origem", required = true, fieldType = FormFieldType.LG_PICKER),
+                FormFieldDef("source_life_group_id", "Life Group de Origem", required = true, fieldType = FormFieldType.LG_PICKER),
                 FormFieldDef("new_life_group_name", "Nome do Novo Grupo", "Ex: GL Norte", required = true),
                 FormFieldDef("new_leader_id", "Novo Líder", required = true, fieldType = FormFieldType.USER_PICKER),
                 FormFieldDef("host_id", "Anfitrião", required = true, fieldType = FormFieldType.USER_PICKER),
@@ -147,7 +147,7 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
                 ),
                 // TODO: replace with sector picker when available
                 FormFieldDef("sector_id", "Setor", required = true, fieldType = FormFieldType.USER_PICKER),
-                FormFieldDef("life_group_id", "Grupo de Vida", fieldType = FormFieldType.LG_PICKER),
+                FormFieldDef("life_group_id", "Life Group", fieldType = FormFieldType.LG_PICKER),
                 FormFieldDef("address", "Endereço"),
             )
         FormType.conversion ->
@@ -183,8 +183,8 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
                 ),
                 FormFieldDef("address", "Endereço", required = true),
                 FormFieldDef("attendance_count", "Quantidade de visitas", required = true),
-                FormFieldDef("life_group_status", "Status do Grupo de Vida", required = true),
-                FormFieldDef("life_group_leader_or_name", "Líder ou nome do Grupo de Vida"),
+                FormFieldDef("life_group_status", "Status do Life Group", required = true),
+                FormFieldDef("life_group_leader_or_name", "Líder ou nome do Life Group"),
                 FormFieldDef("invited_by", "Convidado por"),
                 FormFieldDef("notes", "Observações", fieldType = FormFieldType.MULTILINE),
             )

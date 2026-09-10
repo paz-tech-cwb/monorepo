@@ -195,7 +195,7 @@ export function LifeGroupsReport() {
               <Users2 className="h-4 w-4" />
               Membros com e sem Grupo
             </CardTitle>
-            <CardDescription>Quantos membros da igreja já estão em um grupo de vida</CardDescription>
+            <CardDescription>Quantos membros da igreja já estão em um life group</CardDescription>
           </CardHeader>
           <CardContent>
             {usersLoading ? (

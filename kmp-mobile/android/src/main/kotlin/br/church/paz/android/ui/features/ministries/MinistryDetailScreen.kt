@@ -166,7 +166,7 @@ fun LifeGroupDetailScreen(
     }
 
     DetailScaffold(
-        title = uiState.lifeGroup?.name ?: "Grupo de Vida",
+        title = uiState.lifeGroup?.name ?: "Life Group",
         isLoading = uiState.isLoading,
         error = uiState.error,
         onBack = viewModel::onBack,

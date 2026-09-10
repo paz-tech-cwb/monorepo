@@ -160,7 +160,7 @@ struct LifeGroupAnalyticsView: View {
 
     private var distributionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Distribuição dos Grupos de Vida").font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
+            Text("Distribuição dos Life Groups").font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
 
             HStack(spacing: 8) {
                 ForEach(LifeGroupDistributionTab.allCases) { tab in
@@ -172,7 +172,7 @@ struct LifeGroupAnalyticsView: View {
 
             let buckets = viewModel.distributionForSelectedTab
             if buckets.isEmpty {
-                PazBarChartEmptyView(message: "Nenhum grupo de vida com esse dado cadastrado.")
+                PazBarChartEmptyView(message: "Nenhum life group com esse dado cadastrado.")
             } else {
                 PazBarChartView(
                     entries: buckets.map { PazBarChartEntry(label: $0.label, value: Double($0.count)) }

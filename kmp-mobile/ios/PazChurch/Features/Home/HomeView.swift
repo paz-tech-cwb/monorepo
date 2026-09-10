@@ -197,7 +197,7 @@ struct HomeView: View {
                 Image(systemName: "chart.bar.fill")
                     .font(.system(size: 18))
                     .foregroundColor(PazColors.accent)
-                Text("Relatórios de Grupos de Vida")
+                Text("Relatórios de Life Groups")
                     .font(PazTypography.titleSmall)
                     .foregroundColor(PazColors.ink)
                 Spacer()

@@ -386,8 +386,8 @@ export function LifeGroupsManagement() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Grupos de Vida</h1>
-        <p className="text-muted-foreground">Gerencie os grupos de vida da igreja</p>
+        <h1 className="text-3xl font-bold text-foreground">Life Groups</h1>
+        <p className="text-muted-foreground">Gerencie os life groups da igreja</p>
       </div>
 
       {/* Summary cards */}
@@ -439,7 +439,7 @@ export function LifeGroupsManagement() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Lista de Grupos de Vida</CardTitle>
+              <CardTitle>Lista de Life Groups</CardTitle>
               <CardDescription>{filteredGroups.length} grupo(s) encontrado(s)</CardDescription>
             </div>
             <Button onClick={openCreate}>
@@ -584,7 +584,7 @@ export function LifeGroupsManagement() {
           setIsFormOpen(open)
           if (!open) setEditingGroup(null)
         }}
-        title={editingGroup ? "Editar Grupo de Vida" : "Novo Grupo de Vida"}
+        title={editingGroup ? "Editar Life Group" : "Novo Life Group"}
         description={
           editingGroup
             ? "Atualize os dados do grupo."
@@ -782,7 +782,7 @@ export function LifeGroupsManagement() {
       <ConfirmDeleteDialog
         open={!!deletingGroup}
         onOpenChange={(open) => { if (!open) setDeletingGroup(null) }}
-        entityName={deletingGroup?.name ?? "este grupo de vida"}
+        entityName={deletingGroup?.name ?? "este life group"}
         onConfirm={() => { if (deletingGroup) handleDelete(deletingGroup) }}
         isLoading={deleteLifeGroup.isPending}
       />

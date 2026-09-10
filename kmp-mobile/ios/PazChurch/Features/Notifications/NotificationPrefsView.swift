@@ -29,8 +29,8 @@ struct NotificationPrefsView: View {
                     )
 
                     PreferenceToggle(
-                        title: "Notificações do Grupo de Vida",
-                        description: "Atualizações do seu grupo de vida",
+                        title: "Notificações do Life Group",
+                        description: "Atualizações do seu life group",
                         isOn: $viewModel.lifeGroupNotifications
                     )
 

@@ -4,7 +4,7 @@ import SwiftUI
 
 // Defaults to just the viewer's own life group(s) — leaders/members of at
 // least one group don't need to browse the whole church's list to find
-// their own. "Ver mais grupos de vida" opens the unfiltered list/map for
+// their own. "Ver mais life groups" opens the unfiltered list/map for
 // anyone who wants to browse others. A viewer with no group of their own
 // sees the unfiltered list/map immediately, same as before this change.
 struct LifeGroupsView: View {
@@ -29,7 +29,7 @@ struct LifeGroupsView: View {
             }
         }
         .background(PazMeshBackground())
-        .navigationTitle("Grupos de Vida")
+        .navigationTitle("Life Groups")
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
     }
@@ -47,13 +47,13 @@ struct LifeGroupsView: View {
 
                 NavigationLink {
                     AllLifeGroupsContentView(churchRepository: churchRepository)
-                        .navigationTitle("Todos os Grupos de Vida")
+                        .navigationTitle("Todos os Life Groups")
                         .navigationBarTitleDisplayMode(.inline)
                 } label: {
                     HStack(spacing: PazSpacing.md) {
                         Image(systemName: "square.grid.2x2")
                             .foregroundColor(PazColors.accent)
-                        Text("Ver mais grupos de vida")
+                        Text("Ver mais life groups")
                             .font(PazTypography.titleSmall)
                             .foregroundColor(PazColors.ink)
                         Spacer()
@@ -110,7 +110,7 @@ struct LifeGroupsView: View {
 
 // The unfiltered, everyone-in-the-church list/map — either the fallback
 // when the viewer has no group of their own, or reached via "Ver mais
-// grupos de vida".
+// life groups".
 struct AllLifeGroupsContentView: View {
     @State private var viewModel: AllLifeGroupsViewModel
     @State private var showMap = false
@@ -132,7 +132,7 @@ struct AllLifeGroupsContentView: View {
             } else if let error = viewModel.error {
                 errorState(error: error)
             } else if viewModel.lifeGroups.isEmpty {
-                emptyState("Nenhum grupo de vida encontrado")
+                emptyState("Nenhum life group encontrado")
             } else if showMap {
                 // Map is edge-to-edge (ignoresSafeArea) so it reads behind the
                 // translucent nav bar.
