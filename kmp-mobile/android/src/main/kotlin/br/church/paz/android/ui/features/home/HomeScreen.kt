@@ -80,6 +80,7 @@ import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazCardSkeleton
+import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.LocalPazDarkTheme
 import br.church.paz.android.ui.theme.PazColors
@@ -1058,25 +1059,5 @@ private fun ErrorState(
     onRetry: () -> Unit,
     contentPadding: PaddingValues,
 ) {
-    Box(
-        Modifier
-            .fillMaxSize()
-            .padding(contentPadding),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-        ) {
-            Text("Erro ao carregar", style = MaterialTheme.typography.titleMedium)
-            Text(
-                message,
-                style =
-                    MaterialTheme.typography.bodySmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    ),
-            )
-            PazButton(text = "Tentar novamente", onClick = onRetry)
-        }
-    }
+    PazErrorState(message = message, onRetry = onRetry, contentPadding = contentPadding)
 }

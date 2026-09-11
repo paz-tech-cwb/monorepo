@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazButton
+import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
@@ -770,17 +771,11 @@ private fun ErrorState(
     error: String,
     onRetry: (() -> Unit)?,
 ) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(
-            Modifier.padding(PazSpacing.Xl),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-        ) {
+    if (onRetry != null) {
+        PazErrorState(message = error, onRetry = onRetry)
+    } else {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(error, style = MaterialTheme.typography.bodySmall)
-            if (onRetry != null) {
-                Spacer(Modifier.height(PazSpacing.Lg))
-                PazButton(text = "Tentar Novamente", onClick = onRetry, modifier = Modifier.fillMaxWidth())
-            }
         }
     }
 }

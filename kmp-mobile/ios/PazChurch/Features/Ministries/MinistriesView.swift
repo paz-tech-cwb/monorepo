@@ -54,19 +54,7 @@ struct MinistriesView: View {
     }
 
     private func errorState(error: String) -> some View {
-        VStack(spacing: PazSpacing.md) {
-            Spacer()
-            Text(error)
-                .font(PazTypography.bodySmall)
-                .foregroundColor(.gray)
-            Button(action: { viewModel.onRetry() }) {
-                Text("Tentar Novamente")
-            }
-            .buttonStyle(.pazPillPrimary)
-            .padding(.horizontal, PazSpacing.lg)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        ErrorStateView(message: error, onRetry: { viewModel.onRetry() })
     }
 
     private func emptyState(_ message: String) -> some View {

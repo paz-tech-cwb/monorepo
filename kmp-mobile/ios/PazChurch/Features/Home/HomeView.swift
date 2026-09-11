@@ -394,21 +394,7 @@ struct HomeView: View {
     }
 
     private var errorState: some View {
-        VStack(spacing: PazSpacing.md) {
-            Spacer().frame(height: 60)
-            Image(systemName: "exclamationmark.circle")
-                .font(.system(size: 48))
-                .foregroundStyle(PazColors.error)
-            Text("Erro ao carregar").font(PazTypography.titleMedium)
-            Text(viewModel.error ?? "Algo deu errado")
-                .font(PazTypography.bodySmall).foregroundStyle(.secondary)
-            Button(action: { viewModel.onRetry() }) {
-                Text("Tentar Novamente")
-            }
-            .buttonStyle(.pazPillPrimary)
-            .padding(.top, PazSpacing.md)
-        }
-        .padding(PazSpacing.lg)
+        ErrorStateView(message: viewModel.error ?? "Algo deu errado", onRetry: { viewModel.onRetry() })
     }
 }
 
