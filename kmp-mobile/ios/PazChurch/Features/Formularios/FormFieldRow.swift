@@ -344,7 +344,7 @@ struct DateFieldRow: View {
 
 // MARK: - Input helpers
 
-func applyPhoneMask(old: String, new: String) -> String {
+private func applyPhoneMask(old: String, new: String) -> String {
     var digits = new.filter(\.isNumber)
     let oldDigits = old.filter(\.isNumber)
     // User deleted a separator character — drop the preceding digit too
@@ -372,7 +372,7 @@ private func formatPhone(_ digits: String) -> String {
     return result
 }
 
-func applyCurrencyMask(_ input: String) -> String {
+private func applyCurrencyMask(_ input: String) -> String {
     let digits = input.filter(\.isNumber)
     guard !digits.isEmpty else { return "" }
     let value = Int64(digits) ?? 0

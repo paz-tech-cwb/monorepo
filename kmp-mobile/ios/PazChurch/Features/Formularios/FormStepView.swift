@@ -1,3 +1,4 @@
+import Shared
 import SwiftUI
 
 /// One-question-per-screen fill flow. Voltar/Continuar (or Enviar on the last step) are pinned
