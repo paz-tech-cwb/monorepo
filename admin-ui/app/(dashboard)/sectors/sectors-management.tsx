@@ -13,6 +13,13 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Table,
   TableBody,
   TableCell,
@@ -44,12 +51,34 @@ import {
   useUpdateSector,
   useDeleteSector,
 } from "@/lib/hooks/use-sectors"
+import { useAreas } from "@/lib/hooks/use-areas"
+import { useUsers } from "@/lib/hooks/use-users"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
 import type { Sector } from "@/lib/api/types"
 import { format } from "date-fns"
+import { LeaderCoLeaderPicker } from "@/components/organization/leader-co-leader-picker"
+import { getApiErrorMessage } from "@/lib/api/client"
+
+const NONE_AREA = "none"
+
+interface SectorFormState {
+  name: string
+  area_id: number | null
+  leader_id: number | null
+  co_leader_id: number | null
+}
+
+const EMPTY_FORM: SectorFormState = {
+  name: "",
+  area_id: null,
+  leader_id: null,
+  co_leader_id: null,
+}
 
 export function SectorsManagement() {
   const { data: sectors = [], isLoading, error } = useSectors()
+  const { data: areas = [] } = useAreas()
+  const { data: users = [] } = useUsers()
   const createMutation = useCreateSector()
   const updateMutation = useUpdateSector()
   const deleteMutation = useDeleteSector()
@@ -58,14 +87,14 @@ export function SectorsManagement() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingSector, setEditingSector] = useState<Sector | null>(null)
   const [deletingSectorId, setDeletingSectorId] = useState<number | null>(null)
-  const [formData, setFormData] = useState({ name: "" })
+  const [formData, setFormData] = useState<SectorFormState>(EMPTY_FORM)
 
   const filteredSectors = sectors.filter((sector) =>
     sector.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const resetForm = () => {
-    setFormData({ name: "" })
+    setFormData(EMPTY_FORM)
   }
 
   const handleAdd = async () => {
@@ -75,18 +104,28 @@ export function SectorsManagement() {
     }
 
     try {
-      await createMutation.mutateAsync({ name: formData.name })
+      await createMutation.mutateAsync({
+        name: formData.name,
+        area_id: formData.area_id,
+        leader_id: formData.leader_id,
+        co_leader_id: formData.co_leader_id,
+      })
       toast.success("Setor criado com sucesso!")
       resetForm()
       setIsAddDialogOpen(false)
-    } catch {
-      toast.error("Erro ao criar setor. Tente novamente.")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Erro ao criar setor. Tente novamente."))
     }
   }
 
   const handleEdit = (sector: Sector) => {
     setEditingSector(sector)
-    setFormData({ name: sector.name })
+    setFormData({
+      name: sector.name,
+      area_id: sector.area_id,
+      leader_id: sector.leader_id,
+      co_leader_id: sector.co_leader_id,
+    })
   }
 
   const handleUpdate = async () => {
@@ -100,13 +139,20 @@ export function SectorsManagement() {
     try {
       await updateMutation.mutateAsync({
         id: editingSector.id,
-        data: { name: formData.name },
+        data: {
+          name: formData.name,
+          area_id: formData.area_id,
+          leader_id: formData.leader_id,
+          co_leader_id: formData.co_leader_id,
+        },
       })
       toast.success("Setor atualizado com sucesso!")
       setEditingSector(null)
       resetForm()
-    } catch {
-      toast.error("Erro ao atualizar setor. Tente novamente.")
+    } catch (err) {
+      toast.error(
+        getApiErrorMessage(err, "Erro ao atualizar setor. Tente novamente.")
+      )
     }
   }
 
@@ -114,12 +160,41 @@ export function SectorsManagement() {
     try {
       await deleteMutation.mutateAsync(id)
       toast.success("Setor excluido com sucesso!")
-    } catch {
-      toast.error("Erro ao excluir setor. Tente novamente.")
+    } catch (err) {
+      toast.error(
+        getApiErrorMessage(err, "Erro ao excluir setor. Tente novamente.")
+      )
     } finally {
       setDeletingSectorId(null)
     }
   }
+
+  const renderAreaSelect = () => (
+    <div className="space-y-1">
+      <Label htmlFor="area">Área</Label>
+      <Select
+        value={formData.area_id != null ? String(formData.area_id) : NONE_AREA}
+        onValueChange={(v) =>
+          setFormData((f) => ({
+            ...f,
+            area_id: v === NONE_AREA ? null : Number(v),
+          }))
+        }
+      >
+        <SelectTrigger id="area">
+          <SelectValue placeholder="Selecionar área" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NONE_AREA}>—</SelectItem>
+          {areas.map((area) => (
+            <SelectItem key={area.id} value={String(area.id)}>
+              {area.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
 
   return (
     <div className="space-y-6">
@@ -148,7 +223,7 @@ export function SectorsManagement() {
                 <DialogHeader>
                   <DialogTitle>Criar Novo Setor</DialogTitle>
                   <DialogDescription>
-                    Preencha o nome do novo setor
+                    Preencha os dados do novo setor
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -163,6 +238,18 @@ export function SectorsManagement() {
                       placeholder="Nome do setor"
                     />
                   </div>
+                  {renderAreaSelect()}
+                  <LeaderCoLeaderPicker
+                    users={users}
+                    leaderId={formData.leader_id}
+                    coLeaderId={formData.co_leader_id}
+                    onLeaderChange={(id) =>
+                      setFormData((f) => ({ ...f, leader_id: id }))
+                    }
+                    onCoLeaderChange={(id) =>
+                      setFormData((f) => ({ ...f, co_leader_id: id }))
+                    }
+                  />
                 </div>
                 <DialogFooter>
                   <Button
@@ -210,6 +297,8 @@ export function SectorsManagement() {
                   <TableHead>ID</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Área</TableHead>
+                  <TableHead>Líder</TableHead>
+                  <TableHead>Co-líder</TableHead>
                   <TableHead>Criado em</TableHead>
                   <TableHead className="w-[70px]">Acoes</TableHead>
                 </TableRow>
@@ -221,9 +310,11 @@ export function SectorsManagement() {
                     <TableCell>{sector.name}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">
-                        {sector.area_id != null ? `Área ${sector.area_id}` : "—"}
+                        {sector.area_name ?? "—"}
                       </Badge>
                     </TableCell>
+                    <TableCell>{sector.leader_name ?? "—"}</TableCell>
+                    <TableCell>{sector.co_leader_name ?? "—"}</TableCell>
                     <TableCell>
                       {format(new Date(sector.created_at), "dd/MM/yyyy")}
                     </TableCell>
@@ -265,7 +356,7 @@ export function SectorsManagement() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar Setor</DialogTitle>
-            <DialogDescription>Atualize o nome do setor</DialogDescription>
+            <DialogDescription>Atualize os dados do setor</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -279,6 +370,18 @@ export function SectorsManagement() {
                 placeholder="Nome do setor"
               />
             </div>
+            {renderAreaSelect()}
+            <LeaderCoLeaderPicker
+              users={users}
+              leaderId={formData.leader_id}
+              coLeaderId={formData.co_leader_id}
+              onLeaderChange={(id) =>
+                setFormData((f) => ({ ...f, leader_id: id }))
+              }
+              onCoLeaderChange={(id) =>
+                setFormData((f) => ({ ...f, co_leader_id: id }))
+              }
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingSector(null)}>

@@ -44,12 +44,24 @@ import {
   useUpdateArea,
   useDeleteArea,
 } from "@/lib/hooks/use-areas"
+import { useUsers } from "@/lib/hooks/use-users"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
 import type { Area } from "@/lib/api/types"
 import { format } from "date-fns"
+import { LeaderCoLeaderPicker } from "@/components/organization/leader-co-leader-picker"
+import { getApiErrorMessage } from "@/lib/api/client"
+
+interface AreaFormState {
+  name: string
+  leader_id: number | null
+  co_leader_id: number | null
+}
+
+const EMPTY_FORM: AreaFormState = { name: "", leader_id: null, co_leader_id: null }
 
 export function AreasManagement() {
   const { data: areas = [], isLoading, error } = useAreas()
+  const { data: users = [] } = useUsers()
   const createMutation = useCreateArea()
   const updateMutation = useUpdateArea()
   const deleteMutation = useDeleteArea()
@@ -58,14 +70,14 @@ export function AreasManagement() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingArea, setEditingArea] = useState<Area | null>(null)
   const [deletingAreaId, setDeletingAreaId] = useState<number | null>(null)
-  const [formData, setFormData] = useState({ name: "" })
+  const [formData, setFormData] = useState<AreaFormState>(EMPTY_FORM)
 
   const filteredAreas = areas.filter((area) =>
     area.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const resetForm = () => {
-    setFormData({ name: "" })
+    setFormData(EMPTY_FORM)
   }
 
   const handleAdd = async () => {
@@ -75,18 +87,26 @@ export function AreasManagement() {
     }
 
     try {
-      await createMutation.mutateAsync({ name: formData.name })
+      await createMutation.mutateAsync({
+        name: formData.name,
+        leader_id: formData.leader_id,
+        co_leader_id: formData.co_leader_id,
+      })
       toast.success("Area criada com sucesso!")
       resetForm()
       setIsAddDialogOpen(false)
-    } catch {
-      toast.error("Erro ao criar area. Tente novamente.")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Erro ao criar area. Tente novamente."))
     }
   }
 
   const handleEdit = (area: Area) => {
     setEditingArea(area)
-    setFormData({ name: area.name })
+    setFormData({
+      name: area.name,
+      leader_id: area.leader_id,
+      co_leader_id: area.co_leader_id,
+    })
   }
 
   const handleUpdate = async () => {
@@ -100,13 +120,17 @@ export function AreasManagement() {
     try {
       await updateMutation.mutateAsync({
         id: editingArea.id,
-        data: { name: formData.name },
+        data: {
+          name: formData.name,
+          leader_id: formData.leader_id,
+          co_leader_id: formData.co_leader_id,
+        },
       })
       toast.success("Area atualizada com sucesso!")
       setEditingArea(null)
       resetForm()
-    } catch {
-      toast.error("Erro ao atualizar area. Tente novamente.")
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, "Erro ao atualizar area. Tente novamente."))
     }
   }
 
@@ -114,8 +138,10 @@ export function AreasManagement() {
     try {
       await deleteMutation.mutateAsync(id)
       toast.success("Area excluida com sucesso!")
-    } catch {
-      toast.error("Erro ao excluir area. Tente novamente.")
+    } catch (err) {
+      toast.error(
+        getApiErrorMessage(err, "Erro ao excluir area. Tente novamente.")
+      )
     } finally {
       setDeletingAreaId(null)
     }
@@ -148,7 +174,7 @@ export function AreasManagement() {
                 <DialogHeader>
                   <DialogTitle>Criar Nova Area</DialogTitle>
                   <DialogDescription>
-                    Preencha o nome da nova area
+                    Preencha os dados da nova area
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -163,6 +189,17 @@ export function AreasManagement() {
                       placeholder="Nome da area"
                     />
                   </div>
+                  <LeaderCoLeaderPicker
+                    users={users}
+                    leaderId={formData.leader_id}
+                    coLeaderId={formData.co_leader_id}
+                    onLeaderChange={(id) =>
+                      setFormData((f) => ({ ...f, leader_id: id }))
+                    }
+                    onCoLeaderChange={(id) =>
+                      setFormData((f) => ({ ...f, co_leader_id: id }))
+                    }
+                  />
                 </div>
                 <DialogFooter>
                   <Button
@@ -209,6 +246,8 @@ export function AreasManagement() {
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Nome</TableHead>
+                  <TableHead>Líder</TableHead>
+                  <TableHead>Co-líder</TableHead>
                   <TableHead>Criado em</TableHead>
                   <TableHead className="w-[70px]">Acoes</TableHead>
                 </TableRow>
@@ -218,6 +257,8 @@ export function AreasManagement() {
                   <TableRow key={area.id}>
                     <TableCell className="font-medium"><Badge variant="outline">#{area.id}</Badge></TableCell>
                     <TableCell>{area.name}</TableCell>
+                    <TableCell>{area.leader_name ?? "—"}</TableCell>
+                    <TableCell>{area.co_leader_name ?? "—"}</TableCell>
                     <TableCell>
                       {format(new Date(area.created_at), "dd/MM/yyyy")}
                     </TableCell>
@@ -256,7 +297,7 @@ export function AreasManagement() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar Area</DialogTitle>
-            <DialogDescription>Atualize o nome da area</DialogDescription>
+            <DialogDescription>Atualize os dados da area</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -270,6 +311,17 @@ export function AreasManagement() {
                 placeholder="Nome da area"
               />
             </div>
+            <LeaderCoLeaderPicker
+              users={users}
+              leaderId={formData.leader_id}
+              coLeaderId={formData.co_leader_id}
+              onLeaderChange={(id) =>
+                setFormData((f) => ({ ...f, leader_id: id }))
+              }
+              onCoLeaderChange={(id) =>
+                setFormData((f) => ({ ...f, co_leader_id: id }))
+              }
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingArea(null)}>
