@@ -29,6 +29,10 @@ import { SectorSupervisorReport } from '../sector-supervisor-reports/entities/se
 import { AreaSupervisorReport } from '../area-supervisor-reports/entities/area-supervisor-report.entity';
 import { Multiplication } from '../multiplications/entities/multiplication.entity';
 import { ServiceReport } from '../service-reports/entities/service-report.entity';
+import { LifeGroupStudy } from '../life-group-studies/entities/life-group-study.entity';
+import { LifeGroupStudyPublisher } from '../life-group-studies/entities/life-group-study-publisher.entity';
+import { LifeGroupAttendance } from '../life-group-attendance/entities/life-group-attendance.entity';
+import { LifeGroupAttendanceEntry } from '../life-group-attendance/entities/life-group-attendance-entry.entity';
 import { FormGuest } from '../form-guests/entities/form-guest.entity';
 import { Ministry } from '../ministries/entities/ministry.entity';
 import { MinistryTeam } from '../ministries/entities/ministry-team.entity';
@@ -82,8 +86,13 @@ const config: DataSourceOptions = {
     ReminderRule,
     ReminderDispatchLog,
     AuditLog,
+    LifeGroupStudy,
+    LifeGroupStudyPublisher,
+    LifeGroupAttendance,
+    LifeGroupAttendanceEntry,
   ],
   migrations: ['dist/migrations/*.js'],
+  migrationsTransactionMode: 'each',
   synchronize: process.env.DB_SYNCHRONIZE === 'true',
   logging: process.env.DB_LOGGING === 'true',
 };

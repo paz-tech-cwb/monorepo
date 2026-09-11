@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
+import * as admin from 'firebase-admin';
 import { AuthService } from './auth.service';
 import { User } from 'src/users/entities/user.entity';
 import { UserAccount } from 'src/users/entities/account.entity';
@@ -210,6 +211,27 @@ describe('AuthService', () => {
       );
     });
 
+    it('should allow a plain member to log in via the mobile app (leadership gate is admin-ui only)', async () => {
+      jest.spyOn(service as any, 'verifyGoogleToken').mockResolvedValue({
+        username: 'google-uid',
+        name: 'Member User',
+        email: 'member@example.com',
+        photo: null,
+      });
+
+      userRepo.findOne.mockResolvedValue(mockMemberUser);
+
+      const result = await service.socialLogin(
+        'google',
+        'valid-google-token',
+        undefined,
+        'mobile',
+      );
+
+      expect(result.access_token).toBeDefined();
+      expect(result.user.email).toBe('member@example.com');
+    });
+
     it('should still accept admin user with Apple token', async () => {
       jest.spyOn(service as any, 'verifyAppleToken').mockResolvedValue({
         username: 'apple-uid',
@@ -291,7 +313,12 @@ describe('AuthService', () => {
 
       await expect(
         service.socialLogin('google', 'valid-google-token'),
-      ).rejects.toMatchObject({ status: HttpStatus.BAD_REQUEST });
+      ).rejects.toMatchObject({
+        status: HttpStatus.BAD_REQUEST,
+        // expect.objectContaining() is typed `any` by @types/jest.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        response: expect.objectContaining({ error: 'BIRTH_DATE_REQUIRED' }),
+      });
 
       expect(userRepo.create).not.toHaveBeenCalled();
     });
@@ -550,9 +577,7 @@ describe('AuthService', () => {
   describe('onModuleInit', () => {
     it('should not throw during initialization when Firebase is already initialized', () => {
       // Simulate Firebase already initialized (admin.apps.length > 0 skips initializeApp)
-      jest
-        .spyOn(require('firebase-admin'), 'apps', 'get')
-        .mockReturnValue([{}]);
+      jest.spyOn(admin, 'apps', 'get').mockReturnValue([{}] as admin.app.App[]);
       expect(() => service.onModuleInit()).not.toThrow();
     });
   });

@@ -36,4 +36,9 @@ export class CreateLifeGroupDto {
   @IsOptional()
   @IsString()
   meeting_time?: string | null;
+
+  @Expose()
+  @IsOptional()
+  @IsInt()
+  kids_count?: number;
 }

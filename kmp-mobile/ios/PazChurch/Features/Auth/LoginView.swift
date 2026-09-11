@@ -12,7 +12,9 @@ struct LoginView: View {
     @State private var currentNonce: String?
 
     @Environment(\.colorScheme) private var colorScheme
-    private var isDark: Bool { colorScheme == .dark }
+    private var isDark: Bool {
+        colorScheme == .dark
+    }
 
     // MARK: - Body
 
@@ -62,12 +64,18 @@ struct LoginView: View {
 
     // MARK: - Card
 
-    @ViewBuilder
     private var loginCard: some View {
+        GlassCard(radius: PazSpacing.cardRadiusLarge) {
+            loginCardContent
+        }
+        .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 12)
+    }
+
+    private var loginCardContent: some View {
         VStack(spacing: 0) {
             Text("Paz Church")
                 .font(PazTypography.displayLarge)
-                .foregroundStyle(isDark ? PazColors.pazSky : PazColors.pazPrimary)
+                .foregroundStyle(isDark ? PazColors.pazSky : PazColors.accent)
                 .multilineTextAlignment(.center)
 
             Spacer().frame(height: 14)
@@ -96,6 +104,8 @@ struct LoginView: View {
             Spacer().frame(height: 11)
 
             // Nonce lifecycle: generate raw nonce → send SHA256 to Apple → pass raw to backend
+            // NOTE: SignInWithAppleButton is a system-provided view, not a generic `Button`,
+            // so `.buttonStyle(.pazPill*)` cannot be applied to it — kept as a plain capsule.
             SignInWithAppleButton(.signIn) { request in
                 let nonce = randomNonceString()
                 currentNonce = nonce
@@ -118,17 +128,33 @@ struct LoginView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 26)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26))
-        .overlay(
-            RoundedRectangle(cornerRadius: 26)
-                .stroke(.white.opacity(0.25), lineWidth: 1)
+        .sheet(isPresented: showBirthDateSheet) {
+            BirthDateSheet(
+                onConfirm: { date in
+                    await authCoordinator.confirmBirthDate(isoDateString(from: date))
+                    if authCoordinator.isAuthenticated { onDismiss?() }
+                }
+            )
+        }
+    }
+
+    private var showBirthDateSheet: Binding<Bool> {
+        Binding(
+            get: { authCoordinator.needsBirthDate },
+            set: { if !$0 { authCoordinator.dismissBirthDatePrompt() } }
         )
-        .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 12)
+    }
+
+    private func isoDateString(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
     }
 
     // MARK: - Auth Buttons
 
-    @ViewBuilder
     private func authButton(
         text: String,
         sfSymbol: String? = nil,
@@ -137,18 +163,10 @@ struct LoginView: View {
         isLoading: Bool,
         action: @escaping () -> Void
     ) -> some View {
-        let bg: Color = isApple
-            ? (isDark ? Color.white.opacity(0.10) : .black)
-            : PazColors.surface2
-        let fg: Color = isApple ? .white : PazColors.ink
-        let border: Color = isApple
-            ? (isDark ? Color.white.opacity(0.20) : .clear)
-            : PazColors.line
-
         Button(action: action) {
             HStack(spacing: 10) {
                 if isLoading {
-                    ProgressView().tint(fg)
+                    ProgressView()
                 } else {
                     if let imageName {
                         Image(imageName)
@@ -160,15 +178,15 @@ struct LoginView: View {
                             .font(.system(size: 19, weight: .medium))
                     }
                     Text(text)
-                        .font(.system(size: 19, weight: .semibold))
                 }
             }
-            .foregroundStyle(fg)
-            .frame(maxWidth: .infinity)
-            .frame(height: 54)
         }
-        .background(bg, in: Capsule())
-        .overlay(Capsule().stroke(border, lineWidth: 1))
+        .buttonStyle(isApple ? .pazPillPrimary : .pazPillSecondary)
+        // Google's brand guidelines expect a solid, opaque background — the
+        // secondary pill style's transparent fill disappears over a photo
+        // backdrop, so give this button an explicit solid surface fill.
+        // (pazPillSecondary's foreground is already PazColors.ink, so contrast holds.)
+        .background(isApple ? Color.clear : PazColors.surface, in: Capsule())
         .disabled(isLoading)
     }
 
@@ -233,6 +251,52 @@ struct LoginView: View {
         let inputData = Data(input.utf8)
         let hashedData = SHA256.hash(data: inputData)
         return hashedData.compactMap { String(format: "%02x", $0) }.joined()
+    }
+}
+
+/// First-time sign-in for an identity the backend doesn't recognize requires a birth date
+/// so it can be matched against a pre-created member record (see BirthDateRequiredException
+/// in shared code).
+private struct BirthDateSheet: View {
+    var onConfirm: (Date) async -> Void
+
+    @State private var selectedDate = Date()
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 20) {
+                Text("Para confirmar sua identidade pela primeira vez, informe sua data de nascimento.")
+                    .font(PazTypography.bodyMedium)
+                    .foregroundStyle(PazColors.slate)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+
+                DatePicker(
+                    "Data de nascimento",
+                    selection: $selectedDate,
+                    in: ...Date(),
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.wheel)
+                .labelsHidden()
+
+                Spacer()
+            }
+            .padding(.top, 24)
+            .navigationTitle("Nascimento")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                // The sheet dismisses reactively once `needsBirthDate` flips false inside
+                // confirmBirthDate — calling dismiss() here directly would race with (and
+                // wipe) the pending idToken/provider before the retry request reads them.
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Confirmar") {
+                        Task { await onConfirm(selectedDate) }
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 }
 

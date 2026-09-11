@@ -12,9 +12,10 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             screenContent
-                .background(PazColors.background)
+                .background(PazMeshBackground())
                 .navigationTitle("Meu Perfil")
                 .navigationBarTitleDisplayMode(.large)
+                .toolbarBackground(.hidden, for: .navigationBar)
         }
         .task { await viewModel.loadUser() }
     }
@@ -28,43 +29,39 @@ struct ProfileView: View {
         ScrollView {
             VStack(spacing: 0) {
                 // Avatar card overlapping hero
-                VStack(spacing: 12) {
-                    ZStack(alignment: .bottomTrailing) {
-                        Circle().fill(PazColors.pazPrimary.opacity(0.15)).frame(width: 80, height: 80)
-                            .overlay(
-                                Text(viewModel.user?.name.prefix(1).uppercased() ?? "")
-                                    .font(PazTypography.headlineLarge).foregroundStyle(PazColors.pazPrimary)
-                            )
-                        Circle().fill(PazColors.pazGold).frame(width: 26, height: 26)
-                            .overlay(Image(systemName: "pencil").font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(Color(hex: "3A2600")))
+                GlassCard(radius: PazSpacing.cardRadiusLarge) {
+                    VStack(spacing: 12) {
+                        ZStack(alignment: .bottomTrailing) {
+                            Circle().fill(PazColors.accent.opacity(0.15)).frame(width: 80, height: 80)
+                                .overlay(
+                                    Text(viewModel.user?.name.prefix(1).uppercased() ?? "")
+                                        .font(PazTypography.headlineLarge).foregroundStyle(PazColors.accent)
+                                )
+                            Circle().fill(PazColors.pazGold).frame(width: 26, height: 26)
+                                .overlay(Image(systemName: "pencil").font(.system(size: 11, weight: .bold))
+                                    .foregroundStyle(Color(hex: "3A2600")))
+                        }
+                        Text(viewModel.user?.name ?? "").font(PazTypography.headlineSmall)
+                        Text(viewModel.user?.email ?? "").font(PazTypography.bodySmall).foregroundStyle(PazColors.slate)
+                        Text(viewModel.user?.role.displayName ?? "")
+                            .font(PazTypography.labelSmall).foregroundStyle(PazColors.accent)
+                            .padding(.horizontal, 12).padding(.vertical, 4)
+                            .background(PazColors.accent.opacity(0.12)).clipShape(Capsule())
                     }
-                    Text(viewModel.user?.name ?? "").font(PazTypography.headlineSmall)
-                    Text(viewModel.user?.email ?? "").font(PazTypography.bodySmall).foregroundStyle(PazColors.slate)
-                    Text(viewModel.user?.role.displayName ?? "")
-                        .font(PazTypography.labelSmall).foregroundStyle(PazColors.pazPrimary)
-                        .padding(.horizontal, 12).padding(.vertical, 4)
-                        .background(PazColors.pazPrimary.opacity(0.12)).clipShape(Capsule())
+                    .frame(maxWidth: .infinity)
+                    .padding(24)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(24)
-                .background(PazColors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 22))
-                .shadow(color: .black.opacity(0.07), radius: 16, y: 6)
                 .padding(.horizontal, 20)
                 .offset(y: -22)
 
                 VStack(spacing: 16) {
                     NavigationLink(destination: EditProfileView()) {
                         Text("Editar Perfil")
-                            .font(PazTypography.titleMedium).foregroundStyle(.white)
-                            .frame(maxWidth: .infinity).frame(height: 50)
-                            .background(PazColors.pazPrimary)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
+                    .buttonStyle(.pazPillPrimary)
                     .padding(.horizontal, 20)
 
-                    VStack(spacing: 0) {
+                    GlassCard {
                         Button(action: { viewModel.onLogout() }) {
                             HStack(spacing: 16) {
                                 PazIconContainer(icon: "door.left.hand.open", tint: PazColors.error)
@@ -77,8 +74,6 @@ struct ProfileView: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 18))
                     .padding(.horizontal, 20)
                 }
                 .padding(.top, 4)
@@ -93,12 +88,12 @@ struct ProfileView: View {
                 Spacer().frame(height: 24)
                 ZStack {
                     Circle().strokeBorder(
-                        PazColors.pazPrimary.opacity(0.25),
+                        PazColors.accent.opacity(0.25),
                         style: StrokeStyle(lineWidth: 2, dash: [6])
                     )
                     .frame(width: 80, height: 80)
                     Image(systemName: "person.fill").font(.system(size: 32))
-                        .foregroundStyle(PazColors.pazPrimary.opacity(0.4))
+                        .foregroundStyle(PazColors.accent.opacity(0.4))
                 }
                 VStack(spacing: 6) {
                     Text("Bem-vindo(a)!").font(PazTypography.titleMedium)
@@ -112,10 +107,8 @@ struct ProfileView: View {
                         .foregroundStyle(.white.opacity(0.8))
                     NavigationLink(destination: LoginView(authCoordinator: authCoordinator)) {
                         Text("Entrar na minha conta")
-                            .font(PazTypography.titleSmall).foregroundStyle(PazColors.pazPrimary)
-                            .frame(maxWidth: .infinity).padding(.vertical, 14)
-                            .background(.white).clipShape(RoundedRectangle(cornerRadius: 14))
                     }
+                    .buttonStyle(.pazPillPrimary)
                 }
                 .padding(24)
                 .background(PazColors.featuredCardGradient)

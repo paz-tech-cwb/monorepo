@@ -18,6 +18,7 @@ import { User } from 'src/users/entities/user.entity';
 import { Role } from 'src/roles/entities/role.entity';
 import { UserDeviceToken } from 'src/users/entities/user-device-token.entity';
 import { AuditLogger } from './audit.logger';
+import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 import { Repository } from 'typeorm';
 
 const ACCESS_TOKEN_EXPIRES_IN = '24h';
@@ -100,7 +101,12 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-  async socialLogin(provider: string, idToken: string, birthDate?: string) {
+  async socialLogin(
+    provider: string,
+    idToken: string,
+    birthDate?: string,
+    client: 'admin' | 'mobile' = 'admin',
+  ) {
     let userData: {
       username: string;
       name: string;
@@ -120,7 +126,7 @@ export class AuthService implements OnModuleInit {
     } catch (error) {
       if (
         error instanceof HttpException &&
-        error.getStatus() === HttpStatus.BAD_REQUEST
+        (error.getStatus() as HttpStatus) === HttpStatus.BAD_REQUEST
       ) {
         throw error;
       }
@@ -170,7 +176,11 @@ export class AuthService implements OnModuleInit {
     if (!user) {
       if (!birthDate) {
         throw new HttpException(
-          'birth_date is required to register a new user',
+          {
+            statusCode: HttpStatus.BAD_REQUEST,
+            message: 'birth_date is required to register a new user',
+            error: 'BIRTH_DATE_REQUIRED',
+          },
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -195,15 +205,14 @@ export class AuthService implements OnModuleInit {
     }
 
     // Role-based access check — admin-ui is for leadership roles only;
-    // 'member' (and any other role) is not permitted to log in here.
-    const allowedRoles = [
-      'admin',
-      'pastor',
-      'area_leader',
-      'sector_leader',
-      'life_group_leader',
-    ];
-    if (!user.role || !allowedRoles.includes(user.role.slug)) {
+    // 'member' (and any other role) is not permitted to log in there. The
+    // mobile app is open to all members, so this gate is skipped entirely
+    // for client === 'mobile'.
+    const allowedRoles: readonly string[] = LEADERSHIP_ROLES;
+    if (
+      client === 'admin' &&
+      (!user.role || !allowedRoles.includes(user.role.slug))
+    ) {
       const reason = `User role is '${user.role?.slug ?? 'unknown'}', not a leadership role`;
       try {
         await this.auditLogger.logAuthAttempt(
@@ -411,7 +420,9 @@ export class AuthService implements OnModuleInit {
       return {
         username: decoded.uid,
         name:
-          decoded.name || this.getUsernameFromEmail(decoded.email) || 'User',
+          (decoded.name as string | undefined) ||
+          this.getUsernameFromEmail(decoded.email) ||
+          'User',
         email: decoded.email,
         photo: decoded.picture || null,
       };

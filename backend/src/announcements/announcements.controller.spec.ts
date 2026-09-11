@@ -8,6 +8,7 @@ import { AnnouncementsController } from './announcements.controller';
 import { AnnouncementsService } from './announcements.service';
 import { Announcement } from './entities/announcement.entity';
 import { AnnouncementResponseDto } from './dto/announcement-response.dto';
+import { RolesGuard } from '../common/guards/roles.guard';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 
 describe('AnnouncementsController', () => {
@@ -51,15 +52,16 @@ describe('AnnouncementsController', () => {
     expect(controller).toBeDefined();
   });
 
-  it('registers a guard on the controller (AuthGuard(jwt))', () => {
+  it('registers guards on the controller (AuthGuard(jwt), RolesGuard)', () => {
     const guards = Reflect.getMetadata(
       GUARDS_METADATA,
       AnnouncementsController,
     ) as unknown[];
     expect(guards).toBeDefined();
-    expect(guards).toHaveLength(1);
+    expect(guards).toHaveLength(2);
     // AuthGuard('jwt') returns a dynamically-created mixin class extending PassportGuard.
     expect(typeof guards[0]).toBe('function');
+    expect(guards[1]).toBe(RolesGuard);
   });
 
   it('replace() delegates to the same update path as update()', async () => {

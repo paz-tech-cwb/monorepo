@@ -20,9 +20,11 @@ import {
   Megaphone,
   GitMerge,
   ClipboardList,
+  BarChart3,
   Sun,
   Moon,
   Waves,
+  BookMarked,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -43,6 +45,7 @@ const sidebarSections = [
       { name: "Life Groups", href: "/life-groups", icon: Users2 },
       { name: "Ministérios", href: "/ministerios", icon: Waves },
       { name: "Formulários", href: "/formularios", icon: ClipboardList },
+      { name: "Relatórios", href: "/relatorios", icon: BarChart3 },
     ],
   },
   {
@@ -58,6 +61,7 @@ const sidebarSections = [
     items: [
       { name: "Trilhos", href: "/course-tracks", icon: Route },
       { name: "Cursos", href: "/courses", icon: BookOpen },
+      { name: "Estudo do Life", href: "/estudo-do-life", icon: BookMarked },
     ],
   },
   {

@@ -29,8 +29,8 @@ struct NotificationPrefsView: View {
                     )
 
                     PreferenceToggle(
-                        title: "Notificações do Grupo de Vida",
-                        description: "Atualizações do seu grupo de vida",
+                        title: "Notificações do Life Group",
+                        description: "Atualizações do seu life group",
                         isOn: $viewModel.lifeGroupNotifications
                     )
 
@@ -63,25 +63,19 @@ struct NotificationPrefsView: View {
                 }
                 .padding(.horizontal, PazSpacing.lg)
             }
-            .background(PazColors.background)
 
             Button(action: { viewModel.onSave() }) {
                 Text(viewModel.isSaving ? "Salvando..." : "Salvar")
-                    .font(PazTypography.titleMedium)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(viewModel.isSaving ? Color.gray : PazColors.primary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            .buttonStyle(.pazPillPrimary)
             .disabled(viewModel.isSaving)
             .padding(.horizontal, PazSpacing.lg)
             .padding(.vertical, PazSpacing.md)
-            .background(PazColors.background)
         }
-        .background(PazColors.background)
+        .background(PazMeshBackground())
         .navigationTitle("Notificações")
         .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .task { await viewModel.loadPreferences() }
     }
 }
@@ -105,8 +99,7 @@ private struct PreferenceToggle: View {
                 .labelsHidden()
         }
         .padding(PazSpacing.lg)
-        .background(PazColors.surface)
-        .cornerRadius(16)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }
 

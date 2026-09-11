@@ -145,4 +145,25 @@ class AuthRepositoryTest {
         assertNull(tokenStorage.read())
         assertNull(userStore.read())
     }
+
+    @Test
+    fun `socialLogin request body includes client=mobile`() = runTest {
+        var capturedBody: String? = null
+        val tokenStorage = FakeTokenStorage()
+        val userStore    = FakeUserStore()
+        val engine = MockEngine { request ->
+            capturedBody = (request.body as io.ktor.http.content.TextContent).text
+            respond(successResponse(fakeUser), HttpStatusCode.OK, jsonHeaders)
+        }
+        val client = createPazHttpClient(tokenStorage, "http://test", engine)
+        val repo   = AuthRepositoryImpl(client, tokenStorage, userStore)
+
+        repo.socialLogin("google-id-token", "google")
+
+        assertNotNull(capturedBody)
+        assertTrue(
+            capturedBody!!.contains("\"client\":\"mobile\""),
+            "expected request body to include client=mobile, was: $capturedBody",
+        )
+    }
 }

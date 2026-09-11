@@ -43,6 +43,11 @@ export type AnalyticsEventName =
   | "conversion_created"
   | "conversion_deleted"
   | "reminder_rule_updated"
+  | "life_group_study_created"
+  | "life_group_study_updated"
+  | "life_group_study_deleted"
+  | "life_group_study_publisher_added"
+  | "life_group_study_publisher_removed"
   | "api_error"
 
 export interface AnalyticsEventParams {
@@ -87,6 +92,11 @@ export interface AnalyticsEventParams {
   conversion_created: { conversion_id?: number; type?: string }
   conversion_deleted: { conversion_id: number }
   reminder_rule_updated: { reminder_type: string }
+  life_group_study_created: { study_id: string }
+  life_group_study_updated: { study_id: string }
+  life_group_study_deleted: { study_id: string }
+  life_group_study_publisher_added: { user_id: string }
+  life_group_study_publisher_removed: { user_id: string }
   api_error: { endpoint: string; status: number; message?: string }
 }
 

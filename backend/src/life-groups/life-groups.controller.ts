@@ -6,6 +6,7 @@ import {
   Put,
   Param,
   Delete,
+  Req,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -14,11 +15,19 @@ import {
   Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 import { LifeGroupsService } from './life-groups.service';
 import { CreateLifeGroupDto } from './dto/create-life-group.dto';
 import { UpdateLifeGroupDto } from './dto/update-life-group.dto';
+import { User } from '../users/entities/user.entity';
 
-@UseGuards(AuthGuard('jwt'))
+interface AuthenticatedRequest {
+  user: User;
+}
+
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @SerializeOptions({
   strategy: 'exposeAll',
   excludeExtraneousValues: false,
@@ -28,22 +37,34 @@ export class LifeGroupsController {
   constructor(private readonly lifeGroupsService: LifeGroupsService) {}
 
   @Post()
+  @Roles(...LEADERSHIP_ROLES)
   create(@Body() createLifeGroupDto: CreateLifeGroupDto) {
     return this.lifeGroupsService.create(createLifeGroupDto);
   }
 
   @Get()
-  findAll(@Query('q') q?: string) {
+  findAll(@Req() req: AuthenticatedRequest, @Query('q') q?: string) {
     if (q?.trim()) return this.lifeGroupsService.search(q);
-    return this.lifeGroupsService.findAll();
+    return this.lifeGroupsService.findAll(req.user);
+  }
+
+  // Must be declared before `:id` — otherwise Express would match "me" as
+  // an :id path param and this route would never be reached.
+  @Get('me')
+  findMine(@Req() req: AuthenticatedRequest) {
+    return this.lifeGroupsService.findMine(req.user);
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.lifeGroupsService.findOne(id);
+  findOne(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.lifeGroupsService.findOne(id, req.user);
   }
 
   @Put(':id')
+  @Roles(...LEADERSHIP_ROLES)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateLifeGroupDto: UpdateLifeGroupDto,
@@ -53,12 +74,14 @@ export class LifeGroupsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(...LEADERSHIP_ROLES)
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.lifeGroupsService.remove(id);
   }
 
   @Post(':id/members/:userId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(...LEADERSHIP_ROLES)
   addMember(
     @Param('id', ParseIntPipe) id: number,
     @Param('userId', ParseIntPipe) userId: number,
@@ -68,6 +91,7 @@ export class LifeGroupsController {
 
   @Delete(':id/members/:userId')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(...LEADERSHIP_ROLES)
   removeMember(
     @Param('id', ParseIntPipe) id: number,
     @Param('userId', ParseIntPipe) userId: number,

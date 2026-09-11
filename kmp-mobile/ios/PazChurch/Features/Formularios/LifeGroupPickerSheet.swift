@@ -7,7 +7,7 @@ struct LifeGroupPickerSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                TextField("Buscar grupo de vida", text: Binding(
+                TextField("Buscar life group", text: Binding(
                     get: { viewModel.pickerQuery },
                     set: { viewModel.onPickerQueryChanged($0) }
                 ))
@@ -28,7 +28,7 @@ struct LifeGroupPickerSheet: View {
                             Text(lg.name)
                             Spacer()
                             if String(lg.id) == selectedId {
-                                Image(systemName: "checkmark").foregroundColor(PazColors.pazPrimary)
+                                Image(systemName: "checkmark").foregroundColor(PazColors.accent)
                             }
                         }
                         .contentShape(Rectangle())

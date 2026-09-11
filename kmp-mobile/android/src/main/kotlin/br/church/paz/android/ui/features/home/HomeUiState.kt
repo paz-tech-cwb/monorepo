@@ -12,6 +12,9 @@ data class HomeUiState(
     val sectionOrder: List<String> = listOf("announcements", "contribution", "agenda"),
     val userName: String = "",
     val error: String? = null,
+    // Any leadership role (role.isLeader) — gates the "Relatórios de Grupos
+    // de Vida" shortcut card.
+    val canManage: Boolean = false,
 )
 
 sealed class HomeEffect {

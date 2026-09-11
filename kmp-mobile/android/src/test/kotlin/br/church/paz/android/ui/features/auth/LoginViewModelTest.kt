@@ -5,8 +5,10 @@ import br.church.paz.android.util.MainDispatcherRule
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.model.UserRole
 import br.church.paz.shared.domain.repository.AuthRepository
+import br.church.paz.shared.domain.repository.BirthDateRequiredException
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -24,7 +26,7 @@ class LoginViewModelTest {
     @Test
     fun `Google sign-in success emits NavigateToHome`() =
         runTest {
-            coEvery { authRepository.socialLogin("good-token", "google") } returns Result.success(fakeUser)
+            coEvery { authRepository.socialLogin("good-token", "google", null) } returns Result.success(fakeUser)
             val viewModel = LoginViewModel(authRepository)
 
             viewModel.effect.test {
@@ -37,7 +39,7 @@ class LoginViewModelTest {
     @Test
     fun `Apple sign-in success emits NavigateToHome`() =
         runTest {
-            coEvery { authRepository.socialLogin("apple-token", "apple") } returns Result.success(fakeUser)
+            coEvery { authRepository.socialLogin("apple-token", "apple", null) } returns Result.success(fakeUser)
             val viewModel = LoginViewModel(authRepository)
 
             viewModel.effect.test {
@@ -50,7 +52,7 @@ class LoginViewModelTest {
     @Test
     fun `sign-in failure emits ShowError with message`() =
         runTest {
-            coEvery { authRepository.socialLogin(any(), any()) } returns
+            coEvery { authRepository.socialLogin(any(), any(), any()) } returns
                 Result.failure(RuntimeException("Network error"))
             val viewModel = LoginViewModel(authRepository)
 
@@ -66,7 +68,7 @@ class LoginViewModelTest {
     @Test
     fun `duplicate sign-in while loading is ignored`() =
         runTest {
-            coEvery { authRepository.socialLogin(any(), any()) } returns Result.success(fakeUser)
+            coEvery { authRepository.socialLogin(any(), any(), any()) } returns Result.success(fakeUser)
             val viewModel = LoginViewModel(authRepository)
 
             // Force loading state before second call by checking the guard
@@ -82,7 +84,7 @@ class LoginViewModelTest {
     @Test
     fun `isLoading is false after sign-in completes`() =
         runTest {
-            coEvery { authRepository.socialLogin(any(), any()) } returns Result.success(fakeUser)
+            coEvery { authRepository.socialLogin(any(), any(), any()) } returns Result.success(fakeUser)
             val viewModel = LoginViewModel(authRepository)
 
             viewModel.effect.test {
@@ -92,5 +94,37 @@ class LoginViewModelTest {
             }
 
             assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
+    fun `first-time sign-in without a match sets needsBirthDate instead of showing an error`() =
+        runTest {
+            coEvery { authRepository.socialLogin("new-token", "google", null) } returns
+                Result.failure(BirthDateRequiredException())
+            val viewModel = LoginViewModel(authRepository)
+
+            viewModel.onGoogleSignIn("new-token")
+            advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value.needsBirthDate)
+        }
+
+    @Test
+    fun `confirming birth date retries sign-in and emits NavigateToHome`() =
+        runTest {
+            coEvery { authRepository.socialLogin("new-token", "google", null) } returns
+                Result.failure(BirthDateRequiredException())
+            coEvery { authRepository.socialLogin("new-token", "google", "2000-01-01") } returns
+                Result.success(fakeUser)
+            val viewModel = LoginViewModel(authRepository)
+            viewModel.onGoogleSignIn("new-token")
+            advanceUntilIdle()
+
+            viewModel.effect.test {
+                viewModel.onBirthDateConfirmed("2000-01-01")
+                assertEquals(LoginEffect.NavigateToHome, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertFalse(viewModel.uiState.value.needsBirthDate)
         }
 }

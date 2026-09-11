@@ -16,7 +16,7 @@ export class SocialLoginDto {
   provider: string;
 
   @Expose()
-  @Transform(({ obj }) => obj.id_token)
+  @Transform(({ obj }: { obj: Record<string, unknown> }) => obj.id_token)
   @IsString({ message: 'ID token must be a string.' })
   @IsNotEmpty({ message: 'ID token must not be empty.' })
   idToken: string;
@@ -28,4 +28,12 @@ export class SocialLoginDto {
   @IsOptional()
   @IsDateString({}, { message: 'birth_date must be a valid date string.' })
   birthDate?: string;
+
+  // Distinguishes admin-ui (leadership roles only) from the mobile app
+  // (open to all members) — both share this same endpoint.
+  @Expose()
+  @IsIn(['admin', 'mobile'], {
+    message: 'client must be either "admin" or "mobile".',
+  })
+  client: 'admin' | 'mobile';
 }

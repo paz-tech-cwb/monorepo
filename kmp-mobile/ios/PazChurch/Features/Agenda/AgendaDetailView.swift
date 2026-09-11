@@ -97,9 +97,9 @@ struct AgendaDetailView: View {
                         VStack(spacing: 6) {
                             Text(label)
                                 .font(PazTypography.titleSmall)
-                                .foregroundStyle(selectedTab == key ? PazColors.pazPrimary : PazColors.slate)
+                                .foregroundStyle(selectedTab == key ? PazColors.accent : PazColors.slate)
                             Rectangle()
-                                .fill(selectedTab == key ? PazColors.pazPrimary : Color.clear)
+                                .fill(selectedTab == key ? PazColors.accent : Color.clear)
                                 .frame(height: 2.5)
                         }
                     }
@@ -127,7 +127,7 @@ struct AgendaDetailView: View {
             Spacer().frame(height: 16)
         }
         .padding(20)
-        .background(PazColors.background)
+        .background(PazMeshBackground())
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
         .offset(y: -20)
     }
@@ -140,16 +140,11 @@ struct AgendaDetailView: View {
                 Image(systemName: "heart.fill")
                 Text("Confirmar presença").font(PazTypography.titleMedium)
             }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity).frame(height: 56)
-            .background(PazColors.heroGradient)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: PazColors.pazPrimaryMid.opacity(0.4), radius: 12, y: 6)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pazPillPrimary)
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
-        .background(PazColors.background)
+        .background(PazMeshBackground())
     }
 
     // MARK: - Date formatting
@@ -184,12 +179,11 @@ private struct MetaChip: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: icon).font(.system(size: 12)).foregroundStyle(PazColors.pazPrimary)
+            Image(systemName: icon).font(.system(size: 12)).foregroundStyle(PazColors.accent)
             Text(label).font(PazTypography.labelSmall).foregroundStyle(PazColors.ink)
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(PazColors.surface)
-        .clipShape(Capsule())
+        .glassCard(radius: 16)
     }
 }
 

@@ -7,7 +7,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager, SelectQueryBuilder } from 'typeorm';
+import { Brackets, EntityManager, SelectQueryBuilder } from 'typeorm';
 import {
   Notification,
   NotificationSegment,
@@ -46,13 +46,19 @@ export class NotificationsService implements OnApplicationBootstrap {
       .getMany();
 
     for (const n of missed) {
-      setImmediate(() => this.runDispatch(n));
+      setImmediate(() => {
+        void this.runDispatch(n);
+      });
     }
   }
 
   // ── Create ────────────────────────────────────────────────────────────────
   async create(dto: CreateNotificationDto, creatorId: number) {
-    const leaderOnlyCategories: string[] = ['forms', 'meeting_reports'];
+    const leaderOnlyCategories: string[] = [
+      'forms',
+      'meeting_reports',
+      'life_group_study',
+    ];
     if (leaderOnlyCategories.includes(dto.category)) {
       const roles = dto.segment?.filters?.roles;
       if (dto.segment?.type !== 'filtered' || !roles || roles.length === 0) {
@@ -89,7 +95,9 @@ export class NotificationsService implements OnApplicationBootstrap {
     if (isScheduled) {
       this.scheduleTimer(saved);
     } else {
-      setImmediate(() => this.runDispatch(saved));
+      setImmediate(() => {
+        void this.runDispatch(saved);
+      });
     }
 
     return this.toResponse(saved);
@@ -227,7 +235,12 @@ export class NotificationsService implements OnApplicationBootstrap {
 
   private scheduleTimer(notification: Notification): void {
     const delay = notification.scheduledAt!.getTime() - Date.now();
-    setTimeout(() => this.runDispatch(notification), Math.max(delay, 0));
+    setTimeout(
+      () => {
+        void this.runDispatch(notification);
+      },
+      Math.max(delay, 0),
+    );
   }
 
   private async resolveSegment(segment: NotificationSegment): Promise<User[]> {
@@ -239,20 +252,54 @@ export class NotificationsService implements OnApplicationBootstrap {
       .leftJoinAndSelect('u.lifeGroups', 'lifeGroup');
 
     if (segment.type === 'filtered' && segment.filters) {
-      const { roles, sector_ids, life_group_ids, status } = segment.filters;
+      const { roles, sector_ids, life_group_ids, status, user_ids } =
+        segment.filters;
 
       if (status) {
         qb.andWhere('u.status = :status', { status });
       }
-      if (roles && roles.length > 0) {
-        qb.andWhere('role.slug IN (:...roles)', { roles });
-      }
-      if (sector_ids && sector_ids.length > 0) {
-        qb.andWhere('sector.id IN (:...sectorIds)', { sectorIds: sector_ids });
-      }
-      if (life_group_ids && life_group_ids.length > 0) {
-        qb.andWhere('lifeGroup.id IN (:...lgIds)', { lgIds: life_group_ids });
-      }
+
+      // The role/sector/life-group filters are combined with AND. Explicit
+      // user ids (e.g. life group co-leaders, who have no dedicated role
+      // slug) are unioned in as an alternative match so they are not
+      // excluded by those AND filters.
+      qb.andWhere(
+        new Brackets((qbInner) => {
+          let hasMatchFilter = false;
+
+          if (roles && roles.length > 0) {
+            qbInner.andWhere('role.slug IN (:...roles)', { roles });
+            hasMatchFilter = true;
+          }
+          if (sector_ids && sector_ids.length > 0) {
+            qbInner.andWhere('sector.id IN (:...sectorIds)', {
+              sectorIds: sector_ids,
+            });
+            hasMatchFilter = true;
+          }
+          if (life_group_ids && life_group_ids.length > 0) {
+            qbInner.andWhere('lifeGroup.id IN (:...lgIds)', {
+              lgIds: life_group_ids,
+            });
+            hasMatchFilter = true;
+          }
+
+          if (user_ids && user_ids.length > 0) {
+            if (hasMatchFilter) {
+              qbInner.orWhere('u.id IN (:...userIds)', { userIds: user_ids });
+            } else {
+              qbInner.andWhere('u.id IN (:...userIds)', {
+                userIds: user_ids,
+              });
+            }
+            hasMatchFilter = true;
+          }
+
+          if (!hasMatchFilter) {
+            qbInner.andWhere('1=1');
+          }
+        }),
+      );
     }
 
     return qb.getMany();

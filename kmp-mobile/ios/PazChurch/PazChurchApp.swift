@@ -17,13 +17,21 @@ struct PazChurchApp: App {
     init() {
         // Must run before any repository touches token storage.
         IosKeychainProvider.shared.keychain = KmpKeychainBridge()
-        
+
+        // Must run before IosAppContainer.shared.authRepository is first touched below,
+        // since baseUrl is read when the lazy httpClient is created.
+        // Debug keeps IosAppContainer's default (http://localhost:3001/api — the
+        // Simulator shares the host Mac's network stack, so this needs no per-network IP).
+        #if !DEBUG
+        IosAppContainer.shared.baseUrl = "http://znzcybe6t18zwapiy9hytma5.62.238.45.195.sslip.io/api"
+        #endif
+
         let service = PushNotificationService.shared
         _pushService = State(initialValue: service)
-        
+
         FirebaseApp.configure()
         Messaging.messaging().delegate = service
-        
+
         _authCoordinator = State(initialValue: AuthenticationCoordinator(
             authRepository: IosAppContainer.shared.authRepository
         ))
@@ -43,6 +51,7 @@ struct PazChurchApp: App {
                         }
                 }
             }
+            .pazMeshBackground()
             .preferredColorScheme(themeManager.isDarkMode ? .dark : .light)
             // When the user taps a notification and the app is already running,
             // pendingDeepLink is set; views can observe this to navigate.
@@ -51,7 +60,7 @@ struct PazChurchApp: App {
                 guard phase == .active else { return }
                 Task {
                     let settings = await UNUserNotificationCenter.current().notificationSettings()
-                    let status: String = switch settings.authorizationStatus {
+                    let status = switch settings.authorizationStatus {
                     case .authorized: "granted"
                     case .denied: "denied"
                     default: "not_determined"

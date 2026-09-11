@@ -1,8 +1,9 @@
 "use client"
 
-import { useRef, useCallback } from "react"
+import { useRef, useCallback, type ClipboardEvent } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import TurndownService from "turndown"
 import { Bold, Italic, Heading1, List, ListOrdered, Link2, Code } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -29,8 +30,57 @@ const FORMAT_ACTIONS: Record<string, FormatAction> = {
   orderedList: { type: "line-prefix", prefix: "1. " },
 }
 
+// Lazily created — Turndown touches `document`, which isn't available
+// during SSR, and there's no reason to pay the init cost until a paste
+// with rich HTML actually happens.
+let turndownService: TurndownService | null = null
+
+function getTurndownService(): TurndownService {
+  if (!turndownService) {
+    turndownService = new TurndownService({
+      headingStyle: "atx",
+      bulletListMarker: "-",
+      codeBlockStyle: "fenced",
+    })
+    turndownService.use((service: TurndownService) => {
+      service.remove("style")
+      service.remove("script")
+    })
+  }
+  return turndownService
+}
+
 export function MarkdownEditor({ value, onChange, placeholder }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Pasting rich text (e.g. from Word/Google Docs) carries an
+  // `text/html` clipboard payload. Convert it to clean Markdown instead of
+  // letting the browser fall back to plain text (which drops all
+  // formatting). Plain-text paste is left to the browser's default
+  // behavior.
+  const handlePaste = useCallback(
+    (event: ClipboardEvent<HTMLTextAreaElement>) => {
+      const html = event.clipboardData.getData("text/html")
+      if (!html) return
+
+      event.preventDefault()
+
+      const markdown = getTurndownService().turndown(html).trim()
+      const textarea = textareaRef.current
+      const start = textarea?.selectionStart ?? value.length
+      const end = textarea?.selectionEnd ?? value.length
+
+      const newValue = value.substring(0, start) + markdown + value.substring(end)
+      onChange(newValue)
+
+      const cursorPos = start + markdown.length
+      requestAnimationFrame(() => {
+        textarea?.focus()
+        textarea?.setSelectionRange(cursorPos, cursorPos)
+      })
+    },
+    [value, onChange]
+  )
 
   const applyFormat = useCallback(
     (actionKey: string) => {
@@ -128,6 +178,7 @@ export function MarkdownEditor({ value, onChange, placeholder }: MarkdownEditorP
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onPaste={handlePaste}
           placeholder={placeholder}
           className="flex-1 min-h-[200px] md:min-h-[300px] resize-none rounded-t-none border-t-0 font-mono text-sm"
         />

@@ -54,7 +54,7 @@ class SearchViewModel(
         val homeResult = runCatching { homeRepository.getHomeContent() }
         val academyResult = runCatching { academyRepository.getAcademyContent() }
         val formsResult = runCatching { formsRepository.getCatalog() }
-        val churchResult = runCatching { churchRepository.getChurch() }
+        val ministriesResult = runCatching { churchRepository.getAllMinistries() }
         val lifeGroupsResult = runCatching { churchRepository.getAllLifeGroups() }
 
         val events =
@@ -73,9 +73,8 @@ class SearchViewModel(
                 ?: emptyList()
 
         val ministries =
-            churchResult
+            ministriesResult
                 .getOrNull()
-                ?.ministries
                 ?.filter { it.name.lowercase().contains(q) || it.description?.lowercase()?.contains(q) == true }
                 ?: emptyList()
 

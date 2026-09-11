@@ -15,13 +15,13 @@ struct FormDetailDeepLinkView: View {
             } else if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(PazColors.background)
+                    .background(PazMeshBackground())
             } else {
                 ContentUnavailableView(
                     "Formulário não encontrado",
                     systemImage: "doc.badge.exclamationmark"
                 )
-                .background(PazColors.background)
+                .background(PazMeshBackground())
             }
         }
         .task {
@@ -48,21 +48,48 @@ struct MinistryDetailDeepLinkView: View {
             } else if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(PazColors.background)
+                    .background(PazMeshBackground())
             } else {
                 ContentUnavailableView(
                     "Ministério não encontrado",
                     systemImage: "person.3"
                 )
-                .background(PazColors.background)
+                .background(PazMeshBackground())
             }
         }
         .task {
             do {
-                let church = try await churchRepository.getChurch()
-                ministry = church.ministries.first { $0.id == ministryId }
+                let wantedId = Int32(ministryId)
+                let ministries = try await churchRepository.getAllMinistries()
+                ministry = ministries.first { $0.id == wantedId }
             } catch {}
             isLoading = false
+        }
+    }
+}
+
+struct LifeGroupAttendanceEditorDeepLinkView: View {
+    let lifeGroupId: String
+    let meetingDate: String
+    let repository: LifeGroupAttendanceRepository
+
+    var body: some View {
+        Group {
+            if let id = Int32(lifeGroupId) {
+                LifeGroupAttendanceEditorView(
+                    lifeGroupId: id,
+                    meetingDate: meetingDate,
+                    repository: repository,
+                    onSaved: {},
+                    onCancel: {}
+                )
+            } else {
+                ContentUnavailableView(
+                    "Grupo não encontrado",
+                    systemImage: "person.fill.questionmark"
+                )
+                .background(PazMeshBackground())
+            }
         }
     }
 }
@@ -81,19 +108,20 @@ struct LifeGroupDetailDeepLinkView: View {
             } else if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(PazColors.background)
+                    .background(PazMeshBackground())
             } else {
                 ContentUnavailableView(
                     "Célula não encontrada",
                     systemImage: "person.fill.questionmark"
                 )
-                .background(PazColors.background)
+                .background(PazMeshBackground())
             }
         }
         .task {
             do {
+                let wantedId = Int32(lifeGroupId)
                 let groups = try await churchRepository.getAllLifeGroups()
-                lifeGroup = groups.first { $0.id == lifeGroupId }
+                lifeGroup = groups.first { $0.id == wantedId }
             } catch {}
             isLoading = false
         }

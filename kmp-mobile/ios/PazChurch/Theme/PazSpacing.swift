@@ -8,6 +8,12 @@ enum PazSpacing {
     static let xl: CGFloat = 24
     static let xxl: CGFloat = 32
     static let xxxl: CGFloat = 48
+
+    // MARK: - Glass rebrand radii (2026-09 glassmorphic restyle)
+
+    static let cardRadiusCompact: CGFloat = 24
+    static let cardRadiusLarge: CGFloat = 28
+    static let pillButtonHeight: CGFloat = 52
 }
 
 enum PazShapes {

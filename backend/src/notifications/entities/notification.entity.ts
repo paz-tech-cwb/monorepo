@@ -31,6 +31,12 @@ export interface NotificationSegment {
     sector_ids?: number[];
     life_group_ids?: number[];
     status?: 'active' | 'inactive';
+    /**
+     * Explicit user ids to include in the segment in addition to any
+     * role/sector/life-group filters (e.g. life group co-leaders, who have
+     * no dedicated role slug).
+     */
+    user_ids?: number[];
   };
 }
 

@@ -12,6 +12,12 @@ import br.church.paz.android.ui.features.formularios.FormDetailScreen
 import br.church.paz.android.ui.features.formularios.FormSubmissionDetailScreen
 import br.church.paz.android.ui.features.formularios.FormSubmissionsListScreen
 import br.church.paz.android.ui.features.formularios.FormulariosScreen
+import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsScreen
+import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceEditorScreen
+import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryScreen
+import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailScreen
+import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorScreen
+import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListScreen
 import br.church.paz.android.ui.features.memberjourney.MemberJourneyScreen
 import br.church.paz.android.ui.features.ministries.LifeGroupDetailScreen
 import br.church.paz.android.ui.features.ministries.MinistriesScreen
@@ -115,6 +121,59 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         ) { backStackEntry ->
             val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
             LifeGroupDetailScreen(navController = navController, lifeGroupId = lifeGroupId)
+        }
+        composable(Screen.LifeGroupStudyList.route) {
+            LifeGroupStudyListScreen(navController = navController)
+        }
+        composable(
+            route = Screen.LifeGroupStudyDetail.route,
+            arguments = listOf(androidx.navigation.navArgument("studyId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val studyId = backStackEntry.arguments?.getString("studyId") ?: return@composable
+            LifeGroupStudyDetailScreen(navController = navController, studyId = studyId)
+        }
+        composable(Screen.LifeGroupStudyCreate.route) {
+            LifeGroupStudyEditorScreen(navController = navController, studyId = null)
+        }
+        composable(
+            route = Screen.LifeGroupStudyEdit.route,
+            arguments = listOf(androidx.navigation.navArgument("studyId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val studyId = backStackEntry.arguments?.getString("studyId") ?: return@composable
+            LifeGroupStudyEditorScreen(navController = navController, studyId = studyId)
+        }
+        composable(
+            route = Screen.LifeGroupAttendanceHistory.route,
+            arguments = listOf(androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
+            LifeGroupAttendanceHistoryScreen(navController = navController, lifeGroupId = lifeGroupId)
+        }
+        composable(
+            route = Screen.LifeGroupAttendanceEditor.route,
+            arguments =
+                listOf(
+                    androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType },
+                    androidx.navigation.navArgument("date") { type = androidx.navigation.NavType.StringType },
+                ),
+        ) { backStackEntry ->
+            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
+            val date = backStackEntry.arguments?.getString("date") ?: return@composable
+            LifeGroupAttendanceEditorScreen(navController = navController, lifeGroupId = lifeGroupId, date = date)
+        }
+        composable(
+            route = Screen.LifeGroupAnalytics.route,
+            arguments =
+                listOf(
+                    androidx.navigation.navArgument("lifeGroupId") {
+                        type = androidx.navigation.NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+        ) { backStackEntry ->
+            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId")
+            LifeGroupAnalyticsScreen(navController = navController, lifeGroupId = lifeGroupId)
         }
     }
 }

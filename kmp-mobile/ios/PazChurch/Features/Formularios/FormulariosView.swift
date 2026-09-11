@@ -11,9 +11,10 @@ struct FormulariosView: View {
 
     var body: some View {
         screenContent
-            .background(PazColors.background)
+            .background(PazMeshBackground())
             .navigationTitle("Formulários")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .task { await viewModel.load() }
     }
 
@@ -45,7 +46,7 @@ struct FormulariosView: View {
             }
             .padding(.top, 8)
         }
-        .background(PazColors.background)
+        .refreshable { await viewModel.load() }
     }
 
     private var emptyState: some View {
@@ -66,7 +67,6 @@ struct FormulariosView: View {
             ForEach(0..<3, id: \.self) { _ in SkeletonView().frame(height: 72).padding(.horizontal, 20) }
             Spacer()
         }
-        .background(PazColors.background)
     }
 }
 
@@ -77,11 +77,11 @@ private struct FormCard: View {
 
     private var tint: Color {
         let name = form.type.name.uppercased()
-        if name.contains("CONVERSION") { return PazColors.pazPrimaryLight }
+        if name.contains("CONVERSION") { return PazColors.accent }
         if name.contains("GUEST") { return Color(hex: "2E7D32") }
         if name.contains("SERVICE") { return Color(hex: "6A1B9A") }
         if name.contains("REPORT") { return Color(hex: "E65100") }
-        return PazColors.pazPrimary
+        return PazColors.accent
     }
 
     private var icon: String {
@@ -106,8 +106,7 @@ private struct FormCard: View {
             Image(systemName: "chevron.right").font(.system(size: 13)).foregroundStyle(PazColors.slateLight)
         }
         .padding(14)
-        .background(PazColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }
 

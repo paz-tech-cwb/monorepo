@@ -187,21 +187,21 @@ private fun ResultsList(
                     icon = Icons.Default.Groups,
                     title = ministry.name,
                     subtitle = ministry.description ?: "",
-                    onClick = { viewModel.onMinistryTap(ministry.id) },
+                    onClick = { viewModel.onMinistryTap(ministry.id.toString()) },
                 )
             }
             item { Spacer(Modifier.height(PazSpacing.Sm)) }
         }
 
         if (uiState.results.lifeGroups.isNotEmpty()) {
-            item { SectionHeader("Grupos de Vida", uiState.results.lifeGroups.size) }
+            item { SectionHeader("Life Groups", uiState.results.lifeGroups.size) }
             items(uiState.results.lifeGroups.size) { i ->
                 val group = uiState.results.lifeGroups[i]
                 ResultRow(
                     icon = Icons.Default.Person,
                     title = group.name,
                     subtitle = group.leader?.let { "Líder: $it" } ?: "${group.membersCount} membros",
-                    onClick = { viewModel.onLifeGroupTap(group.id) },
+                    onClick = { viewModel.onLifeGroupTap(group.id.toString()) },
                 )
             }
         }
@@ -296,7 +296,7 @@ private fun EmptyQueryState() {
                 modifier = Modifier.size(48.dp),
             )
             Text(
-                "Busque eventos, vídeos, formulários, ministérios e grupos de vida",
+                "Busque eventos, vídeos, formulários, ministérios e life groups",
                 style =
                     MaterialTheme.typography.bodySmall.copy(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),

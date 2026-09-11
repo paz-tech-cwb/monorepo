@@ -34,7 +34,7 @@ struct UserPickerSheet: View {
                             }
                             Spacer()
                             if selectedIds.contains(user.id) {
-                                Image(systemName: "checkmark").foregroundColor(PazColors.pazPrimary)
+                                Image(systemName: "checkmark").foregroundColor(PazColors.accent)
                             }
                         }
                         .contentShape(Rectangle())

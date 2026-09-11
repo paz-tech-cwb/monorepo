@@ -8,6 +8,7 @@ struct AccountView: View {
     @Environment(AppThemeManager.self) private var themeManager
     @Environment(PushNotificationService.self) private var pushService
     @State private var path: [DeepLinkDestination] = []
+    @Environment(\.colorScheme) private var colorScheme
 
     init(userRepository: UserRepository, authRepository: AuthRepository) {
         _viewModel = State(initialValue: AccountViewModel(
@@ -30,27 +31,39 @@ struct AccountView: View {
             }
             .navigationTitle(authCoordinator.isAuthenticated ? "Conta" : "")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(for: DeepLinkDestination.self) { destination in
                 switch destination {
                 case .formularios:
                     FormulariosView(formsRepository: IosAppContainer.shared.formsRepository)
+
                 case .memberJourney:
                     MemberJourneyView(memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository)
-                case .formDetail(let formId):
+
+                case let .formDetail(formId):
                     FormDetailDeepLinkView(
                         formId: formId,
                         formsRepository: IosAppContainer.shared.formsRepository
                     )
-                case .ministryDetail(let ministryId):
+
+                case let .ministryDetail(ministryId):
                     MinistryDetailDeepLinkView(
                         ministryId: ministryId,
                         churchRepository: IosAppContainer.shared.churchRepository
                     )
-                case .lifeGroupDetail(let lifeGroupId):
+
+                case let .lifeGroupDetail(lifeGroupId):
                     LifeGroupDetailDeepLinkView(
                         lifeGroupId: lifeGroupId,
                         churchRepository: IosAppContainer.shared.churchRepository
                     )
+
+                case let .lifeGroupStudyDetail(studyId):
+                    LifeGroupStudyDetailView(
+                        studyId: studyId,
+                        repository: IosAppContainer.shared.lifeGroupStudyRepository
+                    )
+
                 default:
                     EmptyView()
                 }
@@ -65,11 +78,12 @@ struct AccountView: View {
                   let destination = pushService.deepLinkDestination
             else { return }
             switch destination {
-            case .formularios, .memberJourney, .formDetail, .ministryDetail, .lifeGroupDetail:
+            case .formularios, .memberJourney, .formDetail, .ministryDetail, .lifeGroupDetail, .lifeGroupStudyDetail:
                 Task { @MainActor in
                     path = [destination]
                 }
                 pushService.consumeDeepLink()
+
             default:
                 break
             }
@@ -83,7 +97,14 @@ struct AccountView: View {
             VStack(spacing: 0) {
                 Spacer().frame(height: 16)
 
-                if let user = viewModel.user {
+                // Falls back to authCoordinator.currentUser (already loaded at
+                // app-launch time via silentReAuth) — viewModel.user is fetched
+                // independently via its own .task, and if isAuthenticated flips
+                // true just before that fetch resolves, viewModel.user can
+                // briefly (or indefinitely, if .onChange doesn't re-fire in
+                // time) be nil while the screen already thinks it's logged in,
+                // rendering completely blank instead of showing content.
+                if let user = viewModel.user ?? authCoordinator.currentUser {
                     NavigationLink(destination: EditProfileView()) {
                         userCard(user: user)
                     }
@@ -95,7 +116,7 @@ struct AccountView: View {
                     menuCard {
                         NavigationLink(destination: MemberJourneyView(memberJourneyRepository: IosAppContainer.shared
                                 .memberJourneyRepository)) {
-                            AccountRow(title: "Jornada do Membro", icon: "figure.walk", tint: PazColors.pazPrimaryLight)
+                            AccountRow(title: "Jornada do Membro", icon: "figure.walk", tint: PazColors.accent)
                         }
                         .buttonStyle(.plain)
                         rowDivider
@@ -110,6 +131,12 @@ struct AccountView: View {
                             AccountRow(title: "Ministérios", icon: "music.note", tint: Color(hex: "E65100"))
                         }
                         .buttonStyle(.plain)
+                        rowDivider
+                        NavigationLink(destination: LifeGroupsView(churchRepository: IosAppContainer.shared
+                                .churchRepository)) {
+                            AccountRow(title: "Life Groups", icon: "person.3.fill", tint: Color(hex: "2E7D32"))
+                        }
+                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)
@@ -117,19 +144,19 @@ struct AccountView: View {
                     sectionLabel("PREFERÊNCIAS")
                     menuCard {
                         NavigationLink(destination: NotificationPrefsView()) {
-                            AccountRow(title: "Notificações", icon: "bell", tint: PazColors.pazPrimaryMid)
+                            AccountRow(title: "Notificações", icon: "bell", tint: PazColors.accent)
                         }
                         .buttonStyle(.plain)
                         rowDivider
                         HStack(spacing: 16) {
                             PazIconContainer(
                                 icon: themeManager.isDarkMode ? "moon.fill" : "sun.max.fill",
-                                tint: PazColors.pazPrimaryMid
+                                tint: PazColors.accent
                             )
                             Text("Modo Escuro").font(PazTypography.bodyMedium).foregroundStyle(PazColors.ink)
                             Spacer()
                             Toggle("", isOn: Bindable(themeManager).isDarkMode).labelsHidden()
-                                .tint(PazColors.pazPrimaryLight)
+                                .tint(PazColors.accent)
                         }
                         .padding(.horizontal, 16).padding(.vertical, 12)
                     }
@@ -155,7 +182,8 @@ struct AccountView: View {
                 Spacer().frame(height: 32)
             }
         }
-        .background(PazColors.background)
+        .background(PazMeshBackground())
+        .refreshable { await viewModel.reload() }
     }
 
     // MARK: - Helpers
@@ -164,33 +192,31 @@ struct AccountView: View {
         ZStack(alignment: .topTrailing) {
             HStack(spacing: 12) {
                 ZStack {
-                    Circle().fill(PazColors.pazPrimary.opacity(0.15)).frame(width: 56, height: 56)
+                    Circle().fill(PazColors.accent.opacity(0.15)).frame(width: 56, height: 56)
                     Text(user.name.prefix(1).uppercased()).font(PazTypography.headlineSmall)
-                        .foregroundStyle(PazColors.pazPrimary)
+                        .foregroundStyle(PazColors.accent)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(user.name).font(PazTypography.titleMedium).foregroundStyle(PazColors.pazPrimary)
+                    Text(user.name).font(PazTypography.titleMedium).foregroundStyle(PazColors.accent)
                     Text(user.email).font(PazTypography.bodySmall).foregroundStyle(PazColors.pazSky).lineLimit(1)
                     Spacer().frame(height: 2)
                     Text(user.role.displayName)
                         .font(PazTypography.labelSmall)
-                        .foregroundStyle(PazColors.pazPrimary)
+                        .foregroundStyle(PazColors.accent)
                         .padding(.horizontal, 8).padding(.vertical, 2)
-                        .background(PazColors.pazPrimary.opacity(0.12))
+                        .background(PazColors.accent.opacity(0.12))
                         .clipShape(Capsule())
                 }
                 Spacer()
             }
             .padding(16)
-            .background(PazColors.tint)
-            .clipShape(RoundedRectangle(cornerRadius: 22))
-            .overlay(RoundedRectangle(cornerRadius: 22).stroke(PazColors.pazPrimary.opacity(0.13), lineWidth: 1))
+            .glassCard(radius: PazSpacing.cardRadiusLarge)
 
             Image(systemName: "pencil")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(PazColors.pazPrimary)
+                .foregroundStyle(PazColors.accent)
                 .padding(8)
-                .background(PazColors.surface)
+                .background(PazMaterial.chip(for: colorScheme))
                 .clipShape(Circle())
                 .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
                 .padding(10)
@@ -207,9 +233,9 @@ struct AccountView: View {
     }
 
     private func menuCard(@ViewBuilder content: () -> some View) -> some View {
-        VStack(spacing: 0) { content() }
-            .background(PazColors.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 18))
+        GlassCard(radius: PazSpacing.cardRadiusCompact) {
+            VStack(spacing: 0) { content() }
+        }
     }
 
     private var rowDivider: some View {

@@ -96,7 +96,8 @@ class PazFirebaseMessagingService : FirebaseMessagingService() {
             listOf(
                 "paz_events" to "Eventos",
                 "paz_announcements" to "Avisos",
-                "paz_life_group" to "Grupo de Vida",
+                "paz_life_group" to "Life Group",
+                "paz_life_group_study" to "Estudo do Life",
                 "paz_academy" to "Academia",
                 "paz_member_journey" to "Jornada do Membro",
                 "paz_contributions" to "Contribuições",

@@ -33,6 +33,30 @@ export class LifeGroup {
   @Column({ type: 'varchar', length: 255, nullable: true })
   location: string | null;
 
+  // Geocoded server-side from `location` on create/update (see
+  // LifeGroupsService.geocodeLocation) — powers the map discovery view.
+  @Column({ type: 'double precision', nullable: true })
+  latitude: number | null;
+
+  @Column({ type: 'double precision', nullable: true })
+  longitude: number | null;
+
+  // Address parts parsed from Nominatim's `addressdetails=1` on the same
+  // geocode call as latitude/longitude (see LifeGroupsService.geocodeLocation)
+  // — powers the distribution-by-neighborhood/city analytics chart. `state`
+  // is stored for completeness even though no UI consumes it yet.
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  city: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  neighborhood: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  state: string | null;
+
+  @Column({ name: 'kids_count', type: 'int', default: 0 })
+  kidsCount: number;
+
   @Column({ name: 'meeting_day', type: 'varchar', length: 50, nullable: true })
   meetingDay: string | null;
 

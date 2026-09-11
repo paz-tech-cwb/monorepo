@@ -5,6 +5,7 @@ import br.church.paz.shared.auth.TokenStorage
 import br.church.paz.shared.data.remote.clearBearerTokenCache
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.repository.AuthRepository
+import br.church.paz.shared.domain.repository.BirthDateRequiredException
 import br.church.paz.shared.util.safeRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.request.post
@@ -30,14 +31,24 @@ class AuthRepositoryImpl(
     private val userStore: UserStore,
 ) : AuthRepository {
 
-    override suspend fun socialLogin(idToken: String, provider: String): Result<User> {
+    override suspend fun socialLogin(idToken: String, provider: String, birthDate: String?): Result<User> {
         return safeRunCatching {
             val httpResponse = httpClient.post("api/auth/social-login") {
                 contentType(ContentType.Application.Json)
-                setBody(SocialLoginRequest(idToken = idToken, provider = provider))
+                setBody(
+                    SocialLoginRequest(
+                        idToken = idToken,
+                        provider = provider,
+                        birthDate = birthDate,
+                        client = "mobile",
+                    ),
+                )
             }
             val responseText = httpResponse.bodyAsText()
             if (!httpResponse.status.isSuccess()) {
+                if (extractErrorCode(responseText) == "BIRTH_DATE_REQUIRED") {
+                    throw BirthDateRequiredException()
+                }
                 throw IllegalStateException(
                     extractErrorMessage(responseText) ?: "Login failed (${httpResponse.status.value})"
                 )
@@ -82,6 +93,14 @@ private data class LogoutRequest(
 private data class SocialLoginRequest(
     @SerialName("id_token") val idToken: String,
     val provider: String,
+    @SerialName("birth_date") val birthDate: String? = null,
+    // The mobile app is open to all members — distinguishes from admin-ui,
+    // which restricts this same endpoint to leadership roles.
+    // No default value: kotlinx.serialization's Json config here has
+    // encodeDefaults = false, which silently omits any field left at its
+    // Kotlin default — the backend requires this field, so it must always
+    // be explicitly supplied by the caller.
+    val client: String,
 )
 
 @Serializable
@@ -111,5 +130,12 @@ private fun extractErrorMessage(responseText: String): String? {
             is JsonArray -> message.joinToString("; ") { it.jsonPrimitive.contentOrNull ?: it.toString() }
             else -> null
         }
+    }.getOrNull()
+}
+
+private fun extractErrorCode(responseText: String): String? {
+    return runCatching {
+        val root = authJson.parseToJsonElement(responseText).jsonObject
+        (root["error"] as? JsonPrimitive)?.contentOrNull
     }.getOrNull()
 }

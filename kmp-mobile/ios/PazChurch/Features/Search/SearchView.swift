@@ -56,13 +56,13 @@ class SearchViewModel {
         async let homeResult = homeRepository.getHomeContent()
         async let academyResult = academyRepository.getAcademyContent()
         async let formsResult = formsRepository.getCatalog()
-        async let churchResult = churchRepository.getChurch()
+        async let ministriesResult = churchRepository.getAllMinistries()
         async let lifeGroupsResult = churchRepository.getAllLifeGroups()
 
         let home = try? await homeResult
         let academy = try? await academyResult
         let catalogRaw = try? await formsResult
-        let church = try? await churchResult
+        let ministriesRaw = try? await ministriesResult
         let lgRaw = try? await lifeGroupsResult
 
         let events = ((home?.agenda as? [AgendaEvent]) ?? []).filter {
@@ -77,7 +77,7 @@ class SearchViewModel {
                 ($0.description_?.lowercased().contains(lowered) == true)
         }
 
-        let ministries = ((church?.ministries as? [Ministry]) ?? []).filter {
+        let ministries = (ministriesRaw ?? []).filter {
             $0.name.lowercased().contains(lowered) ||
                 ($0.description_?.lowercased().contains(lowered) == true)
         }
@@ -164,12 +164,11 @@ struct SearchView: View {
                     }
                     .padding(.horizontal, PazSpacing.md)
                     .padding(.vertical, PazSpacing.sm)
-                    .background(.white.opacity(0.15))
-                    .cornerRadius(12)
+                    .glassCard(radius: PazSpacing.cardRadiusCompact)
                 }
                 .padding(.horizontal, PazSpacing.lg)
                 .padding(.vertical, PazSpacing.md)
-                .background(PazColors.heroGradient)
+                .glassBlurBackground()
 
                 // Results
                 if !viewModel.hasSearched, viewModel.query.isEmpty {
@@ -180,7 +179,7 @@ struct SearchView: View {
                     resultsList
                 }
             }
-            .background(PazColors.background)
+            .background(PazMeshBackground())
         }
     }
 
@@ -235,7 +234,7 @@ struct SearchView: View {
                 }
 
                 if !viewModel.results.lifeGroups.isEmpty {
-                    SectionHeaderView(title: "Grupos de Vida", count: viewModel.results.lifeGroups.count)
+                    SectionHeaderView(title: "Life Groups", count: viewModel.results.lifeGroups.count)
                     ForEach(viewModel.results.lifeGroups, id: \.id) { group in
                         NavigationLink(destination: LifeGroupDetailView(lifeGroup: group)) {
                             SearchResultRow(
@@ -252,7 +251,6 @@ struct SearchView: View {
             }
             .padding(.horizontal, PazSpacing.lg)
         }
-        .background(PazColors.background)
     }
 
     private var emptyQueryState: some View {
@@ -262,7 +260,7 @@ struct SearchView: View {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 48))
                     .foregroundColor(.gray.opacity(0.4))
-                Text("Busque eventos, vídeos, formulários, ministérios e grupos de vida")
+                Text("Busque eventos, vídeos, formulários, ministérios e life groups")
                     .font(PazTypography.bodySmall)
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
@@ -270,7 +268,6 @@ struct SearchView: View {
             .padding(.horizontal, PazSpacing.xl)
             Spacer()
         }
-        .background(PazColors.background)
     }
 
     private var noResultsState: some View {
@@ -286,7 +283,6 @@ struct SearchView: View {
             }
             Spacer()
         }
-        .background(PazColors.background)
     }
 }
 
@@ -300,10 +296,10 @@ private struct SectionHeaderView: View {
                 .font(PazTypography.titleSmall)
             Text("\(count)")
                 .font(PazTypography.labelSmall)
-                .foregroundColor(PazColors.primary)
+                .foregroundColor(PazColors.accent)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 2)
-                .background(PazColors.primary.opacity(0.12))
+                .background(PazColors.accent.opacity(0.12))
                 .cornerRadius(20)
         }
         .padding(.vertical, PazSpacing.xs)
@@ -319,11 +315,11 @@ private struct SearchResultRow: View {
         HStack(spacing: PazSpacing.md) {
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(PazColors.primary.opacity(0.1))
+                    .fill(PazColors.accent.opacity(0.1))
                     .frame(width: 40, height: 40)
                 Image(systemName: icon)
                     .font(.system(size: 18))
-                    .foregroundColor(PazColors.primary)
+                    .foregroundColor(PazColors.accent)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -339,8 +335,7 @@ private struct SearchResultRow: View {
             Spacer()
         }
         .padding(PazSpacing.md)
-        .background(PazColors.surface)
-        .cornerRadius(12)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }
 

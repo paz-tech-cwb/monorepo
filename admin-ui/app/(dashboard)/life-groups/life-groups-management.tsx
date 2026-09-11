@@ -59,6 +59,7 @@ import {
   Pencil,
   Trash2,
   Filter,
+  Activity,
 } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -74,6 +75,7 @@ import { useSectors } from "@/lib/hooks/use-sectors"
 import type { LifeGroup, CreateLifeGroupRequest } from "@/lib/api/types"
 import type { AdminUser } from "@/lib/api/types"
 import { LeaderPairPicker } from "@/components/ministries/leader-pair-picker"
+import { LifeGroupAttendanceChart } from "@/components/life-group-analytics/life-group-attendance-chart"
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -215,6 +217,9 @@ export function LifeGroupsManagement() {
 
   // Delete confirmation state
   const [deletingGroup, setDeletingGroup] = useState<LifeGroup | null>(null)
+
+  // Frequency (attendance) dialog state
+  const [frequencyGroup, setFrequencyGroup] = useState<LifeGroup | null>(null)
 
   // ----- derived stats -------------------------------------------------------
 
@@ -382,7 +387,7 @@ export function LifeGroupsManagement() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Life Groups</h1>
-        <p className="text-muted-foreground">Gerencie os grupos de vida da igreja</p>
+        <p className="text-muted-foreground">Gerencie os life groups da igreja</p>
       </div>
 
       {/* Summary cards */}
@@ -544,6 +549,10 @@ export function LifeGroupsManagement() {
                           <DropdownMenuItem onClick={() => setTimeout(() => handleManageMembers(group), 0)}>
                             <Users2 className="mr-2 h-4 w-4" />
                             Gerenciar Membros
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setTimeout(() => setFrequencyGroup(group), 0)}>
+                            <Activity className="mr-2 h-4 w-4" />
+                            Frequência
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setTimeout(() => openEdit(group), 0)}>
                             <Pencil className="mr-2 h-4 w-4" />
@@ -754,11 +763,26 @@ export function LifeGroupsManagement() {
         </DialogContent>
       </Dialog>
 
+      {/* Frequency (attendance) Dialog */}
+      <Dialog open={!!frequencyGroup} onOpenChange={(open) => { if (!open) setFrequencyGroup(null) }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Frequência — {frequencyGroup?.name}</DialogTitle>
+            <DialogDescription>
+              Presenças e ausências registradas nos encontros deste grupo.
+            </DialogDescription>
+          </DialogHeader>
+          {frequencyGroup && (
+            <LifeGroupAttendanceChart lifeGroupId={frequencyGroup.id} metric="counts" />
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation */}
       <ConfirmDeleteDialog
         open={!!deletingGroup}
         onOpenChange={(open) => { if (!open) setDeletingGroup(null) }}
-        entityName={deletingGroup?.name ?? "este grupo de vida"}
+        entityName={deletingGroup?.name ?? "este life group"}
         onConfirm={() => { if (deletingGroup) handleDelete(deletingGroup) }}
         isLoading={deleteLifeGroup.isPending}
       />

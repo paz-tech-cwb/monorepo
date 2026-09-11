@@ -1,6 +1,7 @@
 package br.church.paz.android.ui.features.ministries
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,10 +16,13 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -124,7 +128,7 @@ private fun MinistryContent(ministry: Ministry) {
 
         ministry.leader?.let { leader ->
             val leaderText =
-                if (ministry.coLeader != null) "$leader & ${ministry.coLeader}" else leader
+                if (ministry.coLeader != null) "${leader.name} & ${ministry.coLeader?.name}" else leader.name
             item {
                 Column(
                     Modifier
@@ -162,17 +166,45 @@ fun LifeGroupDetailScreen(
     }
 
     DetailScaffold(
-        title = uiState.lifeGroup?.name ?: "Grupo de Vida",
+        title = uiState.lifeGroup?.name ?: "Life Group",
         isLoading = uiState.isLoading,
         error = uiState.error,
         onBack = viewModel::onBack,
     ) {
-        uiState.lifeGroup?.let { LifeGroupContent(lifeGroup = it) }
+        uiState.lifeGroup?.let { group ->
+            LifeGroupContent(
+                lifeGroup = group,
+                canManageAttendance = uiState.canManageAttendance,
+                onStudyTap = {
+                    navController.navigate(br.church.paz.android.navigation.Screen.LifeGroupStudyList.route)
+                },
+                onAttendanceTap = {
+                    navController.navigate(
+                        br.church.paz.android.navigation.Screen.LifeGroupAttendanceHistory
+                            .createRoute(group.id.toString()),
+                    )
+                },
+                canManage = uiState.canManage,
+                onAnalyticsTap = {
+                    navController.navigate(
+                        br.church.paz.android.navigation.Screen.LifeGroupAnalytics
+                            .createRoute(group.id.toString()),
+                    )
+                },
+            )
+        }
     }
 }
 
 @Composable
-private fun LifeGroupContent(lifeGroup: LifeGroup) {
+private fun LifeGroupContent(
+    lifeGroup: LifeGroup,
+    canManageAttendance: Boolean,
+    onStudyTap: () -> Unit,
+    onAttendanceTap: () -> Unit,
+    canManage: Boolean,
+    onAnalyticsTap: () -> Unit,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding =
@@ -238,8 +270,93 @@ private fun LifeGroupContent(lifeGroup: LifeGroup) {
                             },
                     )
                 }
-                lifeGroup.address?.let {
-                    InfoRow(icon = Icons.Default.LocationOn, label = "Endereço", value = it.fullAddress)
+                lifeGroup.location?.let {
+                    InfoRow(icon = Icons.Default.LocationOn, label = "Endereço", value = it)
+                }
+            }
+        }
+
+        item {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(PazShapes.large)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .clickable(onClick = onStudyTap)
+                        .padding(PazSpacing.Lg),
+                horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Outlined.MenuBook,
+                    contentDescription = null,
+                    tint = PazColors.Primary,
+                    modifier = Modifier.size(22.dp),
+                )
+                Text("Estudo do Life", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                )
+            }
+        }
+
+        if (canManageAttendance) {
+            item {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(PazShapes.large)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .clickable(onClick = onAttendanceTap)
+                            .padding(PazSpacing.Lg),
+                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Outlined.Groups,
+                        contentDescription = null,
+                        tint = PazColors.Primary,
+                        modifier = Modifier.size(22.dp),
+                    )
+                    Text("Presença", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Icon(
+                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    )
+                }
+            }
+        }
+
+        if (canManage || canManageAttendance) {
+            item {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(PazShapes.large)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .clickable(onClick = onAnalyticsTap)
+                            .padding(PazSpacing.Lg),
+                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Outlined.BarChart,
+                        contentDescription = null,
+                        tint = PazColors.Primary,
+                        modifier = Modifier.size(22.dp),
+                    )
+                    Text("Relatórios", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Icon(
+                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    )
                 }
             }
         }

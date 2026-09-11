@@ -103,7 +103,7 @@ fun MinistriesScreen(
             Tab(
                 selected = uiState.selectedTab == MinistriesTab.LifeGroups,
                 onClick = { viewModel.onTabSelected(MinistriesTab.LifeGroups) },
-                text = { Text("Grupos de Vida") },
+                text = { Text("Life Groups") },
             )
         }
 
@@ -149,7 +149,7 @@ private fun MinistriesTab(
     ) {
         item { Spacer(Modifier.height(PazSpacing.Sm)) }
         items(ministries) { ministry ->
-            MinistryCard(ministry = ministry, onClick = { onTap(ministry.id) })
+            MinistryCard(ministry = ministry, onClick = { onTap(ministry.id.toString()) })
         }
         item { Spacer(Modifier.height(PazSpacing.Xl)) }
     }
@@ -161,7 +161,7 @@ private fun LifeGroupsTab(
     onTap: (String) -> Unit,
 ) {
     if (lifeGroups.isEmpty()) {
-        EmptyState(message = "Nenhum grupo de vida encontrado")
+        EmptyState(message = "Nenhum life group encontrado")
         return
     }
     LazyColumn(
@@ -173,7 +173,7 @@ private fun LifeGroupsTab(
     ) {
         item { Spacer(Modifier.height(PazSpacing.Sm)) }
         items(lifeGroups) { lifeGroup ->
-            LifeGroupCard(lifeGroup = lifeGroup, onClick = { onTap(lifeGroup.id) })
+            LifeGroupCard(lifeGroup = lifeGroup, onClick = { onTap(lifeGroup.id.toString()) })
         }
         item { Spacer(Modifier.height(PazSpacing.Xl)) }
     }
@@ -303,10 +303,10 @@ private fun LifeGroupCard(
                 }
             }
 
-            if (lifeGroup.address != null) {
+            if (!lifeGroup.location.isNullOrEmpty()) {
                 Spacer(Modifier.height(PazSpacing.Xs))
                 Text(
-                    lifeGroup.address!!.fullAddress,
+                    lifeGroup.location!!,
                     style =
                         MaterialTheme.typography.bodySmall.copy(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),

@@ -4,4 +4,5 @@
 *.swp
 node_modules/
 .env
+.env.staging
 .superpowers/

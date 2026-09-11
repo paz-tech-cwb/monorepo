@@ -1,4 +1,8 @@
-export type ReminderRuleType = 'form_report' | 'event' | 'member_journey';
+export type ReminderRuleType =
+  | 'form_report'
+  | 'event'
+  | 'member_journey'
+  | 'life_group_attendance';
 
 export interface FormReminderEntry {
   form_slug: string; // e.g. 'life-group-reports'
@@ -31,10 +35,18 @@ export interface MemberJourneyReminderConfig {
   // category is always 'member_journey' — hardcoded at dispatch time
 }
 
+export interface LifeGroupAttendanceReminderConfig {
+  hours_after_meeting_start: number; // e.g. 2 — reminder fires this many hours after the group's scheduled meeting start
+  title: string;
+  message: string;
+  // category is always 'life_group_attendance' — hardcoded at dispatch time
+}
+
 export type ReminderConfig =
   | FormReportReminderConfig
   | EventReminderConfig
-  | MemberJourneyReminderConfig;
+  | MemberJourneyReminderConfig
+  | LifeGroupAttendanceReminderConfig;
 
 export const DEFAULT_CONFIGS: Record<ReminderRuleType, ReminderConfig> = {
   form_report: {
@@ -85,5 +97,11 @@ export const DEFAULT_CONFIGS: Record<ReminderRuleType, ReminderConfig> = {
     steps: [],
     title: 'Continue sua jornada',
     message: 'Há um próximo passo esperando por você na sua jornada.',
+  },
+  life_group_attendance: {
+    hours_after_meeting_start: 2,
+    title: 'Lançar presença do Life Group',
+    message:
+      'A reunião do seu Life Group já começou. Não se esqueça de lançar a presença dos membros.',
   },
 };
