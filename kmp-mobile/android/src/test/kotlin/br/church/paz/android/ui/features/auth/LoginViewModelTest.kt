@@ -8,6 +8,7 @@ import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.BirthDateRequiredException
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -103,6 +104,7 @@ class LoginViewModelTest {
             val viewModel = LoginViewModel(authRepository)
 
             viewModel.onGoogleSignIn("new-token")
+            advanceUntilIdle()
 
             assertTrue(viewModel.uiState.value.needsBirthDate)
         }
@@ -116,6 +118,7 @@ class LoginViewModelTest {
                 Result.success(fakeUser)
             val viewModel = LoginViewModel(authRepository)
             viewModel.onGoogleSignIn("new-token")
+            advanceUntilIdle()
 
             viewModel.effect.test {
                 viewModel.onBirthDateConfirmed("2000-01-01")
