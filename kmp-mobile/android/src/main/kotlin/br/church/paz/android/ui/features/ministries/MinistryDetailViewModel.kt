@@ -29,9 +29,9 @@ class MinistryDetailViewModel(
 
     private fun load() {
         viewModelScope.launch {
-            runCatching { churchRepository.getChurch() }
-                .onSuccess { church ->
-                    val ministry = church.ministries.find { it.id == ministryId }
+            runCatching { churchRepository.getAllMinistries() }
+                .onSuccess { ministries ->
+                    val ministry = ministries.find { it.id.toString() == ministryId }
                     _uiState.update {
                         it.copy(
                             ministry = ministry,
@@ -73,7 +73,7 @@ class LifeGroupDetailViewModel(
             val currentUserId = currentUser?.id?.toIntOrNull()
             runCatching { churchRepository.getAllLifeGroups() }
                 .onSuccess { lifeGroups ->
-                    val group = lifeGroups.find { it.id == lifeGroupId }
+                    val group = lifeGroups.find { it.id.toString() == lifeGroupId }
                     val canManageAttendance =
                         currentUserId != null &&
                             group != null &&

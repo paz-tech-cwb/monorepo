@@ -126,7 +126,7 @@ export class AuthService implements OnModuleInit {
     } catch (error) {
       if (
         error instanceof HttpException &&
-        error.getStatus() === HttpStatus.BAD_REQUEST
+        (error.getStatus() as HttpStatus) === HttpStatus.BAD_REQUEST
       ) {
         throw error;
       }
@@ -420,7 +420,9 @@ export class AuthService implements OnModuleInit {
       return {
         username: decoded.uid,
         name:
-          decoded.name || this.getUsernameFromEmail(decoded.email) || 'User',
+          (decoded.name as string | undefined) ||
+          this.getUsernameFromEmail(decoded.email) ||
+          'User',
         email: decoded.email,
         photo: decoded.picture || null,
       };

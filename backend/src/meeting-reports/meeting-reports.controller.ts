@@ -45,7 +45,14 @@ export class MeetingReportsController {
     @Query('start_date') startDate?: string,
     @Query('end_date') endDate?: string,
   ) {
-    const filters: any = {};
+    const filters: {
+      life_group_id?: number;
+      leader_id?: number;
+      area_id?: number;
+      sector_id?: number;
+      start_date?: string;
+      end_date?: string;
+    } = {};
     if (lifeGroupId) filters.life_group_id = parseInt(lifeGroupId, 10);
     if (leaderId) filters.leader_id = parseInt(leaderId, 10);
     if (areaId) filters.area_id = parseInt(areaId, 10);

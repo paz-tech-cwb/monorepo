@@ -16,7 +16,7 @@ export class SocialLoginDto {
   provider: string;
 
   @Expose()
-  @Transform(({ obj }) => obj.id_token)
+  @Transform(({ obj }: { obj: Record<string, unknown> }) => obj.id_token)
   @IsString({ message: 'ID token must be a string.' })
   @IsNotEmpty({ message: 'ID token must not be empty.' })
   idToken: string;

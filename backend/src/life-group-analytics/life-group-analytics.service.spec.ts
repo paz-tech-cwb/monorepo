@@ -2,16 +2,28 @@ import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { LifeGroupAnalyticsService } from './life-group-analytics.service';
 import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
+import { AttendanceQueryDto } from './dto/attendance-query.dto';
+import { DistributionQueryDto } from './dto/distribution-query.dto';
 
-function makeQueryBuilder(rows: unknown[]) {
-  const qb: any = {
+interface MockQueryBuilder {
+  select: jest.Mock<MockQueryBuilder, unknown[]>;
+  addSelect: jest.Mock<MockQueryBuilder, unknown[]>;
+  where: jest.Mock<MockQueryBuilder, unknown[]>;
+  andWhere: jest.Mock<MockQueryBuilder, unknown[]>;
+  groupBy: jest.Mock<MockQueryBuilder, unknown[]>;
+  orderBy: jest.Mock<MockQueryBuilder, unknown[]>;
+  getRawMany: jest.Mock<Promise<unknown[]>, []>;
+}
+
+function makeQueryBuilder(rows: unknown[]): MockQueryBuilder {
+  const qb: MockQueryBuilder = {
     select: jest.fn(() => qb),
     addSelect: jest.fn(() => qb),
     where: jest.fn(() => qb),
     andWhere: jest.fn(() => qb),
     groupBy: jest.fn(() => qb),
     orderBy: jest.fn(() => qb),
-    getRawMany: jest.fn().mockResolvedValue(rows),
+    getRawMany: jest.fn<Promise<unknown[]>, []>().mockResolvedValue(rows),
   };
   return qb;
 }
@@ -45,8 +57,11 @@ describe('LifeGroupAnalyticsService', () => {
         call += 1;
         return makeQueryBuilder(rows);
       }),
-    } as unknown as EntityManager;
-    return { service: new LifeGroupAnalyticsService(em), em };
+    };
+    return {
+      service: new LifeGroupAnalyticsService(em as unknown as EntityManager),
+      em,
+    };
   }
 
   describe('scope guards', () => {
@@ -56,7 +71,7 @@ describe('LifeGroupAnalyticsService', () => {
       // it can conclude access is truly empty.
       const { service, em } = createService([[]]);
       const result = await service.attendance(
-        { year: 2026 } as any,
+        { year: 2026 } as AttendanceQueryDto,
         noAccessScope,
         actor,
       );
@@ -67,7 +82,7 @@ describe('LifeGroupAnalyticsService', () => {
     it('returns empty distribution when scope and led-group lookup both grant no access', async () => {
       const { service, em } = createService([[]]);
       const result = await service.distribution(
-        {} as any,
+        {} as DistributionQueryDto,
         noAccessScope,
         actor,
       );
@@ -84,7 +99,7 @@ describe('LifeGroupAnalyticsService', () => {
       const { service } = createService([[]]);
       await expect(
         service.attendance(
-          { year: 2026, life_group_id: 99 } as any,
+          { year: 2026, life_group_id: 99 } as AttendanceQueryDto,
           leaderScope,
           actor,
         ),
@@ -94,7 +109,7 @@ describe('LifeGroupAnalyticsService', () => {
     it('allows an explicit life_group_id the caller has scope for', async () => {
       const { service } = createService([[], []]);
       const result = await service.attendance(
-        { year: 2026, life_group_id: 7 } as any,
+        { year: 2026, life_group_id: 7 } as AttendanceQueryDto,
         leaderScope,
         actor,
       );
@@ -104,7 +119,7 @@ describe('LifeGroupAnalyticsService', () => {
     it('allows a life group the actor leads/co-leads even without scope access', async () => {
       const { service } = createService([[{ id: 55 }], []]);
       const result = await service.attendance(
-        { year: 2026, life_group_id: 55 } as any,
+        { year: 2026, life_group_id: 55 } as AttendanceQueryDto,
         noAccessScope,
         actor,
       );
@@ -124,16 +139,16 @@ describe('LifeGroupAnalyticsService', () => {
           },
         ],
       ]);
-      const result: any = await service.attendance(
-        { year: 2026 } as any,
+      const result = await service.attendance(
+        { year: 2026 } as AttendanceQueryDto,
         unrestrictedScope,
         actor,
       );
       expect(result.rows).toHaveLength(12);
-      const march = result.rows.find((r: any) => r.period === '2026-03')!;
+      const march = result.rows.find((r) => r.period === '2026-03')!;
       expect(march.meetings_count).toBe(2);
       expect(march.attendance_rate).toBeCloseTo(0.75);
-      const jan = result.rows.find((r: any) => r.period === '2026-01')!;
+      const jan = result.rows.find((r) => r.period === '2026-01')!;
       expect(jan).toEqual({
         period: '2026-01',
         meetings_count: 0,
@@ -147,7 +162,7 @@ describe('LifeGroupAnalyticsService', () => {
       const { service } = createService([]);
       await expect(
         service.attendance(
-          { year: 2026, granularity: 'meeting' } as any,
+          { year: 2026, granularity: 'meeting' } as AttendanceQueryDto,
           unrestrictedScope,
           actor,
         ),
@@ -170,7 +185,7 @@ describe('LifeGroupAnalyticsService', () => {
         ],
       ]);
       const result = await service.attendance(
-        { year: 2026, month: 3, granularity: 'meeting' } as any,
+        { year: 2026, month: 3, granularity: 'meeting' } as AttendanceQueryDto,
         unrestrictedScope,
         actor,
       );
@@ -201,7 +216,11 @@ describe('LifeGroupAnalyticsService', () => {
         manyNeighborhoods,
         [{ city: 'Curitiba', count: '4' }],
       ]);
-      const result = await service.distribution({} as any, unrestrictedScope, actor);
+      const result = await service.distribution(
+        {} as DistributionQueryDto,
+        unrestrictedScope,
+        actor,
+      );
       expect(result.by_day.map((r) => r.label)).toEqual([
         'Domingo',
         'Quarta-feira',

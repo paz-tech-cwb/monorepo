@@ -5,6 +5,7 @@ import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { LifeGroupStudiesController } from './life-group-studies.controller';
 import { LifeGroupStudiesService } from './life-group-studies.service';
 import { User } from '../users/entities/user.entity';
+import { CreateLifeGroupStudyDto } from './dto/create-life-group-study.dto';
 
 describe('LifeGroupStudiesController', () => {
   let controller: LifeGroupStudiesController;
@@ -51,9 +52,16 @@ describe('LifeGroupStudiesController', () => {
     );
 
     await expect(
-      controller.create({ title: 't', author: 'a', bodyMarkdown: 'b' } as any, {
-        user: memberUser,
-      }),
+      controller.create(
+        {
+          title: 't',
+          author: 'a',
+          bodyMarkdown: 'b',
+        } as CreateLifeGroupStudyDto,
+        {
+          user: memberUser,
+        },
+      ),
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(mockService.create).toHaveBeenCalledWith(
       { title: 't', author: 'a', bodyMarkdown: 'b' },
@@ -78,7 +86,7 @@ describe('LifeGroupStudiesController', () => {
     });
 
     const result = await controller.create(
-      { title: 't', author: 'a', bodyMarkdown: 'b' } as any,
+      { title: 't', author: 'a', bodyMarkdown: 'b' } as CreateLifeGroupStudyDto,
       { user: leaderUser },
     );
 

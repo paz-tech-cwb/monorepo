@@ -28,6 +28,6 @@ export class AttendanceQueryDto {
   // that month.
   @IsOptional()
   @IsIn(['month', 'meeting'])
-  @Transform(({ value }) => value ?? 'month')
+  @Transform(({ value }: { value?: 'month' | 'meeting' }) => value ?? 'month')
   granularity?: 'month' | 'meeting';
 }

@@ -10,6 +10,7 @@ import { LifeGroup } from './entities/life-group.entity';
 import { CreateLifeGroupDto } from './dto/create-life-group.dto';
 import { UpdateLifeGroupDto } from './dto/update-life-group.dto';
 import { User } from '../users/entities/user.entity';
+import { Sector } from '../sectors/entities/sector.entity';
 import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 
 @Injectable()
@@ -37,7 +38,9 @@ export class LifeGroupsService {
     try {
       const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=${encodeURIComponent(location)}`;
       const response = await fetch(url, {
-        headers: { 'User-Agent': 'PazChurchApp/1.0 (contato@igrejapaz.com.br)' },
+        headers: {
+          'User-Agent': 'PazChurchApp/1.0 (contato@igrejapaz.com.br)',
+        },
       });
       if (!response.ok) return null;
       const results = (await response.json()) as Array<{
@@ -92,9 +95,7 @@ export class LifeGroupsService {
   private canSeeMembers(lifeGroup: LifeGroup, viewer?: User): boolean {
     if (!viewer) return false;
     if (
-      (LEADERSHIP_ROLES as readonly string[]).includes(
-        viewer.role?.slug ?? '',
-      )
+      (LEADERSHIP_ROLES as readonly string[]).includes(viewer.role?.slug ?? '')
     )
       return true;
     if (lifeGroup.leader?.id === viewer.id) return true;
@@ -147,7 +148,7 @@ export class LifeGroupsService {
       const lifeGroup = this.entityManager.create(LifeGroup, {
         name: dto.name,
         leader: dto.leader_id ? { id: dto.leader_id } : null,
-        coLeader: dto.co_leader_id ? ({ id: dto.co_leader_id } as any) : null,
+        coLeader: dto.co_leader_id ? ({ id: dto.co_leader_id } as User) : null,
         sector: dto.sector_id ? { id: dto.sector_id } : null,
         location: dto.location ?? null,
         latitude: coords?.latitude ?? null,
@@ -165,7 +166,7 @@ export class LifeGroupsService {
         relations: ['leader', 'coLeader', 'sector', 'users'],
       });
       return this.toResponse(loaded!);
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while creating the life group.',
       );
@@ -194,7 +195,7 @@ export class LifeGroupsService {
         .orderBy('lg.name', 'ASC')
         .getMany();
       return lifeGroups.map((lg) => this.toResponse(lg, viewer));
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving your life groups.',
       );
@@ -208,7 +209,7 @@ export class LifeGroupsService {
         order: { name: 'ASC' },
       });
       return lifeGroups.map((lg) => this.toResponse(lg, viewer));
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving life groups.',
       );
@@ -255,15 +256,15 @@ export class LifeGroupsService {
       if (dto.name !== undefined) lifeGroup.name = dto.name;
       if (dto.leader_id !== undefined)
         lifeGroup.leader = dto.leader_id
-          ? ({ id: dto.leader_id } as any)
+          ? ({ id: dto.leader_id } as User)
           : null;
       if (dto.co_leader_id !== undefined)
         lifeGroup.coLeader = dto.co_leader_id
-          ? ({ id: dto.co_leader_id } as any)
+          ? ({ id: dto.co_leader_id } as User)
           : null;
       if (dto.sector_id !== undefined)
         lifeGroup.sector = dto.sector_id
-          ? ({ id: dto.sector_id } as any)
+          ? ({ id: dto.sector_id } as Sector)
           : null;
       if (dto.location !== undefined) {
         lifeGroup.location = dto.location;

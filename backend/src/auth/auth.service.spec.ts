@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
+import * as admin from 'firebase-admin';
 import { AuthService } from './auth.service';
 import { User } from 'src/users/entities/user.entity';
 import { UserAccount } from 'src/users/entities/account.entity';
@@ -314,6 +315,8 @@ describe('AuthService', () => {
         service.socialLogin('google', 'valid-google-token'),
       ).rejects.toMatchObject({
         status: HttpStatus.BAD_REQUEST,
+        // expect.objectContaining() is typed `any` by @types/jest.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         response: expect.objectContaining({ error: 'BIRTH_DATE_REQUIRED' }),
       });
 
@@ -574,9 +577,7 @@ describe('AuthService', () => {
   describe('onModuleInit', () => {
     it('should not throw during initialization when Firebase is already initialized', () => {
       // Simulate Firebase already initialized (admin.apps.length > 0 skips initializeApp)
-      jest
-        .spyOn(require('firebase-admin'), 'apps', 'get')
-        .mockReturnValue([{}]);
+      jest.spyOn(admin, 'apps', 'get').mockReturnValue([{}] as admin.app.App[]);
       expect(() => service.onModuleInit()).not.toThrow();
     });
   });

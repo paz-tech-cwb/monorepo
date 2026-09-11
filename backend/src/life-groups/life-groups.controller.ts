@@ -56,7 +56,10 @@ export class LifeGroupsController {
   }
 
   @Get(':id')
-  findOne(@Req() req: AuthenticatedRequest, @Param('id', ParseIntPipe) id: number) {
+  findOne(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
     return this.lifeGroupsService.findOne(id, req.user);
   }
 

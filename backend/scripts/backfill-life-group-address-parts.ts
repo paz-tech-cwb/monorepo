@@ -59,7 +59,10 @@ async function geocodeAddressParts(
         address.municipality ??
         null,
       neighborhood:
-        address.suburb ?? address.neighbourhood ?? address.city_district ?? null,
+        address.suburb ??
+        address.neighbourhood ??
+        address.city_district ??
+        null,
       state: address.state ?? null,
     };
   } catch (error: unknown) {

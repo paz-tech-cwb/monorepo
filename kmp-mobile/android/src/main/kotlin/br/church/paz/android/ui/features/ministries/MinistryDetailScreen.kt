@@ -128,7 +128,7 @@ private fun MinistryContent(ministry: Ministry) {
 
         ministry.leader?.let { leader ->
             val leaderText =
-                if (ministry.coLeader != null) "$leader & ${ministry.coLeader}" else leader
+                if (ministry.coLeader != null) "${leader.name} & ${ministry.coLeader?.name}" else leader.name
             item {
                 Column(
                     Modifier
@@ -270,8 +270,8 @@ private fun LifeGroupContent(
                             },
                     )
                 }
-                lifeGroup.address?.let {
-                    InfoRow(icon = Icons.Default.LocationOn, label = "Endereço", value = it.fullAddress)
+                lifeGroup.location?.let {
+                    InfoRow(icon = Icons.Default.LocationOn, label = "Endereço", value = it)
                 }
             }
         }

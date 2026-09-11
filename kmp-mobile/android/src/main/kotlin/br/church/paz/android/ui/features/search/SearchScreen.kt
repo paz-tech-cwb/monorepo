@@ -187,7 +187,7 @@ private fun ResultsList(
                     icon = Icons.Default.Groups,
                     title = ministry.name,
                     subtitle = ministry.description ?: "",
-                    onClick = { viewModel.onMinistryTap(ministry.id) },
+                    onClick = { viewModel.onMinistryTap(ministry.id.toString()) },
                 )
             }
             item { Spacer(Modifier.height(PazSpacing.Sm)) }
@@ -201,7 +201,7 @@ private fun ResultsList(
                     icon = Icons.Default.Person,
                     title = group.name,
                     subtitle = group.leader?.let { "Líder: $it" } ?: "${group.membersCount} membros",
-                    onClick = { viewModel.onLifeGroupTap(group.id) },
+                    onClick = { viewModel.onLifeGroupTap(group.id.toString()) },
                 )
             }
         }

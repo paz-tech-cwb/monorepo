@@ -72,7 +72,10 @@ export class LifeGroupAttendanceService {
    * saved record must remain viewable/editable even if it no longer
    * matches the group's current schedule.
    */
-  private assertMatchesMeetingDay(lifeGroup: LifeGroup, meetingDate: string): void {
+  private assertMatchesMeetingDay(
+    lifeGroup: LifeGroup,
+    meetingDate: string,
+  ): void {
     const expectedWeekday = lifeGroup.meetingDay
       ? WEEKDAY_INDEX[lifeGroup.meetingDay]
       : undefined;
@@ -186,7 +189,7 @@ export class LifeGroupAttendanceService {
     scope: ResolvedScope,
     actor: Actor,
     retrying = false,
-  ) {
+  ): Promise<ReturnType<typeof this.toResponse>> {
     this.assertValidMeetingDate(meetingDate);
     const lifeGroup = await this.findLifeGroup(lifeGroupId);
     this.assertCanAccess(lifeGroup, scope, actor);

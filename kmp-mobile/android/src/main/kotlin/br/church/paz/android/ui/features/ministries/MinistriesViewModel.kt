@@ -27,16 +27,16 @@ class MinistriesViewModel(
 
     private fun load() {
         viewModelScope.launch {
-            val churchDeferred = async { runCatching { churchRepository.getChurch() } }
+            val ministriesDeferred = async { runCatching { churchRepository.getAllMinistries() } }
             val lifeGroupsDeferred = async { runCatching { churchRepository.getAllLifeGroups() } }
 
-            val churchResult = churchDeferred.await()
+            val churchResult = ministriesDeferred.await()
             val lifeGroupsResult = lifeGroupsDeferred.await()
 
             val hasError = churchResult.isFailure && lifeGroupsResult.isFailure
             _uiState.update {
                 it.copy(
-                    ministries = churchResult.getOrNull()?.ministries ?: emptyList(),
+                    ministries = churchResult.getOrNull() ?: emptyList(),
                     lifeGroups = lifeGroupsResult.getOrNull() ?: emptyList(),
                     isLoading = false,
                     error = if (hasError) (churchResult.exceptionOrNull()?.message ?: "Erro ao carregar") else null,

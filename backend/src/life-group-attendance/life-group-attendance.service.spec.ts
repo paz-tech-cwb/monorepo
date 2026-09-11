@@ -1,8 +1,13 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { LifeGroupAttendanceService } from './life-group-attendance.service';
 import { LifeGroup } from '../life-groups/entities/life-group.entity';
 import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
+import { FormSubmissionAuditService } from '../forms-core/services/form-submission-audit.service';
 
 describe('LifeGroupAttendanceService', () => {
   const unrestrictedScope: ResolvedScope = {
@@ -34,10 +39,18 @@ describe('LifeGroupAttendanceService', () => {
     ],
   } as unknown as LifeGroup;
 
-  function createService(overrides: Partial<EntityManager> = {}) {
-    const em = {
-      findOne: jest.fn(),
-      find: jest.fn(),
+  interface MockEntityManager {
+    findOne: jest.Mock<Promise<unknown>, unknown[]>;
+    find: jest.Mock<Promise<unknown>, unknown[]>;
+    create: jest.Mock<unknown, [unknown, unknown]>;
+    save: jest.Mock<Promise<unknown>, unknown[]>;
+    transaction: jest.Mock<unknown, [(trx: EntityManager) => unknown]>;
+  }
+
+  function createService(overrides: Partial<MockEntityManager> = {}) {
+    const em: MockEntityManager = {
+      findOne: jest.fn<Promise<unknown>, unknown[]>(),
+      find: jest.fn<Promise<unknown>, unknown[]>(),
       create: jest.fn((_entity: unknown, value: unknown) => value),
       save: jest.fn((...args: unknown[]) =>
         Promise.resolve(args.length > 1 ? args[1] : args[0]),
@@ -46,12 +59,15 @@ describe('LifeGroupAttendanceService', () => {
         cb(em as unknown as EntityManager),
       ),
       ...overrides,
-    } as unknown as EntityManager;
+    };
 
     const auditService = { record: jest.fn().mockResolvedValue(undefined) };
 
     return {
-      service: new LifeGroupAttendanceService(em, auditService as any),
+      service: new LifeGroupAttendanceService(
+        em as unknown as EntityManager,
+        auditService as unknown as FormSubmissionAuditService,
+      ),
       em,
       auditService,
     };
@@ -132,8 +148,11 @@ describe('LifeGroupAttendanceService', () => {
       ]);
     });
 
-    it('rejects a draft date that does not fall on the group\'s meeting_day', async () => {
-      const saturdayGroup = { ...lifeGroup, meetingDay: 'Sábado' } as unknown as LifeGroup;
+    it("rejects a draft date that does not fall on the group's meeting_day", async () => {
+      const saturdayGroup = {
+        ...lifeGroup,
+        meetingDay: 'Sábado',
+      } as unknown as LifeGroup;
       const { service } = createService({
         findOne: jest
           .fn()
@@ -147,8 +166,11 @@ describe('LifeGroupAttendanceService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('accepts a draft date that falls on the group\'s meeting_day', async () => {
-      const saturdayGroup = { ...lifeGroup, meetingDay: 'Sábado' } as unknown as LifeGroup;
+    it("accepts a draft date that falls on the group's meeting_day", async () => {
+      const saturdayGroup = {
+        ...lifeGroup,
+        meetingDay: 'Sábado',
+      } as unknown as LifeGroup;
       const { service } = createService({
         findOne: jest
           .fn()
@@ -268,7 +290,11 @@ describe('LifeGroupAttendanceService', () => {
         { id: 10 },
       );
 
-      const savedAttendance = (em.save as jest.Mock).mock.calls[0][1];
+      const savedAttendance = em.save.mock.calls[0][1] as {
+        entries: unknown[];
+        membersCount: number;
+        presentCount: number;
+      };
       expect(savedAttendance.entries).toHaveLength(2);
       expect(savedAttendance.membersCount).toBe(2);
       expect(savedAttendance.presentCount).toBe(2);
@@ -368,7 +394,10 @@ describe('LifeGroupAttendanceService', () => {
         }),
       } as unknown as EntityManager;
       const auditService = { record: jest.fn().mockResolvedValue(undefined) };
-      const service = new LifeGroupAttendanceService(em, auditService as any);
+      const service = new LifeGroupAttendanceService(
+        em,
+        auditService as unknown as FormSubmissionAuditService,
+      );
 
       const result = await service.upsert(
         7,
@@ -537,12 +566,9 @@ describe('LifeGroupAttendanceService', () => {
           .mockResolvedValueOnce(null),
       });
 
-      const result = await service.getByDate(
-        7,
-        todayKey,
-        unrestrictedScope,
-        { id: 1 },
-      );
+      const result = await service.getByDate(7, todayKey, unrestrictedScope, {
+        id: 1,
+      });
       expect(result.is_draft).toBe(true);
     });
   });

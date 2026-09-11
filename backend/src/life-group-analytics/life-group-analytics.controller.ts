@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ScopeGuard } from '../forms-core/guards/scope.guard';
+import type { RequestWithScope } from '../forms-core/guards/scope.guard';
 import { LifeGroupAnalyticsService } from './life-group-analytics.service';
 import { AttendanceQueryDto } from './dto/attendance-query.dto';
 import { DistributionQueryDto } from './dto/distribution-query.dto';
@@ -24,12 +25,15 @@ export class LifeGroupAnalyticsController {
   constructor(private readonly svc: LifeGroupAnalyticsService) {}
 
   @Get('attendance')
-  attendance(@Query() query: AttendanceQueryDto, @Req() req: any) {
+  attendance(@Query() query: AttendanceQueryDto, @Req() req: RequestWithScope) {
     return this.svc.attendance(query, req.formScope, { id: req.user.id });
   }
 
   @Get('distribution')
-  distribution(@Query() query: DistributionQueryDto, @Req() req: any) {
+  distribution(
+    @Query() query: DistributionQueryDto,
+    @Req() req: RequestWithScope,
+  ) {
     return this.svc.distribution(query, req.formScope, { id: req.user.id });
   }
 }

@@ -78,7 +78,11 @@ export class LifeGroupAnalyticsService {
     return Array.from(new Set([...scope.lifeGroupIds, ...ledGroupIds]));
   }
 
-  async attendance(query: AttendanceQueryDto, scope: ResolvedScope, actor: Actor) {
+  async attendance(
+    query: AttendanceQueryDto,
+    scope: ResolvedScope,
+    actor: Actor,
+  ) {
     const lifeGroupIds = await this.resolveLifeGroupIds(
       scope,
       actor,
@@ -88,7 +92,7 @@ export class LifeGroupAnalyticsService {
       return {
         granularity: query.granularity ?? 'month',
         year: query.year ?? new Date().getFullYear(),
-        rows: [],
+        rows: [] as MonthlyBucket[],
       };
     }
 

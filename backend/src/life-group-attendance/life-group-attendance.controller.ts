@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ScopeGuard } from '../forms-core/guards/scope.guard';
+import type { RequestWithScope } from '../forms-core/guards/scope.guard';
 import { LifeGroupAttendanceService } from './life-group-attendance.service';
 import { UpsertLifeGroupAttendanceDto } from './dto/upsert-life-group-attendance.dto';
 
@@ -35,7 +36,7 @@ export class LifeGroupAttendanceController {
   @Get()
   list(
     @Param('lifeGroupId', ParseIntPipe) lifeGroupId: number,
-    @Req() req: any,
+    @Req() req: RequestWithScope,
   ) {
     return this.svc.list(lifeGroupId, req.formScope, { id: req.user.id });
   }
@@ -44,7 +45,7 @@ export class LifeGroupAttendanceController {
   getByDate(
     @Param('lifeGroupId', ParseIntPipe) lifeGroupId: number,
     @Param('date') date: string,
-    @Req() req: any,
+    @Req() req: RequestWithScope,
   ) {
     return this.svc.getByDate(lifeGroupId, date, req.formScope, {
       id: req.user.id,
@@ -56,7 +57,7 @@ export class LifeGroupAttendanceController {
     @Param('lifeGroupId', ParseIntPipe) lifeGroupId: number,
     @Param('date') date: string,
     @Body() dto: UpsertLifeGroupAttendanceDto,
-    @Req() req: any,
+    @Req() req: RequestWithScope,
   ) {
     return this.svc.upsert(lifeGroupId, date, dto, req.formScope, {
       id: req.user.id,
