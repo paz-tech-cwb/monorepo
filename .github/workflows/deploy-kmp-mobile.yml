@@ -166,7 +166,8 @@ jobs:
             -scheme PazChurch \
             -configuration Release \
             -destination 'generic/platform=iOS' \
-            -archivePath "$RUNNER_TEMP/PazChurch.xcarchive"
+            -archivePath "$RUNNER_TEMP/PazChurch.xcarchive" \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER"
 
       - name: Export IPA
         run: |
