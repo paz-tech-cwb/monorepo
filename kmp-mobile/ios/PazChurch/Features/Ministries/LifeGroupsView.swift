@@ -2,11 +2,11 @@ import Observation
 import Shared
 import SwiftUI
 
-// Defaults to just the viewer's own life group(s) — leaders/members of at
-// least one group don't need to browse the whole church's list to find
-// their own. "Ver mais life groups" opens the unfiltered list/map for
-// anyone who wants to browse others. A viewer with no group of their own
-// sees the unfiltered list/map immediately, same as before this change.
+/// Defaults to just the viewer's own life group(s) — leaders/members of at
+/// least one group don't need to browse the whole church's list to find
+/// their own. "Ver mais life groups" opens the unfiltered list/map for
+/// anyone who wants to browse others. A viewer with no group of their own
+/// sees the unfiltered list/map immediately, same as before this change.
 struct LifeGroupsView: View {
     @State private var viewModel: LifeGroupsViewModel
     let churchRepository: ChurchRepository
@@ -87,30 +87,13 @@ struct LifeGroupsView: View {
     }
 
     private func errorState(error: String) -> some View {
-        VStack(spacing: PazSpacing.md) {
-            Spacer()
-            Text(error)
-                .font(PazTypography.bodySmall)
-                .foregroundColor(.gray)
-            Button(action: { viewModel.onRetry() }) {
-                Text("Tentar Novamente")
-                    .font(PazTypography.titleMedium)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, PazSpacing.md)
-                    .background(PazColors.accent)
-                    .cornerRadius(12)
-            }
-            .padding(.horizontal, PazSpacing.lg)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        ErrorStateView(message: error, onRetry: { viewModel.onRetry() })
     }
 }
 
-// The unfiltered, everyone-in-the-church list/map — either the fallback
-// when the viewer has no group of their own, or reached via "Ver mais
-// life groups".
+/// The unfiltered, everyone-in-the-church list/map — either the fallback
+/// when the viewer has no group of their own, or reached via "Ver mais
+/// life groups".
 struct AllLifeGroupsContentView: View {
     @State private var viewModel: AllLifeGroupsViewModel
     @State private var showMap = false
@@ -183,24 +166,7 @@ struct AllLifeGroupsContentView: View {
     }
 
     private func errorState(error: String) -> some View {
-        VStack(spacing: PazSpacing.md) {
-            Spacer()
-            Text(error)
-                .font(PazTypography.bodySmall)
-                .foregroundColor(.gray)
-            Button(action: { viewModel.onRetry() }) {
-                Text("Tentar Novamente")
-                    .font(PazTypography.titleMedium)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, PazSpacing.md)
-                    .background(PazColors.accent)
-                    .cornerRadius(12)
-            }
-            .padding(.horizontal, PazSpacing.lg)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        ErrorStateView(message: error, onRetry: { viewModel.onRetry() })
     }
 
     private func emptyState(_ message: String) -> some View {

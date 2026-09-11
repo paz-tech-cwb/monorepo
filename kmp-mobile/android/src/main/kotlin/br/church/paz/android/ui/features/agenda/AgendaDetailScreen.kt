@@ -42,7 +42,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import br.church.paz.android.ui.components.PazButton
+import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazGoldBadge
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
@@ -292,16 +292,7 @@ private fun ErrorState(
     error: String,
     onRetry: () -> Unit,
 ) {
-    Box(Modifier.fillMaxSize(), Alignment.Center) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-            modifier = Modifier.padding(PazSpacing.Xl),
-        ) {
-            Text(error, style = MaterialTheme.typography.bodySmall)
-            PazButton(text = "Tentar Novamente", onClick = onRetry, modifier = Modifier.fillMaxWidth())
-        }
-    }
+    PazErrorState(message = error, onRetry = onRetry)
 }
 
 @Composable

@@ -28,19 +28,7 @@ struct MemberJourneyView: View {
     }
 
     private func errorState(message: String) -> some View {
-        VStack(spacing: PazSpacing.lg) {
-            Spacer()
-            Text(message)
-                .font(PazTypography.bodyMedium)
-                .foregroundStyle(PazColors.slate)
-                .multilineTextAlignment(.center)
-            Button("Tentar Novamente") { viewModel.retry() }
-                .font(PazTypography.titleSmall)
-                .foregroundStyle(PazColors.accent)
-            Spacer()
-        }
-        .padding(.horizontal, PazSpacing.lg)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        ErrorStateView(message: message, onRetry: { viewModel.retry() })
     }
 
     private var emptyState: some View {
