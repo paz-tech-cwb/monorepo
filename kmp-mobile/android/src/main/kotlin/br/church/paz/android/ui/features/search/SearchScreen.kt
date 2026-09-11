@@ -59,7 +59,7 @@ fun SearchScreen(
                 is SearchEffect.NavigateToAgendaDetail ->
                     navController.navigate(Screen.AgendaDetail.createRoute(effect.eventId))
                 is SearchEffect.NavigateToFormDetail ->
-                    navController.navigate(Screen.FormDetail.createRoute(effect.formId))
+                    navController.navigate(Screen.FormSteps.createRoute(effect.formId))
                 is SearchEffect.NavigateToMinistryDetail ->
                     navController.navigate(Screen.MinistryDetail.createRoute(effect.ministryId))
                 is SearchEffect.NavigateToLifeGroupDetail ->
