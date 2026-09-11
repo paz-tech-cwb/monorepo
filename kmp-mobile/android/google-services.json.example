@@ -17,6 +17,19 @@
       "services": {
         "appinvite_service": { "other_platform_oauth_client": [] }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "REPLACE",
+        "android_client_info": {
+          "package_name": "com.cwb.pazchurch.app.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [{ "current_key": "REPLACE" }],
+      "services": {
+        "appinvite_service": { "other_platform_oauth_client": [] }
+      }
     }
   ],
   "configuration_version": "1"
