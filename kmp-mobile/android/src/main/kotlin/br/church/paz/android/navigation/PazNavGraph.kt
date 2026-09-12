@@ -9,6 +9,7 @@ import br.church.paz.android.ui.features.academy.VideoPlayerScreen
 import br.church.paz.android.ui.features.agenda.AgendaDetailScreen
 import br.church.paz.android.ui.features.agenda.AgendaListScreen
 import br.church.paz.android.ui.features.formularios.FormDetailScreen
+import br.church.paz.android.ui.features.formularios.FormStepScreen
 import br.church.paz.android.ui.features.formularios.FormSubmissionDetailScreen
 import br.church.paz.android.ui.features.formularios.FormSubmissionsListScreen
 import br.church.paz.android.ui.features.formularios.FormulariosScreen
@@ -85,6 +86,13 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         ) { backStackEntry ->
             val formId = backStackEntry.arguments?.getString("formId") ?: return@composable
             FormDetailScreen(navController = navController, formId = formId)
+        }
+        composable(
+            route = Screen.FormSteps.route,
+            arguments = listOf(androidx.navigation.navArgument("formId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val formId = backStackEntry.arguments?.getString("formId") ?: return@composable
+            FormStepScreen(navController = navController, formId = formId)
         }
         composable(Screen.FormSubmissionsList.route) {
             FormSubmissionsListScreen(navController = navController)

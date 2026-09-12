@@ -210,7 +210,7 @@ struct SearchView: View {
                 if !viewModel.results.forms.isEmpty {
                     SectionHeaderView(title: "Formulários", count: viewModel.results.forms.count)
                     ForEach(viewModel.results.forms, id: \.id) { form in
-                        NavigationLink(destination: FormDetailView(form: form)) {
+                        NavigationLink(destination: FormStepView(form: form)) {
                             SearchResultRow(icon: "list.clipboard", title: form.title, subtitle: form.description ?? "")
                         }
                         .buttonStyle(.plain)

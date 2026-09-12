@@ -2,305 +2,6 @@ import Observation
 import Shared
 import SwiftUI
 
-// MARK: - Field Definitions
-
-enum FormFieldType {
-    case text
-    case name
-    case phone
-    case email
-    case date
-    case integer
-    case currency
-    case multiline
-    case toggle
-    case select // enum: optionValues[i] = API value, label in options[i] displayed
-    case userPicker // single user → stores id string
-    case userMultiPicker // multi user → stores "1,2,3"
-    case lgPicker // life-group → stores id string
-    case selfOrSearch // invited_by: "" = self, else searched name
-}
-
-struct FormFieldDef {
-    let key: String
-    let label: String
-    let placeholder: String
-    let required: Bool
-    let fieldType: FormFieldType
-    let options: [String] // display labels
-    let optionValues: [String] // API values parallel to options; empty = value IS label
-
-    init(
-        _ key: String,
-        _ label: String,
-        placeholder: String = "",
-        required: Bool = false,
-        fieldType: FormFieldType = .text,
-        options: [String] = [],
-        optionValues: [String] = []
-    ) {
-        self.key = key
-        self.label = label
-        self.placeholder = placeholder
-        self.required = required
-        self.fieldType = fieldType
-        self.options = options
-        self.optionValues = optionValues
-    }
-}
-
-extension FormType {
-    var fieldDefs: [FormFieldDef] {
-        switch self {
-        case .serviceReport:
-            [
-                FormFieldDef("date", "Data", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef(
-                    "report_type",
-                    "Tipo de relatório",
-                    required: true,
-                    fieldType: .select,
-                    options: ["Tadel", "Culto de celebração", "Evento"],
-                    optionValues: ["tadel", "culto_celebracao", "evento"]
-                ),
-                FormFieldDef(
-                    "period",
-                    "Período",
-                    required: true,
-                    fieldType: .select,
-                    options: ["Manhã", "Tarde/Noite"],
-                    optionValues: ["manha", "tarde_noite"]
-                ),
-                FormFieldDef("atmosphere_team_id", "Equipe Atmosfera", fieldType: .integer),
-                FormFieldDef("atmosphere_responsible", "Responsável no dia", required: true),
-                FormFieldDef("tadel_adults", "Adultos (Tadel)", placeholder: "0", required: true, fieldType: .integer),
-                FormFieldDef("tadel_kids", "Crianças (Tadel)", placeholder: "0", fieldType: .integer),
-                FormFieldDef("vehicles_cars", "Carros", placeholder: "0", required: true, fieldType: .integer),
-                FormFieldDef("vehicles_motos", "Motos", placeholder: "0", fieldType: .integer),
-                FormFieldDef("vehicles_bikes", "Bicicletas", placeholder: "0", fieldType: .integer),
-                FormFieldDef("vehicles_others", "Outros veículos", placeholder: "Ex: Ônibus - 2"),
-                FormFieldDef("volunteers_atmosfera", "Voluntários Atmosfera", placeholder: "0", fieldType: .integer),
-                FormFieldDef("volunteers_louvor", "Voluntários Louvor", placeholder: "0", fieldType: .integer),
-                FormFieldDef("volunteers_midia", "Voluntários Mídia", placeholder: "0", fieldType: .integer),
-                FormFieldDef("volunteers_danca", "Voluntários Dança", placeholder: "0", fieldType: .integer),
-                FormFieldDef("notes", "Observação", fieldType: .multiline),
-            ]
-
-        case .guest:
-            [
-                FormFieldDef("date", "Data da Visita", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef(
-                    "full_name",
-                    "Nome do Visitante",
-                    placeholder: "Nome completo",
-                    required: true,
-                    fieldType: .name
-                ),
-                FormFieldDef("email", "E-mail", placeholder: "email@exemplo.com", required: true, fieldType: .email),
-                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", fieldType: .phone),
-                FormFieldDef("invited_by", "Convidado por", fieldType: .selfOrSearch),
-                FormFieldDef("via_casa_de_paz", "Veio de uma Casa de Paz?", fieldType: .toggle),
-                FormFieldDef("how_met_church", "Como conheceu a igreja?"),
-                FormFieldDef("address", "Endereço"),
-            ]
-
-        case .multiplication:
-            [
-                FormFieldDef(
-                    "date",
-                    "Data da Multiplicação",
-                    placeholder: "DD/MM/YYYY",
-                    required: true,
-                    fieldType: .date
-                ),
-                FormFieldDef("source_life_group_id", "Life Group de Origem", required: true, fieldType: .lgPicker),
-                FormFieldDef("new_life_group_name", "Nome do Novo Grupo", placeholder: "Ex: GL Norte", required: true),
-                FormFieldDef("new_leader_id", "Novo Líder", required: true, fieldType: .userPicker),
-                FormFieldDef("host_id", "Anfitrião", required: true, fieldType: .userPicker),
-                FormFieldDef("leader_phone", "Telefone do Líder", required: true, fieldType: .phone),
-                FormFieldDef("meeting_day_time", "Dia e Horário", placeholder: "Ex: Sexta 19h", required: true),
-                FormFieldDef("address", "Endereço", required: true),
-                FormFieldDef("members_to_move", "Membros a Transferir", fieldType: .userMultiPicker),
-                FormFieldDef("new_members", "Novos Membros", fieldType: .userMultiPicker),
-                FormFieldDef("completed_leadership_track", "Completou Trilha de Liderança", fieldType: .toggle),
-                FormFieldDef("legally_married", "Casado Legalmente", fieldType: .toggle),
-                FormFieldDef("faithful_tither", "Dizimista Fiel", fieldType: .toggle),
-                FormFieldDef("evangelizing_and_consolidating", "Evangelizando e Consolidando", fieldType: .toggle),
-                FormFieldDef("good_testimony", "Bom Testemunho", fieldType: .toggle),
-                FormFieldDef("single_living_in_purity", "Solteiro Vivendo em Pureza", fieldType: .toggle),
-            ]
-
-        case .memberRegistration:
-            [
-                FormFieldDef("full_name", "Nome Completo", required: true, fieldType: .name),
-                FormFieldDef("email", "E-mail", placeholder: "email@exemplo.com", fieldType: .email),
-                FormFieldDef(
-                    "birth_date",
-                    "Data de Nascimento",
-                    placeholder: "DD/MM/YYYY",
-                    required: true,
-                    fieldType: .date
-                ),
-                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", required: true, fieldType: .phone),
-                FormFieldDef(
-                    "gender",
-                    "Gênero",
-                    required: true,
-                    fieldType: .select,
-                    options: ["Masculino", "Feminino"],
-                    optionValues: ["m", "f"]
-                ),
-                FormFieldDef(
-                    "civil_state",
-                    "Estado Civil",
-                    required: true,
-                    fieldType: .select,
-                    options: ["Solteiro", "Casado", "Divorciado", "Viúvo"],
-                    optionValues: ["solteiro", "casado", "divorciado", "viuvo"]
-                ),
-                FormFieldDef("sector_id", "Setor", required: true, fieldType: .userPicker), // TODO: sector picker
-                FormFieldDef("life_group_id", "Life Group", fieldType: .lgPicker),
-                FormFieldDef("address", "Endereço"),
-            ]
-
-        case .conversion:
-            [
-                FormFieldDef("full_name", "Nome Completo", required: true, fieldType: .name),
-                FormFieldDef("email", "E-mail", placeholder: "email@exemplo.com", required: true, fieldType: .email),
-                FormFieldDef("phone", "Telefone", placeholder: "(41) 9 9999-9999", required: true, fieldType: .phone),
-                FormFieldDef(
-                    "decision_type",
-                    "Tipo de Decisão",
-                    required: true,
-                    fieldType: .select,
-                    options: ["Primeira vez", "Reconciliação"],
-                    optionValues: ["first_time", "reconciliation"]
-                ),
-                FormFieldDef("how_met_church", "Como conheceu a igreja?", required: true),
-                FormFieldDef(
-                    "gender",
-                    "Gênero",
-                    required: true,
-                    fieldType: .select,
-                    options: ["Masculino", "Feminino"],
-                    optionValues: ["m", "f"]
-                ),
-                FormFieldDef(
-                    "birth_date",
-                    "Data de Nascimento",
-                    placeholder: "DD/MM/YYYY",
-                    required: true,
-                    fieldType: .date
-                ),
-                FormFieldDef(
-                    "civil_state",
-                    "Estado Civil",
-                    required: true,
-                    fieldType: .select,
-                    options: ["Solteiro", "Casado", "Divorciado", "Viúvo"],
-                    optionValues: ["solteiro", "casado", "divorciado", "viuvo"]
-                ),
-                FormFieldDef("address", "Endereço", required: true),
-                FormFieldDef("attendance_count", "Quantidade de visitas", required: true),
-                FormFieldDef("life_group_status", "Status do Life Group", required: true),
-                FormFieldDef("life_group_leader_or_name", "Líder ou nome do Life Group"),
-                FormFieldDef("invited_by", "Convidado por"),
-                FormFieldDef("notes", "Observações", fieldType: .multiline),
-            ]
-
-        case .lifeGroupReport:
-            [
-                FormFieldDef("date", "Data da Reunião", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef(
-                    "attendees",
-                    "Quantidade de Participantes",
-                    placeholder: "0",
-                    required: true,
-                    fieldType: .integer
-                ),
-                FormFieldDef("visitors", "Quantidade de Visitantes", placeholder: "0", fieldType: .integer),
-                FormFieldDef("offerings", "Oferta (R$)", placeholder: "0,00", fieldType: .currency),
-                FormFieldDef("observations", "Observações", fieldType: .multiline),
-            ]
-
-        case .course:
-            [
-                FormFieldDef("course_name", "Nome do Curso", placeholder: "Ex: Escola de Membros", required: true),
-                FormFieldDef(
-                    "enrolled_at",
-                    "Data de Inscrição",
-                    placeholder: "DD/MM/YYYY",
-                    required: true,
-                    fieldType: .date
-                ),
-            ]
-
-        case .sectorSupervisorReport:
-            [
-                FormFieldDef("date", "Data do Relatório", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef("sector_id", "Setor", required: true, fieldType: .userPicker), // TODO: sector picker
-                FormFieldDef("life_groups_visited", "Grupos Visitados", fieldType: .lgPicker),
-                FormFieldDef("leaders_pastored", "Líderes Pastoreados", fieldType: .userMultiPicker),
-                FormFieldDef("multiplication_candidates", "Candidatos à Multiplicação", fieldType: .userMultiPicker),
-                FormFieldDef(
-                    "life_groups_count",
-                    "Total de Grupos",
-                    placeholder: "0",
-                    required: true,
-                    fieldType: .integer
-                ),
-                FormFieldDef(
-                    "life_groups_supervised",
-                    "Grupos Supervisionados",
-                    placeholder: "0",
-                    required: true,
-                    fieldType: .integer
-                ),
-                FormFieldDef("life_group_observations", "Observações dos Grupos", fieldType: .multiline),
-                FormFieldDef("sector_multiplication_date", "Data de Multiplicação do Setor", fieldType: .date),
-                FormFieldDef("notes", "Observações", fieldType: .multiline),
-            ]
-
-        default: // areaSupervisorReport
-            [
-                FormFieldDef("date", "Data do Relatório", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef("area_id", "Área", required: true, fieldType: .userPicker), // TODO: area picker
-                FormFieldDef("sector_leaders_pastored", "Líderes de Setor Pastoreados", fieldType: .userMultiPicker),
-                FormFieldDef(
-                    "life_groups_count",
-                    "Total de Grupos",
-                    placeholder: "0",
-                    required: true,
-                    fieldType: .integer
-                ),
-                FormFieldDef(
-                    "life_groups_supervised",
-                    "Grupos Supervisionados",
-                    placeholder: "0",
-                    required: true,
-                    fieldType: .integer
-                ),
-                FormFieldDef("life_group_observations", "Observações dos Grupos", fieldType: .multiline),
-                FormFieldDef("notes", "Observações", fieldType: .multiline),
-            ]
-        }
-    }
-
-    var displayName: String {
-        switch self {
-        case .memberRegistration: "Registro de Membro"
-        case .conversion: "Conversão"
-        case .guest: "Visitante"
-        case .multiplication: "Multiplicação"
-        case .serviceReport: "Relatório de Culto"
-        case .course: "Curso"
-        case .lifeGroupReport: "Relatório de Grupo"
-        case .sectorSupervisorReport: "Rel. Supervisor de Setor"
-        default: "Rel. Supervisor de Área"
-        }
-    }
-}
-
 // MARK: - ViewModel
 
 @MainActor
@@ -312,6 +13,28 @@ class FormDetailViewModelIOS {
     var isSubmitting = false
     var error: String?
     var submitSuccess = false
+
+    // MARK: - Step mode state
+
+    var stepIndex: Int = 0
+    var stepError: String?
+
+    var currentDef: FormFieldDef? {
+        guard let form else { return nil }
+        let defs = form.type.fieldDefs
+        guard !defs.isEmpty else { return nil }
+        return defs[min(stepIndex, defs.count - 1)]
+    }
+
+    var isLastStep: Bool {
+        guard let form else { return true }
+        return stepIndex >= form.type.fieldDefs.count - 1
+    }
+
+    var progress: Double {
+        guard let form, !form.type.fieldDefs.isEmpty else { return 0 }
+        return Double(stepIndex + 1) / Double(form.type.fieldDefs.count)
+    }
 
     // MARK: - Picker state
 
@@ -371,6 +94,28 @@ class FormDetailViewModelIOS {
     func update(key: String, value: String) {
         fields[key] = value
         error = nil
+        stepError = nil
+    }
+
+    /// Validates the current step's field (if required) and advances, capping at the last question.
+    func nextStep() {
+        guard let form else { return }
+        let defs = form.type.fieldDefs
+        guard let def = defs[safe: stepIndex] else { return }
+
+        if def.required, (fields[def.key] ?? "").trimmingCharacters(in: .whitespaces).isEmpty {
+            stepError = "\(def.label) é obrigatório"
+            return
+        }
+
+        stepIndex = min(stepIndex + 1, defs.count - 1)
+        stepError = nil
+    }
+
+    /// Floors at the first question — does not pop the screen.
+    func previousStep() {
+        stepIndex = max(stepIndex - 1, 0)
+        stepError = nil
     }
 
     func openPicker(def: FormFieldDef) {
@@ -617,8 +362,16 @@ class FormDetailViewModelIOS {
     }
 }
 
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}
+
 // MARK: - View
 
+/// Scrollable all-at-once form screen. Kept as a fallback reachable from `FormStepView`
+/// via "Ver todas as perguntas" for users who prefer to see every question at once.
 struct FormDetailView: View {
     let form: FormCatalogItem
     @State private var viewModel: FormDetailViewModelIOS
@@ -645,7 +398,7 @@ struct FormDetailView: View {
         .navigationTitle(form.title)
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .onChange(of: viewModel.submitSuccess) { success in
+        .onChange(of: viewModel.submitSuccess) { _, success in
             if success { dismiss() }
         }
     }
@@ -725,351 +478,6 @@ struct FormDetailView: View {
         }
         .padding(PazSpacing.lg)
     }
-}
-
-private struct FieldRow: View {
-    let def: FormFieldDef
-    let value: String
-    let extraFields: [String: String]
-    let isSubmitting: Bool
-    let selfOrSearchModes: [String: Bool]
-    let onChange: (String) -> Void
-    let onOpenPicker: (FormFieldDef) -> Void
-    let onSelfOrSearchMode: (String, Bool) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: PazSpacing.sm) {
-            HStack(spacing: 4) {
-                Text(def.label)
-                    .font(PazTypography.labelMedium)
-                if def.required {
-                    Text("*")
-                        .font(PazTypography.labelMedium)
-                        .foregroundColor(PazColors.error)
-                }
-            }
-
-            switch def.fieldType {
-            case .multiline:
-                TextEditor(text: Binding(get: { value }, set: onChange))
-                    .font(PazTypography.bodyMedium)
-                    .frame(height: 120)
-                    .padding(PazSpacing.sm)
-                    .scrollContentBackground(.hidden)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .disabled(isSubmitting)
-
-            case .date:
-                DateFieldRow(value: value, onChange: onChange, disabled: isSubmitting)
-
-            case .phone:
-                MaskedTextField(
-                    placeholder: def.placeholder,
-                    initialValue: value,
-                    disabled: isSubmitting,
-                    keyboardType: .numberPad,
-                    contentType: .telephoneNumber,
-                    mask: applyPhoneMask,
-                    onChange: onChange
-                )
-
-            case .email:
-                TextField(def.placeholder, text: Binding(get: { value }, set: onChange))
-                    .font(PazTypography.bodyMedium)
-                    .keyboardType(.emailAddress)
-                    .textContentType(.emailAddress)
-                    .autocapitalization(.none)
-                    .padding(.horizontal, PazSpacing.md)
-                    .frame(height: 56)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .disabled(isSubmitting)
-
-            case .name:
-                TextField(def.placeholder, text: Binding(get: { value }, set: onChange))
-                    .font(PazTypography.bodyMedium)
-                    .textContentType(.name)
-                    .autocapitalization(.words)
-                    .padding(.horizontal, PazSpacing.md)
-                    .frame(height: 56)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .disabled(isSubmitting)
-
-            case .integer:
-                TextField(def.placeholder, text: Binding(
-                    get: { value },
-                    set: { new in onChange(new.filter(\.isNumber)) }
-                ))
-                .font(PazTypography.bodyMedium)
-                .keyboardType(.numberPad)
-                .padding(.horizontal, PazSpacing.md)
-                .frame(height: 56)
-                .background(PazColors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .disabled(isSubmitting)
-
-            case .currency:
-                MaskedTextField(
-                    placeholder: def.placeholder,
-                    initialValue: value,
-                    disabled: isSubmitting,
-                    keyboardType: .numberPad,
-                    mask: { _, new in applyCurrencyMask(new) },
-                    onChange: onChange
-                )
-
-            case .toggle:
-                Toggle(isOn: Binding(
-                    get: { value == "true" },
-                    set: { onChange($0 ? "true" : "false") }
-                )) {
-                    EmptyView()
-                }
-                .disabled(isSubmitting)
-
-            case .text:
-                TextField(def.placeholder, text: Binding(get: { value }, set: onChange))
-                    .font(PazTypography.bodyMedium)
-                    .autocapitalization(.sentences)
-                    .padding(.horizontal, PazSpacing.md)
-                    .frame(height: 56)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .disabled(isSubmitting)
-
-            case .select:
-                let displayValue: String = {
-                    if def.optionValues.isEmpty { return value }
-                    guard let idx = def.optionValues.firstIndex(of: value) else { return value }
-                    return def.options[idx]
-                }()
-                Menu {
-                    ForEach(Array(def.options.enumerated()), id: \.offset) { idx, label in
-                        Button(label) {
-                            let apiValue = def.optionValues.isEmpty ? label : def.optionValues[idx]
-                            onChange(apiValue)
-                        }
-                    }
-                } label: {
-                    HStack {
-                        Text(displayValue
-                            .isEmpty ? (def.placeholder.isEmpty ? "Selecionar" : def.placeholder) : displayValue)
-                            .font(PazTypography.bodyMedium)
-                            .foregroundStyle(displayValue.isEmpty ? PazColors.slate : PazColors.ink)
-                        Spacer()
-                        Image(systemName: "chevron.down").foregroundStyle(PazColors.accent)
-                    }
-                    .padding(.horizontal, PazSpacing.md)
-                    .frame(height: 56)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .disabled(isSubmitting)
-
-            case .userPicker, .userMultiPicker:
-                let displayName = extraFields["\(def.key)_name"] ?? ""
-                Button(action: { if !isSubmitting { onOpenPicker(def) } }) {
-                    HStack {
-                        Text(displayName.isEmpty ? "Selecionar pessoa" : displayName)
-                            .font(PazTypography.bodyMedium)
-                            .foregroundStyle(displayName.isEmpty ? PazColors.slate : PazColors.ink)
-                        Spacer()
-                        Image(systemName: "chevron.down").foregroundStyle(PazColors.accent)
-                    }
-                    .padding(.horizontal, PazSpacing.md)
-                    .frame(height: 56)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .buttonStyle(.plain)
-
-            case .lgPicker:
-                let displayName = extraFields["\(def.key)_name"] ?? ""
-                Button(action: { if !isSubmitting { onOpenPicker(def) } }) {
-                    HStack {
-                        Text(displayName.isEmpty ? "Selecionar life group" : displayName)
-                            .font(PazTypography.bodyMedium)
-                            .foregroundStyle(displayName.isEmpty ? PazColors.slate : PazColors.ink)
-                        Spacer()
-                        Image(systemName: "chevron.down").foregroundStyle(PazColors.accent)
-                    }
-                    .padding(.horizontal, PazSpacing.md)
-                    .frame(height: 56)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .buttonStyle(.plain)
-
-            case .selfOrSearch:
-                let isSearchMode = selfOrSearchModes[def.key] == true
-                VStack(alignment: .leading, spacing: PazSpacing.sm) {
-                    HStack(spacing: PazSpacing.sm) {
-                        Button("Eu mesmo") { onSelfOrSearchMode(def.key, false) }
-                            .buttonStyle(.bordered)
-                            .tint(isSearchMode ? .secondary : PazColors.accent)
-                        Button("Buscar pessoa") { onSelfOrSearchMode(def.key, true) }
-                            .buttonStyle(.bordered)
-                            .tint(isSearchMode ? PazColors.accent : .secondary)
-                    }
-                    if isSearchMode {
-                        let displayName = extraFields["\(def.key)_name"] ?? ""
-                        Button(action: { if !isSubmitting { onOpenPicker(def) } }) {
-                            HStack {
-                                Text(displayName.isEmpty ? "Selecionar pessoa" : displayName)
-                                    .font(PazTypography.bodyMedium)
-                                    .foregroundStyle(displayName.isEmpty ? PazColors.slate : PazColors.ink)
-                                Spacer()
-                                Image(systemName: "chevron.down").foregroundStyle(PazColors.accent)
-                            }
-                            .padding(.horizontal, PazSpacing.md)
-                            .frame(height: 56)
-                            .background(PazColors.surface)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-        }
-    }
-}
-
-/// Uses local @State so the mask runs inside onChange(of:) — the only reliable
-/// way to intercept and replace text in SwiftUI without cursor/state conflicts.
-private struct MaskedTextField: View {
-    let placeholder: String
-    let initialValue: String
-    let disabled: Bool
-    var keyboardType: UIKeyboardType = .default
-    var contentType: UITextContentType?
-    let mask: (String, String) -> String // (old, new) -> masked
-    let onChange: (String) -> Void
-
-    @State private var text: String = ""
-
-    var body: some View {
-        TextField(placeholder, text: $text)
-            .font(PazTypography.bodyMedium)
-            .keyboardType(keyboardType)
-            .textContentType(contentType)
-            .padding(.horizontal, PazSpacing.md)
-            .frame(height: 56)
-            .background(PazColors.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .disabled(disabled)
-            .onAppear { text = initialValue }
-            .onChange(of: text) { old, new in
-                let masked = mask(old, new)
-                if masked != new { text = masked }
-                onChange(masked)
-            }
-    }
-}
-
-private struct DateFieldRow: View {
-    let value: String
-    let onChange: (String) -> Void
-    let disabled: Bool
-
-    @State private var showPicker = false
-    @State private var selected: Date = DateFormatter.brazilianDate
-        .date(from: DateFormatter.brazilianDate.string(from: Date())) ?? Date()
-
-    private let display = DateFormatter.brazilianDate
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button(action: { if !disabled { showPicker.toggle() } }) {
-                HStack {
-                    Text(value.isEmpty ? "DD/MM/YYYY" : value)
-                        .font(PazTypography.bodyMedium)
-                        .foregroundStyle(value.isEmpty ? PazColors.slate : PazColors.ink)
-                    Spacer()
-                    Image(systemName: "calendar").foregroundStyle(PazColors.accent)
-                }
-                .padding(.horizontal, PazSpacing.md)
-                .frame(height: 56)
-                .background(PazColors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .buttonStyle(.plain)
-            .onAppear {
-                if let d = display.date(from: value) { selected = d }
-                if value.isEmpty { onChange(display.string(from: Date())) }
-            }
-
-            if showPicker {
-                DatePicker("", selection: $selected, displayedComponents: .date)
-                    .datePickerStyle(.graphical)
-                    .tint(PazColors.accent)
-                    .onChange(of: selected) { _, d in
-                        onChange(display.string(from: d))
-                        showPicker = false
-                    }
-                    .padding(PazSpacing.sm)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-        }
-    }
-}
-
-// MARK: - Input helpers
-
-private func applyPhoneMask(old: String, new: String) -> String {
-    var digits = new.filter(\.isNumber)
-    let oldDigits = old.filter(\.isNumber)
-    // User deleted a separator character — drop the preceding digit too
-    if new.count < old.count, digits.count == oldDigits.count, !digits.isEmpty {
-        digits = String(digits.dropLast())
-    }
-    return formatPhone(String(digits.prefix(11)))
-}
-
-/// Separators go BEFORE the digit at boundary positions — no trailing chars at partial input
-private func formatPhone(_ digits: String) -> String {
-    let d = Array(digits)
-    guard !d.isEmpty else { return "" }
-    var result = ""
-    for (i, c) in d.enumerated() {
-        switch i {
-        case 0: result = "(\(c)"
-        case 1: result += "\(c)"
-        case 2: result += ") \(c)" // ") " inserted before 3rd digit
-        case 3: result += " \(c)" // " " inserted before 4th digit
-        case 7: result += "-\(c)" // "-" inserted before 8th digit
-        default: result += "\(c)"
-        }
-    }
-    return result
-}
-
-private func applyCurrencyMask(_ input: String) -> String {
-    let digits = input.filter(\.isNumber)
-    guard !digits.isEmpty else { return "" }
-    let value = Int64(digits) ?? 0
-    let reais = value / 100
-    let centavos = value % 100
-    let reaisStr = reais == 0 ? "0" : formatThousands(reais)
-    return "\(reaisStr),\(String(format: "%02d", centavos))"
-}
-
-private func formatThousands(_ n: Int64) -> String {
-    var result = ""
-    let s = String(n)
-    for (i, c) in s.reversed().enumerated() {
-        if i > 0, i % 3 == 0 { result = "." + result }
-        result = String(c) + result
-    }
-    return result
-}
-
-private extension DateFormatter {
-    static let brazilianDate: DateFormatter = {
-        let f = DateFormatter(); f.dateFormat = "dd/MM/yyyy"; return f
-    }()
 }
 
 #Preview {

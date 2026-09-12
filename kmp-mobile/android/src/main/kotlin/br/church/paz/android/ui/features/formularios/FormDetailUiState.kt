@@ -21,6 +21,21 @@ enum class FormFieldType {
     SELF_OR_SEARCH, // invited_by: "" = self, else searched name
 }
 
+/** True for field types backed by a plain keyboard text field (eligible for focus retention across steps). */
+val FormFieldType.isTextInput: Boolean
+    get() =
+        when (this) {
+            FormFieldType.TEXT,
+            FormFieldType.NAME,
+            FormFieldType.PHONE,
+            FormFieldType.EMAIL,
+            FormFieldType.INTEGER,
+            FormFieldType.CURRENCY,
+            FormFieldType.MULTILINE,
+            -> true
+            else -> false
+        }
+
 data class FormFieldDef(
     val key: String,
     val label: String,
@@ -50,6 +65,8 @@ data class FormDetailUiState(
     val fields: Map<String, String> = emptyMap(),
     val pickerState: PickerState? = null, // non-null = picker sheet open
     val selfOrSearchIsSearch: Map<String, Boolean> = emptyMap(), // key → true if in search mode
+    val stepIndex: Int = 0, // current question index in step-by-step mode
+    val stepError: String? = null, // validation error for the current step's field
 )
 
 sealed class FormDetailEffect {

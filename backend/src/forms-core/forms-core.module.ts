@@ -13,6 +13,8 @@ import {
 } from './services/notification-sender';
 import { User } from '../users/entities/user.entity';
 import { LifeGroup } from '../life-groups/entities/life-group.entity';
+import { Area } from '../areas/entities/area.entity';
+import { Sector } from '../sectors/entities/sector.entity';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { LifeGroup } from '../life-groups/entities/life-group.entity';
       ChurchSetting,
       User,
       LifeGroup,
+      Area,
+      Sector,
     ]),
   ],
   providers: [

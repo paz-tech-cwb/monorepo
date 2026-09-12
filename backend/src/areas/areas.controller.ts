@@ -40,6 +40,11 @@ export class AreasController {
     return this.areasService.findAll();
   }
 
+  @Get('hierarchy')
+  getHierarchy() {
+    return this.areasService.getHierarchy();
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.areasService.findOne(id);
