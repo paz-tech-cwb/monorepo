@@ -1,10 +1,17 @@
 import { api } from "../client"
-import type { Area, CreateAreaRequest, UpdateAreaRequest } from "../types"
+import type {
+  Area,
+  AreaHierarchy,
+  CreateAreaRequest,
+  UpdateAreaRequest,
+} from "../types"
 
 export const areasApi = {
   getAll: () => api.get<Area[]>("/areas"),
 
   getById: (id: number) => api.get<Area>(`/areas/${id}`),
+
+  getHierarchy: () => api.get<AreaHierarchy[]>("/areas/hierarchy"),
 
   create: (data: CreateAreaRequest) => api.post<Area>("/areas", data),
 

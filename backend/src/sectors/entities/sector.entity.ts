@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Area } from '../../areas/entities/area.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Entity('sectors')
 export class Sector {
@@ -20,6 +21,14 @@ export class Sector {
   @ManyToOne(() => Area, { nullable: true, eager: false })
   @JoinColumn({ name: 'area_id' })
   area: Area | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'leader_id' })
+  leader: User | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'co_leader_id' })
+  coLeader: User | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

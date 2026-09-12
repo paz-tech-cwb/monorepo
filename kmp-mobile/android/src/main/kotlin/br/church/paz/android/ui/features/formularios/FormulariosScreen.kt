@@ -61,7 +61,7 @@ fun FormulariosScreen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is FormulariosEffect.NavigateToForm ->
-                    navController.navigate(Screen.FormDetail.createRoute(effect.formId))
+                    navController.navigate(Screen.FormSteps.createRoute(effect.formId))
                 FormulariosEffect.NavigateToSubmissionsList ->
                     navController.navigate(Screen.FormSubmissionsList.route)
                 FormulariosEffect.NavigateBack -> navController.popBackStack()

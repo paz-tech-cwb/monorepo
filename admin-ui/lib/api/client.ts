@@ -33,6 +33,24 @@ export class AuthSessionExpiredError extends ApiError {
   }
 }
 
+/**
+ * Extracts a user-facing message from an API error, preferring the
+ * backend's own `message` (e.g. NestJS `ConflictException`/`BadRequestException`
+ * payloads) and falling back to a generic message otherwise.
+ */
+export function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError && error.data && typeof error.data === "object") {
+    const message = (error.data as { message?: unknown }).message
+    if (typeof message === "string" && message.trim().length > 0) {
+      return message
+    }
+    if (Array.isArray(message) && message.length > 0) {
+      return message.join(", ")
+    }
+  }
+  return fallback
+}
+
 // ---------------------------------------------------------------------------
 // Token storage
 // ---------------------------------------------------------------------------

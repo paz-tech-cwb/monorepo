@@ -25,6 +25,7 @@ import {
   Moon,
   Waves,
   BookMarked,
+  Network,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -42,6 +43,7 @@ const sidebarSections = [
   {
     title: "Igreja",
     items: [
+      { name: "Organização", href: "/organizacao", icon: Network },
       { name: "Life Groups", href: "/life-groups", icon: Users2 },
       { name: "Ministérios", href: "/ministerios", icon: Waves },
       { name: "Formulários", href: "/formularios", icon: ClipboardList },

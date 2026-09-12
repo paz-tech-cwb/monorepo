@@ -47,6 +47,10 @@ sealed class Screen(
         fun createRoute(formId: String) = "form_detail/$formId"
     }
 
+    data object FormSteps : Screen("form_steps/{formId}") {
+        fun createRoute(formId: String) = "form_steps/$formId"
+    }
+
     data object FormSubmissionsList : Screen("form_submissions_list")
 
     data object FormSubmissionDetail : Screen("form_submission_detail/{submissionId}") {

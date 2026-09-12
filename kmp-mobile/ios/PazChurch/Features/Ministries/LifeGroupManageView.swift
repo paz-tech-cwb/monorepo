@@ -13,10 +13,15 @@ struct LifeGroupManageView: View {
 
     @Environment(\.dismiss) private var dismiss
 
+    static let meetingDays = [
+        "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira",
+        "Sexta-feira", "Sábado", "Domingo", "Sem dia fixo",
+    ]
+
     @State private var name: String
     @State private var location: String
     @State private var meetingDay: String
-    @State private var meetingTime: String
+    @State private var meetingTime: Date
     @State private var kidsCount: String
     @State private var members: [LifeGroupMember]
     @State private var isSaving = false
@@ -36,21 +41,50 @@ struct LifeGroupManageView: View {
         _name = State(initialValue: lifeGroup.name)
         _location = State(initialValue: lifeGroup.location ?? "")
         _meetingDay = State(initialValue: lifeGroup.meetingDay ?? "")
-        _meetingTime = State(initialValue: lifeGroup.meetingTime ?? "")
+        _meetingTime = State(initialValue: Self.parseTime(lifeGroup.meetingTime))
         _kidsCount = State(initialValue: "\(lifeGroup.kidsCount)")
         _members = State(initialValue: lifeGroup.members ?? [])
+    }
+
+    private static func parseTime(_ value: String?) -> Date {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        if let value, let date = formatter.date(from: value) {
+            return date
+        }
+        return Calendar.current.date(bySettingHour: 19, minute: 30, second: 0, of: Date()) ?? Date()
+    }
+
+    private var meetingTimeString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: meetingTime)
     }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Informações do grupo") {
-                    TextField("Nome", text: $name)
-                    TextField("Endereço", text: $location)
-                    TextField("Dia da reunião (ex: Quinta)", text: $meetingDay)
-                    TextField("Horário (ex: 19:30)", text: $meetingTime)
-                    TextField("Quantidade de crianças", text: $kidsCount)
-                        .keyboardType(.numberPad)
+                    LabeledContent("Nome") {
+                        TextField("Nome do grupo", text: $name)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    LabeledContent("Endereço") {
+                        TextField("Endereço do grupo", text: $location)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    Picker("Dia da reunião", selection: $meetingDay) {
+                        Text("Selecione...").tag("")
+                        ForEach(Self.meetingDays, id: \.self) { day in
+                            Text(day).tag(day)
+                        }
+                    }
+                    DatePicker("Horário", selection: $meetingTime, displayedComponents: .hourAndMinute)
+                    LabeledContent("Quantidade de crianças") {
+                        TextField("0", text: $kidsCount)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                    }
                 }
 
                 Section("Membros") {
@@ -99,7 +133,7 @@ struct LifeGroupManageView: View {
                     name: name,
                     location: location.isEmpty ? nil : location,
                     meetingDay: meetingDay.isEmpty ? nil : meetingDay,
-                    meetingTime: meetingTime.isEmpty ? nil : meetingTime,
+                    meetingTime: meetingTimeString,
                     kidsCount: Int32(kidsCount).map { KotlinInt(value: $0) }
                 )
             )

@@ -75,8 +75,28 @@ class FormDetailViewModel(
         value: String,
     ) {
         _uiState.update { state ->
-            state.copy(fields = state.fields + (key to value), error = null)
+            state.copy(fields = state.fields + (key to value), error = null, stepError = null)
         }
+    }
+
+    /** Validates the current step's field (if required) and advances, capping at the last question. */
+    fun onNextStep() {
+        val state = _uiState.value
+        val fieldDefs = state.form?.type?.fieldDefs() ?: return
+        val currentDef = fieldDefs.getOrNull(state.stepIndex) ?: return
+
+        if (currentDef.required && state.fields[currentDef.key].isNullOrEmpty()) {
+            _uiState.update { it.copy(stepError = "${currentDef.label} é obrigatório") }
+            return
+        }
+
+        val nextIndex = (state.stepIndex + 1).coerceAtMost(fieldDefs.size - 1)
+        _uiState.update { it.copy(stepIndex = nextIndex, stepError = null) }
+    }
+
+    /** Floors at the first question — does not pop the screen. */
+    fun onPreviousStep() {
+        _uiState.update { it.copy(stepIndex = (it.stepIndex - 1).coerceAtLeast(0), stepError = null) }
     }
 
     fun openPicker(def: FormFieldDef) {
