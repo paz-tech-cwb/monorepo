@@ -31,6 +31,9 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 fun createPazHttpClient(
     tokenStorage: TokenStorage,
@@ -130,10 +133,27 @@ fun Throwable.httpStatusCodeOrNull(): Int? = (this as? ClientRequestException)?.
 suspend fun HttpResponse.throwOnClientOrServerError() {
     if (status.isSuccess()) return
     val text = runCatching { bodyAsText() }.getOrDefault("")
+    val message = friendlyErrorText(status.value, text)
     when (status.value) {
-        in 400..499 -> throw ClientRequestException(this, text)
-        in 500..599 -> throw ServerResponseException(this, text)
+        in 400..499 -> throw ClientRequestException(this, message)
+        in 500..599 -> throw ServerResponseException(this, message)
     }
+}
+
+/**
+ * Extracts a user-facing message from a JSON error body shaped like
+ * `{"statusCode":..., "message":"..."}` (NestJS's default exception shape), falling back to a
+ * generic message when the body isn't parseable. Special-cases 429 since Nest's
+ * `ThrottlerException` message ("ThrottlerException: Too Many Requests") isn't user-facing.
+ */
+private fun friendlyErrorText(statusCode: Int, rawBody: String): String {
+    if (statusCode == 429) {
+        return "Muitas requisições em pouco tempo. Aguarde alguns instantes e tente novamente."
+    }
+    val parsed = runCatching {
+        Json.parseToJsonElement(rawBody).jsonObject["message"]?.jsonPrimitive?.contentOrNull
+    }.getOrNull()
+    return parsed?.takeIf { it.isNotBlank() } ?: "Erro inesperado ($statusCode)."
 }
 
 /**

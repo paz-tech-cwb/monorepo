@@ -14,6 +14,7 @@ import br.church.paz.shared.domain.model.ServiceReportForm
 import br.church.paz.shared.domain.model.ServiceReportSubmission
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.repository.FormsRepository
+import br.church.paz.shared.data.remote.throwOnClientOrServerError
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -26,16 +27,25 @@ import io.ktor.http.contentType
 class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
 
     @Throws(Exception::class)
-    override suspend fun getCatalog(): List<FormCatalogItem> =
-        client.get("api/forms").body()
+    override suspend fun getCatalog(): List<FormCatalogItem> {
+        val response = client.get("api/forms")
+        response.throwOnClientOrServerError()
+        return response.body()
+    }
 
     @Throws(Exception::class)
-    override suspend fun searchUsers(query: String): List<User> =
-        client.get("api/users") { parameter("q", query) }.body()
+    override suspend fun searchUsers(query: String): List<User> {
+        val response = client.get("api/users") { parameter("q", query) }
+        response.throwOnClientOrServerError()
+        return response.body()
+    }
 
     @Throws(Exception::class)
-    override suspend fun searchLifeGroups(query: String): List<LifeGroupSummary> =
-        client.get("api/life-groups") { parameter("q", query) }.body()
+    override suspend fun searchLifeGroups(query: String): List<LifeGroupSummary> {
+        val response = client.get("api/life-groups") { parameter("q", query) }
+        response.throwOnClientOrServerError()
+        return response.body()
+    }
 
     @Throws(Exception::class)
     override suspend fun submitMemberRegistration(form: MemberRegistrationForm) =
@@ -74,13 +84,17 @@ class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
         post("api/forms/area-supervisor-reports", form)
 
     @Throws(Exception::class)
-    override suspend fun getServiceReportSubmissions(): List<ServiceReportSubmission> =
-        client.get("api/forms/service-reports").body()
+    override suspend fun getServiceReportSubmissions(): List<ServiceReportSubmission> {
+        val response = client.get("api/forms/service-reports")
+        response.throwOnClientOrServerError()
+        return response.body()
+    }
 
     private suspend inline fun <reified T : Any> post(path: String, body: T) {
-        client.post(path) {
+        val response = client.post(path) {
             contentType(ContentType.Application.Json)
             setBody(body)
         }
+        response.throwOnClientOrServerError()
     }
 }
