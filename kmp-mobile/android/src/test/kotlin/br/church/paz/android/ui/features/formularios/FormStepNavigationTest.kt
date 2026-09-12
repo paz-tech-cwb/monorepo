@@ -165,12 +165,12 @@ class FormStepNavigationTest {
                         vehiclesCars = 2,
                         vehiclesMotos = 0,
                         vehiclesBikes = 0,
-                        vehiclesOthers = null,
+                        vehiclesOthers = "",
                         volunteersAtmosfera = 0,
                         volunteersLouvor = 0,
                         volunteersMiddia = 0,
                         volunteersDanca = 0,
-                        notes = null,
+                        notes = "",
                     ),
                 )
             }
