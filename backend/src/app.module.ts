@@ -54,12 +54,14 @@ import ormconfig from './configs/orm.config';
         {
           name: 'short',
           ttl: 60000, // 1 minute
-          limit: 20, // 20 requests per minute
+          limit: 60, // 60 requests per minute — raised from 20: normal app usage
+          // (e.g. opening the forms catalog + detail screens back-to-back) was
+          // tripping the old limit and surfacing as a confusing error to users.
         },
         {
           name: 'long',
           ttl: 3600000, // 1 hour
-          limit: 500, // 500 requests per hour
+          limit: 1000, // 1000 requests per hour
         },
       ],
     }),
