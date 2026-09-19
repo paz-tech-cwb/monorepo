@@ -290,7 +290,6 @@ extension FormType {
                 FormFieldDef("kids", "Crianças", placeholder: "0", fieldType: .integer),
                 FormFieldDef("guests", "Convidados", placeholder: "0", fieldType: .integer),
                 FormFieldDef("conversions", "Conversões", placeholder: "0", fieldType: .integer),
-                FormFieldDef("week_number", "Semana", fieldType: .integer),
             ]
 
         default: // areaSupervisorReport

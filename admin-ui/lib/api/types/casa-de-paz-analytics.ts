@@ -75,7 +75,6 @@ export interface CasaDePazReportSubmission {
   kids: number
   guests: number
   conversions: number
-  week_number: number | null
   meeting_day: string | null
   meeting_time: string | null
   created_at: string
