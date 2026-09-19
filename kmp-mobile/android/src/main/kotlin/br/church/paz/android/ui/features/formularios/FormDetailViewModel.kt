@@ -116,6 +116,7 @@ class FormDetailViewModel(
                 ),
             )
         }
+        onPickerQueryChanged("") // load the full list immediately, before the user searches
     }
 
     fun closePicker() {
