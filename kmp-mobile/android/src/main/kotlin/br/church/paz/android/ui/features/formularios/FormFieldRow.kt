@@ -68,21 +68,26 @@ fun FieldRow(
     focusRequester: FocusRequester? = null,
     imeAction: ImeAction = ImeAction.Next,
     onImeAction: () -> Unit = {},
+    // FormStepScreen shows the question as a big headline above this row and hides this
+    // redundant inner label; other call sites default to showing it.
+    showLabel: Boolean = true,
 ) {
     Column {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(PazSpacing.Xs),
-        ) {
-            Text(def.label, style = MaterialTheme.typography.labelMedium)
-            if (def.required) {
-                Text(
-                    "*",
-                    style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.error),
-                )
+        if (showLabel) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(PazSpacing.Xs),
+            ) {
+                Text(def.label, style = MaterialTheme.typography.labelMedium)
+                if (def.required) {
+                    Text(
+                        "*",
+                        style = MaterialTheme.typography.labelMedium.copy(color = MaterialTheme.colorScheme.error),
+                    )
+                }
             }
+            Spacer(Modifier.height(PazSpacing.Sm))
         }
-        Spacer(Modifier.height(PazSpacing.Sm))
 
         when (def.fieldType) {
             FormFieldType.PICKER ->
@@ -528,12 +533,19 @@ fun TimeFieldRow(
 ) {
     var showDialog by remember { mutableStateOf(false) }
 
+    // Defaults to the CURRENT HOUR with minutes zeroed (not the exact current minute) when
+    // empty — a precise-looking default would read as though the user already chose an exact
+    // time before touching the field.
     val (initialHour, initialMinute) =
         remember(value) {
-            val parts = value.split(":")
-            val hour = parts.getOrNull(0)?.toIntOrNull() ?: 0
-            val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
-            hour to minute
+            if (value.isEmpty()) {
+                java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY) to 0
+            } else {
+                val parts = value.split(":")
+                val hour = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                hour to minute
+            }
         }
 
     val pickerState =
