@@ -28,13 +28,13 @@ export class CasaDePazReportsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.svc.findOne(id);
+  findOne(@Param('id') id: string, @Req() req: any) {
+    return this.svc.findOne(id, req.formScope, { id: req.user.id });
   }
 
   @Get(':id/audit')
-  audit(@Param('id') id: string) {
-    return this.svc.auditLog(id);
+  audit(@Param('id') id: string, @Req() req: any) {
+    return this.svc.auditLog(id, req.formScope, { id: req.user.id });
   }
 
   @Post()

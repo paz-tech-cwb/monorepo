@@ -64,12 +64,24 @@ export class CasaDePazReportsService {
     return qb.orderBy('f.created_at', 'DESC').getMany();
   }
 
-  async findOne(id: string): Promise<CasaDePazReport> {
+  // scope/actor are optional so internal callers (update/softDelete) that
+  // already apply their own policy check can load unscoped; the controller's
+  // GET :id and :id/audit routes MUST always pass both, otherwise any
+  // authenticated user could read another actor's submission/audit trail by
+  // guessing its id — the same restriction list() already applies.
+  async findOne(
+    id: string,
+    scope?: ResolvedScope,
+    actor?: { id: number },
+  ): Promise<CasaDePazReport> {
     const m = await this.repo.findOne({
       where: { id },
       relations: ['submittedBy'],
     });
     if (!m) throw new NotFoundException();
+    if (scope && !scope.unrestricted) {
+      if (!actor || m.submittedBy.id !== actor.id) throw new NotFoundException();
+    }
     return m;
   }
 
@@ -110,7 +122,12 @@ export class CasaDePazReportsService {
     });
   }
 
-  async auditLog(id: string) {
+  async auditLog(
+    id: string,
+    scope: ResolvedScope,
+    actor: { id: number },
+  ) {
+    await this.findOne(id, scope, actor); // enforces the same visibility rule as findOne/list
     return this.audit.listForSubmission(SLUG, id);
   }
 }
