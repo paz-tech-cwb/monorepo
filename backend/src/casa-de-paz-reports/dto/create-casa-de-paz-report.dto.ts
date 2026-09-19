@@ -30,7 +30,6 @@ export class CreateCasaDePazReportDto {
   @Expose() @IsOptional() @IsInt() kids?: number;
   @Expose() @IsOptional() @IsInt() guests?: number;
   @Expose() @IsOptional() @IsInt() conversions?: number;
-  @Expose({ name: 'week_number' }) @IsOptional() @IsInt() weekNumber?: number;
   @Expose({ name: 'meeting_day' })
   @IsOptional()
   @IsIn(CASA_DE_PAZ_MEETING_DAYS)

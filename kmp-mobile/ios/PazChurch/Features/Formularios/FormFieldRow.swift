@@ -12,6 +12,10 @@ struct FieldRow: View {
     let onOpenPicker: (FormFieldDef) -> Void
     let onSelfOrSearchMode: (String, Bool) -> Void
 
+    /// `FormStepView` shows the question as a big headline above this row and hides this
+    /// redundant inner label; other call sites (if any) default to showing it.
+    var showLabel: Bool = true
+
     /// Only used by `FormStepView` — hooks the field's keyboard "next"/"return" action to
     /// advance to the next question, and applies the right submit label for the last step.
     var isFocused: FocusState<Bool>.Binding?
@@ -20,13 +24,15 @@ struct FieldRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: PazSpacing.sm) {
-            HStack(spacing: 4) {
-                Text(def.label)
-                    .font(PazTypography.labelMedium)
-                if def.required {
-                    Text("*")
+            if showLabel {
+                HStack(spacing: 4) {
+                    Text(def.label)
                         .font(PazTypography.labelMedium)
-                        .foregroundColor(PazColors.error)
+                    if def.required {
+                        Text("*")
+                            .font(PazTypography.labelMedium)
+                            .foregroundColor(PazColors.error)
+                    }
                 }
             }
 
@@ -314,61 +320,51 @@ struct MaskedTextField: View {
     }
 }
 
+/// Uses SwiftUI's native `.compact` style — tapping opens the system's own floating
+/// calendar overlay (the same one Calendar/Reminders use), rather than a custom inline
+/// wheel that doesn't match native iOS chrome.
 struct DateFieldRow: View {
     let value: String
     let onChange: (String) -> Void
     let disabled: Bool
 
-    @State private var showPicker = false
     @State private var selected: Date = DateFormatter.brazilianDate
         .date(from: DateFormatter.brazilianDate.string(from: Date())) ?? Date()
 
     private let display = DateFormatter.brazilianDate
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button(action: { if !disabled { showPicker.toggle() } }) {
-                HStack {
-                    Text(value.isEmpty ? "DD/MM/YYYY" : value)
-                        .font(PazTypography.bodyMedium)
-                        .foregroundStyle(value.isEmpty ? PazColors.slate : PazColors.ink)
-                    Spacer()
-                    Image(systemName: "calendar").foregroundStyle(PazColors.accent)
-                }
-                .padding(.horizontal, PazSpacing.md)
-                .frame(height: 56)
-                .background(PazColors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .buttonStyle(.plain)
+        DatePicker("", selection: $selected, displayedComponents: .date)
+            .datePickerStyle(.compact)
+            .labelsHidden()
+            .tint(PazColors.accent)
+            .disabled(disabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, PazSpacing.md)
+            .frame(height: 56)
+            .background(PazColors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .onChange(of: selected) { _, d in onChange(display.string(from: d)) }
             .task {
                 if let d = display.date(from: value) { selected = d }
                 if value.isEmpty { onChange(display.string(from: Date())) }
             }
-
-            if showPicker {
-                DatePicker("", selection: $selected, displayedComponents: .date)
-                    .datePickerStyle(.graphical)
-                    .tint(PazColors.accent)
-                    .onChange(of: selected) { _, d in
-                        onChange(display.string(from: d))
-                        showPicker = false
-                    }
-                    .padding(PazSpacing.sm)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-        }
     }
 }
 
+/// Same native `.compact` treatment as `DateFieldRow`. The wheel seeds to the CURRENT HOUR
+/// with minutes zeroed (not the exact current minute) — a precise-looking default reads as
+/// though the user already picked an exact time, when they haven't touched it yet.
 struct TimeFieldRow: View {
     let value: String
     let onChange: (String) -> Void
     let disabled: Bool
 
-    @State private var showPicker = false
-    @State private var selected: Date = Date()
+    @State private var selected: Date = {
+        let now = Date()
+        let hour = Calendar.current.component(.hour, from: now)
+        return Calendar.current.date(bySettingHour: hour, minute: 0, second: 0, of: now) ?? now
+    }()
 
     private static let display: DateFormatter = {
         let f = DateFormatter()
@@ -378,38 +374,20 @@ struct TimeFieldRow: View {
     }()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button(action: { if !disabled { showPicker.toggle() } }) {
-                HStack {
-                    Text(value.isEmpty ? "HH:mm" : value)
-                        .font(PazTypography.bodyMedium)
-                        .foregroundStyle(value.isEmpty ? PazColors.slate : PazColors.ink)
-                    Spacer()
-                    Image(systemName: "clock").foregroundStyle(PazColors.accent)
-                }
-                .padding(.horizontal, PazSpacing.md)
-                .frame(height: 56)
-                .background(PazColors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .buttonStyle(.plain)
+        DatePicker("", selection: $selected, displayedComponents: .hourAndMinute)
+            .datePickerStyle(.compact)
+            .labelsHidden()
+            .tint(PazColors.accent)
+            .disabled(disabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, PazSpacing.md)
+            .frame(height: 56)
+            .background(PazColors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .onChange(of: selected) { _, d in onChange(Self.display.string(from: d)) }
             .task {
                 if let d = Self.display.date(from: value) { selected = d }
             }
-
-            if showPicker {
-                DatePicker("", selection: $selected, displayedComponents: .hourAndMinute)
-                    .datePickerStyle(.wheel)
-                    .labelsHidden()
-                    .tint(PazColors.accent)
-                    .onChange(of: selected) { _, d in
-                        onChange(Self.display.string(from: d))
-                    }
-                    .padding(PazSpacing.sm)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-        }
     }
 }
 
