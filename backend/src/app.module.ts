@@ -40,6 +40,8 @@ import { MinistriesModule } from './ministries/ministries.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { MinistryAccessModule } from './ministry-access/ministry-access.module';
 import { LifeGroupStudiesModule } from './life-group-studies/life-group-studies.module';
+import { CasaDePazReportsModule } from './casa-de-paz-reports/casa-de-paz-reports.module';
+import { CasaDePazAnalyticsModule } from './casa-de-paz-analytics/casa-de-paz-analytics.module';
 
 import ormconfig from './configs/orm.config';
 
@@ -54,12 +56,14 @@ import ormconfig from './configs/orm.config';
         {
           name: 'short',
           ttl: 60000, // 1 minute
-          limit: 20, // 20 requests per minute
+          limit: 60, // 60 requests per minute — raised from 20: normal app usage
+          // (e.g. opening the forms catalog + detail screens back-to-back) was
+          // tripping the old limit and surfacing as a confusing error to users.
         },
         {
           name: 'long',
           ttl: 3600000, // 1 hour
-          limit: 500, // 500 requests per hour
+          limit: 1000, // 1000 requests per hour
         },
       ],
     }),
@@ -91,6 +95,8 @@ import ormconfig from './configs/orm.config';
     LifeGroupReportsModule,
     LifeGroupAttendanceModule,
     LifeGroupAnalyticsModule,
+    CasaDePazReportsModule,
+    CasaDePazAnalyticsModule,
     SectorSupervisorReportsModule,
     AreaSupervisorReportsModule,
     MultiplicationsModule,

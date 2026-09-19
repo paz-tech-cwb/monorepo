@@ -1,13 +1,13 @@
 import Shared
 import SwiftUI
 
-struct UserPickerSheet: View {
+struct SectorPickerSheet: View {
     @Bindable var viewModel: FormDetailViewModelIOS
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                TextField("Buscar por nome, telefone ou e-mail", text: Binding(
+                TextField("Buscar setor", text: Binding(
                     get: { viewModel.pickerQuery },
                     set: { viewModel.onPickerQueryChanged($0) }
                 ))
@@ -21,24 +21,18 @@ struct UserPickerSheet: View {
                 } else if let error = viewModel.pickerError {
                     Text(error).foregroundStyle(PazColors.error).padding()
                 } else {
-                    let users = viewModel.pickerResults.compactMap { $0 as? User }
-                    let selectedIds = Set((viewModel.fields[viewModel.pickerKey ?? ""] ?? "")
-                        .split(separator: ",").map(String.init))
-                    List(users, id: \.id) { user in
+                    let sectors = viewModel.pickerResults.compactMap { $0 as? SectorSummary }
+                    let selectedId = viewModel.fields[viewModel.pickerKey ?? ""] ?? ""
+                    List(sectors, id: \.id) { sector in
                         HStack {
-                            VStack(alignment: .leading) {
-                                Text(user.name)
-                                if !user.email.isEmpty {
-                                    Text(user.email).font(.caption).foregroundColor(.secondary)
-                                }
-                            }
+                            Text(sector.name)
                             Spacer()
-                            if selectedIds.contains(user.id) {
+                            if String(sector.id) == selectedId {
                                 Image(systemName: "checkmark").foregroundColor(PazColors.accent)
                             }
                         }
                         .contentShape(Rectangle())
-                        .onTapGesture { viewModel.onPickerSelect(id: user.id, name: user.name) }
+                        .onTapGesture { viewModel.onPickerSelect(id: String(sector.id), name: sector.name) }
                     }
                     .listStyle(.plain)
                 }
@@ -47,11 +41,7 @@ struct UserPickerSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    if viewModel.pickerKind == .userMulti {
-                        Button("Confirmar") { viewModel.closePicker() }
-                    } else {
-                        Button("Cancelar") { viewModel.closePicker() }
-                    }
+                    Button("Cancelar") { viewModel.closePicker() }
                 }
             }
         }

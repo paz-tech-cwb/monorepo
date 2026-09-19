@@ -123,25 +123,35 @@ fun FormDetailScreen(
 
     val pickerState = uiState.pickerState
     if (pickerState != null) {
-        if (pickerState.isLifeGroup) {
-            LifeGroupPickerSheet(
-                state = pickerState,
-                selectedId = uiState.fields[pickerState.key] ?: "",
-                onQueryChanged = viewModel::onPickerQueryChanged,
-                onSelect = viewModel::onPickerSelect,
-                onDismiss = viewModel::closePicker,
-            )
-        } else {
-            val selectedIds = (uiState.fields[pickerState.key] ?: "")
-                .split(",").filter { it.isNotBlank() }.toSet()
-            UserPickerSheet(
-                state = pickerState,
-                selectedIds = selectedIds,
-                onQueryChanged = viewModel::onPickerQueryChanged,
-                onSelect = viewModel::onPickerSelect,
-                onDismiss = viewModel::closePicker,
-                onConfirmMulti = viewModel::closePicker,
-            )
+        when (pickerState.kind) {
+            PickerKind.LIFE_GROUP ->
+                LifeGroupPickerSheet(
+                    state = pickerState,
+                    selectedId = uiState.fields[pickerState.key] ?: "",
+                    onQueryChanged = viewModel::onPickerQueryChanged,
+                    onSelect = viewModel::onPickerSelect,
+                    onDismiss = viewModel::closePicker,
+                )
+            PickerKind.SECTOR ->
+                SectorPickerSheet(
+                    state = pickerState,
+                    selectedId = uiState.fields[pickerState.key] ?: "",
+                    onQueryChanged = viewModel::onPickerQueryChanged,
+                    onSelect = viewModel::onPickerSelect,
+                    onDismiss = viewModel::closePicker,
+                )
+            PickerKind.USER, PickerKind.USER_MULTI -> {
+                val selectedIds = (uiState.fields[pickerState.key] ?: "")
+                    .split(",").filter { it.isNotBlank() }.toSet()
+                UserPickerSheet(
+                    state = pickerState,
+                    selectedIds = selectedIds,
+                    onQueryChanged = viewModel::onPickerQueryChanged,
+                    onSelect = viewModel::onPickerSelect,
+                    onDismiss = viewModel::closePicker,
+                    onConfirmMulti = viewModel::closePicker,
+                )
+            }
         }
     }
 }

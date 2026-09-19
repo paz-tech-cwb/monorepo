@@ -24,6 +24,7 @@ data class FormCatalogItem(
                 "multiplications" -> FormType.multiplication
                 "service-reports" -> FormType.service_report
                 "form-guests" -> FormType.guest
+                "casa-de-paz-reports" -> FormType.casa_de_paz_report
                 else -> FormType.course
             }
         } catch (e: Exception) {
@@ -42,6 +43,7 @@ enum class FormType {
     @SerialName("service-reports")              service_report,
     @SerialName("form-guests")                  guest,
     @SerialName("course")                       course,
+    @SerialName("casa-de-paz-reports")          casa_de_paz_report,
 }
 
 // ── Submission payloads ──────────────────────────────────────────────────────
@@ -195,6 +197,20 @@ data class CourseForm(
     @SerialName("course_name") val courseName: String,
     @SerialName("member_id") val memberId: String,
     @SerialName("enrolled_at") val enrolledAt: String,
+)
+
+@Serializable
+data class CasaDePazReportForm(
+    val date: String,
+    val facilitator: String,
+    @SerialName("sector_id") val sectorId: Int,
+    val adults: Int,
+    val kids: Int = 0,
+    val guests: Int = 0,
+    val conversions: Int = 0,
+    @SerialName("week_number") val weekNumber: Int? = null,
+    @SerialName("meeting_day") val meetingDay: String? = null,
+    @SerialName("meeting_time") val meetingTime: String? = null,
 )
 
 @Serializable

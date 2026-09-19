@@ -36,8 +36,13 @@ npm run test:cov
 # E2E tests
 npm run test:e2e
 
-# Lint (with auto-fix)
-npm run lint
+# Lint (with auto-fix) — WARNING: runs `eslint --fix` across the ENTIRE src/ tree,
+# not just your changed files. Running it reformats every pre-existing file with a
+# fixable style deviation, producing unrelated diff noise you did not intend to commit.
+# Before committing, always `git status` and revert any files you didn't intentionally
+# change. To validate only your own changes, scope eslint explicitly instead:
+npx eslint <path/to/your/changed/file.ts>
+# Only run the unscoped `npm run lint` when you actually want to reformat the whole repo.
 
 # Format
 npm run format
@@ -81,7 +86,7 @@ When working with member data (registration, course completion, sector/life grou
 - `JwtStrategy` (Passport) validates access tokens from `Authorization: Bearer` header with `algorithms: ['HS256']`. Protected routes use `@UseGuards(AuthGuard('jwt'))`.
 - Refresh tokens are SHA-256 hashed before storage in `user_accounts` table (`UserAccount` entity). On lookup, incoming tokens are hashed and compared against the stored hash.
 - Input validation enforced via DTOs (`SocialLoginDto`, `RefreshTokenDto`) with `class-validator`. Global `ValidationPipe` with `whitelist` and `forbidNonWhitelisted` enabled.
-- Rate limiting via `@nestjs/throttler` (20 req/min short, 500 req/hr long) applied globally.
+- Rate limiting via `@nestjs/throttler` (60 req/min short, 1000 req/hr long) applied globally.
 - Security headers via `helmet` middleware.
 - CORS configured via `CORS_ORIGIN` env var (defaults to `*` in development).
 - Env vars (required): `ACCESS_TOKEN_SECRET`, `REFRESH_TOKEN_SECRET`, `GOOGLE_CLIENT_ID`.
