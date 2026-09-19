@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Req,
+  SerializeOptions,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -18,6 +19,11 @@ import { CasaDePazReportsService } from './casa-de-paz-reports.service';
 import { CreateCasaDePazReportDto } from './dto/create-casa-de-paz-report.dto';
 import { UpdateCasaDePazReportDto } from './dto/update-casa-de-paz-report.dto';
 
+// Required: CasaDePazReportsService returns plain snake_case object literals
+// (not @Expose()-decorated DTO classes), and the app's global
+// ClassSerializerInterceptor defaults to excludeExtraneousValues: true,
+// which would silently strip every field down to `{}` without this.
+@SerializeOptions({ strategy: 'exposeAll', excludeExtraneousValues: false })
 @UseGuards(AuthGuard('jwt'), ScopeGuard)
 @Controller('forms/casa-de-paz-reports')
 export class CasaDePazReportsController {
