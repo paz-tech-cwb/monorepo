@@ -20,7 +20,6 @@ export interface CasaDePazReportResponse {
   kids: number;
   guests: number;
   conversions: number;
-  week_number: number | null;
   meeting_day: string | null;
   meeting_time: string | null;
   created_at: Date;
@@ -53,7 +52,6 @@ export class CasaDePazReportsService {
       kids: m.kids,
       guests: m.guests,
       conversions: m.conversions,
-      week_number: m.weekNumber,
       meeting_day: m.meetingDay,
       meeting_time: m.meetingTime,
       created_at: m.createdAt,
@@ -74,7 +72,6 @@ export class CasaDePazReportsService {
         kids: dto.kids ?? 0,
         guests: dto.guests ?? 0,
         conversions: dto.conversions ?? 0,
-        weekNumber: dto.weekNumber ?? null,
         meetingDay: dto.meetingDay ?? null,
         meetingTime: dto.meetingTime ?? null,
         submittedBy: { id: actorId } as User,

@@ -367,7 +367,6 @@ class FormDetailViewModelIOS {
                 kids: intVal("kids"),
                 guests: intVal("guests"),
                 conversions: intVal("conversions"),
-                weekNumber: opt("week_number").flatMap { Int32($0) }.map { KotlinInt(value: $0) },
                 meetingDay: opt("meeting_day"),
                 meetingTime: opt("meeting_time")
             ))

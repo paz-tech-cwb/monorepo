@@ -208,7 +208,6 @@ data class CasaDePazReportForm(
     val kids: Int = 0,
     val guests: Int = 0,
     val conversions: Int = 0,
-    @SerialName("week_number") val weekNumber: Int? = null,
     @SerialName("meeting_day") val meetingDay: String? = null,
     @SerialName("meeting_time") val meetingTime: String? = null,
 )

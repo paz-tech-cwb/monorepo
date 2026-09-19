@@ -8,7 +8,7 @@ import { useCasaDePazSubmissions } from "@/lib/hooks/use-casa-de-paz-analytics"
 import { useSectors } from "@/lib/hooks/use-sectors"
 import type { CasaDePazFilterState } from "./casa-de-paz-analytics-filters"
 
-const COLUMN_COUNT = 10
+const COLUMN_COUNT = 9
 
 function formatDate(value: string): string {
   const [year, month, day] = value.split("-")
@@ -74,7 +74,6 @@ export function CasaDePazTable({ filters, range }: CasaDePazTableProps) {
               <TableHead>Crianças</TableHead>
               <TableHead>Convidados</TableHead>
               <TableHead>Conversões</TableHead>
-              <TableHead>Semana</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -89,7 +88,6 @@ export function CasaDePazTable({ filters, range }: CasaDePazTableProps) {
                 <TableCell>{s.kids}</TableCell>
                 <TableCell>{s.guests}</TableCell>
                 <TableCell>{s.conversions}</TableCell>
-                <TableCell>{s.week_number ?? "—"}</TableCell>
               </TableRow>
             ))}
           </TableBody>

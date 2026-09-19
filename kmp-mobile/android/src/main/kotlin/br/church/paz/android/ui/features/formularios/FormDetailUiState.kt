@@ -266,7 +266,6 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
                 FormFieldDef("kids", "Crianças", "0", fieldType = FormFieldType.INTEGER),
                 FormFieldDef("guests", "Convidados", "0", fieldType = FormFieldType.INTEGER),
                 FormFieldDef("conversions", "Conversões", "0", fieldType = FormFieldType.INTEGER),
-                FormFieldDef("week_number", "Semana", fieldType = FormFieldType.INTEGER),
             )
     }
 
