@@ -80,7 +80,8 @@ export class CasaDePazReportsService {
     });
     if (!m) throw new NotFoundException();
     if (scope && !scope.unrestricted) {
-      if (!actor || m.submittedBy.id !== actor.id) throw new NotFoundException();
+      if (!actor || m.submittedBy.id !== actor.id)
+        throw new NotFoundException();
     }
     return m;
   }
@@ -122,11 +123,7 @@ export class CasaDePazReportsService {
     });
   }
 
-  async auditLog(
-    id: string,
-    scope: ResolvedScope,
-    actor: { id: number },
-  ) {
+  async auditLog(id: string, scope: ResolvedScope, actor: { id: number }) {
     await this.findOne(id, scope, actor); // enforces the same visibility rule as findOne/list
     return this.audit.listForSubmission(SLUG, id);
   }
