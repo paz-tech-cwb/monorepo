@@ -25,6 +25,7 @@ import { FormCourseLink } from '../form-courses/entities/form-course-link.entity
 import { MemberRegistration } from '../member-registrations/entities/member-registration.entity';
 import { FormConversion } from '../form-conversions/entities/form-conversion.entity';
 import { LifeGroupReport } from '../life-group-reports/entities/life-group-report.entity';
+import { CasaDePazReport } from '../casa-de-paz-reports/entities/casa-de-paz-report.entity';
 import { SectorSupervisorReport } from '../sector-supervisor-reports/entities/sector-supervisor-report.entity';
 import { AreaSupervisorReport } from '../area-supervisor-reports/entities/area-supervisor-report.entity';
 import { Multiplication } from '../multiplications/entities/multiplication.entity';
@@ -90,6 +91,7 @@ const config: DataSourceOptions = {
     LifeGroupStudyPublisher,
     LifeGroupAttendance,
     LifeGroupAttendanceEntry,
+    CasaDePazReport,
   ],
   migrations: ['dist/migrations/*.js'],
   migrationsTransactionMode: 'each',

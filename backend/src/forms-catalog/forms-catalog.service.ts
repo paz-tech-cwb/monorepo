@@ -127,6 +127,25 @@ const FORM_DEFINITIONS = [
       'life_group_leader',
     ],
   },
+  {
+    slug: 'casa-de-paz-reports',
+    name: 'Relatório de Casa de Paz',
+    description: 'Relatório de uma Casa de Paz',
+    write: [
+      'admin',
+      'pastor',
+      'area_leader',
+      'sector_leader',
+      'life_group_leader',
+    ],
+    read: [
+      'admin',
+      'pastor',
+      'area_leader',
+      'sector_leader',
+      'life_group_leader',
+    ],
+  },
 ];
 
 @Injectable()
