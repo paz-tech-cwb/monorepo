@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -35,7 +36,9 @@ export class CasaDePazReport {
     nullable: true,
   })
   meetingTime: string | null;
-  @ManyToOne(() => User, { nullable: false }) submittedBy: User;
+  @ManyToOne(() => User, { nullable: false })
+  @JoinColumn({ name: 'submitted_by_id' })
+  submittedBy: User;
   @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
   @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;
   @DeleteDateColumn({ name: 'deleted_at' }) deletedAt: Date | null;
