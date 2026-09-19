@@ -1,6 +1,7 @@
 package br.church.paz.shared.data.repository
 
 import br.church.paz.shared.domain.model.AreaSupervisorReportForm
+import br.church.paz.shared.domain.model.CasaDePazReportForm
 import br.church.paz.shared.domain.model.ConversionForm
 import br.church.paz.shared.domain.model.CourseForm
 import br.church.paz.shared.domain.model.FormCatalogItem
@@ -9,6 +10,7 @@ import br.church.paz.shared.domain.model.LifeGroupReportForm
 import br.church.paz.shared.domain.model.LifeGroupSummary
 import br.church.paz.shared.domain.model.MemberRegistrationForm
 import br.church.paz.shared.domain.model.MultiplicationForm
+import br.church.paz.shared.domain.model.SectorSummary
 import br.church.paz.shared.domain.model.SectorSupervisorReportForm
 import br.church.paz.shared.domain.model.ServiceReportForm
 import br.church.paz.shared.domain.model.ServiceReportSubmission
@@ -45,6 +47,14 @@ class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
         val response = client.get("api/life-groups") { parameter("q", query) }
         response.throwOnClientOrServerError()
         return response.body()
+    }
+
+    @Throws(Exception::class)
+    override suspend fun searchSectors(query: String): List<SectorSummary> {
+        val response = client.get("api/sectors")
+        response.throwOnClientOrServerError()
+        val sectors: List<SectorSummary> = response.body()
+        return sectors.filter { it.name.contains(query, ignoreCase = true) }
     }
 
     @Throws(Exception::class)
@@ -89,6 +99,10 @@ class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
         response.throwOnClientOrServerError()
         return response.body()
     }
+
+    @Throws(Exception::class)
+    override suspend fun submitCasaDePazReport(form: CasaDePazReportForm) =
+        post("api/forms/casa-de-paz-reports", form)
 
     private suspend inline fun <reified T : Any> post(path: String, body: T) {
         val response = client.post(path) {

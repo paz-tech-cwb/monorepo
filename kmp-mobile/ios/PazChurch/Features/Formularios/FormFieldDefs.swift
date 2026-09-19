@@ -16,7 +16,9 @@ enum FormFieldType {
     case userPicker // single user → stores id string
     case userMultiPicker // multi user → stores "1,2,3"
     case lgPicker // life-group → stores id string
+    case sectorPicker // sector → stores id string
     case selfOrSearch // invited_by: "" = self, else searched name
+    case time // "HH:mm" string, picked via native time picker
 
     /// True for field types backed by a plain keyboard text field (eligible for focus
     /// retention across step-mode screens).
@@ -271,6 +273,26 @@ extension FormType {
                 FormFieldDef("notes", "Observações", fieldType: .multiline),
             ]
 
+        case .casaDePazReport:
+            [
+                FormFieldDef("date", "Data", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
+                FormFieldDef("facilitator", "Facilitador", required: true, fieldType: .name),
+                FormFieldDef("sector_id", "Setor", required: true, fieldType: .sectorPicker),
+                FormFieldDef(
+                    "meeting_day",
+                    "Dia da reunião",
+                    fieldType: .select,
+                    options: FormFieldDefs.meetingDayOptions,
+                    optionValues: FormFieldDefs.meetingDayOptions
+                ),
+                FormFieldDef("meeting_time", "Horário", fieldType: .time),
+                FormFieldDef("adults", "Adultos", placeholder: "0", required: true, fieldType: .integer),
+                FormFieldDef("kids", "Crianças", placeholder: "0", fieldType: .integer),
+                FormFieldDef("guests", "Convidados", placeholder: "0", fieldType: .integer),
+                FormFieldDef("conversions", "Conversões", placeholder: "0", fieldType: .integer),
+                FormFieldDef("week_number", "Semana", fieldType: .integer),
+            ]
+
         default: // areaSupervisorReport
             [
                 FormFieldDef("date", "Data do Relatório", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
@@ -306,7 +328,20 @@ extension FormType {
         case .course: "Curso"
         case .lifeGroupReport: "Relatório de Grupo"
         case .sectorSupervisorReport: "Rel. Supervisor de Setor"
+        case .casaDePazReport: "Relatório de Casa de Paz"
         default: "Rel. Supervisor de Área"
         }
     }
+}
+
+enum FormFieldDefs {
+    static let meetingDayOptions = [
+        "Segunda-feira",
+        "Terça-feira",
+        "Quarta-feira",
+        "Quinta-feira",
+        "Sexta-feira",
+        "Sábado",
+        "Domingo",
+    ]
 }

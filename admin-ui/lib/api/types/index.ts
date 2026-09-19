@@ -17,3 +17,4 @@ export * from "./conversions"
 export * from './reminder-rules'
 export * from "./life-group-studies"
 export * from "./life-group-analytics"
+export * from "./casa-de-paz-analytics"

@@ -18,7 +18,9 @@ enum class FormFieldType {
     USER_PICKER, // single user search picker → stores "id" as string
     USER_MULTI_PICKER, // multi user picker → stores "1,2,3" comma-separated IDs
     LG_PICKER, // life-group picker → stores "id" as string
+    SECTOR_PICKER, // sector picker → stores "id" as string
     SELF_OR_SEARCH, // invited_by: "" = self, else searched name
+    TIME, // "HH:mm" string, picked via native time picker
 }
 
 /** True for field types backed by a plain keyboard text field (eligible for focus retention across steps). */
@@ -46,13 +48,19 @@ data class FormFieldDef(
     val optionValues: List<String> = emptyList(), // API values parallel to options; empty = value IS label
 )
 
+enum class PickerKind {
+    USER,
+    USER_MULTI,
+    LIFE_GROUP,
+    SECTOR,
+}
+
 data class PickerState(
     val key: String, // which field is being picked
     val label: String, // field label for sheet header
-    val isMulti: Boolean,
-    val isLifeGroup: Boolean, // true = search life groups; false = search users
+    val kind: PickerKind,
     val query: String = "",
-    val results: List<Any> = emptyList(), // List<User> or List<LifeGroupSummary>
+    val results: List<Any> = emptyList(), // List<User> or List<LifeGroupSummary> or List<SectorSummary>
     val isLoading: Boolean = false,
     val error: String? = null,
 )
@@ -241,4 +249,34 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
                 FormFieldDef("course_name", "Nome do Curso", "Ex: Escola de Membros", required = true),
                 FormFieldDef("enrolled_at", "Data de Inscrição", "DD/MM/YYYY", required = true, fieldType = FormFieldType.DATE),
             )
+        FormType.casa_de_paz_report ->
+            listOf(
+                FormFieldDef("date", "Data", "DD/MM/YYYY", required = true, fieldType = FormFieldType.DATE),
+                FormFieldDef("facilitator", "Facilitador", required = true, fieldType = FormFieldType.NAME),
+                FormFieldDef("sector_id", "Setor", required = true, fieldType = FormFieldType.SECTOR_PICKER),
+                FormFieldDef(
+                    "meeting_day",
+                    "Dia da reunião",
+                    fieldType = FormFieldType.SELECT,
+                    options = MEETING_DAY_OPTIONS,
+                    optionValues = MEETING_DAY_OPTIONS,
+                ),
+                FormFieldDef("meeting_time", "Horário", fieldType = FormFieldType.TIME),
+                FormFieldDef("adults", "Adultos", "0", required = true, fieldType = FormFieldType.INTEGER),
+                FormFieldDef("kids", "Crianças", "0", fieldType = FormFieldType.INTEGER),
+                FormFieldDef("guests", "Convidados", "0", fieldType = FormFieldType.INTEGER),
+                FormFieldDef("conversions", "Conversões", "0", fieldType = FormFieldType.INTEGER),
+                FormFieldDef("week_number", "Semana", fieldType = FormFieldType.INTEGER),
+            )
     }
+
+val MEETING_DAY_OPTIONS =
+    listOf(
+        "Segunda-feira",
+        "Terça-feira",
+        "Quarta-feira",
+        "Quinta-feira",
+        "Sexta-feira",
+        "Sábado",
+        "Domingo",
+    )

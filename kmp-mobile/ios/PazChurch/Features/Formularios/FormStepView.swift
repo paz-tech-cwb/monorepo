@@ -116,16 +116,22 @@ struct FormStepView: View {
             .padding(.bottom, PazSpacing.xl)
         }
         .sheet(isPresented: Binding(
-            get: { viewModel.pickerKey != nil && !viewModel.pickerIsLifeGroup },
+            get: { viewModel.pickerKey != nil && (viewModel.pickerKind == .user || viewModel.pickerKind == .userMulti) },
             set: { if !$0 { viewModel.closePicker() } }
         )) {
             UserPickerSheet(viewModel: viewModel)
         }
         .sheet(isPresented: Binding(
-            get: { viewModel.pickerKey != nil && viewModel.pickerIsLifeGroup },
+            get: { viewModel.pickerKey != nil && viewModel.pickerKind == .lifeGroup },
             set: { if !$0 { viewModel.closePicker() } }
         )) {
             LifeGroupPickerSheet(viewModel: viewModel)
+        }
+        .sheet(isPresented: Binding(
+            get: { viewModel.pickerKey != nil && viewModel.pickerKind == .sector },
+            set: { if !$0 { viewModel.closePicker() } }
+        )) {
+            SectorPickerSheet(viewModel: viewModel)
         }
         .task(id: viewModel.stepIndex) {
             // Re-request focus for the stable text field when landing on a text-input step;

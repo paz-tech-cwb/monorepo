@@ -203,6 +203,26 @@ struct FieldRow: View {
                 }
                 .buttonStyle(.plain)
 
+            case .sectorPicker:
+                let displayName = extraFields["\(def.key)_name"] ?? ""
+                Button(action: { if !isSubmitting { onOpenPicker(def) } }) {
+                    HStack {
+                        Text(displayName.isEmpty ? "Selecionar setor" : displayName)
+                            .font(PazTypography.bodyMedium)
+                            .foregroundStyle(displayName.isEmpty ? PazColors.slate : PazColors.ink)
+                        Spacer()
+                        Image(systemName: "chevron.down").foregroundStyle(PazColors.accent)
+                    }
+                    .padding(.horizontal, PazSpacing.md)
+                    .frame(height: 56)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+
+            case .time:
+                TimeFieldRow(value: value, onChange: onChange, disabled: isSubmitting)
+
             case .selfOrSearch:
                 let isSearchMode = selfOrSearchModes[def.key] == true
                 VStack(alignment: .leading, spacing: PazSpacing.sm) {
@@ -333,6 +353,57 @@ struct DateFieldRow: View {
                     .onChange(of: selected) { _, d in
                         onChange(display.string(from: d))
                         showPicker = false
+                    }
+                    .padding(PazSpacing.sm)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+    }
+}
+
+struct TimeFieldRow: View {
+    let value: String
+    let onChange: (String) -> Void
+    let disabled: Bool
+
+    @State private var showPicker = false
+    @State private var selected: Date = Date()
+
+    private static let display: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        return f
+    }()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: { if !disabled { showPicker.toggle() } }) {
+                HStack {
+                    Text(value.isEmpty ? "HH:mm" : value)
+                        .font(PazTypography.bodyMedium)
+                        .foregroundStyle(value.isEmpty ? PazColors.slate : PazColors.ink)
+                    Spacer()
+                    Image(systemName: "clock").foregroundStyle(PazColors.accent)
+                }
+                .padding(.horizontal, PazSpacing.md)
+                .frame(height: 56)
+                .background(PazColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+            .task {
+                if let d = Self.display.date(from: value) { selected = d }
+            }
+
+            if showPicker {
+                DatePicker("", selection: $selected, displayedComponents: .hourAndMinute)
+                    .datePickerStyle(.wheel)
+                    .labelsHidden()
+                    .tint(PazColors.accent)
+                    .onChange(of: selected) { _, d in
+                        onChange(Self.display.string(from: d))
                     }
                     .padding(PazSpacing.sm)
                     .background(PazColors.surface)

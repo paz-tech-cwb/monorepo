@@ -36,8 +36,13 @@ npm run test:cov
 # E2E tests
 npm run test:e2e
 
-# Lint (with auto-fix)
-npm run lint
+# Lint (with auto-fix) — WARNING: runs `eslint --fix` across the ENTIRE src/ tree,
+# not just your changed files. Running it reformats every pre-existing file with a
+# fixable style deviation, producing unrelated diff noise you did not intend to commit.
+# Before committing, always `git status` and revert any files you didn't intentionally
+# change. To validate only your own changes, scope eslint explicitly instead:
+npx eslint <path/to/your/changed/file.ts>
+# Only run the unscoped `npm run lint` when you actually want to reformat the whole repo.
 
 # Format
 npm run format

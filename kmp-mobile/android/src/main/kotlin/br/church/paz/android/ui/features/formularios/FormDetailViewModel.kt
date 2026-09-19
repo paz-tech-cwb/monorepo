@@ -3,6 +3,7 @@ package br.church.paz.android.ui.features.formularios
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.shared.domain.model.AreaSupervisorReportForm
+import br.church.paz.shared.domain.model.CasaDePazReportForm
 import br.church.paz.shared.domain.model.ConversionForm
 import br.church.paz.shared.domain.model.CourseForm
 import br.church.paz.shared.domain.model.FormType
@@ -100,14 +101,18 @@ class FormDetailViewModel(
     }
 
     fun openPicker(def: FormFieldDef) {
-        val isLifeGroup = def.fieldType == FormFieldType.LG_PICKER
+        val kind = when (def.fieldType) {
+            FormFieldType.LG_PICKER -> PickerKind.LIFE_GROUP
+            FormFieldType.SECTOR_PICKER -> PickerKind.SECTOR
+            FormFieldType.USER_MULTI_PICKER -> PickerKind.USER_MULTI
+            else -> PickerKind.USER
+        }
         _uiState.update {
             it.copy(
                 pickerState = PickerState(
                     key = def.key,
                     label = def.label,
-                    isMulti = def.fieldType == FormFieldType.USER_MULTI_PICKER,
-                    isLifeGroup = isLifeGroup,
+                    kind = kind,
                 ),
             )
         }
@@ -122,8 +127,11 @@ class FormDetailViewModel(
         _uiState.update { it.copy(pickerState = state.copy(query = query, isLoading = true, error = null)) }
         viewModelScope.launch {
             runCatching {
-                if (state.isLifeGroup) formsRepository.searchLifeGroups(query)
-                else formsRepository.searchUsers(query)
+                when (state.kind) {
+                    PickerKind.LIFE_GROUP -> formsRepository.searchLifeGroups(query)
+                    PickerKind.SECTOR -> formsRepository.searchSectors(query)
+                    PickerKind.USER, PickerKind.USER_MULTI -> formsRepository.searchUsers(query)
+                }
             }.onSuccess { results ->
                 _uiState.update { s ->
                     s.copy(pickerState = s.pickerState?.copy(results = results, isLoading = false))
@@ -138,7 +146,7 @@ class FormDetailViewModel(
 
     fun onPickerSelect(id: String, name: String) {
         val state = _uiState.value.pickerState ?: return
-        if (state.isMulti) {
+        if (state.kind == PickerKind.USER_MULTI) {
             val current = (_uiState.value.fields[state.key] ?: "")
                 .split(",").filter { it.isNotBlank() }.toMutableList()
             if (id in current) current.remove(id) else current.add(id)
@@ -334,6 +342,21 @@ class FormDetailViewModel(
                             lifeGroupObservations = (f.opt("life_group_observations") ?: "")
                                 .split("\n").filter { it.isNotBlank() },
                             notes = f.opt("notes"),
+                        ),
+                    )
+                FormType.casa_de_paz_report ->
+                    formsRepository.submitCasaDePazReport(
+                        CasaDePazReportForm(
+                            date = f.isoDate("date"),
+                            facilitator = f.req("facilitator"),
+                            sectorId = f.idInt("sector_id"),
+                            adults = f.int("adults"),
+                            kids = f.int("kids"),
+                            guests = f.int("guests"),
+                            conversions = f.int("conversions"),
+                            weekNumber = f.intOrNull("week_number"),
+                            meetingDay = f.opt("meeting_day"),
+                            meetingTime = f.opt("meeting_time"),
                         ),
                     )
             }

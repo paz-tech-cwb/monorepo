@@ -4,6 +4,13 @@ import SwiftUI
 
 // MARK: - ViewModel
 
+enum PickerKind {
+    case user
+    case userMulti
+    case lifeGroup
+    case sector
+}
+
 @MainActor
 @Observable
 class FormDetailViewModelIOS {
@@ -40,8 +47,7 @@ class FormDetailViewModelIOS {
 
     var pickerKey: String?
     var pickerLabel: String = ""
-    var pickerIsMulti: Bool = false
-    var pickerIsLifeGroup: Bool = false
+    var pickerKind: PickerKind = .user
     var pickerQuery: String = ""
     var pickerResults: [Any] = []
     var pickerIsLoading: Bool = false
@@ -121,8 +127,12 @@ class FormDetailViewModelIOS {
     func openPicker(def: FormFieldDef) {
         pickerKey = def.key
         pickerLabel = def.label
-        pickerIsMulti = def.fieldType == .userMultiPicker
-        pickerIsLifeGroup = def.fieldType == .lgPicker
+        pickerKind = switch def.fieldType {
+        case .lgPicker: .lifeGroup
+        case .sectorPicker: .sector
+        case .userMultiPicker: .userMulti
+        default: .user
+        }
         pickerQuery = ""
         pickerResults = []
         pickerError = nil
@@ -138,10 +148,14 @@ class FormDetailViewModelIOS {
         pickerError = nil
         Task {
             do {
-                if pickerIsLifeGroup {
+                switch pickerKind {
+                case .lifeGroup:
                     let results = try await formsRepository.searchLifeGroups(query: query)
                     pickerResults = results as [Any]
-                } else {
+                case .sector:
+                    let results = try await formsRepository.searchSectors(query: query)
+                    pickerResults = results as [Any]
+                case .user, .userMulti:
                     let results = try await formsRepository.searchUsers(query: query)
                     pickerResults = results as [Any]
                 }
@@ -155,7 +169,7 @@ class FormDetailViewModelIOS {
 
     func onPickerSelect(id: String, name: String) {
         guard let key = pickerKey else { return }
-        if pickerIsMulti {
+        if pickerKind == .userMulti {
             var current = (fields[key] ?? "").split(separator: ",").map(String.init).filter { !$0.isEmpty }
             if current.contains(id) { current.removeAll { $0 == id } } else { current.append(id) }
             fields[key] = current.joined(separator: ",")
@@ -343,6 +357,20 @@ class FormDetailViewModelIOS {
                 notes: opt("notes")
             ))
 
+        case .casaDePazReport:
+            _ = try await formsRepository.submitCasaDePazReport(form: CasaDePazReportForm(
+                date: isoDate("date"),
+                facilitator: req("facilitator"),
+                sectorId: intVal("sector_id"),
+                adults: intVal("adults"),
+                kids: intVal("kids"),
+                guests: intVal("guests"),
+                conversions: intVal("conversions"),
+                weekNumber: opt("week_number").flatMap { Int32($0) }.map { KotlinInt(value: $0) },
+                meetingDay: opt("meeting_day"),
+                meetingTime: opt("meeting_time")
+            ))
+
         default: // areaSupervisorReport
             let observations = req("life_group_observations")
                 .split(separator: "\n").map(String.init).filter { !$0.isEmpty }
@@ -443,16 +471,22 @@ struct FormDetailView: View {
                 .padding(.horizontal, PazSpacing.lg)
             }
             .sheet(isPresented: Binding(
-                get: { viewModel.pickerKey != nil && !viewModel.pickerIsLifeGroup },
+                get: { viewModel.pickerKey != nil && (viewModel.pickerKind == .user || viewModel.pickerKind == .userMulti) },
                 set: { if !$0 { viewModel.closePicker() } }
             )) {
                 UserPickerSheet(viewModel: viewModel)
             }
             .sheet(isPresented: Binding(
-                get: { viewModel.pickerKey != nil && viewModel.pickerIsLifeGroup },
+                get: { viewModel.pickerKey != nil && viewModel.pickerKind == .lifeGroup },
                 set: { if !$0 { viewModel.closePicker() } }
             )) {
                 LifeGroupPickerSheet(viewModel: viewModel)
+            }
+            .sheet(isPresented: Binding(
+                get: { viewModel.pickerKey != nil && viewModel.pickerKind == .sector },
+                set: { if !$0 { viewModel.closePicker() } }
+            )) {
+                SectorPickerSheet(viewModel: viewModel)
             }
 
             Button(action: { viewModel.onSubmit() }) {

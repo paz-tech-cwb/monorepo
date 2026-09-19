@@ -1,6 +1,7 @@
 package br.church.paz.shared.domain.repository
 
 import br.church.paz.shared.domain.model.AreaSupervisorReportForm
+import br.church.paz.shared.domain.model.CasaDePazReportForm
 import br.church.paz.shared.domain.model.ConversionForm
 import br.church.paz.shared.domain.model.CourseForm
 import br.church.paz.shared.domain.model.FormCatalogItem
@@ -9,6 +10,7 @@ import br.church.paz.shared.domain.model.LifeGroupReportForm
 import br.church.paz.shared.domain.model.LifeGroupSummary
 import br.church.paz.shared.domain.model.MemberRegistrationForm
 import br.church.paz.shared.domain.model.MultiplicationForm
+import br.church.paz.shared.domain.model.SectorSummary
 import br.church.paz.shared.domain.model.SectorSupervisorReportForm
 import br.church.paz.shared.domain.model.ServiceReportForm
 import br.church.paz.shared.domain.model.ServiceReportSubmission
@@ -21,6 +23,8 @@ interface FormsRepository {
     suspend fun searchUsers(query: String): List<User>
     @Throws(Exception::class)
     suspend fun searchLifeGroups(query: String): List<LifeGroupSummary>
+    @Throws(Exception::class)
+    suspend fun searchSectors(query: String): List<SectorSummary>
     @Throws(Exception::class)
     suspend fun submitMemberRegistration(form: MemberRegistrationForm)
     @Throws(Exception::class)
@@ -41,4 +45,6 @@ interface FormsRepository {
     suspend fun submitAreaReport(form: AreaSupervisorReportForm)
     @Throws(Exception::class)
     suspend fun getServiceReportSubmissions(): List<ServiceReportSubmission>
+    @Throws(Exception::class)
+    suspend fun submitCasaDePazReport(form: CasaDePazReportForm)
 }

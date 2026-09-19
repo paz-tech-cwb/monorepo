@@ -8,13 +8,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Users2 } from "lucide-react"
+import { Users2, Home } from "lucide-react"
 import { LifeGroupsReport } from "./life-groups-report"
+import { CasaDePazReport } from "./casa-de-paz-report"
 
 // Report catalog — add an entry here whenever a new report type is built.
 // The selector and the switch below stay in sync with this single list.
 const REPORT_TYPES = [
   { value: "life-groups", label: "Life Group", icon: Users2 },
+  { value: "casa-de-paz", label: "Casa de Paz", icon: Home },
 ] as const
 
 type ReportType = (typeof REPORT_TYPES)[number]["value"]
@@ -45,6 +47,7 @@ export function RelatoriosManagement() {
       </div>
 
       {reportType === "life-groups" && <LifeGroupsReport />}
+      {reportType === "casa-de-paz" && <CasaDePazReport />}
     </div>
   )
 }
