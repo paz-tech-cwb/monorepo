@@ -267,6 +267,30 @@ fun FieldRow(
                 }
             }
 
+            FormFieldType.SECTOR_PICKER -> {
+                val displayName = uiState.fields["${def.key}_name"] ?: ""
+                Box {
+                    OutlinedTextField(
+                        value = displayName,
+                        onValueChange = {},
+                        modifier = Modifier.fillMaxWidth(),
+                        readOnly = true,
+                        enabled = !isSubmitting,
+                        placeholder = { Text(def.placeholder.ifEmpty { "Selecionar setor" }) },
+                        trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null) },
+                        shape = PazShapes.large,
+                        singleLine = true,
+                    )
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { if (!isSubmitting) onOpenPicker(def) },
+                        color = Color.Transparent,
+                    ) {}
+                }
+            }
+
+            FormFieldType.TIME -> TimeFieldRow(value = value, enabled = !isSubmitting, onValueChange = onValueChange)
+
             FormFieldType.SELF_OR_SEARCH -> {
                 val isSearchMode = uiState.selfOrSearchIsSearch[def.key] == true
                 Column {
@@ -492,6 +516,65 @@ fun DateFieldRow(
         ) {
             DatePicker(state = pickerState)
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimeFieldRow(
+    value: String,
+    enabled: Boolean,
+    onValueChange: (String) -> Unit,
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    val (initialHour, initialMinute) =
+        remember(value) {
+            val parts = value.split(":")
+            val hour = parts.getOrNull(0)?.toIntOrNull() ?: 0
+            val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
+            hour to minute
+        }
+
+    val pickerState =
+        androidx.compose.material3.rememberTimePickerState(
+            initialHour = initialHour,
+            initialMinute = initialMinute,
+            is24Hour = true,
+        )
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = {},
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = { Text("HH:mm") },
+        singleLine = true,
+        enabled = enabled,
+        readOnly = true,
+        trailingIcon = {
+            IconButton(onClick = { if (enabled) showDialog = true }) {
+                Icon(Icons.Default.CalendarMonth, contentDescription = "Selecionar horário")
+            }
+        },
+        shape = PazShapes.large,
+    )
+
+    if (showDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    onValueChange("%02d:%02d".format(pickerState.hour, pickerState.minute))
+                    showDialog = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) { Text("Cancelar") }
+            },
+            text = {
+                androidx.compose.material3.TimePicker(state = pickerState)
+            },
+        )
     }
 }
 
