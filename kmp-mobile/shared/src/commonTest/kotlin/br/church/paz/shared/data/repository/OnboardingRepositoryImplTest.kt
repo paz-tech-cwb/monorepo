@@ -6,7 +6,11 @@ import br.church.paz.shared.domain.model.OnboardingStep
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.model.UserAddressDetails
 import br.church.paz.shared.domain.model.UserRole
-import br.church.paz.shared.domain.repository.AuthRepository
+import br.church.paz.shared.domain.model.DeviceToken
+import br.church.paz.shared.domain.model.NotificationPreferences
+import br.church.paz.shared.domain.model.UpdateNotificationPrefsDto
+import br.church.paz.shared.domain.model.UpdateProfileRequest
+import br.church.paz.shared.domain.repository.UserRepository
 import br.church.paz.shared.util.FakeTokenStorage
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -18,6 +22,8 @@ import br.church.paz.shared.data.remote.createPazHttpClient
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class OnboardingRepositoryImplTest {
@@ -46,11 +52,11 @@ class OnboardingRepositoryImplTest {
         response: String = "{}",
         status: HttpStatusCode = HttpStatusCode.OK,
     ): OnboardingRepositoryImpl {
-        val authRepository = FakeAuthRepository(fakeUser(birthDate, phoneNumber, hasAddress))
+        val userRepository = FakeUserRepository(fakeUser(birthDate, phoneNumber, hasAddress))
         val tokenStorage = FakeTokenStorage()
         val engine = MockEngine { respond(response, status, jsonHeaders) }
         val client = createPazHttpClient(tokenStorage, "http://test", engine)
-        return OnboardingRepositoryImpl(client, authRepository)
+        return OnboardingRepositoryImpl(client, userRepository)
     }
 
     @Test
@@ -85,7 +91,7 @@ class OnboardingRepositoryImplTest {
             )
         }
         val client = createPazHttpClient(tokenStorage, "http://test", engine)
-        val repository = OnboardingRepositoryImpl(client, FakeAuthRepository(null))
+        val repository = OnboardingRepositoryImpl(client, FakeUserRepository(null))
 
         val result = repository.lookupCep("80000-000")
 
@@ -101,7 +107,7 @@ class OnboardingRepositoryImplTest {
         val tokenStorage = FakeTokenStorage()
         val engine = MockEngine { respond("""{"erro":true}""", HttpStatusCode.OK, jsonHeaders) }
         val client = createPazHttpClient(tokenStorage, "http://test", engine)
-        val repository = OnboardingRepositoryImpl(client, FakeAuthRepository(null))
+        val repository = OnboardingRepositoryImpl(client, FakeUserRepository(null))
 
         val result = repository.lookupCep("00000-000")
 
@@ -113,7 +119,7 @@ class OnboardingRepositoryImplTest {
         val tokenStorage = FakeTokenStorage()
         val engine = MockEngine { respondError(HttpStatusCode.InternalServerError) }
         val client = createPazHttpClient(tokenStorage, "http://test", engine)
-        val repository = OnboardingRepositoryImpl(client, FakeAuthRepository(null))
+        val repository = OnboardingRepositoryImpl(client, FakeUserRepository(null))
 
         val result = repository.lookupCep("80000-000")
 
@@ -138,7 +144,7 @@ class OnboardingRepositoryImplTest {
             respond("{}", HttpStatusCode.OK, jsonHeaders)
         }
         val client = createPazHttpClient(tokenStorage, "http://test", engine)
-        val repository = OnboardingRepositoryImpl(client, FakeAuthRepository(null))
+        val repository = OnboardingRepositoryImpl(client, FakeUserRepository(null))
 
         val result = repository.submitBirthday("1990-01-01")
 
@@ -155,7 +161,7 @@ class OnboardingRepositoryImplTest {
             respond("{}", HttpStatusCode.OK, jsonHeaders)
         }
         val client = createPazHttpClient(tokenStorage, "http://test", engine)
-        val repository = OnboardingRepositoryImpl(client, FakeAuthRepository(null))
+        val repository = OnboardingRepositoryImpl(client, FakeUserRepository(null))
 
         val result = repository.submitWhatsapp("+5511999999999")
 
@@ -183,7 +189,7 @@ class OnboardingRepositoryImplTest {
             respond("{}", HttpStatusCode.OK, jsonHeaders)
         }
         val client = createPazHttpClient(tokenStorage, "http://test", engine)
-        val repository = OnboardingRepositoryImpl(client, FakeAuthRepository(null))
+        val repository = OnboardingRepositoryImpl(client, FakeUserRepository(null))
 
         val result = repository.submitAddress(
             street = "Rua Um",
@@ -208,20 +214,106 @@ class OnboardingRepositoryImplTest {
 
         assertTrue(result.isFailure)
     }
+
+    @Test
+    fun `missingSteps reads GET users me rather than the cached login user`() = runTest {
+        var requestedPath: String? = null
+        val tokenStorage = FakeTokenStorage()
+        val engine = MockEngine { request ->
+            requestedPath = request.url.encodedPath
+            respond(
+                """{"id":10,"name":"João","email":"joao@paz.church","phone":null,""" +
+                    """"birth_date":null,"address_details":null,"role":"member"}""",
+                HttpStatusCode.OK,
+                jsonHeaders,
+            )
+        }
+        val client = createPazHttpClient(tokenStorage, "http://test", engine)
+        val repository = OnboardingRepositoryImpl(client, UserRepositoryImpl(client))
+
+        val result = repository.missingSteps()
+
+        assertEquals("/api/users/me", requestedPath)
+        assertEquals(
+            listOf(OnboardingStep.Birthday, OnboardingStep.Whatsapp, OnboardingStep.Address),
+            result,
+        )
+    }
+
+    @Test
+    fun `missingSteps sees fields the login response never carries`() = runTest {
+        // Regression guard: `/auth/social-login` only returns id/name/email/picture/role,
+        // so sourcing from that cache reported every step missing forever. `/users/me`
+        // carries the real profile — an already-complete member needs no onboarding.
+        val tokenStorage = FakeTokenStorage()
+        val engine = MockEngine {
+            respond(
+                """{"id":10,"name":"João","email":"joao@paz.church","phone":"+5541999999999",""" +
+                    """"birth_date":"1990-01-01","address_details":{"street":"Rua Um"},"role":"member"}""",
+                HttpStatusCode.OK,
+                jsonHeaders,
+            )
+        }
+        val client = createPazHttpClient(tokenStorage, "http://test", engine)
+        val repository = OnboardingRepositoryImpl(client, UserRepositoryImpl(client))
+
+        assertEquals(emptyList(), repository.missingSteps())
+    }
+
+    @Test
+    fun `missingSteps propagates a profile fetch failure instead of skipping onboarding`() = runTest {
+        val tokenStorage = FakeTokenStorage()
+        val engine = MockEngine { respond("{}", HttpStatusCode.OK, jsonHeaders) }
+        val client = createPazHttpClient(tokenStorage, "http://test", engine)
+        val repository = OnboardingRepositoryImpl(client, FakeUserRepository(null))
+
+        assertFailsWith<IllegalStateException> { repository.missingSteps() }
+    }
+
+    @Test
+    fun `lookupCep does not leak the bearer token to viacep`() = runTest {
+        var authHeader: String? = null
+        var requestedHost: String? = null
+        val tokenStorage = FakeTokenStorage()
+        tokenStorage.save(TokenPair("secret-access-token", "secret-refresh-token"))
+        val engine = MockEngine { request ->
+            requestedHost = request.url.host
+            authHeader = request.headers[HttpHeaders.Authorization]
+            respond("""{"logradouro":"Rua Um"}""", HttpStatusCode.OK, jsonHeaders)
+        }
+        val client = createPazHttpClient(tokenStorage, "http://test", engine)
+        val repository = OnboardingRepositoryImpl(client, FakeUserRepository(null))
+
+        repository.lookupCep("80000-000")
+
+        assertEquals("viacep.com.br", requestedHost)
+        assertNull(authHeader)
+    }
 }
 
 /**
- * Minimal fake mirroring [AuthRepository] for onboarding tests — only
- * [currentUser] is exercised by [OnboardingRepositoryImpl]; every other
- * member is unused here and throws if ever called.
+ * Minimal fake mirroring [UserRepository] for onboarding tests — only [getProfile]
+ * (`GET /users/me`) is exercised by [OnboardingRepositoryImpl]; every other member
+ * is unused here and throws if ever called. A `null` [user] simulates a failing
+ * profile fetch.
  */
-private class FakeAuthRepository(private val user: User?) : AuthRepository {
-    override suspend fun socialLogin(idToken: String, provider: String, birthDate: String?): Result<User> =
+private class FakeUserRepository(private val user: User?) : UserRepository {
+    var getProfileCallCount = 0
+        private set
+
+    override suspend fun getProfile(): User {
+        getProfileCallCount++
+        return user ?: throw IllegalStateException("profile fetch failed")
+    }
+
+    override suspend fun updateProfile(request: UpdateProfileRequest): User = throw NotImplementedError()
+
+    override suspend fun getNotificationPreferences(): NotificationPreferences = throw NotImplementedError()
+
+    override suspend fun updateNotificationPreferences(dto: UpdateNotificationPrefsDto) =
         throw NotImplementedError()
 
-    override suspend fun logout(fcmToken: String?): Result<Unit> = throw NotImplementedError()
+    override suspend fun registerDeviceToken(token: DeviceToken) = throw NotImplementedError()
 
-    override suspend fun currentUser(): User? = user
-
-    override suspend fun storedTokens(): TokenPair? = throw NotImplementedError()
+    override suspend fun removeDeviceToken(tokenId: String) = throw NotImplementedError()
 }

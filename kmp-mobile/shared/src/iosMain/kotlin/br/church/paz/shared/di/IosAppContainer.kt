@@ -70,7 +70,7 @@ object IosAppContainer {
         LifeGroupAnalyticsRepositoryImpl(httpClient)
     }
     val onboardingRepository: OnboardingRepository by lazy {
-        OnboardingRepositoryImpl(httpClient, authRepository)
+        OnboardingRepositoryImpl(httpClient, userRepository)
     }
 
     // iOS-friendly wrappers that throw on failure instead of returning Result<T>

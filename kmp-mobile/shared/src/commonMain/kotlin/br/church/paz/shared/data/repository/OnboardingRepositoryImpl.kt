@@ -3,8 +3,8 @@ package br.church.paz.shared.data.repository
 import br.church.paz.shared.domain.model.CepLookupOutcome
 import br.church.paz.shared.domain.model.CepLookupResult
 import br.church.paz.shared.domain.model.OnboardingStep
-import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.OnboardingRepository
+import br.church.paz.shared.domain.repository.UserRepository
 import br.church.paz.shared.util.safeRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -25,20 +25,30 @@ import kotlinx.serialization.Serializable
  */
 class OnboardingRepositoryImpl(
     private val httpClient: HttpClient,
-    private val authRepository: AuthRepository,
+    private val userRepository: UserRepository,
 ) : OnboardingRepository {
 
     /**
-     * [AuthRepository] exposes no way to refresh/reload the cached [User] after a
-     * successful onboarding submit, so we track steps confirmed as submitted this
-     * session locally and exclude them from [missingSteps]. Without this, a
-     * [missingSteps] call right after a successful `submit*` would still report the
-     * just-submitted field as missing, since the cached user snapshot is stale.
+     * Belt-and-braces guard against a just-submitted step being re-asked. [missingSteps]
+     * re-reads the server, so this is normally redundant — it only matters if a
+     * `GET /users/me` races ahead of a write the server hasn't committed to its read
+     * path yet.
      */
     private val locallyConfirmedSteps = mutableSetOf<OnboardingStep>()
 
+    /**
+     * Sources truth from `GET /users/me`, NOT from the cached login user: the
+     * `/auth/social-login` response body only carries `id/name/email/picture/role`,
+     * so `phone`, `birth_date` and `address_details` are always absent from it and
+     * every step would be reported missing forever.
+     *
+     * Throws on network/auth failure rather than returning an empty list — callers
+     * must surface a retryable error instead of silently skipping onboarding for a
+     * member who still has missing fields.
+     */
+    @Throws(Exception::class)
     override suspend fun missingSteps(): List<OnboardingStep> {
-        val user = authRepository.currentUser() ?: return emptyList()
+        val user = userRepository.getProfile()
         return buildList {
             if (user.birthDate.isNullOrBlank() && OnboardingStep.Birthday !in locallyConfirmedSteps) {
                 add(OnboardingStep.Birthday)
