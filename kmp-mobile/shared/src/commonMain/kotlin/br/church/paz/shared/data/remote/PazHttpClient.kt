@@ -25,6 +25,7 @@ import io.ktor.client.call.body
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.Url
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
@@ -41,6 +42,10 @@ fun createPazHttpClient(
     engine: HttpClientEngine,
     debug: Boolean = false,
 ): HttpClient = HttpClient(engine) {
+    // Host of our own API — the only host allowed to receive the bearer token
+    // preemptively (see the Auth block below).
+    val backendHost = runCatching { Url(baseUrl).host }.getOrDefault("")
+
     defaultRequest { url(baseUrl) }
 
     install(ContentNegotiation) {
@@ -80,6 +85,11 @@ fun createPazHttpClient(
 
     install(Auth) {
         bearer {
+            // Ktor sends bearer credentials preemptively on EVERY request by default,
+            // including third-party calls made on this same client (e.g. the ViaCEP
+            // lookup in OnboardingRepositoryImpl). Restrict preemptive auth to our own
+            // backend host so the app's access token never leaks to another origin.
+            sendWithoutRequest { request -> request.url.host == backendHost }
             loadTokens {
                 val pair = tokenStorage.read()
                 println(

@@ -37,22 +37,24 @@ describe('UsersService', () => {
 
   function createService(managerOverrides: Partial<EntityManager> = {}) {
     const txManager = {
-      findOne: jest.fn(async (entity) => {
-        if (entity === Role) return role;
-        if (entity === User) return makeUser();
-        return null;
+      findOne: jest.fn((entity: unknown) => {
+        if (entity === Role) return Promise.resolve(role);
+        if (entity === User) return Promise.resolve(makeUser());
+        return Promise.resolve(null);
       }),
       findByIds: jest.fn(),
-      save: jest.fn(async (entity, value) => {
-        if (entity === Address) return { ...value, id: 20 };
-        if (entity === User) return { ...value, id: 10 };
-        return value;
+      save: jest.fn((entity: unknown, value: Record<string, unknown>) => {
+        if (entity === Address) return Promise.resolve({ ...value, id: 20 });
+        if (entity === User) return Promise.resolve({ ...value, id: 10 });
+        return Promise.resolve(value);
       }),
       ...managerOverrides,
     };
 
     const entityManager = {
-      transaction: jest.fn((callback) => callback(txManager)),
+      transaction: jest.fn((callback: (manager: typeof txManager) => unknown) =>
+        callback(txManager),
+      ),
     } as unknown as EntityManager;
 
     return {
@@ -83,7 +85,9 @@ describe('UsersService', () => {
     expect(txManager.save).toHaveBeenCalledWith(
       Address,
       expect.objectContaining({
-        zipCode: '80000-000',
+        // Normalized to digits-only by UsersService: the column is varchar(8),
+        // but the DTO/admin-ui submit the hyphenated 9-char CEP format.
+        zipCode: '80000000',
         country: 'Brasil',
         state: 'PR',
         city: 'Curitiba',
@@ -101,8 +105,8 @@ describe('UsersService', () => {
         phoneNumber: '+5541999999999',
         address: expect.objectContaining({
           id: 20,
-          zipCode: '80000-000',
-        }),
+          zipCode: '80000000',
+        }) as unknown as Address,
       }),
     );
   });
@@ -127,19 +131,21 @@ describe('UsersService', () => {
 
   it('uses the transaction for address and user saves so failed user creation rolls back the address', async () => {
     const txManager = {
-      findOne: jest.fn(async (entity) => {
-        if (entity === Role) return role;
-        return null;
+      findOne: jest.fn((entity: unknown) => {
+        if (entity === Role) return Promise.resolve(role);
+        return Promise.resolve(null);
       }),
       findByIds: jest.fn(),
-      save: jest.fn(async (entity, value) => {
-        if (entity === Address) return { ...value, id: 20 };
+      save: jest.fn((entity: unknown, value: Record<string, unknown>) => {
+        if (entity === Address) return Promise.resolve({ ...value, id: 20 });
         if (entity === User) throw new Error('user save failed');
-        return value;
+        return Promise.resolve(value);
       }),
     };
     const entityManager = {
-      transaction: jest.fn((callback) => callback(txManager)),
+      transaction: jest.fn((callback: (manager: typeof txManager) => unknown) =>
+        callback(txManager),
+      ),
     } as unknown as EntityManager;
     const service = new UsersService(entityManager);
 
@@ -159,9 +165,100 @@ describe('UsersService', () => {
       }),
     ).rejects.toThrow(BadRequestException);
 
-    expect(entityManager.transaction).toHaveBeenCalledTimes(1);
+    expect(
+      (entityManager as unknown as { transaction: jest.Mock }).transaction,
+    ).toHaveBeenCalledTimes(1);
     expect(txManager.save).toHaveBeenCalledWith(Address, expect.any(Address));
     expect(txManager.save).toHaveBeenCalledWith(User, expect.any(User));
+  });
+
+  describe('updateProfile', () => {
+    function createUpdateProfileService(existingUser: User = makeUser()) {
+      const savedAddresses: Address[] = [];
+      const entityManager = {
+        findOne: jest.fn(
+          (entity: unknown, options?: { relations?: string[] }) => {
+            if (entity === Address) return Promise.resolve(null);
+            if (entity === User) {
+              if (options?.relations) {
+                return Promise.resolve({
+                  ...existingUser,
+                  address: savedAddresses[savedAddresses.length - 1] ?? null,
+                });
+              }
+              return Promise.resolve(existingUser);
+            }
+            return Promise.resolve(null);
+          },
+        ),
+        save: jest.fn((entity: unknown, value: Address | User) => {
+          if (entity === Address) {
+            const saved = {
+              ...value,
+              id: (value as Address).id ?? 20,
+            } as Address;
+            savedAddresses.push(saved);
+            return Promise.resolve(saved);
+          }
+          if (entity === User)
+            return Promise.resolve({ ...value, id: existingUser.id });
+          return Promise.resolve(value);
+        }),
+      } as unknown as EntityManager;
+
+      return {
+        service: new UsersService(entityManager),
+        entityManager,
+        savedAddresses,
+      };
+    }
+
+    it('persists a new address on updateProfile', async () => {
+      const { service } = createUpdateProfileService(
+        makeUser({ id: 10, address: null }),
+      );
+
+      const dto = {
+        address: {
+          zip_code: '01310-100',
+          country: 'Brasil',
+          street: 'Rua Augusta',
+          number: '100',
+          neighborhood: 'Consolação',
+          city: 'São Paulo',
+          state: 'SP',
+        },
+      };
+
+      const result = await service.updateProfile(10, dto);
+
+      expect(result.address_details).toMatchObject({
+        street: 'Rua Augusta',
+        // Hyphen stripped before hitting the varchar(8) column.
+        zip_code: '01310100',
+      });
+    });
+
+    it('normalizes a hyphenated CEP before it reaches the varchar(8) column', async () => {
+      const { service, savedAddresses } = createUpdateProfileService(
+        makeUser({ id: 10, address: null }),
+      );
+
+      await service.updateProfile(10, {
+        address: {
+          zip_code: '80410-000',
+          country: 'Brasil',
+          street: 'Rua XV',
+          number: '1',
+          neighborhood: 'Centro',
+          city: 'Curitiba',
+          state: 'PR',
+        },
+      });
+
+      expect(savedAddresses).toHaveLength(1);
+      expect(savedAddresses[0].zipCode).toBe('80410000');
+    });
   });
 
   describe('deleteSelf', () => {
@@ -174,7 +271,10 @@ describe('UsersService', () => {
         findOne: jest
           .fn()
           .mockResolvedValue(userExists ? makeUser({ id: 10 }) : null),
-        transaction: jest.fn((callback) => callback(txManager)),
+        transaction: jest.fn(
+          (callback: (manager: typeof txManager) => unknown) =>
+            callback(txManager),
+        ),
       } as unknown as EntityManager;
 
       return {
@@ -276,7 +376,10 @@ describe('UsersService', () => {
       };
       const entityManager = {
         findOne: jest.fn().mockResolvedValue(makeUser({ id: 10 })),
-        transaction: jest.fn((callback) => callback(txManager)),
+        transaction: jest.fn(
+          (callback: (manager: typeof txManager) => unknown) =>
+            callback(txManager),
+        ),
       } as unknown as EntityManager;
       const service = new UsersService(entityManager);
 

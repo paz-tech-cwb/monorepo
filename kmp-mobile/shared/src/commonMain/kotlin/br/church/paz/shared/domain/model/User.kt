@@ -10,6 +10,27 @@ data class User(
     val email: String,
     val picture: String? = null,
     val role: UserRole = UserRole.member,
+    val phone: String? = null,
+    @SerialName("birth_date") val birthDate: String? = null,
+    @SerialName("address_details") val addressDetails: UserAddressDetails? = null,
+)
+
+/**
+ * Mirrors the backend's `address_details` object returned by `GET /users/me`
+ * (see `UsersService.toAddressResponse`). `null` on the parent [User] means the
+ * member has no address on file yet — used by onboarding to determine
+ * [OnboardingStep.Address] completion.
+ */
+@Serializable
+data class UserAddressDetails(
+    @SerialName("zip_code") val zipCode: String? = null,
+    val country: String? = null,
+    val state: String? = null,
+    val city: String? = null,
+    val neighborhood: String? = null,
+    val street: String? = null,
+    val number: String? = null,
+    val complement: String? = null,
 )
 
 @Serializable

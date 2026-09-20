@@ -1,12 +1,15 @@
 // backend/src/users/dto/update-profile.dto.ts
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import {
   IsString,
   IsOptional,
   IsDateString,
   MaxLength,
   IsNotEmpty,
+  IsObject,
+  ValidateNested,
 } from 'class-validator';
+import { CreateAddressDto } from '../../addresses/dto/create-address.dto';
 
 export class UpdateProfileDto {
   @Expose()
@@ -25,4 +28,11 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsDateString()
   birth_date?: string;
+
+  @Expose()
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => CreateAddressDto)
+  address?: CreateAddressDto;
 }

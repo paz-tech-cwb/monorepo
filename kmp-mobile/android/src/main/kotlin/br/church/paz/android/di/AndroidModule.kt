@@ -21,6 +21,7 @@ import br.church.paz.android.ui.features.ministries.LifeGroupDetailViewModel
 import br.church.paz.android.ui.features.ministries.MinistriesViewModel
 import br.church.paz.android.ui.features.ministries.MinistryDetailViewModel
 import br.church.paz.android.ui.features.notifications.NotificationPrefsViewModel
+import br.church.paz.android.ui.features.onboarding.OnboardingViewModel
 import br.church.paz.android.ui.features.profile.EditProfileViewModel
 import br.church.paz.android.ui.features.profile.ProfileViewModel
 import br.church.paz.android.ui.features.search.SearchViewModel
@@ -32,8 +33,11 @@ import org.koin.dsl.module
 val androidModule =
     module {
         single { AppThemeManager() }
-        viewModel { SplashViewModel(get()) }
-        viewModel { LoginViewModel(get()) }
+        viewModel { SplashViewModel(get(), get()) }
+        viewModel { LoginViewModel(get(), get()) }
+        viewModel { (pendingBirthDateLogin: (suspend (String) -> Result<Unit>)?) ->
+            OnboardingViewModel(get(), pendingBirthDateLogin)
+        }
         viewModel { HomeViewModel(get(), get()) }
         viewModel { AcademyViewModel(get(), get()) }
         viewModel { (videoId: String) -> VideoPlayerViewModel(videoId) }

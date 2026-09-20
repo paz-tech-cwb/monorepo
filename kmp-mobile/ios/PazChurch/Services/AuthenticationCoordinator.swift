@@ -14,12 +14,25 @@ class AuthenticationCoordinator {
     var isLoading = false
     var isInitializing = true
     var error: String?
-    /// True when a first-time sign-in needs a birth date to identity-match against
-    /// a pre-created member record (see BirthDateRequiredException in shared code).
-    var needsBirthDate = false
+    /// True once a successful sign-in determined the member-onboarding flow should be shown
+    /// (either because profile fields are missing, or because `BirthDateRequiredException` was
+    /// raised — see `onboardingStartsAtBirthday`).
+    var showOnboarding = false
+    /// True when `showOnboarding` was triggered by a first-time sign-in that needs a birth date
+    /// to identity-match against a pre-created member record (see `BirthDateRequiredException`
+    /// in shared code) rather than by an ordinary missing-profile-field check. In that case
+    /// there is no authenticated session yet, and the onboarding flow's Birthday step must
+    /// retry the deferred sign-in via `completeLoginWithBirthDate` instead of calling
+    /// `OnboardingRepository.submitBirthday` directly.
+    var onboardingStartsAtBirthday = false
+    /// Set when a RESTORED session (stored tokens or silent Firebase re-auth) still has
+    /// missing onboarding steps. Kept separate from `showOnboarding` — which `LoginView`
+    /// presents — so the restore path can be presented from the app root instead, and the
+    /// two can never try to present the same cover at once.
+    var showOnboardingOnRestore = false
 
     private let authRepository: AuthRepository
-    // Held only long enough to retry with a birth date once the user confirms one.
+    // Held only long enough to retry with a birth date once onboarding's Birthday step confirms one.
     private var pendingIdToken: String?
     private var pendingProvider: String?
 
@@ -36,6 +49,7 @@ class AuthenticationCoordinator {
                     let user = try await authRepository.currentUser()
                     self.currentUser = user
                     self.isAuthenticated = true
+                    await self.checkOnboardingOnRestore()
                     self.isInitializing = false
                     return
                 }
@@ -61,11 +75,32 @@ class AuthenticationCoordinator {
         let provider = rawProvider == "google.com" ? "google" : "apple"
         do {
             let idToken = try await firebaseUser.getIDToken()
-            let user = try await IosAppContainer.shared.socialLogin(idToken: idToken, provider: provider, birthDate: nil)
+            let user = try await IosAppContainer.shared.socialLogin(
+                idToken: idToken,
+                provider: provider,
+                birthDate: nil
+            )
             self.currentUser = user
             self.isAuthenticated = true
+            await checkOnboardingOnRestore()
         } catch {
             self.isAuthenticated = false
+        }
+    }
+
+    /// Onboarding must resume on relaunch, not only on an explicit sign-in: a member who
+    /// skipped a step and then force-quit would otherwise never be asked again.
+    ///
+    /// A failed fetch here falls through silently rather than blocking app launch behind a
+    /// retry screen — the next relaunch or sign-in re-checks, and an offline cold start
+    /// must still open the app.
+    private func checkOnboardingOnRestore() async {
+        guard !showOnboarding else { return }
+        let missingSteps = try? await withTimeout(seconds: missingStepsTimeout) {
+            try await IosAppContainer.shared.onboardingRepository.missingSteps()
+        }
+        if let missingSteps, !missingSteps.isEmpty {
+            showOnboardingOnRestore = true
         }
     }
 
@@ -77,22 +112,14 @@ class AuthenticationCoordinator {
         await signIn(idToken: idToken, provider: "apple")
     }
 
-    /// Called once the user picks a birth date in response to `needsBirthDate`.
-    func confirmBirthDate(_ birthDate: String) async {
-        guard let idToken = pendingIdToken, let provider = pendingProvider else { return }
-        needsBirthDate = false
-        await signIn(idToken: idToken, provider: provider, birthDate: birthDate)
-    }
-
-    func dismissBirthDatePrompt() {
-        pendingIdToken = nil
-        pendingProvider = nil
-        needsBirthDate = false
-    }
-
-    private func signIn(idToken: String, provider: String, birthDate: String? = nil) async {
-        isLoading = true
-        error = nil
+    /// Called by the onboarding flow's Birthday step when onboarding was launched to satisfy a
+    /// `BirthDateRequiredException` (see `onboardingStartsAtBirthday`). Retries the pending
+    /// sign-in with the confirmed birth date; on success, `OnboardingCoordinator` re-fetches the
+    /// real remaining onboarding steps and continues the flow.
+    func completeLoginWithBirthDate(_ birthDate: String) async -> Result<Void, Error> {
+        guard let idToken = pendingIdToken, let provider = pendingProvider else {
+            return .failure(AuthError.notImplemented)
+        }
         do {
             let user = try await IosAppContainer.shared.socialLogin(
                 idToken: idToken,
@@ -103,6 +130,28 @@ class AuthenticationCoordinator {
             pendingProvider = nil
             self.currentUser = user
             self.isAuthenticated = true
+            self.onboardingStartsAtBirthday = false
+            return .success(())
+        } catch {
+            return .failure(error)
+        }
+    }
+
+    private func signIn(idToken: String, provider: String) async {
+        isLoading = true
+        error = nil
+        do {
+            let user = try await IosAppContainer.shared.socialLogin(
+                idToken: idToken,
+                provider: provider,
+                birthDate: nil
+            )
+            self.currentUser = user
+            self.isAuthenticated = true
+            let missingSteps = await (try? IosAppContainer.shared.onboardingRepository.missingSteps()) ?? []
+            if !missingSteps.isEmpty {
+                self.showOnboarding = true
+            }
         } catch {
             // Suspend-function failures bridge to Swift as a generic NSError, not the
             // original Kotlin exception type — `catch is BirthDateRequiredException` never
@@ -112,7 +161,8 @@ class AuthenticationCoordinator {
             if (error as NSError).kotlinException is BirthDateRequiredException {
                 pendingIdToken = idToken
                 pendingProvider = provider
-                self.needsBirthDate = true
+                self.showOnboarding = true
+                self.onboardingStartsAtBirthday = true
             } else {
                 self.error = error.localizedDescription
             }
@@ -194,6 +244,32 @@ enum GoogleSignInHelper {
 enum AppleSignInHelper {
     static func signIn(completion: @escaping (String?, String?, Error?) -> Void) {
         completion(nil, nil, AuthError.notImplemented)
+    }
+}
+
+/// Cap on the /users/me-backed missing-steps check so a slow (not failed) connection can't
+/// hang the splash/launch flow behind Ktor's default (much longer) timeouts.
+private let missingStepsTimeout: TimeInterval = 6
+
+private struct TimeoutError: Error {}
+
+/// Races `operation` against a `seconds` deadline; throws `TimeoutError` if the deadline
+/// wins, which callers treat identically to any other failure of `operation`.
+private func withTimeout<T: Sendable>(
+    seconds: TimeInterval,
+    operation: @escaping @Sendable () async throws -> T
+) async throws -> T {
+    try await withThrowingTaskGroup(of: T.self) { group in
+        group.addTask { try await operation() }
+        group.addTask {
+            try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            throw TimeoutError()
+        }
+        guard let result = try await group.next() else {
+            throw TimeoutError()
+        }
+        group.cancelAll()
+        return result
     }
 }
 

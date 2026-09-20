@@ -85,6 +85,7 @@ export class NotificationsService implements OnApplicationBootstrap {
       category: dto.category,
       channels: dto.channels,
       segment: dto.segment,
+      deepLink: dto.deep_link ?? null,
       status: isScheduled ? 'scheduled' : 'pending',
       scheduledAt: isScheduled ? new Date(dto.scheduled_at!) : null,
       createdBy: { id: creatorId },

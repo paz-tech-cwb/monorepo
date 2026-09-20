@@ -42,6 +42,15 @@ android {
         debug {
             applicationIdSuffix = ".dev"
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3001/api\"")
+            // ==================================================================
+            // !!! PLACEHOLDER — MUST BE REPLACED BEFORE PRODUCTION RELEASE !!!
+            // cdn.example.org does not exist. The onboarding welcome video step
+            // will always fall through to its "não foi possível carregar o vídeo"
+            // error state (with a Continuar escape hatch) until a real hosted
+            // asset URL is put here. Same placeholder exists in the other build
+            // type below and in ios/PazChurch/Configuration/AppConfig.swift.
+            // ==================================================================
+            buildConfigField("String", "ONBOARDING_VIDEO_URL", "\"https://cdn.example.org/onboarding/welcome.mp4\"")
             // Web client ID from google-services.json (staging project) → oauth_client[type=3]
             buildConfigField(
                 "String",
@@ -64,6 +73,15 @@ android {
                 "BASE_URL",
                 "\"http://znzcybe6t18zwapiy9hytma5.62.238.45.195.sslip.io/api\"",
             )
+            // ==================================================================
+            // !!! PLACEHOLDER — MUST BE REPLACED BEFORE PRODUCTION RELEASE !!!
+            // cdn.example.org does not exist. The onboarding welcome video step
+            // will always fall through to its "não foi possível carregar o vídeo"
+            // error state (with a Continuar escape hatch) until a real hosted
+            // asset URL is put here. Same placeholder exists in the other build
+            // type below and in ios/PazChurch/Configuration/AppConfig.swift.
+            // ==================================================================
+            buildConfigField("String", "ONBOARDING_VIDEO_URL", "\"https://cdn.example.org/onboarding/welcome.mp4\"")
             buildConfigField(
                 "String",
                 "GOOGLE_WEB_CLIENT_ID",
