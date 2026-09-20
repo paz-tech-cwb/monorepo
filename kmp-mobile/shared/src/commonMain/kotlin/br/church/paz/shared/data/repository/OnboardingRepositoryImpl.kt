@@ -28,12 +28,27 @@ class OnboardingRepositoryImpl(
     private val authRepository: AuthRepository,
 ) : OnboardingRepository {
 
+    /**
+     * [AuthRepository] exposes no way to refresh/reload the cached [User] after a
+     * successful onboarding submit, so we track steps confirmed as submitted this
+     * session locally and exclude them from [missingSteps]. Without this, a
+     * [missingSteps] call right after a successful `submit*` would still report the
+     * just-submitted field as missing, since the cached user snapshot is stale.
+     */
+    private val locallyConfirmedSteps = mutableSetOf<OnboardingStep>()
+
     override suspend fun missingSteps(): List<OnboardingStep> {
         val user = authRepository.currentUser() ?: return emptyList()
         return buildList {
-            if (user.birthDate.isNullOrBlank()) add(OnboardingStep.Birthday)
-            if (user.phone.isNullOrBlank()) add(OnboardingStep.Whatsapp)
-            if (user.addressDetails == null) add(OnboardingStep.Address)
+            if (user.birthDate.isNullOrBlank() && OnboardingStep.Birthday !in locallyConfirmedSteps) {
+                add(OnboardingStep.Birthday)
+            }
+            if (user.phone.isNullOrBlank() && OnboardingStep.Whatsapp !in locallyConfirmedSteps) {
+                add(OnboardingStep.Whatsapp)
+            }
+            if (user.addressDetails == null && OnboardingStep.Address !in locallyConfirmedSteps) {
+                add(OnboardingStep.Address)
+            }
         }
     }
 
@@ -64,11 +79,11 @@ class OnboardingRepositoryImpl(
 
     override suspend fun submitBirthday(birthDate: String): Result<Unit> = updateProfile(
         UpdateMeRequest(birthDate = birthDate),
-    )
+    ).onSuccess { locallyConfirmedSteps.add(OnboardingStep.Birthday) }
 
     override suspend fun submitWhatsapp(phone: String): Result<Unit> = updateProfile(
         UpdateMeRequest(phone = phone),
-    )
+    ).onSuccess { locallyConfirmedSteps.add(OnboardingStep.Whatsapp) }
 
     override suspend fun submitAddress(
         street: String,
@@ -94,7 +109,7 @@ class OnboardingRepositoryImpl(
                 country = "Brasil",
             ),
         ),
-    )
+    ).onSuccess { locallyConfirmedSteps.add(OnboardingStep.Address) }
 
     private suspend fun updateProfile(request: UpdateMeRequest): Result<Unit> = safeRunCatching {
         val response = httpClient.put("api/users/me") {

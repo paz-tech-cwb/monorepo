@@ -130,6 +130,51 @@ class OnboardingRepositoryImplTest {
     }
 
     @Test
+    fun `submitBirthday sends birth_date in the serialized request body`() = runTest {
+        var capturedBody: String? = null
+        val tokenStorage = FakeTokenStorage()
+        val engine = MockEngine { request ->
+            capturedBody = (request.body as io.ktor.http.content.TextContent).text
+            respond("{}", HttpStatusCode.OK, jsonHeaders)
+        }
+        val client = createPazHttpClient(tokenStorage, "http://test", engine)
+        val repository = OnboardingRepositoryImpl(client, FakeAuthRepository(null))
+
+        val result = repository.submitBirthday("1990-01-01")
+
+        assertTrue(result.isSuccess)
+        assertTrue(capturedBody!!.contains("\"birth_date\":\"1990-01-01\""))
+    }
+
+    @Test
+    fun `submitWhatsapp sends phone in the serialized request body`() = runTest {
+        var capturedBody: String? = null
+        val tokenStorage = FakeTokenStorage()
+        val engine = MockEngine { request ->
+            capturedBody = (request.body as io.ktor.http.content.TextContent).text
+            respond("{}", HttpStatusCode.OK, jsonHeaders)
+        }
+        val client = createPazHttpClient(tokenStorage, "http://test", engine)
+        val repository = OnboardingRepositoryImpl(client, FakeAuthRepository(null))
+
+        val result = repository.submitWhatsapp("+5511999999999")
+
+        assertTrue(result.isSuccess)
+        assertTrue(capturedBody!!.contains("\"phone\":\"+5511999999999\""))
+    }
+
+    @Test
+    fun `missingSteps excludes a step just submitted successfully in the same session`() = runTest {
+        val repository = buildRepo(birthDate = null, phoneNumber = "+5511999999999", hasAddress = true)
+
+        val submitResult = repository.submitBirthday("1990-01-01")
+        val result = repository.missingSteps()
+
+        assertTrue(submitResult.isSuccess)
+        assertEquals(emptyList(), result)
+    }
+
+    @Test
     fun `submitAddress sends hardcoded country and digits-only zip code`() = runTest {
         var capturedBody: String? = null
         val tokenStorage = FakeTokenStorage()
