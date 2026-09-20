@@ -7,7 +7,7 @@ import { WEEKDAY_INDEX } from '../life-group-attendance/meeting-day.util';
 
 const SECTOR_TOP_N = 10;
 const OTHERS_LABEL = 'Outros';
-const DEFAULT_MONTHS = 12;
+const DEFAULT_WINDOW_MONTHS = 6;
 
 export interface SeriesRow {
   period: string;
@@ -18,26 +18,37 @@ export interface SeriesRow {
   conversions: number;
 }
 
+function toIsoDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
 @Injectable()
 export class CasaDePazAnalyticsService {
   constructor(@InjectEntityManager() private readonly em: EntityManager) {}
 
-  // The window is the last `months` calendar months ending at the last
-  // month of `year` (Dec), except when `year` is the current calendar
-  // year, in which case the window ends at the current month — mirroring
-  // how the life-group-analytics dashboards default to "up to now" instead
-  // of projecting into months that haven't happened yet.
+  // `from`/`to` are explicit calendar dates (inclusive) rather than a
+  // year+month-count window — the admin picks a date range directly. When
+  // omitted: `to` defaults to today, `from` defaults to the first day of
+  // the month DEFAULT_WINDOW_MONTHS-1 months back.
   private resolveWindow(
-    year: number,
-    months: number,
-  ): { fromYm: number; toYm: number } {
-    const now = new Date();
-    const currentYear = now.getUTCFullYear();
-    const endMonth =
-      year === currentYear ? now.getUTCMonth() + 1 : DEFAULT_MONTHS;
-    const toYm = year * 12 + (endMonth - 1); // 0-indexed absolute month
-    const fromYm = toYm - (months - 1);
-    return { fromYm, toYm };
+    fromStr: string | undefined,
+    toStr: string | undefined,
+  ): { fromDate: Date; toDateExclusive: Date; fromYm: number; toYm: number } {
+    const to = toStr ? new Date(`${toStr}T00:00:00.000Z`) : new Date();
+    const toDateExclusive = new Date(
+      Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate() + 1),
+    );
+    const defaultFrom = new Date(
+      Date.UTC(
+        to.getUTCFullYear(),
+        to.getUTCMonth() - (DEFAULT_WINDOW_MONTHS - 1),
+        1,
+      ),
+    );
+    const from = fromStr ? new Date(`${fromStr}T00:00:00.000Z`) : defaultFrom;
+    const fromYm = from.getUTCFullYear() * 12 + from.getUTCMonth();
+    const toYm = to.getUTCFullYear() * 12 + to.getUTCMonth();
+    return { fromDate: from, toDateExclusive, fromYm, toYm };
   }
 
   private ymToPeriod(ym: number): string {
@@ -46,20 +57,11 @@ export class CasaDePazAnalyticsService {
     return `${year}-${String(month).padStart(2, '0')}`;
   }
 
-  private ymToDate(ym: number): Date {
-    const year = Math.floor(ym / 12);
-    const month = ym % 12;
-    return new Date(Date.UTC(year, month, 1));
-  }
-
   async summary(query: CasaDePazSummaryQueryDto) {
-    const year = query.year ?? new Date().getUTCFullYear();
-    const months = query.months ?? DEFAULT_MONTHS;
-    const { fromYm, toYm } = this.resolveWindow(year, months);
-    const fromDate = this.ymToDate(fromYm);
-    // Exclusive end bound: first day of the month AFTER the window's last
-    // month, so the range covers the entire last month.
-    const toDateExclusive = this.ymToDate(toYm + 1);
+    const { fromDate, toDateExclusive, fromYm, toYm } = this.resolveWindow(
+      query.from,
+      query.to,
+    );
 
     const baseQb = () =>
       this.em
@@ -228,11 +230,9 @@ export class CasaDePazAnalyticsService {
     }));
 
     return {
-      year,
-      months,
       range: {
-        from: this.ymToPeriod(fromYm),
-        to: this.ymToPeriod(toYm),
+        from: toIsoDate(fromDate),
+        to: toIsoDate(new Date(toDateExclusive.getTime() - 86_400_000)),
       },
       totals,
       series,

@@ -17,7 +17,8 @@ struct UserPickerSheet: View {
                 .padding(PazSpacing.md)
 
                 if viewModel.pickerIsLoading {
-                    ProgressView().padding()
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let error = viewModel.pickerError {
                     Text(error).foregroundStyle(PazColors.error).padding()
                 } else {
