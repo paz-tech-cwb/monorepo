@@ -83,7 +83,9 @@ describe('UsersService', () => {
     expect(txManager.save).toHaveBeenCalledWith(
       Address,
       expect.objectContaining({
-        zipCode: '80000-000',
+        // Normalized to digits-only by UsersService: the column is varchar(8),
+        // but the DTO/admin-ui submit the hyphenated 9-char CEP format.
+        zipCode: '80000000',
         country: 'Brasil',
         state: 'PR',
         city: 'Curitiba',
@@ -101,7 +103,7 @@ describe('UsersService', () => {
         phoneNumber: '+5541999999999',
         address: expect.objectContaining({
           id: 20,
-          zipCode: '80000-000',
+          zipCode: '80000000',
         }),
       }),
     );
@@ -201,6 +203,7 @@ describe('UsersService', () => {
       return {
         service: new UsersService(entityManager),
         entityManager,
+        savedAddresses,
       };
     }
 
@@ -225,8 +228,30 @@ describe('UsersService', () => {
 
       expect(result.address_details).toMatchObject({
         street: 'Rua Augusta',
-        zip_code: '01310-100',
+        // Hyphen stripped before hitting the varchar(8) column.
+        zip_code: '01310100',
       });
+    });
+
+    it('normalizes a hyphenated CEP before it reaches the varchar(8) column', async () => {
+      const { service, savedAddresses } = createUpdateProfileService(
+        makeUser({ id: 10, address: null }),
+      );
+
+      await service.updateProfile(10, {
+        address: {
+          zip_code: '80410-000',
+          country: 'Brasil',
+          street: 'Rua XV',
+          number: '1',
+          neighborhood: 'Centro',
+          city: 'Curitiba',
+          state: 'PR',
+        },
+      });
+
+      expect(savedAddresses).toHaveLength(1);
+      expect(savedAddresses[0].zipCode).toBe('80410000');
     });
   });
 

@@ -22,6 +22,17 @@ export class UsersService {
     private readonly entityManager: EntityManager,
   ) {}
 
+  /**
+   * The `addresses.zip_code` column is `varchar(8)`, but `CreateAddressDto` accepts
+   * the hyphenated CEP format (`"80410-000"`) that admin-ui's `formatCEP()` submits.
+   * Every write path must strip non-digits first, or Postgres rejects the insert
+   * with a value-too-long error.
+   */
+  private static normalizeZipCode(zipCode: string | null | undefined) {
+    const digits = (zipCode ?? '').replace(/\D/g, '');
+    return digits.length > 0 ? digits.slice(0, 8) : null;
+  }
+
   private toAddressResponse(address: Address | null) {
     if (!address) return { address: null, address_details: null };
 
@@ -125,7 +136,9 @@ export class UsersService {
         let address: Address | null = null;
         if (dto.address) {
           const newAddress = new Address();
-          newAddress.zipCode = dto.address.zip_code;
+          newAddress.zipCode = UsersService.normalizeZipCode(
+            dto.address.zip_code,
+          );
           newAddress.country = dto.address.country;
           newAddress.state = dto.address.state;
           newAddress.city = dto.address.city;
@@ -246,7 +259,7 @@ export class UsersService {
 
       if (dto.address !== undefined) {
         const address = user.address ?? new Address();
-        address.zipCode = dto.address.zip_code;
+        address.zipCode = UsersService.normalizeZipCode(dto.address.zip_code);
         address.country = dto.address.country;
         address.state = dto.address.state;
         address.city = dto.address.city;
@@ -352,7 +365,7 @@ export class UsersService {
 
       if (dto.address !== undefined) {
         const address = user.address ?? new Address();
-        address.zipCode = dto.address.zip_code;
+        address.zipCode = UsersService.normalizeZipCode(dto.address.zip_code);
         address.country = dto.address.country;
         address.state = dto.address.state;
         address.city = dto.address.city;
