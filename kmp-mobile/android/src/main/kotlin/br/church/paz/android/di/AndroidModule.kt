@@ -35,7 +35,9 @@ val androidModule =
         single { AppThemeManager() }
         viewModel { SplashViewModel(get()) }
         viewModel { LoginViewModel(get(), get()) }
-        viewModel { OnboardingViewModel(get()) }
+        viewModel { (pendingBirthDateLogin: (suspend (String) -> Result<Unit>)?) ->
+            OnboardingViewModel(get(), pendingBirthDateLogin)
+        }
         viewModel { HomeViewModel(get(), get()) }
         viewModel { AcademyViewModel(get(), get()) }
         viewModel { (videoId: String) -> VideoPlayerViewModel(videoId) }

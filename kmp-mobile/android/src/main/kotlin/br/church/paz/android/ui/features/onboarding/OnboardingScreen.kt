@@ -39,6 +39,7 @@ import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.CepLookupOutcome
 import br.church.paz.shared.domain.model.OnboardingStep
 import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 // TODO(task-7): replace this hardcoded placeholder with a BuildConfig-sourced
 // value once the real welcome video is hosted (see task-4 brief §"Video source").
@@ -47,7 +48,12 @@ private const val PLACEHOLDER_ONBOARDING_VIDEO_URL = "https://example.com/placeh
 @Composable
 fun OnboardingScreen(
     onFinished: () -> Unit,
-    viewModel: OnboardingViewModel = koinViewModel(),
+    // Non-null when this onboarding session was launched to satisfy a
+    // BirthDateRequiredException raised during sign-in (see LoginViewModel):
+    // there is no authenticated session yet, so the Birthday step must complete
+    // the pending sign-in instead of calling OnboardingRepository.submitBirthday.
+    pendingBirthDateLogin: (suspend (String) -> Result<Unit>)? = null,
+    viewModel: OnboardingViewModel = koinViewModel(parameters = { parametersOf(pendingBirthDateLogin) }),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val isDark = isSystemInDarkTheme()
@@ -302,7 +308,10 @@ private fun AddressStep(
     ) {
         OutlinedTextField(
             value = cep,
-            onValueChange = { cep = it },
+            onValueChange = {
+                cep = it
+                onDismissError()
+            },
             label = { Text("CEP") },
             trailingIcon = {
                 if (isLookingUpCep) {
@@ -329,14 +338,20 @@ private fun AddressStep(
                 Spacer(modifier = Modifier.height(PazSpacing.Md))
                 OutlinedTextField(
                     value = number,
-                    onValueChange = { number = it },
+                    onValueChange = {
+                        number = it
+                        onDismissError()
+                    },
                     label = { Text("Número") },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(PazSpacing.Md))
                 OutlinedTextField(
                     value = complement,
-                    onValueChange = { complement = it },
+                    onValueChange = {
+                        complement = it
+                        onDismissError()
+                    },
                     label = { Text("Complemento (opcional)") },
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -367,42 +382,60 @@ private fun AddressStep(
                 Spacer(modifier = Modifier.height(PazSpacing.Md))
                 OutlinedTextField(
                     value = manualStreet,
-                    onValueChange = { manualStreet = it },
+                    onValueChange = {
+                        manualStreet = it
+                        onDismissError()
+                    },
                     label = { Text("Rua") },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(PazSpacing.Md))
                 OutlinedTextField(
                     value = number,
-                    onValueChange = { number = it },
+                    onValueChange = {
+                        number = it
+                        onDismissError()
+                    },
                     label = { Text("Número") },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(PazSpacing.Md))
                 OutlinedTextField(
                     value = complement,
-                    onValueChange = { complement = it },
+                    onValueChange = {
+                        complement = it
+                        onDismissError()
+                    },
                     label = { Text("Complemento (opcional)") },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(PazSpacing.Md))
                 OutlinedTextField(
                     value = manualNeighborhood,
-                    onValueChange = { manualNeighborhood = it },
+                    onValueChange = {
+                        manualNeighborhood = it
+                        onDismissError()
+                    },
                     label = { Text("Bairro") },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(PazSpacing.Md))
                 OutlinedTextField(
                     value = manualCity,
-                    onValueChange = { manualCity = it },
+                    onValueChange = {
+                        manualCity = it
+                        onDismissError()
+                    },
                     label = { Text("Cidade") },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(PazSpacing.Md))
                 OutlinedTextField(
                     value = manualState,
-                    onValueChange = { manualState = it },
+                    onValueChange = {
+                        manualState = it
+                        onDismissError()
+                    },
                     label = { Text("Estado") },
                     modifier = Modifier.fillMaxWidth(),
                 )

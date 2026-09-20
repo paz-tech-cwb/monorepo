@@ -24,8 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,8 +31,6 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -67,9 +63,6 @@ import com.google.firebase.auth.OAuthProvider
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import org.koin.androidx.compose.koinViewModel
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.TimeZone
 
 private val CardShape = RoundedCornerShape(26.dp)
 
@@ -96,15 +89,12 @@ fun LoginScreen(
         }
     }
 
-    if (uiState.needsBirthDate) {
-        BirthDateDialog(
-            onConfirm = { viewModel.onBirthDateConfirmed(it) },
-            onDismiss = { viewModel.dismissBirthDatePrompt() },
-        )
-    }
-
     if (uiState.showOnboarding) {
-        OnboardingScreen(onFinished = { viewModel.onOnboardingFinished() })
+        OnboardingScreen(
+            onFinished = { viewModel.onOnboardingFinished() },
+            pendingBirthDateLogin =
+                if (uiState.onboardingStartsAtBirthday) viewModel::completeLoginWithBirthDate else null,
+        )
         return
     }
 
@@ -228,52 +218,6 @@ fun LoginScreen(
             )
         }
     }
-}
-
-/**
- * First-time sign-in for an identity the backend doesn't recognize requires a birth date
- * so it can be matched against a pre-created member record (see BirthDateRequiredException).
- */
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-@Composable
-private fun BirthDateDialog(
-    onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val datePickerState = rememberDatePickerState()
-
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                enabled = datePickerState.selectedDateMillis != null,
-                onClick = {
-                    val millis = datePickerState.selectedDateMillis ?: return@TextButton
-                    onConfirm(formatIsoDate(millis))
-                },
-            ) {
-                Text("Confirmar")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
-        },
-    ) {
-        Column {
-            Text(
-                text = "Para confirmar sua identidade pela primeira vez, informe sua data de nascimento.",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-            )
-            DatePicker(state = datePickerState)
-        }
-    }
-}
-
-private fun formatIsoDate(utcMillis: Long): String {
-    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-    formatter.timeZone = TimeZone.getTimeZone("UTC")
-    return formatter.format(utcMillis)
 }
 
 @Composable

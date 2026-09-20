@@ -105,7 +105,7 @@ class LoginViewModelTest {
         }
 
     @Test
-    fun `first-time sign-in without a match sets needsBirthDate instead of showing an error`() =
+    fun `first-time sign-in without a match shows onboarding starting at the Birthday step`() =
         runTest {
             coEvery { authRepository.socialLogin("new-token", "google", null) } returns
                 Result.failure(BirthDateRequiredException())
@@ -114,11 +114,12 @@ class LoginViewModelTest {
             viewModel.onGoogleSignIn("new-token")
             advanceUntilIdle()
 
-            assertTrue(viewModel.uiState.value.needsBirthDate)
+            assertTrue(viewModel.uiState.value.showOnboarding)
+            assertTrue(viewModel.uiState.value.onboardingStartsAtBirthday)
         }
 
     @Test
-    fun `confirming birth date retries sign-in and emits NavigateToHome`() =
+    fun `completing login with birth date retries sign-in and clears the pending flag`() =
         runTest {
             coEvery { authRepository.socialLogin("new-token", "google", null) } returns
                 Result.failure(BirthDateRequiredException())
@@ -128,12 +129,10 @@ class LoginViewModelTest {
             viewModel.onGoogleSignIn("new-token")
             advanceUntilIdle()
 
-            viewModel.effect.test {
-                viewModel.onBirthDateConfirmed("2000-01-01")
-                assertEquals(LoginEffect.NavigateToHome, awaitItem())
-                cancelAndIgnoreRemainingEvents()
-            }
-            assertFalse(viewModel.uiState.value.needsBirthDate)
+            val result = viewModel.completeLoginWithBirthDate("2000-01-01")
+
+            assertTrue(result.isSuccess)
+            assertFalse(viewModel.uiState.value.onboardingStartsAtBirthday)
         }
 
     @Test

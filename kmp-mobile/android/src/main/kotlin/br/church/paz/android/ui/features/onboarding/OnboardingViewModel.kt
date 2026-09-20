@@ -22,16 +22,33 @@ data class OnboardingUiState(
     val isFinished: Boolean = false,
 )
 
+/**
+ * @param pendingBirthDateLogin When non-null, this onboarding session was launched to satisfy a
+ * [br.church.paz.shared.domain.repository.BirthDateRequiredException] raised during sign-in
+ * (the identity provider matched no existing member without a birth date). In that case there is
+ * no authenticated session yet, so the Birthday step's submission must complete the pending
+ * sign-in instead of calling [OnboardingRepository.submitBirthday] directly. Once that retry
+ * succeeds, the real remaining steps are re-fetched from the now-authenticated repository.
+ */
 class OnboardingViewModel(
     private val repository: OnboardingRepository,
+    private val pendingBirthDateLogin: (suspend (String) -> Result<Unit>)? = null,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            val missing = repository.missingSteps()
-            _uiState.update { it.copy(remainingSteps = missing, isLoadingMissingSteps = false) }
+        if (pendingBirthDateLogin != null) {
+            // No session exists yet — Birthday is known to be missing, and the rest of the
+            // missing steps (if any) are only knowable once the pending login completes.
+            _uiState.update {
+                it.copy(remainingSteps = listOf(OnboardingStep.Birthday), isLoadingMissingSteps = false)
+            }
+        } else {
+            viewModelScope.launch {
+                val missing = repository.missingSteps()
+                _uiState.update { it.copy(remainingSteps = missing, isLoadingMissingSteps = false) }
+            }
         }
     }
 
@@ -39,7 +56,29 @@ class OnboardingViewModel(
 
     fun onSkipCurrentStep() = advance()
 
-    fun onBirthdaySubmitted(birthDate: String) = submit { repository.submitBirthday(birthDate) }
+    fun onBirthdaySubmitted(birthDate: String) {
+        val loginRetry = pendingBirthDateLogin
+        if (loginRetry == null) {
+            submit { repository.submitBirthday(birthDate) }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
+            loginRetry(birthDate)
+                .onSuccess {
+                    val missing = repository.missingSteps()
+                    _uiState.update { it.copy(isSubmitting = false, remainingSteps = missing) }
+                    advance()
+                }.onFailure { e ->
+                    _uiState.update {
+                        it.copy(
+                            isSubmitting = false,
+                            errorMessage = e.message ?: "Não foi possível confirmar. Tente novamente.",
+                        )
+                    }
+                }
+        }
+    }
 
     fun onWhatsappSubmitted(phone: String) = submit { repository.submitWhatsapp(phone) }
 
@@ -88,7 +127,7 @@ class OnboardingViewModel(
     private fun advance() {
         val remaining = _uiState.value.remainingSteps
         if (remaining.isEmpty()) {
-            _uiState.update { it.copy(isFinished = true) }
+            _uiState.update { it.copy(isFinished = true, errorMessage = null) }
             return
         }
         val next = remaining.first()
@@ -97,6 +136,7 @@ class OnboardingViewModel(
                 currentStep = next,
                 remainingSteps = remaining.drop(1),
                 cepResult = null,
+                errorMessage = null,
             )
         }
     }
