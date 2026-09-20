@@ -33,7 +33,14 @@ export function ExportDashboardButton({ targetRef, filename }: ExportDashboardBu
       toast.error("Não foi possível exportar: conteúdo não encontrado.")
       return null
     }
-    const { default: html2canvas } = await import("html2canvas")
+    // html2canvas-pro (not html2canvas) — Tailwind v4 compiles opacity
+    // modifiers like `bg-primary/10` using the modern `color-mix(in oklab, ...)`
+    // CSS function, which the original html2canvas can't parse. It doesn't
+    // throw cleanly either — the capture just hangs mid-clone with no error,
+    // which is exactly what "Starting document clone" never completing looks
+    // like. html2canvas-pro is a maintained fork that adds oklch/oklab/
+    // color-mix() support.
+    const { default: html2canvas } = await import("html2canvas-pro")
     return html2canvas(node, {
       backgroundColor: "#ffffff",
       scale: 2,
