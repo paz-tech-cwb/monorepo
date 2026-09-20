@@ -3,6 +3,8 @@ import SwiftUI
 
 struct LifeGroupAnalyticsView: View {
     @State private var viewModel: LifeGroupAnalyticsViewModel
+    @State private var shareImage: UIImage?
+    @State private var showShareSheet = false
 
     private static let monthLabels = [
         "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez",
@@ -24,10 +26,44 @@ struct LifeGroupAnalyticsView: View {
             .navigationTitle("Relatórios")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: exportImage) {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .disabled(viewModel.isLoading || viewModel.error != nil)
+                }
+            }
+            .sheet(isPresented: $showShareSheet) {
+                if let shareImage {
+                    ShareSheet(activityItems: [shareImage])
+                }
+            }
             .task {
                 await viewModel.loadLifeGroups()
                 await viewModel.load()
             }
+    }
+
+    /// Rasterizes the chart content (filters excluded — they're controls, not
+    /// report content) to a UIImage and opens the system share sheet, so the
+    /// user can save it as a photo, AirDrop it, or "Print" to a PDF via the
+    /// share sheet's own Print action — no extra PDF library needed on mobile.
+    private func exportImage() {
+        let renderer = ImageRenderer(content:
+            VStack(alignment: .leading, spacing: 20) {
+                attendanceSection
+                distributionSection
+            }
+            .padding(20)
+            .background(PazColors.background)
+            .frame(width: UIScreen.main.bounds.width)
+        )
+        renderer.scale = UIScreen.main.scale
+        if let image = renderer.uiImage {
+            shareImage = image
+            showShareSheet = true
+        }
     }
 
     @ViewBuilder
