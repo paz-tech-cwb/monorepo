@@ -25,6 +25,11 @@ class AuthenticationCoordinator {
     /// retry the deferred sign-in via `completeLoginWithBirthDate` instead of calling
     /// `OnboardingRepository.submitBirthday` directly.
     var onboardingStartsAtBirthday = false
+    /// Set when a RESTORED session (stored tokens or silent Firebase re-auth) still has
+    /// missing onboarding steps. Kept separate from `showOnboarding` — which `LoginView`
+    /// presents — so the restore path can be presented from the app root instead, and the
+    /// two can never try to present the same cover at once.
+    var showOnboardingOnRestore = false
 
     private let authRepository: AuthRepository
     // Held only long enough to retry with a birth date once onboarding's Birthday step confirms one.
@@ -44,6 +49,7 @@ class AuthenticationCoordinator {
                     let user = try await authRepository.currentUser()
                     self.currentUser = user
                     self.isAuthenticated = true
+                    await self.checkOnboardingOnRestore()
                     self.isInitializing = false
                     return
                 }
@@ -76,8 +82,23 @@ class AuthenticationCoordinator {
             )
             self.currentUser = user
             self.isAuthenticated = true
+            await checkOnboardingOnRestore()
         } catch {
             self.isAuthenticated = false
+        }
+    }
+
+    /// Onboarding must resume on relaunch, not only on an explicit sign-in: a member who
+    /// skipped a step and then force-quit would otherwise never be asked again.
+    ///
+    /// A failed fetch here falls through silently rather than blocking app launch behind a
+    /// retry screen — the next relaunch or sign-in re-checks, and an offline cold start
+    /// must still open the app.
+    private func checkOnboardingOnRestore() async {
+        guard !showOnboarding else { return }
+        let missingSteps = try? await IosAppContainer.shared.onboardingRepository.missingSteps()
+        if let missingSteps, !missingSteps.isEmpty {
+            showOnboardingOnRestore = true
         }
     }
 

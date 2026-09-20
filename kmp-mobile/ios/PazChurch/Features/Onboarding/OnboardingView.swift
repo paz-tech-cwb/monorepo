@@ -124,35 +124,116 @@ private struct OnboardingLoadErrorView: View {
 private struct WelcomeVideoStepView: View {
     let onFinished: () -> Void
 
+    /// If playback hasn't started within this many seconds, treat the video as failed.
+    /// Guards against a URL that neither errors nor buffers (e.g. a black-holed host),
+    /// which would otherwise leave this non-skippable full-screen step with no exit.
+    private static let startTimeout: Duration = .seconds(15)
+
     @State private var player = AVPlayer(url: AppConfig.onboardingVideoURL)
-    @State private var didEndObserverToken: NSObjectProtocol?
+    @State private var observerTokens: [NSObjectProtocol] = []
+    @State private var statusObservation: NSKeyValueObservation?
+    @State private var timeControlObservation: NSKeyValueObservation?
+    @State private var hasStartedPlaying = false
+    @State private var hasFailed = false
 
     var body: some View {
-        VideoPlayer(player: player)
-            .ignoresSafeArea()
-            .background(Color.black)
-            .task {
-                player.play()
-                removeDidEndObserver()
-                didEndObserverToken = NotificationCenter.default.addObserver(
-                    forName: .AVPlayerItemDidPlayToEndTime,
-                    object: player.currentItem,
-                    queue: .main
-                ) { _ in
-                    removeDidEndObserver()
-                    onFinished()
-                }
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            if hasFailed {
+                failureView
+            } else {
+                VideoPlayer(player: player)
+                    .ignoresSafeArea()
             }
-            .onDisappear {
-                removeDidEndObserver()
+        }
+        .task {
+            startObserving()
+            player.play()
+            try? await Task.sleep(for: Self.startTimeout)
+            if !hasStartedPlaying, !hasFailed {
+                fail()
             }
+        }
+        .onDisappear(perform: stopObserving)
     }
 
-    private func removeDidEndObserver() {
-        if let token = didEndObserverToken {
-            NotificationCenter.default.removeObserver(token)
-            didEndObserverToken = nil
+    /// Mirrors Android's `VideoView.setOnErrorListener` escape hatch: the step is not
+    /// skippable, so a video that can't load MUST still offer a way forward.
+    private var failureView: some View {
+        VStack(spacing: PazSpacing.lg) {
+            Spacer()
+
+            Text("Não foi possível carregar o vídeo de boas-vindas.")
+                .font(PazTypography.bodyLarge)
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+
+            Button("Continuar", action: onFinished)
+                .buttonStyle(.pazPillPrimary)
+
+            Spacer()
         }
+        .padding(PazSpacing.xl)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func startObserving() {
+        stopObserving()
+
+        guard let item = player.currentItem else {
+            fail()
+            return
+        }
+
+        statusObservation = item.observe(\AVPlayerItem.status, options: [.initial, .new]) { item, _ in
+            guard item.status == .failed else { return }
+            Task { @MainActor in fail() }
+        }
+
+        observerTokens = [
+            NotificationCenter.default.addObserver(
+                forName: .AVPlayerItemDidPlayToEndTime,
+                object: item,
+                queue: .main
+            ) { _ in
+                Task { @MainActor in
+                    stopObserving()
+                    onFinished()
+                }
+            },
+            NotificationCenter.default.addObserver(
+                forName: .AVPlayerItemFailedToPlayToEndTime,
+                object: item,
+                queue: .main
+            ) { _ in
+                Task { @MainActor in fail() }
+            },
+        ]
+
+        // Earliest reliable "playback actually started" signal — suppresses the timeout.
+        timeControlObservation = player.observe(\AVPlayer.timeControlStatus, options: [.new]) { player, _ in
+            guard player.timeControlStatus == .playing else { return }
+            Task { @MainActor in hasStartedPlaying = true }
+        }
+    }
+
+    private func fail() {
+        guard !hasFailed else { return }
+        stopObserving()
+        player.pause()
+        hasFailed = true
+    }
+
+    private func stopObserving() {
+        statusObservation?.invalidate()
+        statusObservation = nil
+        timeControlObservation?.invalidate()
+        timeControlObservation = nil
+        for token in observerTokens {
+            NotificationCenter.default.removeObserver(token)
+        }
+        observerTokens = []
     }
 }
 
@@ -352,9 +433,28 @@ private struct AddressStepView: View {
         // subclasses (`CepLookupOutcomeFound` / `CepLookupOutcomeNotFound` / `CepLookupOutcomeError`),
         // not a native Swift enum — matched here via `as?`/`is` casts rather than `switch case`.
         if let found = cepResult as? CepLookupOutcomeFound {
+            // ViaCEP returns an empty logradouro/bairro for some municipalities, but the
+            // backend's CreateAddressDto requires both. Render those specific fields as
+            // editable inputs instead of read-only text so the user can fill the gaps —
+            // never silently submit a blank.
+            let lookedUpStreet = found.result.street
+            let lookedUpNeighborhood = found.result.neighborhood
+            let effectiveStreet = lookedUpStreet.isBlank ? manualStreet : lookedUpStreet
+            let effectiveNeighborhood = lookedUpNeighborhood.isBlank ? manualNeighborhood : lookedUpNeighborhood
+
             VStack(alignment: .leading, spacing: PazSpacing.sm) {
-                Text("\(found.result.street), \(found.result.neighborhood)")
-                    .font(PazTypography.bodyMedium)
+                if lookedUpStreet.isBlank {
+                    TextField("Rua", text: $manualStreet).textFieldStyle(.roundedBorder)
+                } else {
+                    Text(lookedUpStreet).font(PazTypography.bodyMedium)
+                }
+
+                if lookedUpNeighborhood.isBlank {
+                    TextField("Bairro", text: $manualNeighborhood).textFieldStyle(.roundedBorder)
+                } else {
+                    Text(lookedUpNeighborhood).font(PazTypography.bodyMedium)
+                }
+
                 Text("\(found.result.city) - \(found.result.state)")
                     .font(PazTypography.bodySmall)
                     .foregroundStyle(PazColors.slate)
@@ -362,12 +462,20 @@ private struct AddressStepView: View {
                 TextField("Número", text: $number).textFieldStyle(.roundedBorder)
                 TextField("Complemento (opcional)", text: $complement).textFieldStyle(.roundedBorder)
 
-                submitButton {
+                submitButton(
+                    requiredFields: [
+                        effectiveStreet,
+                        number,
+                        effectiveNeighborhood,
+                        found.result.city,
+                        found.result.state,
+                    ]
+                ) {
                     onSubmit(
-                        found.result.street,
+                        effectiveStreet,
                         number,
                         complement.isEmpty ? nil : complement,
-                        found.result.neighborhood,
+                        effectiveNeighborhood,
                         found.result.city,
                         found.result.state,
                         cep
@@ -387,7 +495,9 @@ private struct AddressStepView: View {
                 TextField("Cidade", text: $manualCity).textFieldStyle(.roundedBorder)
                 TextField("Estado", text: $manualState).textFieldStyle(.roundedBorder)
 
-                submitButton {
+                submitButton(
+                    requiredFields: [manualStreet, number, manualNeighborhood, manualCity, manualState]
+                ) {
                     onSubmit(
                         manualStreet,
                         number,
@@ -402,7 +512,13 @@ private struct AddressStepView: View {
         }
     }
 
-    private func submitButton(action: @escaping () -> Void) -> some View {
+    /// `requiredFields` mirrors every property `CreateAddressDto` marks `@IsNotEmpty`
+    /// (street, number, neighborhood, city, state) — submitting with any of them blank
+    /// is a guaranteed 400.
+    private func submitButton(
+        requiredFields: [String],
+        action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             if isSubmitting {
                 ProgressView().tint(PazColors.surface)
@@ -411,6 +527,12 @@ private struct AddressStepView: View {
             }
         }
         .buttonStyle(.pazPillPrimary)
-        .disabled(isSubmitting || number.trimmingCharacters(in: .whitespaces).isEmpty)
+        .disabled(isSubmitting || requiredFields.contains(where: \.isBlank))
+    }
+}
+
+private extension String {
+    var isBlank: Bool {
+        trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }

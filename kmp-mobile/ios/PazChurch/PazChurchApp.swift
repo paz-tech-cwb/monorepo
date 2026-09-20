@@ -49,6 +49,15 @@ struct PazChurchApp: App {
                         .onAppear {
                             pushService.requestPermissionAndRegister()
                         }
+                        // Onboarding resumes on relaunch/session-restore, not only on an
+                        // explicit sign-in. Presented from the root (not LoginView) because
+                        // a restored session never shows LoginView.
+                        .fullScreenCover(isPresented: $authCoordinator.showOnboardingOnRestore) {
+                            OnboardingView(
+                                repository: IosAppContainer.shared.onboardingRepository,
+                                onFinished: { authCoordinator.showOnboardingOnRestore = false }
+                            )
+                        }
                 }
             }
             .pazMeshBackground()

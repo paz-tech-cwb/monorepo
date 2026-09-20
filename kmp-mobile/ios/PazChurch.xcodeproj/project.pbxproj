@@ -80,6 +80,7 @@
 		D801CBE1B82319E0DA01E3CF /* MemberJourneyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACF273449137A8036EAB8D4 /* MemberJourneyView.swift */; };
 		DA3D9622A5DD25011AA5D4BF /* playfair_display_extrabold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = EF907E68FA85FA69FAE6B591 /* playfair_display_extrabold.ttf */; };
 		DBED4836D8DD1B07E3FBB55E /* PazChurchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8ED14052DB30DEC694C772C /* PazChurchApp.swift */; };
+		AA2200000000000000000201 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2200000000000000000200 /* AppConfig.swift */; };
 		E111D004E3CD35D07B1252C8 /* AuthenticationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0E4F5F057D2C920865C94F /* AuthenticationCoordinator.swift */; };
 		EBE6B3F681DC476EBACABABD /* LifeGroupStudyDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F688FE786E3B4822974AA197 /* LifeGroupStudyDetailView.swift */; };
 		EC47F67C306E4116B92C805C /* LifeGroupStudyListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81F5F9C4D6F647AB9C4522FC /* LifeGroupStudyListView.swift */; };
@@ -154,6 +155,7 @@
 		B8DBE4246EB16A5334D999BD /* PazChurch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PazChurch.entitlements; sourceTree = "<group>"; };
 		BABD41D3E08C6B07A350D39C /* PazMeshBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazMeshBackground.swift; sourceTree = "<group>"; };
 		BACF273449137A8036EAB8D4 /* MemberJourneyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemberJourneyView.swift; sourceTree = "<group>"; };
+		AA2200000000000000000200 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		BB0E4F5F057D2C920865C94F /* AuthenticationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationCoordinator.swift; sourceTree = "<group>"; };
 		BB22CC33DD44EE55FF66AA12 /* LifeGroupPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupPickerSheet.swift; sourceTree = "<group>"; };
 		BD36BC4FF7F143F2A22DBA8E /* GlassBlurBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassBlurBackground.swift; sourceTree = "<group>"; };
@@ -215,6 +217,14 @@
 				CC33DD44EE55FF66AA11BB23 /* SectorPickerSheet.swift */,
 			);
 			path = Formularios;
+			sourceTree = "<group>";
+		};
+		AA2200000000000000000202 /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				AA2200000000000000000200 /* AppConfig.swift */,
+			);
+			path = Configuration;
 			sourceTree = "<group>";
 		};
 		1BC6EACBFB5AD78E6BB372DE /* Services */ = {
@@ -392,6 +402,7 @@
 				B8DBE4246EB16A5334D999BD /* PazChurch.entitlements */,
 				E8ED14052DB30DEC694C772C /* PazChurchApp.swift */,
 				6A3874DF13A8A30F5D645BEA /* Components */,
+				AA2200000000000000000202 /* Configuration */,
 				AA2200000000000000000099 /* Extensions */,
 				31E49572560B21B7A113C48B /* Features */,
 				8101B69056A184DB1D1724D1 /* Navigation */,
@@ -616,6 +627,7 @@
 				32B8A8B3FD0A30A168DDE7CB /* AgendaListView.swift in Sources */,
 				F44D2FA2EA14E8B29A866F25 /* AppDelegate.swift in Sources */,
 				16B832FD065C7338B522ABFA /* AppThemeManager.swift in Sources */,
+				AA2200000000000000000201 /* AppConfig.swift in Sources */,
 				E111D004E3CD35D07B1252C8 /* AuthenticationCoordinator.swift in Sources */,
 				4A82A695C9D2A71805FA21F2 /* EditProfileView.swift in Sources */,
 				65323BAB5459A81F682BE7B1 /* EditProfileViewModel.swift in Sources */,
