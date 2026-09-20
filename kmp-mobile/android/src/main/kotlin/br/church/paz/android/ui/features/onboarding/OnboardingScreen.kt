@@ -3,7 +3,6 @@ package br.church.paz.android.ui.features.onboarding
 import android.net.Uri
 import android.widget.VideoView
 import androidx.compose.foundation.isSystemInDarkTheme
-import br.church.paz.android.BuildConfig
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import br.church.paz.android.BuildConfig
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.CepLookupOutcome
