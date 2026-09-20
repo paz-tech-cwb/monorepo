@@ -39,6 +39,16 @@ final class OnboardingCoordinator {
     private let repository: OnboardingRepository
     private let pendingBirthDateLogin: ((String) async -> Result<Void, Error>)?
 
+    /// True while the Birthday step must be answered to complete a deferred sign-in retry.
+    /// In that case there is no session yet at all — skipping would abandon sign-in entirely,
+    /// leaving the user looking logged out, and would also never learn whether WhatsApp/address
+    /// are missing (that's only knowable once the retry succeeds and `missingSteps()` can be
+    /// called against an authenticated session). The Birthday step must not offer a skip
+    /// affordance in this case.
+    var isBirthdayRequiredForLogin: Bool {
+        pendingBirthDateLogin != nil
+    }
+
     init(
         repository: OnboardingRepository,
         pendingBirthDateLogin: ((String) async -> Result<Void, Error>)? = nil
@@ -80,6 +90,9 @@ final class OnboardingCoordinator {
     }
 
     func onSkipCurrentStep() {
+        // Defense in depth: the view hides the skip affordance in this case, but never allow
+        // skipping past a still-pending sign-in even if this were somehow called anyway.
+        guard !(currentStep == .birthday && isBirthdayRequiredForLogin) else { return }
         cepResult = nil
         errorMessage = nil
         advance()

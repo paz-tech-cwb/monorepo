@@ -22,6 +22,15 @@ struct OnboardingView: View {
         self.onFinished = onFinished
     }
 
+    /// `nil` while the Birthday step is completing a deferred sign-in retry — it cannot be
+    /// skipped in that case, since there is no session yet to fall back to.
+    private var birthdaySkipAction: (() -> Void)? {
+        if coordinator.isBirthdayRequiredForLogin {
+            return nil
+        }
+        return coordinator.onSkipCurrentStep
+    }
+
     var body: some View {
         NavigationStack {
             Group {
@@ -44,7 +53,7 @@ struct OnboardingView: View {
                         isSubmitting: coordinator.isSubmitting,
                         errorMessage: coordinator.errorMessage,
                         onSubmit: { date in Task { await coordinator.onBirthdaySubmitted(date) } },
-                        onSkip: coordinator.onSkipCurrentStep
+                        onSkip: birthdaySkipAction
                     )
                 } else if coordinator.currentStep == .whatsapp {
                     WhatsappStepView(
@@ -254,7 +263,9 @@ private struct BirthdayStepView: View {
     let isSubmitting: Bool
     let errorMessage: String?
     let onSubmit: (String) -> Void
-    let onSkip: () -> Void
+    /// `nil` while this step is completing a deferred sign-in retry — birthday is required to
+    /// resolve/create the account in that case, so it cannot be skipped.
+    let onSkip: (() -> Void)?
 
     @State private var birthDate = Date()
 
@@ -307,11 +318,13 @@ private struct BirthdayStepView: View {
             .buttonStyle(.pazPillPrimary)
             .disabled(isSubmitting)
 
-            Button("Pular por agora", action: onSkip)
-                .font(PazTypography.labelLarge)
-                .foregroundStyle(PazColors.slate)
-                .frame(maxWidth: .infinity)
-                .disabled(isSubmitting)
+            if let onSkip {
+                Button("Pular por agora", action: onSkip)
+                    .font(PazTypography.labelLarge)
+                    .foregroundStyle(PazColors.slate)
+                    .frame(maxWidth: .infinity)
+                    .disabled(isSubmitting)
+            }
         }
         .padding(PazSpacing.xl)
         .navigationTitle("Data de nascimento")

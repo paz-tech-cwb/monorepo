@@ -90,7 +90,12 @@ fun OnboardingScreen(
                             isSubmitting = state.isSubmitting,
                             errorMessage = state.errorMessage,
                             onSubmit = viewModel::onBirthdaySubmitted,
-                            onSkip = viewModel::onSkipCurrentStep,
+                            onSkip =
+                                if (viewModel.isBirthdayRequiredForLogin) {
+                                    null
+                                } else {
+                                    viewModel::onSkipCurrentStep
+                                },
                             onDismissError = viewModel::onDismissError,
                         )
                     OnboardingStep.Whatsapp ->
@@ -286,7 +291,9 @@ private fun BirthdayStep(
     isSubmitting: Boolean,
     errorMessage: String?,
     onSubmit: (String) -> Unit,
-    onSkip: () -> Unit,
+    // Null while this step is completing a deferred sign-in retry — birthday is required to
+    // resolve/create the account in that case, so it cannot be skipped.
+    onSkip: (() -> Unit)?,
     onDismissError: () -> Unit,
 ) {
     var isPickerOpen by remember { mutableStateOf(false) }
