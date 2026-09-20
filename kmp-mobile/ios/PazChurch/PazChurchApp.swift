@@ -23,7 +23,7 @@ struct PazChurchApp: App {
         // Debug keeps IosAppContainer's default (http://localhost:3001/api — the
         // Simulator shares the host Mac's network stack, so this needs no per-network IP).
         #if !DEBUG
-        IosAppContainer.shared.baseUrl = "http://znzcybe6t18zwapiy9hytma5.62.238.45.195.sslip.io/api"
+        IosAppContainer.shared.baseUrl = AppConfig.baseUrl
         #endif
 
         let service = PushNotificationService.shared

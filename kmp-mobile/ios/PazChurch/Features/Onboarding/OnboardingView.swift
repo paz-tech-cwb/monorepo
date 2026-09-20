@@ -124,12 +124,7 @@ private struct OnboardingLoadErrorView: View {
 private struct WelcomeVideoStepView: View {
     let onFinished: () -> Void
 
-    // TODO(task-6): replace with a real value sourced from app config once that's wired up.
-    private static let placeholderVideoURL = URL(
-        string: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-    )!
-
-    @State private var player = AVPlayer(url: WelcomeVideoStepView.placeholderVideoURL)
+    @State private var player = AVPlayer(url: AppConfig.onboardingVideoURL)
     @State private var didEndObserverToken: NSObjectProtocol?
 
     var body: some View {

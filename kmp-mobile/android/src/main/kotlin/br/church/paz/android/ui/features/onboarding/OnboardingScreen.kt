@@ -3,6 +3,7 @@ package br.church.paz.android.ui.features.onboarding
 import android.net.Uri
 import android.widget.VideoView
 import androidx.compose.foundation.isSystemInDarkTheme
+import br.church.paz.android.BuildConfig
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,9 +42,6 @@ import br.church.paz.shared.domain.model.OnboardingStep
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
-// TODO(task-7): replace this hardcoded placeholder with a BuildConfig-sourced
-// value once the real welcome video is hosted (see task-4 brief §"Video source").
-private const val PLACEHOLDER_ONBOARDING_VIDEO_URL = "https://example.com/placeholder-onboarding-video.mp4"
 
 @Composable
 fun OnboardingScreen(
@@ -126,7 +124,7 @@ private fun WelcomeVideoStep(onFinished: () -> Unit) {
             modifier = Modifier.fillMaxSize(),
             factory = { context ->
                 VideoView(context).apply {
-                    setVideoURI(Uri.parse(PLACEHOLDER_ONBOARDING_VIDEO_URL))
+                    setVideoURI(Uri.parse(BuildConfig.ONBOARDING_VIDEO_URL))
                     setOnPreparedListener {
                         isBuffering = false
                         start()
