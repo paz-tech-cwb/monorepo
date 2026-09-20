@@ -68,12 +68,14 @@ class LoginViewModel(
                 .onSuccess {
                     pendingIdToken = null
                     pendingProvider = null
-                    // On a fetch failure, show onboarding anyway: OnboardingViewModel runs
-                    // the same check and owns the retry state, whereas going straight Home
-                    // would silently skip onboarding for a member who still needs it.
+                    // A failed missingSteps() fetch here falls through to Home rather than
+                    // trapping the user behind OnboardingScreen's error state (which has no
+                    // escape hatch) — consistent with SplashViewModel.resumeAuthenticatedSession
+                    // and iOS's checkOnboardingOnRestore/signIn: the next successful check
+                    // re-prompts if steps are still missing.
                     val missingSteps =
                         runCatching { onboardingRepository.missingSteps() }.getOrNull()
-                    if (missingSteps == null || missingSteps.isNotEmpty()) {
+                    if (!missingSteps.isNullOrEmpty()) {
                         _uiState.update { it.copy(showOnboarding = true) }
                     } else {
                         _effect.send(LoginEffect.NavigateToHome)

@@ -13,10 +13,14 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeoutOrNull
 
 data class SplashUiState(
     val showOnboarding: Boolean = false,
 )
+
+/** Cap on the /users/me-backed missing-steps check so a slow (not failed) connection can't hang the splash screen. */
+private const val MISSING_STEPS_TIMEOUT_MS = 6_000L
 
 class SplashViewModel(
     private val authRepository: AuthRepository,
@@ -81,7 +85,10 @@ class SplashViewModel(
      * offline cold start must still open the app.
      */
     private suspend fun resumeAuthenticatedSession() {
-        val missingSteps = runCatching { onboardingRepository.missingSteps() }.getOrNull()
+        val missingSteps =
+            runCatching {
+                withTimeoutOrNull(MISSING_STEPS_TIMEOUT_MS) { onboardingRepository.missingSteps() }
+            }.getOrNull()
         if (!missingSteps.isNullOrEmpty()) {
             _uiState.update { it.copy(showOnboarding = true) }
         } else {
