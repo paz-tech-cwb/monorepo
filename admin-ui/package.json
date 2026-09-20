@@ -51,7 +51,7 @@
     "embla-carousel-react": "8.5.1",
     "firebase": "^12.8.0",
     "geist": "latest",
-    "html2canvas": "^1.4.1",
+    "html2canvas-pro": "^2.4.4",
     "input-otp": "1.4.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^0.454.0",
