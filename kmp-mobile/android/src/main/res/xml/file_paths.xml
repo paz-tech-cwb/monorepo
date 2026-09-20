@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Matches File(context.cacheDir, "shared_images") used when exporting a
+         report as an image to share. -->
+    <cache-path name="shared_images" path="shared_images/"/>
+</paths>

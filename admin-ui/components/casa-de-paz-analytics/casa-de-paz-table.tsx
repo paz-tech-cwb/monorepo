@@ -8,7 +8,7 @@ import { useCasaDePazSubmissions } from "@/lib/hooks/use-casa-de-paz-analytics"
 import { useSectors } from "@/lib/hooks/use-sectors"
 import type { CasaDePazFilterState } from "./casa-de-paz-analytics-filters"
 
-const COLUMN_COUNT = 10
+const COLUMN_COUNT = 9
 
 function formatDate(value: string): string {
   const [year, month, day] = value.split("-")
@@ -16,16 +16,12 @@ function formatDate(value: string): string {
   return `${day}/${month}/${year}`
 }
 
-function periodToYm(period: string): number {
-  const [year, month] = period.split("-").map(Number)
-  return year * 12 + (month - 1)
-}
-
 interface CasaDePazTableProps {
   filters: CasaDePazFilterState
-  /** Same "YYYY-MM" window the summary endpoint resolved for these filters
-   * — reused here instead of re-deriving the window logic client-side,
-   * since the raw submissions endpoint has no server-side date filtering. */
+  /** Same exact "YYYY-MM-DD" range the summary endpoint resolved for these
+   * filters — reused here instead of re-deriving the window logic
+   * client-side, since the raw submissions endpoint has no server-side
+   * date filtering. ISO date strings compare correctly lexicographically. */
   range?: { from: string; to: string }
 }
 
@@ -37,13 +33,8 @@ export function CasaDePazTable({ filters, range }: CasaDePazTableProps) {
 
   const filtered = useMemo(() => {
     if (!range) return submissions
-    const fromYm = periodToYm(range.from)
-    const toYm = periodToYm(range.to)
     return submissions
-      .filter((s) => {
-        const ym = periodToYm(s.date.slice(0, 7))
-        return ym >= fromYm && ym <= toYm
-      })
+      .filter((s) => s.date >= range.from && s.date <= range.to)
       .sort((a, b) => (a.date < b.date ? 1 : -1))
   }, [submissions, range])
 
@@ -59,7 +50,7 @@ export function CasaDePazTable({ filters, range }: CasaDePazTableProps) {
         </p>
       ) : filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground py-8 text-center">
-          Nenhum registro de Casa de Paz encontrado para {filters.year}, últimos {filters.months} meses.
+          Nenhum registro de Casa de Paz encontrado entre {filters.from} e {filters.to}.
         </p>
       ) : (
         <Table>
@@ -74,7 +65,6 @@ export function CasaDePazTable({ filters, range }: CasaDePazTableProps) {
               <TableHead>Crianças</TableHead>
               <TableHead>Convidados</TableHead>
               <TableHead>Conversões</TableHead>
-              <TableHead>Semana</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -89,7 +79,6 @@ export function CasaDePazTable({ filters, range }: CasaDePazTableProps) {
                 <TableCell>{s.kids}</TableCell>
                 <TableCell>{s.guests}</TableCell>
                 <TableCell>{s.conversions}</TableCell>
-                <TableCell>{s.week_number ?? "—"}</TableCell>
               </TableRow>
             ))}
           </TableBody>

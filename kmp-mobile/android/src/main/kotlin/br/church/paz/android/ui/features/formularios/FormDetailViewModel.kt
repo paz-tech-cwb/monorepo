@@ -116,6 +116,7 @@ class FormDetailViewModel(
                 ),
             )
         }
+        onPickerQueryChanged("") // load the full list immediately, before the user searches
     }
 
     fun closePicker() {
@@ -186,7 +187,7 @@ class FormDetailViewModel(
             val result = submitForm(form.type, fields)
             result
                 .onSuccess {
-                    _uiState.update { it.copy(isSubmitting = false) }
+                    _uiState.update { it.copy(isSubmitting = false, submitSuccess = true) }
                     _effect.send(FormDetailEffect.SubmitSuccess)
                 }.onFailure { e ->
                     _uiState.update {
@@ -354,7 +355,6 @@ class FormDetailViewModel(
                             kids = f.int("kids"),
                             guests = f.int("guests"),
                             conversions = f.int("conversions"),
-                            weekNumber = f.intOrNull("week_number"),
                             meetingDay = f.opt("meeting_day"),
                             meetingTime = f.opt("meeting_time"),
                         ),

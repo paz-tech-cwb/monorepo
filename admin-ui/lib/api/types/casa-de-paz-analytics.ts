@@ -48,8 +48,6 @@ export interface CasaDePazByTime {
 }
 
 export interface CasaDePazAnalyticsSummary {
-  year: number
-  months: 3 | 6 | 9 | 12
   range: CasaDePazAnalyticsRange
   totals: CasaDePazAnalyticsTotals
   series: CasaDePazSeriesPoint[]
@@ -59,8 +57,10 @@ export interface CasaDePazAnalyticsSummary {
 }
 
 export interface CasaDePazAnalyticsSummaryQuery {
-  year: number
-  months: 3 | 6 | 9 | 12
+  /** "YYYY-MM-DD" — omit to default to 6 months back (start of month). */
+  from?: string
+  /** "YYYY-MM-DD" — omit to default to today. */
+  to?: string
 }
 
 // Raw submission shape returned by the generic forms endpoint
@@ -75,7 +75,6 @@ export interface CasaDePazReportSubmission {
   kids: number
   guests: number
   conversions: number
-  week_number: number | null
   meeting_day: string | null
   meeting_time: string | null
   created_at: string

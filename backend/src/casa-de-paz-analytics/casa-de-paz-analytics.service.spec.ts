@@ -1,6 +1,5 @@
 import { EntityManager } from 'typeorm';
 import { CasaDePazAnalyticsService } from './casa-de-paz-analytics.service';
-import { CasaDePazSummaryQueryDto } from './dto/casa-de-paz-summary-query.dto';
 
 interface MockQueryBuilder {
   where: jest.Mock<MockQueryBuilder, unknown[]>;
@@ -68,14 +67,15 @@ function zeroTotalsRaw() {
   return { houses: '0', adults: '0', kids: '0', guests: '0', conversions: '0' };
 }
 
+// A fixed 6-month range (2026-04-01 .. 2026-09-30) used by tests that don't
+// care about the exact window, just that one is applied consistently.
+const FIXED_RANGE = { from: '2026-04-01', to: '2026-09-30' };
+
 describe('CasaDePazAnalyticsService', () => {
   describe('series zero-fill', () => {
     it('zero-fills all months in the window when there is no data', async () => {
       const { service } = createService({});
-      const result = await service.summary({
-        year: 2026,
-        months: 6,
-      } as CasaDePazSummaryQueryDto);
+      const result = await service.summary(FIXED_RANGE);
 
       expect(result.series).toHaveLength(6);
       expect(result.series.every((r) => r.houses === 0)).toBe(true);
@@ -94,10 +94,7 @@ describe('CasaDePazAnalyticsService', () => {
           conversions: '0',
         },
       });
-      const result = await service.summary({
-        year: 2026,
-        months: 6,
-      } as CasaDePazSummaryQueryDto);
+      const result = await service.summary(FIXED_RANGE);
 
       expect(result.totals.guests).toBe(0);
       expect(result.totals.conversion_rate).toBe(0);
@@ -113,10 +110,7 @@ describe('CasaDePazAnalyticsService', () => {
           conversions: '5',
         },
       });
-      const result = await service.summary({
-        year: 2026,
-        months: 6,
-      } as CasaDePazSummaryQueryDto);
+      const result = await service.summary(FIXED_RANGE);
 
       expect(result.totals.conversion_rate).toBeCloseTo(0.25);
     });
@@ -149,10 +143,7 @@ describe('CasaDePazAnalyticsService', () => {
           },
         ],
       });
-      const result = await service.summary({
-        year: 2026,
-        months: 6,
-      } as CasaDePazSummaryQueryDto);
+      const result = await service.summary(FIXED_RANGE);
 
       expect(result.by_day.map((r) => r.label)).toEqual([
         'Domingo',
@@ -178,10 +169,7 @@ describe('CasaDePazAnalyticsService', () => {
           },
         ],
       });
-      const result = await service.summary({
-        year: 2026,
-        months: 6,
-      } as CasaDePazSummaryQueryDto);
+      const result = await service.summary(FIXED_RANGE);
 
       expect(result.by_time).toEqual([
         { label: '19:00', houses: 7, adults: 40, guests: 10, conversions: 2 },
@@ -201,10 +189,7 @@ describe('CasaDePazAnalyticsService', () => {
         conversions: '1',
       }));
       const { service } = createService({ bySector: manySectors });
-      const result = await service.summary({
-        year: 2026,
-        months: 6,
-      } as CasaDePazSummaryQueryDto);
+      const result = await service.summary(FIXED_RANGE);
 
       expect(result.by_sector).toHaveLength(11);
       const others = result.by_sector.find((r) => r.label === 'Outros')!;
@@ -214,29 +199,36 @@ describe('CasaDePazAnalyticsService', () => {
   });
 
   describe('range computation', () => {
-    it('spans back across a year boundary when months=3 lands before January', async () => {
-      // The window ends at the last month of `year` (Dec 2025 here, since
-      // 2025 !== the mocked "current" year), so 3 months back is
-      // Oct/Nov/Dec 2025 — no boundary crossing in this case, but if the
-      // window's start month index goes negative the from/to math must
-      // still land in the correct prior year.
+    it('echoes back an explicit from/to range unchanged', async () => {
       const { service } = createService({});
       const result = await service.summary({
-        year: 2025,
-        months: 3,
-      } as CasaDePazSummaryQueryDto);
+        from: '2025-10-01',
+        to: '2025-12-31',
+      });
 
-      expect(result.range).toEqual({ from: '2025-10', to: '2025-12' });
+      expect(result.range).toEqual({ from: '2025-10-01', to: '2025-12-31' });
+      // Oct, Nov, Dec = 3 monthly buckets
+      expect(result.series).toHaveLength(3);
     });
 
-    it('computes a range that crosses into the prior year for a 12-month window', async () => {
+    it('defaults `from` to 6 months back (start of month) when omitted', async () => {
       const { service } = createService({});
-      const result = await service.summary({
-        year: 2025,
-        months: 12,
-      } as CasaDePazSummaryQueryDto);
+      const result = await service.summary({ to: '2025-06-15' });
 
-      expect(result.range).toEqual({ from: '2025-01', to: '2025-12' });
+      // to=2025-06-15 -> default from = first day of the month 5 months
+      // back = 2025-01-01; series spans Jan..Jun = 6 monthly buckets.
+      expect(result.range.from).toBe('2025-01-01');
+      expect(result.range.to).toBe('2025-06-15');
+      expect(result.series).toHaveLength(6);
+    });
+
+    it('defaults `to` to today when omitted', async () => {
+      const { service } = createService({});
+      const result = await service.summary({ from: '2020-01-01' });
+
+      const today = new Date().toISOString().slice(0, 10);
+      expect(result.range.to).toBe(today);
+      expect(result.range.from).toBe('2020-01-01');
     });
   });
 });

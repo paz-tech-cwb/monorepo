@@ -7,6 +7,7 @@ import { Home, Users2, Baby, UserPlus, Sparkles, Percent } from "lucide-react"
 import { useCasaDePazSummary } from "@/lib/hooks/use-casa-de-paz-analytics"
 import {
   CasaDePazAnalyticsFilters,
+  defaultCasaDePazFilterState,
   type CasaDePazFilterState,
 } from "@/components/casa-de-paz-analytics/casa-de-paz-analytics-filters"
 import { CasaDePazTrendChart } from "@/components/casa-de-paz-analytics/casa-de-paz-trend-chart"
@@ -14,10 +15,7 @@ import { CasaDePazBreakdownCharts } from "@/components/casa-de-paz-analytics/cas
 import { CasaDePazTable } from "@/components/casa-de-paz-analytics/casa-de-paz-table"
 
 export function CasaDePazReport() {
-  const [filters, setFilters] = useState<CasaDePazFilterState>({
-    year: new Date().getFullYear(),
-    months: 6,
-  })
+  const [filters, setFilters] = useState<CasaDePazFilterState>(defaultCasaDePazFilterState())
 
   const { data, isLoading, isError } = useCasaDePazSummary(filters)
 

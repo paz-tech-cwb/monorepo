@@ -11,6 +11,21 @@ import { FormSubmissionAuditService } from '../forms-core/services/form-submissi
 
 const SLUG = 'casa-de-paz-reports';
 
+export interface CasaDePazReportResponse {
+  id: string;
+  date: string;
+  facilitator: string;
+  sector_id: number;
+  adults: number;
+  kids: number;
+  guests: number;
+  conversions: number;
+  meeting_day: string | null;
+  meeting_time: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
 @Injectable()
 export class CasaDePazReportsService {
   constructor(
@@ -20,10 +35,34 @@ export class CasaDePazReportsService {
     private readonly audit: FormSubmissionAuditService,
   ) {}
 
+  // The global ClassSerializerInterceptor defaults to excludeAll +
+  // excludeExtraneousValues, which would silently serialize a raw
+  // CasaDePazReport entity (no @Expose() decorators) down to `{}`, and even
+  // with @SerializeOptions(exposeAll) on the controller the entity's
+  // camelCase properties wouldn't match the snake_case wire format every
+  // other endpoint uses — map to a plain snake_case object explicitly
+  // instead, same pattern as AreasService/SectorsService.
+  private toResponse(m: CasaDePazReport): CasaDePazReportResponse {
+    return {
+      id: m.id,
+      date: m.date,
+      facilitator: m.facilitator,
+      sector_id: m.sectorId,
+      adults: m.adults,
+      kids: m.kids,
+      guests: m.guests,
+      conversions: m.conversions,
+      meeting_day: m.meetingDay,
+      meeting_time: m.meetingTime,
+      created_at: m.createdAt,
+      updated_at: m.updatedAt,
+    };
+  }
+
   async create(
     dto: CreateCasaDePazReportDto,
     actorId: number,
-  ): Promise<CasaDePazReport> {
+  ): Promise<CasaDePazReportResponse> {
     const entity = await this.repo.save(
       this.repo.create({
         date: dto.date,
@@ -33,7 +72,6 @@ export class CasaDePazReportsService {
         kids: dto.kids ?? 0,
         guests: dto.guests ?? 0,
         conversions: dto.conversions ?? 0,
-        weekNumber: dto.weekNumber ?? null,
         meetingDay: dto.meetingDay ?? null,
         meetingTime: dto.meetingTime ?? null,
         submittedBy: { id: actorId } as User,
@@ -45,7 +83,7 @@ export class CasaDePazReportsService {
       actorId,
       action: 'create',
     });
-    return entity;
+    return this.toResponse(entity);
   }
 
   // This entity has no life_group_id to scope by, so unlike
@@ -56,12 +94,13 @@ export class CasaDePazReportsService {
   async list(
     scope: ResolvedScope,
     actor: { id: number },
-  ): Promise<CasaDePazReport[]> {
+  ): Promise<CasaDePazReportResponse[]> {
     const qb = this.repo.createQueryBuilder('f').where('f.deleted_at IS NULL');
     if (!scope.unrestricted) {
       qb.andWhere('f.submitted_by_id = :actorId', { actorId: actor.id });
     }
-    return qb.orderBy('f.created_at', 'DESC').getMany();
+    const rows = await qb.orderBy('f.created_at', 'DESC').getMany();
+    return rows.map((r) => this.toResponse(r));
   }
 
   // scope/actor are optional so internal callers (update/softDelete) that
@@ -69,7 +108,7 @@ export class CasaDePazReportsService {
   // GET :id and :id/audit routes MUST always pass both, otherwise any
   // authenticated user could read another actor's submission/audit trail by
   // guessing its id — the same restriction list() already applies.
-  async findOne(
+  private async findEntity(
     id: string,
     scope?: ResolvedScope,
     actor?: { id: number },
@@ -86,12 +125,20 @@ export class CasaDePazReportsService {
     return m;
   }
 
+  async findOne(
+    id: string,
+    scope?: ResolvedScope,
+    actor?: { id: number },
+  ): Promise<CasaDePazReportResponse> {
+    return this.toResponse(await this.findEntity(id, scope, actor));
+  }
+
   async update(
     id: string,
     dto: UpdateCasaDePazReportDto,
     actor: { id: number; roleSlug: string },
-  ): Promise<CasaDePazReport> {
-    const m = await this.findOne(id);
+  ): Promise<CasaDePazReportResponse> {
+    const m = await this.findEntity(id);
     this.policy.assertCanEdit(actor, {
       submittedById: m.submittedBy.id,
       createdAt: m.createdAt,
@@ -106,7 +153,7 @@ export class CasaDePazReportsService {
       action: 'update',
       diff: dto as Record<string, unknown>,
     });
-    return saved;
+    return this.toResponse(saved);
   }
 
   async softDelete(

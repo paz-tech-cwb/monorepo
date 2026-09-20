@@ -59,6 +59,7 @@ enum PazColors {
     static let primary = pazPrimary
     static let onSurface = ink
     static let error = Color(red: 0.78, green: 0.16, blue: 0.16)
+    static let success = Color(red: 0.16, green: 0.62, blue: 0.32)
 
     // MARK: - Semantic
 

@@ -75,6 +75,7 @@ data class FormDetailUiState(
     val selfOrSearchIsSearch: Map<String, Boolean> = emptyMap(), // key → true if in search mode
     val stepIndex: Int = 0, // current question index in step-by-step mode
     val stepError: String? = null, // validation error for the current step's field
+    val submitSuccess: Boolean = false, // true after a successful submit — shows the success screen
 )
 
 sealed class FormDetailEffect {
@@ -266,7 +267,6 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
                 FormFieldDef("kids", "Crianças", "0", fieldType = FormFieldType.INTEGER),
                 FormFieldDef("guests", "Convidados", "0", fieldType = FormFieldType.INTEGER),
                 FormFieldDef("conversions", "Conversões", "0", fieldType = FormFieldType.INTEGER),
-                FormFieldDef("week_number", "Semana", fieldType = FormFieldType.INTEGER),
             )
     }
 

@@ -26,8 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -39,9 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,20 +49,20 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazButton
-import br.church.paz.android.ui.components.PazButtonVariant
 import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazSkeleton
+import br.church.paz.android.ui.components.PazSuccessState
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazSpacing
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 /**
- * One-question-per-screen fill flow. Voltar/Continuar (or Enviar on the last step) are pinned
- * above the keyboard via [Scaffold]'s bottomBar + [Modifier.imePadding], never requiring
- * scrolling. Falls back to the scrollable [FormDetailScreen] via "Ver todas as perguntas".
+ * One-question-per-screen fill flow — the only way to fill a form in this app. Continuar (or
+ * Enviar on the last step) is pinned above the keyboard via [Scaffold]'s bottomBar +
+ * [Modifier.imePadding], never requiring scrolling. The header's back arrow steps backward
+ * through questions and only leaves the screen once at the first question.
  */
 @Composable
 fun FormStepScreen(
@@ -82,10 +78,11 @@ fun FormStepScreen(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                FormDetailEffect.SubmitSuccess -> {
-                    snackbarHostState.showSnackbar("Formulário enviado com sucesso!")
-                    navController.popBackStack()
-                }
+                // Submission success now shows a dedicated success screen (see
+                // uiState.submitSuccess below) instead of a snackbar that
+                // instantly popped the screen — that gave no real confirmation
+                // the submission actually went through.
+                FormDetailEffect.SubmitSuccess -> Unit
                 FormDetailEffect.NavigateBack -> navController.popBackStack()
             }
         }
@@ -99,10 +96,9 @@ fun FormStepScreen(
     Scaffold(
         containerColor = Color.Transparent,
         bottomBar = {
-            if (!uiState.isLoading && uiState.form != null) {
+            if (!uiState.isLoading && uiState.form != null && !uiState.submitSuccess) {
                 StepBottomBar(
                     uiState = uiState,
-                    onBack = { if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onBack() },
                     onNext = {
                         val fieldDefs = uiState.form?.type?.fieldDefs().orEmpty()
                         val isLast = uiState.stepIndex == fieldDefs.size - 1
@@ -119,13 +115,16 @@ fun FormStepScreen(
                     .background(PazGradients.Hero)
                     .statusBarsPadding(),
             ) {
-                StepHeader(
-                    title = uiState.form?.title ?: "Formulário",
-                    onBack = { viewModel.onBack() },
-                    onShowAllQuestions = {
-                        navController.navigate(Screen.FormDetail.createRoute(formId))
-                    },
-                )
+                if (!uiState.submitSuccess) {
+                    StepHeader(
+                        title = uiState.form?.title ?: "Formulário",
+                        // The header back arrow steps backward through questions instead of
+                        // always leaving the screen — only pops at the first question.
+                        onBack = {
+                            if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onBack()
+                        },
+                    )
+                }
             }
 
             Box(
@@ -135,6 +134,8 @@ fun FormStepScreen(
                     .background(MaterialTheme.colorScheme.background),
             ) {
                 when {
+                    uiState.submitSuccess ->
+                        PazSuccessState(onDone = { navController.popBackStack() })
                     uiState.isLoading -> StepLoadingState()
                     uiState.form == null ->
                         PazErrorState(
@@ -201,13 +202,20 @@ fun FormStepScreen(
     }
 }
 
+/** Strips a leading "Relatório de/do/da " so long catalog names (e.g. "Relatório de Casa de
+ * Paz") don't overflow the header — the step counter below already gives context. */
+private fun displayTitle(title: String): String {
+    for (prefix in listOf("Relatório de ", "Relatório do ", "Relatório da ")) {
+        if (title.startsWith(prefix)) return title.removePrefix(prefix)
+    }
+    return title
+}
+
 @Composable
 private fun StepHeader(
     title: String,
     onBack: () -> Unit,
-    onShowAllQuestions: () -> Unit,
 ) {
-    var menuExpanded by remember { mutableStateOf(false) }
     Row(
         Modifier
             .fillMaxWidth()
@@ -218,25 +226,11 @@ private fun StepHeader(
             Icon(Icons.AutoMirrored.Filled.ArrowBack, "back", tint = Color.White)
         }
         Text(
-            title,
+            displayTitle(title),
             style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
             modifier = Modifier.weight(1f),
             maxLines = 1,
         )
-        Box {
-            IconButton(onClick = { menuExpanded = true }) {
-                Text("⋮", style = MaterialTheme.typography.headlineMedium.copy(color = Color.White))
-            }
-            DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                DropdownMenuItem(
-                    text = { Text("Ver todas as perguntas") },
-                    onClick = {
-                        menuExpanded = false
-                        onShowAllQuestions()
-                    },
-                )
-            }
-        }
     }
 }
 
@@ -309,6 +303,7 @@ private fun StepContent(
             focusRequester = if (def.fieldType.isTextInput) focusRequester else null,
             imeAction = if (isLast) ImeAction.Done else ImeAction.Next,
             onImeAction = onNextStep,
+            showLabel = false, // the big question headline above already names this field
         )
 
         val stepError = uiState.stepError ?: uiState.error
@@ -325,7 +320,6 @@ private fun StepContent(
 @Composable
 private fun StepBottomBar(
     uiState: FormDetailUiState,
-    onBack: () -> Unit,
     onNext: () -> Unit,
 ) {
     val fieldDefs = uiState.form?.type?.fieldDefs().orEmpty()
@@ -340,19 +334,10 @@ private fun StepBottomBar(
             .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
         horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
     ) {
-        if (uiState.stepIndex > 0) {
-            PazButton(
-                text = "Voltar",
-                onClick = onBack,
-                variant = PazButtonVariant.Secondary,
-                modifier = Modifier.weight(1f),
-                enabled = !uiState.isSubmitting,
-            )
-        }
         PazButton(
             text = if (isLast) (if (uiState.isSubmitting) "Enviando..." else "Enviar") else "Continuar",
             onClick = onNext,
-            modifier = Modifier.weight(if (uiState.stepIndex > 0) 1f else 2f),
+            modifier = Modifier.weight(1f),
             enabled = !uiState.isSubmitting,
         )
     }

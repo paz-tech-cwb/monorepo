@@ -39,5 +39,17 @@
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="paz_church_default"/>
 
+        <!-- Grants share-sheet targets temporary read access to exported report images
+             (cache/shared_images/) without exposing the whole app's file storage. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"/>
+        </provider>
+
     </application>
 </manifest>

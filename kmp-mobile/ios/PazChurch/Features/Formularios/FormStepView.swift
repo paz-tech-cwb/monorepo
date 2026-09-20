@@ -1,21 +1,33 @@
 import Shared
 import SwiftUI
 
-/// One-question-per-screen fill flow. Voltar/Continuar (or Enviar on the last step) are pinned
-/// above the keyboard via `.safeAreaInset(edge: .bottom)`. Falls back to the scrollable
-/// `FormDetailView` via a toolbar "Ver todas as perguntas" action.
+/// One-question-per-screen fill flow — the only way to fill a form in this app.
 ///
 /// Keyboard-flicker avoidance: a single, stable `TextField` instance (bound via a computed
 /// `Binding` onto `viewModel.fields[currentDef.key]`) stays mounted across text-input steps —
 /// we intentionally do NOT key it with `.id(stepIndex)` and do NOT use `TabView(.page)`, since
 /// either would recreate the responder and cause the keyboard to dismiss/reopen. Only the
 /// question label/description animates per step.
+///
+/// Back navigation: the nav bar's back button is replaced with one that steps backward through
+/// questions (matching the bottom bar's removed "Voltar" — the header back button now serves
+/// that role) and only pops the screen once at the first question.
 struct FormStepView: View {
     let form: FormCatalogItem
     @State private var viewModel: FormDetailViewModelIOS
     @FocusState private var inputFocused: Bool
     @Environment(\.dismiss) var dismiss
-    @State private var showAllQuestions = false
+
+    /// Strips a leading "Relatório de/do/da " so long catalog names (e.g. "Relatório de Casa
+    /// de Paz") don't overflow the nav bar title — the step counter already gives context.
+    private var displayTitle: String {
+        for prefix in ["Relatório de ", "Relatório do ", "Relatório da "] {
+            if form.title.hasPrefix(prefix) {
+                return String(form.title.dropFirst(prefix.count))
+            }
+        }
+        return form.title
+    }
 
     init(form: FormCatalogItem) {
         self.form = form
@@ -40,32 +52,37 @@ struct FormStepView: View {
                     message: "Este formulário não possui perguntas",
                     onRetry: { dismiss() }
                 )
+            } else if viewModel.submitSuccess {
+                SuccessStateView(onDone: { dismiss() })
             } else {
                 stepContent
             }
         }
-        .background(PazMeshBackground())
-        .navigationTitle(form.title)
+        .background(PazMeshBackground().ignoresSafeArea())
+        .navigationTitle(viewModel.submitSuccess ? "" : displayTitle)
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Ver todas as perguntas") { showAllQuestions = true }
-                    .font(PazTypography.labelMedium)
+            if !viewModel.submitSuccess {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: goBack) {
+                        Image(systemName: "chevron.left")
+                    }
+                }
             }
         }
-        .navigationDestination(isPresented: $showAllQuestions) {
-            FormDetailView(form: form)
-        }
-        .onChange(of: viewModel.submitSuccess) { _, success in
-            if success { dismiss() }
-        }
         // Applies only to the scroll view inside stepContent (see below) — the keyboard must
-        // stay open while the user taps Continuar/Voltar without the scroll gesture dismissing it.
+        // stay open while the user taps Continuar without the scroll gesture dismissing it.
         .scrollDismissesKeyboard(.never)
-        // System back-swipe/back-button behavior: at step > 0 we pop the whole screen (default
-        // NavigationStack pop gesture), matching this repo's NavigationStack convention rather
-        // than intercepting back to step backwards — Voltar in the bottom bar covers that case.
+    }
+
+    private func goBack() {
+        if viewModel.stepIndex > 0 {
+            viewModel.previousStep()
+        } else {
+            dismiss()
+        }
     }
 
     private var stepContent: some View {
@@ -96,6 +113,7 @@ struct FormStepView: View {
                     onChange: { viewModel.update(key: def.key, value: $0) },
                     onOpenPicker: viewModel.openPicker,
                     onSelfOrSearchMode: viewModel.setSelfOrSearchMode,
+                    showLabel: false, // the big question headline above already names this field
                     isFocused: def.fieldType.isTextInput ? $inputFocused : nil,
                     submitLabel: viewModel.isLastStep ? .done : .next,
                     onSubmitField: { viewModel.nextStep() }
@@ -150,24 +168,17 @@ struct FormStepView: View {
     @ViewBuilder
     private func bottomBar(defs: [FormFieldDef], stepIndex: Int) -> some View {
         let isLast = stepIndex == defs.count - 1
-        HStack(spacing: PazSpacing.md) {
-            if stepIndex > 0 {
-                Button("Voltar") { viewModel.previousStep() }
-                    .buttonStyle(.pazPillSecondary)
-                    .disabled(viewModel.isSubmitting)
-            }
-            Button(action: {
-                if isLast { viewModel.onSubmit() } else { viewModel.nextStep() }
-            }) {
-                Text(isLast ? (viewModel.isSubmitting ? "Enviando..." : "Enviar") : "Continuar")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.pazPillPrimary)
-            .disabled(viewModel.isSubmitting)
+        Button(action: {
+            if isLast { viewModel.onSubmit() } else { viewModel.nextStep() }
+        }) {
+            Text(isLast ? (viewModel.isSubmitting ? "Enviando..." : "Enviar") : "Continuar")
+                .frame(maxWidth: .infinity)
         }
+        .buttonStyle(.pazPillPrimary)
+        .disabled(viewModel.isSubmitting)
         .padding(.horizontal, PazSpacing.lg)
         .padding(.vertical, PazSpacing.md)
-        .background(.ultraThinMaterial)
+        .background(BottomBarBackground())
     }
 
     private var loadingState: some View {
@@ -179,6 +190,24 @@ struct FormStepView: View {
             Spacer()
         }
         .padding(PazSpacing.lg)
+    }
+}
+
+/// `.ultraThinMaterial` reads well over the dark mesh background but is too transparent for
+/// contrast in light mode, where the button nearly disappears into the background — use a
+/// more opaque surface there instead, leaving dark mode untouched.
+private struct BottomBarBackground: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        if colorScheme == .dark {
+            Rectangle().fill(.ultraThinMaterial)
+        } else {
+            Rectangle()
+                .fill(PazColors.surface.opacity(0.96))
+                .overlay(Rectangle().fill(.ultraThinMaterial).opacity(0.3))
+                .shadow(color: .black.opacity(0.08), radius: 8, y: -2)
+        }
     }
 }
 
