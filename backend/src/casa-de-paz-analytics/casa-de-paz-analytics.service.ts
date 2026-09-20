@@ -70,101 +70,156 @@ export class CasaDePazAnalyticsService {
         .andWhere('r.date >= :fromDate', { fromDate })
         .andWhere('r.date < :toDateExclusive', { toDateExclusive });
 
-    const [totalsRaw, seriesRaw, bySectorRaw, byDayRaw, byTimeRaw] =
-      await Promise.all([
-        baseQb()
-          .select('COUNT(*)', 'houses')
-          .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
-          .addSelect('COALESCE(SUM(r.kids), 0)', 'kids')
-          .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
-          .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
-          .getRawOne<{
-            houses: string;
-            adults: string;
-            kids: string;
-            guests: string;
-            conversions: string;
-          }>(),
-        baseQb()
-          .select("to_char(r.date, 'YYYY-MM')", 'period')
-          .addSelect('COUNT(*)', 'houses')
-          .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
-          .addSelect('COALESCE(SUM(r.kids), 0)', 'kids')
-          .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
-          .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
-          .groupBy("to_char(r.date, 'YYYY-MM')")
-          .orderBy("to_char(r.date, 'YYYY-MM')", 'ASC')
-          .getRawMany<{
-            period: string;
-            houses: string;
-            adults: string;
-            kids: string;
-            guests: string;
-            conversions: string;
-          }>(),
-        baseQb()
-          .innerJoin('sectors', 'sector', 'sector.id = r.sector_id')
-          .select('sector.name', 'label')
-          .addSelect('r.sector_id', 'sector_id')
-          .addSelect('COUNT(*)', 'houses')
-          .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
-          .addSelect('COALESCE(SUM(r.kids), 0)', 'kids')
-          .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
-          .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
-          .groupBy('sector.name')
-          .addGroupBy('r.sector_id')
-          .orderBy('houses', 'DESC')
-          .getRawMany<{
-            label: string;
-            sector_id: string;
-            houses: string;
-            adults: string;
-            kids: string;
-            guests: string;
-            conversions: string;
-          }>(),
-        baseQb()
-          .select('r.meeting_day', 'label')
-          .addSelect('COUNT(*)', 'houses')
-          .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
-          .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
-          .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
-          .andWhere('r.meeting_day IS NOT NULL')
-          .groupBy('r.meeting_day')
-          .getRawMany<{
-            label: string;
-            houses: string;
-            adults: string;
-            guests: string;
-            conversions: string;
-          }>(),
-        baseQb()
-          .select("substring(r.meeting_time, 1, 2) || ':00'", 'label')
-          .addSelect('COUNT(*)', 'houses')
-          .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
-          .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
-          .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
-          .andWhere('r.meeting_time IS NOT NULL')
-          .groupBy("substring(r.meeting_time, 1, 2) || ':00'")
-          .orderBy("substring(r.meeting_time, 1, 2) || ':00'", 'ASC')
-          .getRawMany<{
-            label: string;
-            houses: string;
-            adults: string;
-            guests: string;
-            conversions: string;
-          }>(),
-      ]);
+    // Previous period of equal length immediately preceding the selected
+    // window, used to compute growth (e.g. "+12% vs. previous period").
+    const windowMs = toDateExclusive.getTime() - fromDate.getTime();
+    const prevToDateExclusive = fromDate;
+    const prevFromDate = new Date(fromDate.getTime() - windowMs);
+    const prevQb = () =>
+      this.em
+        .createQueryBuilder(CasaDePazReport, 'r')
+        .where('r.deleted_at IS NULL')
+        .andWhere('r.date >= :prevFromDate', { prevFromDate })
+        .andWhere('r.date < :prevToDateExclusive', { prevToDateExclusive });
+
+    const [
+      totalsRaw,
+      seriesRaw,
+      bySectorRaw,
+      byDayRaw,
+      byTimeRaw,
+      prevTotalsRaw,
+    ] = await Promise.all([
+      baseQb()
+        .select('COUNT(*)', 'houses')
+        .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
+        .addSelect('COALESCE(SUM(r.kids), 0)', 'kids')
+        .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
+        .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
+        .getRawOne<{
+          houses: string;
+          adults: string;
+          kids: string;
+          guests: string;
+          conversions: string;
+        }>(),
+      baseQb()
+        .select("to_char(r.date, 'YYYY-MM')", 'period')
+        .addSelect('COUNT(*)', 'houses')
+        .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
+        .addSelect('COALESCE(SUM(r.kids), 0)', 'kids')
+        .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
+        .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
+        .groupBy("to_char(r.date, 'YYYY-MM')")
+        .orderBy("to_char(r.date, 'YYYY-MM')", 'ASC')
+        .getRawMany<{
+          period: string;
+          houses: string;
+          adults: string;
+          kids: string;
+          guests: string;
+          conversions: string;
+        }>(),
+      baseQb()
+        .innerJoin('sectors', 'sector', 'sector.id = r.sector_id')
+        .select('sector.name', 'label')
+        .addSelect('r.sector_id', 'sector_id')
+        .addSelect('COUNT(*)', 'houses')
+        .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
+        .addSelect('COALESCE(SUM(r.kids), 0)', 'kids')
+        .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
+        .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
+        .groupBy('sector.name')
+        .addGroupBy('r.sector_id')
+        .orderBy('houses', 'DESC')
+        .getRawMany<{
+          label: string;
+          sector_id: string;
+          houses: string;
+          adults: string;
+          kids: string;
+          guests: string;
+          conversions: string;
+        }>(),
+      baseQb()
+        .select('r.meeting_day', 'label')
+        .addSelect('COUNT(*)', 'houses')
+        .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
+        .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
+        .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
+        .andWhere('r.meeting_day IS NOT NULL')
+        .groupBy('r.meeting_day')
+        .getRawMany<{
+          label: string;
+          houses: string;
+          adults: string;
+          guests: string;
+          conversions: string;
+        }>(),
+      baseQb()
+        .select("substring(r.meeting_time, 1, 2) || ':00'", 'label')
+        .addSelect('COUNT(*)', 'houses')
+        .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
+        .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
+        .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
+        .andWhere('r.meeting_time IS NOT NULL')
+        .groupBy("substring(r.meeting_time, 1, 2) || ':00'")
+        .orderBy("substring(r.meeting_time, 1, 2) || ':00'", 'ASC')
+        .getRawMany<{
+          label: string;
+          houses: string;
+          adults: string;
+          guests: string;
+          conversions: string;
+        }>(),
+      prevQb()
+        .select('COUNT(*)', 'houses')
+        .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
+        .addSelect('COALESCE(SUM(r.kids), 0)', 'kids')
+        .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
+        .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
+        .getRawOne<{
+          houses: string;
+          adults: string;
+          kids: string;
+          guests: string;
+          conversions: string;
+        }>(),
+    ]);
 
     const totalGuests = Number(totalsRaw?.guests ?? 0);
     const totalConversions = Number(totalsRaw?.conversions ?? 0);
+    const totalAdults = Number(totalsRaw?.adults ?? 0);
+    const totalKids = Number(totalsRaw?.kids ?? 0);
     const totals = {
       houses: Number(totalsRaw?.houses ?? 0),
-      adults: Number(totalsRaw?.adults ?? 0),
-      kids: Number(totalsRaw?.kids ?? 0),
+      adults: totalAdults,
+      kids: totalKids,
       guests: totalGuests,
+      // "Vidas alcançadas" — every person reached across all visits, the
+      // headline ministry metric leadership actually tracks.
+      lives: totalAdults + totalKids + totalGuests,
       conversions: totalConversions,
       conversion_rate: totalGuests > 0 ? totalConversions / totalGuests : 0,
+    };
+
+    const prevGuests = Number(prevTotalsRaw?.guests ?? 0);
+    const prevConversions = Number(prevTotalsRaw?.conversions ?? 0);
+    const prevAdults = Number(prevTotalsRaw?.adults ?? 0);
+    const prevKids = Number(prevTotalsRaw?.kids ?? 0);
+    const prevHouses = Number(prevTotalsRaw?.houses ?? 0);
+    const prevLives = prevAdults + prevKids + prevGuests;
+
+    // null growth means "no previous-period data to compare against" — the
+    // frontend renders that as neutral/no-badge rather than a fake "+100%".
+    const pctChange = (current: number, previous: number): number | null =>
+      previous > 0 ? (current - previous) / previous : null;
+
+    const growth = {
+      houses: pctChange(totals.houses, prevHouses),
+      lives: pctChange(totals.lives, prevLives),
+      guests: pctChange(totals.guests, prevGuests),
+      conversions: pctChange(totals.conversions, prevConversions),
     };
 
     const byPeriod = new Map<string, SeriesRow>(
@@ -235,6 +290,7 @@ export class CasaDePazAnalyticsService {
         to: toIsoDate(new Date(toDateExclusive.getTime() - 86_400_000)),
       },
       totals,
+      growth,
       series,
       by_sector: bySector,
       by_day: byDay,
