@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import {
   Select,
   SelectContent,
@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { ExportDashboardButton } from "@/components/ui/export-dashboard-button"
 import { Users2, Home } from "lucide-react"
 import { LifeGroupsReport } from "./life-groups-report"
 import { CasaDePazReport } from "./casa-de-paz-report"
@@ -23,6 +24,7 @@ type ReportType = (typeof REPORT_TYPES)[number]["value"]
 
 export function RelatoriosManagement() {
   const [reportType, setReportType] = useState<ReportType>("life-groups")
+  const exportRef = useRef<HTMLDivElement>(null)
 
   return (
     <div className="space-y-6">
@@ -31,23 +33,31 @@ export function RelatoriosManagement() {
           <h1 className="text-3xl font-bold text-foreground">Relatórios</h1>
           <p className="text-muted-foreground">Estatísticas e relatórios detalhados da igreja</p>
         </div>
-        <Select value={reportType} onValueChange={(v) => setReportType(v as ReportType)}>
-          <SelectTrigger className="w-full sm:w-64">
-            <SelectValue placeholder="Selecione um relatório" />
-          </SelectTrigger>
-          <SelectContent>
-            {REPORT_TYPES.map((type) => (
-              <SelectItem key={type.value} value={type.value}>
-                <type.icon className="h-4 w-4" />
-                {type.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={reportType} onValueChange={(v) => setReportType(v as ReportType)}>
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder="Selecione um relatório" />
+            </SelectTrigger>
+            <SelectContent>
+              {REPORT_TYPES.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  <type.icon className="h-4 w-4" />
+                  {type.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <ExportDashboardButton
+            targetRef={exportRef}
+            filename={`relatorio-${reportType}`}
+          />
+        </div>
       </div>
 
-      {reportType === "life-groups" && <LifeGroupsReport />}
-      {reportType === "casa-de-paz" && <CasaDePazReport />}
+      <div ref={exportRef} className="space-y-6">
+        {reportType === "life-groups" && <LifeGroupsReport />}
+        {reportType === "casa-de-paz" && <CasaDePazReport />}
+      </div>
     </div>
   )
 }

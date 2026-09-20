@@ -18,8 +18,10 @@ import {
   Pie,
   Cell,
 } from "recharts"
+import { useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useDashboardStats, useAccessTrends, useMemberGrowth, useLifeGroupDistribution } from "@/lib/hooks/use-dashboard"
+import { ExportDashboardButton } from "@/components/ui/export-dashboard-button"
 import { StatsCardSkeleton } from "@/components/ui/skeleton-components"
 import { Skeleton } from "@/components/ui/skeleton"
 import { LifeGroupAttendanceChart } from "@/components/life-group-analytics/life-group-attendance-chart"
@@ -29,6 +31,7 @@ const PIE_COLORS = ["#15803d", "#84cc16", "#d97706", "#3b82f6", "#8b5cf6", "#ec4
 
 export function DashboardHome() {
   const router = useRouter()
+  const exportRef = useRef<HTMLDivElement>(null)
   const { data: stats, isLoading: statsLoading } = useDashboardStats()
   const { data: accessTrends, isLoading: trendsLoading } = useAccessTrends()
   const { data: memberGrowth, isLoading: growthLoading } = useMemberGrowth()
@@ -52,11 +55,15 @@ export function DashboardHome() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Inicio</h1>
-        <p className="text-muted-foreground">Visao geral do sistema de gerenciamento da igreja</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Inicio</h1>
+          <p className="text-muted-foreground">Visao geral do sistema de gerenciamento da igreja</p>
+        </div>
+        <ExportDashboardButton targetRef={exportRef} filename="dashboard-inicio" />
       </div>
 
+      <div ref={exportRef} className="space-y-6">
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statsLoading ? (
@@ -318,6 +325,7 @@ export function DashboardHome() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }
