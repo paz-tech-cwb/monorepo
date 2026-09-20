@@ -1,5 +1,7 @@
 package br.church.paz.android.ui.features.lifegroupanalytics
 
+import android.content.Intent
+import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -35,12 +38,19 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazBarChart
@@ -52,8 +62,11 @@ import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.LifeGroupAttendancePoint
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
+import java.io.File
+import java.io.FileOutputStream
 import java.time.LocalDate
 
 private val MONTH_LABELS =
@@ -67,12 +80,36 @@ fun LifeGroupAnalyticsScreen(
         koinViewModel(parameters = { parametersOf(lifeGroupId?.toIntOrNull()) }),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val graphicsLayer = rememberGraphicsLayer()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 LifeGroupAnalyticsEffect.NavigateBack -> navController.popBackStack()
             }
+        }
+    }
+
+    // Rasterizes the report content (including the filter chips, unlike iOS's
+    // narrower capture — acceptable here since this single screen is small)
+    // to a PNG in the cache dir and opens the system share sheet — the user
+    // can save it, send it, or "Print" to PDF via the share sheet's own
+    // Print action, no extra PDF library needed on mobile.
+    fun exportAndShare() {
+        scope.launch {
+            val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
+            val dir = File(context.cacheDir, "shared_images").apply { mkdirs() }
+            val file = File(dir, "relatorio-life-group-${System.currentTimeMillis()}.png")
+            FileOutputStream(file).use { out -> bitmap.compress(Bitmap.CompressFormat.PNG, 100, out) }
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, "Compartilhar relatório"))
         }
     }
 
@@ -91,6 +128,11 @@ fun LifeGroupAnalyticsScreen(
                         style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
                         modifier = Modifier.weight(1f),
                     )
+                    if (!uiState.isLoading && uiState.error == null) {
+                        IconButton(onClick = ::exportAndShare) {
+                            Icon(Icons.Filled.Share, "compartilhar", tint = Color.White)
+                        }
+                    }
                 }
             }
 
@@ -98,7 +140,11 @@ fun LifeGroupAnalyticsScreen(
                 Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .background(MaterialTheme.colorScheme.background),
+                    .background(MaterialTheme.colorScheme.background)
+                    .drawWithContent {
+                        graphicsLayer.record { this@drawWithContent.drawContent() }
+                        drawLayer(graphicsLayer)
+                    },
             ) {
                 when {
                     uiState.isLoading -> AnalyticsSkeleton()
