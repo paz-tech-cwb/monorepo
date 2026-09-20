@@ -96,7 +96,9 @@ class AuthenticationCoordinator {
     /// must still open the app.
     private func checkOnboardingOnRestore() async {
         guard !showOnboarding else { return }
-        let missingSteps = try? await IosAppContainer.shared.onboardingRepository.missingSteps()
+        let missingSteps = try? await withTimeout(seconds: missingStepsTimeout) {
+            try await IosAppContainer.shared.onboardingRepository.missingSteps()
+        }
         if let missingSteps, !missingSteps.isEmpty {
             showOnboardingOnRestore = true
         }
@@ -242,6 +244,32 @@ enum GoogleSignInHelper {
 enum AppleSignInHelper {
     static func signIn(completion: @escaping (String?, String?, Error?) -> Void) {
         completion(nil, nil, AuthError.notImplemented)
+    }
+}
+
+/// Cap on the /users/me-backed missing-steps check so a slow (not failed) connection can't
+/// hang the splash/launch flow behind Ktor's default (much longer) timeouts.
+private let missingStepsTimeout: TimeInterval = 6
+
+private struct TimeoutError: Error {}
+
+/// Races `operation` against a `seconds` deadline; throws `TimeoutError` if the deadline
+/// wins, which callers treat identically to any other failure of `operation`.
+private func withTimeout<T: Sendable>(
+    seconds: TimeInterval,
+    operation: @escaping @Sendable () async throws -> T
+) async throws -> T {
+    try await withThrowingTaskGroup(of: T.self) { group in
+        group.addTask { try await operation() }
+        group.addTask {
+            try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            throw TimeoutError()
+        }
+        guard let result = try await group.next() else {
+            throw TimeoutError()
+        }
+        group.cancelAll()
+        return result
     }
 }
 
