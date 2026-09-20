@@ -8,8 +8,19 @@ export interface CasaDePazAnalyticsTotals {
   adults: number
   kids: number
   guests: number
+  /** adults + kids + guests — every person reached across all visits. */
+  lives: number
   conversions: number
   conversion_rate: number
+}
+
+export interface CasaDePazAnalyticsGrowth {
+  /** Percent change vs. the immediately preceding period of equal length.
+   * `null` when there's no previous-period data to compare against. */
+  houses: number | null
+  lives: number | null
+  guests: number | null
+  conversions: number | null
 }
 
 export interface CasaDePazSeriesPoint {
@@ -50,6 +61,7 @@ export interface CasaDePazByTime {
 export interface CasaDePazAnalyticsSummary {
   range: CasaDePazAnalyticsRange
   totals: CasaDePazAnalyticsTotals
+  growth: CasaDePazAnalyticsGrowth
   series: CasaDePazSeriesPoint[]
   by_sector: CasaDePazBySector[]
   by_day: CasaDePazByDay[]
@@ -79,4 +91,16 @@ export interface CasaDePazReportSubmission {
   meeting_time: string | null
   created_at: string
   updated_at: string
+}
+
+export interface UpdateCasaDePazReportRequest {
+  date?: string
+  facilitator?: string
+  sector_id?: number
+  adults?: number
+  kids?: number
+  guests?: number
+  conversions?: number
+  meeting_day?: string
+  meeting_time?: string
 }

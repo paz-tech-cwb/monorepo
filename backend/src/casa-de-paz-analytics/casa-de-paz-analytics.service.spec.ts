@@ -34,13 +34,14 @@ function makeQueryBuilder(
 }
 
 // Order of createQueryBuilder() calls inside summary(): totals, series,
-// by_sector, by_day, by_time.
+// by_sector, by_day, by_time, previous-period totals.
 function createService(fixtures: {
   totals?: unknown;
   series?: unknown[];
   bySector?: unknown[];
   byDay?: unknown[];
   byTime?: unknown[];
+  prevTotals?: unknown;
 }) {
   const qbs = [
     makeQueryBuilder(fixtures.totals ?? zeroTotalsRaw(), []),
@@ -48,6 +49,7 @@ function createService(fixtures: {
     makeQueryBuilder(undefined, fixtures.bySector ?? []),
     makeQueryBuilder(undefined, fixtures.byDay ?? []),
     makeQueryBuilder(undefined, fixtures.byTime ?? []),
+    makeQueryBuilder(fixtures.prevTotals ?? zeroTotalsRaw(), []),
   ];
   let call = 0;
   const em = {
