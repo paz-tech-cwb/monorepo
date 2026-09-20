@@ -58,6 +58,15 @@ object VideoCache {
         }
     }
 
-    private fun fileNameFor(url: String): String =
-        url.substringAfterLast('/').ifBlank { "prefetched-video" }
+    /**
+     * Derives a filesystem-safe cache filename from [url]. Strips any query/fragment, then keeps
+     * only alphanumerics/`.`/`-`/`_` and drops leading dots — defense in depth against a
+     * mangled or malicious URL producing something like `..` or `../../etc/passwd` as the
+     * "filename", which would otherwise resolve outside the cache directory when joined with it.
+     */
+    private fun fileNameFor(url: String): String {
+        val rawName = url.substringAfterLast('/').substringBefore('?').substringBefore('#')
+        val safeChars = rawName.filter { it.isLetterOrDigit() || it == '.' || it == '-' || it == '_' }
+        return safeChars.trimStart('.').ifBlank { "prefetched-video" }
+    }
 }

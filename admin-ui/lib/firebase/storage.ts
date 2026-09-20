@@ -8,11 +8,16 @@ function getFirebaseStorage() {
 
 // `crypto.randomUUID()` only exists in secure contexts (HTTPS or localhost) — admin-ui is
 // currently served over plain HTTP on its sslip.io host, where it's undefined and throws.
-// This only needs to be unique per upload, not cryptographically random, so a timestamp +
-// random suffix works everywhere without depending on the Web Crypto API being available.
+// `crypto.getRandomValues()` has no such restriction (it predates randomUUID and doesn't
+// require a secure context), so prefer it over `Math.random()` for the fallback — it's a CSPRNG,
+// not just "good enough for a filename".
 function generateUploadId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID()
+  }
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    const bytes = crypto.getRandomValues(new Uint8Array(16))
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")
   }
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
 }
