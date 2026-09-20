@@ -52,6 +52,7 @@ import type { RecurrenceType } from "@/lib/api/types/agenda"
 import { useAgendaStats } from "@/lib/hooks/use-agenda"
 import { format } from "date-fns"
 import { AddressForm, type AddressFormData } from "@/components/ui/address-form"
+import { formatCEP } from "@/lib/utils/cep"
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -232,7 +233,9 @@ export function EventsManagement() {
       final_date: event.final_date || "",
       recurrence_type: event.recurrence_type,
       image: event.image || "",
-      address: event.address ?? EMPTY_FORM.address,
+      address: event.address
+        ? { ...event.address, zip_code: formatCEP(event.address.zip_code) }
+        : EMPTY_FORM.address,
     })
     setEditingEvent(event)
   }

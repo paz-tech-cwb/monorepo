@@ -28,6 +28,7 @@ import { useChurch, useUpdateChurch } from "@/lib/hooks/use-church"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
 import type { Contribution, CreateContributionRequest, UpdateContributionRequest } from "@/lib/api/types"
 import { AddressForm, type AddressFormData } from "@/components/ui/address-form"
+import { formatCEP } from "@/lib/utils/cep"
 
 interface ChurchFormData {
   name: string
@@ -127,7 +128,7 @@ export function ChurchDataManagement() {
       name: church.name,
       description: church.description ?? "",
       address: {
-        zip_code: church.address.zip_code,
+        zip_code: formatCEP(church.address.zip_code),
         country: church.address.country,
         state: church.address.state,
         city: church.address.city,
