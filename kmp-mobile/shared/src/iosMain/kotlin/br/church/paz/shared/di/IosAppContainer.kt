@@ -12,6 +12,7 @@ import br.church.paz.shared.data.repository.LifeGroupAnalyticsRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupAttendanceRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupStudyRepositoryImpl
 import br.church.paz.shared.data.repository.MemberJourneyRepositoryImpl
+import br.church.paz.shared.data.repository.OnboardingRepositoryImpl
 import br.church.paz.shared.data.repository.UserRepositoryImpl
 import br.church.paz.shared.data.repository.createUserStore
 import br.church.paz.shared.domain.model.User
@@ -26,6 +27,7 @@ import br.church.paz.shared.domain.repository.LifeGroupAnalyticsRepository
 import br.church.paz.shared.domain.repository.LifeGroupAttendanceRepository
 import br.church.paz.shared.domain.repository.LifeGroupStudyRepository
 import br.church.paz.shared.domain.repository.MemberJourneyRepository
+import br.church.paz.shared.domain.repository.OnboardingRepository
 import br.church.paz.shared.domain.repository.UserRepository
 import io.ktor.client.engine.darwin.Darwin
 
@@ -67,6 +69,9 @@ object IosAppContainer {
     val lifeGroupAnalyticsRepository: LifeGroupAnalyticsRepository by lazy {
         LifeGroupAnalyticsRepositoryImpl(httpClient)
     }
+    val onboardingRepository: OnboardingRepository by lazy {
+        OnboardingRepositoryImpl(httpClient, authRepository)
+    }
 
     // iOS-friendly wrappers that throw on failure instead of returning Result<T>
     // BirthDateRequiredException must be listed explicitly (not just Exception::class) for
@@ -79,5 +84,39 @@ object IosAppContainer {
     @Throws(Exception::class)
     suspend fun logout(fcmToken: String?) {
         authRepository.logout(fcmToken).getOrThrow()
+    }
+
+    // OnboardingRepository's submit* methods return Result<Unit>, which — like AuthRepository's
+    // socialLogin above — doesn't bridge cleanly to Swift as a Kotlin `Result` value class.
+    // These wrappers unwrap it into plain throwing suspend functions instead.
+    @Throws(Exception::class)
+    suspend fun submitOnboardingBirthday(birthDate: String) {
+        onboardingRepository.submitBirthday(birthDate).getOrThrow()
+    }
+
+    @Throws(Exception::class)
+    suspend fun submitOnboardingWhatsapp(phone: String) {
+        onboardingRepository.submitWhatsapp(phone).getOrThrow()
+    }
+
+    @Throws(Exception::class)
+    suspend fun submitOnboardingAddress(
+        street: String,
+        number: String,
+        complement: String?,
+        neighborhood: String,
+        city: String,
+        state: String,
+        zipCode: String,
+    ) {
+        onboardingRepository.submitAddress(
+            street = street,
+            number = number,
+            complement = complement,
+            neighborhood = neighborhood,
+            city = city,
+            state = state,
+            zipCode = zipCode,
+        ).getOrThrow()
     }
 }
