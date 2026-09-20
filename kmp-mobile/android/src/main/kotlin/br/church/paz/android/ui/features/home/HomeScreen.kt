@@ -192,7 +192,7 @@ private fun HomeTopBar(
                     )
                     Spacer(Modifier.height(7.dp))
                     Text(
-                        text = "Olá, ${userName.ifEmpty { "Lucas" }}",
+                        text = if (userName.isEmpty()) "Olá!" else "Olá, $userName",
                         style =
                             MaterialTheme.typography.displayLarge.copy(
                                 color =
