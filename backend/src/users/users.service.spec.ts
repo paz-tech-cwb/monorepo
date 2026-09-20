@@ -37,22 +37,24 @@ describe('UsersService', () => {
 
   function createService(managerOverrides: Partial<EntityManager> = {}) {
     const txManager = {
-      findOne: jest.fn(async (entity) => {
-        if (entity === Role) return role;
-        if (entity === User) return makeUser();
-        return null;
+      findOne: jest.fn((entity: unknown) => {
+        if (entity === Role) return Promise.resolve(role);
+        if (entity === User) return Promise.resolve(makeUser());
+        return Promise.resolve(null);
       }),
       findByIds: jest.fn(),
-      save: jest.fn(async (entity, value) => {
-        if (entity === Address) return { ...value, id: 20 };
-        if (entity === User) return { ...value, id: 10 };
-        return value;
+      save: jest.fn((entity: unknown, value: Record<string, unknown>) => {
+        if (entity === Address) return Promise.resolve({ ...value, id: 20 });
+        if (entity === User) return Promise.resolve({ ...value, id: 10 });
+        return Promise.resolve(value);
       }),
       ...managerOverrides,
     };
 
     const entityManager = {
-      transaction: jest.fn((callback) => callback(txManager)),
+      transaction: jest.fn((callback: (manager: typeof txManager) => unknown) =>
+        callback(txManager),
+      ),
     } as unknown as EntityManager;
 
     return {
@@ -104,7 +106,7 @@ describe('UsersService', () => {
         address: expect.objectContaining({
           id: 20,
           zipCode: '80000000',
-        }),
+        }) as unknown as Address,
       }),
     );
   });
@@ -129,19 +131,21 @@ describe('UsersService', () => {
 
   it('uses the transaction for address and user saves so failed user creation rolls back the address', async () => {
     const txManager = {
-      findOne: jest.fn(async (entity) => {
-        if (entity === Role) return role;
-        return null;
+      findOne: jest.fn((entity: unknown) => {
+        if (entity === Role) return Promise.resolve(role);
+        return Promise.resolve(null);
       }),
       findByIds: jest.fn(),
-      save: jest.fn(async (entity, value) => {
-        if (entity === Address) return { ...value, id: 20 };
+      save: jest.fn((entity: unknown, value: Record<string, unknown>) => {
+        if (entity === Address) return Promise.resolve({ ...value, id: 20 });
         if (entity === User) throw new Error('user save failed');
-        return value;
+        return Promise.resolve(value);
       }),
     };
     const entityManager = {
-      transaction: jest.fn((callback) => callback(txManager)),
+      transaction: jest.fn((callback: (manager: typeof txManager) => unknown) =>
+        callback(txManager),
+      ),
     } as unknown as EntityManager;
     const service = new UsersService(entityManager);
 
@@ -161,7 +165,9 @@ describe('UsersService', () => {
       }),
     ).rejects.toThrow(BadRequestException);
 
-    expect(entityManager.transaction).toHaveBeenCalledTimes(1);
+    expect(
+      (entityManager as unknown as { transaction: jest.Mock }).transaction,
+    ).toHaveBeenCalledTimes(1);
     expect(txManager.save).toHaveBeenCalledWith(Address, expect.any(Address));
     expect(txManager.save).toHaveBeenCalledWith(User, expect.any(User));
   });
@@ -265,7 +271,10 @@ describe('UsersService', () => {
         findOne: jest
           .fn()
           .mockResolvedValue(userExists ? makeUser({ id: 10 }) : null),
-        transaction: jest.fn((callback) => callback(txManager)),
+        transaction: jest.fn(
+          (callback: (manager: typeof txManager) => unknown) =>
+            callback(txManager),
+        ),
       } as unknown as EntityManager;
 
       return {
@@ -367,7 +376,10 @@ describe('UsersService', () => {
       };
       const entityManager = {
         findOne: jest.fn().mockResolvedValue(makeUser({ id: 10 })),
-        transaction: jest.fn((callback) => callback(txManager)),
+        transaction: jest.fn(
+          (callback: (manager: typeof txManager) => unknown) =>
+            callback(txManager),
+        ),
       } as unknown as EntityManager;
       const service = new UsersService(entityManager);
 

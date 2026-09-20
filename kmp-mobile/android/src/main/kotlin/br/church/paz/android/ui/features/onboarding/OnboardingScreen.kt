@@ -40,11 +40,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import br.church.paz.android.BuildConfig
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.CepLookupOutcome
 import br.church.paz.shared.domain.model.OnboardingStep
+import com.cwb.pazchurch.app.BuildConfig
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import java.time.Instant
