@@ -16,11 +16,17 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,7 +47,10 @@ import br.church.paz.shared.domain.model.CepLookupOutcome
 import br.church.paz.shared.domain.model.OnboardingStep
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
-
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun OnboardingScreen(
@@ -65,6 +74,11 @@ fun OnboardingScreen(
         color = if (isDark) PazColors.DarkBackground else PazColors.Background,
     ) {
         when {
+            state.loadErrorMessage != null ->
+                OnboardingLoadError(
+                    message = state.loadErrorMessage!!,
+                    onRetry = viewModel::retryLoad,
+                )
             state.isLoadingMissingSteps -> OnboardingLoading()
             else ->
                 when (state.currentStep) {
@@ -101,6 +115,41 @@ fun OnboardingScreen(
     }
 }
 
+/**
+ * The initial `missingSteps()` fetch failed (e.g. network error). Never fall through to
+ * `onFinished()` here — that would silently skip onboarding for a member who still has
+ * missing fields. Mirrors iOS's `OnboardingLoadErrorView`.
+ */
+@Composable
+private fun OnboardingLoadError(
+    message: String,
+    onRetry: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(PazSpacing.Xl),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = "Não foi possível carregar seu cadastro",
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(PazSpacing.Sm))
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = PazColors.Slate,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(PazSpacing.Lg))
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(containerColor = PazColors.Primary),
+        ) { Text("Tentar novamente") }
+    }
+}
+
 @Composable
 private fun OnboardingLoading() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -124,6 +173,10 @@ private fun WelcomeVideoStep(onFinished: () -> Unit) {
             modifier = Modifier.fillMaxSize(),
             factory = { context ->
                 VideoView(context).apply {
+                    // !!! ONBOARDING_VIDEO_URL is still the cdn.example.org PLACEHOLDER !!!
+                    // See android/build.gradle.kts — it MUST be replaced with the real
+                    // hosted welcome video before any production release. Until then this
+                    // step always falls through to the error state below.
                     setVideoURI(Uri.parse(BuildConfig.ONBOARDING_VIDEO_URL))
                     setOnPreparedListener {
                         isBuffering = false
@@ -204,6 +257,12 @@ private fun StepScaffold(
     }
 }
 
+/**
+ * Collects the birth date through a real [DatePicker], never free text: the backend
+ * validates `birth_date` with `@IsDateString()`, so the value submitted MUST be an
+ * ISO `yyyy-MM-dd` string. A typed "DD/MM/AAAA" string would 400 on every submission.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BirthdayStep(
     isSubmitting: Boolean,
@@ -212,7 +271,38 @@ private fun BirthdayStep(
     onSkip: () -> Unit,
     onDismissError: () -> Unit,
 ) {
-    var birthDate by remember { mutableStateOf("") }
+    val datePickerState =
+        rememberDatePickerState(
+            // Future birth dates are never valid.
+            selectableDates =
+                object : SelectableDates {
+                    override fun isSelectableYear(year: Int): Boolean = year <= LocalDate.now().year
+
+                    override fun isSelectableDate(utcTimeMillis: Long): Boolean = utcTimeMillis <= System.currentTimeMillis()
+                },
+        )
+    var isPickerOpen by remember { mutableStateOf(false) }
+
+    val selectedMillis = datePickerState.selectedDateMillis
+    // The picker reports UTC-midnight millis, so format in UTC — using the device
+    // time zone would shift the date by a day for negative-offset zones.
+    val isoDate =
+        selectedMillis?.let {
+            Instant
+                .ofEpochMilli(it)
+                .atZone(ZoneOffset.UTC)
+                .toLocalDate()
+                .format(DateTimeFormatter.ISO_LOCAL_DATE)
+        }
+    val displayDate =
+        selectedMillis?.let {
+            Instant
+                .ofEpochMilli(it)
+                .atZone(ZoneOffset.UTC)
+                .toLocalDate()
+                .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+        }
+
     StepScaffold(
         title = "Qual sua data de nascimento?",
         subtitle =
@@ -222,21 +312,36 @@ private fun BirthdayStep(
         onDismissError = onDismissError,
         onSkip = onSkip,
     ) {
-        OutlinedTextField(
-            value = birthDate,
-            onValueChange = {
-                birthDate = it
+        OutlinedButton(
+            onClick = {
                 onDismissError()
+                isPickerOpen = true
             },
-            label = { Text("DD/MM/AAAA") },
-            modifier = Modifier.fillMaxWidth(),
-        )
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+        ) {
+            Text(displayDate ?: "Selecionar data")
+        }
+
+        if (isPickerOpen) {
+            DatePickerDialog(
+                onDismissRequest = { isPickerOpen = false },
+                confirmButton = {
+                    TextButton(onClick = { isPickerOpen = false }) { Text("OK") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { isPickerOpen = false }) { Text("Cancelar") }
+                },
+            ) {
+                DatePicker(state = datePickerState)
+            }
+        }
+
         Spacer(modifier = Modifier.height(PazSpacing.Lg))
         SubmitButton(
             text = "Continuar",
             isSubmitting = isSubmitting,
-            enabled = birthDate.isNotBlank(),
-            onClick = { onSubmit(birthDate) },
+            enabled = isoDate != null,
+            onClick = { isoDate?.let(onSubmit) },
         )
     }
 }
@@ -324,10 +429,46 @@ private fun AddressStep(
 
         when (cepResult) {
             is CepLookupOutcome.Found -> {
-                Text(
-                    text = "${cepResult.result.street}, ${cepResult.result.neighborhood}",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                // ViaCEP returns an empty logradouro/bairro for some municipalities.
+                // The backend's CreateAddressDto requires both to be non-empty, so those
+                // specific fields are rendered as editable inputs (pre-filled when known)
+                // rather than read-only text — never silently submit a blank.
+                val lookedUpStreet = cepResult.result.street
+                val lookedUpNeighborhood = cepResult.result.neighborhood
+                val effectiveStreet = if (lookedUpStreet.isNotBlank()) lookedUpStreet else manualStreet
+                val effectiveNeighborhood =
+                    if (lookedUpNeighborhood.isNotBlank()) lookedUpNeighborhood else manualNeighborhood
+
+                if (lookedUpStreet.isNotBlank()) {
+                    Text(text = lookedUpStreet, style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    OutlinedTextField(
+                        value = manualStreet,
+                        onValueChange = {
+                            manualStreet = it
+                            onDismissError()
+                        },
+                        label = { Text("Rua") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(modifier = Modifier.height(PazSpacing.Md))
+                }
+
+                if (lookedUpNeighborhood.isNotBlank()) {
+                    Text(text = lookedUpNeighborhood, style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    OutlinedTextField(
+                        value = manualNeighborhood,
+                        onValueChange = {
+                            manualNeighborhood = it
+                            onDismissError()
+                        },
+                        label = { Text("Bairro") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(modifier = Modifier.height(PazSpacing.Md))
+                }
+
                 Text(
                     text = "${cepResult.result.city} - ${cepResult.result.state}",
                     style = MaterialTheme.typography.bodySmall,
@@ -357,13 +498,20 @@ private fun AddressStep(
                 SubmitButton(
                     text = "Continuar",
                     isSubmitting = isSubmitting,
-                    enabled = number.isNotBlank(),
+                    // Every field CreateAddressDto marks @IsNotEmpty must be non-blank,
+                    // or the submit 400s.
+                    enabled =
+                        effectiveStreet.isNotBlank() &&
+                            number.isNotBlank() &&
+                            effectiveNeighborhood.isNotBlank() &&
+                            cepResult.result.city.isNotBlank() &&
+                            cepResult.result.state.isNotBlank(),
                     onClick = {
                         onSubmit(
-                            cepResult.result.street,
+                            effectiveStreet,
                             number,
                             complement.ifBlank { null },
-                            cepResult.result.neighborhood,
+                            effectiveNeighborhood,
                             cepResult.result.city,
                             cepResult.result.state,
                             cep,
@@ -441,7 +589,14 @@ private fun AddressStep(
                 SubmitButton(
                     text = "Continuar",
                     isSubmitting = isSubmitting,
-                    enabled = manualStreet.isNotBlank() && number.isNotBlank() && manualCity.isNotBlank(),
+                    // Mirrors CreateAddressDto's @IsNotEmpty fields: street, neighborhood,
+                    // city and state are all required by the backend.
+                    enabled =
+                        manualStreet.isNotBlank() &&
+                            number.isNotBlank() &&
+                            manualNeighborhood.isNotBlank() &&
+                            manualCity.isNotBlank() &&
+                            manualState.isNotBlank(),
                     onClick = {
                         onSubmit(
                             manualStreet,

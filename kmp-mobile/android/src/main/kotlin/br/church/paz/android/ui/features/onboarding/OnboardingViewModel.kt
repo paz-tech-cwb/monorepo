@@ -19,6 +19,12 @@ data class OnboardingUiState(
     val isLookingUpCep: Boolean = false,
     val cepResult: CepLookupOutcome? = null,
     val errorMessage: String? = null,
+    /**
+     * Set only when the initial [OnboardingRepository.missingSteps] fetch fails. Distinct from
+     * [errorMessage] (per-step submission errors shown inline): this one blocks the whole flow
+     * behind a retry state, so a network failure can never silently skip onboarding.
+     */
+    val loadErrorMessage: String? = null,
     val isFinished: Boolean = false,
 )
 
@@ -45,10 +51,30 @@ class OnboardingViewModel(
                 it.copy(remainingSteps = listOf(OnboardingStep.Birthday), isLoadingMissingSteps = false)
             }
         } else {
-            viewModelScope.launch {
-                val missing = repository.missingSteps()
-                _uiState.update { it.copy(remainingSteps = missing, isLoadingMissingSteps = false) }
-            }
+            loadMissingSteps()
+        }
+    }
+
+    /** Retries the initial missing-steps fetch after it failed with [OnboardingUiState.loadErrorMessage]. */
+    fun retryLoad() = loadMissingSteps()
+
+    private fun loadMissingSteps() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingMissingSteps = true, loadErrorMessage = null) }
+            runCatching { repository.missingSteps() }
+                .onSuccess { missing ->
+                    _uiState.update {
+                        it.copy(remainingSteps = missing, isLoadingMissingSteps = false)
+                    }
+                }.onFailure { e ->
+                    _uiState.update {
+                        it.copy(
+                            isLoadingMissingSteps = false,
+                            loadErrorMessage =
+                                e.message ?: "Não foi possível carregar seu cadastro. Tente novamente.",
+                        )
+                    }
+                }
         }
     }
 
@@ -66,7 +92,10 @@ class OnboardingViewModel(
             _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
             loginRetry(birthDate)
                 .onSuccess {
-                    val missing = repository.missingSteps()
+                    // Now authenticated — the real remaining steps are only knowable here.
+                    // A failure to re-fetch must not re-ask for the birthday we just saved,
+                    // so fall back to "nothing else missing" rather than to an error.
+                    val missing = runCatching { repository.missingSteps() }.getOrDefault(emptyList())
                     _uiState.update { it.copy(isSubmitting = false, remainingSteps = missing) }
                     advance()
                 }.onFailure { e ->

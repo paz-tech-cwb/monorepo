@@ -33,7 +33,7 @@ import org.koin.dsl.module
 val androidModule =
     module {
         single { AppThemeManager() }
-        viewModel { SplashViewModel(get()) }
+        viewModel { SplashViewModel(get(), get()) }
         viewModel { LoginViewModel(get(), get()) }
         viewModel { (pendingBirthDateLogin: (suspend (String) -> Result<Unit>)?) ->
             OnboardingViewModel(get(), pendingBirthDateLogin)
