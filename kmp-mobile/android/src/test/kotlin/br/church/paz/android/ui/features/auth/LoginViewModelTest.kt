@@ -2,10 +2,12 @@ package br.church.paz.android.ui.features.auth
 
 import app.cash.turbine.test
 import br.church.paz.android.util.MainDispatcherRule
+import br.church.paz.shared.domain.model.OnboardingStep
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.model.UserRole
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.BirthDateRequiredException
+import br.church.paz.shared.domain.repository.OnboardingRepository
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -21,13 +23,19 @@ class LoginViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val authRepository = mockk<AuthRepository>()
+    private val onboardingRepository =
+        mockk<OnboardingRepository> {
+            coEvery { missingSteps() } returns emptyList()
+        }
     private val fakeUser = User("u1", "João", "joao@paz.church", role = UserRole.member)
+
+    private fun viewModel() = LoginViewModel(authRepository, onboardingRepository)
 
     @Test
     fun `Google sign-in success emits NavigateToHome`() =
         runTest {
             coEvery { authRepository.socialLogin("good-token", "google", null) } returns Result.success(fakeUser)
-            val viewModel = LoginViewModel(authRepository)
+            val viewModel = viewModel()
 
             viewModel.effect.test {
                 viewModel.onGoogleSignIn("good-token")
@@ -40,7 +48,7 @@ class LoginViewModelTest {
     fun `Apple sign-in success emits NavigateToHome`() =
         runTest {
             coEvery { authRepository.socialLogin("apple-token", "apple", null) } returns Result.success(fakeUser)
-            val viewModel = LoginViewModel(authRepository)
+            val viewModel = viewModel()
 
             viewModel.effect.test {
                 viewModel.onAppleSignIn("apple-token")
@@ -54,7 +62,7 @@ class LoginViewModelTest {
         runTest {
             coEvery { authRepository.socialLogin(any(), any(), any()) } returns
                 Result.failure(RuntimeException("Network error"))
-            val viewModel = LoginViewModel(authRepository)
+            val viewModel = viewModel()
 
             viewModel.effect.test {
                 viewModel.onGoogleSignIn("bad-token")
@@ -69,7 +77,7 @@ class LoginViewModelTest {
     fun `duplicate sign-in while loading is ignored`() =
         runTest {
             coEvery { authRepository.socialLogin(any(), any(), any()) } returns Result.success(fakeUser)
-            val viewModel = LoginViewModel(authRepository)
+            val viewModel = viewModel()
 
             // Force loading state before second call by checking the guard
             // (In practice the first call sets isLoading=true synchronously)
@@ -85,7 +93,7 @@ class LoginViewModelTest {
     fun `isLoading is false after sign-in completes`() =
         runTest {
             coEvery { authRepository.socialLogin(any(), any(), any()) } returns Result.success(fakeUser)
-            val viewModel = LoginViewModel(authRepository)
+            val viewModel = viewModel()
 
             viewModel.effect.test {
                 viewModel.onGoogleSignIn("token")
@@ -101,7 +109,7 @@ class LoginViewModelTest {
         runTest {
             coEvery { authRepository.socialLogin("new-token", "google", null) } returns
                 Result.failure(BirthDateRequiredException())
-            val viewModel = LoginViewModel(authRepository)
+            val viewModel = viewModel()
 
             viewModel.onGoogleSignIn("new-token")
             advanceUntilIdle()
@@ -116,7 +124,7 @@ class LoginViewModelTest {
                 Result.failure(BirthDateRequiredException())
             coEvery { authRepository.socialLogin("new-token", "google", "2000-01-01") } returns
                 Result.success(fakeUser)
-            val viewModel = LoginViewModel(authRepository)
+            val viewModel = viewModel()
             viewModel.onGoogleSignIn("new-token")
             advanceUntilIdle()
 
@@ -126,5 +134,35 @@ class LoginViewModelTest {
                 cancelAndIgnoreRemainingEvents()
             }
             assertFalse(viewModel.uiState.value.needsBirthDate)
+        }
+
+    @Test
+    fun `sign-in success with missing onboarding steps shows onboarding instead of navigating home`() =
+        runTest {
+            coEvery { authRepository.socialLogin("good-token", "google", null) } returns Result.success(fakeUser)
+            coEvery { onboardingRepository.missingSteps() } returns listOf(OnboardingStep.Whatsapp)
+            val viewModel = viewModel()
+
+            viewModel.onGoogleSignIn("good-token")
+            advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value.showOnboarding)
+        }
+
+    @Test
+    fun `finishing onboarding hides it and emits NavigateToHome`() =
+        runTest {
+            coEvery { authRepository.socialLogin("good-token", "google", null) } returns Result.success(fakeUser)
+            coEvery { onboardingRepository.missingSteps() } returns listOf(OnboardingStep.Whatsapp)
+            val viewModel = viewModel()
+            viewModel.onGoogleSignIn("good-token")
+            advanceUntilIdle()
+
+            viewModel.effect.test {
+                viewModel.onOnboardingFinished()
+                assertEquals(LoginEffect.NavigateToHome, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertFalse(viewModel.uiState.value.showOnboarding)
         }
 }

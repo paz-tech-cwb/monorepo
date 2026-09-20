@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.BirthDateRequiredException
+import br.church.paz.shared.domain.repository.OnboardingRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 
 class LoginViewModel(
     private val authRepository: AuthRepository,
+    private val onboardingRepository: OnboardingRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
@@ -44,6 +46,12 @@ class LoginViewModel(
         _uiState.update { it.copy(needsBirthDate = false) }
     }
 
+    /** Called once the member-onboarding flow finishes (completed or skipped through). */
+    fun onOnboardingFinished() {
+        _uiState.update { it.copy(showOnboarding = false) }
+        viewModelScope.launch { _effect.send(LoginEffect.NavigateToHome) }
+    }
+
     private fun signIn(
         idToken: String,
         provider: String,
@@ -57,7 +65,12 @@ class LoginViewModel(
                 .onSuccess {
                     pendingIdToken = null
                     pendingProvider = null
-                    _effect.send(LoginEffect.NavigateToHome)
+                    val missingSteps = onboardingRepository.missingSteps()
+                    if (missingSteps.isNotEmpty()) {
+                        _uiState.update { it.copy(showOnboarding = true) }
+                    } else {
+                        _effect.send(LoginEffect.NavigateToHome)
+                    }
                 }.onFailure { e ->
                     if (e is BirthDateRequiredException) {
                         pendingIdToken = idToken

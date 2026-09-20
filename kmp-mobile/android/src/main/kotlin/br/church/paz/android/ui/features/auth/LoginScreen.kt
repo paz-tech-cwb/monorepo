@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import br.church.paz.android.auth.GoogleSignInHelper
+import br.church.paz.android.ui.features.onboarding.OnboardingScreen
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazShapePill
 import br.church.paz.android.ui.theme.PazSpacing
@@ -100,6 +101,11 @@ fun LoginScreen(
             onConfirm = { viewModel.onBirthDateConfirmed(it) },
             onDismiss = { viewModel.dismissBirthDatePrompt() },
         )
+    }
+
+    if (uiState.showOnboarding) {
+        OnboardingScreen(onFinished = { viewModel.onOnboardingFinished() })
+        return
     }
 
     val onGoogleClick: () -> Unit = {
