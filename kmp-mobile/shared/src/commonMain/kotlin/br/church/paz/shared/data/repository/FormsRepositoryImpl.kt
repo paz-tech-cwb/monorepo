@@ -28,6 +28,12 @@ import io.ktor.http.contentType
 
 class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
 
+    // Sectors are a small, effectively-static list — cache the full GET once
+    // per app session instead of re-fetching every time a Sector picker is
+    // opened (it was previously re-hitting the network, and briefly showing
+    // an empty/loading sheet, on every single open).
+    private var sectorsCache: List<SectorSummary>? = null
+
     @Throws(Exception::class)
     override suspend fun getCatalog(): List<FormCatalogItem> {
         val response = client.get("api/forms")
@@ -51,9 +57,13 @@ class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
 
     @Throws(Exception::class)
     override suspend fun searchSectors(query: String): List<SectorSummary> {
-        val response = client.get("api/sectors")
-        response.throwOnClientOrServerError()
-        val sectors: List<SectorSummary> = response.body()
+        val sectors = sectorsCache ?: run {
+            val response = client.get("api/sectors")
+            response.throwOnClientOrServerError()
+            val body: List<SectorSummary> = response.body()
+            sectorsCache = body
+            body
+        }
         return sectors.filter { it.name.contains(query, ignoreCase = true) }
     }
 

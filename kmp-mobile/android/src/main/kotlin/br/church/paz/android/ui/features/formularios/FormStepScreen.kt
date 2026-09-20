@@ -52,6 +52,7 @@ import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazSkeleton
+import br.church.paz.android.ui.components.PazSuccessState
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazSpacing
 import org.koin.androidx.compose.koinViewModel
@@ -77,10 +78,11 @@ fun FormStepScreen(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                FormDetailEffect.SubmitSuccess -> {
-                    snackbarHostState.showSnackbar("Formulário enviado com sucesso!")
-                    navController.popBackStack()
-                }
+                // Submission success now shows a dedicated success screen (see
+                // uiState.submitSuccess below) instead of a snackbar that
+                // instantly popped the screen — that gave no real confirmation
+                // the submission actually went through.
+                FormDetailEffect.SubmitSuccess -> Unit
                 FormDetailEffect.NavigateBack -> navController.popBackStack()
             }
         }
@@ -94,7 +96,7 @@ fun FormStepScreen(
     Scaffold(
         containerColor = Color.Transparent,
         bottomBar = {
-            if (!uiState.isLoading && uiState.form != null) {
+            if (!uiState.isLoading && uiState.form != null && !uiState.submitSuccess) {
                 StepBottomBar(
                     uiState = uiState,
                     onNext = {
@@ -113,14 +115,16 @@ fun FormStepScreen(
                     .background(PazGradients.Hero)
                     .statusBarsPadding(),
             ) {
-                StepHeader(
-                    title = uiState.form?.title ?: "Formulário",
-                    // The header back arrow steps backward through questions instead of
-                    // always leaving the screen — only pops at the first question.
-                    onBack = {
-                        if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onBack()
-                    },
-                )
+                if (!uiState.submitSuccess) {
+                    StepHeader(
+                        title = uiState.form?.title ?: "Formulário",
+                        // The header back arrow steps backward through questions instead of
+                        // always leaving the screen — only pops at the first question.
+                        onBack = {
+                            if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onBack()
+                        },
+                    )
+                }
             }
 
             Box(
@@ -130,6 +134,8 @@ fun FormStepScreen(
                     .background(MaterialTheme.colorScheme.background),
             ) {
                 when {
+                    uiState.submitSuccess ->
+                        PazSuccessState(onDone = { navController.popBackStack() })
                     uiState.isLoading -> StepLoadingState()
                     uiState.form == null ->
                         PazErrorState(

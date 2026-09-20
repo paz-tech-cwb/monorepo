@@ -187,7 +187,7 @@ class FormDetailViewModel(
             val result = submitForm(form.type, fields)
             result
                 .onSuccess {
-                    _uiState.update { it.copy(isSubmitting = false) }
+                    _uiState.update { it.copy(isSubmitting = false, submitSuccess = true) }
                     _effect.send(FormDetailEffect.SubmitSuccess)
                 }.onFailure { e ->
                     _uiState.update {

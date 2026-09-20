@@ -1,16 +1,11 @@
-import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsDateString, IsOptional } from 'class-validator';
 
 export class CasaDePazSummaryQueryDto {
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(2000)
-  @Max(2100)
-  year?: number;
+  @IsDateString()
+  from?: string;
 
   @IsOptional()
-  @Type(() => Number)
-  @IsIn([3, 6, 9, 12])
-  months?: 3 | 6 | 9 | 12;
+  @IsDateString()
+  to?: string;
 }
