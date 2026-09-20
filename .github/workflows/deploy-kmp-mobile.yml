@@ -20,7 +20,40 @@ permissions:
   contents: read
 
 jobs:
+  release-notes:
+    if: vars.DEPLOYS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      notes: ${{ steps.notes.outputs.notes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Bullet-point highlights for this build, derived from commit subjects
+      # touching kmp-mobile since the last mobile release tag (or the last
+      # 15 commits if no such tag exists yet). Conventional-commit prefixes
+      # (feat:, fix:, chore: ...) are stripped for a cleaner beta-tester note.
+      - name: Generate release notes
+        id: notes
+        run: |
+          PREV_TAG=$(git tag --list 'kmp-mobile-v*' --sort=-creatordate | head -n1)
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="${PREV_TAG}..HEAD"
+          else
+            RANGE="-15"
+          fi
+          {
+            echo "notes<<EOF"
+            git log $RANGE --no-merges --pretty=format:'%s' -- kmp-mobile \
+              | sed -E 's/^(feat|fix|chore|refactor|perf|docs|test|style)(\([^)]*\))?:\s*/- /' \
+              | sed -E 's/^([^-].*)$/- \1/' \
+              | awk '!seen[$0]++'
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
   android-firebase-distribution:
+    needs: release-notes
     if: |
       vars.DEPLOYS_ENABLED == 'true' &&
       (github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'both' || github.event.inputs.platform == 'android')
@@ -62,10 +95,11 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           FIREBASE_SERVICE_ACCOUNT_PATH: ${{ runner.temp }}/firebase-service-account.json
           FIREBASE_DISTRIBUTION_GROUPS: pilot
-          FIREBASE_RELEASE_NOTES: Automated build from develop (${{ github.sha }})
+          FIREBASE_RELEASE_NOTES: ${{ needs.release-notes.outputs.notes }}
         run: ./gradlew :android:assembleRelease :android:appDistributionUploadRelease
 
   ios-testflight:
+    needs: release-notes
     if: |
       vars.DEPLOYS_ENABLED == 'true' &&
       (github.event_name != 'workflow_dispatch' || github.event.inputs.platform == 'both' || github.event.inputs.platform == 'ios')
@@ -205,6 +239,9 @@ jobs:
           fi
           echo "IPA_PATH=$IPA_PATH" >> "$GITHUB_ENV"
 
+      # Attaching release-notes requires TestFlight Test Information (Beta App
+      # Description, Feedback Email, primary locale) to already be filled in
+      # App Store Connect — a one-time manual setup, not something CI can do.
       - name: Upload to TestFlight
         uses: apple-actions/upload-testflight-build@v1
         with:
@@ -212,6 +249,7 @@ jobs:
           api-key-id: ${{ secrets.IOS_APPSTORE_API_KEY_ID }}
           issuer-id: ${{ secrets.IOS_APPSTORE_ISSUER_ID }}
           api-private-key: ${{ secrets.IOS_APPSTORE_API_KEY_P8 }}
+          release-notes: ${{ needs.release-notes.outputs.notes }}
 
       - name: Clean up keychain
         if: always()

@@ -1,14 +1,29 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
+import { toast } from "sonner"
+import { Pencil, Trash2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
-import { useCasaDePazSubmissions } from "@/lib/hooks/use-casa-de-paz-analytics"
+import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useCasaDePazSubmissions, useDeleteCasaDePazSubmission } from "@/lib/hooks/use-casa-de-paz-analytics"
 import { useSectors } from "@/lib/hooks/use-sectors"
+import { CasaDePazEditDialog } from "./casa-de-paz-edit-dialog"
 import type { CasaDePazFilterState } from "./casa-de-paz-analytics-filters"
+import type { CasaDePazReportSubmission } from "@/lib/api/types"
 
-const COLUMN_COUNT = 9
+const COLUMN_COUNT = 10
 
 function formatDate(value: string): string {
   const [year, month, day] = value.split("-")
@@ -28,8 +43,24 @@ interface CasaDePazTableProps {
 export function CasaDePazTable({ filters, range }: CasaDePazTableProps) {
   const { data: submissions = [], isLoading, isError } = useCasaDePazSubmissions()
   const { data: sectors = [] } = useSectors()
+  const deleteMutation = useDeleteCasaDePazSubmission()
+
+  const [editing, setEditing] = useState<CasaDePazReportSubmission | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const sectorMap = useMemo(() => new Map(sectors.map((s) => [s.id, s.name])), [sectors])
+
+  const handleDelete = async () => {
+    if (!deletingId) return
+    try {
+      await deleteMutation.mutateAsync(deletingId)
+      toast.success("Registro removido")
+    } catch {
+      toast.error("Erro ao remover registro")
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   const filtered = useMemo(() => {
     if (!range) return submissions
@@ -65,6 +96,7 @@ export function CasaDePazTable({ filters, range }: CasaDePazTableProps) {
               <TableHead>Crianças</TableHead>
               <TableHead>Convidados</TableHead>
               <TableHead>Conversões</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -79,11 +111,46 @@ export function CasaDePazTable({ filters, range }: CasaDePazTableProps) {
                 <TableCell>{s.kids}</TableCell>
                 <TableCell>{s.guests}</TableCell>
                 <TableCell>{s.conversions}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => setEditing(s)} title="Editar">
+                      <Pencil size={16} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setDeletingId(s.id)}
+                      title="Remover"
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       )}
+
+      <CasaDePazEditDialog submission={editing} onOpenChange={(open) => !open && setEditing(null)} />
+
+      <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover registro de Casa de Paz?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O registro será removido permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }

@@ -80,3 +80,15 @@ export interface CasaDePazReportSubmission {
   created_at: string
   updated_at: string
 }
+
+export interface UpdateCasaDePazReportRequest {
+  date?: string
+  facilitator?: string
+  sector_id?: number
+  adults?: number
+  kids?: number
+  guests?: number
+  conversions?: number
+  meeting_day?: string
+  meeting_time?: string
+}

@@ -3,6 +3,7 @@ import type {
   CasaDePazAnalyticsSummary,
   CasaDePazAnalyticsSummaryQuery,
   CasaDePazReportSubmission,
+  UpdateCasaDePazReportRequest,
 } from "../types"
 
 function toQueryString(params: Record<string, string | number | undefined>): string {
@@ -27,4 +28,10 @@ export const casaDePazAnalyticsApi = {
   // year/months window is applied client-side (see casa-de-paz-table.tsx).
   getSubmissions: () =>
     api.get<CasaDePazReportSubmission[]>("/forms/casa-de-paz-reports"),
+
+  update: (id: string, data: UpdateCasaDePazReportRequest) =>
+    api.patch<CasaDePazReportSubmission>(`/forms/casa-de-paz-reports/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<void>(`/forms/casa-de-paz-reports/${id}`),
 }

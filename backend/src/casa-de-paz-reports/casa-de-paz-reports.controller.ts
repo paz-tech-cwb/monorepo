@@ -57,17 +57,20 @@ export class CasaDePazReportsController {
     @Body() dto: UpdateCasaDePazReportDto,
     @Req() req: RequestWithScope,
   ) {
-    return this.svc.update(id, dto, {
-      id: req.user.id,
-      roleSlug: req.user.role?.slug ?? 'member',
-    });
+    return this.svc.update(
+      id,
+      dto,
+      { id: req.user.id, roleSlug: req.user.role?.slug ?? 'member' },
+      req.formScope,
+    );
   }
 
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: RequestWithScope) {
-    return this.svc.softDelete(id, {
-      id: req.user.id,
-      roleSlug: req.user.role?.slug ?? 'member',
-    });
+    return this.svc.softDelete(
+      id,
+      { id: req.user.id, roleSlug: req.user.role?.slug ?? 'member' },
+      req.formScope,
+    );
   }
 }

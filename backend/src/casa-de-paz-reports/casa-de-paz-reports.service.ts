@@ -86,18 +86,25 @@ export class CasaDePazReportsService {
     return this.toResponse(entity);
   }
 
-  // This entity has no life_group_id to scope by, so unlike
-  // LifeGroupReportsService, "restricted" actors are scoped to their own
-  // submissions (submitted_by_id = actor.id) rather than a set of
-  // life-group ids. Unrestricted actors (admin/pastor, per
-  // ScopeResolverService) see everything.
+  // This entity has no life_group_id to scope by, so area_leader/
+  // sector_leader visibility is derived from scope.sectorIds (the sectors
+  // within their area, or their own sector) matching the report's sector_id.
+  // Actors with no sector scope (life_group_leader, member) fall back to
+  // seeing only their own submissions. Unrestricted actors (admin/pastor)
+  // see everything.
   async list(
     scope: ResolvedScope,
     actor: { id: number },
   ): Promise<CasaDePazReportResponse[]> {
     const qb = this.repo.createQueryBuilder('f').where('f.deleted_at IS NULL');
     if (!scope.unrestricted) {
-      qb.andWhere('f.submitted_by_id = :actorId', { actorId: actor.id });
+      if (scope.sectorIds.length > 0) {
+        qb.andWhere('f.sector_id IN (:...sectorIds)', {
+          sectorIds: scope.sectorIds,
+        });
+      } else {
+        qb.andWhere('f.submitted_by_id = :actorId', { actorId: actor.id });
+      }
     }
     const rows = await qb.orderBy('f.created_at', 'DESC').getMany();
     return rows.map((r) => this.toResponse(r));
@@ -119,7 +126,8 @@ export class CasaDePazReportsService {
     });
     if (!m) throw new NotFoundException();
     if (scope && !scope.unrestricted) {
-      if (!actor || m.submittedBy.id !== actor.id)
+      const inSectorScope = scope.sectorIds.includes(m.sectorId);
+      if (!inSectorScope && (!actor || m.submittedBy.id !== actor.id))
         throw new NotFoundException();
     }
     return m;
@@ -137,13 +145,18 @@ export class CasaDePazReportsService {
     id: string,
     dto: UpdateCasaDePazReportDto,
     actor: { id: number; roleSlug: string },
+    scope?: ResolvedScope,
   ): Promise<CasaDePazReportResponse> {
     const m = await this.findEntity(id);
-    this.policy.assertCanEdit(actor, {
-      submittedById: m.submittedBy.id,
-      createdAt: m.createdAt,
-      deletedAt: m.deletedAt,
-    });
+    const managesSector =
+      !!scope && (scope.unrestricted || scope.sectorIds.includes(m.sectorId));
+    if (!managesSector) {
+      this.policy.assertCanEdit(actor, {
+        submittedById: m.submittedBy.id,
+        createdAt: m.createdAt,
+        deletedAt: m.deletedAt,
+      });
+    }
     Object.assign(m, dto);
     const saved = await this.repo.save(m);
     await this.audit.record({
@@ -159,8 +172,14 @@ export class CasaDePazReportsService {
   async softDelete(
     id: string,
     actor: { id: number; roleSlug: string },
+    scope?: ResolvedScope,
   ): Promise<void> {
-    this.policy.assertCanDelete(actor);
+    const m = await this.findEntity(id);
+    const managesSector =
+      !!scope && (scope.unrestricted || scope.sectorIds.includes(m.sectorId));
+    if (!managesSector) {
+      this.policy.assertCanDelete(actor);
+    }
     await this.repo.softDelete(id);
     await this.audit.record({
       formSlug: SLUG,
