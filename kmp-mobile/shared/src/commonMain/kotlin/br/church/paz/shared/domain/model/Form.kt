@@ -213,6 +213,22 @@ data class CasaDePazReportForm(
 )
 
 @Serializable
+data class CasaDePazReportSubmission(
+    val id: String,
+    val date: String,
+    val facilitator: String,
+    @SerialName("sector_id") val sectorId: Int,
+    val adults: Int,
+    val kids: Int = 0,
+    val guests: Int = 0,
+    val conversions: Int = 0,
+    @SerialName("meeting_day") val meetingDay: String? = null,
+    @SerialName("meeting_time") val meetingTime: String? = null,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+)
+
+@Serializable
 data class LifeGroupReportForm(
     @SerialName("life_group_id") val lifeGroupId: String,
     val date: String,

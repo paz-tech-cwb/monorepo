@@ -2,6 +2,7 @@ package br.church.paz.shared.data.repository
 
 import br.church.paz.shared.domain.model.AreaSupervisorReportForm
 import br.church.paz.shared.domain.model.CasaDePazReportForm
+import br.church.paz.shared.domain.model.CasaDePazReportSubmission
 import br.church.paz.shared.domain.model.ConversionForm
 import br.church.paz.shared.domain.model.CourseForm
 import br.church.paz.shared.domain.model.FormCatalogItem
@@ -19,8 +20,10 @@ import br.church.paz.shared.domain.repository.FormsRepository
 import br.church.paz.shared.data.remote.throwOnClientOrServerError
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -113,6 +116,28 @@ class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
     @Throws(Exception::class)
     override suspend fun submitCasaDePazReport(form: CasaDePazReportForm) =
         post("api/forms/casa-de-paz-reports", form)
+
+    @Throws(Exception::class)
+    override suspend fun getCasaDePazReportSubmissions(): List<CasaDePazReportSubmission> {
+        val response = client.get("api/forms/casa-de-paz-reports")
+        response.throwOnClientOrServerError()
+        return response.body()
+    }
+
+    @Throws(Exception::class)
+    override suspend fun updateCasaDePazReport(id: String, form: CasaDePazReportForm) {
+        val response = client.patch("api/forms/casa-de-paz-reports/$id") {
+            contentType(ContentType.Application.Json)
+            setBody(form)
+        }
+        response.throwOnClientOrServerError()
+    }
+
+    @Throws(Exception::class)
+    override suspend fun deleteCasaDePazReport(id: String) {
+        val response = client.delete("api/forms/casa-de-paz-reports/$id")
+        response.throwOnClientOrServerError()
+    }
 
     private suspend inline fun <reified T : Any> post(path: String, body: T) {
         val response = client.post(path) {
