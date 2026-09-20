@@ -48,6 +48,7 @@
 		81241EF8344367972B2409AF /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0E0ECD6F71C3A9C1F38E441 /* HomeViewModel.swift */; };
 		8696DCD7837887595806B611 /* SkeletonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36DB133997051B82A7D0D38D /* SkeletonView.swift */; };
 		1B0608E32EA94A91AAF0CDD8 /* ErrorStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72E4E654E545438486094398 /* ErrorStateView.swift */; };
+		E20D8CF991F94CAD8DF99955 /* SuccessStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FAAE34D5E8A42499DD13622 /* SuccessStateView.swift */; };
 		8EE80FC9BF00426B84C0FA29 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 024126B7428F482DBF3B9B52 /* ShareSheet.swift */; };
 		8BBB7655494EE2891298CD78 /* PazPillChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62DDEA0026352360D73E873 /* PazPillChip.swift */; };
 		3EC9DC430F954B799D549420 /* GlassBlurBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD36BC4FF7F143F2A22DBA8E /* GlassBlurBackground.swift */; };
@@ -116,6 +117,7 @@
 		22597D6E893E60A78DA0327F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		36DB133997051B82A7D0D38D /* SkeletonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonView.swift; sourceTree = "<group>"; };
 		72E4E654E545438486094398 /* ErrorStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorStateView.swift; sourceTree = "<group>"; };
+		9FAAE34D5E8A42499DD13622 /* SuccessStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuccessStateView.swift; sourceTree = "<group>"; };
 		024126B7428F482DBF3B9B52 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		3B09921331A9C0A41304A36A /* dm_sans_bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = dm_sans_bold.ttf; sourceTree = "<group>"; };
 		43523C0C1306C6777492969E /* dm_sans_medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = dm_sans_medium.ttf; sourceTree = "<group>"; };
@@ -330,6 +332,7 @@
 				75FC45595FDB4FCE93453A85 /* PazPillButtonStyle.swift */,
 				36DB133997051B82A7D0D38D /* SkeletonView.swift */,
 				72E4E654E545438486094398 /* ErrorStateView.swift */,
+				9FAAE34D5E8A42499DD13622 /* SuccessStateView.swift */,
 				024126B7428F482DBF3B9B52 /* ShareSheet.swift */,
 			);
 			path = Components;
@@ -658,6 +661,7 @@
 				217CFACC8706FD29156A10AA /* SearchView.swift in Sources */,
 				8696DCD7837887595806B611 /* SkeletonView.swift in Sources */,
 				1B0608E32EA94A91AAF0CDD8 /* ErrorStateView.swift in Sources */,
+				E20D8CF991F94CAD8DF99955 /* SuccessStateView.swift in Sources */,
 				8EE80FC9BF00426B84C0FA29 /* ShareSheet.swift in Sources */,
 				C757D390C5E4180A712A0B2B /* VideoPlayerView.swift in Sources */,
 			);

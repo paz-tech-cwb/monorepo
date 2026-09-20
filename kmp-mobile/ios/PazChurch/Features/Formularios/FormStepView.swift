@@ -52,24 +52,25 @@ struct FormStepView: View {
                     message: "Este formulário não possui perguntas",
                     onRetry: { dismiss() }
                 )
+            } else if viewModel.submitSuccess {
+                SuccessStateView(onDone: { dismiss() })
             } else {
                 stepContent
             }
         }
         .background(PazMeshBackground().ignoresSafeArea())
-        .navigationTitle(displayTitle)
+        .navigationTitle(viewModel.submitSuccess ? "" : displayTitle)
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: goBack) {
-                    Image(systemName: "chevron.left")
+            if !viewModel.submitSuccess {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: goBack) {
+                        Image(systemName: "chevron.left")
+                    }
                 }
             }
-        }
-        .onChange(of: viewModel.submitSuccess) { _, success in
-            if success { dismiss() }
         }
         // Applies only to the scroll view inside stepContent (see below) — the keyboard must
         // stay open while the user taps Continuar without the scroll gesture dismissing it.
