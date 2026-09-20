@@ -257,6 +257,16 @@ private fun StepScaffold(
     }
 }
 
+// No known birthdate yet when the picker first opens, so default to a typical adult
+// birth year (~28 years ago) instead of forcing a long scroll back from the current month.
+private val DefaultBirthdateMillis: Long =
+    LocalDate
+        .now()
+        .minusYears(28)
+        .atStartOfDay(ZoneOffset.UTC)
+        .toInstant()
+        .toEpochMilli()
+
 /**
  * Collects the birth date through a real [DatePicker], never free text: the backend
  * validates `birth_date` with `@IsDateString()`, so the value submitted MUST be an
@@ -271,23 +281,17 @@ private fun BirthdayStep(
     onSkip: () -> Unit,
     onDismissError: () -> Unit,
 ) {
-    val datePickerState =
-        rememberDatePickerState(
-            // Future birth dates are never valid.
-            selectableDates =
-                object : SelectableDates {
-                    override fun isSelectableYear(year: Int): Boolean = year <= LocalDate.now().year
-
-                    override fun isSelectableDate(utcTimeMillis: Long): Boolean = utcTimeMillis <= System.currentTimeMillis()
-                },
-        )
     var isPickerOpen by remember { mutableStateOf(false) }
+    // The committed value — only ever updated when the user taps "OK" in the dialog.
+    // Never read the DatePickerState's live selectedDateMillis outside the dialog:
+    // it mutates on every tap in the picker UI, so using it directly as the source
+    // of truth would leak an in-progress (possibly cancelled) selection.
+    var confirmedMillis by remember { mutableStateOf<Long?>(null) }
 
-    val selectedMillis = datePickerState.selectedDateMillis
     // The picker reports UTC-midnight millis, so format in UTC — using the device
     // time zone would shift the date by a day for negative-offset zones.
     val isoDate =
-        selectedMillis?.let {
+        confirmedMillis?.let {
             Instant
                 .ofEpochMilli(it)
                 .atZone(ZoneOffset.UTC)
@@ -295,7 +299,7 @@ private fun BirthdayStep(
                 .format(DateTimeFormatter.ISO_LOCAL_DATE)
         }
     val displayDate =
-        selectedMillis?.let {
+        confirmedMillis?.let {
             Instant
                 .ofEpochMilli(it)
                 .atZone(ZoneOffset.UTC)
@@ -323,12 +327,31 @@ private fun BirthdayStep(
         }
 
         if (isPickerOpen) {
+            // Key the picker state on isPickerOpen so a fresh DatePickerState is created
+            // every time the dialog opens, seeded from the last CONFIRMED value (never
+            // from a leftover live selection a previous "Cancelar" tap discarded).
+            val datePickerState =
+                rememberDatePickerState(
+                    initialSelectedDateMillis = confirmedMillis ?: DefaultBirthdateMillis,
+                    initialDisplayedMonthMillis = confirmedMillis ?: DefaultBirthdateMillis,
+                    // Future birth dates are never valid.
+                    selectableDates =
+                        object : SelectableDates {
+                            override fun isSelectableYear(year: Int): Boolean = year <= LocalDate.now().year
+
+                            override fun isSelectableDate(utcTimeMillis: Long): Boolean = utcTimeMillis <= System.currentTimeMillis()
+                        },
+                )
             DatePickerDialog(
                 onDismissRequest = { isPickerOpen = false },
                 confirmButton = {
-                    TextButton(onClick = { isPickerOpen = false }) { Text("OK") }
+                    TextButton(onClick = {
+                        confirmedMillis = datePickerState.selectedDateMillis
+                        isPickerOpen = false
+                    }) { Text("OK") }
                 },
                 dismissButton = {
+                    // Discard the in-progress selection: confirmedMillis is left untouched.
                     TextButton(onClick = { isPickerOpen = false }) { Text("Cancelar") }
                 },
             ) {
@@ -435,9 +458,13 @@ private fun AddressStep(
                 // rather than read-only text — never silently submit a blank.
                 val lookedUpStreet = cepResult.result.street
                 val lookedUpNeighborhood = cepResult.result.neighborhood
+                val lookedUpCity = cepResult.result.city
+                val lookedUpState = cepResult.result.state
                 val effectiveStreet = if (lookedUpStreet.isNotBlank()) lookedUpStreet else manualStreet
                 val effectiveNeighborhood =
                     if (lookedUpNeighborhood.isNotBlank()) lookedUpNeighborhood else manualNeighborhood
+                val effectiveCity = if (lookedUpCity.isNotBlank()) lookedUpCity else manualCity
+                val effectiveState = if (lookedUpState.isNotBlank()) lookedUpState else manualState
 
                 if (lookedUpStreet.isNotBlank()) {
                     Text(text = lookedUpStreet, style = MaterialTheme.typography.bodyMedium)
@@ -469,11 +496,42 @@ private fun AddressStep(
                     Spacer(modifier = Modifier.height(PazSpacing.Md))
                 }
 
-                Text(
-                    text = "${cepResult.result.city} - ${cepResult.result.state}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = PazColors.Slate,
-                )
+                if (lookedUpCity.isNotBlank()) {
+                    Text(
+                        text = lookedUpCity,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = PazColors.Slate,
+                    )
+                } else {
+                    OutlinedTextField(
+                        value = manualCity,
+                        onValueChange = {
+                            manualCity = it
+                            onDismissError()
+                        },
+                        label = { Text("Cidade") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                Spacer(modifier = Modifier.height(PazSpacing.Md))
+
+                if (lookedUpState.isNotBlank()) {
+                    Text(
+                        text = lookedUpState,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = PazColors.Slate,
+                    )
+                } else {
+                    OutlinedTextField(
+                        value = manualState,
+                        onValueChange = {
+                            manualState = it
+                            onDismissError()
+                        },
+                        label = { Text("Estado") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
                 Spacer(modifier = Modifier.height(PazSpacing.Md))
                 OutlinedTextField(
                     value = number,
@@ -504,16 +562,16 @@ private fun AddressStep(
                         effectiveStreet.isNotBlank() &&
                             number.isNotBlank() &&
                             effectiveNeighborhood.isNotBlank() &&
-                            cepResult.result.city.isNotBlank() &&
-                            cepResult.result.state.isNotBlank(),
+                            effectiveCity.isNotBlank() &&
+                            effectiveState.isNotBlank(),
                     onClick = {
                         onSubmit(
                             effectiveStreet,
                             number,
                             complement.ifBlank { null },
                             effectiveNeighborhood,
-                            cepResult.result.city,
-                            cepResult.result.state,
+                            effectiveCity,
+                            effectiveState,
                             cep,
                         )
                     },
