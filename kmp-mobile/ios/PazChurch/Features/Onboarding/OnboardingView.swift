@@ -129,7 +129,18 @@ private struct WelcomeVideoStepView: View {
     /// which would otherwise leave this non-skippable full-screen step with no exit.
     private static let startTimeout: Duration = .seconds(15)
 
-    @State private var player = AVPlayer(url: AppConfig.onboardingVideoURL)
+    /// Prefers the copy `PazChurchApp.init()` prefetched at process start (instant, works
+    /// offline once cached) — falls back to streaming the remote URL directly if prefetch
+    /// hasn't finished yet or failed.
+    private static func resolvedVideoURL() -> URL {
+        let remoteURLString = AppConfig.onboardingVideoURL.absoluteString
+        if let cachedPath = VideoCache.shared.cachedFilePath(url: remoteURLString) {
+            return URL(fileURLWithPath: cachedPath)
+        }
+        return AppConfig.onboardingVideoURL
+    }
+
+    @State private var player = AVPlayer(url: Self.resolvedVideoURL())
     @State private var observerTokens: [NSObjectProtocol] = []
     @State private var statusObservation: NSKeyValueObservation?
     @State private var timeControlObservation: NSKeyValueObservation?
