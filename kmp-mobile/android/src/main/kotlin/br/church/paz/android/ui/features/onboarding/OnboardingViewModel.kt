@@ -80,7 +80,22 @@ class OnboardingViewModel(
 
     fun onVideoFinished() = advance()
 
-    fun onSkipCurrentStep() = advance()
+    /**
+     * True while the Birthday step must be answered to complete a deferred sign-in retry —
+     * there is no session yet at all in that case, so skipping would abandon sign-in entirely
+     * (the user would appear logged out) and would also never learn whether WhatsApp/address
+     * are missing (only knowable once the retry succeeds and `missingSteps()` can be called
+     * against an authenticated session).
+     */
+    val isBirthdayRequiredForLogin: Boolean
+        get() = pendingBirthDateLogin != null
+
+    fun onSkipCurrentStep() {
+        // Defense in depth: the screen hides the skip affordance in this case, but never allow
+        // skipping past a still-pending sign-in even if this were somehow called anyway.
+        if (_uiState.value.currentStep == OnboardingStep.Birthday && isBirthdayRequiredForLogin) return
+        advance()
+    }
 
     fun onBirthdaySubmitted(birthDate: String) {
         val loginRetry = pendingBirthDateLogin
