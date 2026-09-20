@@ -439,8 +439,12 @@ private struct AddressStepView: View {
             // never silently submit a blank.
             let lookedUpStreet = found.result.street
             let lookedUpNeighborhood = found.result.neighborhood
+            let lookedUpCity = found.result.city
+            let lookedUpState = found.result.state
             let effectiveStreet = lookedUpStreet.isBlank ? manualStreet : lookedUpStreet
             let effectiveNeighborhood = lookedUpNeighborhood.isBlank ? manualNeighborhood : lookedUpNeighborhood
+            let effectiveCity = lookedUpCity.isBlank ? manualCity : lookedUpCity
+            let effectiveState = lookedUpState.isBlank ? manualState : lookedUpState
 
             VStack(alignment: .leading, spacing: PazSpacing.sm) {
                 if lookedUpStreet.isBlank {
@@ -455,9 +459,19 @@ private struct AddressStepView: View {
                     Text(lookedUpNeighborhood).font(PazTypography.bodyMedium)
                 }
 
-                Text("\(found.result.city) - \(found.result.state)")
-                    .font(PazTypography.bodySmall)
-                    .foregroundStyle(PazColors.slate)
+                if lookedUpCity.isBlank {
+                    TextField("Cidade", text: $manualCity).textFieldStyle(.roundedBorder)
+                }
+
+                if lookedUpState.isBlank {
+                    TextField("Estado", text: $manualState).textFieldStyle(.roundedBorder)
+                }
+
+                if !lookedUpCity.isBlank, !lookedUpState.isBlank {
+                    Text("\(lookedUpCity) - \(lookedUpState)")
+                        .font(PazTypography.bodySmall)
+                        .foregroundStyle(PazColors.slate)
+                }
 
                 TextField("Número", text: $number).textFieldStyle(.roundedBorder)
                 TextField("Complemento (opcional)", text: $complement).textFieldStyle(.roundedBorder)
@@ -467,8 +481,8 @@ private struct AddressStepView: View {
                         effectiveStreet,
                         number,
                         effectiveNeighborhood,
-                        found.result.city,
-                        found.result.state,
+                        effectiveCity,
+                        effectiveState,
                     ]
                 ) {
                     onSubmit(
@@ -476,8 +490,8 @@ private struct AddressStepView: View {
                         number,
                         complement.isEmpty ? nil : complement,
                         effectiveNeighborhood,
-                        found.result.city,
-                        found.result.state,
+                        effectiveCity,
+                        effectiveState,
                         cep
                     )
                 }
