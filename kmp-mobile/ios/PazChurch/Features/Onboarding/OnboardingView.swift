@@ -25,7 +25,16 @@ struct OnboardingView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if coordinator.isLoadingMissingSteps, coordinator.currentStep != .video {
+                if coordinator.currentStep == .video, let loadErrorMessage = coordinator.loadErrorMessage {
+                    // The initial `missingSteps()` fetch (kicked off by `start()` alongside the
+                    // video) failed. The video may still be playing here; once it finishes,
+                    // `advance()` sees `loadErrorMessage` and stays on `.video` instead of
+                    // silently finishing, so this same branch keeps showing the retry state.
+                    OnboardingLoadErrorView(
+                        message: loadErrorMessage,
+                        onRetry: { Task { await coordinator.retryStart() } }
+                    )
+                } else if coordinator.isLoadingMissingSteps, coordinator.currentStep != .video {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if coordinator.currentStep == .video {
@@ -80,6 +89,36 @@ struct OnboardingView: View {
     }
 }
 
+// MARK: - Initial missing-steps fetch failed (retryable)
+
+private struct OnboardingLoadErrorView: View {
+    let message: String
+    let onRetry: () -> Void
+
+    var body: some View {
+        VStack(spacing: PazSpacing.lg) {
+            Spacer()
+
+            Text("Não foi possível carregar seu cadastro")
+                .font(PazTypography.headlineSmall)
+                .foregroundStyle(PazColors.ink)
+                .multilineTextAlignment(.center)
+
+            Text(message)
+                .font(PazTypography.bodyMedium)
+                .foregroundStyle(PazColors.slate)
+                .multilineTextAlignment(.center)
+
+            Button("Tentar novamente", action: onRetry)
+                .buttonStyle(.pazPillPrimary)
+
+            Spacer()
+        }
+        .padding(PazSpacing.xl)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
 // MARK: - Step 1: Welcome video (not skippable)
 
 private struct WelcomeVideoStepView: View {
@@ -91,6 +130,7 @@ private struct WelcomeVideoStepView: View {
     )!
 
     @State private var player = AVPlayer(url: WelcomeVideoStepView.placeholderVideoURL)
+    @State private var didEndObserverToken: NSObjectProtocol?
 
     var body: some View {
         VideoPlayer(player: player)
@@ -98,14 +138,26 @@ private struct WelcomeVideoStepView: View {
             .background(Color.black)
             .task {
                 player.play()
-                NotificationCenter.default.addObserver(
+                removeDidEndObserver()
+                didEndObserverToken = NotificationCenter.default.addObserver(
                     forName: .AVPlayerItemDidPlayToEndTime,
                     object: player.currentItem,
                     queue: .main
                 ) { _ in
+                    removeDidEndObserver()
                     onFinished()
                 }
             }
+            .onDisappear {
+                removeDidEndObserver()
+            }
+    }
+
+    private func removeDidEndObserver() {
+        if let token = didEndObserverToken {
+            NotificationCenter.default.removeObserver(token)
+            didEndObserverToken = nil
+        }
     }
 }
 

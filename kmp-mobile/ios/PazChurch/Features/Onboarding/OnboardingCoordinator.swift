@@ -29,6 +29,11 @@ final class OnboardingCoordinator {
     private(set) var isLookingUpCep = false
     private(set) var cepResult: CepLookupOutcome?
     private(set) var errorMessage: String?
+    /// Set only when the initial `missingSteps()` fetch (in `start()`) fails, e.g. due to a
+    /// network error. Distinct from `errorMessage`, which reports per-step submission errors
+    /// surfaced inline on the step forms; this one blocks the whole flow behind a full-screen
+    /// retry state so a network failure can never silently skip onboarding.
+    private(set) var loadErrorMessage: String?
 
     private var remainingSteps: [OnboardingStep] = []
     private let repository: OnboardingRepository
@@ -44,6 +49,7 @@ final class OnboardingCoordinator {
 
     func start() async {
         currentStep = .video
+        loadErrorMessage = nil
         if pendingBirthDateLogin != nil {
             // No session exists yet — Birthday is known to be missing, and the rest of the
             // missing steps (if any) are only knowable once the pending login completes.
@@ -51,12 +57,22 @@ final class OnboardingCoordinator {
             isLoadingMissingSteps = false
             return
         }
+        isLoadingMissingSteps = true
         do {
             remainingSteps = try await repository.missingSteps()
+            isLoadingMissingSteps = false
         } catch {
-            remainingSteps = []
+            // Do NOT fall through to `.finished` on failure — that would silently skip
+            // onboarding for a member who still has missing steps, just because of a
+            // transient network error. Surface an explicit, retryable error state instead.
+            isLoadingMissingSteps = false
+            loadErrorMessage = error.localizedDescription
         }
-        isLoadingMissingSteps = false
+    }
+
+    /// Retries the initial missing-steps fetch after `start()` failed with `loadErrorMessage` set.
+    func retryStart() async {
+        await start()
     }
 
     func onVideoFinished() {
@@ -143,6 +159,11 @@ final class OnboardingCoordinator {
     }
 
     private func advance() {
+        guard loadErrorMessage == nil else {
+            // The initial missing-steps fetch failed; stay put (the view surfaces the retry
+            // state for `.video`) instead of silently treating onboarding as finished.
+            return
+        }
         guard !remainingSteps.isEmpty else {
             currentStep = .finished
             return
