@@ -1,20 +1,28 @@
 "use client"
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-const CURRENT_YEAR = new Date().getFullYear()
-const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i)
-
-const PERIOD_OPTIONS = [
-  { value: 3, label: "Últimos 3 meses" },
-  { value: 6, label: "Últimos 6 meses" },
-  { value: 9, label: "Últimos 9 meses" },
-  { value: 12, label: "Últimos 12 meses" },
-] as const
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 export interface CasaDePazFilterState {
-  year: number
-  months: 3 | 6 | 9 | 12
+  /** "YYYY-MM-DD" */
+  from: string
+  /** "YYYY-MM-DD" */
+  to: string
+}
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function monthsAgoIso(months: number): string {
+  const d = new Date()
+  d.setDate(1)
+  d.setMonth(d.getMonth() - (months - 1))
+  return d.toISOString().slice(0, 10)
+}
+
+export function defaultCasaDePazFilterState(): CasaDePazFilterState {
+  return { from: monthsAgoIso(6), to: todayIso() }
 }
 
 interface CasaDePazAnalyticsFiltersProps {
@@ -24,38 +32,30 @@ interface CasaDePazAnalyticsFiltersProps {
 
 export function CasaDePazAnalyticsFilters({ value, onChange }: CasaDePazAnalyticsFiltersProps) {
   return (
-    <div className="flex flex-wrap gap-2">
-      <Select
-        value={String(value.year)}
-        onValueChange={(v) => onChange({ ...value, year: Number(v) })}
-      >
-        <SelectTrigger className="w-[110px]">
-          <SelectValue placeholder="Ano" />
-        </SelectTrigger>
-        <SelectContent>
-          {YEAR_OPTIONS.map((year) => (
-            <SelectItem key={year} value={String(year)}>
-              {year}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={String(value.months)}
-        onValueChange={(v) => onChange({ ...value, months: Number(v) as 3 | 6 | 9 | 12 })}
-      >
-        <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Período" />
-        </SelectTrigger>
-        <SelectContent>
-          {PERIOD_OPTIONS.map((period) => (
-            <SelectItem key={period.value} value={String(period.value)}>
-              {period.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="space-y-1">
+        <Label htmlFor="casa-de-paz-from" className="text-xs">De</Label>
+        <Input
+          id="casa-de-paz-from"
+          type="date"
+          value={value.from}
+          max={value.to}
+          onChange={(e) => onChange({ ...value, from: e.target.value })}
+          className="w-[160px]"
+        />
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor="casa-de-paz-to" className="text-xs">Até</Label>
+        <Input
+          id="casa-de-paz-to"
+          type="date"
+          value={value.to}
+          min={value.from}
+          max={todayIso()}
+          onChange={(e) => onChange({ ...value, to: e.target.value })}
+          className="w-[160px]"
+        />
+      </div>
     </div>
   )
 }

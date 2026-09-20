@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatsCardSkeleton } from "@/components/ui/skeleton-components"
+import { ExportDashboardButton } from "@/components/ui/export-dashboard-button"
 import { Home, Users2, Baby, UserPlus, Sparkles, Percent } from "lucide-react"
 import { useCasaDePazSummary } from "@/lib/hooks/use-casa-de-paz-analytics"
 import {
   CasaDePazAnalyticsFilters,
+  defaultCasaDePazFilterState,
   type CasaDePazFilterState,
 } from "@/components/casa-de-paz-analytics/casa-de-paz-analytics-filters"
 import { CasaDePazTrendChart } from "@/components/casa-de-paz-analytics/casa-de-paz-trend-chart"
@@ -14,10 +16,8 @@ import { CasaDePazBreakdownCharts } from "@/components/casa-de-paz-analytics/cas
 import { CasaDePazTable } from "@/components/casa-de-paz-analytics/casa-de-paz-table"
 
 export function CasaDePazReport() {
-  const [filters, setFilters] = useState<CasaDePazFilterState>({
-    year: new Date().getFullYear(),
-    months: 6,
-  })
+  const [filters, setFilters] = useState<CasaDePazFilterState>(defaultCasaDePazFilterState())
+  const exportRef = useRef<HTMLDivElement>(null)
 
   const { data, isLoading, isError } = useCasaDePazSummary(filters)
 
@@ -25,8 +25,11 @@ export function CasaDePazReport() {
   const conversionRatePercent = totals ? Math.round(totals.conversion_rate * 100) : 0
 
   return (
-    <div className="space-y-4">
-      <CasaDePazAnalyticsFilters value={filters} onChange={setFilters} />
+    <div className="space-y-4" ref={exportRef}>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <CasaDePazAnalyticsFilters value={filters} onChange={setFilters} />
+        <ExportDashboardButton targetRef={exportRef} filename="relatorio-casa-de-paz" />
+      </div>
 
       {isError ? (
         <Card>
