@@ -22,6 +22,17 @@ export class UsersService {
     private readonly entityManager: EntityManager,
   ) {}
 
+  /**
+   * The `addresses.zip_code` column is `varchar(8)`, but `CreateAddressDto` accepts
+   * the hyphenated CEP format (`"80410-000"`) that admin-ui's `formatCEP()` submits.
+   * Every write path must strip non-digits first, or Postgres rejects the insert
+   * with a value-too-long error.
+   */
+  private static normalizeZipCode(zipCode: string | null | undefined) {
+    const digits = (zipCode ?? '').replace(/\D/g, '');
+    return digits.length > 0 ? digits.slice(0, 8) : null;
+  }
+
   private toAddressResponse(address: Address | null) {
     if (!address) return { address: null, address_details: null };
 
@@ -125,7 +136,9 @@ export class UsersService {
         let address: Address | null = null;
         if (dto.address) {
           const newAddress = new Address();
-          newAddress.zipCode = dto.address.zip_code;
+          newAddress.zipCode = UsersService.normalizeZipCode(
+            dto.address.zip_code,
+          );
           newAddress.country = dto.address.country;
           newAddress.state = dto.address.state;
           newAddress.city = dto.address.city;
@@ -205,7 +218,7 @@ export class UsersService {
         order: { name: 'ASC' },
       });
       return users.map((u) => this.toResponse(u));
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving users.',
       );
@@ -246,7 +259,7 @@ export class UsersService {
 
       if (dto.address !== undefined) {
         const address = user.address ?? new Address();
-        address.zipCode = dto.address.zip_code;
+        address.zipCode = UsersService.normalizeZipCode(dto.address.zip_code);
         address.country = dto.address.country;
         address.state = dto.address.state;
         address.city = dto.address.city;
@@ -349,6 +362,19 @@ export class UsersService {
       if (dto.phone !== undefined) user.phoneNumber = dto.phone ?? null;
       if (dto.birth_date !== undefined)
         user.birthDate = dto.birth_date ? new Date(dto.birth_date) : null;
+
+      if (dto.address !== undefined) {
+        const address = user.address ?? new Address();
+        address.zipCode = UsersService.normalizeZipCode(dto.address.zip_code);
+        address.country = dto.address.country;
+        address.state = dto.address.state;
+        address.city = dto.address.city;
+        address.neighborhood = dto.address.neighborhood;
+        address.street = dto.address.street;
+        address.number = dto.address.number?.trim() || null;
+        address.complement = dto.address.complement?.trim() || null;
+        user.address = await this.entityManager.save(Address, address);
+      }
 
       const saved = await this.entityManager.save(User, user);
       const reloaded = await this.entityManager.findOne(User, {

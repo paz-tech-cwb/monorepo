@@ -7,10 +7,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import br.church.paz.android.ui.features.onboarding.OnboardingScreen
 import br.church.paz.android.ui.theme.PazGradients
 import com.cwb.pazchurch.app.R
 import org.koin.androidx.compose.koinViewModel
@@ -20,12 +23,20 @@ fun SplashScreen(
     onNavigateToHome: () -> Unit,
     viewModel: SplashViewModel = koinViewModel(),
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 SplashEffect.NavigateToHome -> onNavigateToHome()
             }
         }
+    }
+
+    // Onboarding resumes on relaunch/session-restore, not only on explicit sign-in.
+    if (uiState.showOnboarding) {
+        OnboardingScreen(onFinished = { viewModel.onOnboardingFinished() })
+        return
     }
 
     Box(

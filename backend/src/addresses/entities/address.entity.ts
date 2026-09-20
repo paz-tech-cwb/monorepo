@@ -26,6 +26,6 @@ export class Address {
   @Column({ type: 'varchar', length: 255 })
   country: string;
 
-  @Column({ type: 'varchar', length: 255 })
-  zipCode: string;
+  @Column({ name: 'zip_code', type: 'varchar', length: 8, nullable: true })
+  zipCode: string | null;
 }

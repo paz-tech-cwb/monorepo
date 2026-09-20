@@ -29,6 +29,7 @@ import {
 import { FormDrawer } from "@/components/ui/form-drawer"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { AddressForm, type AddressFormData } from "@/components/ui/address-form"
+import { formatCEP } from "@/lib/utils/cep"
 import { Search, Plus, MoreHorizontal, Edit, Trash2, GitMerge } from "lucide-react"
 import { useUsers, useUser, useCreateUser, useUpdateUser, useUpdateUserRole, useDeleteUser } from "@/lib/hooks/use-users"
 import { useAreas } from "@/lib/hooks/use-areas"
@@ -74,7 +75,7 @@ type FilterOption = {
 
 function getAddressFormData(member: AdminUser): AddressFormData {
   return {
-    zip_code: member.address_details?.zip_code ?? "",
+    zip_code: formatCEP(member.address_details?.zip_code ?? ""),
     country: member.address_details?.country ?? "Brasil",
     state: member.address_details?.state ?? "",
     city: member.address_details?.city ?? "",
