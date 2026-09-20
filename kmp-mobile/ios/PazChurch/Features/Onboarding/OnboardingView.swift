@@ -2,10 +2,11 @@ import AVKit
 import Shared
 import SwiftUI
 
-/// Post-sign-in member-onboarding flow: an unskippable welcome video, then up to three
-/// skippable profile-completion steps (birthday, WhatsApp, address). Presented full-screen,
-/// with a native (non-custom) nav bar per step so back-navigation never applies here — each
-/// step either advances, is skipped, or the flow finishes and calls `onFinished`.
+/// Post-sign-in member-onboarding flow: an unskippable welcome video, two required
+/// profile-completion steps (birthday, WhatsApp), and a final skippable step (address).
+/// Presented full-screen, with a native (non-custom) nav bar per step so back-navigation
+/// never applies here — each step either advances, is skipped, or the flow finishes and
+/// calls `onFinished`.
 struct OnboardingView: View {
     @State private var coordinator: OnboardingCoordinator
     let onFinished: () -> Void
@@ -20,15 +21,6 @@ struct OnboardingView: View {
             pendingBirthDateLogin: pendingBirthDateLogin
         ))
         self.onFinished = onFinished
-    }
-
-    /// `nil` while the Birthday step is completing a deferred sign-in retry — it cannot be
-    /// skipped in that case, since there is no session yet to fall back to.
-    private var birthdaySkipAction: (() -> Void)? {
-        if coordinator.isBirthdayRequiredForLogin {
-            return nil
-        }
-        return coordinator.onSkipCurrentStep
     }
 
     var body: some View {
@@ -52,15 +44,13 @@ struct OnboardingView: View {
                     BirthdayStepView(
                         isSubmitting: coordinator.isSubmitting,
                         errorMessage: coordinator.errorMessage,
-                        onSubmit: { date in Task { await coordinator.onBirthdaySubmitted(date) } },
-                        onSkip: birthdaySkipAction
+                        onSubmit: { date in Task { await coordinator.onBirthdaySubmitted(date) } }
                     )
                 } else if coordinator.currentStep == .whatsapp {
                     WhatsappStepView(
                         isSubmitting: coordinator.isSubmitting,
                         errorMessage: coordinator.errorMessage,
-                        onSubmit: { phone in Task { await coordinator.onWhatsappSubmitted(phone) } },
-                        onSkip: coordinator.onSkipCurrentStep
+                        onSubmit: { phone in Task { await coordinator.onWhatsappSubmitted(phone) } }
                     )
                 } else if coordinator.currentStep == .address {
                     AddressStepView(
@@ -257,15 +247,12 @@ private struct WelcomeVideoStepView: View {
     }
 }
 
-// MARK: - Step 2: Birthday (skippable)
+// MARK: - Step 2: Birthday (required)
 
 private struct BirthdayStepView: View {
     let isSubmitting: Bool
     let errorMessage: String?
     let onSubmit: (String) -> Void
-    /// `nil` while this step is completing a deferred sign-in retry — birthday is required to
-    /// resolve/create the account in that case, so it cannot be skipped.
-    let onSkip: (() -> Void)?
 
     @State private var birthDate = Date()
 
@@ -317,27 +304,18 @@ private struct BirthdayStepView: View {
             }
             .buttonStyle(.pazPillPrimary)
             .disabled(isSubmitting)
-
-            if let onSkip {
-                Button("Pular por agora", action: onSkip)
-                    .font(PazTypography.labelLarge)
-                    .foregroundStyle(PazColors.slate)
-                    .frame(maxWidth: .infinity)
-                    .disabled(isSubmitting)
-            }
         }
         .padding(PazSpacing.xl)
         .navigationTitle("Data de nascimento")
     }
 }
 
-// MARK: - Step 3: WhatsApp (skippable)
+// MARK: - Step 3: WhatsApp (required)
 
 private struct WhatsappStepView: View {
     let isSubmitting: Bool
     let errorMessage: String?
     let onSubmit: (String) -> Void
-    let onSkip: () -> Void
 
     @State private var phone = ""
 
@@ -374,12 +352,6 @@ private struct WhatsappStepView: View {
             }
             .buttonStyle(.pazPillPrimary)
             .disabled(isSubmitting || phone.trimmingCharacters(in: .whitespaces).isEmpty)
-
-            Button("Pular por agora", action: onSkip)
-                .font(PazTypography.labelLarge)
-                .foregroundStyle(PazColors.slate)
-                .frame(maxWidth: .infinity)
-                .disabled(isSubmitting)
         }
         .padding(PazSpacing.xl)
         .navigationTitle("WhatsApp")

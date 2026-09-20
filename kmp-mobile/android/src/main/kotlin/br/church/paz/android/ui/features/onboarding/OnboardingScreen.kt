@@ -90,12 +90,6 @@ fun OnboardingScreen(
                             isSubmitting = state.isSubmitting,
                             errorMessage = state.errorMessage,
                             onSubmit = viewModel::onBirthdaySubmitted,
-                            onSkip =
-                                if (viewModel.isBirthdayRequiredForLogin) {
-                                    null
-                                } else {
-                                    viewModel::onSkipCurrentStep
-                                },
                             onDismissError = viewModel::onDismissError,
                         )
                     OnboardingStep.Whatsapp ->
@@ -103,7 +97,6 @@ fun OnboardingScreen(
                             isSubmitting = state.isSubmitting,
                             errorMessage = state.errorMessage,
                             onSubmit = viewModel::onWhatsappSubmitted,
-                            onSkip = viewModel::onSkipCurrentStep,
                             onDismissError = viewModel::onDismissError,
                         )
                     OnboardingStep.Address ->
@@ -291,9 +284,6 @@ private fun BirthdayStep(
     isSubmitting: Boolean,
     errorMessage: String?,
     onSubmit: (String) -> Unit,
-    // Null while this step is completing a deferred sign-in retry — birthday is required to
-    // resolve/create the account in that case, so it cannot be skipped.
-    onSkip: (() -> Unit)?,
     onDismissError: () -> Unit,
 ) {
     var isPickerOpen by remember { mutableStateOf(false) }
@@ -329,7 +319,7 @@ private fun BirthdayStep(
                 "confirmar seu cadastro caso já exista um registro seu na igreja.",
         errorMessage = errorMessage,
         onDismissError = onDismissError,
-        onSkip = onSkip,
+        onSkip = null,
     ) {
         OutlinedButton(
             onClick = {
@@ -389,7 +379,6 @@ private fun WhatsappStep(
     isSubmitting: Boolean,
     errorMessage: String?,
     onSubmit: (String) -> Unit,
-    onSkip: () -> Unit,
     onDismissError: () -> Unit,
 ) {
     var phone by remember { mutableStateOf("") }
@@ -400,7 +389,7 @@ private fun WhatsappStep(
                 "eventos e novidades.",
         errorMessage = errorMessage,
         onDismissError = onDismissError,
-        onSkip = onSkip,
+        onSkip = null,
     ) {
         OutlinedTextField(
             value = phone,

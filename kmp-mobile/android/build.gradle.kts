@@ -134,6 +134,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.messaging)
+    implementation(libs.firebase.storage)
     implementation(libs.firebase.remote.config)
     implementation(libs.google.signin)
 

@@ -45,7 +45,7 @@ val androidModule =
         viewModel { (videoId: String) -> VideoPlayerViewModel(videoId) }
         viewModel { AccountViewModel(get(), get()) }
         viewModel { ProfileViewModel(get()) }
-        viewModel { EditProfileViewModel(get(), get()) }
+        viewModel { EditProfileViewModel(get(), get()) } // (UserRepository, OnboardingRepository)
         viewModel { (eventId: String) -> AgendaDetailViewModel(get(), eventId) }
         viewModel { AgendaListViewModel(get()) } // get() resolves AgendaRepository
         viewModel { FormulariosViewModel(get()) }

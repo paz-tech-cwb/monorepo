@@ -19,8 +19,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DynamicForm
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Notifications
@@ -78,6 +80,8 @@ fun AccountScreen(
                 AccountEffect.NavigateToMemberJourney -> navController.navigate(Screen.MemberJourney.route)
                 AccountEffect.NavigateToFormularios -> navController.navigate(Screen.FormulariosList.route)
                 AccountEffect.NavigateToMinistries -> navController.navigate(Screen.Ministries.route)
+                AccountEffect.NavigateToCasaDePaz -> navController.navigate(Screen.CasaDePazSubmissionsList.route)
+                AccountEffect.NavigateToLifeGroupAnalytics -> navController.navigate(Screen.LifeGroupAnalytics.createRoute())
                 AccountEffect.NavigateToNotificationPrefs -> navController.navigate(Screen.NotificationPrefs.route)
                 AccountEffect.LoggedOut -> Unit
             }
@@ -196,6 +200,31 @@ fun AccountScreen(
                     item { Spacer(Modifier.height(PazSpacing.Lg)) }
 
                     item {
+                        PazSectionHeader(title = "Relatórios", modifier = Modifier.padding(horizontal = PazSpacing.Lg + 4.dp))
+                        Spacer(Modifier.height(PazSpacing.Sm))
+                        MenuCard(modifier = Modifier.padding(horizontal = PazSpacing.Lg)) {
+                            PazMenuRow(
+                                title = "Casa de Paz",
+                                icon = Icons.Outlined.Home,
+                                iconTint = Color(0xFFE65100),
+                                onClick = viewModel::onCasaDePaz,
+                                showDivider = user.role.isLeader,
+                            )
+                            if (user.role.isLeader) {
+                                PazMenuRow(
+                                    title = "Life Groups",
+                                    icon = Icons.Outlined.BarChart,
+                                    iconTint = Color(0xFF2E7D32),
+                                    onClick = viewModel::onLifeGroupAnalytics,
+                                    showDivider = false,
+                                )
+                            }
+                        }
+                    }
+
+                    item { Spacer(Modifier.height(PazSpacing.Lg)) }
+
+                    item {
                         PazSectionHeader(title = "Preferências", modifier = Modifier.padding(horizontal = PazSpacing.Lg + 4.dp))
                         Spacer(Modifier.height(PazSpacing.Sm))
                         MenuCard(Modifier.padding(horizontal = PazSpacing.Lg)) {
@@ -210,6 +239,7 @@ fun AccountScreen(
                                 icon = if (uiState.isDarkMode) Icons.Outlined.DarkMode else Icons.Outlined.LightMode,
                                 iconTint = PazColors.PrimaryMid,
                                 showDivider = false,
+                                onClick = { viewModel.onToggleDarkMode(!uiState.isDarkMode) },
                                 trailing = {
                                     Switch(
                                         checked = uiState.isDarkMode,

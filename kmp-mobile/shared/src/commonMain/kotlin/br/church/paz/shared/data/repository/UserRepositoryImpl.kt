@@ -1,5 +1,6 @@
 package br.church.paz.shared.data.repository
 
+import br.church.paz.shared.data.remote.throwOnClientOrServerError
 import br.church.paz.shared.domain.model.DeviceToken
 import br.church.paz.shared.domain.model.NotificationPreferences
 import br.church.paz.shared.domain.model.UpdateNotificationPrefsDto
@@ -19,19 +20,28 @@ import io.ktor.http.contentType
 class UserRepositoryImpl(private val client: HttpClient) : UserRepository {
 
     @Throws(Exception::class)
-    override suspend fun getProfile(): User =
-        client.get("api/users/me").body()
+    override suspend fun getProfile(): User {
+        val response = client.get("api/users/me")
+        response.throwOnClientOrServerError()
+        return response.body()
+    }
 
     @Throws(Exception::class)
-    override suspend fun updateProfile(request: UpdateProfileRequest): User =
-        client.put("api/users/me") {
+    override suspend fun updateProfile(request: UpdateProfileRequest): User {
+        val response = client.put("api/users/me") {
             contentType(ContentType.Application.Json)
             setBody(request)
-        }.body()
+        }
+        response.throwOnClientOrServerError()
+        return response.body()
+    }
 
     @Throws(Exception::class)
-    override suspend fun getNotificationPreferences(): NotificationPreferences =
-        client.get("api/users/me/notification-preferences").body()
+    override suspend fun getNotificationPreferences(): NotificationPreferences {
+        val response = client.get("api/users/me/notification-preferences")
+        response.throwOnClientOrServerError()
+        return response.body()
+    }
 
     @Throws(Exception::class)
     override suspend fun updateNotificationPreferences(dto: UpdateNotificationPrefsDto) {

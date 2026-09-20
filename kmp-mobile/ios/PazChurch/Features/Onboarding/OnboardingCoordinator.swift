@@ -2,9 +2,9 @@ import Foundation
 import Observation
 import Shared
 
-/// Drives the post-sign-in member-onboarding flow: an unskippable welcome video followed by
-/// up to three skippable profile-completion steps (birthday, WhatsApp, address), each backed
-/// by the shared `OnboardingRepository`.
+/// Drives the post-sign-in member-onboarding flow: an unskippable welcome video, two required
+/// profile-completion steps (birthday, WhatsApp), and a final skippable step (address), each
+/// backed by the shared `OnboardingRepository`.
 ///
 /// `pendingBirthDateLogin`, when non-nil, means this session was launched to satisfy a
 /// `BirthDateRequiredException` raised during sign-in (see `AuthenticationCoordinator`) — the

@@ -56,6 +56,7 @@
 		96BF8A72553894BA74F6934B /* PazIconContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC853F6E892CF7A2AE4283F /* PazIconContainer.swift */; };
 		9B9A6148AFFD0C8167085DD0 /* MinistryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDD6B4FBC968ED037D73EAA9 /* MinistryDetailView.swift */; };
 		A0CCE565617A81DD9C6404A9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = F04B442417CCD3B5A58BC0DF /* FirebaseAuth */; };
+		35C3D21C0C80B4EDEF327F6C /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = A7A78974772CE0C97F493EC7 /* FirebaseStorage */; };
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* DeepLinkDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7B8C9D0E1F2A3 /* DeepLinkDestination.swift */; };
 		A305236E34CC934DB2DC0DD7 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF92030D2B02263B99B9287C /* OnboardingView.swift */; };
 		A98EE8C9CC199B26F49D75EB /* AgendaDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE4B8D8AE9B398AA3A77DA29 /* AgendaDetailView.swift */; };
@@ -201,6 +202,7 @@
 			files = (
 				1CB207F6227C85FD1293E3A2 /* Shared.xcframework in Frameworks */,
 				A0CCE565617A81DD9C6404A9 /* FirebaseAuth in Frameworks */,
+				35C3D21C0C80B4EDEF327F6C /* FirebaseStorage in Frameworks */,
 				3A40345A216427C276DD32B7 /* FirebaseMessaging in Frameworks */,
 				1E73813601B5D626FF99A87A /* GoogleSignIn in Frameworks */,
 				5171876776DB984B0FC857E5 /* Kingfisher in Frameworks */,
@@ -536,6 +538,7 @@
 			name = PazChurch;
 			packageProductDependencies = (
 				F04B442417CCD3B5A58BC0DF /* FirebaseAuth */,
+				A7A78974772CE0C97F493EC7 /* FirebaseStorage */,
 				D4D3763343A64715B4360CF2 /* FirebaseMessaging */,
 				2D74D60AD3C0597184B72C20 /* GoogleSignIn */,
 				14D3154CD353A1E73ECC271B /* Kingfisher */,
@@ -954,6 +957,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 1FE66062384A01E6B73D3198 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
+		};
+		A7A78974772CE0C97F493EC7 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1FE66062384A01E6B73D3198 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

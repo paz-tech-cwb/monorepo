@@ -141,6 +141,28 @@ struct AccountView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)
 
+                    sectionLabel("RELATÓRIOS")
+                    menuCard {
+                        NavigationLink(destination: CasaDePazSubmissionsListView(formsRepository: IosAppContainer.shared
+                                .formsRepository)) {
+                            AccountRow(title: "Casa de Paz", icon: "house.fill", tint: Color(hex: "E65100"))
+                        }
+                        .buttonStyle(.plain)
+                        if user.role.isLeader {
+                            rowDivider
+                            NavigationLink(destination: LifeGroupAnalyticsView(
+                                lifeGroupId: nil,
+                                analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository,
+                                churchRepository: IosAppContainer.shared.churchRepository
+                            )) {
+                                AccountRow(title: "Life Groups", icon: "chart.bar.fill", tint: Color(hex: "2E7D32"))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+
                     sectionLabel("PREFERÊNCIAS")
                     menuCard {
                         NavigationLink(destination: NotificationPrefsView()) {
@@ -148,17 +170,22 @@ struct AccountView: View {
                         }
                         .buttonStyle(.plain)
                         rowDivider
-                        HStack(spacing: 16) {
-                            PazIconContainer(
-                                icon: themeManager.isDarkMode ? "moon.fill" : "sun.max.fill",
-                                tint: PazColors.accent
-                            )
-                            Text("Modo Escuro").font(PazTypography.bodyMedium).foregroundStyle(PazColors.ink)
-                            Spacer()
-                            Toggle("", isOn: Bindable(themeManager).isDarkMode).labelsHidden()
-                                .tint(PazColors.accent)
+                        Button(action: { themeManager.isDarkMode.toggle() }) {
+                            HStack(spacing: 16) {
+                                PazIconContainer(
+                                    icon: themeManager.isDarkMode ? "moon.fill" : "sun.max.fill",
+                                    tint: PazColors.accent
+                                )
+                                Text("Modo Escuro").font(PazTypography.bodyMedium).foregroundStyle(PazColors.ink)
+                                Spacer()
+                                Toggle("", isOn: Bindable(themeManager).isDarkMode).labelsHidden()
+                                    .tint(PazColors.accent)
+                                    .allowsHitTesting(false)
+                            }
+                            .padding(.horizontal, 16).padding(.vertical, 12)
+                            .contentShape(Rectangle())
                         }
-                        .padding(.horizontal, 16).padding(.vertical, 12)
+                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)

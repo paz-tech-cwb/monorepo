@@ -63,6 +63,10 @@ class AccountViewModel(
 
     fun onMinistries() = emit(AccountEffect.NavigateToMinistries)
 
+    fun onCasaDePaz() = emit(AccountEffect.NavigateToCasaDePaz)
+
+    fun onLifeGroupAnalytics() = emit(AccountEffect.NavigateToLifeGroupAnalytics)
+
     fun onNotificationPrefs() = emit(AccountEffect.NavigateToNotificationPrefs)
 
     private fun emit(effect: AccountEffect) {
