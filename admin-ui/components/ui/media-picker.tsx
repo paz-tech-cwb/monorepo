@@ -40,7 +40,8 @@ export function MediaPickerDialog({ open, onOpenChange, category, onSelect, crop
     try {
       const result = await listMedia("media/")
       setItems(result)
-    } catch {
+    } catch (error) {
+      console.error("Erro ao carregar biblioteca de imagens:", error)
       setLibraryError(true)
     } finally {
       setLoadingLibrary(false)
@@ -71,8 +72,10 @@ export function MediaPickerDialog({ open, onOpenChange, category, onSelect, crop
       toast.success("Imagem enviada")
       onSelect(url)
       onOpenChange(false)
-    } catch {
-      toast.error("Erro ao enviar imagem")
+    } catch (error) {
+      console.error("Erro ao enviar imagem:", error)
+      const message = error instanceof Error ? error.message : "Erro ao enviar imagem"
+      toast.error(message)
     } finally {
       setUploading(false)
       setUploadProgress(0)

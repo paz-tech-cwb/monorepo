@@ -75,4 +75,9 @@ export class CreateNotificationDto {
   @IsOptional()
   @IsISO8601()
   scheduled_at?: string | null;
+
+  @Expose()
+  @IsOptional()
+  @IsString()
+  deep_link?: string | null;
 }

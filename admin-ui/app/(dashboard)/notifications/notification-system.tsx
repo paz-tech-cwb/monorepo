@@ -37,6 +37,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { sectorsApi } from '@/lib/api/endpoints/sectors'
 import { lifeGroupsApi } from '@/lib/api/endpoints/life-groups'
+import { agendaApi } from '@/lib/api/endpoints/agenda'
 import type {
   CreateNotificationRequest,
   NotificationCategory,
@@ -117,6 +118,7 @@ export function NotificationSystem() {
   const [filters, setFilters] = useState<Array<{ type: string; value: string }>>([])
   const [newFilterType, setNewFilterType] = useState('')
   const [newFilterValue, setNewFilterValue] = useState('')
+  const [targetEventId, setTargetEventId] = useState<string>('')
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [historyOrigin, setHistoryOrigin] = useState<'all' | 'manual' | 'automatic'>('all')
   const isDirty = useRef(false)
@@ -126,6 +128,11 @@ export function NotificationSystem() {
   )
   const { data: sectors = [] } = useQuery({ queryKey: ['sectors'], queryFn: () => sectorsApi.getAll() })
   const { data: lifeGroups = [] } = useQuery({ queryKey: ['life-groups'], queryFn: () => lifeGroupsApi.getAll() })
+  const { data: events = [] } = useQuery({
+    queryKey: ['agenda-events'],
+    queryFn: () => agendaApi.getAll(),
+    enabled: form.category === 'events',
+  })
 
   const createMutation = useCreateNotification()
   const reachMutation = useNotificationReach()
@@ -152,6 +159,10 @@ export function NotificationSystem() {
         ? 'Nenhum filtro'
         : 'Todos os membros ativos'
       : `${filters.length} filtro${filters.length > 1 ? 's' : ''}`
+
+  useEffect(() => {
+    if (form.category !== 'events') setTargetEventId('')
+  }, [form.category])
 
   useEffect(() => {
     if (LEADER_ONLY_CATEGORIES.includes(form.category)) {
@@ -230,6 +241,7 @@ export function NotificationSystem() {
     setSegmentOpen(false)
     setScheduleOpen(false)
     setFilters([])
+    setTargetEventId('')
   }
 
   const handleScheduleToggle = (checked: boolean) => {
@@ -250,7 +262,14 @@ export function NotificationSystem() {
       toast.error('Selecione pelo menos um cargo para esta categoria')
       return
     }
-    const payload: CreateNotificationRequest = { ...form }
+    if (form.category === 'events' && !targetEventId) {
+      toast.error('Selecione o evento que esta notificação deve abrir')
+      return
+    }
+    const payload: CreateNotificationRequest = {
+      ...form,
+      deep_link: form.category === 'events' && targetEventId ? `paz://agenda/${targetEventId}` : null,
+    }
     if (scheduleEnabled) {
       if (!scheduleDate || !scheduleTime) {
         toast.error('Informe a data e a hora do agendamento')
@@ -299,6 +318,9 @@ export function NotificationSystem() {
     }
     setFilters(rebuilt)
     setSegmentOpen(rebuilt.length > 0)
+
+    const eventMatch = item.deep_link?.match(/^paz:\/\/agenda\/(.+)$/)
+    setTargetEventId(eventMatch ? eventMatch[1] : '')
 
     setActiveTab('compose')
     toast.info('Notificação duplicada para edição')
@@ -359,6 +381,27 @@ export function NotificationSystem() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Event target — required when category is "events" so the push deep-links to it */}
+                {form.category === 'events' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="target-event">Evento de destino</Label>
+                    <Select value={targetEventId} onValueChange={setTargetEventId}>
+                      <SelectTrigger id="target-event" className="w-full">
+                        <SelectValue placeholder="Selecione o evento que será aberto ao tocar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {events.length === 0 ? (
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">Nenhum evento cadastrado</div>
+                        ) : (
+                          events.map(ev => (
+                            <SelectItem key={ev.id} value={String(ev.id)}>{ev.title}</SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 {/* Title */}
                 <div className="space-y-2">
