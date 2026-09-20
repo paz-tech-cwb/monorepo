@@ -350,6 +350,19 @@ export class UsersService {
       if (dto.birth_date !== undefined)
         user.birthDate = dto.birth_date ? new Date(dto.birth_date) : null;
 
+      if (dto.address !== undefined) {
+        const address = user.address ?? new Address();
+        address.zipCode = dto.address.zip_code;
+        address.country = dto.address.country;
+        address.state = dto.address.state;
+        address.city = dto.address.city;
+        address.neighborhood = dto.address.neighborhood;
+        address.street = dto.address.street;
+        address.number = dto.address.number?.trim() || null;
+        address.complement = dto.address.complement?.trim() || null;
+        user.address = await this.entityManager.save(Address, address);
+      }
+
       const saved = await this.entityManager.save(User, user);
       const reloaded = await this.entityManager.findOne(User, {
         where: { id: saved.id },

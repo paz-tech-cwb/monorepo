@@ -164,6 +164,72 @@ describe('UsersService', () => {
     expect(txManager.save).toHaveBeenCalledWith(User, expect.any(User));
   });
 
+  describe('updateProfile', () => {
+    function createUpdateProfileService(existingUser: User = makeUser()) {
+      const savedAddresses: Address[] = [];
+      const entityManager = {
+        findOne: jest.fn(
+          (entity: unknown, options?: { relations?: string[] }) => {
+            if (entity === Address) return Promise.resolve(null);
+            if (entity === User) {
+              if (options?.relations) {
+                return Promise.resolve({
+                  ...existingUser,
+                  address: savedAddresses[savedAddresses.length - 1] ?? null,
+                });
+              }
+              return Promise.resolve(existingUser);
+            }
+            return Promise.resolve(null);
+          },
+        ),
+        save: jest.fn((entity: unknown, value: Address | User) => {
+          if (entity === Address) {
+            const saved = {
+              ...value,
+              id: (value as Address).id ?? 20,
+            } as Address;
+            savedAddresses.push(saved);
+            return Promise.resolve(saved);
+          }
+          if (entity === User)
+            return Promise.resolve({ ...value, id: existingUser.id });
+          return Promise.resolve(value);
+        }),
+      } as unknown as EntityManager;
+
+      return {
+        service: new UsersService(entityManager),
+        entityManager,
+      };
+    }
+
+    it('persists a new address on updateProfile', async () => {
+      const { service } = createUpdateProfileService(
+        makeUser({ id: 10, address: null }),
+      );
+
+      const dto = {
+        address: {
+          zip_code: '01310-100',
+          country: 'Brasil',
+          street: 'Rua Augusta',
+          number: '100',
+          neighborhood: 'Consolação',
+          city: 'São Paulo',
+          state: 'SP',
+        },
+      };
+
+      const result = await service.updateProfile(10, dto);
+
+      expect(result.address_details).toMatchObject({
+        street: 'Rua Augusta',
+        zip_code: '01310-100',
+      });
+    });
+  });
+
   describe('deleteSelf', () => {
     function createDeleteService(userExists = true) {
       const txManager = {
