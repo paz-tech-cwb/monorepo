@@ -2,7 +2,7 @@ name: PazChurch
 options:
   bundleIdPrefix: com.cwb.pazchurch
   deploymentTarget:
-    iOS: "19.0"
+    iOS: "26.0"
   xcodeVersion: "15.0"
   generateEmptyDirectories: true
 
@@ -20,7 +20,7 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "5.9"
-    IPHONEOS_DEPLOYMENT_TARGET: "19.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "26.0"
     TARGETED_DEVICE_FAMILY: "1,2"
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
