@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, In } from 'typeorm';
 import { CourseTrack } from './entities/course-track.entity';
@@ -11,7 +7,6 @@ import { Course } from '../courses/entities/course.entity';
 import { CreateCourseTrackDto } from './dto/create-course-track.dto';
 import { UpdateCourseTrackDto } from './dto/update-course-track.dto';
 import { SetTrackCoursesDto } from './dto/set-track-courses.dto';
-import { JOURNEY_STAGES } from '../member-journey/member-journey.service';
 
 @Injectable()
 export class CourseTracksService {
@@ -19,18 +14,6 @@ export class CourseTracksService {
     @InjectEntityManager()
     private readonly entityManager: EntityManager,
   ) {}
-
-  private assertValidJourneyStageId(
-    journeyStageId: number | null | undefined,
-  ): void {
-    if (journeyStageId === null || journeyStageId === undefined) return;
-    const isValid = JOURNEY_STAGES.some((s) => s.id === journeyStageId);
-    if (!isValid) {
-      throw new BadRequestException(
-        `Invalid journey_stage_id: ${journeyStageId}`,
-      );
-    }
-  }
 
   async toResponse(track: CourseTrack) {
     const memberships = await this.entityManager.find(CourseTrackCourse, {
@@ -43,7 +26,6 @@ export class CourseTracksService {
       title: track.title,
       description: track.description ?? null,
       sort_order: track.sortOrder,
-      journey_stage_id: track.journeyStageId ?? null,
       courses: memberships.map((m) => ({
         id: m.course.id,
         title: m.course.title,
@@ -73,12 +55,10 @@ export class CourseTracksService {
   }
 
   async create(dto: CreateCourseTrackDto) {
-    this.assertValidJourneyStageId(dto.journey_stage_id);
     const track = this.entityManager.create(CourseTrack, {
       title: dto.title,
       description: dto.description ?? null,
       sortOrder: dto.sort_order ?? 0,
-      journeyStageId: dto.journey_stage_id ?? null,
     });
     const saved = await this.entityManager.save(track);
     return this.toResponse(saved);
@@ -90,10 +70,6 @@ export class CourseTracksService {
     if (dto.title !== undefined) track.title = dto.title;
     if (dto.description !== undefined) track.description = dto.description;
     if (dto.sort_order !== undefined) track.sortOrder = dto.sort_order;
-    if (dto.journey_stage_id !== undefined) {
-      this.assertValidJourneyStageId(dto.journey_stage_id);
-      track.journeyStageId = dto.journey_stage_id;
-    }
 
     const saved = await this.entityManager.save(CourseTrack, track);
     return this.toResponse(saved);

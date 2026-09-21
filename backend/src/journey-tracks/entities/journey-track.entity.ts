@@ -2,17 +2,17 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinTable,
-  ManyToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Course } from '../../courses/entities/course.entity';
 
-@Entity('course_tracks')
-export class CourseTrack {
+@Entity('journey_tracks')
+export class JourneyTrack {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Column({ type: 'varchar', length: 50, unique: true })
+  key: string;
 
   @Column({ type: 'varchar', length: 255 })
   title: string;
@@ -20,16 +20,14 @@ export class CourseTrack {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
+  @Column({ name: 'eligibility_text', type: 'text', nullable: true })
+  eligibilityText: string | null;
+
   @Column({ name: 'sort_order', type: 'int', default: 0 })
   sortOrder: number;
 
-  @ManyToMany(() => Course, { eager: true })
-  @JoinTable({
-    name: 'course_track_courses',
-    joinColumn: { name: 'track_id', referencedColumnName: 'id' },
-    inverseJoinColumn: { name: 'course_id', referencedColumnName: 'id' },
-  })
-  courses: Course[];
+  @Column({ name: 'is_active', type: 'boolean', default: true })
+  isActive: boolean;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
