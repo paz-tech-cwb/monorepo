@@ -5,6 +5,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import br.church.paz.android.ui.features.academy.CertificatesScreen
+import br.church.paz.android.ui.features.academy.CourseDetailScreen
+import br.church.paz.android.ui.features.academy.QuestionnaireScreen
 import br.church.paz.android.ui.features.academy.VideoPlayerScreen
 import br.church.paz.android.ui.features.agenda.AgendaDetailScreen
 import br.church.paz.android.ui.features.agenda.AgendaListScreen
@@ -78,6 +81,23 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         ) { backStackEntry ->
             val videoId = backStackEntry.arguments?.getString("videoId") ?: return@composable
             VideoPlayerScreen(navController = navController, videoId = videoId)
+        }
+        composable(
+            route = Screen.CourseDetail.route,
+            arguments = listOf(androidx.navigation.navArgument("courseId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val courseId = backStackEntry.arguments?.getString("courseId") ?: return@composable
+            CourseDetailScreen(navController = navController, courseId = courseId)
+        }
+        composable(
+            route = Screen.Questionnaire.route,
+            arguments = listOf(androidx.navigation.navArgument("courseId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val courseId = backStackEntry.arguments?.getString("courseId") ?: return@composable
+            QuestionnaireScreen(navController = navController, courseId = courseId)
+        }
+        composable(Screen.Certificates.route) {
+            CertificatesScreen(navController = navController)
         }
         composable(Screen.FormulariosList.route) {
             FormulariosScreen(navController = navController)

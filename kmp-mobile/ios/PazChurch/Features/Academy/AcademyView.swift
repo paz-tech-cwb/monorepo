@@ -100,8 +100,20 @@ struct AcademyView: View {
                 }
 
                 ForEach(Array(track.courses.enumerated()), id: \.element.id) { index, course in
-                    CourseCard(course: course) {
-                        if authCoordinator.isAuthenticated { viewModel.onCourseTapped(course) } else { showLoginSheet = true }
+                    Group {
+                        if authCoordinator.isAuthenticated {
+                            NavigationLink {
+                                CourseDetailView(
+                                    courseId: course.id,
+                                    courseRepository: IosAppContainer.shared.courseRepository
+                                )
+                            } label: {
+                                CourseCardBody(course: course)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            CourseCard(course: course) { showLoginSheet = true }
+                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 12)
@@ -282,6 +294,17 @@ private struct CourseCard: View {
 
     var body: some View {
         Button(action: onTap) {
+            CourseCardBody(course: course)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct CourseCardBody: View {
+    let course: Course
+
+    var body: some View {
+        Group {
             HStack(spacing: 12) {
                 ZStack {
                     PazColors.featuredCardGradient
@@ -314,7 +337,6 @@ private struct CourseCard: View {
             .padding(12)
             .glassCard(radius: PazSpacing.cardRadiusCompact)
         }
-        .buttonStyle(.plain)
     }
 }
 

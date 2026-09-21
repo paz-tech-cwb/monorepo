@@ -291,6 +291,45 @@ export class MemberJourneyService {
     return this.buildMemberJourneyResponse(user, stages);
   }
 
+  /**
+   * Additive helper for other modules (e.g. academy course completion) to
+   * mark a journey stage complete without disturbing `updateStage()`'s
+   * existing leader-facing behavior. No-op if the stage is already completed.
+   */
+  async completeStageIfNotCompleted(
+    userId: number,
+    stageId: number,
+    note?: string | null,
+  ): Promise<void> {
+    const stageDef = JOURNEY_STAGES.find((s) => s.id === stageId);
+    if (!stageDef) {
+      throw new BadRequestException(`Invalid stage_id: ${stageId}`);
+    }
+
+    let stage = await this.entityManager.findOne(MemberJourneyStage, {
+      where: { memberId: userId, stageId },
+    });
+
+    if (stage?.completed) {
+      return;
+    }
+
+    if (!stage) {
+      stage = this.entityManager.create(MemberJourneyStage, {
+        memberId: userId,
+        stageId,
+        stageKey: stageDef.key,
+      });
+    }
+
+    stage.stageKey = stageDef.key;
+    stage.completed = true;
+    stage.completedAt = new Date();
+    stage.note = note ?? stage.note ?? null;
+
+    await this.entityManager.save(MemberJourneyStage, stage);
+  }
+
   async getStats() {
     try {
       const results = await this.entityManager
