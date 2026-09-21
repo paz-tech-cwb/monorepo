@@ -56,14 +56,17 @@ export class CoursesService {
       }
 
       return this.toResponse(saved);
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while creating the course.',
       );
     }
   }
 
-  private async attachToTrack(courseId: string, trackId: number): Promise<void> {
+  private async attachToTrack(
+    courseId: string,
+    trackId: number,
+  ): Promise<void> {
     const existing = await this.entityManager.findOne(CourseTrackCourse, {
       where: { trackId, courseId },
     });
@@ -86,7 +89,7 @@ export class CoursesService {
         order: { createdAt: 'DESC' },
       });
       return courses.map((c) => this.toResponse(c));
-    } catch (error: unknown) {
+    } catch {
       throw new BadRequestException(
         'An error occurred while retrieving courses.',
       );
