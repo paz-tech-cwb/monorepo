@@ -159,7 +159,7 @@ export function CoursesManagement() {
     return <Badge variant={config.variant}>{config.text}</Badge>
   }
 
-  const CourseFormFields = () => (
+  const courseFormFields = (
     <div className="grid gap-4">
       <div className="space-y-1.5">
         <Label htmlFor="course-title">Título</Label>
@@ -437,7 +437,7 @@ export function CoursesManagement() {
         onSubmit={handleAddCourse}
         submitLabel="Criar Curso"
       >
-        <CourseFormFields />
+        {courseFormFields}
       </FormDrawer>
 
       <FormDrawer
@@ -454,7 +454,7 @@ export function CoursesManagement() {
         onSubmit={handleUpdateCourse}
         submitLabel="Salvar"
       >
-        <CourseFormFields />
+        {courseFormFields}
       </FormDrawer>
 
       <ConfirmDeleteDialog
