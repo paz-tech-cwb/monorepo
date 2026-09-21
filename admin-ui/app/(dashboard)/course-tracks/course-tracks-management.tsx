@@ -114,7 +114,7 @@ export function CourseTracksManagement() {
     }
   }
 
-  const TrackFormFields = () => (
+  const trackFormFields = (
     <div className="grid gap-4">
       <div className="space-y-1.5">
         <Label htmlFor="track-title">Título</Label>
@@ -309,7 +309,7 @@ export function CourseTracksManagement() {
         onSubmit={handleAddTrack}
         submitLabel="Criar Trilha"
       >
-        <TrackFormFields />
+        {trackFormFields}
       </FormDrawer>
 
       <FormDrawer
@@ -326,7 +326,7 @@ export function CourseTracksManagement() {
         onSubmit={handleUpdateTrack}
         submitLabel="Salvar"
       >
-        <TrackFormFields />
+        {trackFormFields}
       </FormDrawer>
 
       <ConfirmDeleteDialog

@@ -19,6 +19,7 @@ import {
   LogOut,
   Megaphone,
   GitMerge,
+  GitBranch,
   ClipboardList,
   BarChart3,
   Sun,
@@ -44,6 +45,7 @@ const sidebarSections = [
     title: "Igreja",
     items: [
       { name: "Organização", href: "/organizacao", icon: Network },
+      { name: "Organograma", href: "/organizacao/organograma", icon: GitBranch },
       { name: "Life Groups", href: "/life-groups", icon: Users2 },
       { name: "Ministérios", href: "/ministerios", icon: Waves },
       { name: "Formulários", href: "/formularios", icon: ClipboardList },
