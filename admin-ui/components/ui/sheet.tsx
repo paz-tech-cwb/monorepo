@@ -5,6 +5,7 @@ import * as SheetPrimitive from "@radix-ui/react-dialog"
 import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useVisualViewport } from "@/lib/hooks/use-visual-viewport"
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />
@@ -49,10 +50,18 @@ function SheetContent({
   className,
   children,
   side = "right",
+  style,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left"
 }) {
+  const { supported, isKeyboardOpen, height, offsetTop } = useVisualViewport()
+
+  const keyboardStyle =
+    (side === "left" || side === "right") && supported && isKeyboardOpen
+      ? { height: `${height}px`, top: `${offsetTop}px`, bottom: "auto" }
+      : undefined
+
   return (
     <SheetPortal>
       <SheetOverlay />
@@ -70,6 +79,7 @@ function SheetContent({
             "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t",
           className
         )}
+        style={{ ...keyboardStyle, ...style }}
         {...props}
       >
         {children}
