@@ -77,7 +77,9 @@ export class CreateCourseLessonsAndQuestionnaires1795400000000
     await queryRunner.query(`DROP TABLE "course_question_options"`);
     await queryRunner.query(`DROP TABLE "course_questions"`);
     await queryRunner.query(`DROP TABLE "course_questionnaires"`);
-    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_course_lessons_course_id"`);
+    await queryRunner.query(
+      `DROP INDEX IF EXISTS "IDX_course_lessons_course_id"`,
+    );
     await queryRunner.query(`DROP TABLE "course_lessons"`);
   }
 }
