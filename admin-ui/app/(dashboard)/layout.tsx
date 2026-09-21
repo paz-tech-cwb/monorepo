@@ -1,12 +1,13 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu } from "lucide-react"
 import { SidebarContent } from "@/components/sidebar"
+import { useVisualViewport } from "@/lib/hooks/use-visual-viewport"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -15,13 +16,48 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const pathname = usePathname()
+  const shellRef = useRef<HTMLDivElement>(null)
+  const { supported, height } = useVisualViewport()
 
   useEffect(() => {
     setMobileNavOpen(false)
   }, [pathname])
 
+  useEffect(() => {
+    const el = shellRef.current
+    if (!el) return
+
+    const isModalLocking = () =>
+      document.body.hasAttribute("data-scroll-locked") ||
+      document.querySelector("[data-vaul-drawer]") !== null
+
+    const applyAppHeight = () => {
+      if (supported && height != null && !isModalLocking()) {
+        el.style.setProperty("--app-height", `${height}px`)
+      } else {
+        el.style.removeProperty("--app-height")
+      }
+    }
+
+    applyAppHeight()
+
+    // Re-run when a modal opens/closes (data-scroll-locked toggles on
+    // document.body) even if it happens without an accompanying
+    // visualViewport resize event.
+    const observer = new MutationObserver(applyAppHeight)
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["data-scroll-locked"],
+    })
+
+    return () => observer.disconnect()
+  }, [supported, height])
+
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-background">
+    <div
+      ref={shellRef}
+      className="flex h-[var(--app-height,100dvh)] overflow-hidden bg-background"
+    >
       {/* Desktop Sidebar - persists across navigation */}
       <div className="hidden w-64 shrink-0 lg:block">
         <SidebarContent />
