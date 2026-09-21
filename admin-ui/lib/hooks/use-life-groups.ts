@@ -7,6 +7,7 @@ import { trackEvent } from "@/lib/firebase/analytics"
 
 const QUERY_KEY = ["life-groups"]
 const USERS_KEY = ["users"]
+const AREAS_ORG_CHART_QUERY_KEY = ["areas", "org-chart"]
 
 export function useLifeGroups() {
   return useQuery({
@@ -33,6 +34,7 @@ export function useUpdateLifeGroup() {
       lifeGroupsApi.update(id, data),
     onSuccess: (group) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      queryClient.invalidateQueries({ queryKey: AREAS_ORG_CHART_QUERY_KEY })
       trackEvent("life_group_updated", { life_group_id: group.id })
     },
   })

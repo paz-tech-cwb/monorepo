@@ -3,7 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AreasManagement } from "@/app/(dashboard)/areas/areas-management"
 import { SectorsManagement } from "@/app/(dashboard)/sectors/sectors-management"
-import { HierarchyTree } from "@/components/organization/hierarchy-tree"
+import { OrgChartTree } from "@/components/organization/org-chart-tree"
 import {
   Card,
   CardContent,
@@ -46,7 +46,7 @@ export function OrganizacaoManagement() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <HierarchyTree />
+              <OrgChartTree />
             </CardContent>
           </Card>
         </TabsContent>

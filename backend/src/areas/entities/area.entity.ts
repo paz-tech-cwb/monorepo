@@ -25,6 +25,14 @@ export class Area {
   @JoinColumn({ name: 'co_leader_id' })
   coLeader: User | null;
 
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'pastor_id' })
+  pastor: User | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'co_pastor_id' })
+  coPastor: User | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

@@ -16,4 +16,14 @@ export class CreateAreaDto {
   @IsOptional()
   @IsInt()
   co_leader_id?: number;
+
+  @Expose()
+  @IsOptional()
+  @IsInt()
+  pastor_id?: number;
+
+  @Expose()
+  @IsOptional()
+  @IsInt()
+  co_pastor_id?: number;
 }
