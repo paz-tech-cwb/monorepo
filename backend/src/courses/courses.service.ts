@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
@@ -12,6 +13,8 @@ import { CourseTrackCourse } from '../academy/entities/course-track-course.entit
 
 @Injectable()
 export class CoursesService {
+  private readonly logger = new Logger(CoursesService.name);
+
   constructor(
     @InjectEntityManager()
     private readonly entityManager: EntityManager,
@@ -37,26 +40,34 @@ export class CoursesService {
 
   async create(dto: CreateCourseDto) {
     try {
-      const course = this.entityManager.create(Course, {
-        title: dto.title,
-        description: dto.description,
-        creator: dto.creator,
-        creatorId: dto.creator_id ?? null,
-        estimatedHours: dto.estimated_hours,
-        category: dto.category,
-        url: dto.url ?? null,
-        imageUrl: dto.image_url ?? null,
-        thumbnailUrl: dto.thumbnail_url ?? null,
-        status: dto.status ?? 'draft',
-      });
-      const saved = await this.entityManager.save(course);
+      const saved = await this.entityManager.transaction(async (manager) => {
+        const course = manager.create(Course, {
+          title: dto.title,
+          description: dto.description,
+          creator: dto.creator,
+          creatorId: dto.creator_id ?? null,
+          estimatedHours: dto.estimated_hours,
+          category: dto.category,
+          url: dto.url ?? null,
+          imageUrl: dto.image_url ?? null,
+          thumbnailUrl: dto.thumbnail_url ?? null,
+          status: dto.status ?? 'draft',
+        });
+        const savedCourse = await manager.save(course);
 
-      if (dto.track_id) {
-        await this.attachToTrack(saved.id, dto.track_id);
-      }
+        if (dto.track_id) {
+          await this.attachToTrack(savedCourse.id, dto.track_id, manager);
+        }
+
+        return savedCourse;
+      });
 
       return this.toResponse(saved);
-    } catch {
+    } catch (error: unknown) {
+      this.logger.error(
+        `Failed to create course: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new BadRequestException(
         'An error occurred while creating the course.',
       );
@@ -66,21 +77,22 @@ export class CoursesService {
   private async attachToTrack(
     courseId: string,
     trackId: number,
+    manager: EntityManager = this.entityManager,
   ): Promise<void> {
-    const existing = await this.entityManager.findOne(CourseTrackCourse, {
+    const existing = await manager.findOne(CourseTrackCourse, {
       where: { trackId, courseId },
     });
     if (existing) return;
 
-    const count = await this.entityManager.count(CourseTrackCourse, {
+    const count = await manager.count(CourseTrackCourse, {
       where: { trackId },
     });
-    const membership = this.entityManager.create(CourseTrackCourse, {
+    const membership = manager.create(CourseTrackCourse, {
       trackId,
       courseId,
       sortOrder: count,
     });
-    await this.entityManager.save(CourseTrackCourse, membership);
+    await manager.save(CourseTrackCourse, membership);
   }
 
   async findAll() {
@@ -89,7 +101,11 @@ export class CoursesService {
         order: { createdAt: 'DESC' },
       });
       return courses.map((c) => this.toResponse(c));
-    } catch {
+    } catch (error: unknown) {
+      this.logger.error(
+        `Failed to retrieve courses: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new BadRequestException(
         'An error occurred while retrieving courses.',
       );

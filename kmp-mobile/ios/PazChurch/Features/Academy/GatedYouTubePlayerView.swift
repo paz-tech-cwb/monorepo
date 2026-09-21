@@ -91,13 +91,12 @@ struct GatedYouTubePlayerView: UIViewRepresentable {
             decidePolicyFor navigationAction: WKNavigationAction,
             decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
         ) {
-            guard navigationAction.targetFrame?.isMainFrame == true,
-                  let host = navigationAction.request.url?.host
-            else {
+            if let targetFrame = navigationAction.targetFrame, !targetFrame.isMainFrame {
                 decisionHandler(.allow)
                 return
             }
-            let allowed = host == "www.youtube.com" || host == "youtube.com" || host.hasSuffix(".ytimg.com")
+            let host = navigationAction.request.url?.host
+            let allowed = host == "www.youtube.com" || host == "youtube.com" || (host?.hasSuffix(".ytimg.com") ?? false)
             decisionHandler(allowed ? .allow : .cancel)
         }
     }

@@ -4,6 +4,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
@@ -33,7 +34,15 @@ const CERTIFICATE_CODE_LENGTH = 12;
 // avoid false positives from timer jitter, while still catching an obviously
 // impossible jump (e.g. 10% -> 90% in 2 real seconds).
 const ANTI_CHEAT_SPEED_MULTIPLIER = 3;
-const ANTI_CHEAT_BUFFER_PERCENTAGE = 5;
+// Small fixed tolerance for clock/buffering jitter ON TOP of the time-based
+// allowance below — NOT a flat per-call allowance. It is deliberately tiny
+// because the time-based term already grows with real elapsed seconds.
+const ANTI_CHEAT_BUFFER_PERCENTAGE = 3;
+// When a lesson has no known duration, elapsed-time plausibility cannot be
+// bounded at all, so the very first checkpoint a user ever reports for a
+// lesson is capped at this conservative ceiling instead of trusting the raw
+// client-reported value.
+const FIRST_CHECKPOINT_MAX_PERCENTAGE_UNKNOWN_DURATION = 20;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -51,6 +60,8 @@ function generateCertificateCode(): string {
 
 @Injectable()
 export class CourseProgressService {
+  private readonly logger = new Logger(CourseProgressService.name);
+
   constructor(
     @InjectEntityManager()
     private readonly entityManager: EntityManager,
@@ -75,6 +86,8 @@ export class CourseProgressService {
     });
 
     const requestedPercentage = clamp(dto.watched_percentage, 0, 100);
+    const now = new Date();
+    const isFirstCheckpoint = !progress;
 
     if (!progress) {
       progress = this.entityManager.create(CourseLessonProgress, {
@@ -84,32 +97,45 @@ export class CourseProgressService {
         lastPositionSeconds: 0,
         completedAt: null,
       });
-    } else {
-      const elapsedSeconds = Math.max(
-        0,
-        (Date.now() - progress.updatedAt.getTime()) / 1000,
-      );
-      const delta = requestedPercentage - progress.maxWatchedPercentage;
-
-      if (delta > 0 && lesson.durationSeconds && lesson.durationSeconds > 0) {
-        const maxPlausibleDelta =
-          (elapsedSeconds / lesson.durationSeconds) *
-            100 *
-            ANTI_CHEAT_SPEED_MULTIPLIER +
-          ANTI_CHEAT_BUFFER_PERCENTAGE;
-
-        if (delta > maxPlausibleDelta) {
-          const clampedPercentage = clamp(
-            progress.maxWatchedPercentage + maxPlausibleDelta,
-            0,
-            100,
-          );
-          return this.applyProgress(progress, clampedPercentage, dto);
-        }
-      }
     }
 
-    return this.applyProgress(progress, requestedPercentage, dto);
+    // Anchor the plausibility ceiling to a STABLE per-row reference point —
+    // the row's creation time (or "now" when this is the very first-ever
+    // checkpoint, since the row doesn't exist yet) — rather than
+    // `updatedAt`, which refreshes on every save. Anchoring to `updatedAt`
+    // let N rapid successive requests each re-earn the flat anti-cheat
+    // buffer against a near-zero elapsed time, accumulating N * buffer with
+    // no real time cost. Anchoring to a stable timestamp means the
+    // plausibility ceiling only grows with real wall-clock time, regardless
+    // of how many requests are fired in a short window.
+    const anchor = isFirstCheckpoint ? now : progress.createdAt;
+    const elapsedSeconds = Math.max(
+      0,
+      (now.getTime() - anchor.getTime()) / 1000,
+    );
+
+    let allowedPercentage = requestedPercentage;
+
+    if (lesson.durationSeconds && lesson.durationSeconds > 0) {
+      const maxPlausiblePercentage = clamp(
+        (elapsedSeconds / lesson.durationSeconds) *
+          100 *
+          ANTI_CHEAT_SPEED_MULTIPLIER +
+          ANTI_CHEAT_BUFFER_PERCENTAGE,
+        0,
+        100,
+      );
+      allowedPercentage = Math.min(requestedPercentage, maxPlausiblePercentage);
+    } else if (isFirstCheckpoint) {
+      allowedPercentage = Math.min(
+        requestedPercentage,
+        FIRST_CHECKPOINT_MAX_PERCENTAGE_UNKNOWN_DURATION,
+      );
+    }
+
+    allowedPercentage = clamp(allowedPercentage, 0, 100);
+
+    return this.applyProgress(progress, allowedPercentage, dto);
   }
 
   private async applyProgress(
@@ -231,21 +257,6 @@ export class CourseProgressService {
         courseId,
       );
 
-    const attemptsUsed = await this.courseQuestionnairesService.countAttempts(
-      userId,
-      questionnaire.id,
-    );
-
-    if (
-      questionnaire.maxAttempts !== null &&
-      attemptsUsed >= questionnaire.maxAttempts
-    ) {
-      throw new ConflictException({
-        code: 'MAX_ATTEMPTS_EXCEEDED',
-        message: `Maximum attempts (${questionnaire.maxAttempts}) exceeded for this questionnaire.`,
-      });
-    }
-
     const questions = await this.entityManager.find(CourseQuestion, {
       where: { questionnaireId: questionnaire.id },
     });
@@ -260,7 +271,6 @@ export class CourseProgressService {
 
     const { scorePercentage } = this.gradeAnswers(questions, options, answers);
     const passed = scorePercentage >= questionnaire.passingScorePercentage;
-    const attemptNumber = attemptsUsed + 1;
 
     // MUST assign an explicit array — never leave `answers` undefined before
     // save (jsonb {} regression, see commit 563626f).
@@ -270,17 +280,81 @@ export class CourseProgressService {
       text: a.text,
     }));
 
-    const response = this.entityManager.create(CourseQuestionnaireResponse, {
-      userId,
-      questionnaireId: questionnaire.id,
-      courseId,
-      answers: normalizedAnswers,
-      scorePercentage,
-      passed,
-      attemptNumber,
-    });
-    const savedResponse = await this.entityManager.save(response);
+    // Count-check + insert MUST be atomic w.r.t. concurrent submits from the
+    // same user, otherwise two racing requests can both pass the
+    // max_attempts check before either inserts (TOCTOU) and both commit,
+    // producing duplicate attempt_number rows / unlimited attempts. A
+    // per-(user, questionnaire) Postgres advisory transaction lock
+    // serializes concurrent submitters, and the DB-level unique constraint
+    // on (user_id, questionnaire_id, attempt_number) is a hard backstop in
+    // case the lock is ever bypassed (e.g. a future direct-write path).
+    let savedResponse: CourseQuestionnaireResponse;
+    let attemptNumber: number;
+    try {
+      const result = await this.entityManager.transaction(async (manager) => {
+        await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
+          `course_questionnaire:${userId}:${questionnaire.id}`,
+        ]);
 
+        const attemptsUsed =
+          await this.courseQuestionnairesService.countAttempts(
+            userId,
+            questionnaire.id,
+            manager,
+          );
+
+        if (
+          questionnaire.maxAttempts !== null &&
+          attemptsUsed >= questionnaire.maxAttempts
+        ) {
+          throw new ConflictException({
+            code: 'MAX_ATTEMPTS_EXCEEDED',
+            message: `Maximum attempts (${questionnaire.maxAttempts}) exceeded for this questionnaire.`,
+          });
+        }
+
+        const nextAttemptNumber = attemptsUsed + 1;
+        const response = manager.create(CourseQuestionnaireResponse, {
+          userId,
+          questionnaireId: questionnaire.id,
+          courseId,
+          answers: normalizedAnswers,
+          scorePercentage,
+          passed,
+          attemptNumber: nextAttemptNumber,
+        });
+        const saved = await manager.save(response);
+        return { saved, attemptNumber: nextAttemptNumber };
+      });
+      savedResponse = result.saved;
+      attemptNumber = result.attemptNumber;
+    } catch (error: unknown) {
+      if (error instanceof ConflictException) throw error;
+      // Backstop: a duplicate-key error on the unique constraint means the
+      // max-attempts race was still lost — surface the correct 409 instead
+      // of a generic 400/500.
+      const isUniqueViolation =
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as { code?: string }).code === '23505';
+      if (isUniqueViolation) {
+        throw new ConflictException({
+          code: 'MAX_ATTEMPTS_EXCEEDED',
+          message: `Maximum attempts (${questionnaire.maxAttempts}) exceeded for this questionnaire.`,
+        });
+      }
+      throw error;
+    }
+
+    // KNOWN FOLLOW-UP: response save (above), certificate issuance, and
+    // journey sync are three separate uncommitted steps rather than one
+    // transaction. `issueCertificateIdempotently` is idempotent (safe to
+    // retry) and `syncTrackCompletion` is best-effort, so a crash between
+    // steps can't duplicate state, but a passing response saved without a
+    // certificate (e.g. process crash right after the response commit) is
+    // possible today. Wrapping all three in one transaction is a larger
+    // refactor left out of this fix's scope.
     let certificate: CourseCertificate | null = null;
     if (passed) {
       certificate = await this.issueCertificateIdempotently(
@@ -369,11 +443,25 @@ export class CourseProgressService {
       );
 
       if (allCertified) {
-        await this.memberJourneyService.completeStageIfNotCompleted(
-          userId,
-          track.journeyStageId,
-          `Trilho "${track.title}" concluído via cursos.`,
-        );
+        // Best-effort: journey sync is a side effect of an already-issued
+        // certificate, not the primary outcome. A concurrent completion of
+        // another course in the same track can race on the unique
+        // (member_id, stage_id) constraint in member_journey_stages — that
+        // is an "already completed" race, not an error, so it must never
+        // fail the questionnaire-submit response.
+        try {
+          await this.memberJourneyService.completeStageIfNotCompleted(
+            userId,
+            track.journeyStageId,
+            `Trilho "${track.title}" concluído via cursos.`,
+          );
+        } catch (error: unknown) {
+          this.logger.warn(
+            `syncTrackCompletion: failed to complete journey stage ${track.journeyStageId} for user ${userId}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        }
       }
     }
   }

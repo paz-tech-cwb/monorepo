@@ -229,8 +229,9 @@ export class CourseQuestionnairesService {
   async countAttempts(
     userId: number,
     questionnaireId: string,
+    manager: EntityManager = this.entityManager,
   ): Promise<number> {
-    return this.entityManager.count(CourseQuestionnaireResponse, {
+    return manager.count(CourseQuestionnaireResponse, {
       where: { userId, questionnaireId },
     });
   }

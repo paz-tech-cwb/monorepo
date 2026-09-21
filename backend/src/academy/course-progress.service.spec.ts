@@ -12,7 +12,7 @@ type EntityRef = new (...args: unknown[]) => unknown;
 type WhereOpts = { where?: Record<string, unknown> };
 
 function buildManagerMock(overrides: Record<string, unknown> = {}) {
-  return {
+  const manager = {
     findOne: jest.fn(),
     find: jest.fn().mockResolvedValue([]),
     save: jest
@@ -25,8 +25,17 @@ function buildManagerMock(overrides: Record<string, unknown> = {}) {
       .fn()
       .mockImplementation((_entity: unknown, value: unknown) => value),
     count: jest.fn().mockResolvedValue(0),
+    query: jest.fn().mockResolvedValue(undefined),
+    transaction: undefined as unknown,
     ...overrides,
   };
+  // `transaction` runs the callback against this same mock manager, so
+  // whatever `find`/`findOne`/`save`/`count` behavior a test configures also
+  // applies inside the transactional submitQuestionnaire code path.
+  manager.transaction = jest
+    .fn()
+    .mockImplementation((cb: (m: typeof manager) => unknown) => cb(manager));
+  return manager;
 }
 
 describe('CourseProgressService - reportProgress', () => {
@@ -38,6 +47,7 @@ describe('CourseProgressService - reportProgress', () => {
       maxWatchedPercentage: 80,
       lastPositionSeconds: 400,
       completedAt: null,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60), // 1h ago, plenty of real time
       updatedAt: new Date(Date.now() - 1000 * 60 * 60), // 1h ago, plenty of real time
     } as CourseLessonProgress;
 
@@ -73,6 +83,7 @@ describe('CourseProgressService - reportProgress', () => {
       maxWatchedPercentage: 80,
       lastPositionSeconds: 480,
       completedAt: null,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60),
       updatedAt: new Date(Date.now() - 1000 * 60 * 60),
     } as CourseLessonProgress;
 
@@ -121,6 +132,7 @@ describe('CourseProgressService - reportProgress', () => {
       maxWatchedPercentage: 10,
       lastPositionSeconds: 60,
       completedAt: null,
+      createdAt: new Date(Date.now() - 2000), // only 2 real seconds ago
       updatedAt: new Date(Date.now() - 2000), // only 2 real seconds ago
     } as CourseLessonProgress;
 
@@ -147,6 +159,110 @@ describe('CourseProgressService - reportProgress', () => {
 
     expect(result.max_watched_percentage).toBeLessThan(90);
     expect(result.completed).toBe(false);
+  });
+
+  it('clamps the very first-ever checkpoint for a lesson (no prior row)', async () => {
+    const lesson = { id: 'lesson-1', durationSeconds: 600 } as CourseLesson;
+
+    const manager = buildManagerMock({
+      findOne: jest.fn().mockImplementation((entity: EntityRef) => {
+        if (entity === CourseLesson) return lesson;
+        if (entity === CourseLessonProgress) return null; // no prior row
+        return null;
+      }),
+    });
+
+    const service = new CourseProgressService(
+      manager as never,
+      {} as never,
+      {} as never,
+    );
+
+    // A single first-ever POST claiming 100% must NOT be trusted outright.
+    const result = await service.reportProgress(1, 'lesson-1', {
+      watched_percentage: 100,
+      position_seconds: 600,
+    });
+
+    expect(result.max_watched_percentage).toBeLessThan(100);
+    expect(result.completed).toBe(false);
+  });
+
+  it('clamps the very first-ever checkpoint to a conservative ceiling when duration is unknown', async () => {
+    const lesson = { id: 'lesson-1', durationSeconds: null } as CourseLesson;
+
+    const manager = buildManagerMock({
+      findOne: jest.fn().mockImplementation((entity: EntityRef) => {
+        if (entity === CourseLesson) return lesson;
+        if (entity === CourseLessonProgress) return null;
+        return null;
+      }),
+    });
+
+    const service = new CourseProgressService(
+      manager as never,
+      {} as never,
+      {} as never,
+    );
+
+    const result = await service.reportProgress(1, 'lesson-1', {
+      watched_percentage: 100,
+      position_seconds: 999,
+    });
+
+    expect(result.max_watched_percentage).toBeLessThanOrEqual(20);
+  });
+
+  it('does not let N rapid successive checkpoints exceed the time-plausible ceiling', async () => {
+    const lesson = { id: 'lesson-1', durationSeconds: 600 } as CourseLesson;
+    const createdAt = new Date(Date.now() - 3000); // 3 real seconds ago
+    let progressState: CourseLessonProgress = {
+      userId: 1,
+      lessonId: 'lesson-1',
+      maxWatchedPercentage: 0,
+      lastPositionSeconds: 0,
+      completedAt: null,
+      createdAt,
+      updatedAt: createdAt,
+    } as CourseLessonProgress;
+
+    const manager = buildManagerMock({
+      findOne: jest.fn().mockImplementation((entity: EntityRef) => {
+        if (entity === CourseLesson) return lesson;
+        if (entity === CourseLessonProgress) return progressState;
+        return null;
+      }),
+      save: jest
+        .fn()
+        .mockImplementation((_entity: unknown, value: CourseLessonProgress) => {
+          progressState = value;
+          return value;
+        }),
+    });
+
+    const service = new CourseProgressService(
+      manager as never,
+      {} as never,
+      {} as never,
+    );
+
+    // 20 rapid-fire requests, each claiming a higher percentage, all within
+    // the same ~3-second real-time window (the anchor, `createdAt`, never
+    // moves, so the buffer can't be re-earned per call).
+    let last:
+      | { max_watched_percentage: number; completed: boolean }
+      | undefined;
+    for (let i = 0; i < 20; i++) {
+      last = await service.reportProgress(1, 'lesson-1', {
+        watched_percentage: 100,
+        position_seconds: 600,
+      });
+    }
+
+    // Time-plausible ceiling: elapsed(~3s)/duration(600s)*100*3x + 3pp buffer
+    // is a low single-digit percentage — nowhere near 100%, regardless of
+    // how many requests were fired.
+    expect(last?.max_watched_percentage).toBeLessThan(10);
   });
 });
 
