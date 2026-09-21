@@ -35,6 +35,15 @@ struct PazChurchApp: App {
         _authCoordinator = State(initialValue: AuthenticationCoordinator(
             authRepository: IosAppContainer.shared.authRepository
         ))
+
+        // Prefetch the onboarding welcome video as soon as the app process starts — well
+        // before any sign-in — so it plays instantly once a member reaches that step instead
+        // of stalling on a live stream. Best-effort: VideoCache swallows failures internally,
+        // and WelcomeVideoStepView falls back to streaming the remote URL directly if this
+        // hasn't finished (or failed) by the time onboarding is shown.
+        Task.detached(priority: .background) {
+            try? await VideoCache.shared.prefetch(url: AppConfig.onboardingVideoURL.absoluteString)
+        }
     }
 
     var body: some Scene {

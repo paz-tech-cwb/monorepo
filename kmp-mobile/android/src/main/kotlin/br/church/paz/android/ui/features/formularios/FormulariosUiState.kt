@@ -13,7 +13,9 @@ sealed class FormulariosEffect {
         val formId: String,
     ) : FormulariosEffect()
 
-    data object NavigateToSubmissionsList : FormulariosEffect()
+    data class NavigateToSubmissionsList(
+        val formId: String,
+    ) : FormulariosEffect()
 
     data object NavigateBack : FormulariosEffect()
 }

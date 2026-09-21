@@ -36,6 +36,7 @@
 		3EC9DC430F954B799D549420 /* GlassBlurBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD36BC4FF7F143F2A22DBA8E /* GlassBlurBackground.swift */; };
 		3FA1B7D719A12BA02FC3ABA0 /* PazMeshBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = BABD41D3E08C6B07A350D39C /* PazMeshBackground.swift */; };
 		45C3440E495FA6E6275A0F54 /* FormFieldDefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7715EB99A1D239E5E9B6224 /* FormFieldDefs.swift */; };
+		5065DB30858D51CA86962AA9 /* CasaDePazSubmissionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E3DD93A38FD46986BAAC85A /* CasaDePazSubmissionsView.swift */; };
 		4A82A695C9D2A71805FA21F2 /* EditProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA7936BCA1C57C580876AD98 /* EditProfileView.swift */; };
 		4F45594E08464136AC489365 /* LifeGroupsMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AC340BD22C41D9A07A3F75 /* LifeGroupsMapView.swift */; };
 		5171876776DB984B0FC857E5 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 14D3154CD353A1E73ECC271B /* Kingfisher */; };
@@ -55,6 +56,7 @@
 		96BF8A72553894BA74F6934B /* PazIconContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC853F6E892CF7A2AE4283F /* PazIconContainer.swift */; };
 		9B9A6148AFFD0C8167085DD0 /* MinistryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDD6B4FBC968ED037D73EAA9 /* MinistryDetailView.swift */; };
 		A0CCE565617A81DD9C6404A9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = F04B442417CCD3B5A58BC0DF /* FirebaseAuth */; };
+		35C3D21C0C80B4EDEF327F6C /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = A7A78974772CE0C97F493EC7 /* FirebaseStorage */; };
 		A1B2C3D4E5F6A7B8C9D0E1F2 /* DeepLinkDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A7B8C9D0E1F2A3 /* DeepLinkDestination.swift */; };
 		A305236E34CC934DB2DC0DD7 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF92030D2B02263B99B9287C /* OnboardingView.swift */; };
 		A98EE8C9CC199B26F49D75EB /* AgendaDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE4B8D8AE9B398AA3A77DA29 /* AgendaDetailView.swift */; };
@@ -186,6 +188,7 @@
 		F62DDEA0026352360D73E873 /* PazPillChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazPillChip.swift; sourceTree = "<group>"; };
 		F688FE786E3B4822974AA197 /* LifeGroupStudyDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupStudyDetailView.swift; sourceTree = "<group>"; };
 		F7715EB99A1D239E5E9B6224 /* FormFieldDefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormFieldDefs.swift; sourceTree = "<group>"; };
+		0E3DD93A38FD46986BAAC85A /* CasaDePazSubmissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CasaDePazSubmissionsView.swift; sourceTree = "<group>"; };
 		F8BEE46E84E5D0C0BE0786C7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		F9246AB7FAA44B7E941D171E /* LifeGroupManageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupManageView.swift; sourceTree = "<group>"; };
 		FA678CF8F2462F7530E49E46 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -199,6 +202,7 @@
 			files = (
 				1CB207F6227C85FD1293E3A2 /* Shared.xcframework in Frameworks */,
 				A0CCE565617A81DD9C6404A9 /* FirebaseAuth in Frameworks */,
+				35C3D21C0C80B4EDEF327F6C /* FirebaseStorage in Frameworks */,
 				3A40345A216427C276DD32B7 /* FirebaseMessaging in Frameworks */,
 				1E73813601B5D626FF99A87A /* GoogleSignIn in Frameworks */,
 				5171876776DB984B0FC857E5 /* Kingfisher in Frameworks */,
@@ -212,6 +216,7 @@
 			isa = PBXGroup;
 			children = (
 				7C3499C673982AA1C0FA8EA5 /* FormDetailView.swift */,
+				0E3DD93A38FD46986BAAC85A /* CasaDePazSubmissionsView.swift */,
 				F7715EB99A1D239E5E9B6224 /* FormFieldDefs.swift */,
 				72DDFAA817EE34CB0ECC8202 /* FormFieldRow.swift */,
 				CEDF5383ACC5401BB4EE5011 /* FormStepView.swift */,
@@ -533,6 +538,7 @@
 			name = PazChurch;
 			packageProductDependencies = (
 				F04B442417CCD3B5A58BC0DF /* FirebaseAuth */,
+				A7A78974772CE0C97F493EC7 /* FirebaseStorage */,
 				D4D3763343A64715B4360CF2 /* FirebaseMessaging */,
 				2D74D60AD3C0597184B72C20 /* GoogleSignIn */,
 				14D3154CD353A1E73ECC271B /* Kingfisher */,
@@ -639,6 +645,7 @@
 				65323BAB5459A81F682BE7B1 /* EditProfileViewModel.swift in Sources */,
 				127BCE182FD590FF004D4473 /* AgendaListViewModel.swift in Sources */,
 				71ABCCDA3D92687839B11506 /* FormDetailView.swift in Sources */,
+				5065DB30858D51CA86962AA9 /* CasaDePazSubmissionsView.swift in Sources */,
 				45C3440E495FA6E6275A0F54 /* FormFieldDefs.swift in Sources */,
 				B0A2B7B83A281ABD8D7DBE01 /* FormFieldRow.swift in Sources */,
 				56B2E623564EAFA865427413 /* FormStepView.swift in Sources */,
@@ -950,6 +957,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 1FE66062384A01E6B73D3198 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
+		};
+		A7A78974772CE0C97F493EC7 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1FE66062384A01E6B73D3198 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

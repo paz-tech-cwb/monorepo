@@ -1,5 +1,6 @@
 package br.church.paz.shared.data.repository
 
+import br.church.paz.shared.domain.model.AddressRequest
 import br.church.paz.shared.domain.model.CepLookupOutcome
 import br.church.paz.shared.domain.model.CepLookupResult
 import br.church.paz.shared.domain.model.OnboardingStep
@@ -137,18 +138,6 @@ private data class UpdateMeRequest(
     val phone: String? = null,
     @SerialName("birth_date") val birthDate: String? = null,
     val address: AddressRequest? = null,
-)
-
-@Serializable
-private data class AddressRequest(
-    val street: String,
-    val number: String,
-    val complement: String? = null,
-    val neighborhood: String,
-    val city: String,
-    val state: String,
-    @SerialName("zip_code") val zipCode: String,
-    val country: String,
 )
 
 @Serializable

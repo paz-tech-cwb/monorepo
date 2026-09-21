@@ -6,6 +6,8 @@ import br.church.paz.android.ui.features.account.AccountViewModel
 import br.church.paz.android.ui.features.agenda.AgendaDetailViewModel
 import br.church.paz.android.ui.features.agenda.AgendaListViewModel
 import br.church.paz.android.ui.features.auth.LoginViewModel
+import br.church.paz.android.ui.features.formularios.CasaDePazSubmissionEditorViewModel
+import br.church.paz.android.ui.features.formularios.CasaDePazSubmissionsListViewModel
 import br.church.paz.android.ui.features.formularios.FormDetailViewModel
 import br.church.paz.android.ui.features.formularios.FormSubmissionsListViewModel
 import br.church.paz.android.ui.features.formularios.FormulariosViewModel
@@ -43,12 +45,14 @@ val androidModule =
         viewModel { (videoId: String) -> VideoPlayerViewModel(videoId) }
         viewModel { AccountViewModel(get(), get()) }
         viewModel { ProfileViewModel(get()) }
-        viewModel { EditProfileViewModel(get(), get()) }
+        viewModel { EditProfileViewModel(get(), get()) } // (UserRepository, OnboardingRepository)
         viewModel { (eventId: String) -> AgendaDetailViewModel(get(), eventId) }
         viewModel { AgendaListViewModel(get()) } // get() resolves AgendaRepository
         viewModel { FormulariosViewModel(get()) }
         viewModel { (formId: String) -> FormDetailViewModel(formId, get(), get()) }
         viewModel { FormSubmissionsListViewModel(get()) }
+        viewModel { CasaDePazSubmissionsListViewModel(get()) }
+        viewModel { (submissionId: String) -> CasaDePazSubmissionEditorViewModel(submissionId, get()) }
         viewModel { MemberJourneyViewModel(get()) }
         viewModel { NotificationPrefsViewModel(get()) }
         viewModel { SearchViewModel(get(), get(), get(), get()) }

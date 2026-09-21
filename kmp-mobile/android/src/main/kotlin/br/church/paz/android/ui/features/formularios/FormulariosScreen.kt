@@ -62,8 +62,15 @@ fun FormulariosScreen(
             when (effect) {
                 is FormulariosEffect.NavigateToForm ->
                     navController.navigate(Screen.FormSteps.createRoute(effect.formId))
-                FormulariosEffect.NavigateToSubmissionsList ->
-                    navController.navigate(Screen.FormSubmissionsList.route)
+                is FormulariosEffect.NavigateToSubmissionsList -> {
+                    val route =
+                        when (uiState.forms.find { it.id == effect.formId }?.type) {
+                            br.church.paz.shared.domain.model.FormType.casa_de_paz_report ->
+                                Screen.CasaDePazSubmissionsList.route
+                            else -> Screen.FormSubmissionsList.route
+                        }
+                    navController.navigate(route)
+                }
                 FormulariosEffect.NavigateBack -> navController.popBackStack()
             }
         }

@@ -2,9 +2,9 @@ import Foundation
 import Observation
 import Shared
 
-/// Drives the post-sign-in member-onboarding flow: an unskippable welcome video followed by
-/// up to three skippable profile-completion steps (birthday, WhatsApp, address), each backed
-/// by the shared `OnboardingRepository`.
+/// Drives the post-sign-in member-onboarding flow: an unskippable welcome video, two required
+/// profile-completion steps (birthday, WhatsApp), and a final skippable step (address), each
+/// backed by the shared `OnboardingRepository`.
 ///
 /// `pendingBirthDateLogin`, when non-nil, means this session was launched to satisfy a
 /// `BirthDateRequiredException` raised during sign-in (see `AuthenticationCoordinator`) — the
@@ -38,6 +38,16 @@ final class OnboardingCoordinator {
     private var remainingSteps: [OnboardingStep] = []
     private let repository: OnboardingRepository
     private let pendingBirthDateLogin: ((String) async -> Result<Void, Error>)?
+
+    /// True while the Birthday step must be answered to complete a deferred sign-in retry.
+    /// In that case there is no session yet at all — skipping would abandon sign-in entirely,
+    /// leaving the user looking logged out, and would also never learn whether WhatsApp/address
+    /// are missing (that's only knowable once the retry succeeds and `missingSteps()` can be
+    /// called against an authenticated session). The Birthday step must not offer a skip
+    /// affordance in this case.
+    var isBirthdayRequiredForLogin: Bool {
+        pendingBirthDateLogin != nil
+    }
 
     init(
         repository: OnboardingRepository,
@@ -80,6 +90,9 @@ final class OnboardingCoordinator {
     }
 
     func onSkipCurrentStep() {
+        // Defense in depth: the view hides the skip affordance in this case, but never allow
+        // skipping past a still-pending sign-in even if this were somehow called anyway.
+        guard !(currentStep == .birthday && isBirthdayRequiredForLogin) else { return }
         cepResult = nil
         errorMessage = nil
         advance()

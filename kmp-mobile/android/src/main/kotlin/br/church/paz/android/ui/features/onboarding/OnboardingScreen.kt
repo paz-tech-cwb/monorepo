@@ -44,9 +44,11 @@ import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.CepLookupOutcome
 import br.church.paz.shared.domain.model.OnboardingStep
+import br.church.paz.shared.media.VideoCache
 import com.cwb.pazchurch.app.BuildConfig
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
+import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -88,7 +90,6 @@ fun OnboardingScreen(
                             isSubmitting = state.isSubmitting,
                             errorMessage = state.errorMessage,
                             onSubmit = viewModel::onBirthdaySubmitted,
-                            onSkip = viewModel::onSkipCurrentStep,
                             onDismissError = viewModel::onDismissError,
                         )
                     OnboardingStep.Whatsapp ->
@@ -96,7 +97,6 @@ fun OnboardingScreen(
                             isSubmitting = state.isSubmitting,
                             errorMessage = state.errorMessage,
                             onSubmit = viewModel::onWhatsappSubmitted,
-                            onSkip = viewModel::onSkipCurrentStep,
                             onDismissError = viewModel::onDismissError,
                         )
                     OnboardingStep.Address ->
@@ -173,11 +173,17 @@ private fun WelcomeVideoStep(onFinished: () -> Unit) {
             modifier = Modifier.fillMaxSize(),
             factory = { context ->
                 VideoView(context).apply {
-                    // !!! ONBOARDING_VIDEO_URL is still the cdn.example.org PLACEHOLDER !!!
-                    // See android/build.gradle.kts — it MUST be replaced with the real
-                    // hosted welcome video before any production release. Until then this
-                    // step always falls through to the error state below.
-                    setVideoURI(Uri.parse(BuildConfig.ONBOARDING_VIDEO_URL))
+                    // Prefer the copy PazApplication prefetched at process start (instant,
+                    // works offline once cached) — fall back to streaming the remote URL
+                    // directly if prefetch hasn't finished yet or failed.
+                    val cachedPath = VideoCache.cachedFilePath(BuildConfig.ONBOARDING_VIDEO_URL)
+                    val uri =
+                        if (cachedPath != null) {
+                            Uri.fromFile(File(cachedPath))
+                        } else {
+                            Uri.parse(BuildConfig.ONBOARDING_VIDEO_URL)
+                        }
+                    setVideoURI(uri)
                     setOnPreparedListener {
                         isBuffering = false
                         start()
@@ -278,7 +284,6 @@ private fun BirthdayStep(
     isSubmitting: Boolean,
     errorMessage: String?,
     onSubmit: (String) -> Unit,
-    onSkip: () -> Unit,
     onDismissError: () -> Unit,
 ) {
     var isPickerOpen by remember { mutableStateOf(false) }
@@ -314,7 +319,7 @@ private fun BirthdayStep(
                 "confirmar seu cadastro caso já exista um registro seu na igreja.",
         errorMessage = errorMessage,
         onDismissError = onDismissError,
-        onSkip = onSkip,
+        onSkip = null,
     ) {
         OutlinedButton(
             onClick = {
@@ -374,7 +379,6 @@ private fun WhatsappStep(
     isSubmitting: Boolean,
     errorMessage: String?,
     onSubmit: (String) -> Unit,
-    onSkip: () -> Unit,
     onDismissError: () -> Unit,
 ) {
     var phone by remember { mutableStateOf("") }
@@ -385,7 +389,7 @@ private fun WhatsappStep(
                 "eventos e novidades.",
         errorMessage = errorMessage,
         onDismissError = onDismissError,
-        onSkip = onSkip,
+        onSkip = null,
     ) {
         OutlinedTextField(
             value = phone,

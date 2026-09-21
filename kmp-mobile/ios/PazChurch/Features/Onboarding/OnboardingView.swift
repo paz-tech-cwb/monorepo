@@ -2,10 +2,11 @@ import AVKit
 import Shared
 import SwiftUI
 
-/// Post-sign-in member-onboarding flow: an unskippable welcome video, then up to three
-/// skippable profile-completion steps (birthday, WhatsApp, address). Presented full-screen,
-/// with a native (non-custom) nav bar per step so back-navigation never applies here — each
-/// step either advances, is skipped, or the flow finishes and calls `onFinished`.
+/// Post-sign-in member-onboarding flow: an unskippable welcome video, two required
+/// profile-completion steps (birthday, WhatsApp), and a final skippable step (address).
+/// Presented full-screen, with a native (non-custom) nav bar per step so back-navigation
+/// never applies here — each step either advances, is skipped, or the flow finishes and
+/// calls `onFinished`.
 struct OnboardingView: View {
     @State private var coordinator: OnboardingCoordinator
     let onFinished: () -> Void
@@ -43,15 +44,13 @@ struct OnboardingView: View {
                     BirthdayStepView(
                         isSubmitting: coordinator.isSubmitting,
                         errorMessage: coordinator.errorMessage,
-                        onSubmit: { date in Task { await coordinator.onBirthdaySubmitted(date) } },
-                        onSkip: coordinator.onSkipCurrentStep
+                        onSubmit: { date in Task { await coordinator.onBirthdaySubmitted(date) } }
                     )
                 } else if coordinator.currentStep == .whatsapp {
                     WhatsappStepView(
                         isSubmitting: coordinator.isSubmitting,
                         errorMessage: coordinator.errorMessage,
-                        onSubmit: { phone in Task { await coordinator.onWhatsappSubmitted(phone) } },
-                        onSkip: coordinator.onSkipCurrentStep
+                        onSubmit: { phone in Task { await coordinator.onWhatsappSubmitted(phone) } }
                     )
                 } else if coordinator.currentStep == .address {
                     AddressStepView(
@@ -129,7 +128,18 @@ private struct WelcomeVideoStepView: View {
     /// which would otherwise leave this non-skippable full-screen step with no exit.
     private static let startTimeout: Duration = .seconds(15)
 
-    @State private var player = AVPlayer(url: AppConfig.onboardingVideoURL)
+    /// Prefers the copy `PazChurchApp.init()` prefetched at process start (instant, works
+    /// offline once cached) — falls back to streaming the remote URL directly if prefetch
+    /// hasn't finished yet or failed.
+    private static func resolvedVideoURL() -> URL {
+        let remoteURLString = AppConfig.onboardingVideoURL.absoluteString
+        if let cachedPath = VideoCache.shared.cachedFilePath(url: remoteURLString) {
+            return URL(fileURLWithPath: cachedPath)
+        }
+        return AppConfig.onboardingVideoURL
+    }
+
+    @State private var player = AVPlayer(url: Self.resolvedVideoURL())
     @State private var observerTokens: [NSObjectProtocol] = []
     @State private var statusObservation: NSKeyValueObservation?
     @State private var timeControlObservation: NSKeyValueObservation?
@@ -237,13 +247,12 @@ private struct WelcomeVideoStepView: View {
     }
 }
 
-// MARK: - Step 2: Birthday (skippable)
+// MARK: - Step 2: Birthday (required)
 
 private struct BirthdayStepView: View {
     let isSubmitting: Bool
     let errorMessage: String?
     let onSubmit: (String) -> Void
-    let onSkip: () -> Void
 
     @State private var birthDate = Date()
 
@@ -295,25 +304,18 @@ private struct BirthdayStepView: View {
             }
             .buttonStyle(.pazPillPrimary)
             .disabled(isSubmitting)
-
-            Button("Pular por agora", action: onSkip)
-                .font(PazTypography.labelLarge)
-                .foregroundStyle(PazColors.slate)
-                .frame(maxWidth: .infinity)
-                .disabled(isSubmitting)
         }
         .padding(PazSpacing.xl)
         .navigationTitle("Data de nascimento")
     }
 }
 
-// MARK: - Step 3: WhatsApp (skippable)
+// MARK: - Step 3: WhatsApp (required)
 
 private struct WhatsappStepView: View {
     let isSubmitting: Bool
     let errorMessage: String?
     let onSubmit: (String) -> Void
-    let onSkip: () -> Void
 
     @State private var phone = ""
 
@@ -350,12 +352,6 @@ private struct WhatsappStepView: View {
             }
             .buttonStyle(.pazPillPrimary)
             .disabled(isSubmitting || phone.trimmingCharacters(in: .whitespaces).isEmpty)
-
-            Button("Pular por agora", action: onSkip)
-                .font(PazTypography.labelLarge)
-                .foregroundStyle(PazColors.slate)
-                .frame(maxWidth: .infinity)
-                .disabled(isSubmitting)
         }
         .padding(PazSpacing.xl)
         .navigationTitle("WhatsApp")

@@ -26,6 +26,11 @@ export class UpdateProfileDto {
 
   @Expose()
   @IsOptional()
+  @IsString()
+  picture?: string;
+
+  @Expose()
+  @IsOptional()
   @IsDateString()
   birth_date?: string;
 

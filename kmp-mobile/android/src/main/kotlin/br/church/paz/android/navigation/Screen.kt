@@ -57,6 +57,12 @@ sealed class Screen(
         fun createRoute(submissionId: String) = "form_submission_detail/$submissionId"
     }
 
+    data object CasaDePazSubmissionsList : Screen("casa_de_paz_submissions_list")
+
+    data object CasaDePazSubmissionEditor : Screen("casa_de_paz_submission_editor/{submissionId}") {
+        fun createRoute(submissionId: String) = "casa_de_paz_submission_editor/$submissionId"
+    }
+
     data object NotificationPrefs : Screen("notification_prefs")
 
     data object AgendaList : Screen("agenda_list")

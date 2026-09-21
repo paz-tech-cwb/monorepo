@@ -1,3 +1,4 @@
+import PhotosUI
 import Shared
 import SwiftUI
 
@@ -5,11 +6,13 @@ struct EditProfileView: View {
     @State private var viewModel: EditProfileViewModel
     @Environment(\.dismiss) var dismiss
     @State private var showDatePicker = false
+    @State private var pickerItem: PhotosPickerItem?
 
     init() {
         _viewModel = State(initialValue: EditProfileViewModel(
             userRepository: IosAppContainer.shared.userRepository,
-            authRepository: IosAppContainer.shared.authRepository
+            authRepository: IosAppContainer.shared.authRepository,
+            onboardingRepository: IosAppContainer.shared.onboardingRepository
         ))
     }
 
@@ -19,7 +22,10 @@ struct EditProfileView: View {
                 VStack(alignment: .leading, spacing: PazSpacing.lg) {
                     Spacer().frame(height: PazSpacing.lg)
 
+                    avatarPicker
+
                     formCard
+                    addressCard
                 }
                 .padding(.horizontal, PazSpacing.lg)
             }
@@ -29,7 +35,7 @@ struct EditProfileView: View {
                     .font(PazTypography.titleMedium)
             }
             .buttonStyle(.pazPillPrimary)
-            .disabled(viewModel.isSaving || viewModel.name.trimmingCharacters(in: .whitespaces).isEmpty)
+            .disabled(viewModel.isSaving || viewModel.isUploadingPicture || viewModel.name.trimmingCharacters(in: .whitespaces).isEmpty)
             .padding(.horizontal, PazSpacing.lg)
             .padding(.vertical, PazSpacing.md)
         }
@@ -39,6 +45,49 @@ struct EditProfileView: View {
         .toolbarBackground(.hidden, for: .navigationBar)
         .onChange(of: viewModel.saveSuccess) { _, success in
             if success { dismiss() }
+        }
+        .onChange(of: pickerItem) { _, newItem in
+            Task {
+                if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                    viewModel.onPictureSelected(data: data)
+                }
+            }
+        }
+    }
+
+    private var avatarPicker: some View {
+        HStack {
+            Spacer()
+            PhotosPicker(selection: $pickerItem, matching: .images) {
+                ZStack(alignment: .bottomTrailing) {
+                    Group {
+                        if viewModel.isUploadingPicture {
+                            ProgressView()
+                        } else if let urlString = viewModel.pictureUrl, let url = URL(string: urlString) {
+                            AsyncImage(url: url) { image in
+                                image.resizable().aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                ProgressView()
+                            }
+                        } else {
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 40))
+                                .foregroundStyle(PazColors.accent)
+                        }
+                    }
+                    .frame(width: 96, height: 96)
+                    .background(PazColors.accent.opacity(0.15))
+                    .clipShape(Circle())
+
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white)
+                        .padding(6)
+                        .background(PazColors.accent)
+                        .clipShape(Circle())
+                }
+            }
+            Spacer()
         }
     }
 
@@ -79,10 +128,9 @@ struct EditProfileView: View {
                     .font(PazTypography.bodyMedium)
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
+                .glassCard(radius: 12)
 
                 if showDatePicker {
                     DatePicker(
@@ -97,8 +145,7 @@ struct EditProfileView: View {
                     .datePickerStyle(.graphical)
                     .tint(PazColors.accent)
                     .onChange(of: viewModel.birthDate) { _, _ in showDatePicker = false }
-                    .background(PazColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .glassCard(radius: 12)
                 }
             }
 
@@ -110,6 +157,48 @@ struct EditProfileView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.red.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+        .padding(PazSpacing.lg)
+        .glassCard(radius: PazSpacing.cardRadiusLarge)
+    }
+
+    private var addressCard: some View {
+        VStack(alignment: .leading, spacing: PazSpacing.md) {
+            Text("Endereço (opcional)")
+                .font(PazTypography.labelMedium)
+                .foregroundStyle(PazColors.onSurface)
+
+            HStack(spacing: PazSpacing.sm) {
+                TextField("CEP", text: Binding(
+                    get: { viewModel.cep },
+                    set: { viewModel.onCepChanged($0) }
+                ))
+                .keyboardType(.numberPad)
+                .profileFieldStyle()
+
+                if viewModel.isLookingUpCep {
+                    ProgressView().frame(width: 24)
+                }
+            }
+
+            TextField("Rua", text: $viewModel.street).profileFieldStyle()
+
+            HStack(spacing: PazSpacing.sm) {
+                TextField("Número", text: $viewModel.number)
+                    .keyboardType(.numberPad)
+                    .profileFieldStyle()
+                TextField("Complemento", text: $viewModel.complement).profileFieldStyle()
+            }
+
+            TextField("Bairro", text: $viewModel.neighborhood).profileFieldStyle()
+
+            HStack(spacing: PazSpacing.sm) {
+                TextField("Cidade", text: $viewModel.city).profileFieldStyle()
+                TextField("UF", text: $viewModel.state)
+                    .autocapitalization(.allCharacters)
+                    .profileFieldStyle()
+                    .frame(width: 80)
             }
         }
         .padding(PazSpacing.lg)
@@ -162,13 +251,14 @@ private struct ProfileField<Content: View>: View {
 }
 
 private extension View {
+    /// Every profile field uses the same frosted GlassCard material as the rest of the
+    /// app — no flat/opaque field backgrounds.
     func profileFieldStyle() -> some View {
         self
             .font(PazTypography.bodyMedium)
             .padding(.horizontal, PazSpacing.md)
             .frame(height: 56)
-            .background(PazColors.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .glassCard(radius: 12)
     }
 }
 

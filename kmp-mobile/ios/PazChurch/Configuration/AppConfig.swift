@@ -14,18 +14,11 @@ enum AppConfig {
 
     /// Welcome video URL for the member onboarding flow.
     ///
-    /// ====================================================================
-    /// !!! PLACEHOLDER — MUST BE REPLACED BEFORE PRODUCTION RELEASE !!!
-    /// `cdn.example.org` does not exist. `WelcomeVideoStepView` detects the
-    /// load failure (AVPlayerItem `.failed` / FailedToPlayToEndTime / a 15s
-    /// start timeout) and shows a "Continuar" escape hatch, so the app is not
-    /// hard-locked — but every member still sees an error instead of the
-    /// welcome video until a real hosted asset URL is put here.
-    /// The same placeholder exists in android/build.gradle.kts
-    /// (`ONBOARDING_VIDEO_URL`, both debug and release).
-    /// ====================================================================
+    /// Served as a static asset from admin-ui's public/ folder — not
+    /// environment-specific, so debug and release point at the same
+    /// production admin-ui host.
     static let onboardingVideoURL: URL = {
-        let urlString = "https://cdn.example.org/onboarding/welcome.mp4"
+        let urlString = "http://f11zk1fs2i2igvjkhyyiubvc.62.238.45.195.sslip.io/onboarding/welcome.mp4"
         return URL(string: urlString)!
     }()
 }

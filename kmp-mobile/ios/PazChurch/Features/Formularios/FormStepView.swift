@@ -70,6 +70,13 @@ struct FormStepView: View {
                         Image(systemName: "chevron.left")
                     }
                 }
+                if form.type == .casaDePazReport {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        NavigationLink(destination: CasaDePazSubmissionsListView(formsRepository: IosAppContainer.shared.formsRepository)) {
+                            Image(systemName: "clock.arrow.circlepath")
+                        }
+                    }
+                }
             }
         }
         // Applies only to the scroll view inside stepContent (see below) — the keyboard must
