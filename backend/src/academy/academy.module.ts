@@ -10,10 +10,10 @@ import { CourseCertificatesService } from './course-certificates.service';
 import { CourseCertificatesController } from './course-certificates.controller';
 import { CourseTracksService } from './course-tracks.service';
 import { CourseTracksController } from './course-tracks.controller';
-import { MemberJourneyModule } from '../member-journey/member-journey.module';
+import { JourneyTracksModule } from '../journey-tracks/journey-tracks.module';
 
 @Module({
-  imports: [MemberJourneyModule],
+  imports: [JourneyTracksModule],
   controllers: [
     AcademyController,
     CourseLessonsController,

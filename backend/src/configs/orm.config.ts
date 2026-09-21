@@ -48,6 +48,9 @@ import { MinistryTeam } from '../ministries/entities/ministry-team.entity';
 import { ReminderRule } from '../reminders/entities/reminder-rule.entity';
 import { ReminderDispatchLog } from '../reminders/entities/reminder-dispatch-log.entity';
 import { AuditLog } from '../auth/entities/audit-log.entity';
+import { JourneyTrack } from '../journey-tracks/entities/journey-track.entity';
+import { JourneyTrackStep } from '../journey-tracks/entities/journey-track-step.entity';
+import { MemberJourneyStepProgress } from '../journey-tracks/entities/member-journey-step-progress.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -108,6 +111,9 @@ const config: DataSourceOptions = {
     CourseLessonProgress,
     CourseQuestionnaireResponse,
     CourseCertificate,
+    JourneyTrack,
+    JourneyTrackStep,
+    MemberJourneyStepProgress,
   ],
   migrations: ['dist/migrations/*.js'],
   migrationsTransactionMode: 'each',

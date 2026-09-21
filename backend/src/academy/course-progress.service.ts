@@ -18,12 +18,11 @@ import {
   CourseQuestionnaireResponse,
 } from './entities/course-questionnaire-response.entity';
 import { CourseCertificate } from './entities/course-certificate.entity';
-import { CourseTrackCourse } from './entities/course-track-course.entity';
-import { CourseTrack } from './entities/course-track.entity';
+import { CourseQuestionnaire } from './entities/course-questionnaire.entity';
 import { ReportLessonProgressDto } from './dto/report-lesson-progress.dto';
 import { QuestionnaireAnswerDto } from './dto/submit-questionnaire.dto';
 import { CourseQuestionnairesService } from './course-questionnaires.service';
-import { MemberJourneyService } from '../member-journey/member-journey.service';
+import { JourneyProgressService } from '../journey-tracks/journey-progress.service';
 import { REQUIRED_WATCH_PERCENTAGE } from './constants';
 
 const CERTIFICATE_CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; // RFC 4648 base32
@@ -66,7 +65,7 @@ export class CourseProgressService {
     @InjectEntityManager()
     private readonly entityManager: EntityManager,
     private readonly courseQuestionnairesService: CourseQuestionnairesService,
-    private readonly memberJourneyService: MemberJourneyService,
+    private readonly journeyProgressService: JourneyProgressService,
   ) {}
 
   async reportProgress(
@@ -143,25 +142,99 @@ export class CourseProgressService {
     requestedPercentage: number,
     dto: ReportLessonProgressDto,
   ) {
+    const previousMaxForThisLesson = progress.maxWatchedPercentage;
     progress.maxWatchedPercentage = Math.max(
       progress.maxWatchedPercentage,
       requestedPercentage,
     );
     progress.lastPositionSeconds = Math.max(0, dto.position_seconds);
 
-    if (
+    const crossedLessonCompletionNow =
       !progress.completedAt &&
-      progress.maxWatchedPercentage >= REQUIRED_WATCH_PERCENTAGE
-    ) {
+      progress.maxWatchedPercentage >= REQUIRED_WATCH_PERCENTAGE;
+    if (crossedLessonCompletionNow) {
       progress.completedAt = new Date();
     }
 
     const saved = await this.entityManager.save(CourseLessonProgress, progress);
 
+    if (crossedLessonCompletionNow) {
+      // Best-effort: lesson progress above is already saved, so a failure
+      // here must never fail the member-facing progress-report response.
+      try {
+        await this.maybeSyncQuestionnaireLessCourseCompletion(
+          saved.userId,
+          saved.lessonId,
+          previousMaxForThisLesson,
+        );
+      } catch (error: unknown) {
+        this.logger.warn(
+          `Failed to sync questionnaire-less course completion for user ${saved.userId}, lesson ${saved.lessonId}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+
     return {
       max_watched_percentage: saved.maxWatchedPercentage,
       completed: saved.completedAt !== null,
     };
+  }
+
+  /**
+   * Questionnaire-backed courses trigger their journey sync from
+   * `submitQuestionnaire` (on pass). A questionnaire-less course, however,
+   * never hits that path, so it would otherwise never sync at all — this
+   * covers that gap by firing exactly once, on the precise transition where
+   * the LAST remaining incomplete lesson of the course crosses the watch
+   * threshold (mirrors the "every lesson >= threshold" completion check in
+   * AcademyService.getAcademy's `completed` field).
+   */
+  private async maybeSyncQuestionnaireLessCourseCompletion(
+    userId: number,
+    lessonId: string,
+    previousMaxForThisLesson: number,
+  ): Promise<void> {
+    // This lesson was already counted as complete before this checkpoint —
+    // not a new transition, so no course-level completion could have just
+    // occurred as a result of it.
+    if (previousMaxForThisLesson >= REQUIRED_WATCH_PERCENTAGE) return;
+
+    const lesson = await this.entityManager.findOne(CourseLesson, {
+      where: { id: lessonId },
+    });
+    if (!lesson) return;
+
+    const questionnaire = await this.entityManager.findOne(
+      CourseQuestionnaire,
+      { where: { courseId: lesson.courseId } },
+    );
+    // Questionnaire-backed courses sync from submitQuestionnaire instead.
+    if (questionnaire) return;
+
+    const lessons = await this.entityManager.find(CourseLesson, {
+      where: { courseId: lesson.courseId },
+    });
+    const otherLessons = lessons.filter((l) => l.id !== lessonId);
+
+    const otherProgresses = otherLessons.length
+      ? await this.entityManager.find(CourseLessonProgress, {
+          where: { userId, lessonId: In(otherLessons.map((l) => l.id)) },
+        })
+      : [];
+    const otherMaxByLesson = new Map(
+      otherProgresses.map((p) => [p.lessonId, p.maxWatchedPercentage]),
+    );
+    const everyOtherLessonAlreadyComplete = otherLessons.every(
+      (l) => (otherMaxByLesson.get(l.id) ?? 0) >= REQUIRED_WATCH_PERCENTAGE,
+    );
+    if (!everyOtherLessonAlreadyComplete) return;
+
+    await this.journeyProgressService.syncCourseCompletion(
+      userId,
+      lesson.courseId,
+    );
   }
 
   async getProgressForUserAndCourse(userId: number, courseId: string) {
@@ -350,7 +423,7 @@ export class CourseProgressService {
     // KNOWN FOLLOW-UP: response save (above), certificate issuance, and
     // journey sync are three separate uncommitted steps rather than one
     // transaction. `issueCertificateIdempotently` is idempotent (safe to
-    // retry) and `syncTrackCompletion` is best-effort, so a crash between
+    // retry) and `syncCourseCompletion` is best-effort, so a crash between
     // steps can't duplicate state, but a passing response saved without a
     // certificate (e.g. process crash right after the response commit) is
     // possible today. Wrapping all three in one transaction is a larger
@@ -363,7 +436,7 @@ export class CourseProgressService {
         scorePercentage,
         savedResponse.id,
       );
-      await this.syncTrackCompletion(userId, courseId);
+      await this.journeyProgressService.syncCourseCompletion(userId, courseId);
     }
 
     return {
@@ -410,59 +483,6 @@ export class CourseProgressService {
       });
       if (raceWinner) return raceWinner;
       throw error;
-    }
-  }
-
-  async syncTrackCompletion(userId: number, courseId: string): Promise<void> {
-    const memberships = await this.entityManager.find(CourseTrackCourse, {
-      where: { courseId },
-    });
-    if (memberships.length === 0) return;
-
-    const trackIds = memberships.map((m) => m.trackId);
-    const tracks = await this.entityManager.find(CourseTrack, {
-      where: { id: In(trackIds) },
-    });
-
-    for (const track of tracks) {
-      if (track.journeyStageId === null) continue;
-
-      const trackCourses = await this.entityManager.find(CourseTrackCourse, {
-        where: { trackId: track.id },
-      });
-      const trackCourseIds = trackCourses.map((tc) => tc.courseId);
-      if (trackCourseIds.length === 0) continue;
-
-      const certificates = await this.entityManager.find(CourseCertificate, {
-        where: { userId, courseId: In(trackCourseIds) },
-      });
-      const certifiedCourseIds = new Set(certificates.map((c) => c.courseId));
-
-      const allCertified = trackCourseIds.every((id) =>
-        certifiedCourseIds.has(id),
-      );
-
-      if (allCertified) {
-        // Best-effort: journey sync is a side effect of an already-issued
-        // certificate, not the primary outcome. A concurrent completion of
-        // another course in the same track can race on the unique
-        // (member_id, stage_id) constraint in member_journey_stages — that
-        // is an "already completed" race, not an error, so it must never
-        // fail the questionnaire-submit response.
-        try {
-          await this.memberJourneyService.completeStageIfNotCompleted(
-            userId,
-            track.journeyStageId,
-            `Trilho "${track.title}" concluído via cursos.`,
-          );
-        } catch (error: unknown) {
-          this.logger.warn(
-            `syncTrackCompletion: failed to complete journey stage ${track.journeyStageId} for user ${userId}: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
-          );
-        }
-      }
     }
   }
 }

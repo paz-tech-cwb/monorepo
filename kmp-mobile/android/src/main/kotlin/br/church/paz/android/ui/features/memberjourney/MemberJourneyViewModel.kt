@@ -28,12 +28,26 @@ class MemberJourneyViewModel(
         viewModelScope.launch {
             runCatching { memberJourneyRepository.getMemberJourney() }
                 .onSuccess { journey ->
-                    _uiState.update { it.copy(journey = journey, isLoading = false) }
+                    val firstIncompleteTrackKey =
+                        journey.tracks.firstOrNull { track -> track.progressPercentage < 100 }?.key
+                    _uiState.update {
+                        it.copy(
+                            tracks = journey.tracks,
+                            expandedTrackKey = firstIncompleteTrackKey ?: journey.tracks.firstOrNull()?.key,
+                            isLoading = false,
+                        )
+                    }
                 }.onFailure { e ->
                     _uiState.update {
                         it.copy(isLoading = false, error = e.message ?: "Erro ao carregar jornada")
                     }
                 }
+        }
+    }
+
+    fun onToggleTrack(trackKey: String) {
+        _uiState.update {
+            it.copy(expandedTrackKey = if (it.expandedTrackKey == trackKey) null else trackKey)
         }
     }
 
