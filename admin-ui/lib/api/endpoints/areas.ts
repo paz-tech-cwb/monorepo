@@ -3,6 +3,7 @@ import type {
   Area,
   AreaHierarchy,
   CreateAreaRequest,
+  OrgChart,
   UpdateAreaRequest,
 } from "../types"
 
@@ -12,6 +13,8 @@ export const areasApi = {
   getById: (id: number) => api.get<Area>(`/areas/${id}`),
 
   getHierarchy: () => api.get<AreaHierarchy[]>("/areas/hierarchy"),
+
+  getOrgChart: () => api.get<OrgChart>("/areas/org-chart"),
 
   create: (data: CreateAreaRequest) => api.post<Area>("/areas", data),
 
