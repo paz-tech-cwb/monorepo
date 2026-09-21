@@ -26,15 +26,36 @@ const KIND_BADGE_VARIANT = {
 function OrgChartCanvasNodeComponent({ data }: NodeProps<OrgCanvasNode>) {
   const Icon = KIND_ICON[data.kind]
   const badgeVariant = KIND_BADGE_VARIANT[data.kind]
+  const isClickable = data.selected !== null
+
+  const handleActivate = () => {
+    data.onActivate?.()
+  }
 
   return (
     <div
       className={cn(
         "flex h-full w-full flex-col justify-center gap-1 rounded-lg border bg-card px-3 py-2 text-card-foreground shadow-sm",
-        data.unassigned && "border-dashed"
+        data.unassigned && "border-dashed",
+        isClickable ? "cursor-pointer" : "cursor-default"
       )}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      aria-label={isClickable ? data.title : undefined}
+      onKeyDown={
+        isClickable
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault()
+                handleActivate()
+              }
+            }
+          : undefined
+      }
     >
-      <Handle type="target" position={Position.Top} className="!bg-border" />
+      {data.kind !== "root" && data.kind !== "unassigned" && (
+        <Handle type="target" position={Position.Top} className="!bg-border" />
+      )}
 
       <div className="flex items-center gap-2">
         <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />

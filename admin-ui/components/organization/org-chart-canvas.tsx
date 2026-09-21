@@ -2,7 +2,7 @@
 
 import "@xyflow/react/dist/style.css"
 
-import { useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { useTheme } from "next-themes"
 import { Background, Controls, MiniMap, ReactFlow, type NodeMouseHandler } from "@xyflow/react"
 import { AlertDialog } from "@/components/ui/alert-dialog"
@@ -12,8 +12,9 @@ import {
   NodeDetailsSheet,
   OrgChartDetachDialog,
   buildMoveOptions,
+  resolveSelectedNode,
   useOrgChartMoves,
-  type SelectedNode,
+  type SelectedNodeRef,
 } from "@/components/organization/org-chart-shared"
 import { orgChartNodeTypes } from "@/components/organization/org-chart-canvas-node"
 import { buildOrgGraph, type OrgCanvasNode } from "@/lib/org-chart/build-graph"
@@ -30,20 +31,55 @@ export function OrgChartCanvas() {
     clearPendingDetach,
   } = useOrgChartMoves()
   const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
 
-  const [selected, setSelected] = useState<SelectedNode>(null)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const [selectedRef, setSelectedRef] = useState<SelectedNodeRef>(null)
 
   const { allAreaOptions, allSectorOptions } = buildMoveOptions(orgChart)
 
-  const { nodes, edges } = useMemo(() => {
+  const { nodes: builtNodes, edges } = useMemo(() => {
     if (!orgChart) return { nodes: [], edges: [] }
     return buildOrgGraph(orgChart)
   }, [orgChart])
 
-  const handleNodeClick: NodeMouseHandler<OrgCanvasNode> = (_event, node) => {
-    if (node.data.selected) {
-      setSelected(node.data.selected)
+  const selected = useMemo(
+    () => resolveSelectedNode(orgChart, selectedRef),
+    [orgChart, selectedRef]
+  )
+
+  const selectNode = (nodeData: OrgCanvasNode["data"]) => {
+    const target = nodeData.selected
+    if (!target) return
+    if (target.type === "root") {
+      setSelectedRef({ type: "root", id: target.root.id })
+    } else if (target.type === "area") {
+      setSelectedRef({ type: "area", id: target.area.id })
+    } else if (target.type === "sector") {
+      setSelectedRef({ type: "sector", id: target.sector.id })
+    } else if (target.type === "life_group") {
+      setSelectedRef({ type: "life_group", id: target.lifeGroup.id })
     }
+  }
+
+  const nodes = useMemo(
+    () =>
+      builtNodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          onActivate: () => selectNode(node.data),
+        },
+      })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [builtNodes]
+  )
+
+  const handleNodeClick: NodeMouseHandler<OrgCanvasNode> = (_event, node) => {
+    selectNode(node.data)
   }
 
   if (isLoading) {
@@ -113,7 +149,7 @@ export function OrgChartCanvas() {
         nodesDraggable={false}
         nodesConnectable={false}
         onNodeClick={handleNodeClick}
-        colorMode={resolvedTheme === "dark" ? "dark" : "light"}
+        colorMode={mounted && resolvedTheme === "dark" ? "dark" : "light"}
         fitView
         proOptions={{ hideAttribution: true }}
       >
@@ -124,7 +160,7 @@ export function OrgChartCanvas() {
 
       <NodeDetailsSheet
         selected={selected}
-        onOpenChange={(open) => !open && setSelected(null)}
+        onOpenChange={(open) => !open && setSelectedRef(null)}
         footer={footer}
       />
 

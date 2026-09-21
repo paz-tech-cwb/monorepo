@@ -16,6 +16,7 @@ export interface OrgCanvasNodeData extends Record<string, unknown> {
   childCountLabel: string | null
   unassigned: boolean
   selected: SelectedNode
+  onActivate?: () => void
 }
 
 export type OrgCanvasNode = Node<OrgCanvasNodeData>
@@ -57,7 +58,8 @@ export function buildOrgGraph(orgChart: OrgChart): BuildGraphResult {
   const addSector = (
     sector: OrgChart["unassigned_sectors"][number],
     areaName: string,
-    parentId: string
+    parentId: string,
+    unassigned = false
   ) => {
     const sectorId = `sector-${sector.id}`
     pushNode(sectorId, {
@@ -66,7 +68,7 @@ export function buildOrgGraph(orgChart: OrgChart): BuildGraphResult {
       title: sector.name,
       subtitle: leaderSubtitle(sector.leader_name, sector.co_leader_name),
       childCountLabel: `${sector.life_groups.length} life group(s)`,
-      unassigned: false,
+      unassigned,
       selected: { type: "sector", sector, areaName },
     })
     pushEdge(parentId, sectorId)
@@ -79,14 +81,19 @@ export function buildOrgGraph(orgChart: OrgChart): BuildGraphResult {
         title: lifeGroup.name,
         subtitle: leaderSubtitle(lifeGroup.leader_name, lifeGroup.co_leader_name),
         childCountLabel: null,
-        unassigned: false,
+        unassigned,
         selected: { type: "life_group", lifeGroup, sectorName: sector.name },
       })
       pushEdge(sectorId, lgId)
     }
   }
 
-  const addArea = (area: OrgChart["unassigned_areas"][number], rootLabel: string, parentId: string) => {
+  const addArea = (
+    area: OrgChart["unassigned_areas"][number],
+    rootLabel: string,
+    parentId: string,
+    unassigned = false
+  ) => {
     const areaId = `area-${area.id}`
     pushNode(areaId, {
       kind: "area",
@@ -94,13 +101,13 @@ export function buildOrgGraph(orgChart: OrgChart): BuildGraphResult {
       title: area.name,
       subtitle: leaderSubtitle(area.leader_name, area.co_leader_name),
       childCountLabel: `${area.sectors.length} setor(es)`,
-      unassigned: false,
+      unassigned,
       selected: { type: "area", area, rootLabel },
     })
     pushEdge(parentId, areaId)
 
     for (const sector of area.sectors) {
-      addSector(sector, area.name, areaId)
+      addSector(sector, area.name, areaId, unassigned)
     }
   }
 
@@ -134,7 +141,7 @@ export function buildOrgGraph(orgChart: OrgChart): BuildGraphResult {
       selected: null,
     })
     for (const area of orgChart.unassigned_areas) {
-      addArea(area, "Sem pastor vinculado", clusterId)
+      addArea(area, "Sem pastor vinculado", clusterId, true)
     }
   }
 
@@ -150,7 +157,7 @@ export function buildOrgGraph(orgChart: OrgChart): BuildGraphResult {
       selected: null,
     })
     for (const sector of orgChart.unassigned_sectors) {
-      addSector(sector, "Sem área vinculada", clusterId)
+      addSector(sector, "Sem área vinculada", clusterId, true)
     }
   }
 
@@ -173,7 +180,7 @@ export function buildOrgGraph(orgChart: OrgChart): BuildGraphResult {
         title: lifeGroup.name,
         subtitle: leaderSubtitle(lifeGroup.leader_name, lifeGroup.co_leader_name),
         childCountLabel: null,
-        unassigned: false,
+        unassigned: true,
         selected: {
           type: "life_group",
           lifeGroup,

@@ -1,6 +1,6 @@
 "use client"
 
-import type { ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import {
@@ -27,7 +27,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
 import { useOrgChart } from "@/lib/hooks/use-areas"
 import { useUpdateSector } from "@/lib/hooks/use-sectors"
 import { useUpdateLifeGroup } from "@/lib/hooks/use-life-groups"
@@ -35,6 +34,7 @@ import { getApiErrorMessage } from "@/lib/api/client"
 import type {
   AreaHierarchyLifeGroup,
   AreaHierarchySector,
+  OrgChart,
   OrgChartArea,
   OrgChartRoot,
 } from "@/lib/api/types"
@@ -51,6 +51,71 @@ export type SelectedNode =
       sectorName: string
     }
   | null
+
+export type SelectedNodeRef =
+  | { type: "root"; id: string }
+  | { type: "area"; id: number }
+  | { type: "sector"; id: number }
+  | { type: "life_group"; id: number }
+  | null
+
+/**
+ * Derives a live SelectedNode payload from the current orgChart data for a
+ * lightweight ref, so consumers never render a stale pre-move snapshot.
+ */
+export function resolveSelectedNode(
+  orgChart: OrgChart | undefined,
+  ref: SelectedNodeRef
+): SelectedNode {
+  if (!orgChart || !ref) return null
+
+  const allRoots = orgChart.roots
+  const allAreas = [
+    ...allRoots.flatMap((root) => root.areas),
+    ...orgChart.unassigned_areas,
+  ]
+  const allSectors = [
+    ...allAreas.flatMap((area) => area.sectors),
+    ...orgChart.unassigned_sectors,
+  ]
+  const allLifeGroups = [
+    ...allSectors.flatMap((sector) => sector.life_groups),
+    ...orgChart.unassigned_life_groups,
+  ]
+
+  if (ref.type === "root") {
+    const root = allRoots.find((r) => r.id === ref.id)
+    return root ? { type: "root", root } : null
+  }
+
+  if (ref.type === "area") {
+    const area = allAreas.find((a) => a.id === ref.id)
+    if (!area) return null
+    const parentRoot = allRoots.find((root) => root.areas.some((a) => a.id === ref.id))
+    const rootLabel = parentRoot
+      ? [parentRoot.pastor_name, parentRoot.co_pastor_name].filter(Boolean).join(" & ")
+      : "Sem pastor vinculado"
+    return { type: "area", area, rootLabel }
+  }
+
+  if (ref.type === "sector") {
+    const sector = allSectors.find((s) => s.id === ref.id)
+    if (!sector) return null
+    const parentArea = allAreas.find((area) => area.sectors.some((s) => s.id === ref.id))
+    return { type: "sector", sector, areaName: parentArea?.name ?? "Sem área vinculada" }
+  }
+
+  const lifeGroup = allLifeGroups.find((lg) => lg.id === ref.id)
+  if (!lifeGroup) return null
+  const parentSector = allSectors.find((sector) =>
+    sector.life_groups.some((lg) => lg.id === ref.id)
+  )
+  return {
+    type: "life_group",
+    lifeGroup,
+    sectorName: parentSector?.name ?? "Sem setor vinculado",
+  }
+}
 
 export function MoveSelect({
   value,
