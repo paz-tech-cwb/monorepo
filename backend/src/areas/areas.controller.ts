@@ -45,6 +45,12 @@ export class AreasController {
     return this.areasService.getHierarchy();
   }
 
+  @Get('org-chart')
+  @Roles(...LEADERSHIP_ROLES)
+  getOrgChart() {
+    return this.areasService.getOrgChart();
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.areasService.findOne(id);

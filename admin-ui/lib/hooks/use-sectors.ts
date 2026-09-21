@@ -7,6 +7,7 @@ import { trackEvent } from "@/lib/firebase/analytics"
 
 const QUERY_KEY = ["sectors"]
 const AREAS_HIERARCHY_QUERY_KEY = ["areas", "hierarchy"]
+const AREAS_ORG_CHART_QUERY_KEY = ["areas", "org-chart"]
 const AREAS_QUERY_KEY = ["areas"]
 
 export function useSectors() {
@@ -27,6 +28,7 @@ export function useSector(id: number | null) {
 function invalidateOrganizationQueries(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: QUERY_KEY })
   queryClient.invalidateQueries({ queryKey: AREAS_HIERARCHY_QUERY_KEY })
+  queryClient.invalidateQueries({ queryKey: AREAS_ORG_CHART_QUERY_KEY })
   queryClient.invalidateQueries({ queryKey: AREAS_QUERY_KEY })
 }
 
