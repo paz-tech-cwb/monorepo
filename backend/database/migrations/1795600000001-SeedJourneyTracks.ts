@@ -48,8 +48,7 @@ const TRACKS: TrackSeed[] = [
       },
       {
         key: 'baptism_acompanhamento',
-        title:
-          'Completar o acompanhamento inicial pelo menos até a lição 5',
+        title: 'Completar o acompanhamento inicial pelo menos até a lição 5',
         type: 'manual_approval',
       },
     ],
@@ -91,8 +90,7 @@ const TRACKS: TrackSeed[] = [
       },
       {
         key: 'member_acompanhamento_livro',
-        title:
-          'Completar o livro de discipulado do acompanhamento inicial',
+        title: 'Completar o livro de discipulado do acompanhamento inicial',
         type: 'manual_approval',
       },
       {
@@ -145,8 +143,7 @@ const TRACKS: TrackSeed[] = [
       },
       {
         key: 'discipler_treinamento_video',
-        title:
-          'Assistir os 3 vídeos de treinamento prático de discipulador',
+        title: 'Assistir os 3 vídeos de treinamento prático de discipulador',
         type: 'informational',
       },
       {
