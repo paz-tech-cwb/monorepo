@@ -33,7 +33,7 @@ export class CasaDePazAnalyticsService {
   private resolveWindow(
     fromStr: string | undefined,
     toStr: string | undefined,
-  ): { fromDate: Date; toDateExclusive: Date; fromYm: number; toYm: number } {
+  ): { fromDate: Date; toDateExclusive: Date } {
     const to = toStr ? new Date(`${toStr}T00:00:00.000Z`) : new Date();
     const toDateExclusive = new Date(
       Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate() + 1),
@@ -46,9 +46,7 @@ export class CasaDePazAnalyticsService {
       ),
     );
     const from = fromStr ? new Date(`${fromStr}T00:00:00.000Z`) : defaultFrom;
-    const fromYm = from.getUTCFullYear() * 12 + from.getUTCMonth();
-    const toYm = to.getUTCFullYear() * 12 + to.getUTCMonth();
-    return { fromDate: from, toDateExclusive, fromYm, toYm };
+    return { fromDate: from, toDateExclusive };
   }
 
   async summary(query: CasaDePazSummaryQueryDto) {
@@ -83,7 +81,8 @@ export class CasaDePazAnalyticsService {
       this.em
         .createQueryBuilder(CasaDePazReport, 'r')
         .where('r.deleted_at IS NULL')
-        .andWhere("to_char(r.date, 'YYYY-MM') = :prevPeriod", { prevPeriod });
+        .andWhere("to_char(r.date, 'YYYY-MM') = :prevPeriod", { prevPeriod })
+        .andWhere('r.date < :fromDate', { fromDate });
 
     const [
       totalsRaw,

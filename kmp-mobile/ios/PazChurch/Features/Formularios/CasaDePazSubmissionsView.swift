@@ -191,7 +191,8 @@ final class CasaDePazSubmissionDetailViewModel {
             kids: Int32(kids) ?? 0,
             guests: Int32(guests) ?? 0,
             conversions: Int32(conversions) ?? 0,
-            meetingDay: meetingDay.isEmpty ? nil : meetingDay
+            meetingDay: meetingDay.isEmpty ? nil : meetingDay,
+            meetingTime: nil
         )
         do {
             try await formsRepository.updateCasaDePazReport(id: id, form: form)
@@ -199,7 +200,7 @@ final class CasaDePazSubmissionDetailViewModel {
             return CasaDePazReportSubmission(
                 id: id, date: date, facilitator: form.facilitator, sectorId: sectorId,
                 adults: form.adults, kids: form.kids, guests: form.guests, conversions: form.conversions,
-                meetingDay: form.meetingDay,
+                meetingDay: form.meetingDay, meetingTime: form.meetingTime,
                 createdAt: "", updatedAt: ""
             )
         } catch {

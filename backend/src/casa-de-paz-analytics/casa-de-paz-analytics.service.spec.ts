@@ -306,6 +306,40 @@ describe('CasaDePazAnalyticsService', () => {
     });
   });
 
+  describe('previous-period query bounds (self-comparison guard)', () => {
+    it('bounds the previous-period totals query to strictly before `fromDate`, even when prevPeriod is the same calendar month as `from`', async () => {
+      // `from` is mid-month (2026-04-15) and prevPeriod resolves to the same
+      // calendar month (2026-04). Without an upper bound of `r.date <
+      // :fromDate` on the previous-period totals query, rows on/after
+      // fromDate would be swept into BOTH the current and previous totals —
+      // a silent self-comparison bug.
+      const { service, em } = createService({ prevPeriod: '2026-04' });
+      await service.summary({ from: '2026-04-15', to: '2026-09-30' });
+
+      // Query order: (1) prevMonthRow lookup, (2) totals, (3) series,
+      // (4) by_sector, (5) by_day, (6) by_time, (7) prevTotals.
+      const prevTotalsQb = em.createQueryBuilder.mock.results[6]
+        .value as MockQueryBuilder;
+
+      const andWhereCalls = prevTotalsQb.andWhere.mock.calls;
+      const hasPrevPeriodFilter = andWhereCalls.some(
+        (call) =>
+          call[0] === "to_char(r.date, 'YYYY-MM') = :prevPeriod" &&
+          (call[1] as { prevPeriod: string }).prevPeriod === '2026-04',
+      );
+      const hasFromDateUpperBound = andWhereCalls.some(
+        (call) =>
+          call[0] === 'r.date < :fromDate' &&
+          (call[1] as { fromDate: Date }).fromDate
+            .toISOString()
+            .slice(0, 10) === '2026-04-15',
+      );
+
+      expect(hasPrevPeriodFilter).toBe(true);
+      expect(hasFromDateUpperBound).toBe(true);
+    });
+  });
+
   describe('range computation', () => {
     it('echoes back an explicit from/to range unchanged', async () => {
       const { service } = createService({});

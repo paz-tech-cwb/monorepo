@@ -34,7 +34,7 @@ function formatComparisonLabel(period: string | undefined): string {
   const [year, month] = period.split("-")
   const label = COMPARISON_MONTH_LABELS[Number(month) - 1]
   if (!label) return "vs. período anterior"
-  return `vs. ${label}/${year}`
+  return `vs. ${label}/${year.slice(-2)}`
 }
 
 function GrowthBadge({

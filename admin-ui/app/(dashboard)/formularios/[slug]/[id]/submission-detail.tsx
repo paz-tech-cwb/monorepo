@@ -18,7 +18,7 @@ const HIDDEN_KEYS = new Set([
   "updated_at", "updatedAt",
   "deleted_at", "deletedAt",
   "atmosphereTeamId",
-  "meeting_time",
+  "meeting_time", "meetingTime",
 ])
 
 const FIELD_LABELS: Record<string, string> = {
