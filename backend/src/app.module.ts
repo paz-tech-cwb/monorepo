@@ -42,6 +42,7 @@ import { MinistryAccessModule } from './ministry-access/ministry-access.module';
 import { LifeGroupStudiesModule } from './life-group-studies/life-group-studies.module';
 import { CasaDePazReportsModule } from './casa-de-paz-reports/casa-de-paz-reports.module';
 import { CasaDePazAnalyticsModule } from './casa-de-paz-analytics/casa-de-paz-analytics.module';
+import { JourneyTracksModule } from './journey-tracks/journey-tracks.module';
 
 import ormconfig from './configs/orm.config';
 
@@ -106,6 +107,7 @@ import ormconfig from './configs/orm.config';
     RemindersModule,
     MinistryAccessModule,
     LifeGroupStudiesModule,
+    JourneyTracksModule,
   ],
   providers: [
     {

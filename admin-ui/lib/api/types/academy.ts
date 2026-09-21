@@ -84,7 +84,6 @@ export interface CourseTrack {
   title: string
   description?: string | null
   sort_order: number
-  journey_stage_id?: number | null
   courses: CourseTrackCourse[]
 }
 
@@ -92,14 +91,12 @@ export interface CreateCourseTrackRequest {
   title: string
   description?: string | null
   sort_order?: number
-  journey_stage_id?: number | null
 }
 
 export interface UpdateCourseTrackRequest {
   title?: string
   description?: string | null
   sort_order?: number
-  journey_stage_id?: number | null
 }
 
 export interface SetTrackCoursesRequest {

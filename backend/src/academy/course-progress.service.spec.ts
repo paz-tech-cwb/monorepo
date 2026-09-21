@@ -5,11 +5,13 @@ import { CourseLessonProgress } from './entities/course-lesson-progress.entity';
 import { CourseQuestion } from './entities/course-question.entity';
 import { CourseQuestionOption } from './entities/course-question-option.entity';
 import { CourseCertificate } from './entities/course-certificate.entity';
-import { CourseTrackCourse } from './entities/course-track-course.entity';
-import { CourseTrack } from './entities/course-track.entity';
+import { CourseQuestionnaire } from './entities/course-questionnaire.entity';
 
 type EntityRef = new (...args: unknown[]) => unknown;
-type WhereOpts = { where?: Record<string, unknown> };
+
+function buildJourneyProgressServiceMock() {
+  return { syncCourseCompletion: jest.fn().mockResolvedValue(undefined) };
+}
 
 function buildManagerMock(overrides: Record<string, unknown> = {}) {
   const manager = {
@@ -104,7 +106,7 @@ describe('CourseProgressService - reportProgress', () => {
     const service = new CourseProgressService(
       manager as never,
       {} as never,
-      {} as never,
+      buildJourneyProgressServiceMock() as never,
     );
 
     const first = await service.reportProgress(1, 'lesson-1', {
@@ -393,16 +395,13 @@ describe('CourseProgressService - submitQuestionnaire', () => {
       findEntityForCourseOrThrow: jest.fn().mockResolvedValue(questionnaire),
       countAttempts: jest.fn().mockResolvedValue(0),
     };
-    const memberJourneyService = {
-      completeStageIfNotCompleted: jest.fn(),
-    };
+    const journeyProgressService = buildJourneyProgressServiceMock();
 
     const service = new CourseProgressService(
       manager as never,
       questionnairesService as never,
-      memberJourneyService as never,
+      journeyProgressService as never,
     );
-    jest.spyOn(service, 'syncTrackCompletion').mockResolvedValue(undefined);
 
     // q1 correct (o1), q2 fully correct (o3+o4), q3 free_text ignored.
     const result = await service.submitQuestionnaire(1, 'course-1', [
@@ -413,6 +412,10 @@ describe('CourseProgressService - submitQuestionnaire', () => {
 
     expect(result.score_percentage).toBe(100);
     expect(result.passed).toBe(true);
+    expect(journeyProgressService.syncCourseCompletion).toHaveBeenCalledWith(
+      1,
+      'course-1',
+    );
   });
 
   it('issues a certificate exactly once across repeated passes', async () => {
@@ -446,14 +449,13 @@ describe('CourseProgressService - submitQuestionnaire', () => {
       findEntityForCourseOrThrow: jest.fn().mockResolvedValue(questionnaire),
       countAttempts: jest.fn().mockResolvedValue(0),
     };
-    const memberJourneyService = { completeStageIfNotCompleted: jest.fn() };
+    const journeyProgressService = buildJourneyProgressServiceMock();
 
     const service = new CourseProgressService(
       manager as never,
       questionnairesService as never,
-      memberJourneyService as never,
+      journeyProgressService as never,
     );
-    jest.spyOn(service, 'syncTrackCompletion').mockResolvedValue(undefined);
 
     const answers = [
       { question_id: 'q1', option_ids: ['o1'] },
@@ -475,82 +477,131 @@ describe('CourseProgressService - submitQuestionnaire', () => {
   });
 });
 
-describe('CourseProgressService - syncTrackCompletion', () => {
-  it('completes the journey stage only when every course in the track is certified', async () => {
-    const memberships = [{ trackId: 1, courseId: 'course-1' }];
-    const track = {
-      id: 1,
-      journeyStageId: 5,
-      title: 'Discipulado',
-    } as CourseTrack;
-    const trackCourses = [
-      { trackId: 1, courseId: 'course-1' },
-      { trackId: 1, courseId: 'course-2' },
-    ];
-    const certificates = [{ userId: 1, courseId: 'course-1' }];
+describe('CourseProgressService - questionnaire-less course completion sync', () => {
+  it('triggers journeyProgressService.syncCourseCompletion exactly once when the final lesson crosses the watch threshold', async () => {
+    const lessonL1 = { id: 'l1', courseId: 'course-1', durationSeconds: null };
+    const lessonL2 = { id: 'l2', courseId: 'course-1', durationSeconds: null };
+    const existingProgressL2 = {
+      userId: 1,
+      lessonId: 'l2',
+      maxWatchedPercentage: 50,
+      lastPositionSeconds: 100,
+      completedAt: null,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60),
+      updatedAt: new Date(Date.now() - 1000 * 60 * 60),
+    } as CourseLessonProgress;
+    const otherLessonProgress = [{ lessonId: 'l1', maxWatchedPercentage: 95 }];
 
     const manager = buildManagerMock({
-      find: jest
-        .fn()
-        .mockImplementation((entity: EntityRef, opts: WhereOpts) => {
-          if (entity === CourseTrackCourse && opts?.where?.courseId) {
-            return memberships;
-          }
-          if (entity === CourseTrack) return [track];
-          if (entity === CourseTrackCourse && opts?.where?.trackId) {
-            return trackCourses;
-          }
-          if (entity === CourseCertificate) return certificates;
-          return [];
-        }),
+      findOne: jest.fn().mockImplementation((entity: EntityRef) => {
+        if (entity === CourseLesson) return lessonL2;
+        if (entity === CourseLessonProgress) return existingProgressL2;
+        if (entity === CourseQuestionnaire) return null; // questionnaire-less course
+        return null;
+      }),
+      find: jest.fn().mockImplementation((entity: EntityRef) => {
+        if (entity === CourseLesson) return [lessonL1, lessonL2];
+        if (entity === CourseLessonProgress) return otherLessonProgress;
+        return [];
+      }),
     });
 
-    const memberJourneyService = { completeStageIfNotCompleted: jest.fn() };
+    const journeyProgressService = buildJourneyProgressServiceMock();
     const service = new CourseProgressService(
       manager as never,
       {} as never,
-      memberJourneyService as never,
+      journeyProgressService as never,
     );
 
-    await service.syncTrackCompletion(1, 'course-1');
-    expect(
-      memberJourneyService.completeStageIfNotCompleted,
-    ).not.toHaveBeenCalled();
+    const result = await service.reportProgress(1, 'l2', {
+      watched_percentage: 95,
+      position_seconds: 190,
+    });
 
-    // Now the user is certified for every course in the track.
-    certificates.push({ userId: 1, courseId: 'course-2' });
-    await service.syncTrackCompletion(1, 'course-1');
-    expect(
-      memberJourneyService.completeStageIfNotCompleted,
-    ).toHaveBeenCalledWith(1, 5, expect.any(String));
+    expect(result.completed).toBe(true);
+    expect(journeyProgressService.syncCourseCompletion).toHaveBeenCalledTimes(
+      1,
+    );
+    expect(journeyProgressService.syncCourseCompletion).toHaveBeenCalledWith(
+      1,
+      'course-1',
+    );
   });
 
-  it('does nothing for tracks with no journey_stage_id', async () => {
-    const memberships = [{ trackId: 1, courseId: 'course-1' }];
-    const track = { id: 1, journeyStageId: null } as CourseTrack;
+  it('does not trigger sync on an ordinary mid-course progress ping', async () => {
+    const lesson = { id: 'l1', courseId: 'course-1', durationSeconds: null };
+    const existingProgress = {
+      userId: 1,
+      lessonId: 'l1',
+      maxWatchedPercentage: 10,
+      lastPositionSeconds: 20,
+      completedAt: null,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60),
+      updatedAt: new Date(Date.now() - 1000 * 60 * 60),
+    } as CourseLessonProgress;
 
     const manager = buildManagerMock({
-      find: jest
-        .fn()
-        .mockImplementation((entity: EntityRef, opts: WhereOpts) => {
-          if (entity === CourseTrackCourse && opts?.where?.courseId) {
-            return memberships;
-          }
-          if (entity === CourseTrack) return [track];
-          return [];
-        }),
+      findOne: jest.fn().mockImplementation((entity: EntityRef) => {
+        if (entity === CourseLesson) return lesson;
+        if (entity === CourseLessonProgress) return existingProgress;
+        return null;
+      }),
     });
 
-    const memberJourneyService = { completeStageIfNotCompleted: jest.fn() };
+    const journeyProgressService = buildJourneyProgressServiceMock();
     const service = new CourseProgressService(
       manager as never,
       {} as never,
-      memberJourneyService as never,
+      journeyProgressService as never,
     );
 
-    await service.syncTrackCompletion(1, 'course-1');
-    expect(
-      memberJourneyService.completeStageIfNotCompleted,
-    ).not.toHaveBeenCalled();
+    const result = await service.reportProgress(1, 'l1', {
+      watched_percentage: 50,
+      position_seconds: 100,
+    });
+
+    expect(result.completed).toBe(false);
+    expect(journeyProgressService.syncCourseCompletion).not.toHaveBeenCalled();
+  });
+
+  it('does not trigger sync when the course still has a questionnaire (handled via submitQuestionnaire instead)', async () => {
+    const lessonL1 = { id: 'l1', courseId: 'course-1', durationSeconds: null };
+    const lessonL2 = { id: 'l2', courseId: 'course-1', durationSeconds: null };
+    const existingProgressL2 = {
+      userId: 1,
+      lessonId: 'l2',
+      maxWatchedPercentage: 50,
+      lastPositionSeconds: 100,
+      completedAt: null,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60),
+      updatedAt: new Date(Date.now() - 1000 * 60 * 60),
+    } as CourseLessonProgress;
+
+    const manager = buildManagerMock({
+      findOne: jest.fn().mockImplementation((entity: EntityRef) => {
+        if (entity === CourseLesson) return lessonL2;
+        if (entity === CourseLessonProgress) return existingProgressL2;
+        if (entity === CourseQuestionnaire) return { id: 'q-1' }; // has a questionnaire
+        return null;
+      }),
+      find: jest.fn().mockImplementation((entity: EntityRef) => {
+        if (entity === CourseLesson) return [lessonL1, lessonL2];
+        return [{ lessonId: 'l1', maxWatchedPercentage: 95 }];
+      }),
+    });
+
+    const journeyProgressService = buildJourneyProgressServiceMock();
+    const service = new CourseProgressService(
+      manager as never,
+      {} as never,
+      journeyProgressService as never,
+    );
+
+    await service.reportProgress(1, 'l2', {
+      watched_percentage: 95,
+      position_seconds: 190,
+    });
+
+    expect(journeyProgressService.syncCourseCompletion).not.toHaveBeenCalled();
   });
 });

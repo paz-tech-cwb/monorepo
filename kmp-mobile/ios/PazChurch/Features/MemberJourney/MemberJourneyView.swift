@@ -15,7 +15,7 @@ struct MemberJourneyView: View {
                 loadingState
             } else if let errorMessage = viewModel.error {
                 errorState(message: errorMessage)
-            } else if viewModel.steps.isEmpty {
+            } else if viewModel.tracks.isEmpty {
                 emptyState
             } else {
                 contentState
@@ -25,6 +25,7 @@ struct MemberJourneyView: View {
         .navigationTitle("Minha Jornada")
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .task { await viewModel.loadJourney() }
     }
 
     private func errorState(message: String) -> some View {
@@ -34,7 +35,7 @@ struct MemberJourneyView: View {
     private var emptyState: some View {
         VStack {
             Spacer()
-            Text("Nenhuma etapa encontrada")
+            Text("Nenhuma trilha encontrada")
                 .font(PazTypography.bodyMedium)
                 .foregroundStyle(PazColors.slate)
             Spacer()
@@ -47,8 +48,12 @@ struct MemberJourneyView: View {
             VStack(alignment: .leading, spacing: PazSpacing.lg) {
                 Spacer().frame(height: PazSpacing.lg)
 
-                ForEach(viewModel.steps, id: \.id) { step in
-                    JourneyStepRow(step: step)
+                ForEach(viewModel.tracks, id: \.key) { track in
+                    JourneyTrackSection(
+                        track: track,
+                        isExpanded: viewModel.expandedTrackKey == track.key,
+                        onToggle: { viewModel.toggleTrack(track.key) }
+                    )
                 }
 
                 Spacer().frame(height: PazSpacing.xl)
@@ -78,82 +83,157 @@ struct MemberJourneyView: View {
     }
 }
 
-private struct JourneyStepRow: View {
-    let step: JourneyStep
+private struct JourneyTrackSection: View {
+    let track: JourneyTrack
+    let isExpanded: Bool
+    let onToggle: () -> Void
+
+    private var trackedSteps: [JourneyTrackStep] {
+        track.steps.filter { $0.type != .informational }
+    }
+
+    private var completedTrackedSteps: Int {
+        trackedSteps.filter { $0.completed }.count
+    }
 
     var body: some View {
         GlassCard(radius: PazSpacing.cardRadiusCompact) {
-            HStack(alignment: .top, spacing: PazSpacing.md) {
-                // Status indicator
-                ZStack {
-                    Circle()
-                        .fill(statusColor.opacity(0.12))
-                        .frame(width: 40, height: 40)
+            VStack(alignment: .leading, spacing: 0) {
+                Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { onToggle() } }) {
+                    VStack(alignment: .leading, spacing: PazSpacing.sm) {
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(track.title)
+                                    .font(PazTypography.titleMedium)
+                                    .foregroundStyle(PazColors.ink)
+                                if !trackedSteps.isEmpty {
+                                    Text("\(completedTrackedSteps)/\(trackedSteps.count) concluído")
+                                        .font(PazTypography.labelSmall)
+                                        .foregroundStyle(PazColors.slate)
+                                }
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(PazColors.slate)
+                                .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                        }
 
-                    if step.status == .completed {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(PazColors.accent)
-                    } else if step.status == .inProgress {
-                        Circle()
-                            .fill(PazColors.accent)
-                            .frame(width: 20, height: 20)
-                    } else {
-                        Image(systemName: "circle")
-                            .font(.system(size: 24))
-                            .foregroundColor(.gray.opacity(0.5))
+                        if let description = track.description_, !description.isEmpty {
+                            Text(description)
+                                .font(PazTypography.bodySmall)
+                                .foregroundStyle(PazColors.slate)
+                        }
+
+                        if !trackedSteps.isEmpty {
+                            ProgressView(value: Double(track.progressPercentage) / 100)
+                                .tint(PazColors.accent)
+                        }
                     }
                 }
+                .buttonStyle(.plain)
+                .padding(PazSpacing.lg)
 
-                // Content
-                VStack(alignment: .leading, spacing: PazSpacing.sm) {
-                    HStack {
-                        Text(step.title)
-                            .font(PazTypography.titleSmall)
-                        Spacer()
-                        Text(statusLabel)
-                            .font(PazTypography.labelSmall)
-                            .foregroundColor(statusLabelColor)
+                if isExpanded {
+                    VStack(alignment: .leading, spacing: PazSpacing.md) {
+                        ForEach(Array(track.steps.enumerated()), id: \.offset) { _, step in
+                            JourneyStepRow(step: step)
+                        }
                     }
-
-                    if let description = step.description_ {
-                        Text(description)
-                            .font(PazTypography.bodySmall)
-                            .foregroundColor(.gray)
-                    }
-
-                    if let completedAt = step.completedAt {
-                        Text("Concluído em \(completedAt)")
-                            .font(PazTypography.labelSmall)
-                            .foregroundColor(.gray.opacity(0.7))
-                    }
+                    .padding(.horizontal, PazSpacing.lg)
+                    .padding(.bottom, PazSpacing.lg)
                 }
-
-                Spacer()
             }
-            .padding(PazSpacing.lg)
+        }
+    }
+}
+
+private struct JourneyStepRow: View {
+    let step: JourneyTrackStep
+
+    var body: some View {
+        HStack(alignment: .top, spacing: PazSpacing.md) {
+            ZStack {
+                Circle()
+                    .fill(iconBackground.opacity(0.15))
+                    .frame(width: 32, height: 32)
+
+                Image(systemName: iconName)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(iconBackground)
+            }
+
+            VStack(alignment: .leading, spacing: PazSpacing.xs) {
+                Text(step.title)
+                    .font(PazTypography.bodyMedium)
+                    .foregroundStyle(PazColors.ink)
+
+                if let description = step.description_, !description.isEmpty {
+                    Text(description)
+                        .font(PazTypography.bodySmall)
+                        .foregroundStyle(PazColors.slate)
+                }
+
+                if !statusLabel.isEmpty {
+                    Text(statusLabel)
+                        .font(PazTypography.labelSmall)
+                        .foregroundStyle(statusColor)
+                }
+
+                if step.type == .informational, let urlString = step.externalUrl, let url = URL(string: urlString) {
+                    Link(destination: url) {
+                        HStack(spacing: PazSpacing.xs) {
+                            Text("Saiba mais")
+                            Image(systemName: "arrow.up.right.square")
+                        }
+                        .font(PazTypography.labelMedium)
+                        .foregroundStyle(PazColors.accent)
+                    }
+                }
+            }
+
+            Spacer()
         }
     }
 
+    private var iconName: String {
+        if step.type == .informational { return "info.circle.fill" }
+        if step.completed { return "checkmark.circle.fill" }
+        if step.type == .manualapproval { return "hourglass" }
+        return "circle"
+    }
+
+    private var iconBackground: Color {
+        if step.type == .informational { return PazColors.slate }
+        if step.completed { return PazColors.accent }
+        if step.type == .manualapproval { return PazColors.pazGold }
+        return PazColors.slateLight
+    }
+
     private var statusColor: Color {
-        step.status == .pending ? .gray : PazColors.accent
+        if step.completed { return PazColors.accent }
+        if step.type == .manualapproval { return PazColors.pazGold }
+        return PazColors.slate
     }
 
     private var statusLabel: String {
-        if step.status == .completed { return "Concluído" }
-        if step.status == .inProgress { return "Em andamento" }
-        return "Pendente"
-    }
-
-    private var statusLabelColor: Color {
-        step.status == .pending ? .gray.opacity(0.5) : PazColors.accent
+        if step.completed {
+            if step.source == .manualapproval, let name = step.completedByName, !name.isEmpty {
+                return "Concluído por \(name)"
+            }
+            return "Concluído"
+        }
+        if step.type == .manualapproval { return "Aguardando aprovação de um líder" }
+        if step.type == .coursecompletion { return "Ainda não concluído" }
+        return ""
     }
 }
 
 @MainActor
 @Observable
 class MemberJourneyViewModel {
-    var steps: [JourneyStep] = []
+    var tracks: [JourneyTrack] = []
+    var expandedTrackKey: String?
     var isLoading = true
     var error: String?
 
@@ -161,19 +241,25 @@ class MemberJourneyViewModel {
 
     init(repository: MemberJourneyRepository) {
         self.repository = repository
-        Task { await loadJourney() }
     }
 
     func loadJourney() async {
         do {
             let journey = try await repository.getMemberJourney()
-            self.steps = journey.steps.compactMap { $0 as? JourneyStep }
-                .sorted { $0.order < $1.order }
+            self.tracks = journey.tracks
+            if expandedTrackKey == nil || !tracks.contains(where: { $0.key == expandedTrackKey }) {
+                self.expandedTrackKey =
+                    tracks.first(where: { $0.progressPercentage < 100 })?.key ?? tracks.first?.key
+            }
             self.isLoading = false
         } catch {
             self.error = "Erro ao carregar jornada"
             self.isLoading = false
         }
+    }
+
+    func toggleTrack(_ key: String) {
+        expandedTrackKey = expandedTrackKey == key ? nil : key
     }
 
     func retry() {

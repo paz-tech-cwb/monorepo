@@ -8,13 +8,6 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { FormDrawer } from "@/components/ui/form-drawer"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -25,12 +18,10 @@ import {
   useUpdateCourseTrack,
   useDeleteCourseTrack,
 } from "@/lib/hooks/use-course-tracks"
-import { useMemberJourneyStats } from "@/lib/hooks/use-member-journey"
 import type { CourseTrack, CreateCourseTrackRequest, UpdateCourseTrackRequest } from "@/lib/api/types/academy"
 
 export function CourseTracksManagement() {
   const { data: tracks = [], isLoading, error } = useCourseTracks()
-  const { data: journeyStages = [] } = useMemberJourneyStats()
   const createMutation = useCreateCourseTrack()
   const updateMutation = useUpdateCourseTrack()
   const deleteMutation = useDeleteCourseTrack()
@@ -42,7 +33,6 @@ export function CourseTracksManagement() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    journey_stage_id: "" as number | "",
   })
 
   const filteredTracks = tracks.filter(
@@ -54,19 +44,13 @@ export function CourseTracksManagement() {
   const totalCourses = tracks.reduce((sum, track) => sum + track.courses.length, 0)
 
   const resetForm = () => {
-    setFormData({ title: "", description: "", journey_stage_id: "" })
-  }
-
-  const stageLabel = (stageId?: number | null) => {
-    if (!stageId) return null
-    return journeyStages.find((s) => s.stage_id === stageId)?.stage_label ?? null
+    setFormData({ title: "", description: "" })
   }
 
   const handleAddTrack = async () => {
     const data: CreateCourseTrackRequest = {
       title: formData.title,
       description: formData.description || null,
-      journey_stage_id: formData.journey_stage_id === "" ? null : formData.journey_stage_id,
     }
 
     try {
@@ -83,7 +67,6 @@ export function CourseTracksManagement() {
     setFormData({
       title: track.title,
       description: track.description || "",
-      journey_stage_id: track.journey_stage_id ?? "",
     })
   }
 
@@ -93,7 +76,6 @@ export function CourseTracksManagement() {
     const data: UpdateCourseTrackRequest = {
       title: formData.title,
       description: formData.description || null,
-      journey_stage_id: formData.journey_stage_id === "" ? null : formData.journey_stage_id,
     }
 
     try {
@@ -133,27 +115,6 @@ export function CourseTracksManagement() {
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="Descrição da trilha"
         />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="track-journey-stage">Etapa da jornada (opcional)</Label>
-        <Select
-          value={formData.journey_stage_id === "" ? "none" : String(formData.journey_stage_id)}
-          onValueChange={(v) =>
-            setFormData({ ...formData, journey_stage_id: v === "none" ? "" : Number(v) })
-          }
-        >
-          <SelectTrigger id="track-journey-stage">
-            <SelectValue placeholder="Nenhuma" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Nenhuma</SelectItem>
-            {journeyStages.map((stage) => (
-              <SelectItem key={stage.stage_id} value={String(stage.stage_id)}>
-                {stage.stage_label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
     </div>
   )
@@ -246,11 +207,6 @@ export function CourseTracksManagement() {
                         <CardTitle className="text-base">{track.title}</CardTitle>
                         {track.description && (
                           <CardDescription className="mt-1">{track.description}</CardDescription>
-                        )}
-                        {stageLabel(track.journey_stage_id) && (
-                          <Badge variant="outline" className="mt-2">
-                            {stageLabel(track.journey_stage_id)}
-                          </Badge>
                         )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">

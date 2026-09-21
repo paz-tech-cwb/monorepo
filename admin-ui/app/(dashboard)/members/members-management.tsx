@@ -30,7 +30,7 @@ import { FormDrawer } from "@/components/ui/form-drawer"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { AddressForm, type AddressFormData } from "@/components/ui/address-form"
 import { formatCEP } from "@/lib/utils/cep"
-import { Search, Plus, MoreHorizontal, Edit, Trash2, GitMerge } from "lucide-react"
+import { Search, Plus, MoreHorizontal, Edit, Trash2, GitMerge, Milestone } from "lucide-react"
 import { useUsers, useUser, useCreateUser, useUpdateUser, useUpdateUserRole, useDeleteUser } from "@/lib/hooks/use-users"
 import { useAreas } from "@/lib/hooks/use-areas"
 import { useSectors } from "@/lib/hooks/use-sectors"
@@ -38,6 +38,7 @@ import { useLifeGroups } from "@/lib/hooks/use-life-groups"
 import { useMinistries } from "@/lib/hooks/use-ministries"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
 import { JourneySheet } from "./journey-sheet"
+import { JourneyTracksSheet } from "./journey-tracks-sheet"
 import type { AdminUser, UserRole } from "@/lib/api/types"
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
@@ -103,6 +104,7 @@ export function MembersManagement() {
   const { data: editingMemberDetails, isFetching: isFetchingEditingMember } = useUser(editingMember?.id ?? null)
   const [deletingMemberId, setDeletingMemberId] = useState<number | null>(null)
   const [journeyMember, setJourneyMember] = useState<AdminUser | null>(null)
+  const [journeyTracksMember, setJourneyTracksMember] = useState<AdminUser | null>(null)
   const [createAddress, setCreateAddress] = useState<AddressFormData>(EMPTY_CREATE_ADDRESS)
   const [editAddress, setEditAddress] = useState<AddressFormData>(EMPTY_CREATE_ADDRESS)
   const [createAddressError, setCreateAddressError] = useState<string | null>(null)
@@ -608,6 +610,10 @@ export function MembersManagement() {
                                   <GitMerge className="mr-2 h-4 w-4" />
                                   Ver Jornada
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setTimeout(() => setJourneyTracksMember(member), 0)}>
+                                  <Milestone className="mr-2 h-4 w-4" />
+                                  Ver Trilhos
+                                </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => setTimeout(() => setDeletingMemberId(member.id), 0)}
                                   className="text-destructive"
@@ -672,6 +678,13 @@ export function MembersManagement() {
         member={journeyMember}
         open={journeyMember !== null}
         onOpenChange={(open) => { if (!open) setJourneyMember(null) }}
+      />
+
+      {/* Journey Tracks Sheet (configurable journey tracks) */}
+      <JourneyTracksSheet
+        member={journeyTracksMember}
+        open={journeyTracksMember !== null}
+        onOpenChange={(open) => { if (!open) setJourneyTracksMember(null) }}
       />
 
       {/* Delete Confirmation Dialog */}

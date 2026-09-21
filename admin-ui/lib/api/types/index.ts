@@ -11,6 +11,7 @@ export * from "./life-groups"
 export * from "./dashboard"
 export * from "./church"
 export * from "./member-journey"
+export * from "./journey-tracks"
 export * from "./areas"
 export * from "./sectors"
 

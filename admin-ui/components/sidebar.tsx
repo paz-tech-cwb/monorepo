@@ -26,6 +26,7 @@ import {
   Waves,
   BookMarked,
   Network,
+  Milestone,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -38,6 +39,7 @@ const sidebarSections = [
       { name: "Inicio", href: "/dashboard", icon: Home },
       { name: "Membros", href: "/members", icon: Users },
       { name: "Jornada", href: "/member-journey", icon: GitMerge },
+      { name: "Trilhos do Membro", href: "/journey-tracks", icon: Milestone },
     ],
   },
   {
@@ -61,7 +63,7 @@ const sidebarSections = [
   {
     title: "Estudo",
     items: [
-      { name: "Trilhos", href: "/course-tracks", icon: Route },
+      { name: "Trilhos de Cursos", href: "/course-tracks", icon: Route },
       { name: "Cursos", href: "/courses", icon: BookOpen },
       { name: "Estudo do Life", href: "/estudo-do-life", icon: BookMarked },
     ],

@@ -16,9 +16,4 @@ export class CreateCourseTrackDto {
   @IsInt()
   @Min(0)
   sort_order?: number;
-
-  @Expose()
-  @IsOptional()
-  @IsInt()
-  journey_stage_id?: number | null;
 }

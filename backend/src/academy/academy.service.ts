@@ -107,7 +107,6 @@ export class AcademyService {
           title: track.title,
           description: track.description ?? null,
           sort_order: track.sortOrder,
-          journey_stage_id: track.journeyStageId ?? null,
           completed: (track.courses || []).every((c) =>
             certifiedCourseIds.has(c.id),
           ),
