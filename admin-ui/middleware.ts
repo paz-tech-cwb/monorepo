@@ -14,7 +14,7 @@ const protectedRoutes = [
   "/course-tracks",
   "/announcements",
   "/contributions",
-  "/member-journey",
+  "/leads",
 ]
 
 export function middleware(request: NextRequest) {
@@ -52,7 +52,7 @@ export const config = {
     "/course-tracks/:path*",
     "/announcements/:path*",
     "/contributions/:path*",
-    "/member-journey",
-    "/member-journey/:path*",
+    "/leads",
+    "/leads/:path*",
   ],
 }

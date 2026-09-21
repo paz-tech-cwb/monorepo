@@ -27,6 +27,7 @@ import { UserNotificationPreferencesService } from './user-notification-preferen
 import { RegisterDeviceTokenDto } from './dto/register-device-token.dto';
 import { UpdateNotificationPreferencesDto } from './dto/update-notification-preferences.dto';
 import { User } from './entities/user.entity';
+import { LeadsService } from './leads.service';
 
 // Only admins may set role/status through the general create/update routes;
 // role changes for everyone else must go through the admin-only
@@ -51,15 +52,13 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly deviceTokensService: UserDeviceTokensService,
     private readonly preferencesService: UserNotificationPreferencesService,
+    private readonly leadsService: LeadsService,
   ) {}
 
   @Post()
   @UseGuards(RolesGuard)
   @Roles('admin', 'pastor', 'area_leader', 'sector_leader', 'life_group_leader')
-  create(
-    @Request() req: { user: User },
-    @Body() createUserDto: CreateUserDto,
-  ) {
+  create(@Request() req: { user: User }, @Body() createUserDto: CreateUserDto) {
     return this.usersService.create(
       stripPrivilegedFields(createUserDto, req.user),
     );
@@ -137,6 +136,14 @@ export class UsersController {
     @Query('phone') phone?: string,
   ) {
     return this.usersService.lookupForForms({ email, phone });
+  }
+
+  // Leads dashboard — MUST be before /:id routes
+  @Get('leads')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'pastor', 'area_leader', 'sector_leader', 'life_group_leader')
+  findLeads(@Request() req: { user: User }) {
+    return this.leadsService.findLeads(req.user);
   }
 
   @Get(':id')

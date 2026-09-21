@@ -4,6 +4,7 @@ import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { UserDeviceTokensService } from './user-device-tokens.service';
 import { UserNotificationPreferencesService } from './user-notification-preferences.service';
+import { LeadsService } from './leads.service';
 
 const mockUserResponse = {
   id: 1,
@@ -47,6 +48,10 @@ describe('UsersController', () => {
             update: jest.fn(),
             toResponse: jest.fn(),
           },
+        },
+        {
+          provide: LeadsService,
+          useValue: { findLeads: jest.fn() },
         },
       ],
     }).compile();

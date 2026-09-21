@@ -18,7 +18,6 @@ import { CourseQuestionnaireResponse } from '../academy/entities/course-question
 import { CourseCertificate } from '../academy/entities/course-certificate.entity';
 import { Notification } from '../notifications/entities/notification.entity';
 import { Church } from '../church/entities/church.entity';
-import { MemberJourneyStage } from '../member-journey/entities/member-journey-stage.entity';
 import { Area } from '../areas/entities/area.entity';
 import { Sector } from '../sectors/entities/sector.entity';
 import { LifeGroup } from '../life-groups/entities/life-group.entity';
@@ -73,7 +72,6 @@ const config: DataSourceOptions = {
     CourseTrack,
     Notification,
     Church,
-    MemberJourneyStage,
     Area,
     Sector,
     LifeGroup,

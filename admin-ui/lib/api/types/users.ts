@@ -4,7 +4,9 @@ export type UserRole =
   | "area_leader"
   | "sector_leader"
   | "life_group_leader"
+  | "discipler"
   | "member"
+  | "lead"
 
 export type UserStatus = "active" | "inactive"
 
