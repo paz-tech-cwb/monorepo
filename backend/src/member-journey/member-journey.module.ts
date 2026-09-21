@@ -5,5 +5,6 @@ import { MemberJourneyController } from './member-journey.controller';
 @Module({
   controllers: [MemberJourneyController],
   providers: [MemberJourneyService],
+  exports: [MemberJourneyService],
 })
 export class MemberJourneyModule {}

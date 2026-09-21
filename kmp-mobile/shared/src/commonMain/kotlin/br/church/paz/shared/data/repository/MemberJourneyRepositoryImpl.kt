@@ -19,7 +19,7 @@ class MemberJourneyRepositoryImpl(private val client: HttpClient) : MemberJourne
             steps = dto.stages.mapIndexed { index, stage ->
                 JourneyStep(
                     id = stage.stageKey,
-                    title = stageKeyTitle(stage.stageKey),
+                    title = stage.stageLabel,
                     description = stage.note,
                     order = index,
                     status = if (stage.completed) JourneyStepStatus.completed else JourneyStepStatus.pending,
@@ -27,18 +27,6 @@ class MemberJourneyRepositoryImpl(private val client: HttpClient) : MemberJourne
                 )
             },
         )
-    }
-
-    private fun stageKeyTitle(key: String): String = when (key) {
-        "salvation" -> "Salvação"
-        "registration" -> "Cadastro"
-        "first_courses" -> "Primeiros Cursos"
-        "discovery" -> "Evento de Descoberta"
-        "life_group" -> "Life Group"
-        "discipleship" -> "Discipulado"
-        "water_baptism" -> "Batismo nas Águas"
-        "disciple_maker" -> "Fazedor de Discípulos"
-        else -> key
     }
 }
 
@@ -53,6 +41,7 @@ private data class MemberJourneyResponseDto(
 private data class JourneyStageDto(
     @SerialName("stage_id") val stageId: Int,
     @SerialName("stage_key") val stageKey: String,
+    @SerialName("stage_label") val stageLabel: String,
     val completed: Boolean,
     @SerialName("completed_at") val completedAt: String? = null,
     val note: String? = null,

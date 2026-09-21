@@ -17,6 +17,16 @@ sealed class Screen(
 
     data object Academy : Screen("academy")
 
+    data object CourseDetail : Screen("course_detail/{courseId}") {
+        fun createRoute(courseId: String) = "course_detail/$courseId"
+    }
+
+    data object Questionnaire : Screen("questionnaire/{courseId}") {
+        fun createRoute(courseId: String) = "questionnaire/$courseId"
+    }
+
+    data object Certificates : Screen("certificates")
+
     data object Account : Screen("account")
 
     data object Profile : Screen("profile")

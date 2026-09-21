@@ -1,0 +1,2 @@
+export const REQUIRED_WATCH_PERCENTAGE = 90;
+export const DEFAULT_PASSING_SCORE = 70;

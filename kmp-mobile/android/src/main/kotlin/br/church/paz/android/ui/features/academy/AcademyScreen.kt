@@ -83,6 +83,8 @@ fun AcademyScreen(
             when (effect) {
                 is AcademyEffect.NavigateToPlayer ->
                     navController.navigate(Screen.VideoPlayer.createRoute(effect.videoId))
+                is AcademyEffect.NavigateToCourse ->
+                    navController.navigate(Screen.CourseDetail.createRoute(effect.courseId))
             }
         }
     }
@@ -132,7 +134,7 @@ fun AcademyScreen(
                         onSelectTrack = { selectedTrackIndex = it },
                         onCourseTap = { course ->
                             if (uiState.isAuthenticated) {
-                                viewModel.onVideoTapped(course.id)
+                                viewModel.onCourseTapped(course.id)
                             } else {
                                 showLoginSheet = true
                             }

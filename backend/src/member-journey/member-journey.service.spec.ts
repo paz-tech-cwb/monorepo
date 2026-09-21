@@ -65,4 +65,61 @@ describe('MemberJourneyService', () => {
       is_complete: false,
     });
   });
+
+  describe('completeStageIfNotCompleted', () => {
+    function buildManager(existingStage: Partial<MemberJourneyStage> | null) {
+      const save = jest
+        .fn()
+        .mockImplementation(
+          (_entity: unknown, value: Partial<MemberJourneyStage>) => value,
+        );
+      const manager = {
+        findOne: jest.fn().mockResolvedValue(existingStage),
+        create: jest
+          .fn()
+          .mockImplementation(
+            (_entity: unknown, value: Partial<MemberJourneyStage>) => value,
+          ),
+        save,
+      };
+      return { manager, save };
+    }
+
+    it('is a no-op on an already-completed stage', async () => {
+      const { manager, save } = buildManager({
+        stageId: 3,
+        completed: true,
+        completedAt: new Date('2026-01-01T00:00:00.000Z'),
+        note: 'already done',
+      });
+      const service = new MemberJourneyService(manager as never);
+
+      await service.completeStageIfNotCompleted(1, 3, 'new note');
+
+      expect(save).not.toHaveBeenCalled();
+    });
+
+    it('marks an incomplete stage as completed', async () => {
+      const { manager, save } = buildManager(null);
+      const service = new MemberJourneyService(manager as never);
+
+      await service.completeStageIfNotCompleted(1, 3, 'done via course');
+
+      expect(save).toHaveBeenCalledTimes(1);
+      const calls = save.mock.calls as unknown[][];
+      const savedStage = calls[0][1] as Partial<MemberJourneyStage>;
+      expect(savedStage.completed).toBe(true);
+      expect(savedStage.completedAt).toBeInstanceOf(Date);
+      expect(savedStage.note).toBe('done via course');
+    });
+
+    it('rejects an invalid stage id', async () => {
+      const { manager } = buildManager(null);
+      const service = new MemberJourneyService(manager as never);
+
+      await expect(
+        service.completeStageIfNotCompleted(1, 999, null),
+      ).rejects.toThrow('Invalid stage_id: 999');
+    });
+  });
 });

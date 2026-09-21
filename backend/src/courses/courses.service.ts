@@ -8,6 +8,7 @@ import { EntityManager } from 'typeorm';
 import { Course } from './entities/course.entity';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { CourseTrackCourse } from '../academy/entities/course-track-course.entity';
 
 @Injectable()
 export class CoursesService {
@@ -49,12 +50,34 @@ export class CoursesService {
         status: dto.status ?? 'draft',
       });
       const saved = await this.entityManager.save(course);
+
+      if (dto.track_id) {
+        await this.attachToTrack(saved.id, dto.track_id);
+      }
+
       return this.toResponse(saved);
     } catch (error: unknown) {
       throw new BadRequestException(
         'An error occurred while creating the course.',
       );
     }
+  }
+
+  private async attachToTrack(courseId: string, trackId: number): Promise<void> {
+    const existing = await this.entityManager.findOne(CourseTrackCourse, {
+      where: { trackId, courseId },
+    });
+    if (existing) return;
+
+    const count = await this.entityManager.count(CourseTrackCourse, {
+      where: { trackId },
+    });
+    const membership = this.entityManager.create(CourseTrackCourse, {
+      trackId,
+      courseId,
+      sortOrder: count,
+    });
+    await this.entityManager.save(CourseTrackCourse, membership);
   }
 
   async findAll() {
@@ -104,6 +127,11 @@ export class CoursesService {
       if (dto.status !== undefined) course.status = dto.status;
 
       const saved = await this.entityManager.save(Course, course);
+
+      if (dto.track_id) {
+        await this.attachToTrack(saved.id, dto.track_id);
+      }
+
       return this.toResponse(saved);
     } catch (error: unknown) {
       if (error instanceof NotFoundException) throw error;

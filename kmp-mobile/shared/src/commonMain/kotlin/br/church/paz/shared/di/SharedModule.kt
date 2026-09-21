@@ -7,6 +7,7 @@ import br.church.paz.shared.data.repository.AcademyRepositoryImpl
 import br.church.paz.shared.data.repository.AgendaRepositoryImpl
 import br.church.paz.shared.data.repository.AuthRepositoryImpl
 import br.church.paz.shared.data.repository.ChurchRepositoryImpl
+import br.church.paz.shared.data.repository.CourseRepositoryImpl
 import br.church.paz.shared.data.repository.FormsRepositoryImpl
 import br.church.paz.shared.data.repository.HomeRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupAnalyticsRepositoryImpl
@@ -21,6 +22,7 @@ import br.church.paz.shared.domain.repository.AcademyRepository
 import br.church.paz.shared.domain.repository.AgendaRepository
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.ChurchRepository
+import br.church.paz.shared.domain.repository.CourseRepository
 import br.church.paz.shared.domain.repository.FormsRepository
 import br.church.paz.shared.domain.repository.HomeRepository
 import br.church.paz.shared.domain.repository.LifeGroupAnalyticsRepository
@@ -53,6 +55,7 @@ val sharedRepositoryModule = module {
     single<HomeRepository>          { HomeRepositoryImpl(get()) }
     single<AgendaRepository>        { AgendaRepositoryImpl(get()) }
     single<AcademyRepository>       { AcademyRepositoryImpl(get()) }
+    single<CourseRepository>        { CourseRepositoryImpl(get()) }
     single<UserRepository>          { UserRepositoryImpl(get()) }
     single<ChurchRepository>        { ChurchRepositoryImpl(get()) }
     single<MemberJourneyRepository> { MemberJourneyRepositoryImpl(get()) }

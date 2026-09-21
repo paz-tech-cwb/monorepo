@@ -44,6 +44,8 @@ targets:
         product: FirebaseAuth
       - package: FirebaseAuth
         product: FirebaseMessaging
+      - package: FirebaseAuth
+        product: FirebaseStorage
       # Google Sign-In via SPM
       - package: GoogleSignIn
         product: GoogleSignIn

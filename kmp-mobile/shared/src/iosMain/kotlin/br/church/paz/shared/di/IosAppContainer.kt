@@ -6,6 +6,7 @@ import br.church.paz.shared.data.repository.AcademyRepositoryImpl
 import br.church.paz.shared.data.repository.AgendaRepositoryImpl
 import br.church.paz.shared.data.repository.AuthRepositoryImpl
 import br.church.paz.shared.data.repository.ChurchRepositoryImpl
+import br.church.paz.shared.data.repository.CourseRepositoryImpl
 import br.church.paz.shared.data.repository.FormsRepositoryImpl
 import br.church.paz.shared.data.repository.HomeRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupAnalyticsRepositoryImpl
@@ -21,6 +22,7 @@ import br.church.paz.shared.domain.repository.AgendaRepository
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.BirthDateRequiredException
 import br.church.paz.shared.domain.repository.ChurchRepository
+import br.church.paz.shared.domain.repository.CourseRepository
 import br.church.paz.shared.domain.repository.FormsRepository
 import br.church.paz.shared.domain.repository.HomeRepository
 import br.church.paz.shared.domain.repository.LifeGroupAnalyticsRepository
@@ -58,6 +60,7 @@ object IosAppContainer {
     val homeRepository: HomeRepository by lazy { HomeRepositoryImpl(httpClient) }
     val agendaRepository: AgendaRepository by lazy { AgendaRepositoryImpl(httpClient) }
     val academyRepository: AcademyRepository by lazy { AcademyRepositoryImpl(httpClient) }
+    val courseRepository: CourseRepository by lazy { CourseRepositoryImpl(httpClient) }
     val userRepository: UserRepository by lazy { UserRepositoryImpl(httpClient) }
     val churchRepository: ChurchRepository by lazy { ChurchRepositoryImpl(httpClient) }
     val memberJourneyRepository: MemberJourneyRepository by lazy { MemberJourneyRepositoryImpl(httpClient) }

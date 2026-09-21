@@ -13,6 +13,7 @@ export interface Course {
   image_url?: string | null
   thumbnail_url?: string | null
   status: CourseStatus
+  track_id?: number | null
   created_at: string
   updated_at: string
 }
@@ -46,6 +47,7 @@ export interface CreateCourseRequest {
   image_url?: string | null
   thumbnail_url?: string | null
   status?: CourseStatus
+  track_id?: number | null
 }
 
 export interface UpdateCourseRequest {
@@ -59,4 +61,5 @@ export interface UpdateCourseRequest {
   image_url?: string | null
   thumbnail_url?: string | null
   status?: CourseStatus
+  track_id?: number | null
 }

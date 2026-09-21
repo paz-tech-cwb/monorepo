@@ -47,4 +47,9 @@ export class CreateCourseDto {
   @IsOptional()
   @IsIn(['draft', 'published', 'archived'])
   status?: string;
+
+  @Expose()
+  @IsOptional()
+  @IsInt()
+  track_id?: number | null;
 }

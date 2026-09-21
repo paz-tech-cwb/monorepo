@@ -50,4 +50,8 @@ class AcademyViewModel(
     fun onVideoTapped(videoId: String) {
         viewModelScope.launch { _effect.send(AcademyEffect.NavigateToPlayer(videoId)) }
     }
+
+    fun onCourseTapped(courseId: String) {
+        viewModelScope.launch { _effect.send(AcademyEffect.NavigateToCourse(courseId)) }
+    }
 }
