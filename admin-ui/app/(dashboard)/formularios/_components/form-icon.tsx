@@ -8,6 +8,7 @@ import {
   Church,
   UserPlus2,
   FileText,
+  Home,
 } from "lucide-react"
 import type { FormSlug } from "@/lib/api/types/formularios"
 
@@ -20,6 +21,7 @@ const ICONS: Partial<Record<FormSlug, React.ComponentType<{ className?: string }
   "multiplications": GitBranch,
   "service-reports": Church,
   "form-guests": UserPlus2,
+  "casa-de-paz-reports": Home,
 }
 
 export function FormIcon({ slug, className }: { slug: FormSlug; className?: string }) {

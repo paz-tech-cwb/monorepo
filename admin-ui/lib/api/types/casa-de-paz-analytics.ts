@@ -58,10 +58,17 @@ export interface CasaDePazByTime {
   conversions: number
 }
 
+export interface CasaDePazAnalyticsComparison {
+  /** "YYYY-MM" of the most recent month with data used for growth comparisons. */
+  period: string
+}
+
 export interface CasaDePazAnalyticsSummary {
   range: CasaDePazAnalyticsRange
   totals: CasaDePazAnalyticsTotals
   growth: CasaDePazAnalyticsGrowth
+  /** `null` when there's no prior month with data to compare against. */
+  comparison: CasaDePazAnalyticsComparison | null
   series: CasaDePazSeriesPoint[]
   by_sector: CasaDePazBySector[]
   by_day: CasaDePazByDay[]

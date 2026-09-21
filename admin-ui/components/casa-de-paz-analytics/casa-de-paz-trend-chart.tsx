@@ -29,8 +29,10 @@ const MONTH_LABELS = [
 ]
 
 function formatPeriodLabel(period: string): string {
-  const [, month] = period.split("-")
-  return MONTH_LABELS[Number(month) - 1] ?? period
+  const [year, month] = period.split("-")
+  const label = MONTH_LABELS[Number(month) - 1]
+  if (!label) return period
+  return `${label}/${year.slice(-2)}`
 }
 
 const activityChartConfig = {
@@ -51,7 +53,7 @@ interface CasaDePazTrendChartProps {
 }
 
 export function CasaDePazTrendChart({ series, isLoading, isError }: CasaDePazTrendChartProps) {
-  const isEmpty = series.every((row) => row.houses === 0)
+  const isEmpty = series.length === 0 || series.every((row) => row.houses === 0)
 
   const activityData = series.map((row) => ({
     name: formatPeriodLabel(row.period),

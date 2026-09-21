@@ -7,6 +7,7 @@ export type FormSlug =
   | 'multiplications'
   | 'service-reports'
   | 'form-guests'
+  | 'casa-de-paz-reports'
 
 export interface FormCatalogEntry {
   slug: FormSlug
