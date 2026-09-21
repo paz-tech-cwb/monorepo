@@ -159,7 +159,6 @@ final class CasaDePazSubmissionDetailViewModel {
     var guests: String
     var conversions: String
     var meetingDay: String
-    var meetingTime: String
 
     var isSaving = false
     var isDeleting = false
@@ -179,7 +178,6 @@ final class CasaDePazSubmissionDetailViewModel {
         guests = "\(submission.guests)"
         conversions = "\(submission.conversions)"
         meetingDay = submission.meetingDay ?? ""
-        meetingTime = submission.meetingTime ?? ""
     }
 
     func save() async -> CasaDePazReportSubmission? {
@@ -193,8 +191,7 @@ final class CasaDePazSubmissionDetailViewModel {
             kids: Int32(kids) ?? 0,
             guests: Int32(guests) ?? 0,
             conversions: Int32(conversions) ?? 0,
-            meetingDay: meetingDay.isEmpty ? nil : meetingDay,
-            meetingTime: meetingTime.isEmpty ? nil : meetingTime
+            meetingDay: meetingDay.isEmpty ? nil : meetingDay
         )
         do {
             try await formsRepository.updateCasaDePazReport(id: id, form: form)
@@ -202,7 +199,7 @@ final class CasaDePazSubmissionDetailViewModel {
             return CasaDePazReportSubmission(
                 id: id, date: date, facilitator: form.facilitator, sectorId: sectorId,
                 adults: form.adults, kids: form.kids, guests: form.guests, conversions: form.conversions,
-                meetingDay: form.meetingDay, meetingTime: form.meetingTime,
+                meetingDay: form.meetingDay,
                 createdAt: "", updatedAt: ""
             )
         } catch {
@@ -277,7 +274,6 @@ struct CasaDePazSubmissionDetailView: View {
                             }
                             .pickerStyle(.menu)
                         }
-                        LabeledField(label: "Horário (HH:MM)") { TextField("", text: $viewModel.meetingTime) }
                         LabeledField(label: "Adultos") { TextField("", text: $viewModel.adults).keyboardType(.numberPad) }
                         LabeledField(label: "Crianças") { TextField("", text: $viewModel.kids).keyboardType(.numberPad) }
                         LabeledField(label: "Convidados") { TextField("", text: $viewModel.guests).keyboardType(.numberPad) }

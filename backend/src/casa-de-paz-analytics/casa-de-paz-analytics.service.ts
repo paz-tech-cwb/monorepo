@@ -51,14 +51,8 @@ export class CasaDePazAnalyticsService {
     return { fromDate: from, toDateExclusive, fromYm, toYm };
   }
 
-  private ymToPeriod(ym: number): string {
-    const year = Math.floor(ym / 12);
-    const month = (ym % 12) + 1;
-    return `${year}-${String(month).padStart(2, '0')}`;
-  }
-
   async summary(query: CasaDePazSummaryQueryDto) {
-    const { fromDate, toDateExclusive, fromYm, toYm } = this.resolveWindow(
+    const { fromDate, toDateExclusive } = this.resolveWindow(
       query.from,
       query.to,
     );
@@ -70,17 +64,26 @@ export class CasaDePazAnalyticsService {
         .andWhere('r.date >= :fromDate', { fromDate })
         .andWhere('r.date < :toDateExclusive', { toDateExclusive });
 
-    // Previous period of equal length immediately preceding the selected
-    // window, used to compute growth (e.g. "+12% vs. previous period").
-    const windowMs = toDateExclusive.getTime() - fromDate.getTime();
-    const prevToDateExclusive = fromDate;
-    const prevFromDate = new Date(fromDate.getTime() - windowMs);
+    // Comparison period = the single most recent month (strictly before the
+    // selected window) that actually has report rows — not a fixed
+    // equal-length window. This avoids comparing against empty months when
+    // data collection only recently started or has gaps.
+    const prevMonthRow = await this.em
+      .createQueryBuilder(CasaDePazReport, 'r')
+      .select("to_char(r.date, 'YYYY-MM')", 'period')
+      .where('r.deleted_at IS NULL')
+      .andWhere('r.date < :fromDate', { fromDate })
+      .groupBy("to_char(r.date, 'YYYY-MM')")
+      .orderBy("to_char(r.date, 'YYYY-MM')", 'DESC')
+      .limit(1)
+      .getRawOne<{ period: string }>();
+
+    const prevPeriod = prevMonthRow?.period ?? null;
     const prevQb = () =>
       this.em
         .createQueryBuilder(CasaDePazReport, 'r')
         .where('r.deleted_at IS NULL')
-        .andWhere('r.date >= :prevFromDate', { prevFromDate })
-        .andWhere('r.date < :prevToDateExclusive', { prevToDateExclusive });
+        .andWhere("to_char(r.date, 'YYYY-MM') = :prevPeriod", { prevPeriod });
 
     const [
       totalsRaw,
@@ -172,19 +175,21 @@ export class CasaDePazAnalyticsService {
           guests: string;
           conversions: string;
         }>(),
-      prevQb()
-        .select('COUNT(*)', 'houses')
-        .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
-        .addSelect('COALESCE(SUM(r.kids), 0)', 'kids')
-        .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
-        .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
-        .getRawOne<{
-          houses: string;
-          adults: string;
-          kids: string;
-          guests: string;
-          conversions: string;
-        }>(),
+      prevPeriod
+        ? prevQb()
+            .select('COUNT(*)', 'houses')
+            .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
+            .addSelect('COALESCE(SUM(r.kids), 0)', 'kids')
+            .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
+            .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
+            .getRawOne<{
+              houses: string;
+              adults: string;
+              kids: string;
+              guests: string;
+              conversions: string;
+            }>()
+        : Promise.resolve(undefined),
     ]);
 
     const totalGuests = Number(totalsRaw?.guests ?? 0);
@@ -222,34 +227,16 @@ export class CasaDePazAnalyticsService {
       conversions: pctChange(totals.conversions, prevConversions),
     };
 
-    const byPeriod = new Map<string, SeriesRow>(
-      seriesRaw.map((r) => [
-        r.period,
-        {
-          period: r.period,
-          houses: Number(r.houses),
-          adults: Number(r.adults),
-          kids: Number(r.kids),
-          guests: Number(r.guests),
-          conversions: Number(r.conversions),
-        },
-      ]),
-    );
-
-    const series: SeriesRow[] = [];
-    for (let ym = fromYm; ym <= toYm; ym += 1) {
-      const period = this.ymToPeriod(ym);
-      series.push(
-        byPeriod.get(period) ?? {
-          period,
-          houses: 0,
-          adults: 0,
-          kids: 0,
-          guests: 0,
-          conversions: 0,
-        },
-      );
-    }
+    // Only months that actually have report rows are included — no
+    // zero-filled gaps, since sparse data can span multiple years.
+    const series: SeriesRow[] = seriesRaw.map((r) => ({
+      period: r.period,
+      houses: Number(r.houses),
+      adults: Number(r.adults),
+      kids: Number(r.kids),
+      guests: Number(r.guests),
+      conversions: Number(r.conversions),
+    }));
 
     const bySector = this.bucketSectorsTopN(
       bySectorRaw.map((r) => ({
@@ -291,6 +278,7 @@ export class CasaDePazAnalyticsService {
       },
       totals,
       growth,
+      comparison: prevPeriod ? { period: prevPeriod } : null,
       series,
       by_sector: bySector,
       by_day: byDay,

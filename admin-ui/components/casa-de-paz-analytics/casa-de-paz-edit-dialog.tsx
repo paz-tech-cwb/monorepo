@@ -43,7 +43,6 @@ export function CasaDePazEditDialog({ submission, onOpenChange }: CasaDePazEditD
         guests: submission.guests,
         conversions: submission.conversions,
         meeting_day: submission.meeting_day ?? undefined,
-        meeting_time: submission.meeting_time ?? undefined,
       })
     }
   }, [submission])
@@ -118,16 +117,6 @@ export function CasaDePazEditDialog({ submission, onOpenChange }: CasaDePazEditD
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="cdp-time">Horário</Label>
-            <Input
-              id="cdp-time"
-              type="time"
-              value={form.meeting_time ?? ""}
-              onChange={(e) => setForm((f) => ({ ...f, meeting_time: e.target.value }))}
-            />
           </div>
 
           <div className="space-y-2">

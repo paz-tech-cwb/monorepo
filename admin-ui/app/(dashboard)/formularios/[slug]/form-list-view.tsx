@@ -44,7 +44,7 @@ export function FormListView({ slug }: { slug: FormSlug }) {
           <h1 className="text-2xl font-semibold">{meta?.name ?? slug}</h1>
           <p className="text-muted-foreground text-sm">{meta?.description}</p>
         </div>
-        {meta?.can_write && (
+        {meta?.can_write && slug !== "casa-de-paz-reports" && (
           <Button asChild>
             <Link href={`/formularios/${slug}/new`}>
               <Plus className="size-4 mr-1" /> Novo registro

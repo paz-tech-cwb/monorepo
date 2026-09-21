@@ -356,7 +356,6 @@ class FormDetailViewModel(
                             guests = f.int("guests"),
                             conversions = f.int("conversions"),
                             meetingDay = f.opt("meeting_day"),
-                            meetingTime = f.opt("meeting_time"),
                         ),
                     )
             }

@@ -47,7 +47,6 @@ class CasaDePazSubmissionEditorViewModel(
                         guests = submission.guests.toString(),
                         conversions = submission.conversions.toString(),
                         meetingDay = submission.meetingDay ?: "",
-                        meetingTime = submission.meetingTime ?: "",
                         sectorNames = sectorNames,
                     )
                 }
@@ -73,8 +72,6 @@ class CasaDePazSubmissionEditorViewModel(
 
     fun onMeetingDayChange(v: String) = _uiState.update { it.copy(meetingDay = v) }
 
-    fun onMeetingTimeChange(v: String) = _uiState.update { it.copy(meetingTime = v) }
-
     fun onSave() {
         val state = _uiState.value
         val sectorId = state.sectorId ?: return
@@ -90,7 +87,6 @@ class CasaDePazSubmissionEditorViewModel(
                     guests = state.guests.toIntOrNull() ?: 0,
                     conversions = state.conversions.toIntOrNull() ?: 0,
                     meetingDay = state.meetingDay.ifBlank { null },
-                    meetingTime = state.meetingTime.ifBlank { null },
                 )
             runCatching { formsRepository.updateCasaDePazReport(submissionId, form) }
                 .onSuccess {

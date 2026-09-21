@@ -367,8 +367,7 @@ class FormDetailViewModelIOS {
                 kids: intVal("kids"),
                 guests: intVal("guests"),
                 conversions: intVal("conversions"),
-                meetingDay: opt("meeting_day"),
-                meetingTime: opt("meeting_time")
+                meetingDay: opt("meeting_day")
             ))
 
         default: // areaSupervisorReport
