@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { IsString, IsOptional, IsInt, IsIn, IsUrl, Min } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsIn, Min } from 'class-validator';
 
 export class CreateCourseDto {
   @Expose()
@@ -47,4 +47,9 @@ export class CreateCourseDto {
   @IsOptional()
   @IsIn(['draft', 'published', 'archived'])
   status?: string;
+
+  @Expose()
+  @IsOptional()
+  @IsInt()
+  track_id?: number | null;
 }

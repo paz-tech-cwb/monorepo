@@ -23,6 +23,9 @@ export class CourseTrack {
   @Column({ name: 'sort_order', type: 'int', default: 0 })
   sortOrder: number;
 
+  @Column({ name: 'journey_stage_id', type: 'int', nullable: true })
+  journeyStageId: number | null;
+
   @ManyToMany(() => Course, { eager: true })
   @JoinTable({
     name: 'course_track_courses',

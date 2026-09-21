@@ -4,21 +4,46 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Search, Route, BookOpen, Clock, Target } from "lucide-react"
-import { useQuery } from "@tanstack/react-query"
-import { academyApi } from "@/lib/api/endpoints/academy"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { FormDrawer } from "@/components/ui/form-drawer"
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Search, Plus, MoreHorizontal, Edit, Trash2, Route, BookOpen, Target } from "lucide-react"
+import {
+  useCourseTracks,
+  useCreateCourseTrack,
+  useUpdateCourseTrack,
+  useDeleteCourseTrack,
+} from "@/lib/hooks/use-course-tracks"
+import { useMemberJourneyStats } from "@/lib/hooks/use-member-journey"
+import type { CourseTrack, CreateCourseTrackRequest, UpdateCourseTrackRequest } from "@/lib/api/types/academy"
 
 export function CourseTracksManagement() {
+  const { data: tracks = [], isLoading, error } = useCourseTracks()
+  const { data: journeyStages = [] } = useMemberJourneyStats()
+  const createMutation = useCreateCourseTrack()
+  const updateMutation = useUpdateCourseTrack()
+  const deleteMutation = useDeleteCourseTrack()
+
   const [searchTerm, setSearchTerm] = useState("")
-
-  const { data: academy, isLoading, error } = useQuery({
-    queryKey: ["academy"],
-    queryFn: () => academyApi.getAcademy(),
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [editingTrack, setEditingTrack] = useState<CourseTrack | null>(null)
+  const [deletingTrackId, setDeletingTrackId] = useState<number | null>(null)
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    journey_stage_id: "" as number | "",
   })
-
-  const tracks = academy?.tracks ?? []
 
   const filteredTracks = tracks.filter(
     (track) =>
@@ -28,11 +53,122 @@ export function CourseTracksManagement() {
 
   const totalCourses = tracks.reduce((sum, track) => sum + track.courses.length, 0)
 
+  const resetForm = () => {
+    setFormData({ title: "", description: "", journey_stage_id: "" })
+  }
+
+  const stageLabel = (stageId?: number | null) => {
+    if (!stageId) return null
+    return journeyStages.find((s) => s.stage_id === stageId)?.stage_label ?? null
+  }
+
+  const handleAddTrack = async () => {
+    const data: CreateCourseTrackRequest = {
+      title: formData.title,
+      description: formData.description || null,
+      journey_stage_id: formData.journey_stage_id === "" ? null : formData.journey_stage_id,
+    }
+
+    try {
+      await createMutation.mutateAsync(data)
+      resetForm()
+      setIsAddDialogOpen(false)
+    } catch (err) {
+      console.error("Failed to create course track:", err)
+    }
+  }
+
+  const handleEditTrack = (track: CourseTrack) => {
+    setEditingTrack(track)
+    setFormData({
+      title: track.title,
+      description: track.description || "",
+      journey_stage_id: track.journey_stage_id ?? "",
+    })
+  }
+
+  const handleUpdateTrack = async () => {
+    if (!editingTrack) return
+
+    const data: UpdateCourseTrackRequest = {
+      title: formData.title,
+      description: formData.description || null,
+      journey_stage_id: formData.journey_stage_id === "" ? null : formData.journey_stage_id,
+    }
+
+    try {
+      await updateMutation.mutateAsync({ id: editingTrack.id, data })
+      setEditingTrack(null)
+      resetForm()
+    } catch (err) {
+      console.error("Failed to update course track:", err)
+    }
+  }
+
+  const handleDeleteTrack = async (trackId: number) => {
+    try {
+      await deleteMutation.mutateAsync(trackId)
+      setDeletingTrackId(null)
+    } catch (err) {
+      console.error("Failed to delete course track:", err)
+    }
+  }
+
+  const TrackFormFields = () => (
+    <div className="grid gap-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="track-title">Título</Label>
+        <Input
+          id="track-title"
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          placeholder="Título da trilha"
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="track-description">Descrição</Label>
+        <Textarea
+          id="track-description"
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder="Descrição da trilha"
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="track-journey-stage">Etapa da jornada (opcional)</Label>
+        <Select
+          value={formData.journey_stage_id === "" ? "none" : String(formData.journey_stage_id)}
+          onValueChange={(v) =>
+            setFormData({ ...formData, journey_stage_id: v === "none" ? "" : Number(v) })
+          }
+        >
+          <SelectTrigger id="track-journey-stage">
+            <SelectValue placeholder="Nenhuma" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Nenhuma</SelectItem>
+            {journeyStages.map((stage) => (
+              <SelectItem key={stage.stage_id} value={String(stage.stage_id)}>
+                {stage.stage_label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  )
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Trilhos de Cursos</h1>
-        <p className="text-muted-foreground">Gerencie as trilhas de formacao da academia</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Trilhos de Cursos</h1>
+          <p className="text-muted-foreground">Gerencie as trilhas de formação da academia</p>
+        </div>
+        <Button onClick={() => setIsAddDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Criar Trilha
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -111,10 +247,35 @@ export function CourseTracksManagement() {
                         {track.description && (
                           <CardDescription className="mt-1">{track.description}</CardDescription>
                         )}
+                        {stageLabel(track.journey_stage_id) && (
+                          <Badge variant="outline" className="mt-2">
+                            {stageLabel(track.journey_stage_id)}
+                          </Badge>
+                        )}
                       </div>
-                      <Badge variant="outline" className="ml-2 shrink-0">
-                        {track.courses.length} curso(s)
-                      </Badge>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge variant="outline">{track.courses.length} curso(s)</Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setTimeout(() => handleEditTrack(track), 0)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setTimeout(() => setDeletingTrackId(track.id), 0)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                   </CardHeader>
                   {track.courses.length > 0 && (
@@ -138,6 +299,47 @@ export function CourseTracksManagement() {
           )}
         </CardContent>
       </Card>
+
+      <FormDrawer
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        title="Criar Nova Trilha"
+        description="Preencha os dados da trilha"
+        isLoading={createMutation.isPending}
+        onSubmit={handleAddTrack}
+        submitLabel="Criar Trilha"
+      >
+        <TrackFormFields />
+      </FormDrawer>
+
+      <FormDrawer
+        open={!!editingTrack}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingTrack(null)
+            resetForm()
+          }
+        }}
+        title="Editar Trilha"
+        description="Atualize os dados da trilha"
+        isLoading={updateMutation.isPending}
+        onSubmit={handleUpdateTrack}
+        submitLabel="Salvar"
+      >
+        <TrackFormFields />
+      </FormDrawer>
+
+      <ConfirmDeleteDialog
+        open={deletingTrackId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingTrackId(null)
+        }}
+        entityName="esta trilha"
+        onConfirm={() => {
+          if (deletingTrackId !== null) handleDeleteTrack(deletingTrackId)
+        }}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   )
 }

@@ -8,6 +8,14 @@ import { User } from '../users/entities/user.entity';
 import { UserAccount } from '../users/entities/account.entity';
 import { Course } from '../courses/entities/course.entity';
 import { CourseTrack } from '../academy/entities/course-track.entity';
+import { CourseTrackCourse } from '../academy/entities/course-track-course.entity';
+import { CourseLesson } from '../academy/entities/course-lesson.entity';
+import { CourseQuestionnaire } from '../academy/entities/course-questionnaire.entity';
+import { CourseQuestion } from '../academy/entities/course-question.entity';
+import { CourseQuestionOption } from '../academy/entities/course-question-option.entity';
+import { CourseLessonProgress } from '../academy/entities/course-lesson-progress.entity';
+import { CourseQuestionnaireResponse } from '../academy/entities/course-questionnaire-response.entity';
+import { CourseCertificate } from '../academy/entities/course-certificate.entity';
 import { Notification } from '../notifications/entities/notification.entity';
 import { Church } from '../church/entities/church.entity';
 import { MemberJourneyStage } from '../member-journey/entities/member-journey-stage.entity';
@@ -92,6 +100,14 @@ const config: DataSourceOptions = {
     LifeGroupAttendance,
     LifeGroupAttendanceEntry,
     CasaDePazReport,
+    CourseTrackCourse,
+    CourseLesson,
+    CourseQuestionnaire,
+    CourseQuestion,
+    CourseQuestionOption,
+    CourseLessonProgress,
+    CourseQuestionnaireResponse,
+    CourseCertificate,
   ],
   migrations: ['dist/migrations/*.js'],
   migrationsTransactionMode: 'each',

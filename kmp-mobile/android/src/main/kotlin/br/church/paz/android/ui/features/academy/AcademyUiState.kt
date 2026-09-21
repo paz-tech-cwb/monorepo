@@ -15,4 +15,8 @@ sealed class AcademyEffect {
     data class NavigateToPlayer(
         val videoId: String,
     ) : AcademyEffect()
+
+    data class NavigateToCourse(
+        val courseId: String,
+    ) : AcademyEffect()
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -22,6 +23,7 @@ import { FormDrawer } from "@/components/ui/form-drawer"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { Search, Plus, MoreHorizontal, Edit, Trash2, BookOpen, Clock, Link as LinkIcon, Image, Loader2 } from "lucide-react"
 import { useCourses, useCourseStats, useCreateCourse, useUpdateCourse, useDeleteCourse } from "@/lib/hooks/use-courses"
+import { useCourseTracks } from "@/lib/hooks/use-course-tracks"
 import type { Course, CourseCategory, CreateCourseRequest, UpdateCourseRequest } from "@/lib/api/types/courses"
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -34,6 +36,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 export function CoursesManagement() {
   const { data: courses = [], isLoading, error } = useCourses()
   const { data: stats } = useCourseStats()
+  const { data: tracks = [] } = useCourseTracks()
   const createCourseMutation = useCreateCourse()
   const updateCourseMutation = useUpdateCourse()
   const deleteCourseMutation = useDeleteCourse()
@@ -51,6 +54,7 @@ export function CoursesManagement() {
     url: "",
     image_url: "",
     is_published: false,
+    track_id: "" as number | "",
   })
 
   const filteredCourses = courses.filter(
@@ -70,6 +74,7 @@ export function CoursesManagement() {
       url: "",
       image_url: "",
       is_published: false,
+      track_id: "",
     })
   }
 
@@ -83,6 +88,7 @@ export function CoursesManagement() {
       url: formData.url || null,
       image_url: formData.image_url || null,
       status: "draft",
+      track_id: formData.track_id === "" ? null : formData.track_id,
     }
 
     try {
@@ -105,6 +111,7 @@ export function CoursesManagement() {
       url: course.url || "",
       image_url: course.image_url || "",
       is_published: false,
+      track_id: course.track_id ?? "",
     })
   }
 
@@ -119,6 +126,7 @@ export function CoursesManagement() {
       category: formData.category,
       url: formData.url || null,
       image_url: formData.image_url || null,
+      track_id: formData.track_id === "" ? null : formData.track_id,
     }
 
     try {
@@ -207,6 +215,25 @@ export function CoursesManagement() {
             </SelectContent>
           </Select>
         </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="course-track">Trilho (opcional)</Label>
+        <Select
+          value={formData.track_id === "" ? "none" : String(formData.track_id)}
+          onValueChange={(v) => setFormData({ ...formData, track_id: v === "none" ? "" : Number(v) })}
+        >
+          <SelectTrigger id="course-track">
+            <SelectValue placeholder="Sem trilho" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Sem trilho</SelectItem>
+            {tracks.map((track) => (
+              <SelectItem key={track.id} value={String(track.id)}>
+                {track.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <Separator />
       <div className="space-y-1.5">
@@ -347,7 +374,10 @@ export function CoursesManagement() {
               {filteredCourses.map((course) => (
                 <TableRow key={course.id}>
                   <TableCell>
-                    <div className="flex items-center gap-3">
+                    <Link
+                      href={`/courses/${course.id}`}
+                      className="flex items-center gap-3 hover:underline"
+                    >
                       {course.image_url && (
                         <img
                           src={course.image_url}
@@ -359,7 +389,7 @@ export function CoursesManagement() {
                         <p className="font-medium">{course.title}</p>
                         <p className="text-sm text-muted-foreground truncate max-w-xs">{course.description}</p>
                       </div>
-                    </div>
+                    </Link>
                   </TableCell>
                   <TableCell>{course.creator}</TableCell>
                   <TableCell>

@@ -1,6 +1,9 @@
 package br.church.paz.android.di
 
 import br.church.paz.android.ui.features.academy.AcademyViewModel
+import br.church.paz.android.ui.features.academy.CertificatesViewModel
+import br.church.paz.android.ui.features.academy.CourseDetailViewModel
+import br.church.paz.android.ui.features.academy.QuestionnaireViewModel
 import br.church.paz.android.ui.features.academy.VideoPlayerViewModel
 import br.church.paz.android.ui.features.account.AccountViewModel
 import br.church.paz.android.ui.features.agenda.AgendaDetailViewModel
@@ -43,6 +46,9 @@ val androidModule =
         viewModel { HomeViewModel(get(), get()) }
         viewModel { AcademyViewModel(get(), get()) }
         viewModel { (videoId: String) -> VideoPlayerViewModel(videoId) }
+        viewModel { (courseId: String) -> CourseDetailViewModel(courseId, get()) }
+        viewModel { (courseId: String) -> QuestionnaireViewModel(courseId, get()) }
+        viewModel { CertificatesViewModel(get()) }
         viewModel { AccountViewModel(get(), get()) }
         viewModel { ProfileViewModel(get()) }
         viewModel { EditProfileViewModel(get(), get()) } // (UserRepository, OnboardingRepository)
