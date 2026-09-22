@@ -45,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazMeshBackground
+import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazShapes
@@ -87,7 +88,11 @@ fun MemberJourneyScreen(
             },
             containerColor = Color.Transparent,
         ) { innerPadding ->
-            Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
+            PazPullToRefresh(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = viewModel::refresh,
+                modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
+            ) {
                 when {
                     uiState.isLoading -> LoadingState()
                     uiState.error != null -> ErrorState(error = uiState.error!!, onRetry = viewModel::onRetry)

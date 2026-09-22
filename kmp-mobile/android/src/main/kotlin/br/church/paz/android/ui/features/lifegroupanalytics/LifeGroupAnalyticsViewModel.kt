@@ -53,10 +53,15 @@ class LifeGroupAnalyticsViewModel(
         }
     }
 
-    fun load() {
+    fun load() = load(showSkeleton = true)
+
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = load(showSkeleton = false)
+
+    private fun load(showSkeleton: Boolean) {
         val state = _uiState.value
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton, error = null) }
             runCatching {
                 val attendanceDeferred =
                     async {
@@ -74,6 +79,7 @@ class LifeGroupAnalyticsViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
+                        isRefreshing = false,
                         attendanceRows = attendance.rows,
                         byDay = distribution.byDay,
                         byHour = distribution.byHour,
@@ -83,7 +89,7 @@ class LifeGroupAnalyticsViewModel(
                 }
             }.onFailure { e ->
                 _uiState.update {
-                    it.copy(isLoading = false, error = e.message ?: "Erro ao carregar relatórios")
+                    it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Erro ao carregar relatórios")
                 }
             }
         }

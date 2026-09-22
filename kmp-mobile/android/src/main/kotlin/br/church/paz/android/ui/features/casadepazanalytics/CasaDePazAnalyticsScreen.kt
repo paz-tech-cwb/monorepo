@@ -39,6 +39,7 @@ import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazCardSkeleton
 import br.church.paz.android.ui.components.PazMeshBackground
+import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.theme.PazSpacing
 import org.koin.androidx.compose.koinViewModel
 import java.time.Instant
@@ -81,7 +82,11 @@ fun CasaDePazAnalyticsScreen(
             },
             containerColor = Color.Transparent,
         ) { innerPadding ->
-            Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
+            PazPullToRefresh(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = viewModel::refresh,
+                modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
+            ) {
                 when {
                     uiState.isLoading -> AnalyticsSkeleton()
                     uiState.error != null -> AnalyticsError(uiState.error!!, viewModel::load)

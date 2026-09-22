@@ -5,6 +5,7 @@ import br.church.paz.shared.domain.model.Ministry
 data class MinistryDetailUiState(
     val ministry: Ministry? = null,
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
     // Any leadership role (role.isLeader) — matches iOS `MinistryDetailView.canManage`
     // and the backend's actual RolesGuard authorization on the manage endpoints.
@@ -14,6 +15,7 @@ data class MinistryDetailUiState(
 data class LifeGroupDetailUiState(
     val lifeGroup: br.church.paz.shared.domain.model.LifeGroup? = null,
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
     // Only the group's leader or co-leader may record attendance — this has
     // no dedicated role slug, so it's resolved by comparing the current

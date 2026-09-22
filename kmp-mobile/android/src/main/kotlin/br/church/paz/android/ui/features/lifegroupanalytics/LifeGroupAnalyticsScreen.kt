@@ -66,6 +66,7 @@ import br.church.paz.android.ui.components.PazDonutChartEmpty
 import br.church.paz.android.ui.components.PazDonutPalette
 import br.church.paz.android.ui.components.PazDonutSlice
 import br.church.paz.android.ui.components.PazMeshBackground
+import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazStatCard
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
@@ -157,17 +158,23 @@ fun LifeGroupAnalyticsScreen(
                         drawLayer(graphicsLayer)
                     },
             ) {
-                when {
-                    uiState.isLoading -> AnalyticsSkeleton()
-                    uiState.error != null -> AnalyticsError(uiState.error!!, viewModel::load)
-                    else ->
-                        AnalyticsContent(
-                            uiState = uiState,
-                            onYearSelected = viewModel::onYearSelected,
-                            onMonthSelected = viewModel::onMonthSelected,
-                            onLifeGroupSelected = viewModel::onLifeGroupSelected,
-                            onDistributionTabSelected = viewModel::onDistributionTabSelected,
-                        )
+                PazPullToRefresh(
+                    isRefreshing = uiState.isRefreshing,
+                    onRefresh = viewModel::refresh,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    when {
+                        uiState.isLoading -> AnalyticsSkeleton()
+                        uiState.error != null -> AnalyticsError(uiState.error!!, viewModel::load)
+                        else ->
+                            AnalyticsContent(
+                                uiState = uiState,
+                                onYearSelected = viewModel::onYearSelected,
+                                onMonthSelected = viewModel::onMonthSelected,
+                                onLifeGroupSelected = viewModel::onLifeGroupSelected,
+                                onDistributionTabSelected = viewModel::onDistributionTabSelected,
+                            )
+                    }
                 }
             }
         }

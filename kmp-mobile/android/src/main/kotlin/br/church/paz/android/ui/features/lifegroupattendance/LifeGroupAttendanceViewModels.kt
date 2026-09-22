@@ -23,18 +23,23 @@ class LifeGroupAttendanceHistoryViewModel(
     val effect = _effect.receiveAsFlow()
 
     init {
-        load()
+        load(showSkeleton = true)
     }
 
-    fun load() {
+    fun load() = load(showSkeleton = true)
+
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = load(showSkeleton = false)
+
+    private fun load(showSkeleton: Boolean) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton, error = null) }
             runCatching { repository.getHistory(lifeGroupId) }
                 .onSuccess { records ->
-                    _uiState.update { it.copy(isLoading = false, records = records) }
+                    _uiState.update { it.copy(isLoading = false, isRefreshing = false, records = records) }
                 }.onFailure { e ->
                     _uiState.update {
-                        it.copy(isLoading = false, error = e.message ?: "Erro ao carregar presenças")
+                        it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Erro ao carregar presenças")
                     }
                 }
         }

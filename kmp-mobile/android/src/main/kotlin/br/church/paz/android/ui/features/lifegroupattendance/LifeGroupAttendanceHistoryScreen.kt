@@ -46,6 +46,7 @@ import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazCardSkeleton
 import br.church.paz.android.ui.components.PazMeshBackground
+import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
@@ -117,7 +118,11 @@ fun LifeGroupAttendanceHistoryScreen(
             },
             containerColor = Color.Transparent,
         ) { innerPadding ->
-            Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
+            PazPullToRefresh(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = viewModel::refresh,
+                modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
+            ) {
                 when {
                     uiState.isLoading -> AttendanceHistorySkeleton()
                     uiState.error != null ->

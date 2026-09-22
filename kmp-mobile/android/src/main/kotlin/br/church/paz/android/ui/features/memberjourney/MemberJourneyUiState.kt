@@ -6,6 +6,7 @@ data class MemberJourneyUiState(
     val track: JourneyTrack? = null,
     val allStepsComplete: Boolean = false,
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
 )
 

@@ -28,8 +28,12 @@ class MinistryDetailViewModel(
         load()
     }
 
-    private fun load() {
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = load(showSkeleton = false)
+
+    private fun load(showSkeleton: Boolean = true) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton) }
             val currentUser = runCatching { authRepository.currentUser() }.getOrNull()
             runCatching { churchRepository.getAllMinistries() }
                 .onSuccess { ministries ->
@@ -38,13 +42,14 @@ class MinistryDetailViewModel(
                         it.copy(
                             ministry = ministry,
                             isLoading = false,
+                            isRefreshing = false,
                             error = if (ministry == null) "Ministério não encontrado" else null,
                             canManage = currentUser?.role?.isLeader == true,
                         )
                     }
                 }.onFailure { e ->
                     _uiState.update {
-                        it.copy(isLoading = false, error = e.message ?: "Erro ao carregar")
+                        it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Erro ao carregar")
                     }
                 }
         }
@@ -74,8 +79,12 @@ class LifeGroupDetailViewModel(
         load()
     }
 
-    private fun load() {
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = load(showSkeleton = false)
+
+    private fun load(showSkeleton: Boolean = true) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton) }
             val currentUser = runCatching { authRepository.currentUser() }.getOrNull()
             val currentUserId = currentUser?.id?.toIntOrNull()
             runCatching { churchRepository.getAllLifeGroups() }
@@ -89,6 +98,7 @@ class LifeGroupDetailViewModel(
                         it.copy(
                             lifeGroup = group,
                             isLoading = false,
+                            isRefreshing = false,
                             error = if (group == null) "Grupo não encontrado" else null,
                             canManageAttendance = canManageAttendance,
                             canManage = currentUser?.role?.isLeader == true,
@@ -96,7 +106,7 @@ class LifeGroupDetailViewModel(
                     }
                 }.onFailure { e ->
                     _uiState.update {
-                        it.copy(isLoading = false, error = e.message ?: "Erro ao carregar")
+                        it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Erro ao carregar")
                     }
                 }
         }

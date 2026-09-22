@@ -5,6 +5,7 @@ import br.church.paz.shared.domain.model.FormCatalogItem
 data class FormulariosUiState(
     val forms: List<FormCatalogItem> = emptyList(),
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
 )
 
