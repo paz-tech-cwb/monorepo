@@ -27,6 +27,7 @@ import br.church.paz.android.ui.features.ministries.AllLifeGroupsViewModel
 import br.church.paz.android.ui.features.ministries.GroupMembersListViewModel
 import br.church.paz.android.ui.features.ministries.GroupMembersType
 import br.church.paz.android.ui.features.ministries.LifeGroupDetailViewModel
+import br.church.paz.android.ui.features.ministries.LifeGroupsMapViewModel
 import br.church.paz.android.ui.features.ministries.LifeGroupsViewModel
 import br.church.paz.android.ui.features.ministries.MinistriesViewModel
 import br.church.paz.android.ui.features.ministries.MinistryDetailViewModel
@@ -72,6 +73,7 @@ val androidModule =
         viewModel { (lifeGroupId: String) -> LifeGroupDetailViewModel(lifeGroupId, get(), get()) }
         viewModel { LifeGroupsViewModel(get()) }
         viewModel { AllLifeGroupsViewModel(get()) }
+        viewModel { LifeGroupsMapViewModel(get()) }
         viewModel { (groupId: String, groupType: GroupMembersType) ->
             GroupMembersListViewModel(groupId, groupType, get())
         }
