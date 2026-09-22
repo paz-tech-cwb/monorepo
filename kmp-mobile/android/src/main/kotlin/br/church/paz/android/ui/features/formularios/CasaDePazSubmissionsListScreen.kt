@@ -111,8 +111,8 @@ private fun SubmissionRow(
         Text("${submission.date} · $sectorName", style = MaterialTheme.typography.titleSmall)
         Text(submission.facilitator, style = MaterialTheme.typography.bodySmall)
         Text(
-            "Adultos: ${submission.adults} · Crianças: ${submission.kids} · " +
-                "Convidados: ${submission.guests} · Conversões: ${submission.conversions}",
+            "Crianças: ${submission.kids} · Convidados: ${submission.guests.size} · " +
+                "Conversões: ${submission.conversions}",
             style = MaterialTheme.typography.bodySmall,
         )
     }

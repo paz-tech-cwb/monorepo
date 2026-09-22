@@ -12,6 +12,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.DatePicker
@@ -71,6 +72,9 @@ fun FieldRow(
     // FormStepScreen shows the question as a big headline above this row and hides this
     // redundant inner label; other call sites default to showing it.
     showLabel: Boolean = true,
+    onAddGuest: () -> Unit = {},
+    onUpdateGuest: (Int, CasaDePazGuestDraft.() -> CasaDePazGuestDraft) -> Unit = { _, _ -> },
+    onRemoveGuest: (Int) -> Unit = {},
 ) {
     Column {
         if (showLabel) {
@@ -293,6 +297,37 @@ fun FieldRow(
                     ) {}
                 }
             }
+
+            FormFieldType.CYCLE_PICKER -> {
+                val displayName = uiState.fields["${def.key}_name"] ?: ""
+                Box {
+                    OutlinedTextField(
+                        value = displayName,
+                        onValueChange = {},
+                        modifier = Modifier.fillMaxWidth(),
+                        readOnly = true,
+                        enabled = !isSubmitting,
+                        placeholder = { Text(def.placeholder.ifEmpty { "Selecionar ciclo" }) },
+                        trailingIcon = { Icon(Icons.Default.KeyboardArrowDown, null) },
+                        shape = PazShapes.large,
+                        singleLine = true,
+                    )
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { if (!isSubmitting) onOpenPicker(def) },
+                        color = Color.Transparent,
+                    ) {}
+                }
+            }
+
+            FormFieldType.GUEST_LIST ->
+                GuestListFieldRow(
+                    guests = uiState.guestEntries,
+                    enabled = !isSubmitting,
+                    onAdd = onAddGuest,
+                    onUpdate = onUpdateGuest,
+                    onRemove = onRemoveGuest,
+                )
 
             FormFieldType.TIME -> TimeFieldRow(value = value, enabled = !isSubmitting, onValueChange = onValueChange)
 
@@ -640,4 +675,78 @@ private fun formatThousands(n: Long): String {
         sb.insert(0, c)
     }
     return sb.toString()
+}
+
+@Composable
+private fun GuestListFieldRow(
+    guests: List<CasaDePazGuestDraft>,
+    enabled: Boolean,
+    onAdd: () -> Unit,
+    onUpdate: (Int, CasaDePazGuestDraft.() -> CasaDePazGuestDraft) -> Unit,
+    onRemove: (Int) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(PazSpacing.Md)) {
+        guests.forEachIndexed { index, guest ->
+            Surface(shape = PazShapes.large, color = MaterialTheme.colorScheme.surfaceVariant) {
+                Column(
+                    Modifier.fillMaxWidth().padding(PazSpacing.Md),
+                    verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("Convidado ${index + 1}", style = MaterialTheme.typography.labelMedium)
+                        IconButton(onClick = { onRemove(index) }, enabled = enabled) {
+                            Icon(Icons.Filled.Close, "remover convidado")
+                        }
+                    }
+                    OutlinedTextField(
+                        value = guest.name,
+                        onValueChange = { v -> onUpdate(index) { copy(name = v) } },
+                        placeholder = { Text("Nome") },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = enabled,
+                        singleLine = true,
+                    )
+                    OutlinedTextField(
+                        value = guest.email,
+                        onValueChange = { v -> onUpdate(index) { copy(email = v) } },
+                        placeholder = { Text("E-mail") },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = enabled,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    )
+                    OutlinedTextField(
+                        value = guest.birthDate,
+                        onValueChange = { v -> onUpdate(index) { copy(birthDate = v) } },
+                        placeholder = { Text("Data de nascimento (AAAA-MM-DD)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = enabled,
+                        singleLine = true,
+                    )
+                    OutlinedTextField(
+                        value = guest.whatsapp,
+                        onValueChange = { v -> onUpdate(index) { copy(whatsapp = v) } },
+                        placeholder = { Text("WhatsApp (opcional)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = enabled,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    )
+                    if (!guest.isValid) {
+                        Text(
+                            "Nome, e-mail e data de nascimento são obrigatórios.",
+                            style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.error),
+                        )
+                    }
+                }
+            }
+        }
+        TextButton(onClick = onAdd, enabled = enabled) {
+            Text("+ Adicionar convidado")
+        }
+    }
 }

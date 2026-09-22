@@ -156,6 +156,9 @@ fun FormStepScreen(
                             onOpenPicker = viewModel::openPicker,
                             onSelfOrSearchMode = viewModel::setSelfOrSearchMode,
                             onNextStep = viewModel::onNextStep,
+                            onAddGuest = viewModel::addGuestEntry,
+                            onUpdateGuest = viewModel::updateGuestEntry,
+                            onRemoveGuest = viewModel::removeGuestEntry,
                         )
                 }
             }
@@ -180,6 +183,14 @@ fun FormStepScreen(
                 )
             PickerKind.SECTOR ->
                 SectorPickerSheet(
+                    state = pickerState,
+                    selectedId = uiState.fields[pickerState.key] ?: "",
+                    onQueryChanged = viewModel::onPickerQueryChanged,
+                    onSelect = viewModel::onPickerSelect,
+                    onDismiss = viewModel::closePicker,
+                )
+            PickerKind.CASA_DE_PAZ_CYCLE ->
+                CasaDePazCyclePickerSheet(
                     state = pickerState,
                     selectedId = uiState.fields[pickerState.key] ?: "",
                     onQueryChanged = viewModel::onPickerQueryChanged,
@@ -243,6 +254,9 @@ private fun StepContent(
     onOpenPicker: (FormFieldDef) -> Unit,
     onSelfOrSearchMode: (String, Boolean) -> Unit,
     onNextStep: () -> Unit,
+    onAddGuest: () -> Unit,
+    onUpdateGuest: (Int, CasaDePazGuestDraft.() -> CasaDePazGuestDraft) -> Unit,
+    onRemoveGuest: (Int) -> Unit,
 ) {
     val form = uiState.form!!
     val fieldDefs = remember(form.type) { form.type.fieldDefs() }
@@ -304,6 +318,9 @@ private fun StepContent(
             imeAction = if (isLast) ImeAction.Done else ImeAction.Next,
             onImeAction = onNextStep,
             showLabel = false, // the big question headline above already names this field
+            onAddGuest = onAddGuest,
+            onUpdateGuest = onUpdateGuest,
+            onRemoveGuest = onRemoveGuest,
         )
 
         val stepError = uiState.stepError ?: uiState.error

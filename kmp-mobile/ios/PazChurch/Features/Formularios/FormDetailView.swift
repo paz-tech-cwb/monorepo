@@ -9,6 +9,23 @@ enum PickerKind {
     case userMulti
     case lifeGroup
     case sector
+    case casaDePazCycle
+}
+
+/// A single Casa de Paz guest roster entry, held outside `fields` in its own array — mirrors
+/// the Android `CasaDePazGuestDraft` state.
+struct CasaDePazGuestDraftIOS: Identifiable {
+    let id = UUID()
+    var name: String = ""
+    var email: String = ""
+    var birthDate: String = ""
+    var whatsapp: String = ""
+
+    var isValid: Bool {
+        !name.trimmingCharacters(in: .whitespaces).isEmpty
+            && email.contains("@")
+            && !birthDate.trimmingCharacters(in: .whitespaces).isEmpty
+    }
 }
 
 @MainActor
@@ -53,6 +70,7 @@ class FormDetailViewModelIOS {
     var pickerIsLoading: Bool = false
     var pickerError: String?
     var selfOrSearchModes: [String: Bool] = [:]
+    var guestEntries: [CasaDePazGuestDraftIOS] = []
 
     private let formsRepository: FormsRepository
     private let authRepository: AuthRepository
@@ -130,6 +148,7 @@ class FormDetailViewModelIOS {
         pickerKind = switch def.fieldType {
         case .lgPicker: .lifeGroup
         case .sectorPicker: .sector
+        case .cyclePicker: .casaDePazCycle
         case .userMultiPicker: .userMulti
         default: .user
         }
@@ -156,6 +175,12 @@ class FormDetailViewModelIOS {
                 case .sector:
                     let results = try await formsRepository.searchSectors(query: query)
                     pickerResults = results as [Any]
+                case .casaDePazCycle:
+                    let results = try await formsRepository.getCasaDePazCycles()
+                    let cycles = results.compactMap { $0 as? CasaDePazCycle }
+                    pickerResults = (query.isEmpty
+                        ? cycles
+                        : cycles.filter { $0.name.localizedCaseInsensitiveContains(query) }) as [Any]
                 case .user, .userMulti:
                     let results = try await formsRepository.searchUsers(query: query)
                     pickerResults = results as [Any]
@@ -184,6 +209,20 @@ class FormDetailViewModelIOS {
     func setSelfOrSearchMode(key: String, isSearch: Bool) {
         selfOrSearchModes[key] = isSearch
         if !isSearch { fields[key] = "" }
+    }
+
+    func addGuestEntry() {
+        guestEntries.append(CasaDePazGuestDraftIOS())
+    }
+
+    func updateGuestEntry(_ index: Int, _ patch: (inout CasaDePazGuestDraftIOS) -> Void) {
+        guard guestEntries.indices.contains(index) else { return }
+        patch(&guestEntries[index])
+    }
+
+    func removeGuestEntry(_ index: Int) {
+        guard guestEntries.indices.contains(index) else { return }
+        guestEntries.remove(at: index)
     }
 
     var canSubmit: Bool {
@@ -359,13 +398,23 @@ class FormDetailViewModelIOS {
             ))
 
         case .casaDePazReport:
+            let guestEntriesSnapshot = guestEntries
             _ = try await formsRepository.submitCasaDePazReport(form: CasaDePazReportForm(
                 date: isoDate("date"),
                 facilitator: req("facilitator"),
                 sectorId: intVal("sector_id"),
-                adults: intVal("adults"),
+                casaDePazId: req("casa_de_paz_id"),
                 kids: intVal("kids"),
-                guests: intVal("guests"),
+                guests: guestEntriesSnapshot.map { g in
+                    CasaDePazReportGuestEntry(
+                        name: g.name.trimmingCharacters(in: .whitespaces),
+                        email: g.email.trimmingCharacters(in: .whitespaces),
+                        birthDate: g.birthDate,
+                        whatsapp: g.whatsapp.trimmingCharacters(in: .whitespaces).isEmpty
+                            ? nil
+                            : g.whatsapp.trimmingCharacters(in: .whitespaces)
+                    )
+                },
                 conversions: intVal("conversions"),
                 meetingDay: opt("meeting_day"),
                 meetingTime: nil

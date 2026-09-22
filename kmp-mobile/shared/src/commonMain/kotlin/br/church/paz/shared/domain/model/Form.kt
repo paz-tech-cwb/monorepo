@@ -200,13 +200,21 @@ data class CourseForm(
 )
 
 @Serializable
+data class CasaDePazReportGuestEntry(
+    val name: String,
+    val email: String,
+    @SerialName("birth_date") val birthDate: String,
+    val whatsapp: String? = null,
+)
+
+@Serializable
 data class CasaDePazReportForm(
     val date: String,
     val facilitator: String,
     @SerialName("sector_id") val sectorId: Int,
-    val adults: Int,
+    @SerialName("casa_de_paz_id") val casaDePazId: String,
     val kids: Int = 0,
-    val guests: Int = 0,
+    val guests: List<CasaDePazReportGuestEntry> = emptyList(),
     val conversions: Int = 0,
     @SerialName("meeting_day") val meetingDay: String? = null,
     @SerialName("meeting_time") val meetingTime: String? = null,
@@ -218,14 +226,22 @@ data class CasaDePazReportSubmission(
     val date: String,
     val facilitator: String,
     @SerialName("sector_id") val sectorId: Int,
-    val adults: Int,
+    @SerialName("casa_de_paz_id") val casaDePazId: String,
     val kids: Int = 0,
-    val guests: Int = 0,
+    val guests: List<CasaDePazReportGuestEntry> = emptyList(),
     val conversions: Int = 0,
     @SerialName("meeting_day") val meetingDay: String? = null,
     @SerialName("meeting_time") val meetingTime: String? = null,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String,
+)
+
+@Serializable
+data class CasaDePazCycle(
+    val id: String,
+    val name: String,
+    val month: String,
+    val status: String,
 )
 
 @Serializable

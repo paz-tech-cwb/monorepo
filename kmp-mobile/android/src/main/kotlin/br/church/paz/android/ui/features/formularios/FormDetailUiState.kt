@@ -19,8 +19,10 @@ enum class FormFieldType {
     USER_MULTI_PICKER, // multi user picker → stores "1,2,3" comma-separated IDs
     LG_PICKER, // life-group picker → stores "id" as string
     SECTOR_PICKER, // sector picker → stores "id" as string
+    CYCLE_PICKER, // Casa de Paz cycle picker → stores "id" as string
     SELF_OR_SEARCH, // invited_by: "" = self, else searched name
     TIME, // "HH:mm" string, picked via native time picker
+    GUEST_LIST, // repeatable Casa de Paz guest roster — held in FormDetailUiState.guestEntries, not the flat fields map
 }
 
 /** True for field types backed by a plain keyboard text field (eligible for focus retention across steps). */
@@ -53,6 +55,17 @@ enum class PickerKind {
     USER_MULTI,
     LIFE_GROUP,
     SECTOR,
+    CASA_DE_PAZ_CYCLE,
+}
+
+data class CasaDePazGuestDraft(
+    val name: String = "",
+    val email: String = "",
+    val birthDate: String = "",
+    val whatsapp: String = "",
+) {
+    val isValid: Boolean
+        get() = name.isNotBlank() && email.contains("@") && birthDate.isNotBlank()
 }
 
 data class PickerState(
@@ -76,6 +89,7 @@ data class FormDetailUiState(
     val stepIndex: Int = 0, // current question index in step-by-step mode
     val stepError: String? = null, // validation error for the current step's field
     val submitSuccess: Boolean = false, // true after a successful submit — shows the success screen
+    val guestEntries: List<CasaDePazGuestDraft> = emptyList(), // Casa de Paz roster — kept out of `fields`
 )
 
 sealed class FormDetailEffect {
@@ -255,6 +269,7 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
                 FormFieldDef("date", "Data", "DD/MM/YYYY", required = true, fieldType = FormFieldType.DATE),
                 FormFieldDef("facilitator", "Facilitador", required = true, fieldType = FormFieldType.NAME),
                 FormFieldDef("sector_id", "Setor", required = true, fieldType = FormFieldType.SECTOR_PICKER),
+                FormFieldDef("casa_de_paz_id", "Ciclo", required = true, fieldType = FormFieldType.CYCLE_PICKER),
                 FormFieldDef(
                     "meeting_day",
                     "Dia da reunião",
@@ -262,9 +277,8 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
                     options = MEETING_DAY_OPTIONS,
                     optionValues = MEETING_DAY_OPTIONS,
                 ),
-                FormFieldDef("adults", "Adultos", "0", required = true, fieldType = FormFieldType.INTEGER),
                 FormFieldDef("kids", "Crianças", "0", fieldType = FormFieldType.INTEGER),
-                FormFieldDef("guests", "Convidados", "0", fieldType = FormFieldType.INTEGER),
+                FormFieldDef("guests", "Convidados", fieldType = FormFieldType.GUEST_LIST),
                 FormFieldDef("conversions", "Conversões", "0", fieldType = FormFieldType.INTEGER),
             )
     }
