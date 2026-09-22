@@ -23,7 +23,7 @@ import { CasaDePazEditDialog } from "./casa-de-paz-edit-dialog"
 import type { CasaDePazFilterState } from "./casa-de-paz-analytics-filters"
 import type { CasaDePazReportSubmission } from "@/lib/api/types"
 
-const COLUMN_COUNT = 10
+const COLUMN_COUNT = 9
 
 function formatDate(value: string): string {
   const [year, month, day] = value.split("-")
@@ -91,7 +91,6 @@ export function CasaDePazTable({ filters, range }: CasaDePazTableProps) {
               <TableHead>Facilitador</TableHead>
               <TableHead>Setor</TableHead>
               <TableHead>Dia</TableHead>
-              <TableHead>Horário</TableHead>
               <TableHead>Adultos</TableHead>
               <TableHead>Crianças</TableHead>
               <TableHead>Convidados</TableHead>
@@ -106,7 +105,6 @@ export function CasaDePazTable({ filters, range }: CasaDePazTableProps) {
                 <TableCell>{s.facilitator}</TableCell>
                 <TableCell>{sectorMap.get(s.sector_id) ?? "Setor removido"}</TableCell>
                 <TableCell>{s.meeting_day ?? "—"}</TableCell>
-                <TableCell>{s.meeting_time ?? "—"}</TableCell>
                 <TableCell>{s.adults}</TableCell>
                 <TableCell>{s.kids}</TableCell>
                 <TableCell>{s.guests}</TableCell>

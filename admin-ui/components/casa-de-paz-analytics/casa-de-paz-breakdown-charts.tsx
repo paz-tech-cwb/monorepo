@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts"
-import type { CasaDePazBySector, CasaDePazByDay, CasaDePazByTime } from "@/lib/api/types"
+import type { CasaDePazBySector, CasaDePazByDay } from "@/lib/api/types"
 
 const sectorChartConfig = {
   casas: { label: "Casas de Paz", color: "var(--color-chart-1)" },
@@ -12,10 +12,6 @@ const sectorChartConfig = {
 
 const dayChartConfig = {
   casas: { label: "Casas de Paz", color: "var(--color-chart-2)" },
-} satisfies ChartConfig
-
-const timeChartConfig = {
-  casas: { label: "Casas de Paz", color: "var(--color-chart-3)" },
 } satisfies ChartConfig
 
 function EmptyState() {
@@ -35,7 +31,6 @@ function ErrorState() {
 interface CasaDePazBreakdownChartsProps {
   bySector: CasaDePazBySector[]
   byDay: CasaDePazByDay[]
-  byTime: CasaDePazByTime[]
   isLoading: boolean
   isError: boolean
 }
@@ -43,16 +38,14 @@ interface CasaDePazBreakdownChartsProps {
 export function CasaDePazBreakdownCharts({
   bySector,
   byDay,
-  byTime,
   isLoading,
   isError,
 }: CasaDePazBreakdownChartsProps) {
   const sectorData = bySector.map((s) => ({ name: s.label, casas: s.houses }))
   const dayData = byDay.map((d) => ({ name: d.label, casas: d.houses }))
-  const timeData = byTime.map((t) => ({ name: t.label, casas: t.houses }))
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid gap-4 lg:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle>Casas de Paz por Setor</CardTitle>
@@ -110,32 +103,6 @@ export function CasaDePazBreakdownCharts({
                   tickLine={false}
                   axisLine={false}
                 />
-                <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-                <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                <Bar dataKey="casas" fill="var(--color-casas)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ChartContainer>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Casas de Paz por Horário</CardTitle>
-          <CardDescription>Horário em que os encontros acontecem</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <Skeleton className="h-[300px] w-full" />
-          ) : isError ? (
-            <ErrorState />
-          ) : timeData.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <ChartContainer config={timeChartConfig} className="aspect-auto h-[300px] w-full">
-              <BarChart data={timeData}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="name" tickLine={false} axisLine={false} />
                 <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
                 <ChartTooltip content={<ChartTooltipContent hideLabel />} />
                 <Bar dataKey="casas" fill="var(--color-casas)" radius={[4, 4, 0, 0]} />

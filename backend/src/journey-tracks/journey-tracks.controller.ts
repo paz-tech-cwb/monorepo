@@ -33,7 +33,7 @@ export class JourneyTracksController {
 
   @Get('me')
   getMyJourney(@Req() req: AuthedRequest) {
-    return this.journeyProgressService.getForMember(req.user.id);
+    return this.journeyProgressService.getCurrentTrackForMember(req.user.id);
   }
 
   @Get('member/:memberId')

@@ -112,14 +112,6 @@ fun CasaDePazSubmissionEditorScreen(
             )
 
             OutlinedTextField(
-                value = uiState.meetingTime,
-                onValueChange = viewModel::onMeetingTimeChange,
-                label = { Text("Horário (HH:MM)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-
-            OutlinedTextField(
                 value = uiState.adults,
                 onValueChange = viewModel::onAdultsChange,
                 label = { Text("Adultos") },

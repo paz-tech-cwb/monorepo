@@ -159,7 +159,6 @@ final class CasaDePazSubmissionDetailViewModel {
     var guests: String
     var conversions: String
     var meetingDay: String
-    var meetingTime: String
 
     var isSaving = false
     var isDeleting = false
@@ -179,7 +178,6 @@ final class CasaDePazSubmissionDetailViewModel {
         guests = "\(submission.guests)"
         conversions = "\(submission.conversions)"
         meetingDay = submission.meetingDay ?? ""
-        meetingTime = submission.meetingTime ?? ""
     }
 
     func save() async -> CasaDePazReportSubmission? {
@@ -194,7 +192,7 @@ final class CasaDePazSubmissionDetailViewModel {
             guests: Int32(guests) ?? 0,
             conversions: Int32(conversions) ?? 0,
             meetingDay: meetingDay.isEmpty ? nil : meetingDay,
-            meetingTime: meetingTime.isEmpty ? nil : meetingTime
+            meetingTime: nil
         )
         do {
             try await formsRepository.updateCasaDePazReport(id: id, form: form)
@@ -277,7 +275,6 @@ struct CasaDePazSubmissionDetailView: View {
                             }
                             .pickerStyle(.menu)
                         }
-                        LabeledField(label: "Horário (HH:MM)") { TextField("", text: $viewModel.meetingTime) }
                         LabeledField(label: "Adultos") { TextField("", text: $viewModel.adults).keyboardType(.numberPad) }
                         LabeledField(label: "Crianças") { TextField("", text: $viewModel.kids).keyboardType(.numberPad) }
                         LabeledField(label: "Convidados") { TextField("", text: $viewModel.guests).keyboardType(.numberPad) }

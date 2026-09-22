@@ -262,7 +262,6 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
                     options = MEETING_DAY_OPTIONS,
                     optionValues = MEETING_DAY_OPTIONS,
                 ),
-                FormFieldDef("meeting_time", "Horário", fieldType = FormFieldType.TIME),
                 FormFieldDef("adults", "Adultos", "0", required = true, fieldType = FormFieldType.INTEGER),
                 FormFieldDef("kids", "Crianças", "0", fieldType = FormFieldType.INTEGER),
                 FormFieldDef("guests", "Convidados", "0", fieldType = FormFieldType.INTEGER),

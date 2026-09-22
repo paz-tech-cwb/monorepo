@@ -285,7 +285,6 @@ extension FormType {
                     options: FormFieldDefs.meetingDayOptions,
                     optionValues: FormFieldDefs.meetingDayOptions
                 ),
-                FormFieldDef("meeting_time", "Horário", fieldType: .time),
                 FormFieldDef("adults", "Adultos", placeholder: "0", required: true, fieldType: .integer),
                 FormFieldDef("kids", "Crianças", placeholder: "0", fieldType: .integer),
                 FormFieldDef("guests", "Convidados", placeholder: "0", fieldType: .integer),

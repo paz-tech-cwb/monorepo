@@ -16,7 +16,6 @@ import { CoursesModule } from './courses/courses.module';
 import { AcademyModule } from './academy/academy.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ChurchModule } from './church/church.module';
-import { MemberJourneyModule } from './member-journey/member-journey.module';
 import { AdminDashboardModule } from './admin-dashboard/admin-dashboard.module';
 import { AreasModule } from './areas/areas.module';
 import { SectorsModule } from './sectors/sectors.module';
@@ -81,7 +80,6 @@ import ormconfig from './configs/orm.config';
     AcademyModule,
     NotificationsModule,
     ChurchModule,
-    MemberJourneyModule,
     AdminDashboardModule,
     AreasModule,
     SectorsModule,

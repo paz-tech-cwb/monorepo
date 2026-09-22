@@ -10,6 +10,7 @@ import { useTheme } from "next-themes"
 import {
   Home,
   Users,
+  UserPlus,
   Bell,
   Building2,
   CalendarDays,
@@ -18,7 +19,6 @@ import {
   Route,
   LogOut,
   Megaphone,
-  GitMerge,
   GitBranch,
   ClipboardList,
   BarChart3,
@@ -39,7 +39,7 @@ const sidebarSections = [
     items: [
       { name: "Inicio", href: "/dashboard", icon: Home },
       { name: "Membros", href: "/members", icon: Users },
-      { name: "Jornada", href: "/member-journey", icon: GitMerge },
+      { name: "Leads", href: "/leads", icon: UserPlus },
       { name: "Trilhos do Membro", href: "/journey-tracks", icon: Milestone },
     ],
   },
@@ -133,13 +133,15 @@ const NavSection = memo(function NavSection({
   )
 })
 
-const ROLE_LABELS: Record<AdminRole | "member", string> = {
+const ROLE_LABELS: Record<AdminRole | "member" | "lead", string> = {
   admin: "Admin",
   pastor: "Pastor",
   area_leader: "Líder de Área",
   sector_leader: "Líder de Setor",
   life_group_leader: "Líder de GV",
+  discipler: "Discipulador",
   member: "Membro",
+  lead: "Lead",
 }
 
 function UserProfile() {
@@ -155,7 +157,7 @@ function UserProfile() {
     .toUpperCase()
 
   const role = user.role ?? "member"
-  const roleLabel = ROLE_LABELS[role as AdminRole | "member"] ?? role
+  const roleLabel = ROLE_LABELS[role as AdminRole | "member" | "lead"] ?? role
 
   return (
     <div className="flex items-center gap-3 px-1 py-2">

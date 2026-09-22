@@ -18,6 +18,7 @@ const HIDDEN_KEYS = new Set([
   "updated_at", "updatedAt",
   "deleted_at", "deletedAt",
   "atmosphereTeamId",
+  "meeting_time", "meetingTime",
 ])
 
 const FIELD_LABELS: Record<string, string> = {
@@ -51,6 +52,12 @@ const FIELD_LABELS: Record<string, string> = {
   trainings_conducted: "Treinamentos realizados",
   new_life_group_name: "Nome da nova GV",
   invited_by: "Convidado por",
+  // casa-de-paz-reports
+  facilitator: "Facilitador",
+  adults: "Adultos",
+  kids: "Crianças",
+  conversions: "Conversões",
+  meeting_day: "Dia",
 }
 
 function labelFor(key: string): string {

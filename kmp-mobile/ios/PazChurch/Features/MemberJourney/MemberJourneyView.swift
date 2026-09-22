@@ -15,8 +15,8 @@ struct MemberJourneyView: View {
                 loadingState
             } else if let errorMessage = viewModel.error {
                 errorState(message: errorMessage)
-            } else if viewModel.tracks.isEmpty {
-                emptyState
+            } else if viewModel.track == nil {
+                noActiveTrackState
             } else {
                 contentState
             }
@@ -32,14 +32,22 @@ struct MemberJourneyView: View {
         ErrorStateView(message: message, onRetry: { viewModel.retry() })
     }
 
-    private var emptyState: some View {
-        VStack {
+    private var noActiveTrackState: some View {
+        VStack(spacing: PazSpacing.md) {
             Spacer()
-            Text("Nenhuma trilha encontrada")
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 44, weight: .semibold))
+                .foregroundStyle(PazColors.accent)
+            Text("Você está em dia!")
+                .font(PazTypography.titleMedium)
+                .foregroundStyle(PazColors.ink)
+            Text("Você já completou todas as etapas disponíveis para você no momento.")
                 .font(PazTypography.bodyMedium)
                 .foregroundStyle(PazColors.slate)
+                .multilineTextAlignment(.center)
             Spacer()
         }
+        .padding(.horizontal, PazSpacing.lg)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -48,12 +56,8 @@ struct MemberJourneyView: View {
             VStack(alignment: .leading, spacing: PazSpacing.lg) {
                 Spacer().frame(height: PazSpacing.lg)
 
-                ForEach(viewModel.tracks, id: \.key) { track in
-                    JourneyTrackSection(
-                        track: track,
-                        isExpanded: viewModel.expandedTrackKey == track.key,
-                        onToggle: { viewModel.toggleTrack(track.key) }
-                    )
+                if let track = viewModel.track {
+                    JourneyTrackSection(track: track)
                 }
 
                 Spacer().frame(height: PazSpacing.xl)
@@ -85,8 +89,6 @@ struct MemberJourneyView: View {
 
 private struct JourneyTrackSection: View {
     let track: JourneyTrack
-    let isExpanded: Bool
-    let onToggle: () -> Void
 
     private var trackedSteps: [JourneyTrackStep] {
         track.steps.filter { $0.type != .informational }
@@ -99,50 +101,38 @@ private struct JourneyTrackSection: View {
     var body: some View {
         GlassCard(radius: PazSpacing.cardRadiusCompact) {
             VStack(alignment: .leading, spacing: 0) {
-                Button(action: { withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { onToggle() } }) {
-                    VStack(alignment: .leading, spacing: PazSpacing.sm) {
-                        HStack(alignment: .top) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(track.title)
-                                    .font(PazTypography.titleMedium)
-                                    .foregroundStyle(PazColors.ink)
-                                if !trackedSteps.isEmpty {
-                                    Text("\(completedTrackedSteps)/\(trackedSteps.count) concluído")
-                                        .font(PazTypography.labelSmall)
-                                        .foregroundStyle(PazColors.slate)
-                                }
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(PazColors.slate)
-                                .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                        }
-
-                        if let description = track.description_, !description.isEmpty {
-                            Text(description)
-                                .font(PazTypography.bodySmall)
-                                .foregroundStyle(PazColors.slate)
-                        }
-
+                VStack(alignment: .leading, spacing: PazSpacing.sm) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(track.title)
+                            .font(PazTypography.titleMedium)
+                            .foregroundStyle(PazColors.ink)
                         if !trackedSteps.isEmpty {
-                            ProgressView(value: Double(track.progressPercentage) / 100)
-                                .tint(PazColors.accent)
+                            Text("\(completedTrackedSteps)/\(trackedSteps.count) concluído")
+                                .font(PazTypography.labelSmall)
+                                .foregroundStyle(PazColors.slate)
                         }
                     }
+
+                    if let description = track.description_, !description.isEmpty {
+                        Text(description)
+                            .font(PazTypography.bodySmall)
+                            .foregroundStyle(PazColors.slate)
+                    }
+
+                    if !trackedSteps.isEmpty {
+                        ProgressView(value: Double(track.progressPercentage) / 100)
+                            .tint(PazColors.accent)
+                    }
                 }
-                .buttonStyle(.plain)
                 .padding(PazSpacing.lg)
 
-                if isExpanded {
-                    VStack(alignment: .leading, spacing: PazSpacing.md) {
-                        ForEach(Array(track.steps.enumerated()), id: \.offset) { _, step in
-                            JourneyStepRow(step: step)
-                        }
+                VStack(alignment: .leading, spacing: PazSpacing.md) {
+                    ForEach(Array(track.steps.enumerated()), id: \.offset) { _, step in
+                        JourneyStepRow(step: step)
                     }
-                    .padding(.horizontal, PazSpacing.lg)
-                    .padding(.bottom, PazSpacing.lg)
                 }
+                .padding(.horizontal, PazSpacing.lg)
+                .padding(.bottom, PazSpacing.lg)
             }
         }
     }
@@ -232,8 +222,8 @@ private struct JourneyStepRow: View {
 @MainActor
 @Observable
 class MemberJourneyViewModel {
-    var tracks: [JourneyTrack] = []
-    var expandedTrackKey: String?
+    var track: JourneyTrack?
+    var allStepsComplete = false
     var isLoading = true
     var error: String?
 
@@ -246,20 +236,13 @@ class MemberJourneyViewModel {
     func loadJourney() async {
         do {
             let journey = try await repository.getMemberJourney()
-            self.tracks = journey.tracks
-            if expandedTrackKey == nil || !tracks.contains(where: { $0.key == expandedTrackKey }) {
-                self.expandedTrackKey =
-                    tracks.first(where: { $0.progressPercentage < 100 })?.key ?? tracks.first?.key
-            }
+            self.track = journey.track
+            self.allStepsComplete = journey.allStepsComplete
             self.isLoading = false
         } catch {
             self.error = "Erro ao carregar jornada"
             self.isLoading = false
         }
-    }
-
-    func toggleTrack(_ key: String) {
-        expandedTrackKey = expandedTrackKey == key ? nil : key
     }
 
     func retry() {

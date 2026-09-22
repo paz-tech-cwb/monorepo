@@ -429,7 +429,7 @@ export class UsersService {
    * Hard-deletes the user and all directly linked personal data. Tables
    * with an `ON DELETE CASCADE` foreign key to `users` (user_accounts /
    * refresh tokens, user_device_tokens, user_notification_preferences,
-   * user_courses, user_life_groups, member_journey_stages, and the
+   * user_courses, user_life_groups, member_journey_step_progress, and the
    * ministry/team member roster join tables) are cleaned up automatically
    * by the database when the user row is deleted.
    *
@@ -515,7 +515,7 @@ export class UsersService {
 
       // Hard-delete the user. Cascading FKs (user_accounts,
       // user_device_tokens, user_notification_preferences, user_courses,
-      // user_life_groups, member_journey_stages, ministry_members,
+      // user_life_groups, member_journey_step_progress, ministry_members,
       // ministry_team_members) are removed by the database automatically;
       // notifications.created_by and life_groups.leader_id/co_leader_id are
       // set to NULL by their existing ON DELETE SET NULL constraints.

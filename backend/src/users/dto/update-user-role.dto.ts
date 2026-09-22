@@ -8,6 +8,8 @@ export const VALID_ROLE_SLUGS = [
   'sector_leader',
   'life_group_leader',
   'member',
+  'lead',
+  'discipler',
 ] as const;
 
 export type RoleSlug = (typeof VALID_ROLE_SLUGS)[number];

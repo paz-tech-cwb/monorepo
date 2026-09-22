@@ -10,7 +10,6 @@ data class CasaDePazSubmissionEditorUiState(
     val guests: String = "0",
     val conversions: String = "0",
     val meetingDay: String = "",
-    val meetingTime: String = "",
     val sectorNames: Map<Int, String> = emptyMap(),
     val isSaving: Boolean = false,
     val isDeleting: Boolean = false,

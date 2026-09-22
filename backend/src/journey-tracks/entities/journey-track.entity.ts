@@ -23,6 +23,14 @@ export class JourneyTrack {
   @Column({ name: 'eligibility_text', type: 'text', nullable: true })
   eligibilityText: string | null;
 
+  @Column({
+    name: 'promotes_to_role',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
+  promotesToRole: string | null;
+
   @Column({ name: 'sort_order', type: 'int', default: 0 })
   sortOrder: number;
 

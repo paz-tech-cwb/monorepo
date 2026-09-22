@@ -66,6 +66,7 @@ export class JourneyTracksService {
       eligibility_text: track.eligibilityText ?? null,
       sort_order: track.sortOrder,
       is_active: track.isActive,
+      promotes_to_role: track.promotesToRole ?? null,
       steps: steps.map((s) => this.stepToResponse(s)),
     };
   }
@@ -110,6 +111,7 @@ export class JourneyTracksService {
       eligibilityText: dto.eligibility_text ?? null,
       sortOrder: dto.sort_order ?? 0,
       isActive: dto.is_active ?? true,
+      promotesToRole: dto.promotes_to_role ?? null,
     });
     const saved = await this.entityManager.save(track);
     return this.trackToResponse(saved);
@@ -125,6 +127,9 @@ export class JourneyTracksService {
     }
     if (dto.sort_order !== undefined) track.sortOrder = dto.sort_order;
     if (dto.is_active !== undefined) track.isActive = dto.is_active;
+    if (dto.promotes_to_role !== undefined) {
+      track.promotesToRole = dto.promotes_to_role;
+    }
 
     const saved = await this.entityManager.save(JourneyTrack, track);
     return this.trackToResponse(saved);

@@ -71,4 +71,13 @@ export const COLUMNS: Record<FormSlug, ColumnDef[]> = {
     { key: "invited_by", label: "Convidado por" },
     { key: "created_at", label: "Data", format: fmt.date },
   ],
+  "casa-de-paz-reports": [
+    { key: "date", label: "Data", format: fmt.date },
+    { key: "facilitator", label: "Facilitador" },
+    { key: "adults", label: "Adultos" },
+    { key: "kids", label: "Crianças" },
+    { key: "guests", label: "Convidados" },
+    { key: "conversions", label: "Conversões" },
+    { key: "meeting_day", label: "Dia" },
+  ],
 }
