@@ -106,4 +106,10 @@ sealed class Screen(
     }
 
     data object CasaDePazAnalytics : Screen("casa_de_paz_analytics")
+
+    data object CasaDePazLessonsList : Screen("casa_de_paz_lessons_list")
+
+    data object CasaDePazLessonDetail : Screen("casa_de_paz_lesson_detail/{week}") {
+        fun createRoute(week: Int) = "casa_de_paz_lesson_detail/$week"
+    }
 }

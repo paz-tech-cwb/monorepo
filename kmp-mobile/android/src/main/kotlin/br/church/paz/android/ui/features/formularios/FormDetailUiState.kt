@@ -90,6 +90,7 @@ data class FormDetailUiState(
     val stepError: String? = null, // validation error for the current step's field
     val submitSuccess: Boolean = false, // true after a successful submit — shows the success screen
     val guestEntries: List<CasaDePazGuestDraft> = emptyList(), // Casa de Paz roster — kept out of `fields`
+    val canAccessCasaDePazLessons: Boolean = false, // leaders only — gates the Casa de Paz lessons shortcut
 )
 
 sealed class FormDetailEffect {

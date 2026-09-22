@@ -18,6 +18,7 @@ import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.FormsRepository
 import br.church.paz.shared.domain.model.LifeGroupSummary
 import br.church.paz.shared.domain.model.User
+import br.church.paz.shared.domain.model.isLeader
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -61,8 +62,14 @@ class FormDetailViewModel(
                                 else -> ""
                             }
                         } ?: emptyMap()
+                    val isLeader = runCatching { authRepository.currentUser() }.getOrNull()?.role?.isLeader == true
                     _uiState.update {
-                        it.copy(form = form, isLoading = false, fields = initialFields)
+                        it.copy(
+                            form = form,
+                            isLoading = false,
+                            fields = initialFields,
+                            canAccessCasaDePazLessons = isLeader,
+                        )
                     }
                 }.onFailure { e ->
                     _uiState.update {

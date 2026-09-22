@@ -10,6 +10,8 @@ import br.church.paz.android.ui.features.agenda.AgendaDetailViewModel
 import br.church.paz.android.ui.features.agenda.AgendaListViewModel
 import br.church.paz.android.ui.features.auth.LoginViewModel
 import br.church.paz.android.ui.features.casadepazanalytics.CasaDePazAnalyticsViewModel
+import br.church.paz.android.ui.features.casadepazlessons.CasaDePazLessonDetailViewModel
+import br.church.paz.android.ui.features.casadepazlessons.CasaDePazLessonsListViewModel
 import br.church.paz.android.ui.features.formularios.CasaDePazSubmissionEditorViewModel
 import br.church.paz.android.ui.features.formularios.CasaDePazSubmissionsListViewModel
 import br.church.paz.android.ui.features.formularios.FormDetailViewModel
@@ -75,4 +77,6 @@ val androidModule =
         }
         viewModel { (lifeGroupId: Int?) -> LifeGroupAnalyticsViewModel(lifeGroupId, get(), get()) }
         viewModel { CasaDePazAnalyticsViewModel(get()) }
+        viewModel { CasaDePazLessonsListViewModel(get()) }
+        viewModel { (week: Int) -> CasaDePazLessonDetailViewModel(week, get()) }
     }

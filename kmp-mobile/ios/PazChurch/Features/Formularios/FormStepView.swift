@@ -76,6 +76,13 @@ struct FormStepView: View {
                             Image(systemName: "clock.arrow.circlepath")
                         }
                     }
+                    if viewModel.canAccessCasaDePazLessons {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            NavigationLink(destination: CasaDePazLessonsView()) {
+                                Image(systemName: "book.closed")
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -59,6 +59,15 @@ struct CasaDePazSubmissionsListView: View {
             .navigationTitle("Registros de Casa de Paz")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
+            // This screen is already the leader's Casa de Paz hub, so no additional role
+            // check is needed here for the lesson content shortcut.
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    NavigationLink(destination: CasaDePazLessonsView()) {
+                        Image(systemName: "book.closed")
+                    }
+                }
+            }
             .task { await viewModel.load() }
     }
 

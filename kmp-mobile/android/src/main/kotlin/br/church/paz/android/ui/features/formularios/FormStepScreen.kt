@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -49,6 +50,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import br.church.paz.android.navigation.Screen
+import br.church.paz.shared.domain.model.FormType
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazSkeleton
@@ -122,6 +125,11 @@ fun FormStepScreen(
                         // always leaving the screen — only pops at the first question.
                         onBack = {
                             if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onBack()
+                        },
+                        showCasaDePazLessonsShortcut =
+                            uiState.form?.type == FormType.casa_de_paz_report && uiState.canAccessCasaDePazLessons,
+                        onCasaDePazLessonsTapped = {
+                            navController.navigate(Screen.CasaDePazLessonsList.route)
                         },
                     )
                 }
@@ -226,6 +234,8 @@ private fun displayTitle(title: String): String {
 private fun StepHeader(
     title: String,
     onBack: () -> Unit,
+    showCasaDePazLessonsShortcut: Boolean = false,
+    onCasaDePazLessonsTapped: () -> Unit = {},
 ) {
     Row(
         Modifier
@@ -242,6 +252,11 @@ private fun StepHeader(
             modifier = Modifier.weight(1f),
             maxLines = 1,
         )
+        if (showCasaDePazLessonsShortcut) {
+            IconButton(onClick = onCasaDePazLessonsTapped) {
+                Icon(Icons.Filled.MenuBook, "Conteúdo Casa de Paz", tint = Color.White)
+            }
+        }
     }
 }
 

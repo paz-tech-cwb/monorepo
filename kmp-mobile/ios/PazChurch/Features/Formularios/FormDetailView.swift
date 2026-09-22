@@ -72,6 +72,8 @@ class FormDetailViewModelIOS {
     var selfOrSearchModes: [String: Bool] = [:]
     var guestEntries: [CasaDePazGuestDraftIOS] = []
 
+    var canAccessCasaDePazLessons = false // leaders only — gates the Casa de Paz lessons shortcut
+
     private let formsRepository: FormsRepository
     private let authRepository: AuthRepository
     private let formId: String
@@ -91,6 +93,7 @@ class FormDetailViewModelIOS {
                 async let user = authRepository.currentUser()
                 let (resolvedCatalog, resolvedUser) = try await (catalogRaw, user)
                 currentUserName = (resolvedUser as? Shared.User)?.name ?? ""
+                canAccessCasaDePazLessons = (resolvedUser as? Shared.User)?.role.isLeader ?? false
                 let catalog = (resolvedCatalog as? [FormCatalogItem]) ?? []
                 guard let found = catalog.first(where: { $0.id == formId }) else {
                     self.error = "Formulário não encontrado"
