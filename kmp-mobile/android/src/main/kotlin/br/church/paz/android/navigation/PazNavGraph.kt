@@ -26,7 +26,12 @@ import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailScre
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListScreen
 import br.church.paz.android.ui.features.memberjourney.MemberJourneyScreen
+import br.church.paz.android.ui.features.ministries.AllLifeGroupsScreen
+import br.church.paz.android.ui.features.ministries.GroupMembersListScreen
+import br.church.paz.android.ui.features.ministries.GroupMembersType
 import br.church.paz.android.ui.features.ministries.LifeGroupDetailScreen
+import br.church.paz.android.ui.features.ministries.LifeGroupsMapScreen
+import br.church.paz.android.ui.features.ministries.LifeGroupsScreen
 import br.church.paz.android.ui.features.ministries.MinistriesScreen
 import br.church.paz.android.ui.features.ministries.MinistryDetailScreen
 import br.church.paz.android.ui.features.notifications.NotificationPrefsScreen
@@ -162,6 +167,37 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         ) { backStackEntry ->
             val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
             LifeGroupDetailScreen(navController = navController, lifeGroupId = lifeGroupId)
+        }
+        composable(Screen.LifeGroups.route) {
+            LifeGroupsScreen(navController = navController)
+        }
+        composable(Screen.AllLifeGroups.route) {
+            AllLifeGroupsScreen(navController = navController)
+        }
+        composable(Screen.LifeGroupsMap.route) {
+            LifeGroupsMapScreen(navController = navController)
+        }
+        composable(
+            route = Screen.MinistryMembersList.route,
+            arguments = listOf(androidx.navigation.navArgument("ministryId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val ministryId = backStackEntry.arguments?.getString("ministryId") ?: return@composable
+            GroupMembersListScreen(
+                navController = navController,
+                groupId = ministryId,
+                groupType = GroupMembersType.Ministry,
+            )
+        }
+        composable(
+            route = Screen.LifeGroupMembersList.route,
+            arguments = listOf(androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
+            GroupMembersListScreen(
+                navController = navController,
+                groupId = lifeGroupId,
+                groupType = GroupMembersType.LifeGroup,
+            )
         }
         composable(Screen.LifeGroupStudyList.route) {
             LifeGroupStudyListScreen(navController = navController)

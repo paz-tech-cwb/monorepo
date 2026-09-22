@@ -51,6 +51,20 @@ sealed class Screen(
         fun createRoute(lifeGroupId: String) = "life_group_detail/$lifeGroupId"
     }
 
+    data object LifeGroups : Screen("life_groups")
+
+    data object AllLifeGroups : Screen("all_life_groups")
+
+    data object LifeGroupsMap : Screen("life_groups_map")
+
+    data object MinistryMembersList : Screen("ministry_members_list/{ministryId}") {
+        fun createRoute(ministryId: String) = "ministry_members_list/$ministryId"
+    }
+
+    data object LifeGroupMembersList : Screen("life_group_members_list/{lifeGroupId}") {
+        fun createRoute(lifeGroupId: String) = "life_group_members_list/$lifeGroupId"
+    }
+
     data object FormulariosList : Screen("formularios")
 
     data object FormDetail : Screen("form_detail/{formId}") {

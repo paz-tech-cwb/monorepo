@@ -23,7 +23,11 @@ import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailView
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListViewModel
 import br.church.paz.android.ui.features.memberjourney.MemberJourneyViewModel
+import br.church.paz.android.ui.features.ministries.AllLifeGroupsViewModel
+import br.church.paz.android.ui.features.ministries.GroupMembersListViewModel
+import br.church.paz.android.ui.features.ministries.GroupMembersType
 import br.church.paz.android.ui.features.ministries.LifeGroupDetailViewModel
+import br.church.paz.android.ui.features.ministries.LifeGroupsViewModel
 import br.church.paz.android.ui.features.ministries.MinistriesViewModel
 import br.church.paz.android.ui.features.ministries.MinistryDetailViewModel
 import br.church.paz.android.ui.features.notifications.NotificationPrefsViewModel
@@ -66,6 +70,11 @@ val androidModule =
         viewModel { MinistriesViewModel(get()) }
         viewModel { (ministryId: String) -> MinistryDetailViewModel(ministryId, get()) }
         viewModel { (lifeGroupId: String) -> LifeGroupDetailViewModel(lifeGroupId, get(), get()) }
+        viewModel { LifeGroupsViewModel(get()) }
+        viewModel { AllLifeGroupsViewModel(get()) }
+        viewModel { (groupId: String, groupType: GroupMembersType) ->
+            GroupMembersListViewModel(groupId, groupType, get())
+        }
         viewModel { LifeGroupStudyListViewModel(get(), get()) }
         viewModel { (studyId: String) -> LifeGroupStudyDetailViewModel(studyId, get(), get()) }
         viewModel { (studyId: String?) -> LifeGroupStudyEditorViewModel(studyId, get()) }

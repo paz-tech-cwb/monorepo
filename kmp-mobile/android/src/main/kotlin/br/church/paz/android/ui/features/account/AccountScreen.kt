@@ -91,8 +91,7 @@ fun AccountScreen(
                 AccountEffect.NavigateToMemberJourney -> navController.navigate(Screen.MemberJourney.route)
                 AccountEffect.NavigateToFormularios -> navController.navigate(Screen.FormulariosList.route)
                 AccountEffect.NavigateToMinistries -> navController.navigate(Screen.Ministries.route)
-                // TODO: route to dedicated LifeGroupsScreen once that screen lands
-                AccountEffect.NavigateToLifeGroups -> navController.navigate(Screen.Ministries.route)
+                AccountEffect.NavigateToLifeGroups -> navController.navigate(Screen.LifeGroups.route)
                 AccountEffect.NavigateToCasaDePaz -> navController.navigate(Screen.CasaDePazSubmissionsList.route)
                 AccountEffect.NavigateToLifeGroupAnalytics -> navController.navigate(Screen.LifeGroupAnalytics.createRoute())
                 AccountEffect.NavigateToCasaDePazAnalytics -> navController.navigate(Screen.CasaDePazAnalytics.route)

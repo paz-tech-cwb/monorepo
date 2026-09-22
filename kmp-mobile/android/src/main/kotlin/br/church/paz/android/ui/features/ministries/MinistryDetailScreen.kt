@@ -75,12 +75,25 @@ fun MinistryDetailScreen(
         error = uiState.error,
         onBack = viewModel::onBack,
     ) {
-        uiState.ministry?.let { MinistryContent(ministry = it) }
+        uiState.ministry?.let { ministry ->
+            MinistryContent(
+                ministry = ministry,
+                onMembersTap = {
+                    navController.navigate(
+                        br.church.paz.android.navigation.Screen.MinistryMembersList
+                            .createRoute(ministry.id.toString()),
+                    )
+                },
+            )
+        }
     }
 }
 
 @Composable
-private fun MinistryContent(ministry: Ministry) {
+private fun MinistryContent(
+    ministry: Ministry,
+    onMembersTap: () -> Unit,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding =
@@ -143,6 +156,34 @@ private fun MinistryContent(ministry: Ministry) {
                 ) {
                     InfoRow(icon = Icons.Default.Person, label = "Liderança", value = leaderText)
                 }
+            }
+        }
+
+        item {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(PazShapes.large)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .clickable(onClick = onMembersTap)
+                        .padding(PazSpacing.Lg),
+                horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Membros", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                Text(
+                    "${ministry.members.size}",
+                    style =
+                        MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        ),
+                )
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                )
             }
         }
 
