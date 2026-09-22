@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 class MinistryDetailViewModel(
     private val ministryId: String,
     private val churchRepository: ChurchRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(MinistryDetailUiState())
     val uiState: StateFlow<MinistryDetailUiState> = _uiState.asStateFlow()
@@ -29,6 +30,7 @@ class MinistryDetailViewModel(
 
     private fun load() {
         viewModelScope.launch {
+            val currentUser = runCatching { authRepository.currentUser() }.getOrNull()
             runCatching { churchRepository.getAllMinistries() }
                 .onSuccess { ministries ->
                     val ministry = ministries.find { it.id.toString() == ministryId }
@@ -37,6 +39,7 @@ class MinistryDetailViewModel(
                             ministry = ministry,
                             isLoading = false,
                             error = if (ministry == null) "Ministério não encontrado" else null,
+                            canManage = currentUser?.role?.isLeader == true,
                         )
                     }
                 }.onFailure { e ->
@@ -45,6 +48,10 @@ class MinistryDetailViewModel(
                     }
                 }
         }
+    }
+
+    fun onManageTap() {
+        viewModelScope.launch { _effect.send(MinistryDetailEffect.NavigateToManage(ministryId)) }
     }
 
     fun onBack() {
@@ -93,6 +100,10 @@ class LifeGroupDetailViewModel(
                     }
                 }
         }
+    }
+
+    fun onManageTap() {
+        viewModelScope.launch { _effect.send(LifeGroupDetailEffect.NavigateToManage(lifeGroupId)) }
     }
 
     fun onBack() {

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.MenuBook
@@ -74,6 +75,8 @@ fun MinistryDetailScreen(
         viewModel.effect.collect {
             when (it) {
                 MinistryDetailEffect.NavigateBack -> navController.popBackStack()
+                is MinistryDetailEffect.NavigateToManage ->
+                    navController.navigate(br.church.paz.android.navigation.Screen.MinistryManage.createRoute(it.ministryId))
             }
         }
     }
@@ -83,6 +86,7 @@ fun MinistryDetailScreen(
         isLoading = uiState.isLoading,
         error = uiState.error,
         onBack = viewModel::onBack,
+        onManageTap = if (uiState.canManage) viewModel::onManageTap else null,
     ) {
         uiState.ministry?.let { ministry ->
             MinistryContent(
@@ -214,6 +218,8 @@ fun LifeGroupDetailScreen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 LifeGroupDetailEffect.NavigateBack -> navController.popBackStack()
+                is LifeGroupDetailEffect.NavigateToManage ->
+                    navController.navigate(br.church.paz.android.navigation.Screen.LifeGroupManage.createRoute(effect.lifeGroupId))
             }
         }
     }
@@ -223,6 +229,7 @@ fun LifeGroupDetailScreen(
         isLoading = uiState.isLoading,
         error = uiState.error,
         onBack = viewModel::onBack,
+        onManageTap = if (uiState.canManage) viewModel::onManageTap else null,
     ) {
         uiState.lifeGroup?.let { group ->
             LifeGroupContent(
@@ -567,6 +574,7 @@ private fun DetailScaffold(
     isLoading: Boolean,
     error: String?,
     onBack: () -> Unit,
+    onManageTap: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     Box(Modifier.fillMaxSize()) {
@@ -579,6 +587,13 @@ private fun DetailScaffold(
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "back")
+                        }
+                    },
+                    actions = {
+                        if (onManageTap != null) {
+                            IconButton(onClick = onManageTap) {
+                                Icon(Icons.Default.Settings, contentDescription = "Gerenciar")
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),

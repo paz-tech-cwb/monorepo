@@ -6,6 +6,9 @@ data class MinistryDetailUiState(
     val ministry: Ministry? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
+    // Any leadership role (role.isLeader) — matches iOS `MinistryDetailView.canManage`
+    // and the backend's actual RolesGuard authorization on the manage endpoints.
+    val canManage: Boolean = false,
 )
 
 data class LifeGroupDetailUiState(
@@ -24,8 +27,16 @@ data class LifeGroupDetailUiState(
 
 sealed class MinistryDetailEffect {
     data object NavigateBack : MinistryDetailEffect()
+
+    data class NavigateToManage(
+        val ministryId: String,
+    ) : MinistryDetailEffect()
 }
 
 sealed class LifeGroupDetailEffect {
     data object NavigateBack : LifeGroupDetailEffect()
+
+    data class NavigateToManage(
+        val lifeGroupId: String,
+    ) : LifeGroupDetailEffect()
 }

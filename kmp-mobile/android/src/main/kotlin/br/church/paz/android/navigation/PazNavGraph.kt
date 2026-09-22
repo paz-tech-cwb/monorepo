@@ -30,10 +30,12 @@ import br.church.paz.android.ui.features.ministries.AllLifeGroupsScreen
 import br.church.paz.android.ui.features.ministries.GroupMembersListScreen
 import br.church.paz.android.ui.features.ministries.GroupMembersType
 import br.church.paz.android.ui.features.ministries.LifeGroupDetailScreen
+import br.church.paz.android.ui.features.ministries.LifeGroupManageScreen
 import br.church.paz.android.ui.features.ministries.LifeGroupsMapScreen
 import br.church.paz.android.ui.features.ministries.LifeGroupsScreen
 import br.church.paz.android.ui.features.ministries.MinistriesScreen
 import br.church.paz.android.ui.features.ministries.MinistryDetailScreen
+import br.church.paz.android.ui.features.ministries.MinistryManageScreen
 import br.church.paz.android.ui.features.notifications.NotificationPrefsScreen
 import br.church.paz.android.ui.features.profile.EditProfileScreen
 import br.church.paz.android.ui.features.profile.ProfileScreen
@@ -176,6 +178,20 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         }
         composable(Screen.LifeGroupsMap.route) {
             LifeGroupsMapScreen(navController = navController)
+        }
+        composable(
+            route = Screen.MinistryManage.route,
+            arguments = listOf(androidx.navigation.navArgument("ministryId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val ministryId = backStackEntry.arguments?.getString("ministryId") ?: return@composable
+            MinistryManageScreen(navController = navController, ministryId = ministryId)
+        }
+        composable(
+            route = Screen.LifeGroupManage.route,
+            arguments = listOf(androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
+            LifeGroupManageScreen(navController = navController, lifeGroupId = lifeGroupId)
         }
         composable(
             route = Screen.MinistryMembersList.route,
