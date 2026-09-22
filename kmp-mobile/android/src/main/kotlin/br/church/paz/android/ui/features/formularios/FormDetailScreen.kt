@@ -5,23 +5,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,8 +36,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazErrorState
+import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazSkeleton
-import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import org.koin.androidx.compose.koinViewModel
@@ -46,6 +47,7 @@ import org.koin.core.parameter.parametersOf
  * Scrollable all-at-once form screen. Kept as a fallback reachable from
  * [FormStepScreen] via "Ver todas as perguntas" for users who prefer to see every question at once.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FormDetailScreen(
     navController: NavController,
@@ -68,37 +70,23 @@ fun FormDetailScreen(
     }
 
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize()) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .background(PazGradients.Hero)
-                    .statusBarsPadding(),
-            ) {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(onClick = { viewModel.onBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "back", tint = Color.White)
-                    }
-                    Text(
-                        uiState.form?.title ?: "Formulário",
-                        style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
-                        modifier = Modifier.weight(1f),
-                        maxLines = 1,
-                    )
-                }
-            }
+        PazMeshBackground()
 
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .background(MaterialTheme.colorScheme.background),
-            ) {
+        Scaffold(
+            topBar = {
+                LargeTopAppBar(
+                    title = { Text(uiState.form?.title ?: "Formulário", maxLines = 1) },
+                    navigationIcon = {
+                        IconButton(onClick = { viewModel.onBack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "voltar")
+                        }
+                    },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
+                )
+            },
+            containerColor = Color.Transparent,
+        ) { innerPadding ->
+            Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
                 when {
                     uiState.isLoading -> LoadingState()
                     uiState.form == null ->

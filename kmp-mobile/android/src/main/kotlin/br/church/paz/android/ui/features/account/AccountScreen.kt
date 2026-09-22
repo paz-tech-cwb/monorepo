@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,11 +30,17 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,10 +58,10 @@ import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazAvatar
 import br.church.paz.android.ui.components.PazMenuRow
+import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazSectionHeader
 import br.church.paz.android.ui.features.auth.LoginScreen
 import br.church.paz.android.ui.theme.PazColors
-import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.User
@@ -64,6 +69,7 @@ import br.church.paz.shared.domain.model.displayName
 import br.church.paz.shared.domain.model.isLeader
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountScreen(
     navController: NavController,
@@ -119,45 +125,34 @@ fun AccountScreen(
         )
     }
 
-    Column(Modifier.fillMaxSize()) {
-        // Hero with gear button
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .background(PazGradients.Hero)
-                .statusBarsPadding()
-                .padding(horizontal = PazSpacing.Xl, vertical = PazSpacing.Lg),
-        ) {
-            Column {
-                Text("Meu Perfil", style = MaterialTheme.typography.bodySmall.copy(color = Color.White.copy(.5f)))
-                Text(
-                    uiState.user
-                        ?.name
-                        ?.split(Regex("\\s+"))
-                        ?.firstOrNull() ?: "Conta",
-                    style = MaterialTheme.typography.headlineLarge.copy(color = Color.White),
-                )
-            }
-            Box(
-                Modifier
-                    .align(Alignment.CenterEnd)
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(PazColors.DarkCard2)
-                    .clickable { /* settings — future */ },
-                Alignment.Center,
-            ) {
-                androidx.compose.material3.Icon(Settings, "Configurações", tint = Color.White, modifier = Modifier.size(20.dp))
-            }
-        }
+    Box(Modifier.fillMaxSize()) {
+        PazMeshBackground()
 
-        Box(
-            Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(MaterialTheme.colorScheme.background),
-        ) {
-            LazyColumn(contentPadding = contentPadding, modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                LargeTopAppBar(
+                    title = {
+                        Text(
+                            uiState.user
+                                ?.name
+                                ?.split(Regex("\\s+"))
+                                ?.firstOrNull() ?: "Conta",
+                        )
+                    },
+                    actions = {
+                        IconButton(onClick = { /* settings — future */ }) {
+                            Icon(Settings, "Configurações")
+                        }
+                    },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
+                )
+            },
+            containerColor = Color.Transparent,
+        ) { innerPadding ->
+            LazyColumn(
+                contentPadding = contentPadding,
+                modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
+            ) {
                 item { Spacer(Modifier.height(PazSpacing.Xl)) }
 
                 uiState.user?.let { user ->

@@ -13,11 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BarChart
@@ -31,11 +29,13 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -65,8 +65,8 @@ import br.church.paz.android.ui.components.PazDonutChart
 import br.church.paz.android.ui.components.PazDonutChartEmpty
 import br.church.paz.android.ui.components.PazDonutPalette
 import br.church.paz.android.ui.components.PazDonutSlice
+import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazStatCard
-import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.LifeGroupAttendancePoint
@@ -81,6 +81,7 @@ import java.time.LocalDate
 private val MONTH_LABELS =
     listOf("Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez")
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LifeGroupAnalyticsScreen(
     navController: NavController,
@@ -123,34 +124,34 @@ fun LifeGroupAnalyticsScreen(
         }
     }
 
-    Scaffold { _ ->
-        Column(Modifier.fillMaxSize()) {
-            Box(Modifier.fillMaxWidth().background(PazGradients.Hero).statusBarsPadding()) {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(onClick = viewModel::onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "voltar", tint = Color.White)
-                    }
-                    Text(
-                        "Relatórios",
-                        style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
-                        modifier = Modifier.weight(1f),
-                    )
-                    if (!uiState.isLoading && uiState.error == null) {
-                        IconButton(onClick = ::exportAndShare) {
-                            Icon(Icons.Filled.Share, "compartilhar", tint = Color.White)
-                        }
-                    }
-                }
-            }
+    Box(Modifier.fillMaxSize()) {
+        PazMeshBackground()
 
+        Scaffold(
+            topBar = {
+                LargeTopAppBar(
+                    title = { Text("Relatórios") },
+                    navigationIcon = {
+                        IconButton(onClick = viewModel::onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "voltar")
+                        }
+                    },
+                    actions = {
+                        if (!uiState.isLoading && uiState.error == null) {
+                            IconButton(onClick = ::exportAndShare) {
+                                Icon(Icons.Filled.Share, "compartilhar")
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
+                )
+            },
+            containerColor = Color.Transparent,
+        ) { innerPadding ->
             Box(
                 Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .background(MaterialTheme.colorScheme.background)
+                    .padding(top = innerPadding.calculateTopPadding())
                     .drawWithContent {
                         graphicsLayer.record { this@drawWithContent.drawContent() }
                         drawLayer(graphicsLayer)
