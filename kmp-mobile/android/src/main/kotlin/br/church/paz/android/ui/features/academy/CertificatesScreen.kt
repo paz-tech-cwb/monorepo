@@ -10,27 +10,32 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.WorkspacePremium
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazErrorState
+import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazShapes
@@ -38,6 +43,7 @@ import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.repository.CourseCertificateEntry
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CertificatesScreen(
     navController: NavController,
@@ -45,31 +51,40 @@ fun CertificatesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(Modifier.fillMaxSize()) {
-        Row(
-            Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "voltar")
-            }
-            Text("Meus certificados", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-        }
+    Box(Modifier.fillMaxSize()) {
+        PazMeshBackground()
 
-        when {
-            uiState.isLoading -> CertificatesSkeleton()
-            uiState.error != null -> PazErrorState(message = uiState.error ?: "Erro ao carregar certificados", onRetry = viewModel::load)
-            uiState.certificates.isEmpty() -> CertificatesEmpty()
-            else ->
-                LazyColumn(
-                    contentPadding = PaddingValues(PazSpacing.Lg),
-                    verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    items(uiState.certificates, key = { it.certificate.id }) { entry ->
-                        CertificateCard(entry)
-                    }
+        Scaffold(
+            topBar = {
+                LargeTopAppBar(
+                    title = { Text("Meus certificados") },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "voltar")
+                        }
+                    },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
+                )
+            },
+            containerColor = Color.Transparent,
+        ) { innerPadding ->
+            Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
+                when {
+                    uiState.isLoading -> CertificatesSkeleton()
+                    uiState.error != null -> PazErrorState(message = uiState.error ?: "Erro ao carregar certificados", onRetry = viewModel::load)
+                    uiState.certificates.isEmpty() -> CertificatesEmpty()
+                    else ->
+                        LazyColumn(
+                            contentPadding = PaddingValues(PazSpacing.Lg),
+                            verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            items(uiState.certificates, key = { it.certificate.id }) { entry ->
+                                CertificateCard(entry)
+                            }
+                        }
                 }
+            }
         }
     }
 }
