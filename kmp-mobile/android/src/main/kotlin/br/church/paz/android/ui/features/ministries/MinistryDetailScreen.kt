@@ -37,10 +37,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,7 +50,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazGlassCard
@@ -78,9 +83,25 @@ fun MinistryDetailScreen(
             when (it) {
                 MinistryDetailEffect.NavigateBack -> navController.popBackStack()
                 is MinistryDetailEffect.NavigateToManage ->
-                    navController.navigate(br.church.paz.android.navigation.Screen.MinistryManage.createRoute(it.ministryId))
+                    navController.navigate(
+                        br.church.paz.android.navigation.Screen.MinistryManage
+                            .createRoute(it.ministryId),
+                    )
             }
         }
+    }
+
+    // Reload whenever this screen returns to the foreground (e.g. popping back from the
+    // manage screen after a save) — the ViewModel only loads once in init otherwise.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val currentOnResume = rememberUpdatedState(viewModel::refresh)
+    DisposableEffect(lifecycleOwner) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) currentOnResume.value()
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     DetailScaffold(
@@ -222,9 +243,25 @@ fun LifeGroupDetailScreen(
             when (effect) {
                 LifeGroupDetailEffect.NavigateBack -> navController.popBackStack()
                 is LifeGroupDetailEffect.NavigateToManage ->
-                    navController.navigate(br.church.paz.android.navigation.Screen.LifeGroupManage.createRoute(effect.lifeGroupId))
+                    navController.navigate(
+                        br.church.paz.android.navigation.Screen.LifeGroupManage
+                            .createRoute(effect.lifeGroupId),
+                    )
             }
         }
+    }
+
+    // Reload whenever this screen returns to the foreground (e.g. popping back from the
+    // manage screen after a save) — the ViewModel only loads once in init otherwise.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val currentOnResume = rememberUpdatedState(viewModel::refresh)
+    DisposableEffect(lifecycleOwner) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) currentOnResume.value()
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     DetailScaffold(
