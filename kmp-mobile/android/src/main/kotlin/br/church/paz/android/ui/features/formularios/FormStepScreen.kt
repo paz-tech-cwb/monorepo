@@ -20,27 +20,26 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
@@ -51,9 +50,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazErrorState
+import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.components.PazSuccessState
-import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazSpacing
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -64,6 +63,7 @@ import org.koin.core.parameter.parametersOf
  * [Modifier.imePadding], never requiring scrolling. The header's back arrow steps backward
  * through questions and only leaves the screen once at the first question.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FormStepScreen(
     navController: NavController,
@@ -93,45 +93,47 @@ fun FormStepScreen(
         viewModel.onPreviousStep()
     }
 
-    Scaffold(
-        containerColor = Color.Transparent,
-        bottomBar = {
-            if (!uiState.isLoading && uiState.form != null && !uiState.submitSuccess) {
-                StepBottomBar(
-                    uiState = uiState,
-                    onNext = {
-                        val fieldDefs = uiState.form?.type?.fieldDefs().orEmpty()
-                        val isLast = uiState.stepIndex == fieldDefs.size - 1
-                        if (isLast) viewModel.onSubmit() else viewModel.onNextStep()
-                    },
-                )
-            }
-        },
-    ) { innerPadding ->
-        Column(Modifier.fillMaxSize().padding(bottom = innerPadding.calculateBottomPadding())) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .background(PazGradients.Hero)
-                    .statusBarsPadding(),
-            ) {
+    Box(Modifier.fillMaxSize()) {
+        PazMeshBackground()
+
+        Scaffold(
+            topBar = {
                 if (!uiState.submitSuccess) {
-                    StepHeader(
-                        title = uiState.form?.title ?: "Formulário",
-                        // The header back arrow steps backward through questions instead of
-                        // always leaving the screen — only pops at the first question.
-                        onBack = {
-                            if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onBack()
+                    LargeTopAppBar(
+                        title = { Text(displayTitle(uiState.form?.title ?: "Formulário"), maxLines = 1) },
+                        navigationIcon = {
+                            // The header back arrow steps backward through questions instead of
+                            // always leaving the screen — only pops at the first question.
+                            IconButton(
+                                onClick = {
+                                    if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onBack()
+                                },
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, "back")
+                            }
+                        },
+                        colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
+                    )
+                }
+            },
+            containerColor = Color.Transparent,
+            bottomBar = {
+                if (!uiState.isLoading && uiState.form != null && !uiState.submitSuccess) {
+                    StepBottomBar(
+                        uiState = uiState,
+                        onNext = {
+                            val fieldDefs = uiState.form?.type?.fieldDefs().orEmpty()
+                            val isLast = uiState.stepIndex == fieldDefs.size - 1
+                            if (isLast) viewModel.onSubmit() else viewModel.onNextStep()
                         },
                     )
                 }
-            }
-
+            },
+        ) { innerPadding ->
             Box(
                 Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .background(MaterialTheme.colorScheme.background),
+                    .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding()),
             ) {
                 when {
                     uiState.submitSuccess ->
@@ -159,12 +161,12 @@ fun FormStepScreen(
                         )
                 }
             }
-        }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.padding(PazSpacing.Lg),
-        )
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(PazSpacing.Lg),
+            )
+        }
     }
 
     val pickerState = uiState.pickerState
@@ -209,29 +211,6 @@ private fun displayTitle(title: String): String {
         if (title.startsWith(prefix)) return title.removePrefix(prefix)
     }
     return title
-}
-
-@Composable
-private fun StepHeader(
-    title: String,
-    onBack: () -> Unit,
-) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, "back", tint = Color.White)
-        }
-        Text(
-            displayTitle(title),
-            style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
-            modifier = Modifier.weight(1f),
-            maxLines = 1,
-        )
-    }
 }
 
 @Composable

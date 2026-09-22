@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,10 +22,14 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,9 +41,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
-import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.LifeGroup
@@ -382,6 +385,7 @@ private fun InfoRow(
 
 // ── Shared scaffold ──────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DetailScaffold(
     title: String,
@@ -390,55 +394,44 @@ private fun DetailScaffold(
     onBack: () -> Unit,
     content: @Composable () -> Unit,
 ) {
-    Column(Modifier.fillMaxSize()) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .background(PazGradients.Hero)
-                .statusBarsPadding(),
-        ) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "back", tint = Color.White)
-                }
-                Text(
-                    title,
-                    style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1,
-                )
-            }
-        }
+    Box(Modifier.fillMaxSize()) {
+        PazMeshBackground()
 
-        Box(
-            Modifier
-                .fillMaxSize()
-                .clip(
-                    androidx.compose.foundation.shape
-                        .RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                ).background(MaterialTheme.colorScheme.background),
-        ) {
-            when {
-                isLoading ->
-                    Column(Modifier.padding(PazSpacing.Lg), verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg)) {
-                        Spacer(Modifier.height(PazSpacing.Lg))
-                        PazSkeleton(height = 72.dp, width = 72.dp)
-                        PazSkeleton(height = 28.dp, width = 200.dp)
-                        PazSkeleton(height = 120.dp)
-                    }
-                error != null ->
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            error,
-                            style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)),
-                        )
-                    }
-                else -> content()
+        Scaffold(
+            topBar = {
+                LargeTopAppBar(
+                    title = { Text(title, maxLines = 1) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "back")
+                        }
+                    },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
+                )
+            },
+            containerColor = Color.Transparent,
+        ) { innerPadding ->
+            Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
+                when {
+                    isLoading ->
+                        Column(Modifier.padding(PazSpacing.Lg), verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg)) {
+                            Spacer(Modifier.height(PazSpacing.Lg))
+                            PazSkeleton(height = 72.dp, width = 72.dp)
+                            PazSkeleton(height = 28.dp, width = 200.dp)
+                            PazSkeleton(height = 120.dp)
+                        }
+                    error != null ->
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                error,
+                                style =
+                                    MaterialTheme.typography.bodySmall.copy(
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                    ),
+                            )
+                        }
+                    else -> content()
+                }
             }
         }
     }

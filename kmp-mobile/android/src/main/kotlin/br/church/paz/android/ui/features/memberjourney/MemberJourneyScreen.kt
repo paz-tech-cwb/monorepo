@@ -13,10 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
@@ -25,11 +23,15 @@ import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.Circle
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,9 +44,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazErrorState
+import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
-import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.JourneyTrack
@@ -52,6 +54,7 @@ import br.church.paz.shared.domain.model.JourneyTrackStep
 import br.church.paz.shared.domain.model.JourneyTrackStepType
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MemberJourneyScreen(
     navController: NavController,
@@ -67,41 +70,30 @@ fun MemberJourneyScreen(
         }
     }
 
-    Column(Modifier.fillMaxSize()) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .background(PazGradients.Hero)
-                .statusBarsPadding(),
-        ) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = { viewModel.onBack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "back", tint = Color.White)
-                }
-                Text(
-                    "Minha Jornada",
-                    style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
+    Box(Modifier.fillMaxSize()) {
+        PazMeshBackground()
 
-        Box(
-            Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(MaterialTheme.colorScheme.background),
-        ) {
-            when {
-                uiState.isLoading -> LoadingState()
-                uiState.error != null -> ErrorState(error = uiState.error!!, onRetry = viewModel::onRetry)
-                uiState.track == null -> NoActiveTrackState()
-                else -> ContentState(track = uiState.track!!)
+        Scaffold(
+            topBar = {
+                LargeTopAppBar(
+                    title = { Text("Minha Jornada") },
+                    navigationIcon = {
+                        IconButton(onClick = { viewModel.onBack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "back")
+                        }
+                    },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
+                )
+            },
+            containerColor = Color.Transparent,
+        ) { innerPadding ->
+            Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
+                when {
+                    uiState.isLoading -> LoadingState()
+                    uiState.error != null -> ErrorState(error = uiState.error!!, onRetry = viewModel::onRetry)
+                    uiState.track == null -> NoActiveTrackState()
+                    else -> ContentState(track = uiState.track!!)
+                }
             }
         }
     }

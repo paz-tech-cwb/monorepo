@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -31,8 +30,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -40,6 +41,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,9 +55,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazErrorState
+import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
-import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.Question
@@ -68,6 +70,7 @@ import org.koin.core.parameter.parametersOf
  * only leaves the screen at the first question, and a dedicated result screen at the end
  * instead of an instant pop/snackbar.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuestionnaireScreen(
     navController: NavController,
@@ -87,48 +90,43 @@ fun QuestionnaireScreen(
     val questions = uiState.questionnaire?.questions.orEmpty()
     BackHandler(enabled = uiState.stepIndex > 0 && uiState.result == null) { viewModel.onPreviousStep() }
 
-    Scaffold(
-        containerColor = Color.Transparent,
-        bottomBar = {
-            if (!uiState.isLoading && uiState.questionnaire != null && uiState.result == null && questions.isNotEmpty()) {
-                QuestionnaireBottomBar(
-                    isLast = uiState.stepIndex == questions.size - 1,
-                    isSubmitting = uiState.isSubmitting,
-                    onNext = {
-                        val isLast = uiState.stepIndex == questions.size - 1
-                        if (isLast) viewModel.onSubmit() else viewModel.onNextStep()
-                    },
-                )
-            }
-        },
-    ) { innerPadding ->
-        Column(Modifier.fillMaxSize().padding(bottom = innerPadding.calculateBottomPadding())) {
-            Box(Modifier.fillMaxWidth().background(PazGradients.Hero).statusBarsPadding()) {
-                if (uiState.result == null) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        IconButton(
-                            onClick = { if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onBack() },
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "voltar", tint = Color.White)
-                        }
-                        Text(
-                            uiState.questionnaire?.title ?: "Questionário",
-                            style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
+    Box(Modifier.fillMaxSize()) {
+        PazMeshBackground()
 
+        Scaffold(
+            topBar = {
+                if (uiState.result == null) {
+                    LargeTopAppBar(
+                        title = { Text(uiState.questionnaire?.title ?: "Questionário", maxLines = 1) },
+                        navigationIcon = {
+                            IconButton(
+                                onClick = { if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onBack() },
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, "voltar")
+                            }
+                        },
+                        colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
+                    )
+                }
+            },
+            containerColor = Color.Transparent,
+            bottomBar = {
+                if (!uiState.isLoading && uiState.questionnaire != null && uiState.result == null && questions.isNotEmpty()) {
+                    QuestionnaireBottomBar(
+                        isLast = uiState.stepIndex == questions.size - 1,
+                        isSubmitting = uiState.isSubmitting,
+                        onNext = {
+                            val isLast = uiState.stepIndex == questions.size - 1
+                            if (isLast) viewModel.onSubmit() else viewModel.onNextStep()
+                        },
+                    )
+                }
+            },
+        ) { innerPadding ->
             Box(
                 Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .background(MaterialTheme.colorScheme.background),
+                    .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding()),
             ) {
                 when {
                     uiState.result != null ->
