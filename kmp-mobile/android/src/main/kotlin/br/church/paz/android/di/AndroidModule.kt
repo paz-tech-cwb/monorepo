@@ -45,7 +45,7 @@ val androidModule =
             OnboardingViewModel(get(), pendingBirthDateLogin)
         }
         viewModel { HomeViewModel(get(), get()) }
-        viewModel { AcademyViewModel(get(), get()) }
+        viewModel { AcademyViewModel(get(), get(), get()) }
         viewModel { (videoId: String) -> VideoPlayerViewModel(videoId) }
         viewModel { (courseId: String) -> CourseDetailViewModel(courseId, get()) }
         viewModel { (courseId: String) -> QuestionnaireViewModel(courseId, get()) }

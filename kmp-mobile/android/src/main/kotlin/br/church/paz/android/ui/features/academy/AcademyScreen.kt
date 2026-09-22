@@ -23,7 +23,9 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Star
@@ -56,9 +58,11 @@ import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazCardSkeleton
+import br.church.paz.android.ui.components.PazGlassCard
 import br.church.paz.android.ui.components.PazGoldBadge
 import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazPillChip
+import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.features.auth.LoginScreen
 import br.church.paz.android.ui.theme.PazColors
@@ -66,6 +70,7 @@ import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.Course
+import br.church.paz.shared.domain.model.LifeGroupStudy
 import coil3.compose.AsyncImage
 import org.koin.androidx.compose.koinViewModel
 
@@ -88,6 +93,8 @@ fun AcademyScreen(
                     navController.navigate(Screen.VideoPlayer.createRoute(effect.videoId))
                 is AcademyEffect.NavigateToCourse ->
                     navController.navigate(Screen.CourseDetail.createRoute(effect.courseId))
+                is AcademyEffect.NavigateToStudy ->
+                    navController.navigate(Screen.LifeGroupStudyDetail.createRoute(effect.studyId))
             }
         }
     }
@@ -110,16 +117,16 @@ fun AcademyScreen(
         Scaffold(
             topBar = {
                 LargeTopAppBar(
-                    title = { Text("Academia Paz Church") },
+                    title = { Text("Academia") },
                     colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
                 )
             },
             containerColor = Color.Transparent,
         ) { innerPadding ->
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(top = innerPadding.calculateTopPadding()),
+            PazPullToRefresh(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = viewModel::refresh,
+                modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
             ) {
                 when {
                     uiState.isLoading -> AcademySkeleton(contentPadding)
@@ -139,6 +146,7 @@ fun AcademyScreen(
                                     showLoginSheet = true
                                 }
                             },
+                            onStudyTap = { study -> viewModel.onStudyTapped(study.id) },
                             contentPadding = contentPadding,
                         )
                 }
@@ -155,15 +163,25 @@ private fun AcademyContent(
     selectedTrackIndex: Int,
     onSelectTrack: (Int) -> Unit,
     onCourseTap: (Course) -> Unit,
+    onStudyTap: (LifeGroupStudy) -> Unit,
     contentPadding: PaddingValues,
 ) {
     LazyColumn(contentPadding = contentPadding, modifier = Modifier.fillMaxSize()) {
         item {
             Spacer(Modifier.height(PazSpacing.Lg))
 
+            if (uiState.isAuthenticated && uiState.latestStudy != null) {
+                LatestStudyBanner(
+                    study = uiState.latestStudy,
+                    onClick = { onStudyTap(uiState.latestStudy) },
+                    modifier = Modifier.padding(horizontal = PazSpacing.Lg).padding(bottom = PazSpacing.Lg),
+                )
+            }
+
             if (uiState.isAuthenticated && uiState.resumeCourse != null) {
                 ResumeBanner(
                     course = uiState.resumeCourse,
+                    onClick = { onCourseTap(uiState.resumeCourse) },
                     modifier = Modifier.padding(horizontal = PazSpacing.Lg).padding(bottom = PazSpacing.Lg),
                 )
             }
@@ -217,32 +235,70 @@ private fun AcademyContent(
 }
 
 @Composable
-private fun ResumeBanner(
-    course: Course,
+private fun LatestStudyBanner(
+    study: LifeGroupStudy,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clip(PazShapes.large)
-                .background(MaterialTheme.colorScheme.surface)
-                .clickable { }
-                .padding(PazSpacing.Md),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-    ) {
-        Box(
-            Modifier.size(width = 72.dp, height = 48.dp).clip(PazShapes.medium).background(PazGradients.Card),
-            Alignment.Center,
+    PazGlassCard(modifier = modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onClick)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(PazSpacing.Md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
         ) {
-            Icon(Icons.Outlined.PlayArrow, null, tint = Color.White, modifier = Modifier.size(24.dp))
+            Box(
+                Modifier.size(width = 72.dp, height = 48.dp).clip(PazShapes.medium).background(PazGradients.Card),
+                Alignment.Center,
+            ) {
+                if (study.imageUrl != null) {
+                    AsyncImage(
+                        model = study.imageUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    Icon(Icons.Outlined.MenuBook, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                }
+            }
+            Column(Modifier.weight(1f)) {
+                Text("Estudo do Life", style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Accent))
+                Text(study.title, style = MaterialTheme.typography.titleSmall, maxLines = 1)
+            }
+            Icon(
+                Icons.Outlined.ChevronRight,
+                null,
+                tint = MaterialTheme.colorScheme.onSurface.copy(.4f),
+                modifier = Modifier.size(18.dp),
+            )
         }
-        Column(Modifier.weight(1f)) {
-            Text("Continuar assistindo", style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Accent))
-            Text(course.title, style = MaterialTheme.typography.titleSmall, maxLines = 1)
+    }
+}
+
+@Composable
+private fun ResumeBanner(
+    course: Course,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    PazGlassCard(modifier = modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onClick)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(PazSpacing.Md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+        ) {
+            Box(
+                Modifier.size(width = 72.dp, height = 48.dp).clip(PazShapes.medium).background(PazGradients.Card),
+                Alignment.Center,
+            ) {
+                Icon(Icons.Outlined.PlayArrow, null, tint = Color.White, modifier = Modifier.size(24.dp))
+            }
+            Column(Modifier.weight(1f)) {
+                Text("Continuar assistindo", style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Accent))
+                Text(course.title, style = MaterialTheme.typography.titleSmall, maxLines = 1)
+            }
+            PazGoldBadge(text = "Retomar")
         }
-        PazGoldBadge(text = "Retomar")
     }
 }
 
@@ -252,46 +308,43 @@ private fun CourseCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clip(PazShapes.large)
-                .background(MaterialTheme.colorScheme.surface)
-                .clickable(onClick = onClick)
-                .padding(PazSpacing.Md),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-    ) {
-        Box(
-            modifier = Modifier.size(width = 104.dp, height = 68.dp).clip(RoundedCornerShape(10.dp)).background(PazGradients.Card),
-            contentAlignment = Alignment.Center,
+    PazGlassCard(modifier = modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onClick)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(PazSpacing.Md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
         ) {
-            if (course.thumbnailUrl != null) {
-                AsyncImage(
-                    model = course.thumbnailUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                Icon(Icons.Outlined.VideoLibrary, null, tint = Color.White.copy(.7f), modifier = Modifier.size(28.dp))
-            }
             Box(
-                Modifier.size(28.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(.22f)),
-                Alignment.Center,
+                modifier =
+                    Modifier.size(width = 104.dp, height = 68.dp).clip(RoundedCornerShape(10.dp)).background(PazGradients.Card),
+                contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Outlined.PlayArrow, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                if (course.thumbnailUrl != null) {
+                    AsyncImage(
+                        model = course.thumbnailUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    Icon(Icons.Outlined.VideoLibrary, null, tint = Color.White.copy(.7f), modifier = Modifier.size(28.dp))
+                }
+                Box(
+                    Modifier.size(28.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(.22f)),
+                    Alignment.Center,
+                ) {
+                    Icon(Icons.Outlined.PlayArrow, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                }
             }
-        }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(course.title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), maxLines = 2)
-            if (!course.description.isNullOrBlank()) {
-                Text(
-                    course.description!!,
-                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.5f)),
-                    maxLines = 1,
-                )
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(course.title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), maxLines = 2)
+                if (!course.description.isNullOrBlank()) {
+                    Text(
+                        course.description!!,
+                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.5f)),
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }
