@@ -230,7 +230,8 @@ private fun FormContent(
         item {
             val canSubmit =
                 !uiState.isSubmitting &&
-                    fieldDefs.filter { it.required }.all { (uiState.fields[it.key] ?: "").isNotBlank() }
+                    fieldDefs.filter { it.required }.all { (uiState.fields[it.key] ?: "").isNotBlank() } &&
+                    uiState.guestEntries.all { it.isValid }
 
             PazButton(
                 text = if (uiState.isSubmitting) "Enviando..." else "Enviar",

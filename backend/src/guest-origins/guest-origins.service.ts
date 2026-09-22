@@ -47,15 +47,6 @@ export class GuestOriginsService {
     return manager ? manager.getRepository(GuestOrigin) : this.repo;
   }
 
-  private isUniqueViolation(error: unknown): boolean {
-    return (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      (error as { code?: string }).code === '23505'
-    );
-  }
-
   // Reserved for a future self-service endpoint (POST /guest-origins/me) —
   // throws if the user already has an origin recorded, since a guest's
   // origin should only ever be set once through self-service.
@@ -90,19 +81,29 @@ export class GuestOriginsService {
     const existing = await repo.findOne({ where: { userId } });
     if (existing) return existing;
     this.validate(input);
-    try {
-      return await repo.save(repo.create(this.build(userId, input)));
-    } catch (error: unknown) {
-      // Two requests racing to record the origin for the same brand-new
-      // guest (e.g. same email submitted in two reports near-simultaneously)
-      // both pass the check-then-insert race; the loser hits the
-      // guest_origins.user_id UNIQUE violation — treat it as a no-op, same
-      // as if `existing` had been found above.
-      if (this.isUniqueViolation(error)) {
-        const raced = await repo.findOne({ where: { userId } });
-        if (raced) return raced;
-      }
-      throw error;
+    // Two requests racing to record the origin for the same brand-new guest
+    // (e.g. same email submitted in two reports near-simultaneously) both
+    // pass the check-then-insert race. Use `INSERT ... ON CONFLICT (user_id)
+    // DO NOTHING` via `orIgnore()` so the loser's insert never raises a
+    // unique-violation error — that matters because inside an open
+    // transaction, a raised 23505 aborts the whole transaction and the very
+    // next statement (a recovery re-read) would fail with 25P02 instead of
+    // returning the raced row. With orIgnore() no error is ever raised, so a
+    // single follow-up read safely returns whichever row (ours or the
+    // racer's) ended up persisted — first-origin-wins either way.
+    await repo
+      .createQueryBuilder()
+      .insert()
+      .into(GuestOrigin)
+      .values(this.build(userId, input))
+      .orIgnore()
+      .execute();
+    const saved = await repo.findOne({ where: { userId } });
+    if (!saved) {
+      throw new Error(
+        `ensureForUser: expected a guest_origins row for userId=${userId} after insert/orIgnore, found none`,
+      );
     }
+    return saved;
   }
 }
