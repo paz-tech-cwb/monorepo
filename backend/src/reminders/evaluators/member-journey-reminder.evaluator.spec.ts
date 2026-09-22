@@ -25,7 +25,7 @@ describe('MemberJourneyReminderEvaluator', () => {
 
   const staleUser = {
     id: 7,
-    role: { slug: 'lead' },
+    role: { slug: 'guest' },
     updatedAt: new Date('2026-06-01T00:00:00'),
   } as User;
 

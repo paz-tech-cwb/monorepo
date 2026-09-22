@@ -25,15 +25,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useCreateNotification } from "@/lib/hooks/use-notifications"
-import type { Lead } from "@/lib/api/types"
+import type { Guest } from "@/lib/api/types"
 
-interface LeadPushDialogProps {
-  lead: Lead | null
+interface GuestPushDialogProps {
+  guest: Guest | null
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function LeadPushDialog({ lead, open, onOpenChange }: LeadPushDialogProps) {
+export function GuestPushDialog({ guest, open, onOpenChange }: GuestPushDialogProps) {
   const [title, setTitle] = useState("")
   const [message, setMessage] = useState("")
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
@@ -50,7 +50,7 @@ export function LeadPushDialog({ lead, open, onOpenChange }: LeadPushDialogProps
   }
 
   const handleSend = async () => {
-    if (!lead) return
+    if (!guest) return
 
     try {
       await createMutation.mutateAsync({
@@ -60,7 +60,7 @@ export function LeadPushDialog({ lead, open, onOpenChange }: LeadPushDialogProps
         channels: ["push"],
         segment: {
           type: "filtered",
-          filters: { user_ids: [lead.id] },
+          filters: { user_ids: [guest.id] },
         },
       })
       toast.success("Notificação enviada!")
@@ -73,7 +73,7 @@ export function LeadPushDialog({ lead, open, onOpenChange }: LeadPushDialogProps
     }
   }
 
-  if (!lead) return null
+  if (!guest) return null
 
   const canSubmit = title.trim().length > 0 && message.trim().length > 0
 
@@ -82,26 +82,26 @@ export function LeadPushDialog({ lead, open, onOpenChange }: LeadPushDialogProps
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Enviar notificação para {lead.name}</DialogTitle>
+            <DialogTitle>Enviar notificação para {guest.name}</DialogTitle>
             <DialogDescription>
-              Envia uma notificação push diretamente para este lead.
+              Envia uma notificação push diretamente para este convidado.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="lead-push-title">Título</Label>
+              <Label htmlFor="guest-push-title">Título</Label>
               <Input
-                id="lead-push-title"
+                id="guest-push-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Título da notificação"
               />
             </div>
             <div>
-              <Label htmlFor="lead-push-message">Mensagem</Label>
+              <Label htmlFor="guest-push-message">Mensagem</Label>
               <Textarea
-                id="lead-push-message"
+                id="guest-push-message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Mensagem da notificação"
@@ -129,7 +129,7 @@ export function LeadPushDialog({ lead, open, onOpenChange }: LeadPushDialogProps
           <AlertDialogHeader>
             <AlertDialogTitle>Enviar notificação?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação enviará uma notificação push imediata e visível para {lead.name}. Não pode
+              Esta ação enviará uma notificação push imediata e visível para {guest.name}. Não pode
               ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>

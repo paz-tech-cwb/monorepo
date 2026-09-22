@@ -185,17 +185,17 @@ export class AuthService implements OnModuleInit {
         );
       }
 
-      // New registrations start in the lead funnel ('lead', not 'member')
+      // New registrations start in the guest funnel ('guest', not 'member')
       // and are auto-promoted to 'member' once they complete the
       // "Como se tornar Membro" journey track (see
       // JourneyProgressService.syncRolePromotion). This does not affect
       // existing users logging in — only brand-new account creation.
-      const leadRole = await this.roleRepo.findOne({
-        where: { slug: 'lead' },
+      const guestRole = await this.roleRepo.findOne({
+        where: { slug: 'guest' },
       });
-      if (!leadRole) {
+      if (!guestRole) {
         throw new HttpException(
-          'Lead role not found in database',
+          'Guest role not found in database',
           HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
@@ -204,7 +204,7 @@ export class AuthService implements OnModuleInit {
         email: userData.email,
         birthDate: new Date(birthDate),
         picture: userData.photo ?? undefined,
-        role: leadRole,
+        role: guestRole,
       });
       await this.userRepo.save(user);
     }
