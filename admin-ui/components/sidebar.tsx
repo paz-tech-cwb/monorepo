@@ -29,6 +29,7 @@ import {
   Network,
   Milestone,
   CalendarRange,
+  BookText,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -54,6 +55,7 @@ const sidebarSections = [
       { name: "Formulários", href: "/formularios", icon: ClipboardList },
       { name: "Relatórios", href: "/relatorios", icon: BarChart3 },
       { name: "Ciclos Casa de Paz", href: "/casa-de-paz-ciclos", icon: CalendarRange },
+      { name: "Conteúdo Casa de Paz", href: "/casa-de-paz-conteudo", icon: BookText },
     ],
   },
   {
