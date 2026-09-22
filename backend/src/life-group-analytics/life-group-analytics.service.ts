@@ -7,6 +7,7 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import { LifeGroupAttendance } from '../life-group-attendance/entities/life-group-attendance.entity';
 import { LifeGroup } from '../life-groups/entities/life-group.entity';
+import { User } from '../users/entities/user.entity';
 import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
 import { AttendanceQueryDto } from './dto/attendance-query.dto';
 import { DistributionQueryDto } from './dto/distribution-query.dto';
@@ -300,6 +301,118 @@ export class LifeGroupAnalyticsService {
       by_hour: byHour,
       by_neighborhood: byNeighborhood,
       by_city: byCity,
+    };
+  }
+
+  /**
+   * Mirrors the client-side aggregation in admin-ui's life-groups-report.tsx
+   * (totalKids / avgMembersPerGroup / groupsBySector / membersInGroup) but
+   * computed server-side and scope-aware, so a sector/area leader only sees
+   * their own slice instead of the org-wide numbers admin-ui computes from
+   * an unfiltered `useLifeGroups()`/`useUsers()`.
+   */
+  async overview(scope: ResolvedScope, actor: Actor) {
+    const lifeGroupIds = await this.resolveLifeGroupIds(scope, actor);
+    if (lifeGroupIds !== null && lifeGroupIds.length === 0) {
+      return {
+        total_kids: 0,
+        avg_members_per_group: 0,
+        groups_by_sector: [] as { label: string; count: number }[],
+        members_in_group: 0,
+        members_total: 0,
+      };
+    }
+
+    const groupsQb = this.em
+      .createQueryBuilder(LifeGroup, 'lg')
+      .leftJoin('lg.sector', 'sector')
+      .leftJoin('lg.users', 'user')
+      .select('lg.id', 'id')
+      .addSelect('lg.kids_count', 'kids_count')
+      .addSelect('sector.name', 'sector_label')
+      .addSelect('COUNT(DISTINCT user.id)', 'member_count');
+    if (lifeGroupIds !== null) {
+      groupsQb.where('lg.id IN (:...lifeGroupIds)', { lifeGroupIds });
+    }
+    groupsQb.groupBy('lg.id').addGroupBy('sector.name');
+
+    const groupsRaw = await groupsQb.getRawMany<{
+      id: string;
+      kids_count: string;
+      sector_label: string | null;
+      member_count: string;
+    }>();
+
+    const totalKids = groupsRaw.reduce(
+      (sum, g) => sum + Number(g.kids_count ?? 0),
+      0,
+    );
+    const totalMembersInGroups = groupsRaw.reduce(
+      (sum, g) => sum + Number(g.member_count ?? 0),
+      0,
+    );
+    const avgMembersPerGroup =
+      groupsRaw.length > 0
+        ? Math.round((totalMembersInGroups / groupsRaw.length) * 10) / 10
+        : 0;
+
+    const sectorCounts = new Map<string, number>();
+    for (const g of groupsRaw) {
+      const label = g.sector_label ?? 'Sem setor';
+      sectorCounts.set(label, (sectorCounts.get(label) ?? 0) + 1);
+    }
+    const groupsBySector = Array.from(sectorCounts.entries())
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Members universe: unrestricted callers see every user, sector/area
+    // leaders see only users belonging to their sectors. A caller with no
+    // sector scope but an explicit life-group scope (e.g. life_group_leader,
+    // per scope-resolver.service.ts) has no sectorIds to filter by — for
+    // them the member universe is derived from lifeGroupIds instead, so
+    // members_in_group/members_total reflect their actual group's
+    // membership rather than being hard-coded to 0.
+    const usersQb = this.em
+      .createQueryBuilder(User, 'u')
+      .leftJoin('u.lifeGroups', 'lg')
+      .select('u.id', 'id')
+      .addSelect('COUNT(DISTINCT lg.id)', 'life_group_count');
+    if (!scope.unrestricted) {
+      if (scope.sectorIds.length === 0) {
+        if (lifeGroupIds === null || lifeGroupIds.length === 0) {
+          return {
+            total_kids: totalKids,
+            avg_members_per_group: avgMembersPerGroup,
+            groups_by_sector: groupsBySector,
+            members_in_group: 0,
+            members_total: 0,
+          };
+        }
+        usersQb.where('lg.id IN (:...lifeGroupIds)', { lifeGroupIds });
+      } else {
+        usersQb.where('u."sectorId" IN (:...sectorIds)', {
+          sectorIds: scope.sectorIds,
+        });
+      }
+    }
+    usersQb.groupBy('u.id');
+
+    const usersRaw = await usersQb.getRawMany<{
+      id: string;
+      life_group_count: string;
+    }>();
+
+    const membersTotal = usersRaw.length;
+    const membersInGroup = usersRaw.filter(
+      (u) => Number(u.life_group_count) > 0,
+    ).length;
+
+    return {
+      total_kids: totalKids,
+      avg_members_per_group: avgMembersPerGroup,
+      groups_by_sector: groupsBySector,
+      members_in_group: membersInGroup,
+      members_total: membersTotal,
     };
   }
 

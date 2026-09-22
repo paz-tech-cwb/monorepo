@@ -32,3 +32,12 @@ data class LifeGroupDistributionAnalytics(
     val byNeighborhood: List<LifeGroupDistributionBucket>,
     val byCity: List<LifeGroupDistributionBucket>,
 )
+
+@Serializable
+data class LifeGroupOverview(
+    val totalKids: Int,
+    val avgMembersPerGroup: Double,
+    val groupsBySector: List<LifeGroupDistributionBucket>,
+    val membersInGroup: Int,
+    val membersTotal: Int,
+)

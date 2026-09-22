@@ -4,6 +4,7 @@ import { EntityManager } from 'typeorm';
 import { CasaDePazReport } from '../casa-de-paz-reports/entities/casa-de-paz-report.entity';
 import { CasaDePazSummaryQueryDto } from './dto/casa-de-paz-summary-query.dto';
 import { WEEKDAY_INDEX } from '../life-group-attendance/meeting-day.util';
+import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
 
 const SECTOR_TOP_N = 10;
 const OTHERS_LABEL = 'Outros';
@@ -49,28 +50,52 @@ export class CasaDePazAnalyticsService {
     return { fromDate: from, toDateExclusive };
   }
 
-  async summary(query: CasaDePazSummaryQueryDto) {
+  async summary(query: CasaDePazSummaryQueryDto, scope: ResolvedScope) {
+    // Sector-restricted callers (e.g. life_group_leader, who is granted
+    // access to this LEADERSHIP_ROLES-gated endpoint but has no sector
+    // scope) must never see other sectors' data. Mirrors the
+    // LifeGroupAnalyticsService.overview precedent for a restricted caller
+    // with an empty scope: return a zeroed/empty summary rather than
+    // silently running the query unfiltered.
+    const restrictedSectorIds = scope.unrestricted ? null : scope.sectorIds;
+    if (restrictedSectorIds !== null && restrictedSectorIds.length === 0) {
+      return this.emptySummary(query.from, query.to);
+    }
+
     const { fromDate, toDateExclusive } = this.resolveWindow(
       query.from,
       query.to,
     );
 
+    const applySectorScope = <T extends { andWhere: (...args: any[]) => T }>(
+      qb: T,
+    ): T =>
+      restrictedSectorIds !== null
+        ? qb.andWhere('r.sector_id IN (:...sectorIds)', {
+            sectorIds: restrictedSectorIds,
+          })
+        : qb;
+
     const baseQb = () =>
-      this.em
-        .createQueryBuilder(CasaDePazReport, 'r')
-        .where('r.deleted_at IS NULL')
-        .andWhere('r.date >= :fromDate', { fromDate })
-        .andWhere('r.date < :toDateExclusive', { toDateExclusive });
+      applySectorScope(
+        this.em
+          .createQueryBuilder(CasaDePazReport, 'r')
+          .where('r.deleted_at IS NULL')
+          .andWhere('r.date >= :fromDate', { fromDate })
+          .andWhere('r.date < :toDateExclusive', { toDateExclusive }),
+      );
 
     // Comparison period = the single most recent month (strictly before the
     // selected window) that actually has report rows — not a fixed
     // equal-length window. This avoids comparing against empty months when
     // data collection only recently started or has gaps.
-    const prevMonthRow = await this.em
-      .createQueryBuilder(CasaDePazReport, 'r')
-      .select("to_char(r.date, 'YYYY-MM')", 'period')
-      .where('r.deleted_at IS NULL')
-      .andWhere('r.date < :fromDate', { fromDate })
+    const prevMonthRow = await applySectorScope(
+      this.em
+        .createQueryBuilder(CasaDePazReport, 'r')
+        .select("to_char(r.date, 'YYYY-MM')", 'period')
+        .where('r.deleted_at IS NULL')
+        .andWhere('r.date < :fromDate', { fromDate }),
+    )
       .groupBy("to_char(r.date, 'YYYY-MM')")
       .orderBy("to_char(r.date, 'YYYY-MM')", 'DESC')
       .limit(1)
@@ -78,11 +103,15 @@ export class CasaDePazAnalyticsService {
 
     const prevPeriod = prevMonthRow?.period ?? null;
     const prevQb = () =>
-      this.em
-        .createQueryBuilder(CasaDePazReport, 'r')
-        .where('r.deleted_at IS NULL')
-        .andWhere("to_char(r.date, 'YYYY-MM') = :prevPeriod", { prevPeriod })
-        .andWhere('r.date < :fromDate', { fromDate });
+      applySectorScope(
+        this.em
+          .createQueryBuilder(CasaDePazReport, 'r')
+          .where('r.deleted_at IS NULL')
+          .andWhere("to_char(r.date, 'YYYY-MM') = :prevPeriod", {
+            prevPeriod,
+          })
+          .andWhere('r.date < :fromDate', { fromDate }),
+      );
 
     const [
       totalsRaw,
@@ -282,6 +311,56 @@ export class CasaDePazAnalyticsService {
       by_sector: bySector,
       by_day: byDay,
       by_time: byTime,
+    };
+  }
+
+  private emptySummary(fromStr: string | undefined, toStr: string | undefined) {
+    const { fromDate, toDateExclusive } = this.resolveWindow(fromStr, toStr);
+    return {
+      range: {
+        from: toIsoDate(fromDate),
+        to: toIsoDate(new Date(toDateExclusive.getTime() - 86_400_000)),
+      },
+      totals: {
+        houses: 0,
+        adults: 0,
+        kids: 0,
+        guests: 0,
+        lives: 0,
+        conversions: 0,
+        conversion_rate: 0,
+      },
+      growth: {
+        houses: null,
+        lives: null,
+        guests: null,
+        conversions: null,
+      },
+      comparison: null,
+      series: [] as SeriesRow[],
+      by_sector: [] as {
+        label: string;
+        sector_id: number;
+        houses: number;
+        adults: number;
+        kids: number;
+        guests: number;
+        conversions: number;
+      }[],
+      by_day: [] as {
+        label: string;
+        houses: number;
+        adults: number;
+        guests: number;
+        conversions: number;
+      }[],
+      by_time: [] as {
+        label: string;
+        houses: number;
+        adults: number;
+        guests: number;
+        conversions: number;
+      }[],
     };
   }
 

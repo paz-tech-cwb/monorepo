@@ -22,6 +22,8 @@ sealed class AccountEffect {
 
     data object NavigateToLifeGroupAnalytics : AccountEffect()
 
+    data object NavigateToCasaDePazAnalytics : AccountEffect()
+
     data object NavigateToNotificationPrefs : AccountEffect()
 
     data object LoggedOut : AccountEffect()

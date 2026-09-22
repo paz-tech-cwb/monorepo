@@ -41,7 +41,14 @@ struct LifeGroupAnalyticsView: View {
             }
             .task {
                 await viewModel.loadLifeGroups()
-                await viewModel.load()
+                // Overview is best-effort and must never block or delay the
+                // main attendance/distribution report — run it concurrently
+                // rather than awaiting it before `load()`, matching Android's
+                // LifeGroupAnalyticsViewModel (launches overview in its own
+                // coroutine).
+                async let overview: Void = viewModel.loadOverview()
+                async let main: Void = viewModel.load()
+                _ = await (overview, main)
             }
     }
 
@@ -81,12 +88,88 @@ struct LifeGroupAnalyticsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 filtersSection
+                if let overview = viewModel.overview {
+                    statCardsSection(overview)
+                    overviewChartsSection(overview)
+                }
                 attendanceSection
                 distributionSection
             }
             .padding(20)
         }
         .refreshable { await viewModel.load() }
+    }
+
+    // MARK: Overview stat cards + donuts
+
+    private func statCardsSection(_ overview: LifeGroupOverview) -> some View {
+        VStack(spacing: 12) {
+            PazStatCard(
+                title: "Crianças nos Grupos",
+                value: "\(overview.totalKids)",
+                subtitle: "crianças de 0 a 11 anos cadastradas",
+                icon: "figure.child"
+            )
+            PazStatCard(
+                title: "Média por Grupo",
+                value: overview.avgMembersPerGroup.formatted(.number.precision(.fractionLength(1))),
+                subtitle: "membros por grupo, em média",
+                icon: "chart.bar.fill"
+            )
+            let inGroupPercent = overview.membersTotal > 0
+                ? Int(overview.membersInGroup * 100 / overview.membersTotal)
+                : 0
+            PazStatCard(
+                title: "Membros em Grupos",
+                value: "\(overview.membersInGroup)",
+                subtitle: "\(inGroupPercent)% em grupo · \(overview.membersTotal - overview.membersInGroup) sem grupo",
+                icon: "person.3.fill",
+                secondaryValue: "\(overview.membersTotal)"
+            )
+        }
+    }
+
+    private func overviewChartsSection(_ overview: LifeGroupOverview) -> some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Grupos por Setor").font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
+                if overview.groupsBySector.isEmpty {
+                    PazChartEmptyView(message: "Nenhum grupo cadastrado.")
+                } else {
+                    PazDonutChart(slices: overview.groupsBySector.enumerated().map { index, bucket in
+                        PazDonutSlice(
+                            label: bucket.label,
+                            value: Double(bucket.count),
+                            color: PazDonutPalette.colors[index % PazDonutPalette.colors.count]
+                        )
+                    })
+                }
+            }
+            .padding(16)
+            .glassCard(radius: PazSpacing.cardRadiusCompact)
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Membros com e sem Grupo").font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
+                if overview.membersTotal <= 0 {
+                    PazChartEmptyView(message: "Nenhum membro cadastrado.")
+                } else {
+                    PazDonutChart(slices: [
+                        PazDonutSlice(
+                            label: "Em um grupo",
+                            value: Double(overview.membersInGroup),
+                            color: PazDonutPalette.colors[0]
+                        ),
+                        PazDonutSlice(
+                            label: "Sem grupo",
+                            value: Double(overview.membersTotal - overview.membersInGroup),
+                            color: PazDonutPalette.colors[2]
+                        ),
+                    ])
+                }
+            }
+            .padding(16)
+            .glassCard(radius: PazSpacing.cardRadiusCompact)
+        }
     }
 
     // MARK: Filters
@@ -180,13 +263,13 @@ struct LifeGroupAnalyticsView: View {
         let perMeeting = viewModel.month != nil
         return viewModel.attendanceRows.map { point in
             let parts = point.period.split(separator: "-")
-            let label: String
-            if perMeeting, parts.count == 3 {
-                label = "\(parts[2])/\(parts[1])"
-            } else if parts.count >= 2, let monthIndex = Int(parts[1]), Self.monthLabels.indices.contains(monthIndex - 1) {
-                label = Self.monthLabels[monthIndex - 1]
+            let label: String = if perMeeting, parts.count == 3 {
+                "\(parts[2])/\(parts[1])"
+            } else if parts.count >= 2, let monthIndex = Int(parts[1]),
+                      Self.monthLabels.indices.contains(monthIndex - 1) {
+                Self.monthLabels[monthIndex - 1]
             } else {
-                label = point.period
+                point.period
             }
             return PazBarChartEntry(label: label, value: Double(point.presentCount))
         }

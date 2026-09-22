@@ -2,6 +2,7 @@ package br.church.paz.shared.domain.repository
 
 import br.church.paz.shared.domain.model.LifeGroupAttendanceAnalytics
 import br.church.paz.shared.domain.model.LifeGroupDistributionAnalytics
+import br.church.paz.shared.domain.model.LifeGroupOverview
 
 interface LifeGroupAnalyticsRepository {
     // `granularity` defaults to "month" server-side when omitted — pass
@@ -17,4 +18,7 @@ interface LifeGroupAnalyticsRepository {
 
     @Throws(Exception::class)
     suspend fun getDistribution(lifeGroupId: Int? = null): LifeGroupDistributionAnalytics
+
+    @Throws(Exception::class)
+    suspend fun getOverview(): LifeGroupOverview
 }
