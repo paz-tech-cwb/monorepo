@@ -105,10 +105,14 @@ export class CasaDePazReportsService {
       });
       user = await manager.save(User, user);
     }
-    await this.guestOriginsService.ensureForUser(user.id, {
-      originType: 'casa_de_paz',
-      casaDePazId,
-    });
+    await this.guestOriginsService.ensureForUser(
+      user.id,
+      {
+        originType: 'casa_de_paz',
+        casaDePazId,
+      },
+      manager,
+    );
     return user.id;
   }
 

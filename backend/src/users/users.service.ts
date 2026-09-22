@@ -418,24 +418,6 @@ export class UsersService {
     };
   }
 
-  // Minimal member search for picker UIs (e.g. a future "invited by"
-  // selector) — intentionally open to any authenticated user, including
-  // guests, and returns only the fields such a picker needs.
-  async searchMinimal(q: string) {
-    if (!q || q.trim().length < 2) return [];
-    const users = await this.entityManager
-      .createQueryBuilder(User, 'u')
-      .select('u.id', 'id')
-      .addSelect('u.name', 'name')
-      .addSelect('u.picture', 'picture')
-      .where('u.status = :status', { status: 'active' })
-      .andWhere('u.name ILIKE :q', { q: `%${q.trim()}%` })
-      .orderBy('u.name', 'ASC')
-      .limit(20)
-      .getRawMany<{ id: number; name: string; picture: string | null }>();
-    return users;
-  }
-
   async remove(id: number): Promise<void> {
     const user = await this.findOneEntity(id);
     await this.entityManager.remove(User, user);

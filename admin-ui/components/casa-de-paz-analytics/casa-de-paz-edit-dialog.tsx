@@ -47,6 +47,9 @@ export function CasaDePazEditDialog({ submission, onOpenChange }: CasaDePazEditD
   const updateMutation = useUpdateCasaDePazSubmission()
   const [form, setForm] = useState<UpdateCasaDePazReportRequest>({})
   const [guests, setGuests] = useState<CasaDePazReportGuestInput[]>([])
+  // Rows loaded from the server (already persisted) vs. ones added in this
+  // editing session — only the former need a confirm before removal.
+  const [persistedCount, setPersistedCount] = useState(0)
 
   const mostRecentCycleId = useMemo(() => {
     if (cycles.length === 0) return undefined
@@ -75,9 +78,11 @@ export function CasaDePazEditDialog({ submission, onOpenChange }: CasaDePazEditD
             }))
           : []
       )
+      setPersistedCount(submission.guests.length)
     } else {
       setForm((f) => ({ ...f, casa_de_paz_id: mostRecentCycleId }))
       setGuests([])
+      setPersistedCount(0)
     }
   }, [submission, mostRecentCycleId])
 
@@ -89,6 +94,11 @@ export function CasaDePazEditDialog({ submission, onOpenChange }: CasaDePazEditD
   }
 
   const removeGuest = (index: number) => {
+    if (index < persistedCount) {
+      const confirmed = window.confirm("Remover este convidado já salvo do registro?")
+      if (!confirmed) return
+      setPersistedCount((count) => count - 1)
+    }
     setGuests((list) => list.filter((_, i) => i !== index))
   }
 

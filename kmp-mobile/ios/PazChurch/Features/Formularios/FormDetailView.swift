@@ -227,7 +227,7 @@ class FormDetailViewModelIOS {
 
     var canSubmit: Bool {
         guard let form else { return false }
-        return !isSubmitting && form.type.fieldDefs
+        return !isSubmitting && guestEntries.allSatisfy(\.isValid) && form.type.fieldDefs
             .filter(\.required)
             .allSatisfy { !(fields[$0.key] ?? "").trimmingCharacters(in: .whitespaces).isEmpty }
     }
@@ -239,6 +239,11 @@ class FormDetailViewModelIOS {
             .first { $0.required && (fields[$0.key] ?? "").trimmingCharacters(in: .whitespaces).isEmpty }?.label
         if let label = missingLabel {
             error = "\(label) é obrigatório"
+            return
+        }
+
+        guard guestEntries.allSatisfy(\.isValid) else {
+            error = "Preencha nome, e-mail e data de nascimento de todos os convidados"
             return
         }
 

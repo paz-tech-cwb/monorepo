@@ -32,12 +32,30 @@ export class BackfillAndRequireCasaDePazCycle1795800000003
       return;
     }
 
+    // Month names are built with an explicit CASE mapping (not
+    // to_char(..., 'TMMonth')) to match casa-de-paz-cycles.service.ts's
+    // monthNameFor(), which always emits pt-BR labels regardless of server
+    // locale — to_char's month name is locale-dependent and could emit
+    // English names on a non-pt_BR cluster.
     await queryRunner.query(
       `
       INSERT INTO "casa_de_paz_cycles" ("month", "name", "status", "created_by_id")
       SELECT
         DISTINCT date_trunc('month', r.date)::date AS month,
-        'Casa de Paz — ' || to_char(r.date, 'TMMonth') || ' ' || to_char(r.date, 'YYYY') AS name,
+        'Casa de Paz — ' || (CASE EXTRACT(MONTH FROM r.date)
+          WHEN 1 THEN 'Janeiro'
+          WHEN 2 THEN 'Fevereiro'
+          WHEN 3 THEN 'Março'
+          WHEN 4 THEN 'Abril'
+          WHEN 5 THEN 'Maio'
+          WHEN 6 THEN 'Junho'
+          WHEN 7 THEN 'Julho'
+          WHEN 8 THEN 'Agosto'
+          WHEN 9 THEN 'Setembro'
+          WHEN 10 THEN 'Outubro'
+          WHEN 11 THEN 'Novembro'
+          WHEN 12 THEN 'Dezembro'
+        END) || ' ' || to_char(r.date, 'YYYY') AS name,
         'closed' AS status,
         $1 AS created_by_id
       FROM "casa_de_paz_reports" r

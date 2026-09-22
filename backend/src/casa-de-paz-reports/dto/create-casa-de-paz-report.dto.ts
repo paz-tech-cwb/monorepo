@@ -1,5 +1,6 @@
 import { Expose, Type } from 'class-transformer';
 import {
+  IsArray,
   IsIn,
   IsInt,
   IsDateString,
@@ -34,6 +35,7 @@ export class CreateCasaDePazReportDto {
   @Expose() @IsOptional() @IsInt() conversions?: number;
   @Expose()
   @IsOptional()
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CasaDePazReportGuestDto)
   guests?: CasaDePazReportGuestDto[];

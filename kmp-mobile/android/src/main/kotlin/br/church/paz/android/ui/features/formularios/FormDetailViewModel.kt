@@ -204,6 +204,11 @@ class FormDetailViewModel(
             return
         }
 
+        if (!state.guestEntries.all { it.isValid }) {
+            _uiState.update { it.copy(error = "Preencha nome, e-mail e data de nascimento de todos os convidados") }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, error = null) }
 
