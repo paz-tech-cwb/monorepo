@@ -5,6 +5,8 @@ import br.church.paz.shared.data.remote.createPazHttpClient
 import br.church.paz.shared.data.repository.AcademyRepositoryImpl
 import br.church.paz.shared.data.repository.AgendaRepositoryImpl
 import br.church.paz.shared.data.repository.AuthRepositoryImpl
+import br.church.paz.shared.data.repository.CasaDePazAnalyticsRepositoryImpl
+import br.church.paz.shared.data.repository.CasaDePazLessonRepositoryImpl
 import br.church.paz.shared.data.repository.ChurchRepositoryImpl
 import br.church.paz.shared.data.repository.CourseRepositoryImpl
 import br.church.paz.shared.data.repository.FormsRepositoryImpl
@@ -21,6 +23,8 @@ import br.church.paz.shared.domain.repository.AcademyRepository
 import br.church.paz.shared.domain.repository.AgendaRepository
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.BirthDateRequiredException
+import br.church.paz.shared.domain.repository.CasaDePazAnalyticsRepository
+import br.church.paz.shared.domain.repository.CasaDePazLessonRepository
 import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.CourseRepository
 import br.church.paz.shared.domain.repository.FormsRepository
@@ -72,8 +76,14 @@ object IosAppContainer {
     val lifeGroupAnalyticsRepository: LifeGroupAnalyticsRepository by lazy {
         LifeGroupAnalyticsRepositoryImpl(httpClient)
     }
+    val casaDePazAnalyticsRepository: CasaDePazAnalyticsRepository by lazy {
+        CasaDePazAnalyticsRepositoryImpl(httpClient)
+    }
     val onboardingRepository: OnboardingRepository by lazy {
         OnboardingRepositoryImpl(httpClient, userRepository)
+    }
+    val casaDePazLessonRepository: CasaDePazLessonRepository by lazy {
+        CasaDePazLessonRepositoryImpl(httpClient)
     }
 
     // iOS-friendly wrappers that throw on failure instead of returning Result<T>

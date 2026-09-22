@@ -5,9 +5,15 @@ import { FormsCoreModule } from '../forms-core/forms-core.module';
 import { FormGuestsService } from './form-guests.service';
 import { FormGuestsController } from './form-guests.controller';
 import { UsersModule } from '../users/users.module';
+import { GuestOriginsModule } from '../guest-origins/guest-origins.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([FormGuest]), FormsCoreModule, UsersModule],
+  imports: [
+    TypeOrmModule.forFeature([FormGuest]),
+    FormsCoreModule,
+    UsersModule,
+    GuestOriginsModule,
+  ],
   controllers: [FormGuestsController],
   providers: [FormGuestsService],
 })

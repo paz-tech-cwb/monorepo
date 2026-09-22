@@ -140,6 +140,14 @@ fun FormDetailScreen(
                     onSelect = viewModel::onPickerSelect,
                     onDismiss = viewModel::closePicker,
                 )
+            PickerKind.CASA_DE_PAZ_CYCLE ->
+                CasaDePazCyclePickerSheet(
+                    state = pickerState,
+                    selectedId = uiState.fields[pickerState.key] ?: "",
+                    onQueryChanged = viewModel::onPickerQueryChanged,
+                    onSelect = viewModel::onPickerSelect,
+                    onDismiss = viewModel::closePicker,
+                )
             PickerKind.USER, PickerKind.USER_MULTI -> {
                 val selectedIds = (uiState.fields[pickerState.key] ?: "")
                     .split(",").filter { it.isNotBlank() }.toSet()
@@ -230,7 +238,8 @@ private fun FormContent(
         item {
             val canSubmit =
                 !uiState.isSubmitting &&
-                    fieldDefs.filter { it.required }.all { (uiState.fields[it.key] ?: "").isNotBlank() }
+                    fieldDefs.filter { it.required }.all { (uiState.fields[it.key] ?: "").isNotBlank() } &&
+                    uiState.guestEntries.all { it.isValid }
 
             PazButton(
                 text = if (uiState.isSubmitting) "Enviando..." else "Enviar",

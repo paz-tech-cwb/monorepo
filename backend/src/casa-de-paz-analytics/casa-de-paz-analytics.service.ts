@@ -1,18 +1,31 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager } from 'typeorm';
+import { EntityManager, ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import { CasaDePazReport } from '../casa-de-paz-reports/entities/casa-de-paz-report.entity';
 import { CasaDePazSummaryQueryDto } from './dto/casa-de-paz-summary-query.dto';
 import { WEEKDAY_INDEX } from '../life-group-attendance/meeting-day.util';
+import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
 
 const SECTOR_TOP_N = 10;
 const OTHERS_LABEL = 'Outros';
 const DEFAULT_WINDOW_MONTHS = 6;
 
+// Pre-aggregated per-report guest counts, LEFT JOINed once onto the main
+// query. Joining the raw casa_de_paz_report_guests rows directly would fan
+// out the main aggregation (a single report with N guests would multiply
+// its houses/kids/conversions sums by N) — this subquery avoids that.
+const GUEST_COUNTS_SUBQUERY =
+  '(SELECT report_id, COUNT(*) AS guest_count FROM casa_de_paz_report_guests GROUP BY report_id)';
+
+function withGuestCounts<T extends ObjectLiteral>(
+  qb: SelectQueryBuilder<T>,
+): SelectQueryBuilder<T> {
+  return qb.leftJoin(GUEST_COUNTS_SUBQUERY, 'gc', 'gc.report_id = r.id');
+}
+
 export interface SeriesRow {
   period: string;
   houses: number;
-  adults: number;
   kids: number;
   guests: number;
   conversions: number;
@@ -49,28 +62,54 @@ export class CasaDePazAnalyticsService {
     return { fromDate: from, toDateExclusive };
   }
 
-  async summary(query: CasaDePazSummaryQueryDto) {
+  async summary(query: CasaDePazSummaryQueryDto, scope: ResolvedScope) {
+    // Sector-restricted callers (e.g. life_group_leader, who is granted
+    // access to this LEADERSHIP_ROLES-gated endpoint but has no sector
+    // scope) must never see other sectors' data. Mirrors the
+    // LifeGroupAnalyticsService.overview precedent for a restricted caller
+    // with an empty scope: return a zeroed/empty summary rather than
+    // silently running the query unfiltered.
+    const restrictedSectorIds = scope.unrestricted ? null : scope.sectorIds;
+    if (restrictedSectorIds !== null && restrictedSectorIds.length === 0) {
+      return this.emptySummary(query.from, query.to);
+    }
+
     const { fromDate, toDateExclusive } = this.resolveWindow(
       query.from,
       query.to,
     );
 
+    const applySectorScope = <T extends { andWhere: (...args: any[]) => T }>(
+      qb: T,
+    ): T =>
+      restrictedSectorIds !== null
+        ? qb.andWhere('r.sector_id IN (:...sectorIds)', {
+            sectorIds: restrictedSectorIds,
+          })
+        : qb;
+
     const baseQb = () =>
-      this.em
-        .createQueryBuilder(CasaDePazReport, 'r')
-        .where('r.deleted_at IS NULL')
-        .andWhere('r.date >= :fromDate', { fromDate })
-        .andWhere('r.date < :toDateExclusive', { toDateExclusive });
+      applySectorScope(
+        withGuestCounts(
+          this.em
+            .createQueryBuilder(CasaDePazReport, 'r')
+            .where('r.deleted_at IS NULL')
+            .andWhere('r.date >= :fromDate', { fromDate })
+            .andWhere('r.date < :toDateExclusive', { toDateExclusive }),
+        ),
+      );
 
     // Comparison period = the single most recent month (strictly before the
     // selected window) that actually has report rows — not a fixed
     // equal-length window. This avoids comparing against empty months when
     // data collection only recently started or has gaps.
-    const prevMonthRow = await this.em
-      .createQueryBuilder(CasaDePazReport, 'r')
-      .select("to_char(r.date, 'YYYY-MM')", 'period')
-      .where('r.deleted_at IS NULL')
-      .andWhere('r.date < :fromDate', { fromDate })
+    const prevMonthRow = await applySectorScope(
+      this.em
+        .createQueryBuilder(CasaDePazReport, 'r')
+        .select("to_char(r.date, 'YYYY-MM')", 'period')
+        .where('r.deleted_at IS NULL')
+        .andWhere('r.date < :fromDate', { fromDate }),
+    )
       .groupBy("to_char(r.date, 'YYYY-MM')")
       .orderBy("to_char(r.date, 'YYYY-MM')", 'DESC')
       .limit(1)
@@ -78,11 +117,17 @@ export class CasaDePazAnalyticsService {
 
     const prevPeriod = prevMonthRow?.period ?? null;
     const prevQb = () =>
-      this.em
-        .createQueryBuilder(CasaDePazReport, 'r')
-        .where('r.deleted_at IS NULL')
-        .andWhere("to_char(r.date, 'YYYY-MM') = :prevPeriod", { prevPeriod })
-        .andWhere('r.date < :fromDate', { fromDate });
+      applySectorScope(
+        withGuestCounts(
+          this.em
+            .createQueryBuilder(CasaDePazReport, 'r')
+            .where('r.deleted_at IS NULL')
+            .andWhere("to_char(r.date, 'YYYY-MM') = :prevPeriod", {
+              prevPeriod,
+            })
+            .andWhere('r.date < :fromDate', { fromDate }),
+        ),
+      );
 
     const [
       totalsRaw,
@@ -93,31 +138,27 @@ export class CasaDePazAnalyticsService {
       prevTotalsRaw,
     ] = await Promise.all([
       baseQb()
-        .select('COUNT(*)', 'houses')
-        .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
+        .select('COUNT(DISTINCT r.id)', 'houses')
         .addSelect('COALESCE(SUM(r.kids), 0)', 'kids')
-        .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
+        .addSelect('COALESCE(SUM(gc.guest_count), 0)', 'guests')
         .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
         .getRawOne<{
           houses: string;
-          adults: string;
           kids: string;
           guests: string;
           conversions: string;
         }>(),
       baseQb()
         .select("to_char(r.date, 'YYYY-MM')", 'period')
-        .addSelect('COUNT(*)', 'houses')
-        .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
+        .addSelect('COUNT(DISTINCT r.id)', 'houses')
         .addSelect('COALESCE(SUM(r.kids), 0)', 'kids')
-        .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
+        .addSelect('COALESCE(SUM(gc.guest_count), 0)', 'guests')
         .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
         .groupBy("to_char(r.date, 'YYYY-MM')")
         .orderBy("to_char(r.date, 'YYYY-MM')", 'ASC')
         .getRawMany<{
           period: string;
           houses: string;
-          adults: string;
           kids: string;
           guests: string;
           conversions: string;
@@ -126,10 +167,9 @@ export class CasaDePazAnalyticsService {
         .innerJoin('sectors', 'sector', 'sector.id = r.sector_id')
         .select('sector.name', 'label')
         .addSelect('r.sector_id', 'sector_id')
-        .addSelect('COUNT(*)', 'houses')
-        .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
+        .addSelect('COUNT(DISTINCT r.id)', 'houses')
         .addSelect('COALESCE(SUM(r.kids), 0)', 'kids')
-        .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
+        .addSelect('COALESCE(SUM(gc.guest_count), 0)', 'guests')
         .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
         .groupBy('sector.name')
         .addGroupBy('r.sector_id')
@@ -138,31 +178,27 @@ export class CasaDePazAnalyticsService {
           label: string;
           sector_id: string;
           houses: string;
-          adults: string;
           kids: string;
           guests: string;
           conversions: string;
         }>(),
       baseQb()
         .select('r.meeting_day', 'label')
-        .addSelect('COUNT(*)', 'houses')
-        .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
-        .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
+        .addSelect('COUNT(DISTINCT r.id)', 'houses')
+        .addSelect('COALESCE(SUM(gc.guest_count), 0)', 'guests')
         .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
         .andWhere('r.meeting_day IS NOT NULL')
         .groupBy('r.meeting_day')
         .getRawMany<{
           label: string;
           houses: string;
-          adults: string;
           guests: string;
           conversions: string;
         }>(),
       baseQb()
         .select("substring(r.meeting_time, 1, 2) || ':00'", 'label')
-        .addSelect('COUNT(*)', 'houses')
-        .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
-        .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
+        .addSelect('COUNT(DISTINCT r.id)', 'houses')
+        .addSelect('COALESCE(SUM(gc.guest_count), 0)', 'guests')
         .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
         .andWhere('r.meeting_time IS NOT NULL')
         .groupBy("substring(r.meeting_time, 1, 2) || ':00'")
@@ -170,20 +206,17 @@ export class CasaDePazAnalyticsService {
         .getRawMany<{
           label: string;
           houses: string;
-          adults: string;
           guests: string;
           conversions: string;
         }>(),
       prevPeriod
         ? prevQb()
-            .select('COUNT(*)', 'houses')
-            .addSelect('COALESCE(SUM(r.adults), 0)', 'adults')
+            .select('COUNT(DISTINCT r.id)', 'houses')
             .addSelect('COALESCE(SUM(r.kids), 0)', 'kids')
-            .addSelect('COALESCE(SUM(r.guests), 0)', 'guests')
+            .addSelect('COALESCE(SUM(gc.guest_count), 0)', 'guests')
             .addSelect('COALESCE(SUM(r.conversions), 0)', 'conversions')
             .getRawOne<{
               houses: string;
-              adults: string;
               kids: string;
               guests: string;
               conversions: string;
@@ -193,26 +226,23 @@ export class CasaDePazAnalyticsService {
 
     const totalGuests = Number(totalsRaw?.guests ?? 0);
     const totalConversions = Number(totalsRaw?.conversions ?? 0);
-    const totalAdults = Number(totalsRaw?.adults ?? 0);
     const totalKids = Number(totalsRaw?.kids ?? 0);
     const totals = {
       houses: Number(totalsRaw?.houses ?? 0),
-      adults: totalAdults,
       kids: totalKids,
       guests: totalGuests,
       // "Vidas alcançadas" — every person reached across all visits, the
       // headline ministry metric leadership actually tracks.
-      lives: totalAdults + totalKids + totalGuests,
+      lives: totalKids + totalGuests,
       conversions: totalConversions,
       conversion_rate: totalGuests > 0 ? totalConversions / totalGuests : 0,
     };
 
     const prevGuests = Number(prevTotalsRaw?.guests ?? 0);
     const prevConversions = Number(prevTotalsRaw?.conversions ?? 0);
-    const prevAdults = Number(prevTotalsRaw?.adults ?? 0);
     const prevKids = Number(prevTotalsRaw?.kids ?? 0);
     const prevHouses = Number(prevTotalsRaw?.houses ?? 0);
-    const prevLives = prevAdults + prevKids + prevGuests;
+    const prevLives = prevKids + prevGuests;
 
     // null growth means "no previous-period data to compare against" — the
     // frontend renders that as neutral/no-badge rather than a fake "+100%".
@@ -231,7 +261,6 @@ export class CasaDePazAnalyticsService {
     const series: SeriesRow[] = seriesRaw.map((r) => ({
       period: r.period,
       houses: Number(r.houses),
-      adults: Number(r.adults),
       kids: Number(r.kids),
       guests: Number(r.guests),
       conversions: Number(r.conversions),
@@ -242,7 +271,6 @@ export class CasaDePazAnalyticsService {
         label: r.label,
         sector_id: Number(r.sector_id),
         houses: Number(r.houses),
-        adults: Number(r.adults),
         kids: Number(r.kids),
         guests: Number(r.guests),
         conversions: Number(r.conversions),
@@ -257,7 +285,6 @@ export class CasaDePazAnalyticsService {
       .map((r) => ({
         label: r.label,
         houses: Number(r.houses),
-        adults: Number(r.adults),
         guests: Number(r.guests),
         conversions: Number(r.conversions),
       }));
@@ -265,7 +292,6 @@ export class CasaDePazAnalyticsService {
     const byTime = byTimeRaw.map((r) => ({
       label: r.label,
       houses: Number(r.houses),
-      adults: Number(r.adults),
       guests: Number(r.guests),
       conversions: Number(r.conversions),
     }));
@@ -285,12 +311,57 @@ export class CasaDePazAnalyticsService {
     };
   }
 
+  private emptySummary(fromStr: string | undefined, toStr: string | undefined) {
+    const { fromDate, toDateExclusive } = this.resolveWindow(fromStr, toStr);
+    return {
+      range: {
+        from: toIsoDate(fromDate),
+        to: toIsoDate(new Date(toDateExclusive.getTime() - 86_400_000)),
+      },
+      totals: {
+        houses: 0,
+        kids: 0,
+        guests: 0,
+        lives: 0,
+        conversions: 0,
+        conversion_rate: 0,
+      },
+      growth: {
+        houses: null,
+        lives: null,
+        guests: null,
+        conversions: null,
+      },
+      comparison: null,
+      series: [] as SeriesRow[],
+      by_sector: [] as {
+        label: string;
+        sector_id: number;
+        houses: number;
+        kids: number;
+        guests: number;
+        conversions: number;
+      }[],
+      by_day: [] as {
+        label: string;
+        houses: number;
+        guests: number;
+        conversions: number;
+      }[],
+      by_time: [] as {
+        label: string;
+        houses: number;
+        guests: number;
+        conversions: number;
+      }[],
+    };
+  }
+
   private bucketSectorsTopN(
     rows: {
       label: string;
       sector_id: number;
       houses: number;
-      adults: number;
       kids: number;
       guests: number;
       conversions: number;
@@ -302,12 +373,11 @@ export class CasaDePazAnalyticsService {
     const others = rest.reduce(
       (acc, r) => ({
         houses: acc.houses + r.houses,
-        adults: acc.adults + r.adults,
         kids: acc.kids + r.kids,
         guests: acc.guests + r.guests,
         conversions: acc.conversions + r.conversions,
       }),
-      { houses: 0, adults: 0, kids: 0, guests: 0, conversions: 0 },
+      { houses: 0, kids: 0, guests: 0, conversions: 0 },
     );
     return [
       ...top,

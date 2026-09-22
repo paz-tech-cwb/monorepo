@@ -83,7 +83,7 @@ describe('role-track-map wiring vs. real seeded promotes_to_role', () => {
   });
 
   it.each([
-    ['lead', 'become_member', 'member'],
+    ['guest', 'become_member', 'member'],
     ['member', 'discipler', 'discipler'],
     ['discipler', 'leader', 'life_group_leader'],
   ])(

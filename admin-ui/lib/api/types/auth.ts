@@ -11,7 +11,7 @@ export interface User {
   email: string
   name: string
   picture: string
-  role: AdminRole | "member" | "lead" | null
+  role: AdminRole | "member" | "guest" | null
 }
 
 export interface AuthResponse {

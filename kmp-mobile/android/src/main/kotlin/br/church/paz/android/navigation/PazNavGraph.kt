@@ -11,6 +11,9 @@ import br.church.paz.android.ui.features.academy.QuestionnaireScreen
 import br.church.paz.android.ui.features.academy.VideoPlayerScreen
 import br.church.paz.android.ui.features.agenda.AgendaDetailScreen
 import br.church.paz.android.ui.features.agenda.AgendaListScreen
+import br.church.paz.android.ui.features.casadepazanalytics.CasaDePazAnalyticsScreen
+import br.church.paz.android.ui.features.casadepazlessons.CasaDePazLessonDetailScreen
+import br.church.paz.android.ui.features.casadepazlessons.CasaDePazLessonsListScreen
 import br.church.paz.android.ui.features.formularios.CasaDePazSubmissionEditorScreen
 import br.church.paz.android.ui.features.formularios.CasaDePazSubmissionsListScreen
 import br.church.paz.android.ui.features.formularios.FormDetailScreen
@@ -214,6 +217,19 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         ) { backStackEntry ->
             val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId")
             LifeGroupAnalyticsScreen(navController = navController, lifeGroupId = lifeGroupId)
+        }
+        composable(route = Screen.CasaDePazAnalytics.route) {
+            CasaDePazAnalyticsScreen(navController = navController)
+        }
+        composable(Screen.CasaDePazLessonsList.route) {
+            CasaDePazLessonsListScreen(navController = navController)
+        }
+        composable(
+            route = Screen.CasaDePazLessonDetail.route,
+            arguments = listOf(androidx.navigation.navArgument("week") { type = androidx.navigation.NavType.IntType }),
+        ) { backStackEntry ->
+            val week = backStackEntry.arguments?.getInt("week") ?: return@composable
+            CasaDePazLessonDetailScreen(navController = navController, week = week)
         }
     }
 }

@@ -1,10 +1,33 @@
 import { EntityManager } from 'typeorm';
 import { CasaDePazAnalyticsService } from './casa-de-paz-analytics.service';
+import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
+
+const UNRESTRICTED_SCOPE: ResolvedScope = {
+  unrestricted: true,
+  areaIds: [],
+  sectorIds: [],
+  lifeGroupIds: [],
+};
+
+const SECTOR_SCOPE: ResolvedScope = {
+  unrestricted: false,
+  areaIds: [],
+  sectorIds: [7],
+  lifeGroupIds: [],
+};
+
+const NO_SECTOR_SCOPE: ResolvedScope = {
+  unrestricted: false,
+  areaIds: [],
+  sectorIds: [],
+  lifeGroupIds: [],
+};
 
 interface MockQueryBuilder {
   where: jest.Mock<MockQueryBuilder, unknown[]>;
   andWhere: jest.Mock<MockQueryBuilder, unknown[]>;
   innerJoin: jest.Mock<MockQueryBuilder, unknown[]>;
+  leftJoin: jest.Mock<MockQueryBuilder, unknown[]>;
   select: jest.Mock<MockQueryBuilder, unknown[]>;
   addSelect: jest.Mock<MockQueryBuilder, unknown[]>;
   groupBy: jest.Mock<MockQueryBuilder, unknown[]>;
@@ -23,6 +46,7 @@ function makeQueryBuilder(
     where: jest.fn(() => qb),
     andWhere: jest.fn(() => qb),
     innerJoin: jest.fn(() => qb),
+    leftJoin: jest.fn(() => qb),
     select: jest.fn(() => qb),
     addSelect: jest.fn(() => qb),
     groupBy: jest.fn(() => qb),
@@ -79,7 +103,7 @@ function createService(fixtures: {
 }
 
 function zeroTotalsRaw() {
-  return { houses: '0', adults: '0', kids: '0', guests: '0', conversions: '0' };
+  return { houses: '0', kids: '0', guests: '0', conversions: '0' };
 }
 
 // A fixed 6-month range (2026-04-01 .. 2026-09-30) used by tests that don't
@@ -90,7 +114,7 @@ describe('CasaDePazAnalyticsService', () => {
   describe('series — only months with data', () => {
     it('returns an empty series (no zero-filled months) when there is no data', async () => {
       const { service } = createService({ prevPeriod: null });
-      const result = await service.summary(FIXED_RANGE);
+      const result = await service.summary(FIXED_RANGE, UNRESTRICTED_SCOPE);
 
       expect(result.series).toEqual([]);
     });
@@ -102,7 +126,6 @@ describe('CasaDePazAnalyticsService', () => {
           {
             period: '2026-04',
             houses: '2',
-            adults: '10',
             kids: '3',
             guests: '4',
             conversions: '1',
@@ -110,20 +133,18 @@ describe('CasaDePazAnalyticsService', () => {
           {
             period: '2026-08',
             houses: '5',
-            adults: '20',
             kids: '6',
             guests: '8',
             conversions: '2',
           },
         ],
       });
-      const result = await service.summary(FIXED_RANGE);
+      const result = await service.summary(FIXED_RANGE, UNRESTRICTED_SCOPE);
 
       expect(result.series).toEqual([
         {
           period: '2026-04',
           houses: 2,
-          adults: 10,
           kids: 3,
           guests: 4,
           conversions: 1,
@@ -131,7 +152,6 @@ describe('CasaDePazAnalyticsService', () => {
         {
           period: '2026-08',
           houses: 5,
-          adults: 20,
           kids: 6,
           guests: 8,
           conversions: 2,
@@ -146,25 +166,23 @@ describe('CasaDePazAnalyticsService', () => {
         prevPeriod: '2026-02',
         totals: {
           houses: '10',
-          adults: '80',
           kids: '20',
           guests: '20',
           conversions: '5',
         },
         prevTotals: {
           houses: '5',
-          adults: '40',
           kids: '10',
           guests: '10',
           conversions: '2',
         },
       });
-      const result = await service.summary(FIXED_RANGE);
+      const result = await service.summary(FIXED_RANGE, UNRESTRICTED_SCOPE);
 
       expect(result.comparison).toEqual({ period: '2026-02' });
       expect(result.growth.houses).toBeCloseTo(1); // (10-5)/5
       expect(result.growth.guests).toBeCloseTo(1); // (20-10)/10
-      expect(result.growth.lives).toBeCloseTo((120 - 60) / 60);
+      expect(result.growth.lives).toBeCloseTo((40 - 20) / 20);
       expect(result.growth.conversions).toBeCloseTo(1.5); // (5-2)/2
     });
 
@@ -173,13 +191,12 @@ describe('CasaDePazAnalyticsService', () => {
         prevPeriod: null,
         totals: {
           houses: '10',
-          adults: '80',
           kids: '20',
           guests: '20',
           conversions: '5',
         },
       });
-      const result = await service.summary(FIXED_RANGE);
+      const result = await service.summary(FIXED_RANGE, UNRESTRICTED_SCOPE);
 
       expect(result.comparison).toBeNull();
       expect(result.growth).toEqual({
@@ -196,13 +213,12 @@ describe('CasaDePazAnalyticsService', () => {
       const { service } = createService({
         totals: {
           houses: '5',
-          adults: '30',
           kids: '10',
           guests: '0',
           conversions: '0',
         },
       });
-      const result = await service.summary(FIXED_RANGE);
+      const result = await service.summary(FIXED_RANGE, UNRESTRICTED_SCOPE);
 
       expect(result.totals.guests).toBe(0);
       expect(result.totals.conversion_rate).toBe(0);
@@ -212,13 +228,12 @@ describe('CasaDePazAnalyticsService', () => {
       const { service } = createService({
         totals: {
           houses: '10',
-          adults: '80',
           kids: '20',
           guests: '20',
           conversions: '5',
         },
       });
-      const result = await service.summary(FIXED_RANGE);
+      const result = await service.summary(FIXED_RANGE, UNRESTRICTED_SCOPE);
 
       expect(result.totals.conversion_rate).toBeCloseTo(0.25);
     });
@@ -231,27 +246,24 @@ describe('CasaDePazAnalyticsService', () => {
           {
             label: 'Quarta-feira',
             houses: '3',
-            adults: '10',
             guests: '2',
             conversions: '1',
           },
           {
             label: 'Domingo',
             houses: '5',
-            adults: '20',
             guests: '4',
             conversions: '2',
           },
           {
             label: 'Segunda-feira',
             houses: '2',
-            adults: '5',
             guests: '1',
             conversions: '0',
           },
         ],
       });
-      const result = await service.summary(FIXED_RANGE);
+      const result = await service.summary(FIXED_RANGE, UNRESTRICTED_SCOPE);
 
       expect(result.by_day.map((r) => r.label)).toEqual([
         'Domingo',
@@ -271,16 +283,15 @@ describe('CasaDePazAnalyticsService', () => {
           {
             label: '19:00',
             houses: '7',
-            adults: '40',
             guests: '10',
             conversions: '2',
           },
         ],
       });
-      const result = await service.summary(FIXED_RANGE);
+      const result = await service.summary(FIXED_RANGE, UNRESTRICTED_SCOPE);
 
       expect(result.by_time).toEqual([
-        { label: '19:00', houses: 7, adults: 40, guests: 10, conversions: 2 },
+        { label: '19:00', houses: 7, guests: 10, conversions: 2 },
       ]);
     });
   });
@@ -291,18 +302,41 @@ describe('CasaDePazAnalyticsService', () => {
         label: `Setor ${i}`,
         sector_id: String(i + 1),
         houses: String(12 - i),
-        adults: String((12 - i) * 5),
         kids: String((12 - i) * 2),
         guests: String(12 - i),
         conversions: '1',
       }));
       const { service } = createService({ bySector: manySectors });
-      const result = await service.summary(FIXED_RANGE);
+      const result = await service.summary(FIXED_RANGE, UNRESTRICTED_SCOPE);
 
       expect(result.by_sector).toHaveLength(11);
       const others = result.by_sector.find((r) => r.label === 'Outros')!;
       // rows past top 10 (index 10, 11) have houses 2 and 1
       expect(others.houses).toBe(2 + 1);
+    });
+  });
+
+  describe('guest fan-out avoidance', () => {
+    it('does not inflate houses/kids/conversions when a single report has multiple guest entries', async () => {
+      // The raw SQL groups guests into a pre-aggregated subquery
+      // (COUNT(*) per report_id) LEFT JOINed once, so a report with 3
+      // guests must still surface as houses=1 with un-multiplied
+      // kids/conversions, while guests correctly totals 3.
+      const { service } = createService({
+        totals: {
+          houses: '1',
+          kids: '2',
+          guests: '3',
+          conversions: '1',
+        },
+      });
+      const result = await service.summary(FIXED_RANGE, UNRESTRICTED_SCOPE);
+
+      expect(result.totals.houses).toBe(1);
+      expect(result.totals.kids).toBe(2);
+      expect(result.totals.conversions).toBe(1);
+      expect(result.totals.guests).toBe(3);
+      expect(result.totals.lives).toBe(5);
     });
   });
 
@@ -314,7 +348,10 @@ describe('CasaDePazAnalyticsService', () => {
       // fromDate would be swept into BOTH the current and previous totals —
       // a silent self-comparison bug.
       const { service, em } = createService({ prevPeriod: '2026-04' });
-      await service.summary({ from: '2026-04-15', to: '2026-09-30' });
+      await service.summary(
+        { from: '2026-04-15', to: '2026-09-30' },
+        UNRESTRICTED_SCOPE,
+      );
 
       // Query order: (1) prevMonthRow lookup, (2) totals, (3) series,
       // (4) by_sector, (5) by_day, (6) by_time, (7) prevTotals.
@@ -343,17 +380,23 @@ describe('CasaDePazAnalyticsService', () => {
   describe('range computation', () => {
     it('echoes back an explicit from/to range unchanged', async () => {
       const { service } = createService({});
-      const result = await service.summary({
-        from: '2025-10-01',
-        to: '2025-12-31',
-      });
+      const result = await service.summary(
+        {
+          from: '2025-10-01',
+          to: '2025-12-31',
+        },
+        UNRESTRICTED_SCOPE,
+      );
 
       expect(result.range).toEqual({ from: '2025-10-01', to: '2025-12-31' });
     });
 
     it('defaults `from` to 6 months back (start of month) when omitted', async () => {
       const { service } = createService({});
-      const result = await service.summary({ to: '2025-06-15' });
+      const result = await service.summary(
+        { to: '2025-06-15' },
+        UNRESTRICTED_SCOPE,
+      );
 
       // to=2025-06-15 -> default from = first day of the month 5 months
       // back = 2025-01-01.
@@ -363,11 +406,56 @@ describe('CasaDePazAnalyticsService', () => {
 
     it('defaults `to` to today when omitted', async () => {
       const { service } = createService({});
-      const result = await service.summary({ from: '2020-01-01' });
+      const result = await service.summary(
+        { from: '2020-01-01' },
+        UNRESTRICTED_SCOPE,
+      );
 
       const today = new Date().toISOString().slice(0, 10);
       expect(result.range.to).toBe(today);
       expect(result.range.from).toBe('2020-01-01');
+    });
+  });
+
+  describe('sector scoping (cross-sector data exposure guard)', () => {
+    it('filters every query by sector_id when the caller has a restricted sector scope', async () => {
+      const { service, em } = createService({ prevPeriod: '2026-02' });
+      await service.summary(FIXED_RANGE, SECTOR_SCOPE);
+
+      // Every createQueryBuilder() result issued during summary() must have
+      // been filtered by r.sector_id IN (:...sectorIds) for the caller's
+      // sectors — proving a sector-restricted caller cannot see other
+      // sectors' rows.
+      for (const result of em.createQueryBuilder.mock.results) {
+        const qb = result.value as MockQueryBuilder;
+        const andWhereCalls = qb.andWhere.mock.calls;
+        const hasSectorFilter = andWhereCalls.some(
+          (call) =>
+            call[0] === 'r.sector_id IN (:...sectorIds)' &&
+            (call[1] as { sectorIds: number[] }).sectorIds[0] === 7,
+        );
+        expect(hasSectorFilter).toBe(true);
+      }
+    });
+
+    it('returns a zeroed/empty summary without querying the database when a restricted caller has no sector scope', async () => {
+      const { service, em } = createService({});
+      const result = await service.summary(FIXED_RANGE, NO_SECTOR_SCOPE);
+
+      expect(em.createQueryBuilder).not.toHaveBeenCalled();
+      expect(result.totals).toEqual({
+        houses: 0,
+        kids: 0,
+        guests: 0,
+        lives: 0,
+        conversions: 0,
+        conversion_rate: 0,
+      });
+      expect(result.series).toEqual([]);
+      expect(result.by_sector).toEqual([]);
+      expect(result.by_day).toEqual([]);
+      expect(result.by_time).toEqual([]);
+      expect(result.comparison).toBeNull();
     });
   });
 });

@@ -4,14 +4,16 @@ import Shared
 enum LifeGroupDistributionTab: String, CaseIterable, Identifiable {
     case day, hour, neighborhood, city
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var label: String {
         switch self {
-        case .day: return "Dia"
-        case .hour: return "Horário"
-        case .neighborhood: return "Bairro"
-        case .city: return "Cidade"
+        case .day: "Dia"
+        case .hour: "Horário"
+        case .neighborhood: "Bairro"
+        case .city: "Cidade"
         }
     }
 }
@@ -31,6 +33,12 @@ class LifeGroupAnalyticsViewModel {
     var byCity: [LifeGroupDistributionBucket] = []
     var distributionTab: LifeGroupDistributionTab = .day
 
+    /// Loaded best-effort alongside attendance/distribution — a failure here
+    /// must never break the rest of the report (same precedent as
+    /// loadLifeGroups()), so it stays a separate optional, not folded into
+    /// the screen's main `error` state.
+    var overview: LifeGroupOverview?
+
     var isLoading = true
     var error: String?
 
@@ -39,10 +47,10 @@ class LifeGroupAnalyticsViewModel {
 
     var distributionForSelectedTab: [LifeGroupDistributionBucket] {
         switch distributionTab {
-        case .day: return byDay
-        case .hour: return byHour
-        case .neighborhood: return byNeighborhood
-        case .city: return byCity
+        case .day: byDay
+        case .hour: byHour
+        case .neighborhood: byNeighborhood
+        case .city: byCity
         }
     }
 
@@ -63,6 +71,17 @@ class LifeGroupAnalyticsViewModel {
             lifeGroups = groups.map { (id: $0.id, name: $0.name) }
         } catch {
             // Best-effort: the filter dropdown just stays empty on failure.
+        }
+    }
+
+    func loadOverview() async {
+        do {
+            overview = try await analyticsRepository.getOverview()
+        } catch {
+            // Best-effort, like loadLifeGroups() above — the stat cards +
+            // donuts this feeds are additive to the attendance/distribution
+            // charts, so a failure here must not surface as the screen's
+            // main error state.
         }
     }
 

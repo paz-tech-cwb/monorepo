@@ -158,6 +158,17 @@ struct AccountView: View {
                                 AccountRow(title: "Life Groups", icon: "chart.bar.fill", tint: Color(hex: "2E7D32"))
                             }
                             .buttonStyle(.plain)
+                            rowDivider
+                            NavigationLink(destination: CasaDePazAnalyticsView(
+                                analyticsRepository: IosAppContainer.shared.casaDePazAnalyticsRepository
+                            )) {
+                                AccountRow(
+                                    title: "Casa de Paz (Relatório)",
+                                    icon: "chart.pie.fill",
+                                    tint: Color(hex: "E65100")
+                                )
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                     .padding(.horizontal, 20)

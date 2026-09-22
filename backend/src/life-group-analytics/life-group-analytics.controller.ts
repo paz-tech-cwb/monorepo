@@ -36,4 +36,9 @@ export class LifeGroupAnalyticsController {
   ) {
     return this.svc.distribution(query, req.formScope, { id: req.user.id });
   }
+
+  @Get('overview')
+  overview(@Req() req: RequestWithScope) {
+    return this.svc.overview(req.formScope, { id: req.user.id });
+  }
 }

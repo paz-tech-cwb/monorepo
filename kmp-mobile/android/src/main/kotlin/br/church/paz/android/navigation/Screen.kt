@@ -104,4 +104,12 @@ sealed class Screen(
         fun createRoute(lifeGroupId: String? = null) =
             if (lifeGroupId != null) "life_group_analytics?lifeGroupId=$lifeGroupId" else "life_group_analytics"
     }
+
+    data object CasaDePazAnalytics : Screen("casa_de_paz_analytics")
+
+    data object CasaDePazLessonsList : Screen("casa_de_paz_lessons_list")
+
+    data object CasaDePazLessonDetail : Screen("casa_de_paz_lesson_detail/{week}") {
+        fun createRoute(week: Int) = "casa_de_paz_lesson_detail/$week"
+    }
 }
