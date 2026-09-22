@@ -94,6 +94,15 @@ object PazColors {
     /** Border for light-mode auth button */
     val LightButtonBorder = Color(0xFFE7ECF3)
 
+    /** Menu row icon tint — Formulários (Account "Minha Igreja" section) */
+    val MenuFormularios = Color(0xFF6A1B9A)
+
+    /** Menu row icon tint — Ministérios / Casa de Paz (Account menu rows) */
+    val MenuMinistries = Color(0xFFE65100)
+
+    /** Menu row icon tint — Life Groups (Account menu rows) */
+    val MenuLifeGroups = Color(0xFF2E7D32)
+
     /**
      * `Primary`, adapted for legibility: the brand navy is near-black and
      * disappears against dark surfaces, so dark mode steps up to the brighter

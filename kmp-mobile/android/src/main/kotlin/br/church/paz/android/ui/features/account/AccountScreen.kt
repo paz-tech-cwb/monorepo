@@ -15,12 +15,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DynamicForm
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.MusicNote
@@ -57,8 +60,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazAvatar
+import br.church.paz.android.ui.components.PazGlassCard
 import br.church.paz.android.ui.components.PazMenuRow
 import br.church.paz.android.ui.components.PazMeshBackground
+import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSectionHeader
 import br.church.paz.android.ui.features.auth.LoginScreen
 import br.church.paz.android.ui.theme.PazColors
@@ -86,6 +91,8 @@ fun AccountScreen(
                 AccountEffect.NavigateToMemberJourney -> navController.navigate(Screen.MemberJourney.route)
                 AccountEffect.NavigateToFormularios -> navController.navigate(Screen.FormulariosList.route)
                 AccountEffect.NavigateToMinistries -> navController.navigate(Screen.Ministries.route)
+                // TODO: route to dedicated LifeGroupsScreen once that screen lands
+                AccountEffect.NavigateToLifeGroups -> navController.navigate(Screen.Ministries.route)
                 AccountEffect.NavigateToCasaDePaz -> navController.navigate(Screen.CasaDePazSubmissionsList.route)
                 AccountEffect.NavigateToLifeGroupAnalytics -> navController.navigate(Screen.LifeGroupAnalytics.createRoute())
                 AccountEffect.NavigateToCasaDePazAnalytics -> navController.navigate(Screen.CasaDePazAnalytics.route)
@@ -149,132 +156,153 @@ fun AccountScreen(
             },
             containerColor = Color.Transparent,
         ) { innerPadding ->
-            LazyColumn(
-                contentPadding = contentPadding,
+            PazPullToRefresh(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = viewModel::refresh,
                 modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
             ) {
-                item { Spacer(Modifier.height(PazSpacing.Xl)) }
-
-                uiState.user?.let { user ->
-                    item {
-                        ProfileCard(
-                            user = user,
-                            onClick = viewModel::onEditProfile,
-                            modifier = Modifier.padding(horizontal = PazSpacing.Lg),
-                        )
-                    }
+                LazyColumn(
+                    contentPadding = contentPadding,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
                     item { Spacer(Modifier.height(PazSpacing.Xl)) }
 
-                    item {
-                        PazSectionHeader(title = "Minha Igreja", modifier = Modifier.padding(horizontal = PazSpacing.Lg + 4.dp))
-                        Spacer(Modifier.height(PazSpacing.Sm))
-                        MenuCard(modifier = Modifier.padding(horizontal = PazSpacing.Lg)) {
-                            PazMenuRow(
-                                title = "Jornada do Membro",
-                                icon = Icons.Outlined.Route,
-                                iconTint = PazColors.PrimaryLight,
-                                onClick = viewModel::onMemberJourney,
-                            )
-                            if (user.role.isLeader) {
-                                PazMenuRow(
-                                    title = "Formulários",
-                                    icon = Icons.Outlined.DynamicForm,
-                                    iconTint = Color(0xFF6A1B9A),
-                                    onClick = viewModel::onFormularios,
-                                )
-                            }
-                            PazMenuRow(
-                                title = "Ministérios",
-                                icon = Icons.Outlined.MusicNote,
-                                iconTint = Color(0xFFE65100),
-                                onClick = viewModel::onMinistries,
-                                showDivider = false,
+                    uiState.user?.let { user ->
+                        item {
+                            ProfileCard(
+                                user = user,
+                                onClick = viewModel::onEditProfile,
+                                modifier = Modifier.padding(horizontal = PazSpacing.Lg),
                             )
                         }
-                    }
+                        item { Spacer(Modifier.height(PazSpacing.Xl)) }
 
-                    item { Spacer(Modifier.height(PazSpacing.Lg)) }
-
-                    item {
-                        PazSectionHeader(title = "Relatórios", modifier = Modifier.padding(horizontal = PazSpacing.Lg + 4.dp))
-                        Spacer(Modifier.height(PazSpacing.Sm))
-                        MenuCard(modifier = Modifier.padding(horizontal = PazSpacing.Lg)) {
-                            PazMenuRow(
-                                title = "Casa de Paz",
-                                icon = Icons.Outlined.Home,
-                                iconTint = Color(0xFFE65100),
-                                onClick = viewModel::onCasaDePaz,
-                                showDivider = user.role.isLeader,
+                        item {
+                            PazSectionHeader(
+                                title = "MINHA IGREJA",
+                                modifier = Modifier.padding(horizontal = PazSpacing.Lg + 4.dp),
                             )
-                            if (user.role.isLeader) {
+                            Spacer(Modifier.height(PazSpacing.Sm))
+                            MenuCard(modifier = Modifier.padding(horizontal = PazSpacing.Lg)) {
                                 PazMenuRow(
-                                    title = "Life Groups",
-                                    icon = Icons.Outlined.BarChart,
-                                    iconTint = Color(0xFF2E7D32),
-                                    onClick = viewModel::onLifeGroupAnalytics,
-                                    showDivider = true,
+                                    title = "Jornada do Membro",
+                                    icon = Icons.Outlined.Route,
+                                    iconTint = PazColors.PrimaryLight,
+                                    onClick = viewModel::onMemberJourney,
+                                )
+                                if (user.role.isLeader) {
+                                    PazMenuRow(
+                                        title = "Formulários",
+                                        icon = Icons.Outlined.DynamicForm,
+                                        iconTint = PazColors.MenuFormularios,
+                                        onClick = viewModel::onFormularios,
+                                    )
+                                }
+                                PazMenuRow(
+                                    title = "Ministérios",
+                                    icon = Icons.Outlined.MusicNote,
+                                    iconTint = PazColors.MenuMinistries,
+                                    onClick = viewModel::onMinistries,
                                 )
                                 PazMenuRow(
-                                    title = "Casa de Paz (Relatório)",
-                                    icon = Icons.Outlined.BarChart,
-                                    iconTint = Color(0xFFE65100),
-                                    onClick = viewModel::onCasaDePazAnalytics,
+                                    title = "Life Groups",
+                                    icon = Icons.Outlined.Groups,
+                                    iconTint = PazColors.MenuLifeGroups,
+                                    onClick = viewModel::onLifeGroups,
                                     showDivider = false,
                                 )
                             }
                         }
-                    }
 
-                    item { Spacer(Modifier.height(PazSpacing.Lg)) }
+                        item { Spacer(Modifier.height(PazSpacing.Lg)) }
 
-                    item {
-                        PazSectionHeader(title = "Preferências", modifier = Modifier.padding(horizontal = PazSpacing.Lg + 4.dp))
-                        Spacer(Modifier.height(PazSpacing.Sm))
-                        MenuCard(Modifier.padding(horizontal = PazSpacing.Lg)) {
-                            PazMenuRow(
-                                title = "Notificações",
-                                icon = Icons.Outlined.Notifications,
-                                iconTint = PazColors.PrimaryMid,
-                                onClick = viewModel::onNotificationPrefs,
+                        item {
+                            PazSectionHeader(
+                                title = "RELATÓRIOS",
+                                modifier = Modifier.padding(horizontal = PazSpacing.Lg + 4.dp),
                             )
-                            PazMenuRow(
-                                title = "Modo escuro",
-                                icon = if (uiState.isDarkMode) Icons.Outlined.DarkMode else Icons.Outlined.LightMode,
-                                iconTint = PazColors.PrimaryMid,
-                                showDivider = false,
-                                onClick = { viewModel.onToggleDarkMode(!uiState.isDarkMode) },
-                                trailing = {
-                                    Switch(
-                                        checked = uiState.isDarkMode,
-                                        onCheckedChange = viewModel::onToggleDarkMode,
-                                        colors =
-                                            SwitchDefaults.colors(
-                                                checkedThumbColor = Color.White,
-                                                checkedTrackColor = PazColors.PrimaryLight,
-                                            ),
+                            Spacer(Modifier.height(PazSpacing.Sm))
+                            MenuCard(modifier = Modifier.padding(horizontal = PazSpacing.Lg)) {
+                                PazMenuRow(
+                                    title = "Casa de Paz",
+                                    icon = Icons.Outlined.Home,
+                                    iconTint = PazColors.MenuMinistries,
+                                    onClick = viewModel::onCasaDePaz,
+                                    showDivider = user.role.isLeader,
+                                )
+                                if (user.role.isLeader) {
+                                    PazMenuRow(
+                                        title = "Life Groups",
+                                        icon = Icons.Outlined.BarChart,
+                                        iconTint = PazColors.MenuLifeGroups,
+                                        onClick = viewModel::onLifeGroupAnalytics,
+                                        showDivider = true,
                                     )
-                                },
-                            )
+                                    PazMenuRow(
+                                        title = "Casa de Paz (Relatório)",
+                                        icon = Icons.Outlined.BarChart,
+                                        iconTint = PazColors.MenuMinistries,
+                                        onClick = viewModel::onCasaDePazAnalytics,
+                                        showDivider = false,
+                                    )
+                                }
+                            }
                         }
-                    }
 
-                    item { Spacer(Modifier.height(PazSpacing.Lg)) }
+                        item { Spacer(Modifier.height(PazSpacing.Lg)) }
 
-                    item {
-                        MenuCard(Modifier.padding(horizontal = PazSpacing.Lg)) {
-                            PazMenuRow(
-                                title = "Sair da conta",
-                                icon = Icons.AutoMirrored.Outlined.Logout,
-                                iconTint = PazColors.Error,
-                                titleColor = PazColors.Error,
-                                onClick = { showLogoutDialog = true },
-                                showDivider = false,
-                                tintIcon = false,
+                        item {
+                            PazSectionHeader(
+                                title = "PREFERÊNCIAS",
+                                modifier = Modifier.padding(horizontal = PazSpacing.Lg + 4.dp),
                             )
+                            Spacer(Modifier.height(PazSpacing.Sm))
+                            MenuCard(Modifier.padding(horizontal = PazSpacing.Lg)) {
+                                PazMenuRow(
+                                    title = "Notificações",
+                                    icon = Icons.Outlined.Notifications,
+                                    iconTint = PazColors.PrimaryMid,
+                                    onClick = viewModel::onNotificationPrefs,
+                                )
+                                PazMenuRow(
+                                    title = "Modo Escuro",
+                                    icon = if (uiState.isDarkMode) Icons.Outlined.DarkMode else Icons.Outlined.LightMode,
+                                    iconTint = PazColors.PrimaryMid,
+                                    showDivider = false,
+                                    onClick = { viewModel.onToggleDarkMode(!uiState.isDarkMode) },
+                                    trailing = {
+                                        Switch(
+                                            checked = uiState.isDarkMode,
+                                            onCheckedChange = viewModel::onToggleDarkMode,
+                                            colors =
+                                                SwitchDefaults.colors(
+                                                    checkedThumbColor = Color.White,
+                                                    checkedTrackColor = PazColors.PrimaryLight,
+                                                ),
+                                        )
+                                    },
+                                )
+                            }
                         }
-                    }
 
-                    item { Spacer(Modifier.height(PazSpacing.Xl)) }
+                        item { Spacer(Modifier.height(PazSpacing.Lg)) }
+
+                        item {
+                            MenuCard(Modifier.padding(horizontal = PazSpacing.Lg)) {
+                                PazMenuRow(
+                                    title = "Sair da conta",
+                                    icon = Icons.AutoMirrored.Outlined.Logout,
+                                    iconTint = PazColors.Error,
+                                    titleColor = PazColors.Error,
+                                    onClick = { showLogoutDialog = true },
+                                    showDivider = false,
+                                    tintIcon = false,
+                                )
+                            }
+                        }
+
+                        item { Spacer(Modifier.height(PazSpacing.Xl)) }
+                    }
                 }
             }
         }
@@ -287,41 +315,59 @@ private fun ProfileCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
-                .background(
-                    if (MaterialTheme.colorScheme.background ==
-                        PazColors.Background
-                    ) {
-                        PazColors.PrimaryTint
-                    } else {
-                        PazColors.DarkPrimaryContainer
-                    },
-                ).border(1.dp, PazColors.Primary.copy(alpha = 0.13f), RoundedCornerShape(22.dp))
-                .clickable(onClick = onClick)
-                .padding(PazSpacing.Md),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        PazAvatar(name = user.name, imageUrl = user.picture, size = 56.dp)
-        Column(
-            Modifier.weight(1f).padding(horizontal = PazSpacing.Md),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+    Box(modifier = modifier) {
+        PazGlassCard(
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+            cornerRadius = 22.dp,
         ) {
-            Text(user.name, style = MaterialTheme.typography.titleMedium.copy(color = PazColors.Primary))
-            Text(user.email, style = MaterialTheme.typography.bodySmall.copy(color = PazColors.Accent), maxLines = 1)
-            Spacer(Modifier.height(4.dp))
-            Box(
-                Modifier
-                    .clip(
-                        RoundedCornerShape(20.dp),
-                    ).background(PazColors.Primary.copy(alpha = 0.12f))
-                    .padding(horizontal = 8.dp, vertical = 2.dp),
+            Row(
+                modifier = Modifier.padding(PazSpacing.Md),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(user.role.displayName, style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Primary))
+                PazAvatar(name = user.name, imageUrl = user.picture, size = 56.dp)
+                Column(
+                    Modifier.weight(1f).padding(horizontal = PazSpacing.Md),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(user.name, style = MaterialTheme.typography.titleMedium.copy(color = PazColors.Primary))
+                    Text(
+                        user.email,
+                        style = MaterialTheme.typography.bodySmall.copy(color = PazColors.Accent),
+                        maxLines = 1,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Box(
+                        Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(PazColors.Primary.copy(alpha = 0.12f))
+                            .padding(horizontal = 8.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            user.role.displayName,
+                            style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Primary),
+                        )
+                    }
+                }
             }
+        }
+
+        // Floating "edit" badge overlapping the avatar, mirrors iOS's pencil badge on the user card.
+        Box(
+            modifier =
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(1.dp, PazColors.Primary.copy(alpha = 0.13f), CircleShape)
+                    .padding(6.dp),
+        ) {
+            Icon(
+                Icons.Outlined.Edit,
+                contentDescription = null,
+                tint = PazColors.Primary,
+                modifier = Modifier.size(14.dp),
+            )
         }
     }
 }

@@ -34,6 +34,14 @@ class AccountViewModel(
         }
     }
 
+    fun refresh() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true) }
+            val user = authRepository.currentUser()
+            _uiState.update { it.copy(user = user, isRefreshing = false, isGuestMode = false) }
+        }
+    }
+
     fun onExploreAsGuest() {
         _uiState.update { it.copy(isGuestMode = true) }
     }
@@ -62,6 +70,8 @@ class AccountViewModel(
     fun onFormularios() = emit(AccountEffect.NavigateToFormularios)
 
     fun onMinistries() = emit(AccountEffect.NavigateToMinistries)
+
+    fun onLifeGroups() = emit(AccountEffect.NavigateToLifeGroups)
 
     fun onCasaDePaz() = emit(AccountEffect.NavigateToCasaDePaz)
 
