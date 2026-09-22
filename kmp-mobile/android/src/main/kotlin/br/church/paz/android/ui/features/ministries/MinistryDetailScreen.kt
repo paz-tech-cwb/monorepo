@@ -1,5 +1,7 @@
 package br.church.paz.android.ui.features.ministries
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,10 +20,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,15 +33,20 @@ import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -249,6 +258,32 @@ private fun LifeGroupContent(
     canManage: Boolean,
     onAnalyticsTap: () -> Unit,
 ) {
+    val context = LocalContext.current
+    var showLeadershipDialog by remember { mutableStateOf(false) }
+
+    val leadershipContacts =
+        remember(lifeGroup) {
+            buildList {
+                if (lifeGroup.leader != null && !lifeGroup.leaderPhone.isNullOrBlank()) {
+                    add(LeadershipContact(lifeGroup.leader, lifeGroup.leaderPhone))
+                }
+                if (lifeGroup.coLeaderName != null && !lifeGroup.coLeaderPhone.isNullOrBlank()) {
+                    add(LeadershipContact(lifeGroup.coLeaderName, lifeGroup.coLeaderPhone))
+                }
+            }
+        }
+
+    if (showLeadershipDialog) {
+        LeadershipPickerDialog(
+            contacts = leadershipContacts,
+            onDismiss = { showLeadershipDialog = false },
+            onPick = { contact ->
+                showLeadershipDialog = false
+                openWhatsApp(context, contact.phone)
+            },
+        )
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding =
@@ -316,6 +351,47 @@ private fun LifeGroupContent(
                 }
                 lifeGroup.location?.let {
                     InfoRow(icon = Icons.Default.LocationOn, label = "Endereço", value = it)
+                    if (lifeGroup.latitude != null && lifeGroup.longitude != null) {
+                        Text(
+                            "Como chegar",
+                            style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Primary),
+                            modifier =
+                                Modifier
+                                    .padding(start = 32.dp)
+                                    .clickable {
+                                        openInMaps(context, lifeGroup.latitude!!, lifeGroup.longitude!!, lifeGroup.name)
+                                    },
+                        )
+                    }
+                }
+            }
+        }
+
+        if (leadershipContacts.isNotEmpty()) {
+            item {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(PazShapes.large)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .clickable {
+                                if (leadershipContacts.size > 1) {
+                                    showLeadershipDialog = true
+                                } else {
+                                    openWhatsApp(context, leadershipContacts.first().phone)
+                                }
+                            }.padding(PazSpacing.Lg),
+                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Default.Message, contentDescription = null, tint = PazColors.Primary, modifier = Modifier.size(22.dp))
+                    Text("Falar com a liderança", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Icon(
+                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    )
                 }
             }
         }
@@ -422,6 +498,64 @@ private fun InfoRow(
             Text(value, style = MaterialTheme.typography.bodySmall)
         }
     }
+}
+
+// ── "Falar com a liderança" — WhatsApp deep link ────────────────────────────
+
+private data class LeadershipContact(
+    val name: String,
+    val phone: String,
+)
+
+@Composable
+private fun LeadershipPickerDialog(
+    contacts: List<LeadershipContact>,
+    onDismiss: () -> Unit,
+    onPick: (LeadershipContact) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Falar com a liderança") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
+                contacts.forEach { contact ->
+                    Text(
+                        contact.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { onPick(contact) }
+                                .padding(vertical = PazSpacing.Sm),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
+        },
+    )
+}
+
+/** Opens the device's default maps app — lets the user pick their preferred provider. */
+private fun openInMaps(
+    context: android.content.Context,
+    latitude: Double,
+    longitude: Double,
+    name: String,
+) {
+    val uri = Uri.parse("geo:$latitude,$longitude?q=$latitude,$longitude(${Uri.encode(name)})")
+    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
+}
+
+private fun openWhatsApp(
+    context: android.content.Context,
+    phone: String,
+) {
+    val digits = phone.filter { it.isDigit() }
+    if (digits.isEmpty()) return
+    val uri = Uri.parse("https://wa.me/$digits")
+    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
 }
 
 // ── Shared scaffold ──────────────────────────────────────────────────────────
