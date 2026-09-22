@@ -6,6 +6,7 @@ import br.church.paz.shared.domain.model.Banner
 
 data class HomeUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val banners: List<Banner> = emptyList(),
     val agendaEvents: List<AgendaEvent> = emptyList(),
     val bank: BankInfo? = null,

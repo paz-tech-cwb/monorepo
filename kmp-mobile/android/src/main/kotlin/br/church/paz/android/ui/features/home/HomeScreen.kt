@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -29,35 +28,35 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
@@ -65,9 +64,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,11 +77,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
-import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazCardSkeleton
 import br.church.paz.android.ui.components.PazErrorState
+import br.church.paz.android.ui.components.PazGlassCard
+import br.church.paz.android.ui.components.PazMeshBackground
+import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSkeleton
-import br.church.paz.android.ui.theme.LocalPazDarkTheme
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapePill
@@ -90,8 +92,8 @@ import br.church.paz.shared.domain.model.BankInfo
 import br.church.paz.shared.domain.model.Banner
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
-import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
@@ -106,7 +108,6 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -120,31 +121,40 @@ fun HomeScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = { HomeTopBar(userName = uiState.userName, scrollBehavior = scrollBehavior) },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { innerPadding ->
-        val bottomPad = contentPadding.calculateBottomPadding() + PazSpacing.Xl
-        val adjustedPadding =
-            PaddingValues(
-                top = innerPadding.calculateTopPadding(),
-                bottom = bottomPad,
-            )
-        when {
-            uiState.isLoading -> LoadingSkeleton(adjustedPadding)
-            uiState.error != null -> ErrorState(uiState.error!!, viewModel::load, adjustedPadding)
-            else ->
-                HomeContent(
-                    banners = uiState.banners,
-                    agendaEvents = uiState.agendaEvents,
-                    bank = uiState.bank,
-                    sectionOrder = uiState.sectionOrder,
-                    onBannerTap = viewModel::onBannerTapped,
-                    onEventTap = viewModel::onEventTapped,
-                    onSeeAllEvents = { navController.navigate(Screen.AgendaList.route) },
-                    contentPadding = adjustedPadding,
+    Box(Modifier.fillMaxSize()) {
+        PazMeshBackground()
+
+        Scaffold(
+            topBar = { HomeTopBar() },
+            containerColor = Color.Transparent,
+        ) { innerPadding ->
+            val bottomPad = contentPadding.calculateBottomPadding() + PazSpacing.Xl
+            val adjustedPadding =
+                PaddingValues(
+                    top = innerPadding.calculateTopPadding(),
+                    bottom = bottomPad,
                 )
+            PazPullToRefresh(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = viewModel::refresh,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                when {
+                    uiState.isLoading -> LoadingSkeleton(adjustedPadding)
+                    uiState.error != null -> ErrorState(uiState.error!!, viewModel::load, adjustedPadding)
+                    else ->
+                        HomeContent(
+                            banners = uiState.banners,
+                            agendaEvents = uiState.agendaEvents,
+                            bank = uiState.bank,
+                            sectionOrder = uiState.sectionOrder,
+                            onBannerTap = viewModel::onBannerTapped,
+                            onEventTap = viewModel::onEventTapped,
+                            onSeeAllEvents = { navController.navigate(Screen.AgendaList.route) },
+                            contentPadding = adjustedPadding,
+                        )
+                }
+            }
         }
     }
 }
@@ -153,79 +163,10 @@ fun HomeScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeTopBar(
-    userName: String,
-    scrollBehavior: TopAppBarScrollBehavior,
-) {
-    val fraction = scrollBehavior.state.collapsedFraction
-    val collapsed = fraction > 0.5f
-    val isDark = LocalPazDarkTheme.current
-
-    val today = remember { Calendar.getInstance() }
-    val ptBr = remember { Locale("pt", "BR") }
-    val dateLabel =
-        remember {
-            val dow = SimpleDateFormat("EEEE", ptBr).format(today.time).uppercase(ptBr)
-            val day = today.get(Calendar.DAY_OF_MONTH)
-            val month = SimpleDateFormat("MMMM", ptBr).format(today.time).uppercase(ptBr)
-            "$dow, $day DE $month"
-        }
-
+private fun HomeTopBar() {
     LargeTopAppBar(
-        expandedHeight = 112.dp,
-        title = {
-            if (collapsed) {
-                Text("Início", style = MaterialTheme.typography.titleMedium)
-            } else {
-                Column {
-                    Text(
-                        text = dateLabel,
-                        style =
-                            MaterialTheme.typography.labelSmall.copy(
-                                color = PazColors.PrimaryLight,
-                            ),
-                    )
-                    Spacer(Modifier.height(7.dp))
-                    Text(
-                        text = if (userName.isEmpty()) "Olá!" else "Olá, $userName",
-                        style =
-                            MaterialTheme.typography.displayLarge.copy(
-                                color =
-                                    if (isDark) {
-                                        MaterialTheme.colorScheme.onBackground
-                                    } else {
-                                        PazColors.Primary
-                                    },
-                            ),
-                    )
-                }
-            }
-        },
-        actions = {
-            Box(contentAlignment = Alignment.TopEnd) {
-                IconButton(onClick = {}) {
-                    Icon(
-                        imageVector = Icons.Outlined.Notifications,
-                        contentDescription = "Notificações",
-                        tint = MaterialTheme.colorScheme.onBackground,
-                    )
-                }
-                Box(
-                    Modifier
-                        .padding(top = 11.dp, end = 11.dp)
-                        .size(8.dp)
-                        .border(1.6.dp, MaterialTheme.colorScheme.background, CircleShape)
-                        .background(PazColors.Gold, CircleShape),
-                )
-            }
-        },
-        colors =
-            TopAppBarDefaults.largeTopAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background,
-                scrolledContainerColor = MaterialTheme.colorScheme.background,
-                titleContentColor = MaterialTheme.colorScheme.onBackground,
-            ),
-        scrollBehavior = scrollBehavior,
+        title = { Text("Início") },
+        colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
     )
 }
 
@@ -257,7 +198,7 @@ private fun HomeContent(
                     if (banners.isNotEmpty()) {
                         item(key = "featured") {
                             AnimatedSection(index = index) {
-                                FeaturedSection(banners = banners, onBannerTap = onBannerTap, onSeeAll = onSeeAllEvents)
+                                FeaturedSection(banners = banners, onBannerTap = onBannerTap)
                             }
                         }
                     }
@@ -272,21 +213,22 @@ private fun HomeContent(
                             }
                         }
                     }
-                "agenda" -> {
-                    item(key = "agenda") {
-                        AnimatedSection(index = index) {
-                            AgendaSection(
-                                weekDays = weekDays,
-                                allEvents = agendaEvents,
-                                weekHasEvents = weekHasEvents,
-                                selectedDay = selectedDay,
-                                onDaySelected = { selectedDay = it },
-                                onEventTap = onEventTap,
-                                onSeeAll = onSeeAllEvents,
-                            )
+                "agenda" ->
+                    if (agendaEvents.isNotEmpty()) {
+                        item(key = "agenda") {
+                            AnimatedSection(index = index) {
+                                AgendaSection(
+                                    weekDays = weekDays,
+                                    allEvents = agendaEvents,
+                                    weekHasEvents = weekHasEvents,
+                                    selectedDay = selectedDay,
+                                    onDaySelected = { selectedDay = it },
+                                    onEventTap = onEventTap,
+                                    onSeeAll = onSeeAllEvents,
+                                )
+                            }
                         }
                     }
-                }
             }
         }
     }
@@ -320,80 +262,41 @@ private fun AnimatedSection(
 private fun FeaturedSection(
     banners: List<Banner>,
     onBannerTap: (String?) -> Unit,
-    onSeeAll: () -> Unit,
 ) {
     val pagerState = rememberPagerState { banners.size }
-    val isDark = LocalPazDarkTheme.current
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val cardWidth = screenWidth - 88.dp
+
+    // Auto-advance every 3s, matching iOS's Timer-driven carousel. Restarting the
+    // effect on every page change (whether from this timer or a user swipe) both
+    // keeps the cadence going and effectively pauses it while a drag is in progress,
+    // since currentPage doesn't change mid-drag until the user releases.
+    LaunchedEffect(pagerState.currentPage, banners.size) {
+        if (banners.size <= 1) return@LaunchedEffect
+        delay(3000)
+        if (!pagerState.isScrollInProgress) {
+            val next = (pagerState.currentPage + 1) % banners.size
+            pagerState.animateScrollToPage(next)
+        }
+    }
 
     Column(Modifier.padding(top = PazSpacing.Md)) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Sm),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("Eventos", style = MaterialTheme.typography.headlineMedium)
-            TextButton(onClick = onSeeAll) {
-                Text(
-                    "Ver todos",
-                    style = MaterialTheme.typography.labelSmall.copy(color = PazColors.PrimaryLight),
-                )
-                Icon(
-                    Icons.AutoMirrored.Outlined.ArrowForward,
-                    contentDescription = null,
-                    tint = PazColors.PrimaryLight,
-                    modifier = Modifier.size(15.dp).padding(start = 4.dp),
-                )
-            }
-        }
-
         HorizontalPager(
             state = pagerState,
             contentPadding = PaddingValues(horizontal = PazSpacing.Lg),
             pageSpacing = PazSpacing.Md,
+            pageSize = PageSize.Fixed(cardWidth),
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 12.dp),
+                    .height(224.dp),
         ) { page ->
             FeaturedCard(
                 banner = banners[page],
                 isAlt = page % 2 == 1,
+                // Android keeps tap-to-open on banner cards (iOS lacks this — follow-up to add there).
                 onClick = { onBannerTap(banners[page].actionUrl) },
             )
-        }
-
-        // Dot indicators
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(top = PazSpacing.Md),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            banners.indices.forEach { i ->
-                val isActive = pagerState.currentPage == i
-                val w by animateDpAsState(
-                    targetValue = if (isActive) 20.dp else 7.dp,
-                    animationSpec = tween(250),
-                    label = "dotWidth$i",
-                )
-                Box(
-                    Modifier
-                        .padding(horizontal = 3.dp)
-                        .size(width = w, height = 7.dp)
-                        .background(
-                            color =
-                                if (isActive) {
-                                    if (isDark) PazColors.PrimaryLight else PazColors.Primary
-                                } else {
-                                    PazColors.DotInactive
-                                },
-                            shape = RoundedCornerShape(4.dp),
-                        ),
-                )
-            }
         }
     }
 }
@@ -410,7 +313,7 @@ private fun FeaturedCard(
     Box(
         Modifier
             .fillMaxWidth()
-            .height(176.dp)
+            .height(180.dp)
             .shadow(
                 elevation = 12.dp,
                 shape = shape,
@@ -500,37 +403,20 @@ private fun DizimosCard(
     bank: BankInfo,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 12.dp,
-                shape = RoundedCornerShape(24.dp),
-                spotColor = PazColors.ContributionDeep.copy(alpha = 0.70f),
-                ambientColor = PazColors.ContributionDeep.copy(alpha = 0.10f),
-            ).clip(RoundedCornerShape(24.dp))
-            .drawBehind {
-                drawRect(
-                    brush =
-                        Brush.radialGradient(
-                            colorStops =
-                                arrayOf(
-                                    0f to PazColors.ContributionHighlight,
-                                    0.40f to PazColors.PrimaryMid,
-                                    1f to PazColors.ContributionDeep,
-                                ),
-                            center = Offset(size.width * 0.82f, -size.height * 0.08f),
-                            radius = size.width * 1.30f,
-                        ),
-                )
-            }.padding(22.dp),
+    val clipboardManager = LocalClipboardManager.current
+    val scope = rememberCoroutineScope()
+    var copied by remember { mutableStateOf(false) }
+
+    PazGlassCard(
+        modifier = modifier.fillMaxWidth(),
+        cornerRadius = PazSpacing.CardRadiusCompact,
     ) {
-        Column {
+        Column(Modifier.padding(22.dp)) {
             Text(
                 "DÍZIMOS & OFERTAS",
                 style =
                     MaterialTheme.typography.labelSmall.copy(
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     ),
             )
             Spacer(Modifier.height(PazSpacing.Xs))
@@ -540,34 +426,39 @@ private fun DizimosCard(
                     MaterialTheme.typography.headlineMedium.copy(
                         fontSize = 27.sp,
                         lineHeight = 30.sp,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                     ),
             )
             Text(
                 "Sua oferta transforma vidas na comunidade",
                 style =
                     MaterialTheme.typography.bodySmall.copy(
-                        color = Color.White.copy(alpha = 0.70f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.70f),
                         lineHeight = 20.sp,
                     ),
                 modifier = Modifier.padding(top = PazSpacing.Xs),
             )
-            Spacer(Modifier.height(PazSpacing.Lg))
-            Row(horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md)) {
-                if (bank.pixKey != null) {
-                    DizimosButton("PIX", primary = true, modifier = Modifier.weight(1f), onClick = {})
-                }
-                DizimosButton("Cartão", primary = false, modifier = Modifier.weight(1f), onClick = {})
+            if (bank.pixKey != null) {
+                Spacer(Modifier.height(PazSpacing.Lg))
+                DizimosPixButton(
+                    copied = copied,
+                    onClick = {
+                        clipboardManager.setText(AnnotatedString(bank.pixKey))
+                        copied = true
+                        scope.launch {
+                            delay(1500)
+                            copied = false
+                        }
+                    },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun DizimosButton(
-    label: String,
-    primary: Boolean,
-    modifier: Modifier = Modifier,
+private fun DizimosPixButton(
+    copied: Boolean,
     onClick: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -575,23 +466,17 @@ private fun DizimosButton(
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.97f else 1f,
         animationSpec = tween(120),
-        label = "btnScale",
+        label = "pixBtnScale",
     )
     Box(
         modifier =
-            modifier
-                .height(52.dp)
-                .shadow(
-                    elevation = if (primary) 8.dp else 0.dp,
-                    shape = PazShapePill,
-                    spotColor = Color.Black.copy(alpha = 0.33f),
-                ).clip(PazShapePill)
-                .background(if (primary) Color.White else Color.White.copy(alpha = 0.13f))
-                .border(
-                    width = if (primary) 0.dp else 1.dp,
-                    color = if (primary) Color.Transparent else Color.White.copy(alpha = 0.24f),
-                    shape = PazShapePill,
-                ).clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            Modifier
+                .fillMaxWidth()
+                .height(PazSpacing.PillButtonHeight)
+                .shadow(elevation = 8.dp, shape = PazShapePill, spotColor = Color.Black.copy(alpha = 0.33f))
+                .clip(PazShapePill)
+                .background(PazColors.accent.copy(alpha = 0.78f))
+                .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale
@@ -599,12 +484,12 @@ private fun DizimosButton(
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            label,
+            if (copied) "Copiado!" else "Copiar PIX",
             style =
                 MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.5.sp,
-                    color = if (primary) PazColors.NavyText else Color.White,
+                    color = Color.White,
                 ),
         )
     }
@@ -729,19 +614,16 @@ private fun AgendaSection(
         if (weekHasEvents) {
             Spacer(Modifier.height(PazSpacing.Md))
 
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = PazSpacing.Lg)
-                        .padding(vertical = 12.dp),
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = PazSpacing.Lg, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
             ) {
-                weekDays.forEachIndexed { index, item ->
+                itemsIndexed(weekDays) { index, item ->
                     DayPill(
                         item = item,
                         isSelected = index == selectedDay,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.width(52.dp),
                         onClick = { onDaySelected(index) },
                     )
                 }
@@ -751,10 +633,7 @@ private fun AgendaSection(
         Spacer(Modifier.height(PazSpacing.Md))
 
         if (dayEvents.isEmpty()) {
-            EmptyAgendaCard(
-                hasUpcomingEvents = allEvents.isNotEmpty(),
-                onSeeAll = onSeeAll,
-            )
+            EmptyAgendaCard(hasUpcomingEvents = allEvents.isNotEmpty())
         } else {
             Column(
                 Modifier.padding(horizontal = PazSpacing.Lg),
@@ -770,56 +649,40 @@ private fun AgendaSection(
 }
 
 @Composable
-private fun EmptyAgendaCard(
-    hasUpcomingEvents: Boolean,
-    onSeeAll: () -> Unit,
-) {
-    val shape = RoundedCornerShape(20.dp)
-    Column(
+private fun EmptyAgendaCard(hasUpcomingEvents: Boolean) {
+    PazGlassCard(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = PazSpacing.Lg)
-                .shadow(
-                    elevation = 6.dp,
-                    shape = shape,
-                    spotColor = PazColors.ShadowNavy.copy(alpha = 0.20f),
-                    ambientColor = PazColors.ShadowNavy.copy(alpha = 0.04f),
-                ).clip(shape)
-                .background(MaterialTheme.colorScheme.surface)
-                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), shape)
-                .padding(PazSpacing.Lg),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+                .padding(horizontal = PazSpacing.Lg),
+        cornerRadius = PazSpacing.CardRadiusCompact,
     ) {
-        Text(
-            text = if (hasUpcomingEvents) "Nenhum evento para esta semana" else "Nenhum evento agendado",
-            style =
-                MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp,
-                ),
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text =
-                if (hasUpcomingEvents) {
-                    "Confira todos os eventos clicando no botão abaixo."
-                } else {
-                    "Aguarde novos eventos para o futuro."
-                },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        if (hasUpcomingEvents) {
-            Spacer(Modifier.height(PazSpacing.Lg))
-            PazButton(
-                text = "Ver próximos eventos",
-                onClick = onSeeAll,
-                modifier = Modifier.fillMaxWidth(0.9f),
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(PazSpacing.Xl),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = if (hasUpcomingEvents) "Nenhum evento para esta semana" else "Nenhum evento agendado",
+                style =
+                    MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                    ),
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text =
+                    if (hasUpcomingEvents) {
+                        "Confira todos os eventos na agenda."
+                    } else {
+                        "Aguarde novos eventos para o futuro."
+                    },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
         }
     }
@@ -950,7 +813,7 @@ private fun EventCard(
             modifier = Modifier.width(50.dp),
         )
         Box(Modifier.size(18.dp), contentAlignment = Alignment.Center) {
-            Box(Modifier.size(18.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape))
+            Box(Modifier.size(18.dp).background(PazColors.tint, CircleShape))
             Box(Modifier.size(10.dp).background(PazColors.Primary, CircleShape))
         }
         Column(Modifier.weight(1f)) {
@@ -1002,7 +865,7 @@ private fun LoadingSkeleton(contentPadding: PaddingValues) {
                 .padding(horizontal = PazSpacing.Lg),
     ) {
         item { Spacer(Modifier.height(PazSpacing.Md)) }
-        item { PazSkeleton(height = 176.dp) }
+        item { PazSkeleton(height = 180.dp) }
         item { PazCardSkeleton() }
         repeat(3) { item { PazCardSkeleton() } }
     }
