@@ -119,12 +119,14 @@ struct AccountView: View {
                             AccountRow(title: "Jornada do Membro", icon: "figure.walk", tint: PazColors.accent)
                         }
                         .buttonStyle(.plain)
-                        rowDivider
-                        NavigationLink(destination: FormulariosView(formsRepository: IosAppContainer.shared
-                                .formsRepository)) {
-                            AccountRow(title: "Formulários", icon: "list.clipboard", tint: Color(hex: "6A1B9A"))
+                        if user.role.isLeader {
+                            rowDivider
+                            NavigationLink(destination: FormulariosView(formsRepository: IosAppContainer.shared
+                                    .formsRepository)) {
+                                AccountRow(title: "Formulários", icon: "list.clipboard", tint: Color(hex: "6A1B9A"))
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                         rowDivider
                         NavigationLink(destination: MinistriesView(churchRepository: IosAppContainer.shared
                                 .churchRepository)) {
