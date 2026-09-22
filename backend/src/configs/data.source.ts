@@ -45,6 +45,13 @@ import { FormGuest } from '../form-guests/entities/form-guest.entity';
 import { Ministry } from '../ministries/entities/ministry.entity';
 import { MinistryTeam } from '../ministries/entities/ministry-team.entity';
 import { AuditLog } from '../auth/entities/audit-log.entity';
+import { JourneyTrack } from '../journey-tracks/entities/journey-track.entity';
+import { JourneyTrackStep } from '../journey-tracks/entities/journey-track-step.entity';
+import { MemberJourneyStepProgress } from '../journey-tracks/entities/member-journey-step-progress.entity';
+import { CasaDePazCycle } from '../casa-de-paz-cycles/entities/casa-de-paz-cycle.entity';
+import { CasaDePazReportGuest } from '../casa-de-paz-reports/entities/casa-de-paz-report-guest.entity';
+import { GuestOrigin } from '../guest-origins/entities/guest-origin.entity';
+import { CasaDePazLesson } from '../casa-de-paz-lessons/entities/casa-de-paz-lesson.entity';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -102,6 +109,13 @@ export const AppDataSource = new DataSource({
     CourseLessonProgress,
     CourseQuestionnaireResponse,
     CourseCertificate,
+    JourneyTrack,
+    JourneyTrackStep,
+    MemberJourneyStepProgress,
+    CasaDePazCycle,
+    CasaDePazReportGuest,
+    GuestOrigin,
+    CasaDePazLesson,
   ],
   migrations: ['dist/database/migrations/*.js'],
   migrationsTransactionMode: 'each',
