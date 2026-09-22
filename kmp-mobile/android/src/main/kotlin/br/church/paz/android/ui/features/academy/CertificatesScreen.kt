@@ -71,7 +71,11 @@ fun CertificatesScreen(
             Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
                 when {
                     uiState.isLoading -> CertificatesSkeleton()
-                    uiState.error != null -> PazErrorState(message = uiState.error ?: "Erro ao carregar certificados", onRetry = viewModel::load)
+                    uiState.error != null ->
+                        PazErrorState(
+                            message = uiState.error ?: "Erro ao carregar certificados",
+                            onRetry = viewModel::load,
+                        )
                     uiState.certificates.isEmpty() -> CertificatesEmpty()
                     else ->
                         LazyColumn(

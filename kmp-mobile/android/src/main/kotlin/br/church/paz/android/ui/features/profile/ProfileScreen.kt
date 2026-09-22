@@ -13,16 +13,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,14 +40,15 @@ import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazAvatar
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazMenuRow
+import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
-import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.displayName
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     navController: NavController,
@@ -62,35 +66,32 @@ fun ProfileScreen(
         }
     }
 
-    Column(Modifier.fillMaxSize()) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .background(PazGradients.Hero)
-                .statusBarsPadding()
-                .padding(horizontal = PazSpacing.Xl, vertical = PazSpacing.Lg),
-        ) {
-            Text("Meu Perfil", style = MaterialTheme.typography.headlineMedium.copy(color = Color.White))
-        }
+    Box(Modifier.fillMaxSize()) {
+        PazMeshBackground()
 
-        Box(
-            Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(MaterialTheme.colorScheme.background),
-        ) {
-            when {
-                uiState.isLoading -> LoadingState()
-                uiState.user == null ->
-                    LoggedOutState(onLogin = {
-                        navController.navigate(Screen.Shell.route) {
-                            popUpTo(0) {
-                                inclusive =
-                                    true
+        Scaffold(
+            topBar = {
+                LargeTopAppBar(
+                    title = { Text("Meu Perfil") },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
+                )
+            },
+            containerColor = Color.Transparent,
+        ) { innerPadding ->
+            Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
+                when {
+                    uiState.isLoading -> LoadingState()
+                    uiState.user == null ->
+                        LoggedOutState(onLogin = {
+                            navController.navigate(Screen.Shell.route) {
+                                popUpTo(0) {
+                                    inclusive =
+                                        true
+                                }
                             }
-                        }
-                    })
-                else -> LoggedInState(user = uiState.user!!, viewModel = viewModel)
+                        })
+                    else -> LoggedInState(user = uiState.user!!, viewModel = viewModel)
+                }
             }
         }
     }
