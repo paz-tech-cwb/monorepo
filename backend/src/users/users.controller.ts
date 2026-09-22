@@ -37,6 +37,7 @@ function stripPrivilegedFields<T extends { role?: string; status?: string }>(
   actor: User,
 ): T {
   if (actor.role?.slug === 'admin') return dto;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { role: _role, status: _status, ...rest } = dto;
   return rest as T;
 }

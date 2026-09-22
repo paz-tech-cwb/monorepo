@@ -12,7 +12,9 @@ export class DropMemberJourneyStages1795700000003
   name = 'DropMemberJourneyStages1795700000003';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE IF EXISTS "member_journey_stages" CASCADE`);
+    await queryRunner.query(
+      `DROP TABLE IF EXISTS "member_journey_stages" CASCADE`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
