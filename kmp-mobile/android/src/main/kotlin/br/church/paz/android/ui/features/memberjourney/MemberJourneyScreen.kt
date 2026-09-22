@@ -1,11 +1,5 @@
 package br.church.paz.android.ui.features.memberjourney
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,14 +15,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.Circle
@@ -43,7 +36,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
@@ -108,24 +100,15 @@ fun MemberJourneyScreen(
             when {
                 uiState.isLoading -> LoadingState()
                 uiState.error != null -> ErrorState(error = uiState.error!!, onRetry = viewModel::onRetry)
-                uiState.isEmpty -> EmptyState()
-                else ->
-                    ContentState(
-                        tracks = uiState.tracks,
-                        expandedTrackKey = uiState.expandedTrackKey,
-                        onToggleTrack = viewModel::onToggleTrack,
-                    )
+                uiState.track == null -> NoActiveTrackState()
+                else -> ContentState(track = uiState.track!!)
             }
         }
     }
 }
 
 @Composable
-private fun ContentState(
-    tracks: List<JourneyTrack>,
-    expandedTrackKey: String?,
-    onToggleTrack: (String) -> Unit,
-) {
+private fun ContentState(track: JourneyTrack) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
@@ -133,32 +116,17 @@ private fun ContentState(
     ) {
         item { Spacer(Modifier.height(PazSpacing.Sm)) }
 
-        items(tracks, key = { it.key }) { track ->
-            JourneyTrackCard(
-                track = track,
-                isExpanded = track.key == expandedTrackKey,
-                onToggle = { onToggleTrack(track.key) },
-            )
-        }
+        item { JourneyTrackCard(track = track) }
 
         item { Spacer(Modifier.height(PazSpacing.Xl)) }
     }
 }
 
 @Composable
-private fun JourneyTrackCard(
-    track: JourneyTrack,
-    isExpanded: Boolean,
-    onToggle: () -> Unit,
-) {
+private fun JourneyTrackCard(track: JourneyTrack) {
     val totalTrackedSteps = track.steps.count { it.type != JourneyTrackStepType.Informational }
     val completedTrackedSteps =
         track.steps.count { it.type != JourneyTrackStepType.Informational && it.completed }
-
-    val rotation by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (isExpanded) 180f else 0f,
-        label = "chevronRotation",
-    )
 
     Column(
         modifier =
@@ -168,36 +136,20 @@ private fun JourneyTrackCard(
                 .background(MaterialTheme.colorScheme.surface),
     ) {
         Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onToggle)
-                    .padding(PazSpacing.Lg),
+            modifier = Modifier.fillMaxWidth().padding(PazSpacing.Lg),
             verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(track.title, style = MaterialTheme.typography.titleMedium)
-                    if (totalTrackedSteps > 0) {
-                        Text(
-                            "$completedTrackedSteps/$totalTrackedSteps concluído",
-                            style =
-                                MaterialTheme.typography.labelSmall.copy(
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                ),
-                        )
-                    }
+            Column {
+                Text(track.title, style = MaterialTheme.typography.titleMedium)
+                if (totalTrackedSteps > 0) {
+                    Text(
+                        "$completedTrackedSteps/$totalTrackedSteps concluído",
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            ),
+                    )
                 }
-                Icon(
-                    Icons.Filled.ExpandMore,
-                    contentDescription = if (isExpanded) "recolher" else "expandir",
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    modifier = Modifier.rotate(rotation),
-                )
             }
 
             val trackDescription = track.description
@@ -224,20 +176,14 @@ private fun JourneyTrackCard(
             }
         }
 
-        AnimatedVisibility(
-            visible = isExpanded,
-            enter = fadeIn(tween(200)) + expandVertically(tween(200)),
-            exit = fadeOut(tween(150)) + shrinkVertically(tween(150)),
+        Column(
+            modifier = Modifier.padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Sm),
+            verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
         ) {
-            Column(
-                modifier = Modifier.padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Sm),
-                verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-            ) {
-                track.steps.forEach { step ->
-                    JourneyStepRow(step = step)
-                }
-                Spacer(Modifier.height(PazSpacing.Sm))
+            track.steps.forEach { step ->
+                JourneyStepRow(step = step)
             }
+            Spacer(Modifier.height(PazSpacing.Sm))
         }
     }
 }
@@ -375,18 +321,34 @@ private fun ErrorState(
 }
 
 @Composable
-private fun EmptyState() {
+private fun NoActiveTrackState() {
     Box(
         modifier = Modifier.fillMaxSize().padding(PazSpacing.Lg),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            "Nenhuma trilha encontrada",
-            style =
-                MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                ),
-        )
+        Column(
+            verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                Icons.Filled.CheckCircleOutline,
+                contentDescription = null,
+                tint = PazColors.Primary,
+                modifier = Modifier.size(48.dp),
+            )
+            Text(
+                "Você está em dia!",
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                "Você já completou todas as etapas disponíveis para você no momento.",
+                style =
+                    MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    ),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+        }
     }
 }
 

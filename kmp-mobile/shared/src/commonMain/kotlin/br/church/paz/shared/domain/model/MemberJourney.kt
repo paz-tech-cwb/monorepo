@@ -1,7 +1,8 @@
 package br.church.paz.shared.domain.model
 
 data class MemberJourney(
-    val tracks: List<JourneyTrack> = emptyList(),
+    val track: JourneyTrack?,
+    val allStepsComplete: Boolean = false,
 )
 
 data class JourneyTrack(

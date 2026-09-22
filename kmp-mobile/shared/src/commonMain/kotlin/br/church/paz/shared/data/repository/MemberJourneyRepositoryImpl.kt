@@ -16,10 +16,19 @@ class MemberJourneyRepositoryImpl(private val client: HttpClient) : MemberJourne
 
     @Throws(Exception::class)
     override suspend fun getMemberJourney(): MemberJourney {
-        val dto: List<JourneyTrackDto> = client.get("api/journey-tracks/me").body()
-        return MemberJourney(tracks = dto.map { it.toDomain() })
+        val dto: CurrentTrackResponseDto = client.get("api/journey-tracks/me").body()
+        return MemberJourney(
+            track = dto.track?.toDomain(),
+            allStepsComplete = dto.allStepsComplete,
+        )
     }
 }
+
+@Serializable
+private data class CurrentTrackResponseDto(
+    val track: JourneyTrackDto? = null,
+    @SerialName("all_steps_complete") val allStepsComplete: Boolean = false,
+)
 
 @Serializable
 private data class JourneyTrackDto(

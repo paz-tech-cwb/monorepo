@@ -4,13 +4,14 @@ export type AdminRole =
   | "area_leader"
   | "sector_leader"
   | "life_group_leader"
+  | "discipler"
 
 export interface User {
   id: number
   email: string
   name: string
   picture: string
-  role: AdminRole | "member" | null
+  role: AdminRole | "member" | "lead" | null
 }
 
 export interface AuthResponse {

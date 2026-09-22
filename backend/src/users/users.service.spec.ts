@@ -364,7 +364,7 @@ describe('UsersService', () => {
 
       // The user row itself is hard-deleted last; cascading FKs
       // (accounts, device tokens, notification preferences, user_courses,
-      // user_life_groups, member_journey_stages, ministry rosters) are
+      // user_life_groups, member_journey_step_progress, ministry rosters) are
       // handled by the database.
       expect(txManager.delete).toHaveBeenCalledWith(User, 10);
     });

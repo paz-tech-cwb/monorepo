@@ -28,7 +28,9 @@ import type { AdminUser, UserRole } from "@/lib/api/types"
 import { useAuthContext } from "@/contexts/auth-context"
 
 const ROLE_OPTIONS: { value: UserRole; label: string; badgeVariant: "destructive" | "default" | "outline" | "secondary" }[] = [
+  { value: "lead",              label: "Lead",                badgeVariant: "secondary" },
   { value: "member",            label: "Membro",              badgeVariant: "secondary" },
+  { value: "discipler",         label: "Discipulador",        badgeVariant: "outline" },
   { value: "life_group_leader", label: "Lider de Life Group", badgeVariant: "outline" },
   { value: "sector_leader",     label: "Lider de Setor",      badgeVariant: "outline" },
   { value: "area_leader",       label: "Lider de Area",       badgeVariant: "outline" },

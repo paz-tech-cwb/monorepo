@@ -1,12 +1,14 @@
 import { Expose } from 'class-transformer';
 import {
   IsBoolean,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
   Matches,
   Min,
 } from 'class-validator';
+import { VALID_ROLE_SLUGS } from '../../users/dto/update-user-role.dto';
 
 export class CreateJourneyTrackDto {
   @Expose()
@@ -41,4 +43,9 @@ export class CreateJourneyTrackDto {
   @IsOptional()
   @IsBoolean()
   is_active?: boolean;
+
+  @Expose()
+  @IsOptional()
+  @IsIn(VALID_ROLE_SLUGS)
+  promotes_to_role?: string | null;
 }
