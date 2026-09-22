@@ -140,6 +140,14 @@ fun FormDetailScreen(
                     onSelect = viewModel::onPickerSelect,
                     onDismiss = viewModel::closePicker,
                 )
+            PickerKind.CASA_DE_PAZ_CYCLE ->
+                CasaDePazCyclePickerSheet(
+                    state = pickerState,
+                    selectedId = uiState.fields[pickerState.key] ?: "",
+                    onQueryChanged = viewModel::onPickerQueryChanged,
+                    onSelect = viewModel::onPickerSelect,
+                    onDismiss = viewModel::closePicker,
+                )
             PickerKind.USER, PickerKind.USER_MULTI -> {
                 val selectedIds = (uiState.fields[pickerState.key] ?: "")
                     .split(",").filter { it.isNotBlank() }.toSet()
