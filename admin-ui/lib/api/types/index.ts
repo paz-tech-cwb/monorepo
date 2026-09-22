@@ -20,3 +20,4 @@ export * from './reminder-rules'
 export * from "./life-group-studies"
 export * from "./life-group-analytics"
 export * from "./casa-de-paz-analytics"
+export * from "./casa-de-paz-cycles"

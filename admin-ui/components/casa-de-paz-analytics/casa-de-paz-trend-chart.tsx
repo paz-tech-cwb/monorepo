@@ -37,7 +37,6 @@ function formatPeriodLabel(period: string): string {
 
 const activityChartConfig = {
   casas: { label: "Casas de Paz", color: "var(--color-chart-1)" },
-  adultos: { label: "Adultos", color: "var(--color-chart-2)" },
   criancas: { label: "Crianças", color: "var(--color-chart-3)" },
 } satisfies ChartConfig
 
@@ -58,7 +57,6 @@ export function CasaDePazTrendChart({ series, isLoading, isError }: CasaDePazTre
   const activityData = series.map((row) => ({
     name: formatPeriodLabel(row.period),
     casas: row.houses,
-    adultos: row.adults,
     criancas: row.kids,
   }))
 
@@ -95,13 +93,6 @@ export function CasaDePazTrendChart({ series, isLoading, isError }: CasaDePazTre
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <ChartLegend content={<ChartLegendContent />} />
                 <Bar dataKey="casas" fill="var(--color-casas)" radius={[4, 4, 0, 0]} />
-                <Line
-                  type="monotone"
-                  dataKey="adultos"
-                  stroke="var(--color-adultos)"
-                  strokeWidth={2}
-                  dot={false}
-                />
                 <Line
                   type="monotone"
                   dataKey="criancas"
