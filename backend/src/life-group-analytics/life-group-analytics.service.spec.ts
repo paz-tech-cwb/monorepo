@@ -10,7 +10,9 @@ interface MockQueryBuilder {
   addSelect: jest.Mock<MockQueryBuilder, unknown[]>;
   where: jest.Mock<MockQueryBuilder, unknown[]>;
   andWhere: jest.Mock<MockQueryBuilder, unknown[]>;
+  leftJoin: jest.Mock<MockQueryBuilder, unknown[]>;
   groupBy: jest.Mock<MockQueryBuilder, unknown[]>;
+  addGroupBy: jest.Mock<MockQueryBuilder, unknown[]>;
   orderBy: jest.Mock<MockQueryBuilder, unknown[]>;
   getRawMany: jest.Mock<Promise<unknown[]>, []>;
 }
@@ -21,7 +23,9 @@ function makeQueryBuilder(rows: unknown[]): MockQueryBuilder {
     addSelect: jest.fn(() => qb),
     where: jest.fn(() => qb),
     andWhere: jest.fn(() => qb),
+    leftJoin: jest.fn(() => qb),
     groupBy: jest.fn(() => qb),
+    addGroupBy: jest.fn(() => qb),
     orderBy: jest.fn(() => qb),
     getRawMany: jest.fn<Promise<unknown[]>, []>().mockResolvedValue(rows),
   };
@@ -228,6 +232,131 @@ describe('LifeGroupAnalyticsService', () => {
       expect(result.by_neighborhood).toHaveLength(11);
       const others = result.by_neighborhood.find((r) => r.label === 'Outros')!;
       expect(others.count).toBe(1 + 2); // sum of the two entries past top 10
+    });
+  });
+
+  describe('overview', () => {
+    it('aggregates kids, average members, sector counts and membership for an unrestricted caller', async () => {
+      const { service } = createService([
+        [
+          {
+            id: '1',
+            kids_count: '3',
+            sector_label: 'Norte',
+            member_count: '4',
+          },
+          {
+            id: '2',
+            kids_count: '1',
+            sector_label: 'Norte',
+            member_count: '2',
+          },
+          { id: '3', kids_count: '0', sector_label: null, member_count: '0' },
+        ],
+        [
+          { id: '10', life_group_count: '1' },
+          { id: '11', life_group_count: '0' },
+          { id: '12', life_group_count: '2' },
+        ],
+      ]);
+      const result = await service.overview(unrestrictedScope, actor);
+      expect(result.total_kids).toBe(4);
+      expect(result.avg_members_per_group).toBeCloseTo(2, 1);
+      expect(result.groups_by_sector).toEqual([
+        { label: 'Norte', count: 2 },
+        { label: 'Sem setor', count: 1 },
+      ]);
+      expect(result.members_total).toBe(3);
+      expect(result.members_in_group).toBe(2);
+    });
+
+    it('returns all zeros when the caller has no access to any life group', async () => {
+      const { service, em } = createService([[]]);
+      const result = await service.overview(noAccessScope, actor);
+      expect(result).toEqual({
+        total_kids: 0,
+        avg_members_per_group: 0,
+        groups_by_sector: [],
+        members_in_group: 0,
+        members_total: 0,
+      });
+      expect(em.createQueryBuilder).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns zero average when there are no groups but caller is unrestricted', async () => {
+      const { service } = createService([[], []]);
+      const result = await service.overview(unrestrictedScope, actor);
+      expect(result.avg_members_per_group).toBe(0);
+      expect(result.groups_by_sector).toEqual([]);
+    });
+
+    it('scopes the members universe to the caller sectors when restricted', async () => {
+      const sectorScope: ResolvedScope = {
+        unrestricted: false,
+        areaIds: [],
+        sectorIds: [3],
+        lifeGroupIds: [7],
+      };
+      const { service } = createService([
+        [],
+        [{ id: '7', kids_count: '2', sector_label: 'Sul', member_count: '5' }],
+        [{ id: '20', life_group_count: '1' }],
+      ]);
+      const result = await service.overview(sectorScope, actor);
+      expect(result.members_total).toBe(1);
+      expect(result.members_in_group).toBe(1);
+    });
+
+    it('derives the members universe from lifeGroupIds when a restricted caller has no sector scope (e.g. life_group_leader)', async () => {
+      const sectorlessScope: ResolvedScope = {
+        unrestricted: false,
+        areaIds: [],
+        sectorIds: [],
+        lifeGroupIds: [7],
+      };
+      const { service, em } = createService([
+        [],
+        [{ id: '7', kids_count: '2', sector_label: 'Sul', member_count: '5' }],
+        [
+          { id: '30', life_group_count: '1' },
+          { id: '31', life_group_count: '1' },
+        ],
+      ]);
+      const result = await service.overview(sectorlessScope, actor);
+      expect(result.members_total).toBe(2);
+      expect(result.members_in_group).toBe(2);
+
+      // The users query must be filtered by the caller's life group ids
+      // (not sectorIds, which is empty for this caller type), since a
+      // hard-coded 0 would silently misrepresent this leader's own group.
+      const usersQb = em.createQueryBuilder.mock.results[2].value as {
+        where: jest.Mock;
+      };
+      expect(usersQb.where).toHaveBeenCalledWith(
+        'lg.id IN (:...lifeGroupIds)',
+        {
+          lifeGroupIds: [7],
+        },
+      );
+    });
+
+    it('still returns an empty members universe when a restricted caller has no sector scope and no life group scope', async () => {
+      const noScope: ResolvedScope = {
+        unrestricted: false,
+        areaIds: [],
+        sectorIds: [],
+        lifeGroupIds: [],
+      };
+      const { service, em } = createService([[]]);
+      const result = await service.overview(noScope, actor);
+      expect(result).toEqual({
+        total_kids: 0,
+        avg_members_per_group: 0,
+        groups_by_sector: [],
+        members_in_group: 0,
+        members_total: 0,
+      });
+      expect(em.createQueryBuilder).toHaveBeenCalledTimes(1);
     });
   });
 });

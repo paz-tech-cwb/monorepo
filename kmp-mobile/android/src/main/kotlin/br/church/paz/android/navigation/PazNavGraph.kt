@@ -11,6 +11,7 @@ import br.church.paz.android.ui.features.academy.QuestionnaireScreen
 import br.church.paz.android.ui.features.academy.VideoPlayerScreen
 import br.church.paz.android.ui.features.agenda.AgendaDetailScreen
 import br.church.paz.android.ui.features.agenda.AgendaListScreen
+import br.church.paz.android.ui.features.casadepazanalytics.CasaDePazAnalyticsScreen
 import br.church.paz.android.ui.features.formularios.CasaDePazSubmissionEditorScreen
 import br.church.paz.android.ui.features.formularios.CasaDePazSubmissionsListScreen
 import br.church.paz.android.ui.features.formularios.FormDetailScreen
@@ -214,6 +215,9 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         ) { backStackEntry ->
             val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId")
             LifeGroupAnalyticsScreen(navController = navController, lifeGroupId = lifeGroupId)
+        }
+        composable(route = Screen.CasaDePazAnalytics.route) {
+            CasaDePazAnalyticsScreen(navController = navController)
         }
     }
 }

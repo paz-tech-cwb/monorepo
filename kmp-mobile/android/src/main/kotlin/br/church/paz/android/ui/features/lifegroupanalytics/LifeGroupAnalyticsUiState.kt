@@ -2,6 +2,7 @@ package br.church.paz.android.ui.features.lifegroupanalytics
 
 import br.church.paz.shared.domain.model.LifeGroupAttendancePoint
 import br.church.paz.shared.domain.model.LifeGroupDistributionBucket
+import br.church.paz.shared.domain.model.LifeGroupOverview
 
 enum class DistributionTab { DAY, HOUR, NEIGHBORHOOD, CITY }
 
@@ -17,6 +18,11 @@ data class LifeGroupAnalyticsUiState(
     val byHour: List<LifeGroupDistributionBucket> = emptyList(),
     val byNeighborhood: List<LifeGroupDistributionBucket> = emptyList(),
     val byCity: List<LifeGroupDistributionBucket> = emptyList(),
+    // Loaded best-effort alongside attendance/distribution — a failure here
+    // must never break the rest of the report (same precedent as
+    // loadLifeGroups()), so it's a separate nullable field, not folded into
+    // the main error state.
+    val overview: LifeGroupOverview? = null,
     val error: String? = null,
 ) {
     val distributionForSelectedTab: List<LifeGroupDistributionBucket>

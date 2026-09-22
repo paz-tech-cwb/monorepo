@@ -82,6 +82,7 @@ fun AccountScreen(
                 AccountEffect.NavigateToMinistries -> navController.navigate(Screen.Ministries.route)
                 AccountEffect.NavigateToCasaDePaz -> navController.navigate(Screen.CasaDePazSubmissionsList.route)
                 AccountEffect.NavigateToLifeGroupAnalytics -> navController.navigate(Screen.LifeGroupAnalytics.createRoute())
+                AccountEffect.NavigateToCasaDePazAnalytics -> navController.navigate(Screen.CasaDePazAnalytics.route)
                 AccountEffect.NavigateToNotificationPrefs -> navController.navigate(Screen.NotificationPrefs.route)
                 AccountEffect.LoggedOut -> Unit
             }
@@ -216,6 +217,13 @@ fun AccountScreen(
                                     icon = Icons.Outlined.BarChart,
                                     iconTint = Color(0xFF2E7D32),
                                     onClick = viewModel::onLifeGroupAnalytics,
+                                    showDivider = true,
+                                )
+                                PazMenuRow(
+                                    title = "Casa de Paz (Relatório)",
+                                    icon = Icons.Outlined.BarChart,
+                                    iconTint = Color(0xFFE65100),
+                                    onClick = viewModel::onCasaDePazAnalytics,
                                     showDivider = false,
                                 )
                             }

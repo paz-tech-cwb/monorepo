@@ -20,6 +20,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.ChildCare
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -58,10 +61,16 @@ import br.church.paz.android.ui.components.PazBarChartEmpty
 import br.church.paz.android.ui.components.PazBarChartEntry
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazCardSkeleton
+import br.church.paz.android.ui.components.PazDonutChart
+import br.church.paz.android.ui.components.PazDonutChartEmpty
+import br.church.paz.android.ui.components.PazDonutPalette
+import br.church.paz.android.ui.components.PazDonutSlice
+import br.church.paz.android.ui.components.PazStatCard
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.LifeGroupAttendancePoint
+import br.church.paz.shared.domain.model.LifeGroupOverview
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -104,11 +113,12 @@ fun LifeGroupAnalyticsScreen(
             val file = File(dir, "relatorio-life-group-${System.currentTimeMillis()}.png")
             FileOutputStream(file).use { out -> bitmap.compress(Bitmap.CompressFormat.PNG, 100, out) }
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "image/png"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
+            val intent =
+                Intent(Intent.ACTION_SEND).apply {
+                    type = "image/png"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
             context.startActivity(Intent.createChooser(intent, "Compartilhar relatório"))
         }
     }
@@ -185,6 +195,11 @@ private fun AnalyticsContent(
             )
         }
 
+        uiState.overview?.let { overview ->
+            item { LifeGroupStatCards(overview) }
+            item { LifeGroupOverviewCharts(overview) }
+        }
+
         item {
             SectionCard(title = "Frequência de Presença") {
                 // Monthly rows are always zero-filled for all 12 months, so the
@@ -225,6 +240,73 @@ private fun AnalyticsContent(
         }
 
         item { Spacer(Modifier.height(PazSpacing.Xl)) }
+    }
+}
+
+@Composable
+private fun LifeGroupStatCards(overview: LifeGroupOverview) {
+    Column(verticalArrangement = Arrangement.spacedBy(PazSpacing.Md)) {
+        PazStatCard(
+            title = "Crianças nos Grupos",
+            value = overview.totalKids.toString(),
+            subtitle = "crianças de 0 a 11 anos cadastradas",
+            icon = Icons.Filled.ChildCare,
+        )
+        PazStatCard(
+            title = "Média por Grupo",
+            value = overview.avgMembersPerGroup.toString(),
+            subtitle = "membros por grupo, em média",
+            icon = Icons.Filled.BarChart,
+        )
+        val inGroupPercent =
+            if (overview.membersTotal > 0) {
+                (overview.membersInGroup * 100 / overview.membersTotal)
+            } else {
+                0
+            }
+        PazStatCard(
+            title = "Membros em Grupos",
+            value = overview.membersInGroup.toString(),
+            secondaryValue = overview.membersTotal.toString(),
+            subtitle = "$inGroupPercent% em grupo · ${overview.membersTotal - overview.membersInGroup} sem grupo",
+            icon = Icons.Filled.Groups,
+        )
+    }
+}
+
+@Composable
+private fun LifeGroupOverviewCharts(overview: LifeGroupOverview) {
+    Column(verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg)) {
+        SectionCard(title = "Grupos por Setor") {
+            if (overview.groupsBySector.isEmpty()) {
+                PazDonutChartEmpty("Nenhum grupo cadastrado.")
+            } else {
+                PazDonutChart(
+                    slices =
+                        overview.groupsBySector.mapIndexed { index, bucket ->
+                            PazDonutSlice(
+                                label = bucket.label,
+                                value = bucket.count.toFloat(),
+                                color = PazDonutPalette[index % PazDonutPalette.size],
+                            )
+                        },
+                )
+            }
+        }
+        SectionCard(title = "Membros com e sem Grupo") {
+            val withoutGroup = overview.membersTotal - overview.membersInGroup
+            if (overview.membersTotal <= 0) {
+                PazDonutChartEmpty("Nenhum membro cadastrado.")
+            } else {
+                PazDonutChart(
+                    slices =
+                        listOf(
+                            PazDonutSlice("Em um grupo", overview.membersInGroup.toFloat(), PazDonutPalette[0]),
+                            PazDonutSlice("Sem grupo", withoutGroup.toFloat(), PazDonutPalette[2]),
+                        ),
+                )
+            }
+        }
     }
 }
 

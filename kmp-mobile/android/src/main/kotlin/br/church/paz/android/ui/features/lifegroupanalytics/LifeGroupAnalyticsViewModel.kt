@@ -30,6 +30,7 @@ class LifeGroupAnalyticsViewModel(
 
     init {
         loadLifeGroups()
+        loadOverview()
         load()
     }
 
@@ -39,6 +40,16 @@ class LifeGroupAnalyticsViewModel(
                 .onSuccess { groups ->
                     _uiState.update { it.copy(lifeGroups = groups.map { g -> g.id to g.name }) }
                 }
+        }
+    }
+
+    // Best-effort, like loadLifeGroups() above — the stat cards + donuts
+    // this feeds are additive to the attendance/distribution charts, so a
+    // failure here must not surface as the screen's main error state.
+    private fun loadOverview() {
+        viewModelScope.launch {
+            runCatching { analyticsRepository.getOverview() }
+                .onSuccess { overview -> _uiState.update { it.copy(overview = overview) } }
         }
     }
 

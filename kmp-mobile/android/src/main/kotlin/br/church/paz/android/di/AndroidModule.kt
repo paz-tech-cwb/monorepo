@@ -9,6 +9,7 @@ import br.church.paz.android.ui.features.account.AccountViewModel
 import br.church.paz.android.ui.features.agenda.AgendaDetailViewModel
 import br.church.paz.android.ui.features.agenda.AgendaListViewModel
 import br.church.paz.android.ui.features.auth.LoginViewModel
+import br.church.paz.android.ui.features.casadepazanalytics.CasaDePazAnalyticsViewModel
 import br.church.paz.android.ui.features.formularios.CasaDePazSubmissionEditorViewModel
 import br.church.paz.android.ui.features.formularios.CasaDePazSubmissionsListViewModel
 import br.church.paz.android.ui.features.formularios.FormDetailViewModel
@@ -73,4 +74,5 @@ val androidModule =
             LifeGroupAttendanceEditorViewModel(lifeGroupId, date, get())
         }
         viewModel { (lifeGroupId: Int?) -> LifeGroupAnalyticsViewModel(lifeGroupId, get(), get()) }
+        viewModel { CasaDePazAnalyticsViewModel(get()) }
     }
