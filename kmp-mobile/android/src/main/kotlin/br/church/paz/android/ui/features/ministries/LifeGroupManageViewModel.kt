@@ -89,7 +89,11 @@ class LifeGroupManageViewModel(
         }
     }
 
-    fun onMemberSelected(userId: String, name: String, email: String) {
+    fun onMemberSelected(
+        userId: String,
+        name: String,
+        email: String,
+    ) {
         val id = userId.toIntOrNull() ?: return
         viewModelScope.launch {
             runCatching { churchRepository.addLifeGroupMember(lifeGroupId.toInt(), id) }
@@ -104,9 +108,15 @@ class LifeGroupManageViewModel(
     }
 
     fun onRemoveMember(member: LifeGroupMember) {
+        val previousMembers = _uiState.value.members
         _uiState.update { it.copy(members = it.members.filterNot { m -> m.id == member.id }) }
         viewModelScope.launch {
             runCatching { churchRepository.removeLifeGroupMember(lifeGroupId.toInt(), member.id) }
+                .onFailure {
+                    _uiState.update {
+                        it.copy(members = previousMembers, saveError = "Erro ao remover membro. Tente novamente.")
+                    }
+                }
         }
     }
 

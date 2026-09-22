@@ -80,7 +80,10 @@ class MinistryManageViewModel(
         }
     }
 
-    fun onMemberSelected(userId: String, name: String) {
+    fun onMemberSelected(
+        userId: String,
+        name: String,
+    ) {
         val id = userId.toIntOrNull() ?: return
         viewModelScope.launch {
             runCatching { churchRepository.addMinistryMember(ministryId.toInt(), id) }
@@ -95,9 +98,15 @@ class MinistryManageViewModel(
     }
 
     fun onRemoveMember(member: MinistryUser) {
+        val previousMembers = _uiState.value.members
         _uiState.update { it.copy(members = it.members.filterNot { m -> m.id == member.id }) }
         viewModelScope.launch {
             runCatching { churchRepository.removeMinistryMember(ministryId.toInt(), member.id) }
+                .onFailure {
+                    _uiState.update {
+                        it.copy(members = previousMembers, saveError = "Erro ao remover membro. Tente novamente.")
+                    }
+                }
         }
     }
 
