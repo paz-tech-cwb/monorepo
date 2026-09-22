@@ -13,7 +13,7 @@ struct CasaDePazStatCards: View {
             PazStatCard(
                 title: "Vidas Alcançadas",
                 value: "\(summary.totals.lives)",
-                subtitle: "adultos + crianças + convidados",
+                subtitle: "crianças + convidados",
                 icon: "heart.fill",
                 growth: summary.growth.lives?.doubleValue
             )
@@ -25,7 +25,6 @@ struct CasaDePazStatCards: View {
                 growth: summary.growth.houses?.doubleValue
             )
             CasaDePazPresencasCard(
-                adults: Int(summary.totals.adults),
                 kids: Int(summary.totals.kids),
                 guests: Int(summary.totals.guests),
                 guestsGrowth: summary.growth.guests?.doubleValue
@@ -48,15 +47,13 @@ struct CasaDePazStatCards: View {
 }
 
 /// "Presenças" card — matches admin-ui's casa-de-paz-report.tsx breakdown-row
-/// layout for this card (Adultos / Crianças / Convidados rows) instead of a
-/// single headline number, because the growth badge is `growth.guests`
-/// (guest growth), not growth for adults+kids. A single "adults+kids"
-/// headline paired with a guests-only badge reads as "+N% presences," which
-/// is misleading — the breakdown rows put the Convidados count directly
-/// above its own badge so the number the badge describes is always visible
-/// next to it.
+/// layout for this card (Crianças / Convidados rows) instead of a single
+/// headline number, because the growth badge is `growth.guests` (guest
+/// growth), not a combined growth. A single "kids+guests" headline paired
+/// with a guests-only badge reads as "+N% presences," which is misleading —
+/// the breakdown rows put the Convidados count directly above its own badge
+/// so the number the badge describes is always visible next to it.
 struct CasaDePazPresencasCard: View {
-    let adults: Int
     let kids: Int
     let guests: Int
     let guestsGrowth: Double?
@@ -72,7 +69,6 @@ struct CasaDePazPresencasCard: View {
                     .foregroundStyle(PazColors.slate)
             }
 
-            breakdownRow(label: "Adultos", value: "\(adults)")
             breakdownRow(label: "Crianças", value: "\(kids)")
 
             HStack(spacing: PazSpacing.xs) {
