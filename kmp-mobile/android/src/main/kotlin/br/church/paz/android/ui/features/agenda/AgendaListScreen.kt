@@ -45,7 +45,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
+import br.church.paz.android.ui.components.PazGlassCard
 import br.church.paz.android.ui.components.PazMeshBackground
+import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazShapes
@@ -96,7 +98,11 @@ fun AgendaListScreen(
             },
             containerColor = Color.Transparent,
         ) { innerPadding ->
-            Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
+            PazPullToRefresh(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = viewModel::refresh,
+                modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
+            ) {
                 when {
                     uiState.isLoading -> AgendaListSkeleton()
                     uiState.error != null && uiState.events.isEmpty() ->
@@ -247,54 +253,53 @@ private fun AgendaEventCard(
     modifier: Modifier = Modifier,
 ) {
     val parts = event.startDate.split("-")
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clip(PazShapes.large)
-                .background(MaterialTheme.colorScheme.surface)
-                .clickable(onClick = onClick)
-                .padding(PazSpacing.Md),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+    PazGlassCard(
+        modifier = modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onClick),
+        cornerRadius = PazSpacing.CardRadiusCompact,
     ) {
-        if (!event.imageUrl.isNullOrEmpty()) {
-            AsyncImage(
-                model = event.imageUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.size(52.dp).clip(RoundedCornerShape(12.dp)),
-            )
-        } else {
-            Column(
-                Modifier
-                    .size(52.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(PazColors.Primary.copy(.08f)),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Text(
-                    parts.getOrNull(2)?.substringBefore("T") ?: "--",
-                    style = MaterialTheme.typography.titleMedium.copy(color = PazColors.Primary),
+        Row(
+            modifier = Modifier.padding(PazSpacing.Md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+        ) {
+            if (!event.imageUrl.isNullOrEmpty()) {
+                AsyncImage(
+                    model = event.imageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(52.dp).clip(RoundedCornerShape(12.dp)),
                 )
-                Text(
-                    monthAbbrev(parts.getOrNull(1)),
-                    style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Accent),
-                )
+            } else {
+                Column(
+                    Modifier
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(PazColors.Primary.copy(.08f)),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        parts.getOrNull(2)?.substringBefore("T") ?: "--",
+                        style = MaterialTheme.typography.titleMedium.copy(color = PazColors.Primary),
+                    )
+                    Text(
+                        monthAbbrev(parts.getOrNull(1)),
+                        style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Accent),
+                    )
+                }
             }
-        }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(event.title, style = MaterialTheme.typography.titleSmall, maxLines = 2)
-            if (!event.location.isNullOrEmpty()) {
-                Text(
-                    event.location!!,
-                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.5f)),
-                    maxLines = 1,
-                )
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(event.title, style = MaterialTheme.typography.titleSmall, maxLines = 2)
+                if (!event.location.isNullOrEmpty()) {
+                    Text(
+                        event.location!!,
+                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.5f)),
+                        maxLines = 1,
+                    )
+                }
             }
+            Box(Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(PazColors.Primary))
         }
-        Box(Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(PazColors.Primary))
     }
 }
 

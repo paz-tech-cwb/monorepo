@@ -1,6 +1,7 @@
 package br.church.paz.android.ui.features.ministries
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazErrorState
+import br.church.paz.android.ui.components.PazGlassCard
 import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSkeleton
@@ -124,11 +126,9 @@ private fun MinistryCard(
     ministry: Ministry,
     onClick: () -> Unit,
 ) {
-    androidx.compose.material3.Surface(
-        onClick = onClick,
-        shape = PazShapes.large,
-        color = MaterialTheme.colorScheme.surface,
-        modifier = Modifier.fillMaxWidth(),
+    PazGlassCard(
+        modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onClick),
+        cornerRadius = PazSpacing.CardRadiusCompact,
     ) {
         Row(
             Modifier.padding(PazSpacing.Lg),

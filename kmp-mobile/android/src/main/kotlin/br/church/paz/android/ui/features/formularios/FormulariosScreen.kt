@@ -44,8 +44,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazErrorState
+import br.church.paz.android.ui.components.PazGlassCard
 import br.church.paz.android.ui.components.PazIconContainer
 import br.church.paz.android.ui.components.PazMeshBackground
+import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazShapes
@@ -97,7 +99,11 @@ fun FormulariosScreen(
             },
             containerColor = Color.Transparent,
         ) { innerPadding ->
-            Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
+            PazPullToRefresh(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = viewModel::refresh,
+                modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
+            ) {
                 when {
                     uiState.isLoading -> LoadingState()
                     uiState.error != null -> ErrorState(error = uiState.error!!, onRetry = viewModel::onRetry)
@@ -133,29 +139,28 @@ private fun FormCard(
     onClick: () -> Unit,
 ) {
     val tint = formTint(form.type.name)
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(PazShapes.large)
-                .background(MaterialTheme.colorScheme.surface)
-                .clickable(onClick = onClick)
-                .padding(PazSpacing.Md),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+    PazGlassCard(
+        modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onClick),
+        cornerRadius = PazSpacing.CardRadiusCompact,
     ) {
-        PazIconContainer(icon = formIcon(form.type.name), tint = tint, size = 42.dp)
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(form.title, style = MaterialTheme.typography.titleSmall)
-            if (!form.description.isNullOrEmpty()) {
-                Text(
-                    form.description!!,
-                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.6f)),
-                    maxLines = 1,
-                )
+        Row(
+            modifier = Modifier.padding(PazSpacing.Md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+        ) {
+            PazIconContainer(icon = formIcon(form.type.name), tint = tint, size = 42.dp)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(form.title, style = MaterialTheme.typography.titleSmall)
+                if (!form.description.isNullOrEmpty()) {
+                    Text(
+                        form.description!!,
+                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.6f)),
+                        maxLines = 1,
+                    )
+                }
             }
+            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(.3f), modifier = Modifier.size(18.dp))
         }
-        Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(.3f), modifier = Modifier.size(18.dp))
     }
 }
 

@@ -45,7 +45,9 @@ import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazCardSkeleton
+import br.church.paz.android.ui.components.PazGlassCard
 import br.church.paz.android.ui.components.PazMeshBackground
+import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
@@ -98,7 +100,11 @@ fun LifeGroupStudyListScreen(
             },
             containerColor = Color.Transparent,
         ) { innerPadding ->
-            Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
+            PazPullToRefresh(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = viewModel::refresh,
+                modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
+            ) {
                 when {
                     uiState.isLoading -> LifeGroupStudySkeleton()
                     uiState.error != null -> LifeGroupStudyError(message = uiState.error!!, onRetry = viewModel::load)
@@ -147,39 +153,38 @@ private fun StudyCard(
     study: LifeGroupStudy,
     onClick: () -> Unit,
 ) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(PazShapes.large)
-                .background(MaterialTheme.colorScheme.surface)
-                .clickable(onClick = onClick)
-                .padding(PazSpacing.Md),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+    PazGlassCard(
+        modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onClick),
+        cornerRadius = PazSpacing.CardRadiusCompact,
     ) {
-        Box(
-            modifier = Modifier.size(width = 88.dp, height = 64.dp).clip(RoundedCornerShape(10.dp)).background(PazGradients.Card),
-            contentAlignment = Alignment.Center,
+        Row(
+            modifier = Modifier.padding(PazSpacing.Md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
         ) {
-            if (study.imageUrl != null) {
-                AsyncImage(
-                    model = study.imageUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                Icon(Icons.Outlined.MenuBook, null, tint = Color.White.copy(.7f), modifier = Modifier.size(24.dp))
+            Box(
+                modifier = Modifier.size(width = 88.dp, height = 64.dp).clip(RoundedCornerShape(10.dp)).background(PazGradients.Card),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (study.imageUrl != null) {
+                    AsyncImage(
+                        model = study.imageUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    Icon(Icons.Outlined.MenuBook, null, tint = Color.White.copy(.7f), modifier = Modifier.size(24.dp))
+                }
             }
-        }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(study.title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), maxLines = 2)
-            Text(
-                study.author,
-                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.55f)),
-                maxLines = 1,
-            )
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(study.title, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), maxLines = 2)
+                Text(
+                    study.author,
+                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.55f)),
+                    maxLines = 1,
+                )
+            }
         }
     }
 }

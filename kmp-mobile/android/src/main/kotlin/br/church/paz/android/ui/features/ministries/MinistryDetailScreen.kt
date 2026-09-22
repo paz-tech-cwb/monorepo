@@ -51,7 +51,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import br.church.paz.android.ui.components.PazGlassCard
 import br.church.paz.android.ui.components.PazMeshBackground
+import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazShapes
@@ -84,6 +86,8 @@ fun MinistryDetailScreen(
     DetailScaffold(
         title = uiState.ministry?.name ?: "Ministério",
         isLoading = uiState.isLoading,
+        isRefreshing = uiState.isRefreshing,
+        onRefresh = viewModel::refresh,
         error = uiState.error,
         onBack = viewModel::onBack,
         onManageTap = if (uiState.canManage) viewModel::onManageTap else null,
@@ -135,22 +139,21 @@ private fun MinistryContent(
 
         if (!ministry.description.isNullOrEmpty()) {
             item {
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(PazShapes.large)
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(PazSpacing.Lg),
+                PazGlassCard(
+                    modifier = Modifier.fillMaxWidth().clip(PazShapes.large),
+                    cornerRadius = PazSpacing.CardRadiusCompact,
                 ) {
-                    Text("Sobre", style = MaterialTheme.typography.titleSmall)
-                    Spacer(Modifier.height(PazSpacing.Sm))
-                    Text(
-                        ministry.description!!,
-                        style =
-                            MaterialTheme.typography.bodySmall.copy(
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                            ),
-                    )
+                    Column(Modifier.padding(PazSpacing.Lg)) {
+                        Text("Sobre", style = MaterialTheme.typography.titleSmall)
+                        Spacer(Modifier.height(PazSpacing.Sm))
+                        Text(
+                            ministry.description!!,
+                            style =
+                                MaterialTheme.typography.bodySmall.copy(
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                ),
+                        )
+                    }
                 }
             }
         }
@@ -159,44 +162,44 @@ private fun MinistryContent(
             val leaderText =
                 if (ministry.coLeader != null) "${leader.name} & ${ministry.coLeader?.name}" else leader.name
             item {
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(PazShapes.large)
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(PazSpacing.Lg),
-                    verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                PazGlassCard(
+                    modifier = Modifier.fillMaxWidth().clip(PazShapes.large),
+                    cornerRadius = PazSpacing.CardRadiusCompact,
                 ) {
-                    InfoRow(icon = Icons.Default.Person, label = "Liderança", value = leaderText)
+                    Column(
+                        Modifier.padding(PazSpacing.Lg),
+                        verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                    ) {
+                        InfoRow(icon = Icons.Default.Person, label = "Liderança", value = leaderText)
+                    }
                 }
             }
         }
 
         item {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(PazShapes.large)
-                        .background(MaterialTheme.colorScheme.surface)
-                        .clickable(onClick = onMembersTap)
-                        .padding(PazSpacing.Lg),
-                horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                verticalAlignment = Alignment.CenterVertically,
+            PazGlassCard(
+                modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onMembersTap),
+                cornerRadius = PazSpacing.CardRadiusCompact,
             ) {
-                Text("Membros", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                Text(
-                    "${ministry.members.size}",
-                    style =
-                        MaterialTheme.typography.labelSmall.copy(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                        ),
-                )
-                Icon(
-                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                )
+                Row(
+                    modifier = Modifier.padding(PazSpacing.Lg),
+                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Membros", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Text(
+                        "${ministry.members.size}",
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            ),
+                    )
+                    Icon(
+                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    )
+                }
             }
         }
 
@@ -227,6 +230,8 @@ fun LifeGroupDetailScreen(
     DetailScaffold(
         title = uiState.lifeGroup?.name ?: "Life Group",
         isLoading = uiState.isLoading,
+        isRefreshing = uiState.isRefreshing,
+        onRefresh = viewModel::refresh,
         error = uiState.error,
         onBack = viewModel::onBack,
         onManageTap = if (uiState.canManage) viewModel::onManageTap else null,
@@ -333,42 +338,43 @@ private fun LifeGroupContent(
         }
 
         item {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(PazShapes.large)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(PazSpacing.Lg),
-                verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+            PazGlassCard(
+                modifier = Modifier.fillMaxWidth().clip(PazShapes.large),
+                cornerRadius = PazSpacing.CardRadiusCompact,
             ) {
-                lifeGroup.leader?.let {
-                    InfoRow(icon = Icons.Default.Person, label = "Líder", value = it)
-                }
-                if (!lifeGroup.meetingDay.isNullOrEmpty() || !lifeGroup.meetingTime.isNullOrEmpty()) {
-                    InfoRow(
-                        icon = Icons.Default.CalendarToday,
-                        label = "Reunião",
-                        value =
-                            buildString {
-                                lifeGroup.meetingDay?.let { append(it) }
-                                if (!lifeGroup.meetingDay.isNullOrEmpty() && !lifeGroup.meetingTime.isNullOrEmpty()) append(" às ")
-                                lifeGroup.meetingTime?.let { append(it) }
-                            },
-                    )
-                }
-                lifeGroup.location?.let {
-                    InfoRow(icon = Icons.Default.LocationOn, label = "Endereço", value = it)
-                    if (lifeGroup.latitude != null && lifeGroup.longitude != null) {
-                        Text(
-                            "Como chegar",
-                            style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Primary),
-                            modifier =
-                                Modifier
-                                    .padding(start = 32.dp)
-                                    .clickable {
-                                        openInMaps(context, lifeGroup.latitude!!, lifeGroup.longitude!!, lifeGroup.name)
-                                    },
+                Column(
+                    Modifier.padding(PazSpacing.Lg),
+                    verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                ) {
+                    lifeGroup.leader?.let {
+                        InfoRow(icon = Icons.Default.Person, label = "Líder", value = it)
+                    }
+                    if (!lifeGroup.meetingDay.isNullOrEmpty() || !lifeGroup.meetingTime.isNullOrEmpty()) {
+                        InfoRow(
+                            icon = Icons.Default.CalendarToday,
+                            label = "Reunião",
+                            value =
+                                buildString {
+                                    lifeGroup.meetingDay?.let { append(it) }
+                                    if (!lifeGroup.meetingDay.isNullOrEmpty() && !lifeGroup.meetingTime.isNullOrEmpty()) append(" às ")
+                                    lifeGroup.meetingTime?.let { append(it) }
+                                },
                         )
+                    }
+                    lifeGroup.location?.let {
+                        InfoRow(icon = Icons.Default.LocationOn, label = "Endereço", value = it)
+                        if (lifeGroup.latitude != null && lifeGroup.longitude != null) {
+                            Text(
+                                "Como chegar",
+                                style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Primary),
+                                modifier =
+                                    Modifier
+                                        .padding(start = 32.dp)
+                                        .clickable {
+                                            openInMaps(context, lifeGroup.latitude!!, lifeGroup.longitude!!, lifeGroup.name)
+                                        },
+                            )
+                        }
                     }
                 }
             }
@@ -376,24 +382,59 @@ private fun LifeGroupContent(
 
         if (leadershipContacts.isNotEmpty()) {
             item {
-                Row(
+                PazGlassCard(
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .clip(PazShapes.large)
-                            .background(MaterialTheme.colorScheme.surface)
                             .clickable {
                                 if (leadershipContacts.size > 1) {
                                     showLeadershipDialog = true
                                 } else {
                                     openWhatsApp(context, leadershipContacts.first().phone)
                                 }
-                            }.padding(PazSpacing.Lg),
+                            },
+                    cornerRadius = PazSpacing.CardRadiusCompact,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(PazSpacing.Lg),
+                        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Default.Message,
+                            contentDescription = null,
+                            tint = PazColors.Primary,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Text("Falar com a liderança", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        Icon(
+                            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            PazGlassCard(
+                modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onStudyTap),
+                cornerRadius = PazSpacing.CardRadiusCompact,
+            ) {
+                Row(
+                    modifier = Modifier.padding(PazSpacing.Lg),
                     horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Default.Message, contentDescription = null, tint = PazColors.Primary, modifier = Modifier.size(22.dp))
-                    Text("Falar com a liderança", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Icon(
+                        Icons.Outlined.MenuBook,
+                        contentDescription = null,
+                        tint = PazColors.Primary,
+                        modifier = Modifier.size(22.dp),
+                    )
+                    Text("Estudo do Life", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                     Icon(
                         Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                         contentDescription = null,
@@ -403,87 +444,58 @@ private fun LifeGroupContent(
             }
         }
 
-        item {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(PazShapes.large)
-                        .background(MaterialTheme.colorScheme.surface)
-                        .clickable(onClick = onStudyTap)
-                        .padding(PazSpacing.Lg),
-                horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    Icons.Outlined.MenuBook,
-                    contentDescription = null,
-                    tint = PazColors.Primary,
-                    modifier = Modifier.size(22.dp),
-                )
-                Text("Estudo do Life", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                Icon(
-                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                )
-            }
-        }
-
         if (canManageAttendance) {
             item {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(PazShapes.large)
-                            .background(MaterialTheme.colorScheme.surface)
-                            .clickable(onClick = onAttendanceTap)
-                            .padding(PazSpacing.Lg),
-                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                    verticalAlignment = Alignment.CenterVertically,
+                PazGlassCard(
+                    modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onAttendanceTap),
+                    cornerRadius = PazSpacing.CardRadiusCompact,
                 ) {
-                    Icon(
-                        Icons.Outlined.Groups,
-                        contentDescription = null,
-                        tint = PazColors.Primary,
-                        modifier = Modifier.size(22.dp),
-                    )
-                    Text("Presença", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                    Icon(
-                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                    )
+                    Row(
+                        modifier = Modifier.padding(PazSpacing.Lg),
+                        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Outlined.Groups,
+                            contentDescription = null,
+                            tint = PazColors.Primary,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Text("Presença", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        Icon(
+                            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                        )
+                    }
                 }
             }
         }
 
         if (canManage || canManageAttendance) {
             item {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(PazShapes.large)
-                            .background(MaterialTheme.colorScheme.surface)
-                            .clickable(onClick = onAnalyticsTap)
-                            .padding(PazSpacing.Lg),
-                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                    verticalAlignment = Alignment.CenterVertically,
+                PazGlassCard(
+                    modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onAnalyticsTap),
+                    cornerRadius = PazSpacing.CardRadiusCompact,
                 ) {
-                    Icon(
-                        Icons.Outlined.BarChart,
-                        contentDescription = null,
-                        tint = PazColors.Primary,
-                        modifier = Modifier.size(22.dp),
-                    )
-                    Text("Relatórios", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                    Icon(
-                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                    )
+                    Row(
+                        modifier = Modifier.padding(PazSpacing.Lg),
+                        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Outlined.BarChart,
+                            contentDescription = null,
+                            tint = PazColors.Primary,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Text("Relatórios", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        Icon(
+                            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                        )
+                    }
                 }
             }
         }
@@ -572,6 +584,8 @@ private fun openWhatsApp(
 private fun DetailScaffold(
     title: String,
     isLoading: Boolean,
+    isRefreshing: Boolean = false,
+    onRefresh: () -> Unit = {},
     error: String?,
     onBack: () -> Unit,
     onManageTap: (() -> Unit)? = null,
@@ -601,7 +615,11 @@ private fun DetailScaffold(
             },
             containerColor = Color.Transparent,
         ) { innerPadding ->
-            Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
+            PazPullToRefresh(
+                isRefreshing = isRefreshing,
+                onRefresh = onRefresh,
+                modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
+            ) {
                 when {
                     isLoading ->
                         Column(Modifier.padding(PazSpacing.Lg), verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg)) {
