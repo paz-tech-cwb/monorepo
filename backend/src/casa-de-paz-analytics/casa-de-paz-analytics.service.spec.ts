@@ -330,7 +330,7 @@ describe('CasaDePazAnalyticsService', () => {
           conversions: '1',
         },
       });
-      const result = await service.summary(FIXED_RANGE);
+      const result = await service.summary(FIXED_RANGE, UNRESTRICTED_SCOPE);
 
       expect(result.totals.houses).toBe(1);
       expect(result.totals.kids).toBe(2);
