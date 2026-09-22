@@ -438,12 +438,13 @@ private fun DizimosCard(
                     ),
                 modifier = Modifier.padding(top = PazSpacing.Xs),
             )
-            if (bank.pixKey != null) {
+            val pixKey = bank.pixKey
+            if (pixKey != null) {
                 Spacer(Modifier.height(PazSpacing.Lg))
                 DizimosPixButton(
                     copied = copied,
                     onClick = {
-                        clipboardManager.setText(AnnotatedString(bank.pixKey))
+                        clipboardManager.setText(AnnotatedString(pixKey))
                         copied = true
                         scope.launch {
                             delay(1500)

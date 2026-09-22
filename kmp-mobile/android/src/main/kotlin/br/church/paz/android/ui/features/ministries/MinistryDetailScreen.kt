@@ -313,11 +313,15 @@ private fun LifeGroupContent(
     val leadershipContacts =
         remember(lifeGroup) {
             buildList {
-                if (lifeGroup.leader != null && !lifeGroup.leaderPhone.isNullOrBlank()) {
-                    add(LeadershipContact(lifeGroup.leader, lifeGroup.leaderPhone))
+                val leader = lifeGroup.leader
+                val leaderPhone = lifeGroup.leaderPhone
+                if (leader != null && !leaderPhone.isNullOrBlank()) {
+                    add(LeadershipContact(leader, leaderPhone))
                 }
-                if (lifeGroup.coLeaderName != null && !lifeGroup.coLeaderPhone.isNullOrBlank()) {
-                    add(LeadershipContact(lifeGroup.coLeaderName, lifeGroup.coLeaderPhone))
+                val coLeaderName = lifeGroup.coLeaderName
+                val coLeaderPhone = lifeGroup.coLeaderPhone
+                if (coLeaderName != null && !coLeaderPhone.isNullOrBlank()) {
+                    add(LeadershipContact(coLeaderName, coLeaderPhone))
                 }
             }
         }
