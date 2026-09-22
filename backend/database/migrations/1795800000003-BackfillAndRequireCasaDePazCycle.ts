@@ -57,7 +57,7 @@ export class BackfillAndRequireCasaDePazCycle1795800000003
           WHEN 12 THEN 'Dezembro'
         END) || ' ' || to_char(r.date, 'YYYY') AS name,
         'closed' AS status,
-        $1 AS created_by_id
+        $1::integer AS created_by_id
       FROM "casa_de_paz_reports" r
       WHERE r.casa_de_paz_id IS NULL
       ON CONFLICT ("month") DO NOTHING
