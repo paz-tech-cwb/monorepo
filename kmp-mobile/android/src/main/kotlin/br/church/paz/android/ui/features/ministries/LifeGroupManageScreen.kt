@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -71,6 +72,7 @@ fun LifeGroupManageScreen(
     viewModel: LifeGroupManageViewModel = koinViewModel(parameters = { parametersOf(lifeGroupId) }),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var memberPendingRemoval by remember { mutableStateOf<LifeGroupMember?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect {
@@ -78,6 +80,23 @@ fun LifeGroupManageScreen(
                 LifeGroupManageEffect.Dismiss -> navController.popBackStack()
             }
         }
+    }
+
+    memberPendingRemoval?.let { member ->
+        AlertDialog(
+            onDismissRequest = { memberPendingRemoval = null },
+            title = { Text("Remover membro") },
+            text = { Text("Tem certeza que deseja remover ${member.name} deste grupo?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    memberPendingRemoval = null
+                    viewModel.onRemoveMember(member)
+                }) {
+                    Text("Remover", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { memberPendingRemoval = null }) { Text("Cancelar") } },
+        )
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -123,7 +142,7 @@ fun LifeGroupManageScreen(
                             onMeetingTimeChanged = viewModel::onMeetingTimeChanged,
                             onKidsCountChanged = viewModel::onKidsCountChanged,
                             onAddMemberTap = viewModel::onAddMemberTap,
-                            onRemoveMember = viewModel::onRemoveMember,
+                            onRemoveMember = { member -> memberPendingRemoval = member },
                         )
                 }
             }
