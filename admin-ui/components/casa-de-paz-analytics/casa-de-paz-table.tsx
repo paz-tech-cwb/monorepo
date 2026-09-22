@@ -23,7 +23,7 @@ import { CasaDePazEditDialog } from "./casa-de-paz-edit-dialog"
 import type { CasaDePazFilterState } from "./casa-de-paz-analytics-filters"
 import type { CasaDePazReportSubmission } from "@/lib/api/types"
 
-const COLUMN_COUNT = 9
+const COLUMN_COUNT = 8
 
 function formatDate(value: string): string {
   const [year, month, day] = value.split("-")
@@ -91,7 +91,6 @@ export function CasaDePazTable({ filters, range }: CasaDePazTableProps) {
               <TableHead>Facilitador</TableHead>
               <TableHead>Setor</TableHead>
               <TableHead>Dia</TableHead>
-              <TableHead>Adultos</TableHead>
               <TableHead>Crianças</TableHead>
               <TableHead>Convidados</TableHead>
               <TableHead>Conversões</TableHead>
@@ -105,9 +104,15 @@ export function CasaDePazTable({ filters, range }: CasaDePazTableProps) {
                 <TableCell>{s.facilitator}</TableCell>
                 <TableCell>{sectorMap.get(s.sector_id) ?? "Setor removido"}</TableCell>
                 <TableCell>{s.meeting_day ?? "—"}</TableCell>
-                <TableCell>{s.adults}</TableCell>
                 <TableCell>{s.kids}</TableCell>
-                <TableCell>{s.guests}</TableCell>
+                <TableCell>
+                  <span
+                    title={s.guests.map((g) => g.name).join(", ") || undefined}
+                    className={s.guests.length > 0 ? "underline decoration-dotted cursor-default" : undefined}
+                  >
+                    {s.guests.length}
+                  </span>
+                </TableCell>
                 <TableCell>{s.conversions}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">

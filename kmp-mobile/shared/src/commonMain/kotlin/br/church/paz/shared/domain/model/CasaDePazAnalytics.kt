@@ -11,10 +11,9 @@ data class CasaDePazAnalyticsRange(
 @Serializable
 data class CasaDePazAnalyticsTotals(
     val houses: Int,
-    val adults: Int,
     val kids: Int,
     val guests: Int,
-    // adults + kids + guests — every person reached across all visits.
+    // kids + guests — every person reached across all visits.
     val lives: Int,
     val conversions: Int,
     val conversionRate: Double,
@@ -34,7 +33,6 @@ data class CasaDePazAnalyticsGrowth(
 data class CasaDePazSeriesPoint(
     val period: String,
     val houses: Int,
-    val adults: Int,
     val kids: Int,
     val guests: Int,
     val conversions: Int,
@@ -45,7 +43,6 @@ data class CasaDePazBySector(
     val label: String,
     val sectorId: Int?,
     val houses: Int,
-    val adults: Int,
     val kids: Int,
     val guests: Int,
     val conversions: Int,
@@ -55,7 +52,6 @@ data class CasaDePazBySector(
 data class CasaDePazByDay(
     val label: String,
     val houses: Int,
-    val adults: Int,
     val guests: Int,
     val conversions: Int,
 )

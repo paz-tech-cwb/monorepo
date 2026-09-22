@@ -33,13 +33,13 @@ class CasaDePazAnalyticsRepositoryTest {
                 """
                 {
                   "range": {"from": "2026-01-01", "to": "2026-06-30"},
-                  "totals": {"houses": 10, "adults": 20, "kids": 5, "guests": 8, "lives": 33, "conversions": 3, "conversion_rate": 0.375},
+                  "totals": {"houses": 10, "kids": 5, "guests": 8, "lives": 33, "conversions": 3, "conversion_rate": 0.375},
                   "growth": {"houses": 0.1, "lives": 0.2, "guests": null, "conversions": 0.0},
                   "comparison": {"period": "2025-12"},
-                  "series": [{"period": "2026-01", "houses": 2, "adults": 4, "kids": 1, "guests": 2, "conversions": 1}],
-                  "by_sector": [{"label": "Norte", "sector_id": 1, "houses": 5, "adults": 10, "kids": 2, "guests": 4, "conversions": 2}],
-                  "by_day": [{"label": "Domingo", "houses": 3, "adults": 6, "guests": 2, "conversions": 1}],
-                  "by_time": [{"label": "19:00", "houses": 3, "adults": 6, "guests": 2, "conversions": 1}]
+                  "series": [{"period": "2026-01", "houses": 2, "kids": 1, "guests": 2, "conversions": 1}],
+                  "by_sector": [{"label": "Norte", "sector_id": 1, "houses": 5, "kids": 2, "guests": 4, "conversions": 2}],
+                  "by_day": [{"label": "Domingo", "houses": 3, "guests": 2, "conversions": 1}],
+                  "by_time": [{"label": "19:00", "houses": 3, "guests": 2, "conversions": 1}]
                 }
                 """.trimIndent(),
                 HttpStatusCode.OK,
@@ -73,7 +73,7 @@ class CasaDePazAnalyticsRepositoryTest {
                 """
                 {
                   "range": {"from": "2026-01-01", "to": "2026-06-30"},
-                  "totals": {"houses": 0, "adults": 0, "kids": 0, "guests": 0, "lives": 0, "conversions": 0, "conversion_rate": 0},
+                  "totals": {"houses": 0, "kids": 0, "guests": 0, "lives": 0, "conversions": 0, "conversion_rate": 0},
                   "growth": {"houses": null, "lives": null, "guests": null, "conversions": null},
                   "comparison": null,
                   "series": [],
@@ -108,7 +108,7 @@ class CasaDePazAnalyticsRepositoryTest {
                 """
                 {
                   "range": {"from": "2026-01-01", "to": "2026-06-30"},
-                  "totals": {"houses": 0, "adults": 0, "kids": 0, "guests": 0, "lives": 0, "conversions": 0, "conversion_rate": 0},
+                  "totals": {"houses": 0, "kids": 0, "guests": 0, "lives": 0, "conversions": 0, "conversion_rate": 0},
                   "growth": {"houses": null, "lives": null, "guests": null, "conversions": null},
                   "comparison": null,
                   "series": [],

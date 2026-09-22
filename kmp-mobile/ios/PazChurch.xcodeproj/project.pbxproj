@@ -66,8 +66,10 @@
 		8BBB7655494EE2891298CD78 /* PazPillChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62DDEA0026352360D73E873 /* PazPillChip.swift */; };
 		8CED05A41A291F12C62B6836 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E82BF64ABC060C59D814EBA /* OnboardingView.swift */; };
 		8D8430332E05F42EED9AD97A /* LifeGroupAnalyticsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CD6337A2A4FD69B304F33C /* LifeGroupAnalyticsViewModel.swift */; };
+		8F38AE17F7E00C2819DDAE9F /* CasaDePazLessonDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADB1B6A6945AD2405ED7AEFF /* CasaDePazLessonDetailView.swift */; };
 		9531A2BAD6ADBC340F6DD4DD /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B554E6B77B5313AFF3EEAD09 /* OnboardingCoordinator.swift */; };
 		96BF8A72553894BA74F6934B /* PazIconContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC853F6E892CF7A2AE4283F /* PazIconContainer.swift */; };
+		9713458591D4950B97EE77BA /* CasaDePazCyclePickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19BCE06C2D7FAA81524F09DE /* CasaDePazCyclePickerSheet.swift */; };
 		9B35B93C7F743C40EC9D2013 /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2792E4E00D06402A139D1665 /* GlassCard.swift */; };
 		9B9A6148AFFD0C8167085DD0 /* MinistryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDD6B4FBC968ED037D73EAA9 /* MinistryDetailView.swift */; };
 		9FC7139DF9C1E4F65329A028 /* CourseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A47D9B2BCAEA98860B58CF7 /* CourseDetailView.swift */; };
@@ -96,12 +98,15 @@
 		CED3F9128F6B92DF5DA8B565 /* FormStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2019A7167B120D6FEB1A5E7B /* FormStepView.swift */; };
 		D30F409FE86E40DA408524CB /* dm_sans_semibold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 637873C380E73CE0CA8DEA87 /* dm_sans_semibold.ttf */; };
 		D801CBE1B82319E0DA01E3CF /* MemberJourneyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACF273449137A8036EAB8D4 /* MemberJourneyView.swift */; };
+		D9EDA323E8F4F684C92AC609 /* CasaDePazLessonsViewModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63D7E8FC70A1FEC35EA0D419 /* CasaDePazLessonsViewModels.swift */; };
 		DA3D9622A5DD25011AA5D4BF /* playfair_display_extrabold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = EF907E68FA85FA69FAE6B591 /* playfair_display_extrabold.ttf */; };
+		DA87CEF6CCA95AD6C572640F /* MarkdownBodyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFC5B8B6E66286582CCC1CFA /* MarkdownBodyView.swift */; };
 		DBED4836D8DD1B07E3FBB55E /* PazChurchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8ED14052DB30DEC694C772C /* PazChurchApp.swift */; };
 		DD355395C1DDEC6848A616DE /* PazMaterial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57FD6DC40B6A7E3C8C56FD20 /* PazMaterial.swift */; };
 		E111D004E3CD35D07B1252C8 /* AuthenticationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0E4F5F057D2C920865C94F /* AuthenticationCoordinator.swift */; };
 		E1410C3996707FD9EE3B84C5 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D52E9AA381B5524BF375AF56 /* ShareSheet.swift */; };
 		E14AB35C85A65F0E85EBBD68 /* ErrorStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20CF68CE0958124973A70BA /* ErrorStateView.swift */; };
+		E190A056BE4865FE452D5735 /* CasaDePazLessonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18FB511E4D840081FD61266D /* CasaDePazLessonsView.swift */; };
 		E5E4F215F16D5A592885DDBD /* LifeGroupAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1D0B28C097FED3187839E /* LifeGroupAnalyticsView.swift */; };
 		F16C5E3B1FFA34FE5BA06943 /* CasaDePazAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 112A275F2799289F69B2259C /* CasaDePazAnalyticsView.swift */; };
 		F44D2FA2EA14E8B29A866F25 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8BEE46E84E5D0C0BE0786C7 /* AppDelegate.swift */; };
@@ -138,6 +143,8 @@
 		11AEC91450BA581754E1B481 /* FormSubmissionsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormSubmissionsListView.swift; sourceTree = "<group>"; };
 		121FA55058E48ADE89F7DCDC /* AgendaListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgendaListView.swift; sourceTree = "<group>"; };
 		1235A4B8BC89050828199B43 /* GatedYouTubePlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GatedYouTubePlayerView.swift; sourceTree = "<group>"; };
+		18FB511E4D840081FD61266D /* CasaDePazLessonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CasaDePazLessonsView.swift; sourceTree = "<group>"; };
+		19BCE06C2D7FAA81524F09DE /* CasaDePazCyclePickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CasaDePazCyclePickerSheet.swift; sourceTree = "<group>"; };
 		19E3E44DBCB2C6495E5BB60D /* PazColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazColors.swift; sourceTree = "<group>"; };
 		1A78FBD0E12C138DD1D1835C /* FormulariosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulariosView.swift; sourceTree = "<group>"; };
 		2019A7167B120D6FEB1A5E7B /* FormStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormStepView.swift; sourceTree = "<group>"; };
@@ -163,6 +170,7 @@
 		5F0FB3B1EB376B17132F9FA2 /* CertificatesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CertificatesViewModel.swift; sourceTree = "<group>"; };
 		61BBF8A887B712967D20287B /* LifeGroupAttendanceEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupAttendanceEditorView.swift; sourceTree = "<group>"; };
 		637873C380E73CE0CA8DEA87 /* dm_sans_semibold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = dm_sans_semibold.ttf; sourceTree = "<group>"; };
+		63D7E8FC70A1FEC35EA0D419 /* CasaDePazLessonsViewModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CasaDePazLessonsViewModels.swift; sourceTree = "<group>"; };
 		667C5328F0D1720F48DB35B2 /* EditProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfileViewModel.swift; sourceTree = "<group>"; };
 		670BD0FE9AF308947192BCCD /* QuestionnaireViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestionnaireViewModel.swift; sourceTree = "<group>"; };
 		6FBE9259B746D236383598F3 /* GlassBlurBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassBlurBackground.swift; sourceTree = "<group>"; };
@@ -185,6 +193,7 @@
 		A1CD6337A2A4FD69B304F33C /* LifeGroupAnalyticsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupAnalyticsViewModel.swift; sourceTree = "<group>"; };
 		A5F29167AE0FBA90438E386F /* LifeGroupsMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupsMapView.swift; sourceTree = "<group>"; };
 		A6CF7432C3804DACAD979BE9 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		ADB1B6A6945AD2405ED7AEFF /* CasaDePazLessonDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CasaDePazLessonDetailView.swift; sourceTree = "<group>"; };
 		B334D6F59293FC45EE9E6BC0 /* CasaDePazSubmissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CasaDePazSubmissionsView.swift; sourceTree = "<group>"; };
 		B554E6B77B5313AFF3EEAD09 /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
 		B6756FF82393E3C2B725AFCC /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
@@ -206,6 +215,7 @@
 		CA39212501DAA7DB14BFE730 /* AcademyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademyView.swift; sourceTree = "<group>"; };
 		CAC853F6E892CF7A2AE4283F /* PazIconContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazIconContainer.swift; sourceTree = "<group>"; };
 		CB3B8D8FB1ECDA45FE9ACC57 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		CFC5B8B6E66286582CCC1CFA /* MarkdownBodyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownBodyView.swift; sourceTree = "<group>"; };
 		D33772BE7A618459F8F98DA2 /* NotificationPrefsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPrefsView.swift; sourceTree = "<group>"; };
 		D52E9AA381B5524BF375AF56 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		D664B1D68AD1FA25AAA7C11C /* dm_sans_regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = dm_sans_regular.ttf; sourceTree = "<group>"; };
@@ -246,6 +256,7 @@
 		0E08E2571AD28D4B6DAFCFC6 /* Formularios */ = {
 			isa = PBXGroup;
 			children = (
+				19BCE06C2D7FAA81524F09DE /* CasaDePazCyclePickerSheet.swift */,
 				B334D6F59293FC45EE9E6BC0 /* CasaDePazSubmissionsView.swift */,
 				7C3499C673982AA1C0FA8EA5 /* FormDetailView.swift */,
 				5B51C64F53D18957F80B0D96 /* FormFieldDefs.swift */,
@@ -258,6 +269,16 @@
 				B85B3442F48DE8B02EE0E4CB /* UserPickerSheet.swift */,
 			);
 			path = Formularios;
+			sourceTree = "<group>";
+		};
+		10D780A48948B8909422C178 /* CasaDePazLessons */ = {
+			isa = PBXGroup;
+			children = (
+				ADB1B6A6945AD2405ED7AEFF /* CasaDePazLessonDetailView.swift */,
+				18FB511E4D840081FD61266D /* CasaDePazLessonsView.swift */,
+				63D7E8FC70A1FEC35EA0D419 /* CasaDePazLessonsViewModels.swift */,
+			);
+			path = CasaDePazLessons;
 			sourceTree = "<group>";
 		};
 		1BC6EACBFB5AD78E6BB372DE /* Services */ = {
@@ -304,6 +325,7 @@
 				C2F87C2FD639BBECB403D28F /* Agenda */,
 				CDB19A2D2D5B6981617D8234 /* Auth */,
 				A4C62A9DADA43415DE1C4BC4 /* CasaDePazAnalytics */,
+				10D780A48948B8909422C178 /* CasaDePazLessons */,
 				0E08E2571AD28D4B6DAFCFC6 /* Formularios */,
 				9583323C0C4D778E6E30C67E /* Home */,
 				4572C86A42A72B7ABC777BAE /* LifeGroupAnalytics */,
@@ -381,6 +403,7 @@
 				E20CF68CE0958124973A70BA /* ErrorStateView.swift */,
 				6FBE9259B746D236383598F3 /* GlassBlurBackground.swift */,
 				2792E4E00D06402A139D1665 /* GlassCard.swift */,
+				CFC5B8B6E66286582CCC1CFA /* MarkdownBodyView.swift */,
 				C7AB7D082CBCFBF7C089DB6B /* PazCharts.swift */,
 				956C0B652EACA4EB866BDD9C /* PazGoldBadge.swift */,
 				CAC853F6E892CF7A2AE4283F /* PazIconContainer.swift */,
@@ -699,6 +722,10 @@
 				F16C5E3B1FFA34FE5BA06943 /* CasaDePazAnalyticsView.swift in Sources */,
 				A882169C3987D03873848621 /* CasaDePazAnalyticsViewModel.swift in Sources */,
 				52095A3054AD258F46DBE6CF /* CasaDePazCharts.swift in Sources */,
+				9713458591D4950B97EE77BA /* CasaDePazCyclePickerSheet.swift in Sources */,
+				8F38AE17F7E00C2819DDAE9F /* CasaDePazLessonDetailView.swift in Sources */,
+				E190A056BE4865FE452D5735 /* CasaDePazLessonsView.swift in Sources */,
+				D9EDA323E8F4F684C92AC609 /* CasaDePazLessonsViewModels.swift in Sources */,
 				4A9B2AFC286D23CD3BEA6FD0 /* CasaDePazStatCards.swift in Sources */,
 				514B9718357844DF83FA3171 /* CasaDePazSubmissionsView.swift in Sources */,
 				5B2B7669BFE226EBCE026CA6 /* CertificatesView.swift in Sources */,
@@ -738,6 +765,7 @@
 				BD6852735FDBC471DA8AC835 /* LifeGroupsView.swift in Sources */,
 				045500E917135CF9ED6D160E /* LoginView.swift in Sources */,
 				2793855F821689FC2DFCA082 /* MainTabView.swift in Sources */,
+				DA87CEF6CCA95AD6C572640F /* MarkdownBodyView.swift in Sources */,
 				D801CBE1B82319E0DA01E3CF /* MemberJourneyView.swift in Sources */,
 				1F3D35E5FF143FC6C08A16BC /* MinistriesView.swift in Sources */,
 				9B9A6148AFFD0C8167085DD0 /* MinistryDetailView.swift in Sources */,

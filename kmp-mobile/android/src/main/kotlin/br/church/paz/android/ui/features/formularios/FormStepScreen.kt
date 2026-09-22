@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -49,6 +50,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import br.church.paz.android.navigation.Screen
+import br.church.paz.shared.domain.model.FormType
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazSkeleton
@@ -123,6 +126,11 @@ fun FormStepScreen(
                         onBack = {
                             if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onBack()
                         },
+                        showCasaDePazLessonsShortcut =
+                            uiState.form?.type == FormType.casa_de_paz_report && uiState.canAccessCasaDePazLessons,
+                        onCasaDePazLessonsTapped = {
+                            navController.navigate(Screen.CasaDePazLessonsList.route)
+                        },
                     )
                 }
             }
@@ -156,6 +164,9 @@ fun FormStepScreen(
                             onOpenPicker = viewModel::openPicker,
                             onSelfOrSearchMode = viewModel::setSelfOrSearchMode,
                             onNextStep = viewModel::onNextStep,
+                            onAddGuest = viewModel::addGuestEntry,
+                            onUpdateGuest = viewModel::updateGuestEntry,
+                            onRemoveGuest = viewModel::removeGuestEntry,
                         )
                 }
             }
@@ -180,6 +191,14 @@ fun FormStepScreen(
                 )
             PickerKind.SECTOR ->
                 SectorPickerSheet(
+                    state = pickerState,
+                    selectedId = uiState.fields[pickerState.key] ?: "",
+                    onQueryChanged = viewModel::onPickerQueryChanged,
+                    onSelect = viewModel::onPickerSelect,
+                    onDismiss = viewModel::closePicker,
+                )
+            PickerKind.CASA_DE_PAZ_CYCLE ->
+                CasaDePazCyclePickerSheet(
                     state = pickerState,
                     selectedId = uiState.fields[pickerState.key] ?: "",
                     onQueryChanged = viewModel::onPickerQueryChanged,
@@ -215,6 +234,8 @@ private fun displayTitle(title: String): String {
 private fun StepHeader(
     title: String,
     onBack: () -> Unit,
+    showCasaDePazLessonsShortcut: Boolean = false,
+    onCasaDePazLessonsTapped: () -> Unit = {},
 ) {
     Row(
         Modifier
@@ -231,6 +252,11 @@ private fun StepHeader(
             modifier = Modifier.weight(1f),
             maxLines = 1,
         )
+        if (showCasaDePazLessonsShortcut) {
+            IconButton(onClick = onCasaDePazLessonsTapped) {
+                Icon(Icons.Filled.MenuBook, "Conteúdo Casa de Paz", tint = Color.White)
+            }
+        }
     }
 }
 
@@ -243,6 +269,9 @@ private fun StepContent(
     onOpenPicker: (FormFieldDef) -> Unit,
     onSelfOrSearchMode: (String, Boolean) -> Unit,
     onNextStep: () -> Unit,
+    onAddGuest: () -> Unit,
+    onUpdateGuest: (Int, CasaDePazGuestDraft.() -> CasaDePazGuestDraft) -> Unit,
+    onRemoveGuest: (Int) -> Unit,
 ) {
     val form = uiState.form!!
     val fieldDefs = remember(form.type) { form.type.fieldDefs() }
@@ -304,6 +333,9 @@ private fun StepContent(
             imeAction = if (isLast) ImeAction.Done else ImeAction.Next,
             onImeAction = onNextStep,
             showLabel = false, // the big question headline above already names this field
+            onAddGuest = onAddGuest,
+            onUpdateGuest = onUpdateGuest,
+            onRemoveGuest = onRemoveGuest,
         )
 
         val stepError = uiState.stepError ?: uiState.error

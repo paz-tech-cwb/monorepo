@@ -3,7 +3,7 @@ import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { UserDeviceTokensService } from './user-device-tokens.service';
 import { UserNotificationPreferencesService } from './user-notification-preferences.service';
-import { LeadsService } from './leads.service';
+import { GuestsService } from './guests.service';
 import { FormsCoreModule } from '../forms-core/forms-core.module';
 
 @Module({
@@ -13,7 +13,7 @@ import { FormsCoreModule } from '../forms-core/forms-core.module';
     UsersService,
     UserDeviceTokensService,
     UserNotificationPreferencesService,
-    LeadsService,
+    GuestsService,
   ],
   exports: [
     UsersService,

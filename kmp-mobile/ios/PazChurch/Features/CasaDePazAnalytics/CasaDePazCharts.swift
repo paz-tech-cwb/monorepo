@@ -34,12 +34,12 @@ struct CasaDePazCharts: View {
                                 series: "Casas"
                             )
                         },
-                        lineSeries: summary.series.flatMap { point -> [PazChartSeriesPoint] in
-                            let label = periodLabel(point.period)
-                            return [
-                                PazChartSeriesPoint(label: label, value: Double(point.adults), series: "Adultos"),
-                                PazChartSeriesPoint(label: label, value: Double(point.kids), series: "Crianças"),
-                            ]
+                        lineSeries: summary.series.map { point in
+                            PazChartSeriesPoint(
+                                label: periodLabel(point.period),
+                                value: Double(point.kids),
+                                series: "Crianças"
+                            )
                         }
                     )
                 }

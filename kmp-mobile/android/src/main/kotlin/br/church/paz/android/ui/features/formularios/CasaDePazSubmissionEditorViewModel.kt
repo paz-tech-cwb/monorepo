@@ -3,6 +3,7 @@ package br.church.paz.android.ui.features.formularios
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.shared.domain.model.CasaDePazReportForm
+import br.church.paz.shared.domain.model.CasaDePazReportGuestEntry
 import br.church.paz.shared.domain.repository.FormsRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,23 +32,32 @@ class CasaDePazSubmissionEditorViewModel(
             runCatching {
                 val submissions = formsRepository.getCasaDePazReportSubmissions()
                 val sectors = formsRepository.searchSectors("")
+                val cycles = formsRepository.getCasaDePazCycles()
                 val submission =
                     submissions.firstOrNull { it.id == submissionId }
                         ?: error("Registro não encontrado")
-                submission to sectors.associate { it.id to it.name }
-            }.onSuccess { (submission, sectorNames) ->
+                Triple(submission, sectors.associate { it.id to it.name }, cycles)
+            }.onSuccess { (submission, sectorNames, cycles) ->
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         date = submission.date,
                         facilitator = submission.facilitator,
                         sectorId = submission.sectorId,
-                        adults = submission.adults.toString(),
+                        casaDePazId = submission.casaDePazId,
                         kids = submission.kids.toString(),
-                        guests = submission.guests.toString(),
+                        guests = submission.guests.map { g ->
+                            CasaDePazGuestDraft(
+                                name = g.name,
+                                email = g.email,
+                                birthDate = g.birthDate,
+                                whatsapp = g.whatsapp ?: "",
+                            )
+                        },
                         conversions = submission.conversions.toString(),
                         meetingDay = submission.meetingDay ?: "",
                         sectorNames = sectorNames,
+                        cycles = cycles.map { CasaDePazCycleOption(it.id, it.name) },
                     )
                 }
             }.onFailure { e ->
@@ -62,19 +72,30 @@ class CasaDePazSubmissionEditorViewModel(
 
     fun onSectorChange(v: Int) = _uiState.update { it.copy(sectorId = v) }
 
-    fun onAdultsChange(v: String) = _uiState.update { it.copy(adults = v) }
+    fun onCycleChange(v: String) = _uiState.update { it.copy(casaDePazId = v) }
 
     fun onKidsChange(v: String) = _uiState.update { it.copy(kids = v) }
-
-    fun onGuestsChange(v: String) = _uiState.update { it.copy(guests = v) }
 
     fun onConversionsChange(v: String) = _uiState.update { it.copy(conversions = v) }
 
     fun onMeetingDayChange(v: String) = _uiState.update { it.copy(meetingDay = v) }
 
+    fun onAddGuest() = _uiState.update { it.copy(guests = it.guests + CasaDePazGuestDraft()) }
+
+    fun onUpdateGuest(index: Int, patch: CasaDePazGuestDraft.() -> CasaDePazGuestDraft) {
+        _uiState.update { state ->
+            state.copy(guests = state.guests.mapIndexed { i, g -> if (i == index) g.patch() else g })
+        }
+    }
+
+    fun onRemoveGuest(index: Int) {
+        _uiState.update { state -> state.copy(guests = state.guests.filterIndexed { i, _ -> i != index }) }
+    }
+
     fun onSave() {
         val state = _uiState.value
         val sectorId = state.sectorId ?: return
+        val casaDePazId = state.casaDePazId ?: return
         _uiState.update { it.copy(isSaving = true, error = null) }
         viewModelScope.launch {
             val form =
@@ -82,9 +103,16 @@ class CasaDePazSubmissionEditorViewModel(
                     date = state.date,
                     facilitator = state.facilitator.trim(),
                     sectorId = sectorId,
-                    adults = state.adults.toIntOrNull() ?: 0,
+                    casaDePazId = casaDePazId,
                     kids = state.kids.toIntOrNull() ?: 0,
-                    guests = state.guests.toIntOrNull() ?: 0,
+                    guests = state.guests.map {
+                        CasaDePazReportGuestEntry(
+                            name = it.name.trim(),
+                            email = it.email.trim(),
+                            birthDate = it.birthDate,
+                            whatsapp = it.whatsapp.trim().ifEmpty { null },
+                        )
+                    },
                     conversions = state.conversions.toIntOrNull() ?: 0,
                     meetingDay = state.meetingDay.ifBlank { null },
                 )
