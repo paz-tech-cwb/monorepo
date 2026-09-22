@@ -166,10 +166,10 @@ private fun FormCard(
 
 private fun formTint(typeName: String): Color =
     when {
-        typeName.contains("CONVERSION", true) -> Color(0xFF1565C0)
-        typeName.contains("GUEST", true) -> Color(0xFF2E7D32)
-        typeName.contains("SERVICE", true) -> Color(0xFF6A1B9A)
-        typeName.contains("REPORT", true) -> Color(0xFFE65100)
+        typeName.contains("CONVERSION", true) -> PazColors.PrimaryLight
+        typeName.contains("GUEST", true) -> PazColors.MenuLifeGroups
+        typeName.contains("SERVICE", true) -> PazColors.MenuFormularios
+        typeName.contains("REPORT", true) -> PazColors.MenuMinistries
         else -> PazColors.Primary
     }
 

@@ -16,11 +16,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazSpacing
-
-private val SuccessGreen = Color(0xFF28A745)
 
 /**
  * Shown after any dynamic form submits successfully — without this, the screen used to just
@@ -48,7 +46,7 @@ fun PazSuccessState(
             Icon(
                 Icons.Filled.CheckCircle,
                 contentDescription = null,
-                tint = SuccessGreen,
+                tint = PazColors.SuccessIcon,
                 modifier = Modifier.size(72.dp),
             )
             Text(title, style = MaterialTheme.typography.titleMedium)

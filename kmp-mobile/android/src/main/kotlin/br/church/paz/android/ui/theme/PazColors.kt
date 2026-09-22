@@ -36,6 +36,9 @@ object PazColors {
     val ErrorTint = Color(0xFFFFEAEA)
     val SuccessTint = Color(0xFFE6F4ED)
 
+    /** Success checkmark icon tint (form submission confirmation) */
+    val SuccessIcon = Color(0xFF28A745)
+
     // ── Dark palette ──────────────────────────────────────────────────────
     val DarkBackground = Color(0xFF070E1A)
     val DarkSurface = Color(0xFF0D1826)
