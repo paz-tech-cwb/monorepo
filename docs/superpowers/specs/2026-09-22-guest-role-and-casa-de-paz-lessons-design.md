@@ -35,13 +35,36 @@ Full rename across the stack — not just a display label:
   destructive drop/recreate — an `UPDATE`), plus a data migration note that any code
   querying `role.slug = 'lead'` must be updated in the same change.
 
+### New: Casa de Paz entity (monthly, global cycle)
+
+A real, persistent Casa de Paz entity is introduced — not a physical house, a **monthly
+cycle for the entire church** (one global cycle at a time, not per facilitator/sector):
+
+- Created manually in admin-ui. Uniqueness key is the **month** (e.g. "Casa de Paz —
+  Setembro 2026"). Can be created ahead of when lesson content or reports exist for it —
+  it's just an empty container at creation time.
+- A cycle can stay open past its calendar month if closing it takes longer than expected
+  ("we can end up getting next month's rows into the casa de paz (month)") — closing is a
+  manual admin action, not automatic on month-end.
+- Casa de Paz **reports** (the existing `casa-de-paz-reports` module — date/facilitator/
+  sector/kids/conversions rows) get a required FK to this entity going forward. On the
+  report submission form (admin-ui and mobile), the most recently created/open cycle is
+  pre-selected by default.
+- Minimal fields: a name/label (or derive one from the month), status (open/closed), plus
+  whatever the implementation plan finds necessary to support the FK and the "most recent"
+  default-selection behavior. Exact schema is left to the implementation plan.
+- This is what "select which Casa de Paz" resolves to in origin tracking below — the
+  onboarding/report guest-origin link points at this entity, not at an individual report
+  row.
+
 ### Origin tracking
 
 Add an `origin` concept to the guest record:
 
 - `origin_type` enum: `casa_de_paz` | `invited_by_member` | `self`
 - Optional linkage depending on type:
-  - `casa_de_paz` → link to the specific Casa de Paz report/casa that produced this guest
+  - `casa_de_paz` → link to the specific Casa de Paz **entity** (the monthly cycle, see
+    above) that produced this guest
   - `invited_by_member` → link to the inviting member's `User` id (falls back to the
     existing free-text `invited_by` string if no match)
   - `self` → no link; came on their own
@@ -55,19 +78,25 @@ already known.
 
 1. **Casa de Paz report** (`casa-de-paz-reports` module + its admin-ui/mobile forms):
    - Remove the numeric `adults` count entirely — adult attendees are now captured
-     individually via the guest list (see below), which already carries their info.
+     individually via the guest list (see below), which already carries their info. This is
+     a **destructive** migration (existing `adults`/`guests` count columns are dropped, not
+     just hidden) — confirmed acceptable; historical per-report adult headcounts are not
+     preserved, and going forward "adults reached" is derived from real guest/member
+     records tied to a Casa de Paz cycle, not a manual count.
    - Keep `kids` as a plain headcount (children aren't tracked individually / don't get
      accounts).
    - Replace the numeric `guests` count with a repeatable list of guest entries:
      **name, email, birthdate (required)**, **WhatsApp (optional)**.
    - On submit, each list entry creates-or-links a `guest`-role `User`
      (match by email first, consistent with existing `usersService.lookupForForms`-style
-     lookups elsewhere), with `origin_type = casa_de_paz` linked to that report/casa.
+     lookups elsewhere), with `origin_type = casa_de_paz` linked to the report's Casa de Paz
+     cycle entity.
    - Keep `conversions` as-is (unaffected count).
    - This changes the report entity, DTOs, the admin-ui Casa de Paz report table/edit
      dialog/stat cards (the already-merged "Presenças" card now reflects Crianças count +
      guest-list count, dropping Adultos), and the kmp-mobile Casa de Paz report submission
-     form (adults field removed, guest-list UI added).
+     form (adults field removed, guest-list UI added). The report form also gains a Casa de
+     Paz cycle selector, pre-selecting the most recently created/open cycle.
 
 2. **Convidado form** (`form-guests` module): already creates a `User` on submit when
    email/phone is present, but currently assigns role `member`. Change that assignment to
@@ -147,3 +176,6 @@ writes a Casa de Paz report (i.e. wherever `can_write` is true for that form tod
   recommend requiring an explicit picker (admin-ui/mobile UI selects a real member) rather
   than parsing free text, to avoid mismatches.
 - Exact placement of the new admin-ui content screen in the sidebar/navigation.
+- Exact schema/fields for the new Casa de Paz entity beyond month-uniqueness and
+  open/closed status, and exact admin-ui screen for creating/closing cycles — left to the
+  implementation plan.
