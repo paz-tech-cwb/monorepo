@@ -11,6 +11,7 @@ data class LifeGroupsUiState(
     val lifeGroups: List<LifeGroup> = emptyList(),
     val isFallbackToAll: Boolean = false,
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
 )
 
@@ -22,12 +23,15 @@ sealed class LifeGroupsEffect {
     ) : LifeGroupsEffect()
 
     data object NavigateToAllLifeGroups : LifeGroupsEffect()
+
+    data object NavigateToMap : LifeGroupsEffect()
 }
 
 /** Unfiltered, church-wide list — reached via "Ver mais life groups" or as a fallback. */
 data class AllLifeGroupsUiState(
     val lifeGroups: List<LifeGroup> = emptyList(),
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
 )
 

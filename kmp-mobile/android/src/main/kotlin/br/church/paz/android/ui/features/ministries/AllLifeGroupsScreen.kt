@@ -94,22 +94,34 @@ fun AllLifeGroupsScreen(
                     uiState.error != null -> PazErrorState(message = uiState.error!!, onRetry = viewModel::onRetry)
                     uiState.lifeGroups.isEmpty() -> LifeGroupsEmptyState(message = "Nenhum life group encontrado")
                     else ->
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(PazSpacing.Lg),
-                            verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                        ) {
-                            item { Spacer(Modifier.height(PazSpacing.Sm)) }
-                            items(uiState.lifeGroups) { lifeGroup ->
-                                LifeGroupCard(
-                                    lifeGroup = lifeGroup,
-                                    onClick = { viewModel.onLifeGroupTap(lifeGroup.id.toString()) },
-                                )
-                            }
-                            item { Spacer(Modifier.height(PazSpacing.Xl)) }
-                        }
+                        AllStyleLifeGroupsList(
+                            lifeGroups = uiState.lifeGroups,
+                            onTap = viewModel::onLifeGroupTap,
+                        )
                 }
             }
         }
+    }
+}
+
+/**
+ * Unfiltered-style list rendering (no "Ver mais" row) — shared by [AllLifeGroupsScreen]
+ * and [LifeGroupsScreen] when the latter falls back to the church-wide list.
+ */
+@Composable
+fun AllStyleLifeGroupsList(
+    lifeGroups: List<br.church.paz.shared.domain.model.LifeGroup>,
+    onTap: (String) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(PazSpacing.Lg),
+        verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+    ) {
+        item { Spacer(Modifier.height(PazSpacing.Sm)) }
+        items(lifeGroups) { lifeGroup ->
+            LifeGroupCard(lifeGroup = lifeGroup, onClick = { onTap(lifeGroup.id.toString()) })
+        }
+        item { Spacer(Modifier.height(PazSpacing.Xl)) }
     }
 }

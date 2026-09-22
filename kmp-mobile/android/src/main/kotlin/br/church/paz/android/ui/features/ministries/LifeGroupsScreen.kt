@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -69,9 +70,14 @@ fun LifeGroupsScreen(
                     navController.navigate(Screen.LifeGroupDetail.createRoute(effect.lifeGroupId))
                 LifeGroupsEffect.NavigateToAllLifeGroups ->
                     navController.navigate(Screen.AllLifeGroups.route)
+                LifeGroupsEffect.NavigateToMap ->
+                    navController.navigate(Screen.LifeGroupsMap.route)
             }
         }
     }
+
+    val showsMapToggle =
+        uiState.isFallbackToAll && !uiState.isLoading && uiState.error == null && uiState.lifeGroups.isNotEmpty()
 
     Box(Modifier.fillMaxSize()) {
         PazMeshBackground()
@@ -79,10 +85,17 @@ fun LifeGroupsScreen(
         Scaffold(
             topBar = {
                 LargeTopAppBar(
-                    title = { Text("Life Groups") },
+                    title = { Text(if (uiState.isFallbackToAll) "Todos os Life Groups" else "Life Groups") },
                     navigationIcon = {
                         IconButton(onClick = { viewModel.onBack() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "back")
+                        }
+                    },
+                    actions = {
+                        if (showsMapToggle) {
+                            IconButton(onClick = { viewModel.onMapToggle() }) {
+                                Icon(Icons.Outlined.Map, contentDescription = "Ver mapa")
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
@@ -91,14 +104,19 @@ fun LifeGroupsScreen(
             containerColor = Color.Transparent,
         ) { innerPadding ->
             PazPullToRefresh(
-                isRefreshing = false,
-                onRefresh = { viewModel.onRetry() },
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = viewModel::refresh,
                 modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
             ) {
                 when {
                     uiState.isLoading -> LifeGroupsLoadingState()
                     uiState.error != null -> PazErrorState(message = uiState.error!!, onRetry = viewModel::onRetry)
                     uiState.lifeGroups.isEmpty() -> LifeGroupsEmptyState(message = "Nenhum life group encontrado")
+                    uiState.isFallbackToAll ->
+                        AllStyleLifeGroupsList(
+                            lifeGroups = uiState.lifeGroups,
+                            onTap = viewModel::onLifeGroupTap,
+                        )
                     else ->
                         MyLifeGroupsContent(
                             lifeGroups = uiState.lifeGroups,

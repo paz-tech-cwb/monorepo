@@ -29,19 +29,33 @@ class LifeGroupsViewModel(
         load()
     }
 
-    fun load() {
+    fun load() = fetch(showSkeleton = true)
+
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = fetch(showSkeleton = false)
+
+    private fun fetch(showSkeleton: Boolean) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton, error = null) }
             runCatching { churchRepository.getMyLifeGroups() }
                 .onSuccess { myGroups ->
                     if (myGroups.isNotEmpty()) {
                         _uiState.update {
-                            it.copy(lifeGroups = myGroups, isFallbackToAll = false, isLoading = false, error = null)
+                            it.copy(
+                                lifeGroups = myGroups,
+                                isFallbackToAll = false,
+                                isLoading = false,
+                                isRefreshing = false,
+                                error = null,
+                            )
                         }
                     } else {
                         loadAllAsFallback()
                     }
                 }.onFailure { e ->
-                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "Erro ao carregar dados") }
+                    _uiState.update {
+                        it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Erro ao carregar dados")
+                    }
                 }
         }
     }
@@ -50,10 +64,18 @@ class LifeGroupsViewModel(
         runCatching { churchRepository.getAllLifeGroups() }
             .onSuccess { allGroups ->
                 _uiState.update {
-                    it.copy(lifeGroups = allGroups, isFallbackToAll = true, isLoading = false, error = null)
+                    it.copy(
+                        lifeGroups = allGroups,
+                        isFallbackToAll = true,
+                        isLoading = false,
+                        isRefreshing = false,
+                        error = null,
+                    )
                 }
             }.onFailure { e ->
-                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Erro ao carregar dados") }
+                _uiState.update {
+                    it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Erro ao carregar dados")
+                }
             }
     }
 
@@ -63,6 +85,10 @@ class LifeGroupsViewModel(
 
     fun onSeeAllTap() {
         viewModelScope.launch { _effect.send(LifeGroupsEffect.NavigateToAllLifeGroups) }
+    }
+
+    fun onMapToggle() {
+        viewModelScope.launch { _effect.send(LifeGroupsEffect.NavigateToMap) }
     }
 
     fun onBack() {
@@ -89,13 +115,23 @@ class AllLifeGroupsViewModel(
         load()
     }
 
-    fun load() {
+    fun load() = fetch(showSkeleton = true)
+
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = fetch(showSkeleton = false)
+
+    private fun fetch(showSkeleton: Boolean) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton, error = null) }
             runCatching { churchRepository.getAllLifeGroups() }
                 .onSuccess { groups ->
-                    _uiState.update { it.copy(lifeGroups = groups, isLoading = false, error = null) }
+                    _uiState.update {
+                        it.copy(lifeGroups = groups, isLoading = false, isRefreshing = false, error = null)
+                    }
                 }.onFailure { e ->
-                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "Erro ao carregar dados") }
+                    _uiState.update {
+                        it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Erro ao carregar dados")
+                    }
                 }
         }
     }
