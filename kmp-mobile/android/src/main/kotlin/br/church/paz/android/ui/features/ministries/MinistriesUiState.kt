@@ -5,6 +5,7 @@ import br.church.paz.shared.domain.model.Ministry
 data class MinistriesUiState(
     val ministries: List<Ministry> = emptyList(),
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
 )
 

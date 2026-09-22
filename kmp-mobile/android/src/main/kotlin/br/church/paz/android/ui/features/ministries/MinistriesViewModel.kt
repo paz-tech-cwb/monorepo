@@ -24,13 +24,23 @@ class MinistriesViewModel(
         load()
     }
 
-    private fun load() {
+    fun load() = fetch(showSkeleton = true)
+
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = fetch(showSkeleton = false)
+
+    private fun fetch(showSkeleton: Boolean) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton, error = null) }
             runCatching { churchRepository.getAllMinistries() }
                 .onSuccess { ministries ->
-                    _uiState.update { it.copy(ministries = ministries, isLoading = false, error = null) }
+                    _uiState.update {
+                        it.copy(ministries = ministries, isLoading = false, isRefreshing = false, error = null)
+                    }
                 }.onFailure { e ->
-                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "Erro ao carregar dados") }
+                    _uiState.update {
+                        it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Erro ao carregar dados")
+                    }
                 }
         }
     }

@@ -84,8 +84,8 @@ fun MinistriesScreen(
             containerColor = Color.Transparent,
         ) { innerPadding ->
             PazPullToRefresh(
-                isRefreshing = false,
-                onRefresh = { viewModel.onRetry() },
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = viewModel::refresh,
                 modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
             ) {
                 when {
