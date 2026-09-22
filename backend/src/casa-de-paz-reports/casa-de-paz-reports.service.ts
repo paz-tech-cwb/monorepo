@@ -1,24 +1,36 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { CasaDePazReport } from './entities/casa-de-paz-report.entity';
+import { CasaDePazReportGuest } from './entities/casa-de-paz-report-guest.entity';
 import { User } from '../users/entities/user.entity';
+import { Role } from '../roles/entities/role.entity';
 import { CreateCasaDePazReportDto } from './dto/create-casa-de-paz-report.dto';
+import { CasaDePazReportGuestDto } from './dto/casa-de-paz-report-guest.dto';
 import { UpdateCasaDePazReportDto } from './dto/update-casa-de-paz-report.dto';
 import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
 import { FormSubmissionPolicyService } from '../forms-core/services/form-submission-policy.service';
 import { FormSubmissionAuditService } from '../forms-core/services/form-submission-audit.service';
+import { GuestOriginsService } from '../guest-origins/guest-origins.service';
 
 const SLUG = 'casa-de-paz-reports';
+
+export interface CasaDePazReportGuestResponse {
+  id: string;
+  name: string;
+  email: string;
+  birth_date: string;
+  whatsapp: string | null;
+}
 
 export interface CasaDePazReportResponse {
   id: string;
   date: string;
   facilitator: string;
   sector_id: number;
-  adults: number;
+  casa_de_paz_id: string;
   kids: number;
-  guests: number;
+  guests: CasaDePazReportGuestResponse[];
   conversions: number;
   meeting_day: string | null;
   meeting_time: string | null;
@@ -31,8 +43,10 @@ export class CasaDePazReportsService {
   constructor(
     @InjectRepository(CasaDePazReport)
     private readonly repo: Repository<CasaDePazReport>,
+    @InjectEntityManager() private readonly em: EntityManager,
     private readonly policy: FormSubmissionPolicyService,
     private readonly audit: FormSubmissionAuditService,
+    private readonly guestOriginsService: GuestOriginsService,
   ) {}
 
   // The global ClassSerializerInterceptor defaults to excludeAll +
@@ -48,9 +62,15 @@ export class CasaDePazReportsService {
       date: m.date,
       facilitator: m.facilitator,
       sector_id: m.sectorId,
-      adults: m.adults,
+      casa_de_paz_id: m.casaDePazId,
       kids: m.kids,
-      guests: m.guests,
+      guests: (m.guests ?? []).map((g) => ({
+        id: g.id,
+        name: g.name,
+        email: g.email,
+        birth_date: g.birthDate,
+        whatsapp: g.whatsapp,
+      })),
       conversions: m.conversions,
       meeting_day: m.meetingDay,
       meeting_time: m.meetingTime,
@@ -59,31 +79,93 @@ export class CasaDePazReportsService {
     };
   }
 
+  // Finds an existing User by (lowercased) email, matching form-guests
+  // .service.ts's lookup-for-forms pattern, or creates a new `guest`-role
+  // User from the guest-list entry. Then links a guest_origins row (no-op
+  // if one already exists, e.g. a returning guest's second visit) and
+  // returns the user id to attach to the CasaDePazReportGuest row.
+  private async resolveGuestUser(
+    entry: CasaDePazReportGuestDto,
+    casaDePazId: string,
+    manager: EntityManager,
+  ): Promise<number> {
+    const email = entry.email.trim().toLowerCase();
+    let user = await manager.findOne(User, { where: { email } });
+    if (!user) {
+      const guestRole = await manager.findOne(Role, {
+        where: { slug: 'guest' },
+      });
+      user = manager.create(User, {
+        name: entry.name,
+        email,
+        phoneNumber: entry.whatsapp ?? null,
+        birthDate: new Date(entry.birthDate),
+        role: guestRole ?? undefined,
+        status: 'active',
+      });
+      user = await manager.save(User, user);
+    }
+    await this.guestOriginsService.ensureForUser(user.id, {
+      originType: 'casa_de_paz',
+      casaDePazId,
+    });
+    return user.id;
+  }
+
+  private async saveGuests(
+    reportId: string,
+    casaDePazId: string,
+    entries: CasaDePazReportGuestDto[],
+    manager: EntityManager,
+  ): Promise<void> {
+    for (const entry of entries) {
+      const userId = await this.resolveGuestUser(entry, casaDePazId, manager);
+      await manager.save(
+        CasaDePazReportGuest,
+        manager.create(CasaDePazReportGuest, {
+          reportId,
+          userId,
+          name: entry.name,
+          email: entry.email.trim().toLowerCase(),
+          birthDate: entry.birthDate,
+          whatsapp: entry.whatsapp ?? null,
+        }),
+      );
+    }
+  }
+
   async create(
     dto: CreateCasaDePazReportDto,
     actorId: number,
   ): Promise<CasaDePazReportResponse> {
-    const entity = await this.repo.save(
-      this.repo.create({
-        date: dto.date,
-        facilitator: dto.facilitator,
-        sectorId: dto.sectorId,
-        adults: dto.adults,
-        kids: dto.kids ?? 0,
-        guests: dto.guests ?? 0,
-        conversions: dto.conversions ?? 0,
-        meetingDay: dto.meetingDay ?? null,
-        meetingTime: dto.meetingTime ?? null,
-        submittedBy: { id: actorId } as User,
-      }),
-    );
+    const savedId = await this.em.transaction(async (manager) => {
+      const report = await manager.save(
+        CasaDePazReport,
+        manager.create(CasaDePazReport, {
+          date: dto.date,
+          facilitator: dto.facilitator,
+          sectorId: dto.sectorId,
+          casaDePazId: dto.casaDePazId,
+          kids: dto.kids ?? 0,
+          conversions: dto.conversions ?? 0,
+          meetingDay: dto.meetingDay ?? null,
+          meetingTime: dto.meetingTime ?? null,
+          submittedBy: { id: actorId } as User,
+        }),
+      );
+      if (dto.guests?.length) {
+        await this.saveGuests(report.id, dto.casaDePazId, dto.guests, manager);
+      }
+      return report.id;
+    });
+
     await this.audit.record({
       formSlug: SLUG,
-      submissionId: entity.id,
+      submissionId: savedId,
       actorId,
       action: 'create',
     });
-    return this.toResponse(entity);
+    return this.findOne(savedId);
   }
 
   // This entity has no life_group_id to scope by, so area_leader/
@@ -96,7 +178,10 @@ export class CasaDePazReportsService {
     scope: ResolvedScope,
     actor: { id: number },
   ): Promise<CasaDePazReportResponse[]> {
-    const qb = this.repo.createQueryBuilder('f').where('f.deleted_at IS NULL');
+    const qb = this.repo
+      .createQueryBuilder('f')
+      .leftJoinAndSelect('f.guests', 'guests')
+      .where('f.deleted_at IS NULL');
     if (!scope.unrestricted) {
       if (scope.sectorIds.length > 0) {
         qb.andWhere('f.sector_id IN (:...sectorIds)', {
@@ -122,7 +207,7 @@ export class CasaDePazReportsService {
   ): Promise<CasaDePazReport> {
     const m = await this.repo.findOne({
       where: { id },
-      relations: ['submittedBy'],
+      relations: ['submittedBy', 'guests'],
     });
     if (!m) throw new NotFoundException();
     if (scope && !scope.unrestricted) {
@@ -157,8 +242,38 @@ export class CasaDePazReportsService {
         deletedAt: m.deletedAt,
       });
     }
-    Object.assign(m, dto);
-    const saved = await this.repo.save(m);
+
+    // Explicit scalar assignment only — `dto.guests`, when present, is an
+    // array of plain objects (not CasaDePazReportGuest entities), so a
+    // blind Object.assign(m, dto) would corrupt the `guests` relation.
+    if (dto.date !== undefined) m.date = dto.date;
+    if (dto.facilitator !== undefined) m.facilitator = dto.facilitator;
+    if (dto.sectorId !== undefined) m.sectorId = dto.sectorId;
+    if (dto.casaDePazId !== undefined) m.casaDePazId = dto.casaDePazId;
+    if (dto.kids !== undefined) m.kids = dto.kids;
+    if (dto.conversions !== undefined) m.conversions = dto.conversions;
+    if (dto.meetingDay !== undefined) m.meetingDay = dto.meetingDay ?? null;
+    if (dto.meetingTime !== undefined) m.meetingTime = dto.meetingTime ?? null;
+
+    const savedId = await this.em.transaction(async (manager) => {
+      const saved = await manager.save(CasaDePazReport, m);
+      if (dto.guests !== undefined) {
+        // Re-create the guest list — the created User/guest_origins records
+        // persist regardless of report edits, only the join rows for this
+        // report are replaced.
+        await manager.delete(CasaDePazReportGuest, { reportId: saved.id });
+        if (dto.guests.length) {
+          await this.saveGuests(
+            saved.id,
+            dto.casaDePazId ?? saved.casaDePazId,
+            dto.guests,
+            manager,
+          );
+        }
+      }
+      return saved.id;
+    });
+
     await this.audit.record({
       formSlug: SLUG,
       submissionId: id,
@@ -166,7 +281,7 @@ export class CasaDePazReportsService {
       action: 'update',
       diff: dto as Record<string, unknown>,
     });
-    return this.toResponse(saved);
+    return this.findOne(savedId);
   }
 
   async softDelete(

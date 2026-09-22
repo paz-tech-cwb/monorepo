@@ -42,6 +42,8 @@ import { LifeGroupStudiesModule } from './life-group-studies/life-group-studies.
 import { CasaDePazReportsModule } from './casa-de-paz-reports/casa-de-paz-reports.module';
 import { CasaDePazAnalyticsModule } from './casa-de-paz-analytics/casa-de-paz-analytics.module';
 import { JourneyTracksModule } from './journey-tracks/journey-tracks.module';
+import { CasaDePazCyclesModule } from './casa-de-paz-cycles/casa-de-paz-cycles.module';
+import { GuestOriginsModule } from './guest-origins/guest-origins.module';
 
 import ormconfig from './configs/orm.config';
 
@@ -106,6 +108,8 @@ import ormconfig from './configs/orm.config';
     MinistryAccessModule,
     LifeGroupStudiesModule,
     JourneyTracksModule,
+    CasaDePazCyclesModule,
+    GuestOriginsModule,
   ],
   providers: [
     {

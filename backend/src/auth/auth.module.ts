@@ -10,11 +10,19 @@ import { UserDeviceToken } from 'src/users/entities/user-device-token.entity';
 import { AuditLog } from './entities/audit-log.entity';
 import { JwtStrategy } from './jwt.strategy';
 import { AuditLogger } from './audit.logger';
+import { GuestOriginsModule } from '../guest-origins/guest-origins.module';
 
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([User, UserAccount, Role, UserDeviceToken, AuditLog]),
+    TypeOrmModule.forFeature([
+      User,
+      UserAccount,
+      Role,
+      UserDeviceToken,
+      AuditLog,
+    ]),
+    GuestOriginsModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, AuditLogger],

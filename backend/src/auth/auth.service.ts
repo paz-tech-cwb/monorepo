@@ -20,6 +20,7 @@ import { UserDeviceToken } from 'src/users/entities/user-device-token.entity';
 import { AuditLogger } from './audit.logger';
 import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 import { Repository } from 'typeorm';
+import { GuestOriginsService } from '../guest-origins/guest-origins.service';
 
 const ACCESS_TOKEN_EXPIRES_IN = '24h';
 const REFRESH_TOKEN_EXPIRES_IN = '90d';
@@ -52,6 +53,7 @@ export class AuthService implements OnModuleInit {
     private userDeviceTokenRepo: Repository<UserDeviceToken>,
     private configService: ConfigService,
     private auditLogger: AuditLogger,
+    private guestOriginsService: GuestOriginsService,
   ) {
     this.accessTokenSecret = this.configService.getOrThrow<string>(
       'ACCESS_TOKEN_SECRET',
@@ -207,6 +209,12 @@ export class AuthService implements OnModuleInit {
         role: guestRole,
       });
       await this.userRepo.save(user);
+
+      // Today's only self-registration path — record the origin directly,
+      // server-side, no interaction/onboarding step needed.
+      await this.guestOriginsService.ensureForUser(user.id, {
+        originType: 'self',
+      });
     }
 
     // Role-based access check — admin-ui is for leadership roles only;

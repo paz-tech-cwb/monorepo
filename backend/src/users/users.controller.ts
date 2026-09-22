@@ -139,6 +139,13 @@ export class UsersController {
     return this.usersService.lookupForForms({ email, phone });
   }
 
+  // Minimal member search for picker UIs — MUST be before /:id routes.
+  // Open to any authenticated user (including guests), no RolesGuard.
+  @Get('search-minimal')
+  searchMinimal(@Query('q') q?: string) {
+    return this.usersService.searchMinimal(q ?? '');
+  }
+
   // Guests dashboard — MUST be before /:id routes
   @Get('guests')
   @UseGuards(RolesGuard)

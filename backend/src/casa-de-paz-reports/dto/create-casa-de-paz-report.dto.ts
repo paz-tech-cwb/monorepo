@@ -1,13 +1,16 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import {
   IsIn,
   IsInt,
   IsDateString,
   IsOptional,
   IsString,
+  IsUUID,
   Length,
   Matches,
+  ValidateNested,
 } from 'class-validator';
+import { CasaDePazReportGuestDto } from './casa-de-paz-report-guest.dto';
 
 // Mirrors admin-ui's MEETING_DAYS list (life-groups-management.tsx), minus
 // "Sem dia fixo" — a Casa de Paz report always has a fixed meeting day when
@@ -26,10 +29,14 @@ export class CreateCasaDePazReportDto {
   @Expose() @IsDateString() date: string;
   @Expose() @IsString() @Length(1, 180) facilitator: string;
   @Expose({ name: 'sector_id' }) @IsInt() sectorId: number;
-  @Expose() @IsInt() adults: number;
+  @Expose({ name: 'casa_de_paz_id' }) @IsUUID() casaDePazId: string;
   @Expose() @IsOptional() @IsInt() kids?: number;
-  @Expose() @IsOptional() @IsInt() guests?: number;
   @Expose() @IsOptional() @IsInt() conversions?: number;
+  @Expose()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CasaDePazReportGuestDto)
+  guests?: CasaDePazReportGuestDto[];
   @Expose({ name: 'meeting_day' })
   @IsOptional()
   @IsIn(CASA_DE_PAZ_MEETING_DAYS)

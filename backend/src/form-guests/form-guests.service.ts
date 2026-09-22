@@ -10,6 +10,7 @@ import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
 import { FormSubmissionPolicyService } from '../forms-core/services/form-submission-policy.service';
 import { FormSubmissionAuditService } from '../forms-core/services/form-submission-audit.service';
 import { UsersService } from '../users/users.service';
+import { GuestOriginsService } from '../guest-origins/guest-origins.service';
 
 const SLUG = 'form-guests';
 
@@ -21,6 +22,7 @@ export class FormGuestsService {
     private readonly usersService: UsersService,
     private readonly policy: FormSubmissionPolicyService,
     private readonly audit: FormSubmissionAuditService,
+    private readonly guestOriginsService: GuestOriginsService,
   ) {}
 
   async create(dto: CreateFormGuestDto, actorId: number): Promise<FormGuest> {
@@ -51,16 +53,19 @@ export class FormGuestsService {
         phone: dto.phone,
       });
       if (existing) {
-        createdUserId = existing.id as number;
+        createdUserId = existing.id;
       } else if (dto.fullName && (dto.email || dto.phone)) {
-        const memberRole = await this.em.findOne(Role, {
-          where: { slug: 'member' },
+        // Convidados submitted through this form start in the guest funnel
+        // ('guest', not 'member') — see AuthService/JourneyProgressService
+        // for the promotion path once they progress.
+        const guestRole = await this.em.findOne(Role, {
+          where: { slug: 'guest' },
         });
         const newUser = this.em.create(User, {
           name: dto.fullName,
           email: dto.email ?? null,
           phoneNumber: dto.phone ?? null,
-          role: memberRole ?? undefined,
+          role: guestRole ?? undefined,
           status: 'active',
         });
         const saved = await this.em.save(User, newUser);
@@ -69,6 +74,13 @@ export class FormGuestsService {
       if (createdUserId) {
         await this.em.update(FormGuest, entity.id, { createdUserId });
         entity.createdUserId = createdUserId;
+        // No fuzzy matching to an inviting member — invited_by is recorded
+        // as free text only for this path; ensureForUser is a no-op if this
+        // guest already has an origin (e.g. a returning guest).
+        await this.guestOriginsService.ensureForUser(createdUserId, {
+          originType: 'invited_by_member',
+          invitedByText: dto.invitedBy ?? null,
+        });
       }
     }
 
