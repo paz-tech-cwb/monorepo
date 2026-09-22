@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -12,7 +14,7 @@ plugins {
 // never committed. Mirrors the sdk.dir pattern already used by local.properties —
 // falls back to an empty string so debug builds without a key still compile (the map
 // just won't render tiles); see kmp-mobile/local.properties.example for the key to set.
-val localProperties = java.util.Properties()
+val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     localPropertiesFile.inputStream().use { localProperties.load(it) }
