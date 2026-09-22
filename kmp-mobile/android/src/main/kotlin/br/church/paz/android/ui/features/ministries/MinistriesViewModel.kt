@@ -3,7 +3,6 @@ package br.church.paz.android.ui.features.ministries
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.shared.domain.repository.ChurchRepository
-import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,34 +26,17 @@ class MinistriesViewModel(
 
     private fun load() {
         viewModelScope.launch {
-            val ministriesDeferred = async { runCatching { churchRepository.getAllMinistries() } }
-            val lifeGroupsDeferred = async { runCatching { churchRepository.getAllLifeGroups() } }
-
-            val churchResult = ministriesDeferred.await()
-            val lifeGroupsResult = lifeGroupsDeferred.await()
-
-            val hasError = churchResult.isFailure && lifeGroupsResult.isFailure
-            _uiState.update {
-                it.copy(
-                    ministries = churchResult.getOrNull() ?: emptyList(),
-                    lifeGroups = lifeGroupsResult.getOrNull() ?: emptyList(),
-                    isLoading = false,
-                    error = if (hasError) (churchResult.exceptionOrNull()?.message ?: "Erro ao carregar") else null,
-                )
-            }
+            runCatching { churchRepository.getAllMinistries() }
+                .onSuccess { ministries ->
+                    _uiState.update { it.copy(ministries = ministries, isLoading = false, error = null) }
+                }.onFailure { e ->
+                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "Erro ao carregar dados") }
+                }
         }
-    }
-
-    fun onTabSelected(tab: MinistriesTab) {
-        _uiState.update { it.copy(selectedTab = tab) }
     }
 
     fun onMinistryTap(ministryId: String) {
         viewModelScope.launch { _effect.send(MinistriesEffect.NavigateToMinistryDetail(ministryId)) }
-    }
-
-    fun onLifeGroupTap(lifeGroupId: String) {
-        viewModelScope.launch { _effect.send(MinistriesEffect.NavigateToLifeGroupDetail(lifeGroupId)) }
     }
 
     fun onBack() {
