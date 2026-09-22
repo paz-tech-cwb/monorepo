@@ -1,9 +1,7 @@
 package br.church.paz.android.ui.features.ministries
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -240,15 +238,4 @@ private fun MarkerActionRow(
         Icon(icon, contentDescription = null, tint = PazColors.Primary)
         Text(label, style = MaterialTheme.typography.titleSmall)
     }
-}
-
-private fun openInMaps(
-    context: android.content.Context,
-    latitude: Double,
-    longitude: Double,
-    name: String,
-) {
-    val uri = Uri.parse("geo:$latitude,$longitude?q=$latitude,$longitude(${Uri.encode(name)})")
-    val intent = Intent(Intent.ACTION_VIEW, uri)
-    runCatching { context.startActivity(intent) }
 }

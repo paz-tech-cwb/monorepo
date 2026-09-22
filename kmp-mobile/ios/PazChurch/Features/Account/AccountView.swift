@@ -123,7 +123,11 @@ struct AccountView: View {
                             rowDivider
                             NavigationLink(destination: FormulariosView(formsRepository: IosAppContainer.shared
                                     .formsRepository)) {
-                                AccountRow(title: "Formulários", icon: "list.clipboard", tint: Color(hex: "6A1B9A"))
+                                AccountRow(
+                                    title: "Formulários",
+                                    icon: "list.clipboard",
+                                    tint: PazColors.menuFormularios
+                                )
                             }
                             .buttonStyle(.plain)
                         }

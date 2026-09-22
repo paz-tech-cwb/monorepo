@@ -19,7 +19,6 @@ sealed class AccountEffect {
 
     data object NavigateToMinistries : AccountEffect()
 
-    // TODO: route to dedicated LifeGroupsScreen once that screen lands
     data object NavigateToLifeGroups : AccountEffect()
 
     data object NavigateToCasaDePaz : AccountEffect()

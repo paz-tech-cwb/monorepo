@@ -593,17 +593,6 @@ private fun LeadershipPickerDialog(
     )
 }
 
-/** Opens the device's default maps app — lets the user pick their preferred provider. */
-private fun openInMaps(
-    context: android.content.Context,
-    latitude: Double,
-    longitude: Double,
-    name: String,
-) {
-    val uri = Uri.parse("geo:$latitude,$longitude?q=$latitude,$longitude(${Uri.encode(name)})")
-    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
-}
-
 private fun openWhatsApp(
     context: android.content.Context,
     phone: String,

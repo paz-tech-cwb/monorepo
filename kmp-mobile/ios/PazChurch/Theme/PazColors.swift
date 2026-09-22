@@ -64,6 +64,7 @@ enum PazColors {
     // MARK: - Semantic
 
     static let pazCoral = Color(hex: "E0533D")
+    static let menuFormularios = Color(hex: "6A1B9A")
 
     // MARK: - Gradients
 
