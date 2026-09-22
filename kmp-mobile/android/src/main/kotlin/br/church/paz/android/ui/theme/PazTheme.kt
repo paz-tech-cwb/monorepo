@@ -32,6 +32,11 @@ object PazSpacing {
     val Xxxl = 48.dp
     val PageHorizontal = Lg
     val CardGap = Md
+
+    // ── Glass rebrand radii (2026-09 glassmorphic restyle) ────────────────
+    val CardRadiusCompact = 24.dp
+    val CardRadiusLarge = 28.dp
+    val PillButtonHeight = 52.dp
 }
 
 @Composable
