@@ -59,6 +59,7 @@ class AccountViewModel(
         viewModelScope.launch {
             val fcmToken = getFcmToken()
             authRepository.logout(fcmToken = fcmToken)
+            _uiState.update { it.copy(user = null, isGuestMode = false) }
             _effect.send(AccountEffect.LoggedOut)
         }
     }
