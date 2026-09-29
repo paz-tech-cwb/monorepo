@@ -59,6 +59,15 @@ struct CasaDePazSubmissionsListView: View {
             .navigationTitle("Registros de Casa de Paz")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
+            // This screen is already the leader's Casa de Paz hub, so no additional role
+            // check is needed here for the lesson content shortcut.
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    NavigationLink(destination: CasaDePazLessonsView()) {
+                        Image(systemName: "book.closed")
+                    }
+                }
+            }
             .task { await viewModel.load() }
     }
 
@@ -137,7 +146,7 @@ private struct SubmissionRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(brDateString(fromISODate: submission.date)) · \(sectorName)").font(PazTypography.titleSmall)
                 Text(submission.facilitator).font(PazTypography.bodySmall).foregroundStyle(PazColors.slate)
-                Text("Adultos: \(submission.adults) · Crianças: \(submission.kids) · Convidados: \(submission.guests) · Conversões: \(submission.conversions)")
+                Text("Crianças: \(submission.kids) · Convidados: \(submission.guests.count) · Conversões: \(submission.conversions)")
                     .font(PazTypography.bodySmall).foregroundStyle(PazColors.slate)
             }
             .padding(14)
@@ -154,11 +163,12 @@ final class CasaDePazSubmissionDetailViewModel {
     var date: String
     var facilitator: String
     var sectorId: Int32
-    var adults: String
+    var casaDePazId: String
     var kids: String
-    var guests: String
+    var guests: [CasaDePazGuestDraftIOS]
     var conversions: String
     var meetingDay: String
+    var cycles: [CasaDePazCycle] = []
 
     var isSaving = false
     var isDeleting = false
@@ -173,11 +183,41 @@ final class CasaDePazSubmissionDetailViewModel {
         date = submission.date
         facilitator = submission.facilitator
         sectorId = submission.sectorId
-        adults = "\(submission.adults)"
+        casaDePazId = submission.casaDePazId
         kids = "\(submission.kids)"
-        guests = "\(submission.guests)"
+        guests = submission.guests.map {
+            CasaDePazGuestDraftIOS(
+                name: $0.name,
+                email: $0.email,
+                birthDate: $0.birthDate,
+                whatsapp: $0.whatsapp ?? ""
+            )
+        }
         conversions = "\(submission.conversions)"
         meetingDay = submission.meetingDay ?? ""
+    }
+
+    func loadCycles() async {
+        do {
+            let result = try await formsRepository.getCasaDePazCycles()
+            cycles = result.compactMap { $0 as? CasaDePazCycle }
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    func addGuest() {
+        guests.append(CasaDePazGuestDraftIOS())
+    }
+
+    func updateGuest(_ index: Int, _ patch: (inout CasaDePazGuestDraftIOS) -> Void) {
+        guard guests.indices.contains(index) else { return }
+        patch(&guests[index])
+    }
+
+    func removeGuest(_ index: Int) {
+        guard guests.indices.contains(index) else { return }
+        guests.remove(at: index)
     }
 
     func save() async -> CasaDePazReportSubmission? {
@@ -187,9 +227,18 @@ final class CasaDePazSubmissionDetailViewModel {
             date: date,
             facilitator: facilitator.trimmingCharacters(in: .whitespaces),
             sectorId: sectorId,
-            adults: Int32(adults) ?? 0,
+            casaDePazId: casaDePazId,
             kids: Int32(kids) ?? 0,
-            guests: Int32(guests) ?? 0,
+            guests: guests.map {
+                CasaDePazReportGuestEntry(
+                    name: $0.name.trimmingCharacters(in: .whitespaces),
+                    email: $0.email.trimmingCharacters(in: .whitespaces),
+                    birthDate: $0.birthDate,
+                    whatsapp: $0.whatsapp.trimmingCharacters(in: .whitespaces).isEmpty
+                        ? nil
+                        : $0.whatsapp.trimmingCharacters(in: .whitespaces)
+                )
+            },
             conversions: Int32(conversions) ?? 0,
             meetingDay: meetingDay.isEmpty ? nil : meetingDay,
             meetingTime: nil
@@ -199,7 +248,8 @@ final class CasaDePazSubmissionDetailViewModel {
             isSaving = false
             return CasaDePazReportSubmission(
                 id: id, date: date, facilitator: form.facilitator, sectorId: sectorId,
-                adults: form.adults, kids: form.kids, guests: form.guests, conversions: form.conversions,
+                casaDePazId: form.casaDePazId, kids: form.kids, guests: form.guests,
+                conversions: form.conversions,
                 meetingDay: form.meetingDay, meetingTime: form.meetingTime,
                 createdAt: "", updatedAt: ""
             )
@@ -266,6 +316,14 @@ struct CasaDePazSubmissionDetailView: View {
                             }
                             .pickerStyle(.menu)
                         }
+                        LabeledField(label: "Ciclo") {
+                            Picker("", selection: $viewModel.casaDePazId) {
+                                ForEach(viewModel.cycles, id: \.id) { cycle in
+                                    Text(cycle.name).tag(cycle.id)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                        }
                         LabeledField(label: "Dia da reunião") {
                             Picker("", selection: $viewModel.meetingDay) {
                                 Text("—").tag("")
@@ -275,11 +333,20 @@ struct CasaDePazSubmissionDetailView: View {
                             }
                             .pickerStyle(.menu)
                         }
-                        LabeledField(label: "Adultos") { TextField("", text: $viewModel.adults).keyboardType(.numberPad) }
                         LabeledField(label: "Crianças") { TextField("", text: $viewModel.kids).keyboardType(.numberPad) }
-                        LabeledField(label: "Convidados") { TextField("", text: $viewModel.guests).keyboardType(.numberPad) }
                         LabeledField(label: "Conversões") { TextField("", text: $viewModel.conversions).keyboardType(.numberPad) }
                     }
+                    .padding(PazSpacing.md)
+                }
+
+                GlassCard(radius: PazSpacing.cardRadiusCompact) {
+                    GuestListFieldRow(
+                        guests: viewModel.guests,
+                        disabled: viewModel.isSaving || viewModel.isDeleting,
+                        onAdd: { viewModel.addGuest() },
+                        onUpdate: { viewModel.updateGuest($0, $1) },
+                        onRemove: { viewModel.removeGuest($0) }
+                    )
                     .padding(PazSpacing.md)
                 }
 
@@ -298,7 +365,11 @@ struct CasaDePazSubmissionDetailView: View {
                     if viewModel.isSaving { ProgressView() } else { Text("Salvar") }
                 }
                 .buttonStyle(.pazPillPrimary)
-                .disabled(viewModel.isSaving || viewModel.isDeleting)
+                .disabled(
+                    viewModel.isSaving || viewModel.isDeleting
+                        || viewModel.casaDePazId.isEmpty
+                        || !viewModel.guests.allSatisfy(\.isValid)
+                )
                 .frame(maxWidth: .infinity)
 
                 Button(role: .destructive) {
@@ -317,6 +388,7 @@ struct CasaDePazSubmissionDetailView: View {
         .background(PazMeshBackground())
         .navigationTitle("Editar Registro")
         .navigationBarTitleDisplayMode(.inline)
+        .task { await viewModel.loadCycles() }
         .confirmationDialog(
             "Excluir este registro de Casa de Paz?",
             isPresented: $showDeleteConfirm,

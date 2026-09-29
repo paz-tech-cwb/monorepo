@@ -1,9 +1,5 @@
 package br.church.paz.android.ui.features.academy
 
-import android.view.ViewGroup
-import android.webkit.WebChromeClient
-import android.webkit.WebSettings
-import android.webkit.WebView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,10 +30,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazSkeleton
+import br.church.paz.android.ui.components.YouTubeWebView
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
@@ -100,58 +96,6 @@ fun VideoPlayerScreen(
             uiState.isLoading -> LoadingMetadata()
         }
     }
-}
-
-@Composable
-private fun YouTubeWebView(youtubeId: String) {
-    // YouTube iframe embed with autoplay=1, rel=0 (no related), modestbranding=1
-    val htmlContent =
-        """
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <style>
-            * { margin: 0; padding: 0; background: #000; }
-            iframe { width: 100%; height: 100vh; border: none; }
-          </style>
-        </head>
-        <body>
-          <iframe
-            src="https://www.youtube.com/embed/$youtubeId?autoplay=1&rel=0&modestbranding=1&playsinline=1"
-            allow="autoplay; encrypted-media; fullscreen"
-            allowfullscreen>
-          </iframe>
-        </body>
-        </html>
-        """.trimIndent()
-
-    AndroidView(
-        factory = { context ->
-            WebView(context).apply {
-                layoutParams =
-                    ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                    )
-                webChromeClient = WebChromeClient()
-                settings.apply {
-                    javaScriptEnabled = true
-                    mediaPlaybackRequiresUserGesture = false
-                    domStorageEnabled = true
-                    cacheMode = WebSettings.LOAD_NO_CACHE
-                }
-                loadDataWithBaseURL(
-                    "https://www.youtube.com",
-                    htmlContent,
-                    "text/html",
-                    "UTF-8",
-                    null,
-                )
-            }
-        },
-        modifier = Modifier.fillMaxSize(),
-    )
 }
 
 @Composable

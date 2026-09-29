@@ -8,7 +8,7 @@ export const VALID_ROLE_SLUGS = [
   'sector_leader',
   'life_group_leader',
   'member',
-  'lead',
+  'guest',
   'discipler',
 ] as const;
 

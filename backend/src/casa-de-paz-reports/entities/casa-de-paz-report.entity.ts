@@ -5,10 +5,13 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { CasaDePazCycle } from '../../casa-de-paz-cycles/entities/casa-de-paz-cycle.entity';
+import { CasaDePazReportGuest } from './casa-de-paz-report-guest.entity';
 
 @Entity('casa_de_paz_reports')
 export class CasaDePazReport {
@@ -16,10 +19,14 @@ export class CasaDePazReport {
   @Column({ type: 'date' }) date: string;
   @Column({ type: 'varchar', length: 180 }) facilitator: string;
   @Column({ name: 'sector_id', type: 'int' }) sectorId: number;
-  @Column({ type: 'int', default: 0 }) adults: number;
+  @Column({ name: 'casa_de_paz_id', type: 'uuid' }) casaDePazId: string;
+  @ManyToOne(() => CasaDePazCycle, { nullable: false })
+  @JoinColumn({ name: 'casa_de_paz_id' })
+  casaDePazCycle: CasaDePazCycle;
   @Column({ type: 'int', default: 0 }) kids: number;
-  @Column({ type: 'int', default: 0 }) guests: number;
   @Column({ type: 'int', default: 0 }) conversions: number;
+  @OneToMany(() => CasaDePazReportGuest, (g) => g.report, { cascade: true })
+  guests: CasaDePazReportGuest[];
   @Column({ name: 'week_number', type: 'int', nullable: true })
   weekNumber: number | null;
   @Column({

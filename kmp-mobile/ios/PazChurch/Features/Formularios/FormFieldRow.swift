@@ -22,6 +22,12 @@ struct FieldRow: View {
     var submitLabel: SubmitLabel = .next
     var onSubmitField: () -> Void = {}
 
+    // Casa de Paz guest roster — only populated/used for `.guestList` field types.
+    var guestEntries: [CasaDePazGuestDraftIOS] = []
+    var onAddGuest: () -> Void = {}
+    var onUpdateGuest: (Int, (inout CasaDePazGuestDraftIOS) -> Void) -> Void = { _, _ in }
+    var onRemoveGuest: (Int) -> Void = { _ in }
+
     var body: some View {
         VStack(alignment: .leading, spacing: PazSpacing.sm) {
             if showLabel {
@@ -225,6 +231,32 @@ struct FieldRow: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
+
+            case .cyclePicker:
+                let displayName = extraFields["\(def.key)_name"] ?? ""
+                Button(action: { if !isSubmitting { onOpenPicker(def) } }) {
+                    HStack {
+                        Text(displayName.isEmpty ? "Selecionar ciclo" : displayName)
+                            .font(PazTypography.bodyMedium)
+                            .foregroundStyle(displayName.isEmpty ? PazColors.slate : PazColors.ink)
+                        Spacer()
+                        Image(systemName: "chevron.down").foregroundStyle(PazColors.accent)
+                    }
+                    .padding(.horizontal, PazSpacing.md)
+                    .frame(height: 56)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+
+            case .guestList:
+                GuestListFieldRow(
+                    guests: guestEntries,
+                    disabled: isSubmitting,
+                    onAdd: onAddGuest,
+                    onUpdate: onUpdateGuest,
+                    onRemove: onRemoveGuest
+                )
 
             case .time:
                 TimeFieldRow(value: value, onChange: onChange, disabled: isSubmitting)
@@ -496,4 +528,75 @@ extension DateFormatter {
     static let brazilianDate: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "dd/MM/yyyy"; return f
     }()
+}
+
+/// Repeatable Casa de Paz guest roster editor — add/remove entries, each with inline
+/// validation (name, e-mail and birth date required; WhatsApp optional).
+struct GuestListFieldRow: View {
+    let guests: [CasaDePazGuestDraftIOS]
+    let disabled: Bool
+    let onAdd: () -> Void
+    let onUpdate: (Int, (inout CasaDePazGuestDraftIOS) -> Void) -> Void
+    let onRemove: (Int) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: PazSpacing.md) {
+            ForEach(Array(guests.enumerated()), id: \.element.id) { index, guest in
+                VStack(alignment: .leading, spacing: PazSpacing.sm) {
+                    HStack {
+                        Text("Convidado \(index + 1)").font(PazTypography.labelMedium)
+                        Spacer()
+                        Button(action: { onRemove(index) }) {
+                            Image(systemName: "xmark.circle.fill").foregroundStyle(PazColors.slate)
+                        }
+                        .disabled(disabled)
+                    }
+                    TextField("Nome", text: Binding(
+                        get: { guest.name },
+                        set: { new in onUpdate(index) { $0.name = new } }
+                    ))
+                    .textFieldStyle(.roundedBorder)
+                    .disabled(disabled)
+
+                    TextField("E-mail", text: Binding(
+                        get: { guest.email },
+                        set: { new in onUpdate(index) { $0.email = new } }
+                    ))
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .textFieldStyle(.roundedBorder)
+                    .disabled(disabled)
+
+                    TextField("Data de nascimento (AAAA-MM-DD)", text: Binding(
+                        get: { guest.birthDate },
+                        set: { new in onUpdate(index) { $0.birthDate = new } }
+                    ))
+                    .textFieldStyle(.roundedBorder)
+                    .disabled(disabled)
+
+                    TextField("WhatsApp (opcional)", text: Binding(
+                        get: { guest.whatsapp },
+                        set: { new in onUpdate(index) { $0.whatsapp = new } }
+                    ))
+                    .keyboardType(.phonePad)
+                    .textFieldStyle(.roundedBorder)
+                    .disabled(disabled)
+
+                    if !guest.isValid {
+                        Text("Nome, e-mail e data de nascimento são obrigatórios.")
+                            .font(PazTypography.bodySmall)
+                            .foregroundColor(PazColors.error)
+                    }
+                }
+                .padding(PazSpacing.md)
+                .background(PazColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+
+            Button(action: onAdd) {
+                Label("Adicionar convidado", systemImage: "plus")
+            }
+            .disabled(disabled)
+        }
+    }
 }

@@ -9,6 +9,23 @@ enum PickerKind {
     case userMulti
     case lifeGroup
     case sector
+    case casaDePazCycle
+}
+
+/// A single Casa de Paz guest roster entry, held outside `fields` in its own array — mirrors
+/// the Android `CasaDePazGuestDraft` state.
+struct CasaDePazGuestDraftIOS: Identifiable {
+    let id = UUID()
+    var name: String = ""
+    var email: String = ""
+    var birthDate: String = ""
+    var whatsapp: String = ""
+
+    var isValid: Bool {
+        !name.trimmingCharacters(in: .whitespaces).isEmpty
+            && email.contains("@")
+            && !birthDate.trimmingCharacters(in: .whitespaces).isEmpty
+    }
 }
 
 @MainActor
@@ -53,6 +70,9 @@ class FormDetailViewModelIOS {
     var pickerIsLoading: Bool = false
     var pickerError: String?
     var selfOrSearchModes: [String: Bool] = [:]
+    var guestEntries: [CasaDePazGuestDraftIOS] = []
+
+    var canAccessCasaDePazLessons = false // leaders only — gates the Casa de Paz lessons shortcut
 
     private let formsRepository: FormsRepository
     private let authRepository: AuthRepository
@@ -73,6 +93,7 @@ class FormDetailViewModelIOS {
                 async let user = authRepository.currentUser()
                 let (resolvedCatalog, resolvedUser) = try await (catalogRaw, user)
                 currentUserName = (resolvedUser as? Shared.User)?.name ?? ""
+                canAccessCasaDePazLessons = (resolvedUser as? Shared.User)?.role.isLeader ?? false
                 let catalog = (resolvedCatalog as? [FormCatalogItem]) ?? []
                 guard let found = catalog.first(where: { $0.id == formId }) else {
                     self.error = "Formulário não encontrado"
@@ -130,6 +151,7 @@ class FormDetailViewModelIOS {
         pickerKind = switch def.fieldType {
         case .lgPicker: .lifeGroup
         case .sectorPicker: .sector
+        case .cyclePicker: .casaDePazCycle
         case .userMultiPicker: .userMulti
         default: .user
         }
@@ -156,6 +178,12 @@ class FormDetailViewModelIOS {
                 case .sector:
                     let results = try await formsRepository.searchSectors(query: query)
                     pickerResults = results as [Any]
+                case .casaDePazCycle:
+                    let results = try await formsRepository.getCasaDePazCycles()
+                    let cycles = results.compactMap { $0 as? CasaDePazCycle }
+                    pickerResults = (query.isEmpty
+                        ? cycles
+                        : cycles.filter { $0.name.localizedCaseInsensitiveContains(query) }) as [Any]
                 case .user, .userMulti:
                     let results = try await formsRepository.searchUsers(query: query)
                     pickerResults = results as [Any]
@@ -186,9 +214,23 @@ class FormDetailViewModelIOS {
         if !isSearch { fields[key] = "" }
     }
 
+    func addGuestEntry() {
+        guestEntries.append(CasaDePazGuestDraftIOS())
+    }
+
+    func updateGuestEntry(_ index: Int, _ patch: (inout CasaDePazGuestDraftIOS) -> Void) {
+        guard guestEntries.indices.contains(index) else { return }
+        patch(&guestEntries[index])
+    }
+
+    func removeGuestEntry(_ index: Int) {
+        guard guestEntries.indices.contains(index) else { return }
+        guestEntries.remove(at: index)
+    }
+
     var canSubmit: Bool {
         guard let form else { return false }
-        return !isSubmitting && form.type.fieldDefs
+        return !isSubmitting && guestEntries.allSatisfy(\.isValid) && form.type.fieldDefs
             .filter(\.required)
             .allSatisfy { !(fields[$0.key] ?? "").trimmingCharacters(in: .whitespaces).isEmpty }
     }
@@ -200,6 +242,11 @@ class FormDetailViewModelIOS {
             .first { $0.required && (fields[$0.key] ?? "").trimmingCharacters(in: .whitespaces).isEmpty }?.label
         if let label = missingLabel {
             error = "\(label) é obrigatório"
+            return
+        }
+
+        guard guestEntries.allSatisfy(\.isValid) else {
+            error = "Preencha nome, e-mail e data de nascimento de todos os convidados"
             return
         }
 
@@ -359,13 +406,23 @@ class FormDetailViewModelIOS {
             ))
 
         case .casaDePazReport:
+            let guestEntriesSnapshot = guestEntries
             _ = try await formsRepository.submitCasaDePazReport(form: CasaDePazReportForm(
                 date: isoDate("date"),
                 facilitator: req("facilitator"),
                 sectorId: intVal("sector_id"),
-                adults: intVal("adults"),
+                casaDePazId: req("casa_de_paz_id"),
                 kids: intVal("kids"),
-                guests: intVal("guests"),
+                guests: guestEntriesSnapshot.map { g in
+                    CasaDePazReportGuestEntry(
+                        name: g.name.trimmingCharacters(in: .whitespaces),
+                        email: g.email.trimmingCharacters(in: .whitespaces),
+                        birthDate: g.birthDate,
+                        whatsapp: g.whatsapp.trimmingCharacters(in: .whitespaces).isEmpty
+                            ? nil
+                            : g.whatsapp.trimmingCharacters(in: .whitespaces)
+                    )
+                },
                 conversions: intVal("conversions"),
                 meetingDay: opt("meeting_day"),
                 meetingTime: nil

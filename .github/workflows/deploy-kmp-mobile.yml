@@ -2,7 +2,7 @@ name: Deploy KMP Mobile
 
 on:
   push:
-    branches: [develop]
+    branches: [main]
     paths:
       - 'kmp-mobile/**'
   workflow_dispatch:

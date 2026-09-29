@@ -160,7 +160,7 @@ describe('JourneyProgressService - approveStep', () => {
             trackId: 1,
           } as JourneyTrackStep;
         }
-        if (entity === User) return { id: 5, role: { slug: 'lead' } };
+        if (entity === User) return { id: 5, role: { slug: 'guest' } };
         if (entity === JourneyTrack) {
           return { id: 1, key: 'become_member', isActive: true };
         }
@@ -190,13 +190,13 @@ describe('JourneyProgressService - approveStep', () => {
   it('allows a life_group_leader to approve a member in their own group but 403s for an outside member', async () => {
     const memberInGroup = {
       id: 5,
-      role: { slug: 'lead' },
+      role: { slug: 'guest' },
       sector: { id: 10, area: { id: 100 } },
       lifeGroups: [{ id: 1 }],
     } as User;
     const memberOutsideGroup = {
       id: 6,
-      role: { slug: 'lead' },
+      role: { slug: 'guest' },
       sector: { id: 20, area: { id: 200 } },
       lifeGroups: [{ id: 2 }],
     } as User;
@@ -253,7 +253,7 @@ describe('JourneyProgressService - approveStep', () => {
   it('scopes a sector_leader to members of their sector', async () => {
     const memberInSector = {
       id: 5,
-      role: { slug: 'lead' },
+      role: { slug: 'guest' },
       sector: { id: 10 },
       lifeGroups: [],
     } as User;
@@ -416,7 +416,7 @@ describe('JourneyProgressService - approveStep', () => {
             trackId: 1,
           } as JourneyTrackStep;
         }
-        if (entity === User) return { id: 99, role: { slug: 'lead' } };
+        if (entity === User) return { id: 99, role: { slug: 'guest' } };
         if (entity === JourneyTrack) {
           return { id: 1, key: 'become_member', isActive: true };
         }
@@ -553,10 +553,10 @@ describe('JourneyProgressService - getCurrentTrackForMember', () => {
     { id: 1, trackId: 1, type: 'manual_approval', sortOrder: 0 },
   ] as JourneyTrackStep[];
 
-  it("resolves the 'become_member' track for a 'lead'", async () => {
+  it("resolves the 'become_member' track for a 'guest'", async () => {
     const { manager } = buildManagerMock({
       findOne: jest.fn().mockImplementation((entity: EntityRef) => {
-        if (entity === User) return { id: 5, role: { slug: 'lead' } };
+        if (entity === User) return { id: 5, role: { slug: 'guest' } };
         if (entity === JourneyTrack) return track;
         return null;
       }),
@@ -659,7 +659,7 @@ describe('JourneyProgressService - getCurrentTrackForMember', () => {
   it('returns no track when the mapped track is inactive/missing', async () => {
     const { manager } = buildManagerMock({
       findOne: jest.fn().mockImplementation((entity: EntityRef) => {
-        if (entity === User) return { id: 5, role: { slug: 'lead' } };
+        if (entity === User) return { id: 5, role: { slug: 'guest' } };
         if (entity === JourneyTrack) return null;
         return null;
       }),
@@ -681,7 +681,7 @@ describe('JourneyProgressService - getCurrentTrackForMember', () => {
     ] as MemberJourneyStepProgress[];
     const { manager } = buildManagerMock({
       findOne: jest.fn().mockImplementation((entity: EntityRef) => {
-        if (entity === User) return { id: 5, role: { slug: 'lead' } };
+        if (entity === User) return { id: 5, role: { slug: 'guest' } };
         if (entity === JourneyTrack) return track;
         return null;
       }),
@@ -704,8 +704,8 @@ describe('JourneyProgressService - getCurrentTrackForMember', () => {
 });
 
 describe('JourneyProgressService - syncRolePromotion (via approveStep)', () => {
-  it('promotes a lead to member exactly when the completing approveStep call finishes the become_member track', async () => {
-    const leadUser = { id: 5, role: { slug: 'lead' } };
+  it('promotes a guest to member exactly when the completing approveStep call finishes the become_member track', async () => {
+    const guestUser = { id: 5, role: { slug: 'guest' } };
     const becomeMemberTrack = {
       id: 1,
       key: 'become_member',
@@ -721,7 +721,7 @@ describe('JourneyProgressService - syncRolePromotion (via approveStep)', () => {
         if (entity === JourneyTrackStep) {
           return { id: 1, type: 'manual_approval', trackId: 1 };
         }
-        if (entity === User) return leadUser;
+        if (entity === User) return guestUser;
         if (entity === JourneyTrack) return becomeMemberTrack;
         if (entity === Role) return memberRole;
         return null;
@@ -745,12 +745,12 @@ describe('JourneyProgressService - syncRolePromotion (via approveStep)', () => {
     expect(manager.query).toHaveBeenCalledTimes(1);
     expect(manager.query).toHaveBeenCalledWith(
       expect.stringContaining('UPDATE "users"'),
-      [memberRole.id, 5, 'lead'],
+      [memberRole.id, 5, 'guest'],
     );
   });
 
   it('does not promote while steps are still incomplete', async () => {
-    const leadUser = { id: 5, role: { slug: 'lead' } };
+    const guestUser = { id: 5, role: { slug: 'guest' } };
     const becomeMemberTrack = {
       id: 1,
       key: 'become_member',
@@ -765,7 +765,7 @@ describe('JourneyProgressService - syncRolePromotion (via approveStep)', () => {
       findOne: jest.fn().mockImplementation((entity: EntityRef) => {
         if (entity === JourneyTrackStep)
           return { id: 1, type: 'manual_approval', trackId: 1 };
-        if (entity === User) return leadUser;
+        if (entity === User) return guestUser;
         if (entity === JourneyTrack) return becomeMemberTrack;
         return null;
       }),
@@ -787,7 +787,7 @@ describe('JourneyProgressService - syncRolePromotion (via approveStep)', () => {
   });
 
   it('is idempotent on a second completing call (no duplicate promotion side effects thrown)', async () => {
-    const leadUser = { id: 5, role: { slug: 'lead' } };
+    const guestUser = { id: 5, role: { slug: 'guest' } };
     const becomeMemberTrack = {
       id: 1,
       key: 'become_member',
@@ -802,7 +802,7 @@ describe('JourneyProgressService - syncRolePromotion (via approveStep)', () => {
       findOne: jest.fn().mockImplementation((entity: EntityRef) => {
         if (entity === JourneyTrackStep)
           return { id: 1, type: 'manual_approval', trackId: 1 };
-        if (entity === User) return leadUser;
+        if (entity === User) return guestUser;
         if (entity === JourneyTrack) return becomeMemberTrack;
         if (entity === Role) return memberRole;
         return null;
@@ -812,7 +812,7 @@ describe('JourneyProgressService - syncRolePromotion (via approveStep)', () => {
         return [];
       }),
       count: jest.fn().mockResolvedValue(1),
-      // Second call: role_id no longer matches 'lead' (already promoted),
+      // Second call: role_id no longer matches 'guest' (already promoted),
       // so the conditional UPDATE affects 0 rows — must not throw.
       query: jest.fn().mockResolvedValue([[], 0]),
     });
@@ -831,7 +831,7 @@ describe('JourneyProgressService - syncRolePromotion (via approveStep)', () => {
   });
 
   it('never promotes when promotes_to_role is NULL on the track', async () => {
-    const leadUser = { id: 5, role: { slug: 'lead' } };
+    const guestUser = { id: 5, role: { slug: 'guest' } };
     const noPromoTrack = {
       id: 1,
       key: 'become_member',
@@ -845,7 +845,7 @@ describe('JourneyProgressService - syncRolePromotion (via approveStep)', () => {
       findOne: jest.fn().mockImplementation((entity: EntityRef) => {
         if (entity === JourneyTrackStep)
           return { id: 1, type: 'manual_approval', trackId: 1 };
-        if (entity === User) return leadUser;
+        if (entity === User) return guestUser;
         if (entity === JourneyTrack) return noPromoTrack;
         return null;
       }),
@@ -880,7 +880,7 @@ describe('JourneyProgressService - syncRolePromotion (via approveStep)', () => {
         }
         if (entity === User) {
           userLookupCount += 1;
-          if (userLookupCount === 1) return { id: 5, role: { slug: 'lead' } };
+          if (userLookupCount === 1) return { id: 5, role: { slug: 'guest' } };
           throw new Error('db exploded');
         }
         return null;

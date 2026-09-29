@@ -46,7 +46,7 @@ fun CasaDePazChartCard(
     }
 }
 
-// "Atividade das Casas de Paz" — houses (bars) + adults/kids attendance (a
+// "Atividade das Casas de Paz" — houses (bars) + kids attendance (a
 // second bar series, since PazBarChart has no line-overlay support). Mirrors
 // admin-ui's casa-de-paz-trend-chart without a charting dependency.
 @Composable
@@ -69,7 +69,7 @@ fun CasaDePazAttendanceChart(summary: CasaDePazAnalyticsSummary) {
             PazBarChart(
                 entries =
                     summary.series.map {
-                        PazBarChartEntry(periodLabel(it.period), (it.adults + it.kids).toFloat())
+                        PazBarChartEntry(periodLabel(it.period), it.kids.toFloat())
                     },
             )
         }

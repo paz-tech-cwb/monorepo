@@ -1,6 +1,7 @@
 package br.church.paz.shared.domain.repository
 
 import br.church.paz.shared.domain.model.AreaSupervisorReportForm
+import br.church.paz.shared.domain.model.CasaDePazCycle
 import br.church.paz.shared.domain.model.CasaDePazReportForm
 import br.church.paz.shared.domain.model.CasaDePazReportSubmission
 import br.church.paz.shared.domain.model.ConversionForm
@@ -54,4 +55,6 @@ interface FormsRepository {
     suspend fun updateCasaDePazReport(id: String, form: CasaDePazReportForm)
     @Throws(Exception::class)
     suspend fun deleteCasaDePazReport(id: String)
+    @Throws(Exception::class)
+    suspend fun getCasaDePazCycles(): List<CasaDePazCycle>
 }

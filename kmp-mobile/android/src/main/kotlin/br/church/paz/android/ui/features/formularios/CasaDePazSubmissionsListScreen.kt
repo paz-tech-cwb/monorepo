@@ -6,11 +6,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -66,6 +72,23 @@ fun CasaDePazSubmissionsListScreen(
     }
 
     Column(Modifier.fillMaxSize().padding(PazSpacing.Lg)) {
+        // Entry point to the Casa de Paz weekly lesson content — this screen is already the
+        // leader's Casa de Paz hub, so no additional role check is needed here.
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(PazShapes.large)
+                .background(MaterialTheme.colorScheme.surface)
+                .clickable { navController.navigate(Screen.CasaDePazLessonsList.route) }
+                .padding(PazSpacing.Md),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
+        ) {
+            Icon(Icons.Filled.MenuBook, contentDescription = null)
+            Text("Conteúdo Casa de Paz", style = MaterialTheme.typography.titleSmall)
+        }
+        Spacer(Modifier.height(PazSpacing.Sm))
+
         when {
             uiState.isLoading -> repeat(3) { PazSkeleton(height = 72.dp) }
             uiState.error != null ->
@@ -111,8 +134,8 @@ private fun SubmissionRow(
         Text("${submission.date} · $sectorName", style = MaterialTheme.typography.titleSmall)
         Text(submission.facilitator, style = MaterialTheme.typography.bodySmall)
         Text(
-            "Adultos: ${submission.adults} · Crianças: ${submission.kids} · " +
-                "Convidados: ${submission.guests} · Conversões: ${submission.conversions}",
+            "Crianças: ${submission.kids} · Convidados: ${submission.guests.size} · " +
+                "Conversões: ${submission.conversions}",
             style = MaterialTheme.typography.bodySmall,
         )
     }

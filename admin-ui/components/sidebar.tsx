@@ -28,6 +28,8 @@ import {
   BookMarked,
   Network,
   Milestone,
+  CalendarRange,
+  BookText,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -39,7 +41,7 @@ const sidebarSections = [
     items: [
       { name: "Inicio", href: "/dashboard", icon: Home },
       { name: "Membros", href: "/members", icon: Users },
-      { name: "Leads", href: "/leads", icon: UserPlus },
+      { name: "Convidados", href: "/guests", icon: UserPlus },
       { name: "Trilhos do Membro", href: "/journey-tracks", icon: Milestone },
     ],
   },
@@ -52,6 +54,8 @@ const sidebarSections = [
       { name: "Ministérios", href: "/ministerios", icon: Waves },
       { name: "Formulários", href: "/formularios", icon: ClipboardList },
       { name: "Relatórios", href: "/relatorios", icon: BarChart3 },
+      { name: "Ciclos Casa de Paz", href: "/casa-de-paz-ciclos", icon: CalendarRange },
+      { name: "Conteúdo Casa de Paz", href: "/casa-de-paz-conteudo", icon: BookText },
     ],
   },
   {
@@ -133,7 +137,7 @@ const NavSection = memo(function NavSection({
   )
 })
 
-const ROLE_LABELS: Record<AdminRole | "member" | "lead", string> = {
+const ROLE_LABELS: Record<AdminRole | "member" | "guest", string> = {
   admin: "Admin",
   pastor: "Pastor",
   area_leader: "Líder de Área",
@@ -141,7 +145,7 @@ const ROLE_LABELS: Record<AdminRole | "member" | "lead", string> = {
   life_group_leader: "Líder de GV",
   discipler: "Discipulador",
   member: "Membro",
-  lead: "Lead",
+  guest: "Convidado",
 }
 
 function UserProfile() {
@@ -157,7 +161,7 @@ function UserProfile() {
     .toUpperCase()
 
   const role = user.role ?? "member"
-  const roleLabel = ROLE_LABELS[role as AdminRole | "member" | "lead"] ?? role
+  const roleLabel = ROLE_LABELS[role as AdminRole | "member" | "guest"] ?? role
 
   return (
     <div className="flex items-center gap-3 px-1 py-2">

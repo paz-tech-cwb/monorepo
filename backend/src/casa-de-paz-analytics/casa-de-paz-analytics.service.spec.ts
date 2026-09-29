@@ -27,6 +27,7 @@ interface MockQueryBuilder {
   where: jest.Mock<MockQueryBuilder, unknown[]>;
   andWhere: jest.Mock<MockQueryBuilder, unknown[]>;
   innerJoin: jest.Mock<MockQueryBuilder, unknown[]>;
+  leftJoin: jest.Mock<MockQueryBuilder, unknown[]>;
   select: jest.Mock<MockQueryBuilder, unknown[]>;
   addSelect: jest.Mock<MockQueryBuilder, unknown[]>;
   groupBy: jest.Mock<MockQueryBuilder, unknown[]>;
@@ -45,6 +46,7 @@ function makeQueryBuilder(
     where: jest.fn(() => qb),
     andWhere: jest.fn(() => qb),
     innerJoin: jest.fn(() => qb),
+    leftJoin: jest.fn(() => qb),
     select: jest.fn(() => qb),
     addSelect: jest.fn(() => qb),
     groupBy: jest.fn(() => qb),
@@ -101,7 +103,7 @@ function createService(fixtures: {
 }
 
 function zeroTotalsRaw() {
-  return { houses: '0', adults: '0', kids: '0', guests: '0', conversions: '0' };
+  return { houses: '0', kids: '0', guests: '0', conversions: '0' };
 }
 
 // A fixed 6-month range (2026-04-01 .. 2026-09-30) used by tests that don't
@@ -124,7 +126,6 @@ describe('CasaDePazAnalyticsService', () => {
           {
             period: '2026-04',
             houses: '2',
-            adults: '10',
             kids: '3',
             guests: '4',
             conversions: '1',
@@ -132,7 +133,6 @@ describe('CasaDePazAnalyticsService', () => {
           {
             period: '2026-08',
             houses: '5',
-            adults: '20',
             kids: '6',
             guests: '8',
             conversions: '2',
@@ -145,7 +145,6 @@ describe('CasaDePazAnalyticsService', () => {
         {
           period: '2026-04',
           houses: 2,
-          adults: 10,
           kids: 3,
           guests: 4,
           conversions: 1,
@@ -153,7 +152,6 @@ describe('CasaDePazAnalyticsService', () => {
         {
           period: '2026-08',
           houses: 5,
-          adults: 20,
           kids: 6,
           guests: 8,
           conversions: 2,
@@ -168,14 +166,12 @@ describe('CasaDePazAnalyticsService', () => {
         prevPeriod: '2026-02',
         totals: {
           houses: '10',
-          adults: '80',
           kids: '20',
           guests: '20',
           conversions: '5',
         },
         prevTotals: {
           houses: '5',
-          adults: '40',
           kids: '10',
           guests: '10',
           conversions: '2',
@@ -186,7 +182,7 @@ describe('CasaDePazAnalyticsService', () => {
       expect(result.comparison).toEqual({ period: '2026-02' });
       expect(result.growth.houses).toBeCloseTo(1); // (10-5)/5
       expect(result.growth.guests).toBeCloseTo(1); // (20-10)/10
-      expect(result.growth.lives).toBeCloseTo((120 - 60) / 60);
+      expect(result.growth.lives).toBeCloseTo((40 - 20) / 20);
       expect(result.growth.conversions).toBeCloseTo(1.5); // (5-2)/2
     });
 
@@ -195,7 +191,6 @@ describe('CasaDePazAnalyticsService', () => {
         prevPeriod: null,
         totals: {
           houses: '10',
-          adults: '80',
           kids: '20',
           guests: '20',
           conversions: '5',
@@ -218,7 +213,6 @@ describe('CasaDePazAnalyticsService', () => {
       const { service } = createService({
         totals: {
           houses: '5',
-          adults: '30',
           kids: '10',
           guests: '0',
           conversions: '0',
@@ -234,7 +228,6 @@ describe('CasaDePazAnalyticsService', () => {
       const { service } = createService({
         totals: {
           houses: '10',
-          adults: '80',
           kids: '20',
           guests: '20',
           conversions: '5',
@@ -253,21 +246,18 @@ describe('CasaDePazAnalyticsService', () => {
           {
             label: 'Quarta-feira',
             houses: '3',
-            adults: '10',
             guests: '2',
             conversions: '1',
           },
           {
             label: 'Domingo',
             houses: '5',
-            adults: '20',
             guests: '4',
             conversions: '2',
           },
           {
             label: 'Segunda-feira',
             houses: '2',
-            adults: '5',
             guests: '1',
             conversions: '0',
           },
@@ -293,7 +283,6 @@ describe('CasaDePazAnalyticsService', () => {
           {
             label: '19:00',
             houses: '7',
-            adults: '40',
             guests: '10',
             conversions: '2',
           },
@@ -302,7 +291,7 @@ describe('CasaDePazAnalyticsService', () => {
       const result = await service.summary(FIXED_RANGE, UNRESTRICTED_SCOPE);
 
       expect(result.by_time).toEqual([
-        { label: '19:00', houses: 7, adults: 40, guests: 10, conversions: 2 },
+        { label: '19:00', houses: 7, guests: 10, conversions: 2 },
       ]);
     });
   });
@@ -313,7 +302,6 @@ describe('CasaDePazAnalyticsService', () => {
         label: `Setor ${i}`,
         sector_id: String(i + 1),
         houses: String(12 - i),
-        adults: String((12 - i) * 5),
         kids: String((12 - i) * 2),
         guests: String(12 - i),
         conversions: '1',
@@ -325,6 +313,30 @@ describe('CasaDePazAnalyticsService', () => {
       const others = result.by_sector.find((r) => r.label === 'Outros')!;
       // rows past top 10 (index 10, 11) have houses 2 and 1
       expect(others.houses).toBe(2 + 1);
+    });
+  });
+
+  describe('guest fan-out avoidance', () => {
+    it('does not inflate houses/kids/conversions when a single report has multiple guest entries', async () => {
+      // The raw SQL groups guests into a pre-aggregated subquery
+      // (COUNT(*) per report_id) LEFT JOINed once, so a report with 3
+      // guests must still surface as houses=1 with un-multiplied
+      // kids/conversions, while guests correctly totals 3.
+      const { service } = createService({
+        totals: {
+          houses: '1',
+          kids: '2',
+          guests: '3',
+          conversions: '1',
+        },
+      });
+      const result = await service.summary(FIXED_RANGE, UNRESTRICTED_SCOPE);
+
+      expect(result.totals.houses).toBe(1);
+      expect(result.totals.kids).toBe(2);
+      expect(result.totals.conversions).toBe(1);
+      expect(result.totals.guests).toBe(3);
+      expect(result.totals.lives).toBe(5);
     });
   });
 
@@ -433,7 +445,6 @@ describe('CasaDePazAnalyticsService', () => {
       expect(em.createQueryBuilder).not.toHaveBeenCalled();
       expect(result.totals).toEqual({
         houses: 0,
-        adults: 0,
         kids: 0,
         guests: 0,
         lives: 0,

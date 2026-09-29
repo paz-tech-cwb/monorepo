@@ -1,6 +1,7 @@
 package br.church.paz.shared.data.repository
 
 import br.church.paz.shared.domain.model.AreaSupervisorReportForm
+import br.church.paz.shared.domain.model.CasaDePazCycle
 import br.church.paz.shared.domain.model.CasaDePazReportForm
 import br.church.paz.shared.domain.model.CasaDePazReportSubmission
 import br.church.paz.shared.domain.model.ConversionForm
@@ -137,6 +138,13 @@ class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
     override suspend fun deleteCasaDePazReport(id: String) {
         val response = client.delete("api/forms/casa-de-paz-reports/$id")
         response.throwOnClientOrServerError()
+    }
+
+    @Throws(Exception::class)
+    override suspend fun getCasaDePazCycles(): List<CasaDePazCycle> {
+        val response = client.get("api/casa-de-paz-cycles")
+        response.throwOnClientOrServerError()
+        return response.body()
     }
 
     private suspend inline fun <reified T : Any> post(path: String, body: T) {

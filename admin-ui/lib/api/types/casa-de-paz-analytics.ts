@@ -5,10 +5,9 @@ export interface CasaDePazAnalyticsRange {
 
 export interface CasaDePazAnalyticsTotals {
   houses: number
-  adults: number
   kids: number
   guests: number
-  /** adults + kids + guests — every person reached across all visits. */
+  /** kids + guests — every person reached across all visits. */
   lives: number
   conversions: number
   conversion_rate: number
@@ -26,7 +25,6 @@ export interface CasaDePazAnalyticsGrowth {
 export interface CasaDePazSeriesPoint {
   period: string
   houses: number
-  adults: number
   kids: number
   guests: number
   conversions: number
@@ -36,7 +34,6 @@ export interface CasaDePazBySector {
   label: string
   sector_id: number | null
   houses: number
-  adults: number
   kids: number
   guests: number
   conversions: number
@@ -45,7 +42,6 @@ export interface CasaDePazBySector {
 export interface CasaDePazByDay {
   label: string
   houses: number
-  adults: number
   guests: number
   conversions: number
 }
@@ -53,7 +49,6 @@ export interface CasaDePazByDay {
 export interface CasaDePazByTime {
   label: string
   houses: number
-  adults: number
   guests: number
   conversions: number
 }
@@ -82,6 +77,14 @@ export interface CasaDePazAnalyticsSummaryQuery {
   to?: string
 }
 
+export interface CasaDePazReportGuestEntry {
+  id: string
+  name: string
+  email: string
+  birth_date: string
+  whatsapp: string | null
+}
+
 // Raw submission shape returned by the generic forms endpoint
 // (GET /api/forms/casa-de-paz-reports), used for the drill-down table —
 // mirrors backend/src/casa-de-paz-reports/entities/casa-de-paz-report.entity.ts
@@ -90,9 +93,9 @@ export interface CasaDePazReportSubmission {
   date: string
   facilitator: string
   sector_id: number
-  adults: number
+  casa_de_paz_id: string
   kids: number
-  guests: number
+  guests: CasaDePazReportGuestEntry[]
   conversions: number
   meeting_day: string | null
   meeting_time: string | null
@@ -100,13 +103,20 @@ export interface CasaDePazReportSubmission {
   updated_at: string
 }
 
+export interface CasaDePazReportGuestInput {
+  name: string
+  email: string
+  birth_date: string
+  whatsapp?: string
+}
+
 export interface UpdateCasaDePazReportRequest {
   date?: string
   facilitator?: string
   sector_id?: number
-  adults?: number
+  casa_de_paz_id?: string
   kids?: number
-  guests?: number
+  guests?: CasaDePazReportGuestInput[]
   conversions?: number
   meeting_day?: string
   meeting_time?: string

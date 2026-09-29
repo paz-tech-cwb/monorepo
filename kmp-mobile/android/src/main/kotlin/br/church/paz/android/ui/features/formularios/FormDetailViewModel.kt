@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.shared.domain.model.AreaSupervisorReportForm
 import br.church.paz.shared.domain.model.CasaDePazReportForm
+import br.church.paz.shared.domain.model.CasaDePazReportGuestEntry
 import br.church.paz.shared.domain.model.ConversionForm
 import br.church.paz.shared.domain.model.CourseForm
 import br.church.paz.shared.domain.model.FormType
@@ -17,6 +18,7 @@ import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.FormsRepository
 import br.church.paz.shared.domain.model.LifeGroupSummary
 import br.church.paz.shared.domain.model.User
+import br.church.paz.shared.domain.model.isLeader
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,8 +62,14 @@ class FormDetailViewModel(
                                 else -> ""
                             }
                         } ?: emptyMap()
+                    val isLeader = runCatching { authRepository.currentUser() }.getOrNull()?.role?.isLeader == true
                     _uiState.update {
-                        it.copy(form = form, isLoading = false, fields = initialFields)
+                        it.copy(
+                            form = form,
+                            isLoading = false,
+                            fields = initialFields,
+                            canAccessCasaDePazLessons = isLeader,
+                        )
                     }
                 }.onFailure { e ->
                     _uiState.update {
@@ -104,6 +112,7 @@ class FormDetailViewModel(
         val kind = when (def.fieldType) {
             FormFieldType.LG_PICKER -> PickerKind.LIFE_GROUP
             FormFieldType.SECTOR_PICKER -> PickerKind.SECTOR
+            FormFieldType.CYCLE_PICKER -> PickerKind.CASA_DE_PAZ_CYCLE
             FormFieldType.USER_MULTI_PICKER -> PickerKind.USER_MULTI
             else -> PickerKind.USER
         }
@@ -131,6 +140,9 @@ class FormDetailViewModel(
                 when (state.kind) {
                     PickerKind.LIFE_GROUP -> formsRepository.searchLifeGroups(query)
                     PickerKind.SECTOR -> formsRepository.searchSectors(query)
+                    PickerKind.CASA_DE_PAZ_CYCLE ->
+                        formsRepository.getCasaDePazCycles()
+                            .filter { it.name.contains(query, ignoreCase = true) }
                     PickerKind.USER, PickerKind.USER_MULTI -> formsRepository.searchUsers(query)
                 }
             }.onSuccess { results ->
@@ -170,6 +182,24 @@ class FormDetailViewModel(
         }
     }
 
+    fun addGuestEntry() {
+        _uiState.update { it.copy(guestEntries = it.guestEntries + CasaDePazGuestDraft()) }
+    }
+
+    fun updateGuestEntry(index: Int, patch: CasaDePazGuestDraft.() -> CasaDePazGuestDraft) {
+        _uiState.update { state ->
+            state.copy(
+                guestEntries = state.guestEntries.mapIndexed { i, g -> if (i == index) g.patch() else g },
+            )
+        }
+    }
+
+    fun removeGuestEntry(index: Int) {
+        _uiState.update { state ->
+            state.copy(guestEntries = state.guestEntries.filterIndexed { i, _ -> i != index })
+        }
+    }
+
     fun onSubmit() {
         val state = _uiState.value
         val form = state.form ?: return
@@ -181,10 +211,15 @@ class FormDetailViewModel(
             return
         }
 
+        if (!state.guestEntries.all { it.isValid }) {
+            _uiState.update { it.copy(error = "Preencha nome, e-mail e data de nascimento de todos os convidados") }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, error = null) }
 
-            val result = submitForm(form.type, fields)
+            val result = submitForm(form.type, fields, state.guestEntries)
             result
                 .onSuccess {
                     _uiState.update { it.copy(isSubmitting = false, submitSuccess = true) }
@@ -200,6 +235,7 @@ class FormDetailViewModel(
     private suspend fun submitForm(
         type: FormType,
         f: Map<String, String>,
+        guestEntries: List<CasaDePazGuestDraft>,
     ): Result<Unit> {
         val userId = authRepository.currentUser()?.id ?: ""
         return runCatching {
@@ -351,9 +387,16 @@ class FormDetailViewModel(
                             date = f.isoDate("date"),
                             facilitator = f.req("facilitator"),
                             sectorId = f.idInt("sector_id"),
-                            adults = f.int("adults"),
+                            casaDePazId = f.req("casa_de_paz_id"),
                             kids = f.int("kids"),
-                            guests = f.int("guests"),
+                            guests = guestEntries.map {
+                                CasaDePazReportGuestEntry(
+                                    name = it.name.trim(),
+                                    email = it.email.trim(),
+                                    birthDate = it.birthDate,
+                                    whatsapp = it.whatsapp.trim().ifEmpty { null },
+                                )
+                            },
                             conversions = f.int("conversions"),
                             meetingDay = f.opt("meeting_day"),
                         ),

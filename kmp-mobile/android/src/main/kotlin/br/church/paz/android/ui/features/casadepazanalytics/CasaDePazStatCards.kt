@@ -40,7 +40,7 @@ fun CasaDePazStatCards(summary: CasaDePazAnalyticsSummary) {
         PazStatCard(
             title = "Vidas Alcançadas",
             value = summary.totals.lives.toString(),
-            subtitle = "adultos + crianças + convidados",
+            subtitle = "crianças + convidados",
             icon = Icons.Filled.Favorite,
             growth = summary.growth.lives,
         )
@@ -52,7 +52,6 @@ fun CasaDePazStatCards(summary: CasaDePazAnalyticsSummary) {
             growth = summary.growth.houses,
         )
         CasaDePazPresencasCard(
-            adults = summary.totals.adults,
             kids = summary.totals.kids,
             guests = summary.totals.guests,
             guestsGrowth = summary.growth.guests,
@@ -75,17 +74,15 @@ fun CasaDePazStatCards(summary: CasaDePazAnalyticsSummary) {
 
 /**
  * "Presenças" card — matches admin-ui's casa-de-paz-report.tsx breakdown-row
- * layout for this card (Adultos / Crianças / Convidados rows) instead of a
- * single headline number, because the growth badge is `growth.guests` (guest
- * growth), not growth for adults+kids. A single "adults+kids" headline
- * paired with a guests-only badge reads as "+N% presences," which is
- * misleading — the breakdown rows put the Convidados count directly above
- * its own badge so the number the badge describes is always visible next to
- * it.
+ * layout for this card (Crianças / Convidados rows) instead of a single
+ * headline number, because the growth badge is `growth.guests` (guest
+ * growth), not a combined growth. A single "kids+guests" headline paired
+ * with a guests-only badge reads as "+N% presences," which is misleading —
+ * the breakdown rows put the Convidados count directly above its own badge
+ * so the number the badge describes is always visible next to it.
  */
 @Composable
 private fun CasaDePazPresencasCard(
-    adults: Int,
     kids: Int,
     guests: Int,
     guestsGrowth: Double?,
@@ -113,7 +110,6 @@ private fun CasaDePazPresencasCard(
                 )
             }
             Spacer(Modifier.height(PazSpacing.Xs))
-            CasaDePazBreakdownRow(label = "Adultos", value = adults.toString())
             CasaDePazBreakdownRow(label = "Crianças", value = kids.toString())
             Row(
                 modifier = Modifier.fillMaxWidth(),

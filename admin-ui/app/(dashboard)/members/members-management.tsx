@@ -42,7 +42,7 @@ import type { AdminUser, UserRole } from "@/lib/api/types"
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "member", label: "Membro" },
-  { value: "lead", label: "Lead" },
+  { value: "guest", label: "Convidado" },
   { value: "discipler", label: "Discipulador" },
   { value: "life_group_leader", label: "Lider de Life Group" },
   { value: "sector_leader", label: "Lider de Setor" },

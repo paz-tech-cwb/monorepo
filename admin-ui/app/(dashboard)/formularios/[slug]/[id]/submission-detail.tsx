@@ -54,7 +54,6 @@ const FIELD_LABELS: Record<string, string> = {
   invited_by: "Convidado por",
   // casa-de-paz-reports
   facilitator: "Facilitador",
-  adults: "Adultos",
   kids: "Crianças",
   conversions: "Conversões",
   meeting_day: "Dia",
@@ -129,7 +128,12 @@ export function SubmissionDetail({
               .filter(([k]) => !HIDDEN_KEYS.has(k))
               .map(([k, v]) => {
                 let display: string
-                if (Array.isArray(v)) {
+                if (k === "guests" && Array.isArray(v)) {
+                  display =
+                    (v as Array<{ name?: string; email?: string }>)
+                      .map((g) => (g.email ? `${g.name} (${g.email})` : g.name))
+                      .join("; ") || "—"
+                } else if (Array.isArray(v)) {
                   display = v.join(", ") || "—"
                 } else if (v !== null && typeof v === "object") {
                   display = (v as { name?: string }).name ?? JSON.stringify(v)

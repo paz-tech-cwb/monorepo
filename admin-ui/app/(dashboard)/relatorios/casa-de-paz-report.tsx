@@ -92,7 +92,7 @@ export function CasaDePazReport() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{totals.lives}</div>
-                    <p className="text-xs text-muted-foreground mb-1">adultos + crianças + convidados</p>
+                    <p className="text-xs text-muted-foreground mb-1">crianças + convidados</p>
                     <GrowthBadge value={growth?.lives} comparisonLabel={comparisonLabel} />
                   </CardContent>
                 </Card>
@@ -115,12 +115,6 @@ export function CasaDePazReport() {
                     <Users2 className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent className="space-y-1.5">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground flex items-center gap-1">
-                        <Users2 className="h-3 w-3" /> Adultos
-                      </span>
-                      <span className="font-semibold">{totals.adults}</span>
-                    </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground flex items-center gap-1">
                         <Baby className="h-3 w-3" /> Crianças

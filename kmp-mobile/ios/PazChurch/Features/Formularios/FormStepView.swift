@@ -76,6 +76,13 @@ struct FormStepView: View {
                             Image(systemName: "clock.arrow.circlepath")
                         }
                     }
+                    if viewModel.canAccessCasaDePazLessons {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            NavigationLink(destination: CasaDePazLessonsView()) {
+                                Image(systemName: "book.closed")
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -123,7 +130,11 @@ struct FormStepView: View {
                     showLabel: false, // the big question headline above already names this field
                     isFocused: def.fieldType.isTextInput ? $inputFocused : nil,
                     submitLabel: viewModel.isLastStep ? .done : .next,
-                    onSubmitField: { viewModel.nextStep() }
+                    onSubmitField: { viewModel.nextStep() },
+                    guestEntries: viewModel.guestEntries,
+                    onAddGuest: { viewModel.addGuestEntry() },
+                    onUpdateGuest: { viewModel.updateGuestEntry($0, $1) },
+                    onRemoveGuest: { viewModel.removeGuestEntry($0) }
                 )
 
                 if let stepError = viewModel.stepError ?? viewModel.error {
@@ -157,6 +168,12 @@ struct FormStepView: View {
             set: { if !$0 { viewModel.closePicker() } }
         )) {
             SectorPickerSheet(viewModel: viewModel)
+        }
+        .sheet(isPresented: Binding(
+            get: { viewModel.pickerKey != nil && viewModel.pickerKind == .casaDePazCycle },
+            set: { if !$0 { viewModel.closePicker() } }
+        )) {
+            CasaDePazCyclePickerSheet(viewModel: viewModel)
         }
         .task(id: viewModel.stepIndex) {
             // Re-request focus for the stable text field when landing on a text-input step;

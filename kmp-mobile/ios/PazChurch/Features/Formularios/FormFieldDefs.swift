@@ -17,8 +17,10 @@ enum FormFieldType {
     case userMultiPicker // multi user → stores "1,2,3"
     case lgPicker // life-group → stores id string
     case sectorPicker // sector → stores id string
+    case cyclePicker // Casa de Paz cycle → stores id string
     case selfOrSearch // invited_by: "" = self, else searched name
     case time // "HH:mm" string, picked via native time picker
+    case guestList // repeatable Casa de Paz guest roster — held in FormDetailViewModelIOS.guestEntries, not `fields`
 
     /// True for field types backed by a plain keyboard text field (eligible for focus
     /// retention across step-mode screens).
@@ -278,6 +280,7 @@ extension FormType {
                 FormFieldDef("date", "Data", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
                 FormFieldDef("facilitator", "Facilitador", required: true, fieldType: .name),
                 FormFieldDef("sector_id", "Setor", required: true, fieldType: .sectorPicker),
+                FormFieldDef("casa_de_paz_id", "Ciclo", required: true, fieldType: .cyclePicker),
                 FormFieldDef(
                     "meeting_day",
                     "Dia da reunião",
@@ -285,9 +288,8 @@ extension FormType {
                     options: FormFieldDefs.meetingDayOptions,
                     optionValues: FormFieldDefs.meetingDayOptions
                 ),
-                FormFieldDef("adults", "Adultos", placeholder: "0", required: true, fieldType: .integer),
                 FormFieldDef("kids", "Crianças", placeholder: "0", fieldType: .integer),
-                FormFieldDef("guests", "Convidados", placeholder: "0", fieldType: .integer),
+                FormFieldDef("guests", "Convidados", fieldType: .guestList),
                 FormFieldDef("conversions", "Conversões", placeholder: "0", fieldType: .integer),
             ]
 

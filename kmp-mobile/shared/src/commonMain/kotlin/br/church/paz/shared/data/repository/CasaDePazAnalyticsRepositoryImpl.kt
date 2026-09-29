@@ -47,7 +47,6 @@ private data class CasaDePazAnalyticsRangeDto(
 @Serializable
 private data class CasaDePazAnalyticsTotalsDto(
     val houses: Int = 0,
-    val adults: Int = 0,
     val kids: Int = 0,
     val guests: Int = 0,
     val lives: Int = 0,
@@ -57,7 +56,6 @@ private data class CasaDePazAnalyticsTotalsDto(
     fun toDomain() =
         CasaDePazAnalyticsTotals(
             houses = houses,
-            adults = adults,
             kids = kids,
             guests = guests,
             lives = lives,
@@ -86,7 +84,6 @@ private data class CasaDePazAnalyticsGrowthDto(
 private data class CasaDePazSeriesPointDto(
     val period: String,
     val houses: Int = 0,
-    val adults: Int = 0,
     val kids: Int = 0,
     val guests: Int = 0,
     val conversions: Int = 0,
@@ -95,7 +92,6 @@ private data class CasaDePazSeriesPointDto(
         CasaDePazSeriesPoint(
             period = period,
             houses = houses,
-            adults = adults,
             kids = kids,
             guests = guests,
             conversions = conversions,
@@ -107,7 +103,6 @@ private data class CasaDePazBySectorDto(
     val label: String,
     @SerialName("sector_id") val sectorId: Int? = null,
     val houses: Int = 0,
-    val adults: Int = 0,
     val kids: Int = 0,
     val guests: Int = 0,
     val conversions: Int = 0,
@@ -117,7 +112,6 @@ private data class CasaDePazBySectorDto(
             label = label,
             sectorId = sectorId,
             houses = houses,
-            adults = adults,
             kids = kids,
             guests = guests,
             conversions = conversions,
@@ -128,7 +122,6 @@ private data class CasaDePazBySectorDto(
 private data class CasaDePazByDayDto(
     val label: String,
     val houses: Int = 0,
-    val adults: Int = 0,
     val guests: Int = 0,
     val conversions: Int = 0,
 ) {
@@ -136,7 +129,6 @@ private data class CasaDePazByDayDto(
         CasaDePazByDay(
             label = label,
             houses = houses,
-            adults = adults,
             guests = guests,
             conversions = conversions,
         )

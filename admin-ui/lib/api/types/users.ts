@@ -6,7 +6,7 @@ export type UserRole =
   | "life_group_leader"
   | "discipler"
   | "member"
-  | "lead"
+  | "guest"
 
 export type UserStatus = "active" | "inactive"
 

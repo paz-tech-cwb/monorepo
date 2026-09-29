@@ -16,6 +16,7 @@ import { Role } from 'src/roles/entities/role.entity';
 import { UserDeviceToken } from 'src/users/entities/user-device-token.entity';
 import { AuditLog } from './entities/audit-log.entity';
 import { AuditLogger } from './audit.logger';
+import { GuestOriginsService } from '../guest-origins/guest-origins.service';
 
 const ACCESS_SECRET = 'test-access-secret-at-least-32-chars!!';
 const REFRESH_SECRET = 'test-refresh-secret-at-least-32-chars!!';
@@ -124,6 +125,10 @@ describe('AuthService', () => {
         { provide: getRepositoryToken(AuditLog), useValue: auditLogRepo },
         { provide: ConfigService, useValue: configServiceMock },
         { provide: AuditLogger, useValue: auditLoggerMock },
+        {
+          provide: GuestOriginsService,
+          useValue: { ensureForUser: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 
