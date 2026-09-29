@@ -13,10 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Assignment
@@ -25,9 +23,14 @@ import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.DynamicForm
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,15 +44,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazErrorState
+import br.church.paz.android.ui.components.PazGlassCard
 import br.church.paz.android.ui.components.PazIconContainer
+import br.church.paz.android.ui.components.PazMeshBackground
+import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
-import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.FormCatalogItem
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FormulariosScreen(
     navController: NavController,
@@ -76,50 +82,34 @@ fun FormulariosScreen(
         }
     }
 
-    Column(Modifier.fillMaxSize()) {
-        // Hero with circle back button
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .background(PazGradients.Hero)
-                .statusBarsPadding(),
-        ) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-            ) {
-                Box(
-                    Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(Color.White.copy(.15f))
-                        .clickable { viewModel.onBack() },
-                    Alignment.Center,
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "back", tint = Color.White, modifier = Modifier.size(20.dp))
-                }
-                Text(
-                    "Formulários",
-                    style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
+    Box(Modifier.fillMaxSize()) {
+        PazMeshBackground()
 
-        Box(
-            Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(MaterialTheme.colorScheme.background),
-        ) {
-            when {
-                uiState.isLoading -> LoadingState()
-                uiState.error != null -> ErrorState(error = uiState.error!!, onRetry = viewModel::onRetry)
-                uiState.forms.isEmpty() -> EmptyState()
-                else -> ContentState(forms = uiState.forms, onFormTap = viewModel::onFormTap)
+        Scaffold(
+            topBar = {
+                LargeTopAppBar(
+                    title = { Text("Formulários") },
+                    navigationIcon = {
+                        IconButton(onClick = viewModel::onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "back")
+                        }
+                    },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
+                )
+            },
+            containerColor = Color.Transparent,
+        ) { innerPadding ->
+            PazPullToRefresh(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = viewModel::refresh,
+                modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
+            ) {
+                when {
+                    uiState.isLoading -> LoadingState()
+                    uiState.error != null -> ErrorState(error = uiState.error!!, onRetry = viewModel::onRetry)
+                    uiState.forms.isEmpty() -> EmptyState()
+                    else -> ContentState(forms = uiState.forms, onFormTap = viewModel::onFormTap)
+                }
             }
         }
     }
@@ -149,38 +139,37 @@ private fun FormCard(
     onClick: () -> Unit,
 ) {
     val tint = formTint(form.type.name)
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(PazShapes.large)
-                .background(MaterialTheme.colorScheme.surface)
-                .clickable(onClick = onClick)
-                .padding(PazSpacing.Md),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+    PazGlassCard(
+        modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onClick),
+        cornerRadius = PazSpacing.CardRadiusCompact,
     ) {
-        PazIconContainer(icon = formIcon(form.type.name), tint = tint, size = 42.dp)
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(form.title, style = MaterialTheme.typography.titleSmall)
-            if (!form.description.isNullOrEmpty()) {
-                Text(
-                    form.description!!,
-                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.6f)),
-                    maxLines = 1,
-                )
+        Row(
+            modifier = Modifier.padding(PazSpacing.Md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+        ) {
+            PazIconContainer(icon = formIcon(form.type.name), tint = tint, size = 42.dp)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(form.title, style = MaterialTheme.typography.titleSmall)
+                if (!form.description.isNullOrEmpty()) {
+                    Text(
+                        form.description!!,
+                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.6f)),
+                        maxLines = 1,
+                    )
+                }
             }
+            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(.3f), modifier = Modifier.size(18.dp))
         }
-        Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(.3f), modifier = Modifier.size(18.dp))
     }
 }
 
 private fun formTint(typeName: String): Color =
     when {
-        typeName.contains("CONVERSION", true) -> Color(0xFF1565C0)
-        typeName.contains("GUEST", true) -> Color(0xFF2E7D32)
-        typeName.contains("SERVICE", true) -> Color(0xFF6A1B9A)
-        typeName.contains("REPORT", true) -> Color(0xFFE65100)
+        typeName.contains("CONVERSION", true) -> PazColors.PrimaryLight
+        typeName.contains("GUEST", true) -> PazColors.MenuLifeGroups
+        typeName.contains("SERVICE", true) -> PazColors.MenuFormularios
+        typeName.contains("REPORT", true) -> PazColors.MenuMinistries
         else -> PazColors.Primary
     }
 

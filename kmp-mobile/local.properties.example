@@ -1,3 +1,8 @@
 # Copy this file to local.properties and fill in your values.
 # local.properties is gitignored — never commit it.
 sdk.dir=/Users/YOUR_USERNAME/Library/Android/sdk
+
+# Google Maps SDK for Android key (Google Cloud Console → APIs & Services →
+# Credentials, restricted to the Maps SDK for Android). Needed for the Life
+# Groups map screen; leave blank and the map will render without tiles.
+MAPS_API_KEY=

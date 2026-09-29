@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 data class AgendaListUiState(
     val events: List<AgendaEvent> = emptyList(),
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val isLoadingMore: Boolean = false,
     val error: String? = null,
     val hasReachedEnd: Boolean = false,
@@ -29,22 +30,38 @@ class AgendaListViewModel(
     private var isRequestInFlight = false
 
     init {
-        loadFirstPage()
+        loadFirstPage(showSkeleton = true)
     }
 
-    private fun loadFirstPage() {
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = loadFirstPage(showSkeleton = false)
+
+    private fun loadFirstPage(showSkeleton: Boolean) {
         currentPage = 1
         viewModelScope.launch {
             isRequestInFlight = true
+            _uiState.value =
+                _uiState.value.copy(
+                    isLoading = showSkeleton,
+                    isRefreshing = !showSkeleton,
+                )
             runCatching { agendaRepository.getEvents(page = 1, limit = PAGE_SIZE) }
                 .onSuccess { events ->
                     _uiState.value =
                         AgendaListUiState(
                             events = events,
                             isLoading = false,
+                            isRefreshing = false,
                             hasReachedEnd = events.size < PAGE_SIZE,
                         )
-                }.onFailure { _uiState.value = AgendaListUiState(isLoading = false, error = it.message) }
+                }.onFailure {
+                    _uiState.value =
+                        _uiState.value.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            error = it.message,
+                        )
+                }
             isRequestInFlight = false
         }
     }
@@ -72,5 +89,5 @@ class AgendaListViewModel(
         }
     }
 
-    fun retry() = loadFirstPage()
+    fun retry() = loadFirstPage(showSkeleton = true)
 }
