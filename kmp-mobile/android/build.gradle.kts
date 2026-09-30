@@ -48,7 +48,7 @@ android {
             buildConfigField(
                 "String",
                 "ONBOARDING_VIDEO_URL",
-                "\"http://f11zk1fs2i2igvjkhyyiubvc.62.238.45.195.sslip.io/onboarding/welcome.mp4\"",
+                "\"https://pazcuritiba.com.br/admin/onboarding/welcome.mp4\"",
             )
             // Web client ID from google-services.json (staging project) → oauth_client[type=3]
             buildConfigField(
@@ -70,13 +70,13 @@ android {
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"http://znzcybe6t18zwapiy9hytma5.62.238.45.195.sslip.io/api\"",
+                "\"https://api.pazcuritiba.com.br/api\"",
             )
             // Served as a static asset from admin-ui's public/ folder.
             buildConfigField(
                 "String",
                 "ONBOARDING_VIDEO_URL",
-                "\"http://f11zk1fs2i2igvjkhyyiubvc.62.238.45.195.sslip.io/onboarding/welcome.mp4\"",
+                "\"https://pazcuritiba.com.br/admin/onboarding/welcome.mp4\"",
             )
             buildConfigField(
                 "String",

@@ -8,7 +8,7 @@ enum AppConfig {
         #if DEBUG
         "http://localhost:3001/api"
         #else
-        "http://znzcybe6t18zwapiy9hytma5.62.238.45.195.sslip.io/api"
+        "https://api.pazcuritiba.com.br/api"
         #endif
     }()
 
@@ -18,7 +18,7 @@ enum AppConfig {
     /// environment-specific, so debug and release point at the same
     /// production admin-ui host.
     static let onboardingVideoURL: URL = {
-        let urlString = "http://f11zk1fs2i2igvjkhyyiubvc.62.238.45.195.sslip.io/onboarding/welcome.mp4"
+        let urlString = "https://pazcuritiba.com.br/admin/onboarding/welcome.mp4"
         return URL(string: urlString)!
     }()
 }
