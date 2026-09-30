@@ -6,11 +6,11 @@ function getFirebaseStorage() {
   return getStorage(getFirebaseApp())
 }
 
-// `crypto.randomUUID()` only exists in secure contexts (HTTPS or localhost) — admin-ui is
-// currently served over plain HTTP on its sslip.io host, where it's undefined and throws.
-// `crypto.getRandomValues()` has no such restriction (it predates randomUUID and doesn't
-// require a secure context), so prefer it over `Math.random()` for the fallback — it's a CSPRNG,
-// not just "good enough for a filename".
+// `crypto.randomUUID()` only exists in secure contexts (HTTPS or localhost). admin-ui is
+// served over HTTPS in production, but keep the fallback in case a future deploy target
+// isn't. `crypto.getRandomValues()` has no such restriction (it predates randomUUID and
+// doesn't require a secure context), so prefer it over `Math.random()` for the fallback —
+// it's a CSPRNG, not just "good enough for a filename".
 function generateUploadId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID()
