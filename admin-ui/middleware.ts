@@ -28,8 +28,11 @@ export function middleware(request: NextRequest) {
     const hasSession = request.cookies.get("auth_session")
 
     if (!hasSession) {
-      // No session cookie -- redirect to login page
-      const loginUrl = new URL("/", request.url)
+      // No session cookie -- redirect to login page.
+      // Use request.nextUrl.clone() (not `new URL("/", request.url)`) so the
+      // basePath ("/admin") is preserved instead of being dropped.
+      const loginUrl = request.nextUrl.clone()
+      loginUrl.pathname = "/"
       loginUrl.searchParams.set("redirect", pathname)
       return NextResponse.redirect(loginUrl)
     }
