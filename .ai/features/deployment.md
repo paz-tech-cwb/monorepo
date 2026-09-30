@@ -24,10 +24,12 @@ The root `docker-compose.yaml` is the deployment entrypoint for containerized en
 Expected public URL contract:
 
 ```bash
-API_BASE_URL=https://church-api.<domain>/api
-ADMIN_BASE_URL=https://church-admin.<domain>
-CORS_ORIGIN=https://church-admin.<domain>
+API_BASE_URL=https://api.pazcuritiba.com.br/api
+ADMIN_BASE_URL=https://pazcuritiba.com.br/admin
+CORS_ORIGIN=https://pazcuritiba.com.br
 ```
+
+(`CORS_ORIGIN` in `backend/src/main.ts` is a single literal origin, not a comma-separated list — see its `app.enableCors` call before assuming multiple origins are supported.)
 
 ## CI/CD (GitHub Actions)
 
