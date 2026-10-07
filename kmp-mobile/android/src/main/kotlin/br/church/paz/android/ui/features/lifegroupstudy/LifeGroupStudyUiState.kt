@@ -5,6 +5,7 @@ import br.church.paz.shared.domain.model.LifeGroupStudy
 
 data class LifeGroupStudyListUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val isLoadingMore: Boolean = false,
     val studies: List<LifeGroupStudy> = emptyList(),
     val error: String? = null,

@@ -4,6 +4,7 @@ import br.church.paz.shared.domain.model.LifeGroupAttendance
 
 data class LifeGroupAttendanceHistoryUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val records: List<LifeGroupAttendance> = emptyList(),
     val error: String? = null,
 )

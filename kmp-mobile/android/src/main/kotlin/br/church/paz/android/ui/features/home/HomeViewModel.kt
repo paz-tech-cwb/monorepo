@@ -28,9 +28,20 @@ class HomeViewModel(
         load()
     }
 
-    fun load() {
+    fun load() = fetch(showSkeleton = true)
+
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = fetch(showSkeleton = false)
+
+    private fun fetch(showSkeleton: Boolean) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = showSkeleton,
+                    isRefreshing = !showSkeleton,
+                    error = null,
+                )
+            }
 
             val user = runCatching { authRepository.currentUser() }.getOrNull()
             val firstName =
@@ -49,6 +60,7 @@ class HomeViewModel(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
+                            isRefreshing = false,
                             banners = content.banners,
                             agendaEvents = content.agenda,
                             bank = content.contribution?.bank,
@@ -59,7 +71,13 @@ class HomeViewModel(
                     }
                 }.onFailure { e ->
                     Log.e("HomeVM", "load failed", e)
-                    _uiState.update { it.copy(isLoading = false, error = e.message ?: e::class.simpleName ?: "Erro desconhecido") }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            error = e.message ?: e::class.simpleName ?: "Erro desconhecido",
+                        )
+                    }
                 }
         }
     }

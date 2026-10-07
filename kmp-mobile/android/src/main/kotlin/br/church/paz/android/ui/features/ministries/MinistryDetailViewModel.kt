@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 class MinistryDetailViewModel(
     private val ministryId: String,
     private val churchRepository: ChurchRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(MinistryDetailUiState())
     val uiState: StateFlow<MinistryDetailUiState> = _uiState.asStateFlow()
@@ -27,8 +28,13 @@ class MinistryDetailViewModel(
         load()
     }
 
-    private fun load() {
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = load(showSkeleton = false)
+
+    private fun load(showSkeleton: Boolean = true) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton) }
+            val currentUser = runCatching { authRepository.currentUser() }.getOrNull()
             runCatching { churchRepository.getAllMinistries() }
                 .onSuccess { ministries ->
                     val ministry = ministries.find { it.id.toString() == ministryId }
@@ -36,15 +42,21 @@ class MinistryDetailViewModel(
                         it.copy(
                             ministry = ministry,
                             isLoading = false,
+                            isRefreshing = false,
                             error = if (ministry == null) "Ministério não encontrado" else null,
+                            canManage = currentUser?.role?.isLeader == true,
                         )
                     }
                 }.onFailure { e ->
                     _uiState.update {
-                        it.copy(isLoading = false, error = e.message ?: "Erro ao carregar")
+                        it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Erro ao carregar")
                     }
                 }
         }
+    }
+
+    fun onManageTap() {
+        viewModelScope.launch { _effect.send(MinistryDetailEffect.NavigateToManage(ministryId)) }
     }
 
     fun onBack() {
@@ -67,8 +79,12 @@ class LifeGroupDetailViewModel(
         load()
     }
 
-    private fun load() {
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = load(showSkeleton = false)
+
+    private fun load(showSkeleton: Boolean = true) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton) }
             val currentUser = runCatching { authRepository.currentUser() }.getOrNull()
             val currentUserId = currentUser?.id?.toIntOrNull()
             runCatching { churchRepository.getAllLifeGroups() }
@@ -82,6 +98,7 @@ class LifeGroupDetailViewModel(
                         it.copy(
                             lifeGroup = group,
                             isLoading = false,
+                            isRefreshing = false,
                             error = if (group == null) "Grupo não encontrado" else null,
                             canManageAttendance = canManageAttendance,
                             canManage = currentUser?.role?.isLeader == true,
@@ -89,10 +106,14 @@ class LifeGroupDetailViewModel(
                     }
                 }.onFailure { e ->
                     _uiState.update {
-                        it.copy(isLoading = false, error = e.message ?: "Erro ao carregar")
+                        it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Erro ao carregar")
                     }
                 }
         }
+    }
+
+    fun onManageTap() {
+        viewModelScope.launch { _effect.send(LifeGroupDetailEffect.NavigateToManage(lifeGroupId)) }
     }
 
     fun onBack() {

@@ -29,20 +29,26 @@ class CasaDePazAnalyticsViewModel(
     val effect = _effect.receiveAsFlow()
 
     init {
-        load()
+        load(showSkeleton = true)
     }
 
-    fun load() {
+    fun load() = load(showSkeleton = true)
+
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = load(showSkeleton = false)
+
+    private fun load(showSkeleton: Boolean) {
         val state = _uiState.value
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton, error = null) }
             runCatching { repository.getSummary(from = state.from, to = state.to) }
                 .onSuccess { summary ->
-                    _uiState.update { it.copy(isLoading = false, summary = summary) }
+                    _uiState.update { it.copy(isLoading = false, isRefreshing = false, summary = summary) }
                 }.onFailure { e ->
                     _uiState.update {
                         it.copy(
                             isLoading = false,
+                            isRefreshing = false,
                             error = e.message ?: "Não foi possível carregar o relatório de Casa de Paz.",
                         )
                     }
@@ -52,12 +58,12 @@ class CasaDePazAnalyticsViewModel(
 
     fun onFromSelected(from: String) {
         _uiState.update { it.copy(from = from) }
-        load()
+        load(showSkeleton = true)
     }
 
     fun onToSelected(to: String) {
         _uiState.update { it.copy(to = to) }
-        load()
+        load(showSkeleton = true)
     }
 
     fun onBack() {

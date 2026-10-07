@@ -8,6 +8,7 @@ enum class DistributionTab { DAY, HOUR, NEIGHBORHOOD, CITY }
 
 data class LifeGroupAnalyticsUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val year: Int,
     val month: Int? = null,
     val lifeGroupId: Int? = null,

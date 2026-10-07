@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <!-- Required on Android 13+ to show push notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Life groups map: shows the user's own position alongside group markers. Optional —
+         the map still renders group pins without it, we just skip the "my location" dot. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
     <application
         android:name="br.church.paz.android.PazApplication"
@@ -38,6 +42,15 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="paz_church_default"/>
+
+        <!-- Google Maps API key — injected via manifestPlaceholders from
+             local.properties (MAPS_API_KEY), gitignored per-developer. See
+             android/build.gradle.kts. TODO: a real key still needs to be
+             provisioned by the team (Google Cloud Console → Maps SDK for
+             Android) and added to CI secrets for release builds. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${mapsApiKey}"/>
 
         <!-- Grants share-sheet targets temporary read access to exported report images
              (cache/shared_images/) without exposing the whole app's file storage. -->
