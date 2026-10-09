@@ -33,7 +33,8 @@ class LifeGroupAnalyticsRepositoryTest {
                   "avg_members_per_group": 8.5,
                   "groups_by_sector": [{"label": "Norte", "count": 3}, {"label": "Sem setor", "count": 1}],
                   "members_in_group": 40,
-                  "members_total": 100
+                  "members_total": 100,
+                  "life_groups": [{"id": 7, "name": "Grupo Alfa"}]
                 }
                 """.trimIndent(),
                 HttpStatusCode.OK,
@@ -50,6 +51,9 @@ class LifeGroupAnalyticsRepositoryTest {
         assertEquals("Norte", result.groupsBySector.first().label)
         assertEquals(40, result.membersInGroup)
         assertEquals(100, result.membersTotal)
+        assertEquals(1, result.lifeGroups.size)
+        assertEquals(7, result.lifeGroups.first().id)
+        assertEquals("Grupo Alfa", result.lifeGroups.first().name)
     }
 
     @Test
@@ -66,5 +70,6 @@ class LifeGroupAnalyticsRepositoryTest {
         assertTrue(result.groupsBySector.isEmpty())
         assertEquals(0, result.membersInGroup)
         assertEquals(0, result.membersTotal)
+        assertTrue(result.lifeGroups.isEmpty())
     }
 }

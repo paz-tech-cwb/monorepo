@@ -10,12 +10,11 @@ struct LifeGroupAnalyticsView: View {
         "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez",
     ]
 
-    init(lifeGroupId: Int32?, analyticsRepository: LifeGroupAnalyticsRepository, churchRepository: ChurchRepository) {
+    init(lifeGroupId: Int32?, analyticsRepository: LifeGroupAnalyticsRepository) {
         _viewModel = State(
             initialValue: LifeGroupAnalyticsViewModel(
                 lifeGroupId: lifeGroupId,
-                analyticsRepository: analyticsRepository,
-                churchRepository: churchRepository
+                analyticsRepository: analyticsRepository
             )
         )
     }
@@ -40,12 +39,13 @@ struct LifeGroupAnalyticsView: View {
                 }
             }
             .task {
-                await viewModel.loadLifeGroups()
                 // Overview is best-effort and must never block or delay the
                 // main attendance/distribution report — run it concurrently
                 // rather than awaiting it before `load()`, matching Android's
                 // LifeGroupAnalyticsViewModel (launches overview in its own
-                // coroutine).
+                // coroutine). It's also the (scoped) source of the filter
+                // dropdown's groups now, replacing the unscoped
+                // ChurchRepository.getAllLifeGroups() call.
                 async let overview: Void = viewModel.loadOverview()
                 async let main: Void = viewModel.load()
                 _ = await (overview, main)
@@ -73,31 +73,54 @@ struct LifeGroupAnalyticsView: View {
         }
     }
 
+    // The filter row is hoisted outside the loading/error branches below and
+    // stays mounted across filter-triggered reloads — only `isLoading` (the
+    // genuine first load) shows the full skeleton INSTEAD of the filters; a
+    // filter-triggered reload sets `isRefreshing` and keeps the filters +
+    // any already rendered content, with a lighter indicator in the report
+    // area (root cause C).
     @ViewBuilder
     private var screenContent: some View {
-        if viewModel.isLoading {
-            loadingState
-        } else if let error = viewModel.error {
-            errorState(message: error)
-        } else {
-            contentState
-        }
-    }
-
-    private var contentState: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 filtersSection
-                if let overview = viewModel.overview {
-                    statCardsSection(overview)
-                    overviewChartsSection(overview)
+                if viewModel.isLoading {
+                    loadingState
+                } else if let error = viewModel.error {
+                    errorState(message: error)
+                } else {
+                    reportState
                 }
-                attendanceSection
-                distributionSection
             }
             .padding(20)
         }
         .refreshable { await viewModel.load() }
+    }
+
+    private var reportState: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            if viewModel.isRefreshing {
+                SkeletonView().frame(height: 220)
+            }
+            // The overview stat cards/donuts are fed by their own independent
+            // endpoint, unrelated to attendance/distribution, so they always
+            // render regardless of either of those failing.
+            if let overview = viewModel.overview {
+                statCardsSection(overview)
+                overviewChartsSection(overview)
+            }
+            attendanceSection
+            distributionSection
+        }
+    }
+
+    private func sectionErrorNotice(title: String, message: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title).font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
+            Text(message).font(PazTypography.bodySmall).foregroundStyle(PazColors.slate)
+        }
+        .padding(16)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 
     // MARK: Overview stat cards + donuts
@@ -244,19 +267,25 @@ struct LifeGroupAnalyticsView: View {
     // MARK: Attendance
 
     private var attendanceSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Frequência de Presença").font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
-            // Monthly rows are always zero-filled for all 12 months, so the
-            // array is never actually empty for that view — check every row
-            // has zero meetings instead of just checking array emptiness.
-            if viewModel.attendanceRows.allSatisfy({ $0.meetingsCount == 0 }) {
-                PazBarChartEmptyView(message: "Nenhum registro de presença encontrado.")
+        Group {
+            if let attendanceError = viewModel.attendanceError {
+                sectionErrorNotice(title: "Frequência de Presença", message: attendanceError)
             } else {
-                PazBarChartView(entries: attendanceChartEntries)
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Frequência de Presença").font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
+                    // Monthly rows are always zero-filled for all 12 months, so the
+                    // array is never actually empty for that view — check every row
+                    // has zero meetings instead of just checking array emptiness.
+                    if viewModel.attendanceRows.allSatisfy({ $0.meetingsCount == 0 }) {
+                        PazBarChartEmptyView(message: "Nenhum registro de presença encontrado.")
+                    } else {
+                        PazBarChartView(entries: attendanceChartEntries)
+                    }
+                }
+                .padding(16)
+                .glassCard(radius: PazSpacing.cardRadiusCompact)
             }
         }
-        .padding(16)
-        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 
     private var attendanceChartEntries: [PazBarChartEntry] {
@@ -278,28 +307,34 @@ struct LifeGroupAnalyticsView: View {
     // MARK: Distribution
 
     private var distributionSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Distribuição dos Life Groups").font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
+        Group {
+            if let distributionError = viewModel.distributionError {
+                sectionErrorNotice(title: "Distribuição dos Life Groups", message: distributionError)
+            } else {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Distribuição dos Life Groups").font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
 
-            HStack(spacing: 8) {
-                ForEach(LifeGroupDistributionTab.allCases) { tab in
-                    FilterChip(label: tab.label, isSelected: viewModel.distributionTab == tab) {
-                        viewModel.distributionTab = tab
+                    HStack(spacing: 8) {
+                        ForEach(LifeGroupDistributionTab.allCases) { tab in
+                            FilterChip(label: tab.label, isSelected: viewModel.distributionTab == tab) {
+                                viewModel.distributionTab = tab
+                            }
+                        }
+                    }
+
+                    let buckets = viewModel.distributionForSelectedTab
+                    if buckets.isEmpty {
+                        PazBarChartEmptyView(message: "Nenhum life group com esse dado cadastrado.")
+                    } else {
+                        PazBarChartView(
+                            entries: buckets.map { PazBarChartEntry(label: $0.label, value: Double($0.count)) }
+                        )
                     }
                 }
-            }
-
-            let buckets = viewModel.distributionForSelectedTab
-            if buckets.isEmpty {
-                PazBarChartEmptyView(message: "Nenhum life group com esse dado cadastrado.")
-            } else {
-                PazBarChartView(
-                    entries: buckets.map { PazBarChartEntry(label: $0.label, value: Double($0.count)) }
-                )
+                .padding(16)
+                .glassCard(radius: PazSpacing.cardRadiusCompact)
             }
         }
-        .padding(16)
-        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 
     // MARK: States
@@ -317,12 +352,8 @@ struct LifeGroupAnalyticsView: View {
     }
 
     private var loadingState: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                Spacer().frame(height: 20)
-                ForEach(0..<3, id: \.self) { _ in SkeletonView().frame(height: 220).padding(.horizontal, 20) }
-                Spacer()
-            }
+        VStack(spacing: 16) {
+            ForEach(0..<3, id: \.self) { _ in SkeletonView().frame(height: 220) }
         }
     }
 }

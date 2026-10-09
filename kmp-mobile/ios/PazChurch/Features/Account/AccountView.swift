@@ -152,8 +152,7 @@ struct AccountView: View {
                             rowDivider
                             NavigationLink(destination: LifeGroupAnalyticsView(
                                 lifeGroupId: nil,
-                                analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository,
-                                churchRepository: IosAppContainer.shared.churchRepository
+                                analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository
                             )) {
                                 AccountRow(title: "Life Groups", icon: "chart.bar.fill", tint: Color(hex: "2E7D32"))
                             }

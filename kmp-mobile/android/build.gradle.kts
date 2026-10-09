@@ -155,4 +155,9 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.mockk)
     testImplementation(libs.arch.core.testing)
+    // Used to construct a real Ktor ClientRequestException (via a MockEngine
+    // response) in LifeGroupAnalyticsViewModelTest, so the 403-routing test
+    // exercises the exact exception type httpStatusCodeOrNull() recognizes
+    // instead of a generic exception it can never match.
+    testImplementation(libs.ktor.client.mock)
 }

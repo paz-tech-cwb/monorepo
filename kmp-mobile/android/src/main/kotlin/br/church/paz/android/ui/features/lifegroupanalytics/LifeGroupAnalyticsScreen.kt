@@ -156,17 +156,30 @@ fun LifeGroupAnalyticsScreen(
                         drawLayer(graphicsLayer)
                     },
             ) {
-                when {
-                    uiState.isLoading -> AnalyticsSkeleton()
-                    uiState.error != null -> AnalyticsError(uiState.error!!, viewModel::load)
-                    else ->
-                        AnalyticsContent(
-                            uiState = uiState,
-                            onYearSelected = viewModel::onYearSelected,
-                            onMonthSelected = viewModel::onMonthSelected,
-                            onLifeGroupSelected = viewModel::onLifeGroupSelected,
-                            onDistributionTabSelected = viewModel::onDistributionTabSelected,
-                        )
+                // The filter row is hoisted outside the loading/error branches
+                // below and stays mounted across filter-triggered reloads —
+                // only `isLoading` (the genuine first load) shows the full
+                // skeleton INSTEAD of the filters; a filter-triggered reload
+                // sets `isRefreshing` and keeps the filters + any already
+                // rendered content, with a lighter indicator in the content
+                // area (root cause C).
+                Column(Modifier.fillMaxSize()) {
+                    AnalyticsFilters(
+                        uiState = uiState,
+                        onYearSelected = viewModel::onYearSelected,
+                        onMonthSelected = viewModel::onMonthSelected,
+                        onLifeGroupSelected = viewModel::onLifeGroupSelected,
+                        modifier = Modifier.padding(PazSpacing.Lg),
+                    )
+                    when {
+                        uiState.isLoading -> AnalyticsSkeleton()
+                        uiState.error != null -> AnalyticsError(uiState.error!!, viewModel::load)
+                        else ->
+                            AnalyticsReportContent(
+                                uiState = uiState,
+                                onDistributionTabSelected = viewModel::onDistributionTabSelected,
+                            )
+                    }
                 }
             }
         }
@@ -174,27 +187,24 @@ fun LifeGroupAnalyticsScreen(
 }
 
 @Composable
-private fun AnalyticsContent(
+private fun AnalyticsReportContent(
     uiState: LifeGroupAnalyticsUiState,
-    onYearSelected: (Int) -> Unit,
-    onMonthSelected: (Int?) -> Unit,
-    onLifeGroupSelected: (Int?) -> Unit,
     onDistributionTabSelected: (DistributionTab) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(PazSpacing.Lg),
+        contentPadding = PaddingValues(horizontal = PazSpacing.Lg, vertical = PazSpacing.Sm),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
     ) {
-        item {
-            AnalyticsFilters(
-                uiState = uiState,
-                onYearSelected = onYearSelected,
-                onMonthSelected = onMonthSelected,
-                onLifeGroupSelected = onLifeGroupSelected,
-            )
+        // Lighter in-place indicator for a filter-triggered reload — never the
+        // full-screen skeleton, so the filters and content below stay mounted.
+        if (uiState.isRefreshing) {
+            item { PazCardSkeleton() }
         }
 
+        // The overview stat cards/donuts are fed by their own independent
+        // endpoint, unrelated to attendance/distribution, so they always
+        // render regardless of either of those failing.
         uiState.overview?.let { overview ->
             item { LifeGroupStatCards(overview) }
             item { LifeGroupOverviewCharts(overview) }
@@ -202,10 +212,12 @@ private fun AnalyticsContent(
 
         item {
             SectionCard(title = "Frequência de Presença") {
-                // Monthly rows are always zero-filled for all 12 months, so the
-                // list is never actually empty for that view — check every row
-                // has zero meetings instead of just checking list emptiness.
-                if (uiState.attendanceRows.all { it.meetingsCount == 0 }) {
+                if (uiState.attendanceError != null) {
+                    Text(uiState.attendanceError, style = MaterialTheme.typography.bodySmall)
+                } else if (uiState.attendanceRows.all { it.meetingsCount == 0 }) {
+                    // Monthly rows are always zero-filled for all 12 months, so the
+                    // list is never actually empty for that view — check every row
+                    // has zero meetings instead of just checking list emptiness.
                     PazBarChartEmpty("Nenhum registro de presença encontrado.")
                 } else {
                     PazBarChart(entries = uiState.attendanceRows.toChartEntries(uiState.month != null))
@@ -215,26 +227,30 @@ private fun AnalyticsContent(
 
         item {
             SectionCard(title = "Distribuição dos Life Groups") {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Xs),
-                ) {
-                    DistributionTab.entries.forEach { tab ->
-                        FilterChip(
-                            selected = uiState.distributionTab == tab,
-                            onClick = { onDistributionTabSelected(tab) },
-                            label = { Text(tab.label()) },
+                if (uiState.distributionError != null) {
+                    Text(uiState.distributionError, style = MaterialTheme.typography.bodySmall)
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Xs),
+                    ) {
+                        DistributionTab.entries.forEach { tab ->
+                            FilterChip(
+                                selected = uiState.distributionTab == tab,
+                                onClick = { onDistributionTabSelected(tab) },
+                                label = { Text(tab.label()) },
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(PazSpacing.Md))
+                    val bucketEntries = uiState.distributionForSelectedTab
+                    if (bucketEntries.isEmpty()) {
+                        PazBarChartEmpty("Nenhum life group com esse dado cadastrado.")
+                    } else {
+                        PazBarChart(
+                            entries = bucketEntries.map { PazBarChartEntry(it.label, it.count.toFloat()) },
                         )
                     }
-                }
-                Spacer(Modifier.height(PazSpacing.Md))
-                val bucketEntries = uiState.distributionForSelectedTab
-                if (bucketEntries.isEmpty()) {
-                    PazBarChartEmpty("Nenhum life group com esse dado cadastrado.")
-                } else {
-                    PazBarChart(
-                        entries = bucketEntries.map { PazBarChartEntry(it.label, it.count.toFloat()) },
-                    )
                 }
             }
         }
@@ -358,11 +374,12 @@ private fun AnalyticsFilters(
     onYearSelected: (Int) -> Unit,
     onMonthSelected: (Int?) -> Unit,
     onLifeGroupSelected: (Int?) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val currentYear = remember { LocalDate.now().year }
     val years = remember { (0..4).map { currentYear - it } }
 
-    Column(verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
         LazyRow(horizontalArrangement = Arrangement.spacedBy(PazSpacing.Xs)) {
             items(years) { year ->
                 FilterChip(
