@@ -1,7 +1,8 @@
-import { Type } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { IsInt, IsOptional, Min } from 'class-validator';
 
 export class DistributionQueryDto {
+  @Expose()
   @IsOptional()
   @Type(() => Number)
   @IsInt()

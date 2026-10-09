@@ -320,6 +320,7 @@ export class LifeGroupAnalyticsService {
         groups_by_sector: [] as { label: string; count: number }[],
         members_in_group: 0,
         members_total: 0,
+        life_groups: [] as { id: number; name: string }[],
       };
     }
 
@@ -328,20 +329,32 @@ export class LifeGroupAnalyticsService {
       .leftJoin('lg.sector', 'sector')
       .leftJoin('lg.users', 'user')
       .select('lg.id', 'id')
+      .addSelect('lg.name', 'name')
       .addSelect('lg.kids_count', 'kids_count')
       .addSelect('sector.name', 'sector_label')
       .addSelect('COUNT(DISTINCT user.id)', 'member_count');
     if (lifeGroupIds !== null) {
       groupsQb.where('lg.id IN (:...lifeGroupIds)', { lifeGroupIds });
     }
-    groupsQb.groupBy('lg.id').addGroupBy('sector.name');
+    groupsQb.groupBy('lg.id').addGroupBy('lg.name').addGroupBy('sector.name');
 
     const groupsRaw = await groupsQb.getRawMany<{
       id: string;
+      name: string;
       kids_count: string;
       sector_label: string | null;
       member_count: string;
     }>();
+
+    // Scoped list of life groups this caller is actually allowed to query
+    // via `?life_group_id=` on the attendance/distribution endpoints — the
+    // same `resolveLifeGroupIds` scoping used above (and that throws the
+    // 403 on those endpoints), so the dropdown built from this list can
+    // never surface a group that would 403. Mirrors `/api/life-groups`'
+    // unscoped `{id, name}` shape for the subset the caller can access.
+    const lifeGroupsList = groupsRaw
+      .map((g) => ({ id: Number(g.id), name: g.name }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
     const totalKids = groupsRaw.reduce(
       (sum, g) => sum + Number(g.kids_count ?? 0),
@@ -386,6 +399,7 @@ export class LifeGroupAnalyticsService {
             groups_by_sector: groupsBySector,
             members_in_group: 0,
             members_total: 0,
+            life_groups: lifeGroupsList,
           };
         }
         usersQb.where('lg.id IN (:...lifeGroupIds)', { lifeGroupIds });
@@ -413,6 +427,7 @@ export class LifeGroupAnalyticsService {
       groups_by_sector: groupsBySector,
       members_in_group: membersInGroup,
       members_total: membersTotal,
+      life_groups: lifeGroupsList,
     };
   }
 

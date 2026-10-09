@@ -93,7 +93,7 @@ val androidModule =
         viewModel { (lifeGroupId: Int, date: String) ->
             LifeGroupAttendanceEditorViewModel(lifeGroupId, date, get())
         }
-        viewModel { (lifeGroupId: Int?) -> LifeGroupAnalyticsViewModel(lifeGroupId, get(), get()) }
+        viewModel { (lifeGroupId: Int?) -> LifeGroupAnalyticsViewModel(lifeGroupId, get()) }
         viewModel { CasaDePazAnalyticsViewModel(get()) }
         viewModel { CasaDePazLessonsListViewModel(get()) }
         viewModel { (week: Int) -> CasaDePazLessonDetailViewModel(week, get()) }

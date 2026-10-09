@@ -6,6 +6,7 @@ import br.church.paz.shared.domain.model.LifeGroupAttendancePoint
 import br.church.paz.shared.domain.model.LifeGroupDistributionAnalytics
 import br.church.paz.shared.domain.model.LifeGroupDistributionBucket
 import br.church.paz.shared.domain.model.LifeGroupOverview
+import br.church.paz.shared.domain.model.LifeGroupSummary
 import br.church.paz.shared.domain.repository.LifeGroupAnalyticsRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -113,12 +114,21 @@ private data class LifeGroupDistributionAnalyticsDto(
 }
 
 @Serializable
+private data class LifeGroupSummaryDto(
+    val id: Int,
+    val name: String,
+) {
+    fun toDomain() = LifeGroupSummary(id = id, name = name)
+}
+
+@Serializable
 private data class LifeGroupOverviewDto(
     @SerialName("total_kids") val totalKids: Int = 0,
     @SerialName("avg_members_per_group") val avgMembersPerGroup: Double = 0.0,
     @SerialName("groups_by_sector") val groupsBySector: List<LifeGroupDistributionBucketDto> = emptyList(),
     @SerialName("members_in_group") val membersInGroup: Int = 0,
     @SerialName("members_total") val membersTotal: Int = 0,
+    @SerialName("life_groups") val lifeGroups: List<LifeGroupSummaryDto> = emptyList(),
 ) {
     fun toDomain() =
         LifeGroupOverview(
@@ -127,5 +137,6 @@ private data class LifeGroupOverviewDto(
             groupsBySector = groupsBySector.map { it.toDomain() },
             membersInGroup = membersInGroup,
             membersTotal = membersTotal,
+            lifeGroups = lifeGroups.map { it.toDomain() },
         )
 }

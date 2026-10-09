@@ -2,6 +2,7 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { GLOBAL_VALIDATION_PIPE_OPTIONS } from './common/constants/global-validation-pipe-options';
 import { BackendErrorMonitoringFilter } from './common/filters/backend-error-monitoring.filter';
 import { initializeErrorMonitoring } from './common/monitoring/error-monitoring';
 
@@ -19,14 +20,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: { excludeExtraneousValues: true },
-    }),
-  );
+  app.useGlobalPipes(new ValidationPipe(GLOBAL_VALIDATION_PIPE_OPTIONS));
 
   app.useGlobalInterceptors(
     new ClassSerializerInterceptor(app.get(Reflector), {
