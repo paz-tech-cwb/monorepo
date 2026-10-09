@@ -211,6 +211,8 @@ struct AccountView: View {
                                     .foregroundStyle(PazColors.slateLight)
                             }
                             .padding(.horizontal, 16).padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
@@ -236,7 +238,7 @@ struct AccountView: View {
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(user.name).font(PazTypography.titleMedium).foregroundStyle(PazColors.accent)
-                    Text(user.email).font(PazTypography.bodySmall).foregroundStyle(PazColors.pazSky).lineLimit(1)
+                    Text(user.email ?? "").font(PazTypography.bodySmall).foregroundStyle(PazColors.pazSky).lineLimit(1)
                     Spacer().frame(height: 2)
                     Text(user.role.displayName)
                         .font(PazTypography.labelSmall)
@@ -307,6 +309,8 @@ private struct AccountRow: View {
             Image(systemName: "chevron.right").font(.system(size: 13)).foregroundStyle(PazColors.slateLight)
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
     }
 }
 

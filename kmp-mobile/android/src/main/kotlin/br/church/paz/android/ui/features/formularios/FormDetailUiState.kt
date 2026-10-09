@@ -186,8 +186,7 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
                     options = listOf("Solteiro", "Casado", "Divorciado", "Viúvo"),
                     optionValues = listOf("solteiro", "casado", "divorciado", "viuvo"),
                 ),
-                // TODO: replace with sector picker when available
-                FormFieldDef("sector_id", "Setor", required = true, fieldType = FormFieldType.USER_PICKER),
+                FormFieldDef("sector_id", "Setor", required = true, fieldType = FormFieldType.SECTOR_PICKER),
                 FormFieldDef("life_group_id", "Life Group", fieldType = FormFieldType.LG_PICKER),
                 FormFieldDef("address", "Endereço"),
             )
@@ -232,7 +231,7 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
         FormType.sector_supervisor_report ->
             listOf(
                 FormFieldDef("date", "Data do Relatório", "DD/MM/YYYY", required = true, fieldType = FormFieldType.DATE),
-                FormFieldDef("sector_id", "Setor", required = true, fieldType = FormFieldType.USER_PICKER), // TODO: sector picker
+                FormFieldDef("sector_id", "Setor", required = true, fieldType = FormFieldType.SECTOR_PICKER),
                 FormFieldDef("life_groups_visited", "Grupos Visitados", fieldType = FormFieldType.LG_PICKER),
                 FormFieldDef("leaders_pastored", "Líderes Pastoreados", fieldType = FormFieldType.USER_MULTI_PICKER),
                 FormFieldDef("multiplication_candidates", "Candidatos à Multiplicação", fieldType = FormFieldType.USER_MULTI_PICKER),

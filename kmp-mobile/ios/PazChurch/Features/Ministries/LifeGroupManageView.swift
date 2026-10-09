@@ -184,7 +184,7 @@ private struct AddLifeGroupMemberView: View {
                 }) {
                     VStack(alignment: .leading) {
                         Text(user.name)
-                        Text(user.email).font(PazTypography.labelSmall).foregroundColor(.gray)
+                        Text(user.email ?? "").font(PazTypography.labelSmall).foregroundColor(.gray)
                     }
                 }
             }

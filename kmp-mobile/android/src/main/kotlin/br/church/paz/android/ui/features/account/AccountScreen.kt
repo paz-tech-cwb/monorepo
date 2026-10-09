@@ -316,7 +316,7 @@ private fun ProfileCard(
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(user.name, style = MaterialTheme.typography.titleMedium.copy(color = PazColors.Primary))
-            Text(user.email, style = MaterialTheme.typography.bodySmall.copy(color = PazColors.Accent), maxLines = 1)
+            Text(user.email ?: "", style = MaterialTheme.typography.bodySmall.copy(color = PazColors.Accent), maxLines = 1)
             Spacer(Modifier.height(4.dp))
             Box(
                 Modifier

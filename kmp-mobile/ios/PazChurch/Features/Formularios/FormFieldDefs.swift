@@ -172,7 +172,7 @@ extension FormType {
                     options: ["Solteiro", "Casado", "Divorciado", "Viúvo"],
                     optionValues: ["solteiro", "casado", "divorciado", "viuvo"]
                 ),
-                FormFieldDef("sector_id", "Setor", required: true, fieldType: .userPicker), // TODO: sector picker
+                FormFieldDef("sector_id", "Setor", required: true, fieldType: .sectorPicker),
                 FormFieldDef("life_group_id", "Life Group", fieldType: .lgPicker),
                 FormFieldDef("address", "Endereço"),
             ]
@@ -252,7 +252,7 @@ extension FormType {
         case .sectorSupervisorReport:
             [
                 FormFieldDef("date", "Data do Relatório", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef("sector_id", "Setor", required: true, fieldType: .userPicker), // TODO: sector picker
+                FormFieldDef("sector_id", "Setor", required: true, fieldType: .sectorPicker),
                 FormFieldDef("life_groups_visited", "Grupos Visitados", fieldType: .lgPicker),
                 FormFieldDef("leaders_pastored", "Líderes Pastoreados", fieldType: .userMultiPicker),
                 FormFieldDef("multiplication_candidates", "Candidatos à Multiplicação", fieldType: .userMultiPicker),

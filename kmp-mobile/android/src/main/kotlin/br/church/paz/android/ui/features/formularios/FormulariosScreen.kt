@@ -25,9 +25,11 @@ import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.DynamicForm
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,6 +52,7 @@ import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.FormCatalogItem
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FormulariosScreen(
     navController: NavController,
@@ -115,11 +118,17 @@ fun FormulariosScreen(
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(MaterialTheme.colorScheme.background),
         ) {
-            when {
-                uiState.isLoading -> LoadingState()
-                uiState.error != null -> ErrorState(error = uiState.error!!, onRetry = viewModel::onRetry)
-                uiState.forms.isEmpty() -> EmptyState()
-                else -> ContentState(forms = uiState.forms, onFormTap = viewModel::onFormTap)
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = { viewModel.loadForms(forceRefresh = true) },
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                when {
+                    uiState.isLoading -> LoadingState()
+                    uiState.error != null -> ErrorState(error = uiState.error!!, onRetry = viewModel::onRetry)
+                    uiState.forms.isEmpty() -> EmptyState()
+                    else -> ContentState(forms = uiState.forms, onFormTap = viewModel::onFormTap)
+                }
             }
         }
     }

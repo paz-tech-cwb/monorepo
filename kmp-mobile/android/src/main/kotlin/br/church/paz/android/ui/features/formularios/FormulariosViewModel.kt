@@ -24,16 +24,18 @@ class FormulariosViewModel(
         loadForms()
     }
 
-    private fun loadForms() {
+    fun loadForms(forceRefresh: Boolean = false) {
+        if (forceRefresh) _uiState.update { it.copy(isRefreshing = true) }
         viewModelScope.launch {
-            runCatching { formsRepository.getCatalog() }
-                .onSuccess { forms ->
-                    _uiState.update { it.copy(forms = forms, isLoading = false) }
-                }.onFailure { e ->
-                    _uiState.update {
-                        it.copy(isLoading = false, error = e.message ?: "Erro ao carregar formulários")
-                    }
+            runCatching {
+                if (forceRefresh) formsRepository.refreshCatalog() else formsRepository.getCatalog()
+            }.onSuccess { forms ->
+                _uiState.update { it.copy(forms = forms, isLoading = false, isRefreshing = false) }
+            }.onFailure { e ->
+                _uiState.update {
+                    it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Erro ao carregar formulários")
                 }
+            }
         }
     }
 
@@ -56,6 +58,6 @@ class FormulariosViewModel(
 
     fun onRetry() {
         _uiState.update { it.copy(isLoading = true, error = null) }
-        loadForms()
+        loadForms(forceRefresh = true)
     }
 }
