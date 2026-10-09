@@ -311,54 +311,19 @@ struct HomeView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 13)
 
-            let eventsToShow = viewModel.isAgendaExpanded ? viewModel.fullAgendaEvents : nextSevenDaysEvents
+            let eventsToShow = Array(nextSevenDaysEvents.prefix(7))
 
-            if !viewModel.isAgendaExpanded, nextSevenDaysEvents.isEmpty {
+            if eventsToShow.isEmpty {
                 // No events in the next 7 days — keep only the entry point to
-                // the full agenda ("Ver tudo" above), without the detailed
-                // week-list view or expand toggle.
+                // the full agenda ("Ver tudo" above).
                 Spacer().frame(height: 4)
             } else {
-                if viewModel.isAgendaExpanded, viewModel.isLoadingFullAgenda {
-                    VStack(spacing: 12) {
-                        ForEach(0..<3, id: \.self) { _ in
-                            HomeSkeletonView().frame(height: 60)
-                        }
+                VStack(spacing: 12) {
+                    ForEach(eventsToShow, id: \.id) { event in
+                        EventCardView(event: event)
                     }
-                    .padding(.horizontal, 16)
-                } else if viewModel.isAgendaExpanded, let fullAgendaLoadError = viewModel.fullAgendaLoadError {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Não foi possível carregar a agenda completa.")
-                            .font(PazTypography.bodyMedium)
-                            .foregroundStyle(PazColors.ink)
-                        Button(action: { Task { await viewModel.loadFullAgenda() } }) {
-                            Text("Tentar novamente")
-                                .font(PazTypography.labelMedium)
-                                .foregroundStyle(PazColors.accent)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-                    .background(PazColors.surface, in: RoundedRectangle(cornerRadius: 14))
-                    .padding(.horizontal, 16)
-                } else {
-                    VStack(spacing: 12) {
-                        ForEach(eventsToShow, id: \.id) { event in
-                            EventCardView(event: event)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                }
-
-                Button(action: { withAnimation { viewModel.onToggleAgendaExpanded() } }) {
-                    Text(viewModel.isAgendaExpanded ? "Ver menos" : "Ver próximos eventos")
-                        .font(PazTypography.labelMedium)
-                        .foregroundStyle(PazColors.accent)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 8)
             }
         }
     }
@@ -394,12 +359,21 @@ private struct FeaturedCardView: View {
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
+            // Forces the ZStack to adopt the bounded size proposed by the
+            // caller's external `.frame(width:height:)` *before* layout,
+            // rather than letting `scaledToFill()`'s intrinsic image size
+            // drive the ZStack's own size (which pushed the rounded clip
+            // shape off the visible bounds when only one banner was shown).
+            Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
+
             if !imageUrl.isEmpty, let url = URL(string: imageUrl) {
                 KFImage(url)
                     .resizable()
                     .placeholder { gradient }
                     .fade(duration: 0.2)
                     .scaledToFill()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
                     .overlay(
                         LinearGradient(
                             colors: [.clear, .black.opacity(0.6)],
@@ -464,6 +438,7 @@ private struct CrossWatermarkView: View {
 private struct DizimosPixButton: View {
     let pixKey: String?
     @State private var copied = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Button {
@@ -478,8 +453,16 @@ private struct DizimosPixButton: View {
                 Image(systemName: copied ? "checkmark" : "doc.on.doc.fill")
                 Text(copied ? "Copiado!" : "Copiar PIX").font(PazTypography.titleMedium)
             }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: PazSpacing.pillButtonHeight)
+            .background {
+                Capsule().fill(PazMaterial.glass(for: colorScheme))
+                Capsule().fill(PazColors.accent.opacity(0.78))
+            }
+            .clipShape(Capsule())
         }
-        .buttonStyle(.pazPillPrimary)
+        .buttonStyle(.plain)
     }
 }
 

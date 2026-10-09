@@ -33,6 +33,9 @@ export class LifeGroup {
   @Column({ type: 'varchar', length: 255, nullable: true })
   location: string | null;
 
+  @Column({ name: 'image_url', type: 'text', nullable: true })
+  imageUrl: string | null;
+
   // Geocoded server-side from `location` on create/update (see
   // LifeGroupsService.geocodeLocation) — powers the map discovery view.
   @Column({ type: 'double precision', nullable: true })

@@ -1,5 +1,11 @@
 import { Expose } from 'class-transformer';
-import { IsString, IsOptional, IsInt, MinLength } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsInt,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateLifeGroupDto {
   @Expose()
@@ -26,6 +32,12 @@ export class CreateLifeGroupDto {
   @IsOptional()
   @IsString()
   location?: string | null;
+
+  @Expose()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  image_url?: string | null;
 
   @Expose()
   @IsOptional()

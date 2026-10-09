@@ -8,12 +8,11 @@ import {
   defaultCasaDePazFilterState,
   type CasaDePazFilterState,
 } from "@/components/casa-de-paz-analytics/casa-de-paz-analytics-filters"
-import { CasaDePazTrendChart } from "@/components/casa-de-paz-analytics/casa-de-paz-trend-chart"
-import { CasaDePazBreakdownCharts } from "@/components/casa-de-paz-analytics/casa-de-paz-breakdown-charts"
+import { CasaDePazTable } from "@/components/casa-de-paz-analytics/casa-de-paz-table"
 import { CasaDePazStatCards } from "@/components/casa-de-paz-analytics/casa-de-paz-stat-cards"
 import { formatComparisonLabel } from "@/components/casa-de-paz-analytics/growth-badge"
 
-export function CasaDePazReport() {
+export function CasaDePazRegistrosManagement() {
   const [filters, setFilters] = useState<CasaDePazFilterState>(defaultCasaDePazFilterState())
 
   const { data, isLoading, isError } = useCasaDePazSummary(filters)
@@ -27,21 +26,14 @@ export function CasaDePazReport() {
       {isError ? (
         <Card>
           <CardContent className="py-8 text-center text-sm text-destructive">
-            Não foi possível carregar o relatório de Casa de Paz.
+            Não foi possível carregar os registros de Casa de Paz.
           </CardContent>
         </Card>
       ) : (
         <>
           <CasaDePazStatCards data={data} isLoading={isLoading} comparisonLabel={comparisonLabel} />
 
-          <CasaDePazTrendChart series={data?.series ?? []} isLoading={isLoading} isError={isError} />
-
-          <CasaDePazBreakdownCharts
-            bySector={data?.by_sector ?? []}
-            byDay={data?.by_day ?? []}
-            isLoading={isLoading}
-            isError={isError}
-          />
+          <CasaDePazTable filters={filters} range={data?.range} />
         </>
       )}
     </div>

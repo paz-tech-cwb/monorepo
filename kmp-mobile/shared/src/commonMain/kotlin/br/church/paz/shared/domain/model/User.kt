@@ -42,10 +42,15 @@ enum class UserRole {
     @SerialName("life_group_leader") life_group_leader,
     @SerialName("member")         member,
     @SerialName("guest")          guest,
+    @SerialName("discipler")      discipler,
 }
 
 val UserRole.isLeader: Boolean
-    get() = this != UserRole.member && this != UserRole.guest
+    get() = this == UserRole.admin ||
+        this == UserRole.pastor ||
+        this == UserRole.area_leader ||
+        this == UserRole.sector_leader ||
+        this == UserRole.life_group_leader
 
 val UserRole.displayName: String
     get() = when (this) {
@@ -56,4 +61,5 @@ val UserRole.displayName: String
         UserRole.life_group_leader  -> "Líder de Life Group"
         UserRole.member             -> "Membro"
         UserRole.guest              -> "Convidado"
+        UserRole.discipler          -> "Discipulador"
     }

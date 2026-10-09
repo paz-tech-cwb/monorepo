@@ -1,8 +1,12 @@
 import { Controller, Get, UseGuards, SerializeOptions } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminDashboardService } from './admin-dashboard.service';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles(...LEADERSHIP_ROLES)
 @SerializeOptions({
   strategy: 'exposeAll',
   excludeExtraneousValues: false,

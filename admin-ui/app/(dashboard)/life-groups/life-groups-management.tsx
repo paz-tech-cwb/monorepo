@@ -44,6 +44,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { FormDrawer } from "@/components/ui/form-drawer"
+import { ImageField } from "@/components/ui/image-field"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import {
   Search,
@@ -98,6 +99,7 @@ const MEETING_DAYS = [
 interface LifeGroupFormData {
   name: string
   location: string
+  image_url: string
   meeting_day: string
   meeting_time: string
   leader_id: string   // string for select value; converted to number on submit
@@ -108,6 +110,7 @@ interface LifeGroupFormData {
 const EMPTY_FORM: LifeGroupFormData = {
   name: "",
   location: "",
+  image_url: "",
   meeting_day: "",
   meeting_time: "",
   leader_id: "",
@@ -119,6 +122,7 @@ function groupToForm(g: LifeGroup): LifeGroupFormData {
   return {
     name: g.name,
     location: g.location ?? "",
+    image_url: g.image_url ?? "",
     meeting_day: g.meeting_day ?? "",
     meeting_time: g.meeting_time ?? "",
     leader_id: g.leader_id != null ? String(g.leader_id) : "",
@@ -131,6 +135,7 @@ function formToRequest(f: LifeGroupFormData): CreateLifeGroupRequest {
   return {
     name: f.name.trim(),
     location: f.location.trim() || null,
+    image_url: f.image_url || null,
     meeting_day: f.meeting_day || null,
     meeting_time: f.meeting_time || null,
     leader_id: f.leader_id ? Number(f.leader_id) : null,
@@ -492,8 +497,20 @@ export function LifeGroupsManagement() {
                 {filteredGroups.map((group) => (
                   <TableRow key={group.id}>
                     <TableCell>
-                      <p className="font-medium">{group.name}</p>
-                      <p className="text-xs text-muted-foreground">{group.location ?? ""}</p>
+                      <div className="flex items-center gap-2">
+                        {group.image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={group.image_url}
+                            alt=""
+                            className="h-8 w-8 rounded-md object-cover shrink-0"
+                          />
+                        ) : null}
+                        <div>
+                          <p className="font-medium">{group.name}</p>
+                          <p className="text-xs text-muted-foreground">{group.location ?? ""}</p>
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -661,6 +678,12 @@ export function LifeGroupsManagement() {
               </SelectContent>
             </Select>
           </div>
+
+          <ImageField
+            value={form.image_url}
+            onChange={(url) => setForm((f) => ({ ...f, image_url: url }))}
+            category="life-groups"
+          />
         </div>
       </FormDrawer>
 

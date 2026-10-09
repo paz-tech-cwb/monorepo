@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +49,10 @@ export function CasaDePazTable({ filters, range }: CasaDePazTableProps) {
 
   const [editing, setEditing] = useState<CasaDePazReportSubmission | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  // Client-side refinements on top of the summary's date range — narrows the
+  // record list itself rather than the stat cards/charts above.
+  const [facilitatorFilter, setFacilitatorFilter] = useState("")
+  const [monthFilter, setMonthFilter] = useState("")
 
   const sectorMap = useMemo(() => new Map(sectors.map((s) => [s.id, s.name])), [sectors])
 
@@ -63,14 +69,43 @@ export function CasaDePazTable({ filters, range }: CasaDePazTableProps) {
   }
 
   const filtered = useMemo(() => {
-    if (!range) return submissions
-    return submissions
-      .filter((s) => s.date >= range.from && s.date <= range.to)
-      .sort((a, b) => (a.date < b.date ? 1 : -1))
-  }, [submissions, range])
+    let list = range
+      ? submissions.filter((s) => s.date >= range.from && s.date <= range.to)
+      : submissions
+    const facilitatorTerm = facilitatorFilter.trim().toLowerCase()
+    if (facilitatorTerm) {
+      list = list.filter((s) => s.facilitator.toLowerCase().includes(facilitatorTerm))
+    }
+    if (monthFilter) {
+      list = list.filter((s) => s.date.startsWith(monthFilter))
+    }
+    return [...list].sort((a, b) => (a.date < b.date ? 1 : -1))
+  }, [submissions, range, facilitatorFilter, monthFilter])
 
   return (
     <Card>
+      <div className="flex flex-wrap items-end gap-3 p-4 pb-0">
+        <div className="space-y-1.5">
+          <Label htmlFor="cdp-table-facilitator">Facilitador</Label>
+          <Input
+            id="cdp-table-facilitator"
+            placeholder="Buscar por facilitador..."
+            value={facilitatorFilter}
+            onChange={(e) => setFacilitatorFilter(e.target.value)}
+            className="w-56"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="cdp-table-month">Mês</Label>
+          <Input
+            id="cdp-table-month"
+            type="month"
+            value={monthFilter}
+            onChange={(e) => setMonthFilter(e.target.value)}
+            className="w-40"
+          />
+        </div>
+      </div>
       {isLoading ? (
         <div className="p-4">
           <TableSkeleton rows={6} columns={COLUMN_COUNT} />

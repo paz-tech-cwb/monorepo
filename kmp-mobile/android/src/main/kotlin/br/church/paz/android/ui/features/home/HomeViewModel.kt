@@ -101,41 +101,4 @@ class HomeViewModel(
     fun onEventTapped(eventId: String) {
         viewModelScope.launch { _effect.send(HomeEffect.NavigateToAgenda(eventId)) }
     }
-
-    /**
-     * Expands the home agenda section into the full upcoming (recurrence-
-     * expanded) agenda, loading it lazily on first expand via the same
-     * paginated AgendaRepository the full Agenda list screen uses.
-     */
-    fun onToggleAgendaExpanded() {
-        val expanding = !_uiState.value.isAgendaExpanded
-        _uiState.update { it.copy(isAgendaExpanded = expanding) }
-        if (expanding && _uiState.value.fullAgendaEvents.isEmpty()) {
-            loadFullAgenda()
-        }
-    }
-
-    private fun loadFullAgenda() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingFullAgenda = true, fullAgendaLoadError = null) }
-            runCatching { agendaRepository.getEvents(page = 1, limit = 50) }
-                .onSuccess { events ->
-                    _uiState.update {
-                        it.copy(isLoadingFullAgenda = false, fullAgendaEvents = events, fullAgendaLoadError = null)
-                    }
-                }.onFailure { e ->
-                    Log.e("HomeVM", "loadFullAgenda failed", e)
-                    _uiState.update {
-                        it.copy(
-                            isLoadingFullAgenda = false,
-                            fullAgendaLoadError = e.message ?: e::class.simpleName ?: "Erro desconhecido",
-                        )
-                    }
-                }
-        }
-    }
-
-    fun onRetryFullAgenda() {
-        loadFullAgenda()
-    }
 }

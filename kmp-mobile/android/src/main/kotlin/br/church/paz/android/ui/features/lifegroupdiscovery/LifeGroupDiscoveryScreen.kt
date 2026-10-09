@@ -6,6 +6,8 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,16 +17,21 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.FilterAlt
 import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.Map
-import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,14 +46,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -123,6 +134,14 @@ fun LifeGroupDiscoveryScreen(
                                     contentDescription = if (uiState.showMap) "Ver lista" else "Ver mapa",
                                 )
                             }
+                            // "Com crianças" filter + sort, relocated next to the
+                            // map toggle rather than living in the (now
+                            // scroll-collapsible) search header.
+                            FilterSortMenu(
+                                uiState = uiState,
+                                onKidsOnlyToggled = viewModel::onKidsOnlyToggled,
+                                onSortSelected = viewModel::onSortOptionSelected,
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
@@ -143,14 +162,24 @@ fun LifeGroupDiscoveryScreen(
                             modifier = Modifier.fillMaxSize(),
                             onMarkerTap = { viewModel.onLifeGroupTap(it.id.toString()) },
                         )
-                    else ->
+                    else -> {
+                        val listState = rememberLazyListState()
+                        // The search field stays mounted at all times (never
+                        // conditionally removed, per plan) — only its
+                        // wrapping container's height animates on scroll, so a
+                        // debounced search reload never loses keyboard focus.
+                        val isSearchBarVisible by remember {
+                            derivedStateOf {
+                                listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 24
+                            }
+                        }
+
                         Column(Modifier.fillMaxSize()) {
-                            DiscoveryFilterBar(
+                            CollapsingSearchHeader(
                                 uiState = uiState,
+                                isVisible = isSearchBarVisible,
                                 onSearchChanged = viewModel::onSearchTextChanged,
                                 onSearchCleared = viewModel::onSearchCleared,
-                                onKidsOnlyToggled = viewModel::onKidsOnlyToggled,
-                                onSortSelected = viewModel::onSortOptionSelected,
                             )
                             when {
                                 uiState.error != null -> InlineErrorState(uiState.error!!, viewModel::onRetry)
@@ -168,11 +197,13 @@ fun LifeGroupDiscoveryScreen(
                                             groups = uiState.displayedGroups,
                                             sortOption = uiState.sortOption,
                                             userLocation = uiState.userLocation,
+                                            listState = listState,
                                             onTap = viewModel::onLifeGroupTap,
                                         )
                                     }
                             }
                         }
+                    }
                 }
             }
         }
@@ -184,10 +215,12 @@ private fun DiscoveryList(
     groups: List<LifeGroup>,
     sortOption: LifeGroupSortOption,
     userLocation: Pair<Double, Double>?,
+    listState: LazyListState,
     onTap: (String) -> Unit,
 ) {
     val isSortedByDistance = sortOption == LifeGroupSortOption.DISTANCE && userLocation != null
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(PazSpacing.Lg),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
@@ -216,72 +249,105 @@ private fun DiscoveryList(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Search field + the `hasLocation` hint — the "Com crianças" filter and sort
+ * control now live in the top app bar next to the map toggle (see
+ * [FilterSortMenu]). The search field itself is always composed (never
+ * conditionally removed); only the wrapping [Box]'s height is animated based
+ * on [isVisible], so a debounced search reload never loses keyboard focus.
+ */
 @Composable
-private fun DiscoveryFilterBar(
+private fun CollapsingSearchHeader(
     uiState: LifeGroupDiscoveryUiState,
+    isVisible: Boolean,
     onSearchChanged: (String) -> Unit,
     onSearchCleared: () -> Unit,
+) {
+    var naturalHeightPx by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
+    val targetHeight = if (isVisible) with(density) { naturalHeightPx.toDp() } else 0.dp
+    val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = tween(200), label = "searchHeader")
+
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(max = animatedHeight)
+            .clipToBounds(),
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .wrapContentHeight(unbounded = true)
+                .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Sm)
+                .onGloballyPositioned { naturalHeightPx = it.size.height },
+        ) {
+            OutlinedTextField(
+                value = uiState.searchText,
+                onValueChange = onSearchChanged,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Buscar por nome ou líder") },
+                singleLine = true,
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (uiState.searchText.isNotEmpty()) {
+                        IconButton(onClick = onSearchCleared) {
+                            Icon(Icons.Filled.Clear, contentDescription = "Limpar busca")
+                        }
+                    }
+                },
+            )
+
+            if (!uiState.hasLocation) {
+                Spacer(Modifier.height(PazSpacing.Xs))
+                Text(
+                    "Ative a localização para ordenar por distância",
+                    style =
+                        MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        ),
+                )
+            }
+        }
+    }
+}
+
+/** "Com crianças" filter + sort, hosted as a top app bar action next to the map toggle. */
+@Composable
+private fun FilterSortMenu(
+    uiState: LifeGroupDiscoveryUiState,
     onKidsOnlyToggled: (Boolean) -> Unit,
     onSortSelected: (LifeGroupSortOption) -> Unit,
 ) {
-    var sortMenuExpanded by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
 
-    Column(Modifier.padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Sm)) {
-        OutlinedTextField(
-            value = uiState.searchText,
-            onValueChange = onSearchChanged,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Buscar por nome ou líder") },
-            singleLine = true,
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-            trailingIcon = {
-                if (uiState.searchText.isNotEmpty()) {
-                    IconButton(onClick = onSearchCleared) {
-                        Icon(Icons.Filled.Clear, contentDescription = "Limpar busca")
-                    }
-                }
-            },
-        )
-
-        Spacer(Modifier.height(PazSpacing.Sm))
-
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                if (uiState.kidsOnly) Icons.Filled.FilterAlt else Icons.Outlined.FilterAlt,
+                contentDescription = "Filtrar e ordenar",
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = PazSpacing.Md, vertical = PazSpacing.Xs),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text("Com crianças", style = MaterialTheme.typography.labelSmall)
                 Switch(checked = uiState.kidsOnly, onCheckedChange = onKidsOnlyToggled)
             }
-
-            Box {
-                IconButton(onClick = { sortMenuExpanded = true }) {
-                    Icon(Icons.Outlined.Sort, contentDescription = "Ordenar: ${uiState.sortOption.label}")
-                }
-                DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
-                    uiState.availableSortOptions.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(option.label) },
-                            onClick = {
-                                onSortSelected(option)
-                                sortMenuExpanded = false
-                            },
-                        )
-                    }
-                }
+            androidx.compose.material3.HorizontalDivider()
+            uiState.availableSortOptions.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.label) },
+                    onClick = {
+                        onSortSelected(option)
+                        expanded = false
+                    },
+                )
             }
-        }
-
-        if (!uiState.hasLocation) {
-            Text(
-                "Ative a localização para ordenar por distância",
-                style =
-                    MaterialTheme.typography.labelSmall.copy(
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    ),
-            )
         }
     }
 }

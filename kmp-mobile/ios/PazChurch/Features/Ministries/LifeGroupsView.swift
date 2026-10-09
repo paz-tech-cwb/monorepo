@@ -111,6 +111,11 @@ struct AllLifeGroupsContentView: View {
     /// Debounces `searchText` → repository calls so every keystroke doesn't
     /// fire a network request.
     @State private var searchTask: Task<Void, Never>?
+    /// Drives the collapsing/sticky reveal of `searchBar` as the list
+    /// scrolls — the search field itself stays mounted at all times (never
+    /// conditionally removed) so a debounced search reload never loses
+    /// keyboard focus; only its wrapping container's height/opacity animate.
+    @State private var isSearchBarVisible = true
 
     let churchRepository: ChurchRepository
 
@@ -197,7 +202,14 @@ struct AllLifeGroupsContentView: View {
                 LifeGroupsMapView(lifeGroups: displayedGroups, locationProvider: locationProvider)
             } else {
                 VStack(spacing: 0) {
-                    filterBar
+                    // Always mounted (see `isSearchBarVisible` doc comment) —
+                    // only its height/opacity are animated on scroll.
+                    searchBar
+                        .frame(maxHeight: isSearchBarVisible ? nil : 0)
+                        .opacity(isSearchBarVisible ? 1 : 0)
+                        .clipped()
+                        .animation(.easeInOut(duration: 0.2), value: isSearchBarVisible)
+
                     if let error = viewModel.error {
                         inlineError(error)
                     } else if viewModel.isSearching {
@@ -224,6 +236,11 @@ struct AllLifeGroupsContentView: View {
                             }
                             .padding(.horizontal, PazSpacing.lg)
                         }
+                        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                            geometry.contentOffset.y
+                        } action: { _, newOffset in
+                            isSearchBarVisible = newOffset < 24
+                        }
                         .refreshable { await viewModel.load(search: searchText) }
                     }
                 }
@@ -249,6 +266,24 @@ struct AllLifeGroupsContentView: View {
                     }
                     .accessibilityLabel(showMap ? "Ver lista" : "Ver mapa")
                 }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    // "Com crianças" filter + sort, relocated next to the
+                    // map toggle rather than living in the (now
+                    // scroll-collapsible) search header.
+                    Menu {
+                        Toggle("Com crianças", isOn: $kidsSpaceOnly)
+
+                        Picker("Ordenar", selection: $sortOption) {
+                            ForEach(availableSortOptions) { option in
+                                Text(option.rawValue).tag(option)
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "line.3.horizontal.decrease.circle\(kidsSpaceOnly ? ".fill" : "")")
+                    }
+                    .accessibilityLabel("Filtrar e ordenar")
+                }
             }
         }
     }
@@ -261,7 +296,12 @@ struct AllLifeGroupsContentView: View {
         hasLocation ? LifeGroupSortOption.allCases : [.name]
     }
 
-    private var filterBar: some View {
+    /// Search field + the `hasLocation` hint — the "Com crianças" filter and
+    /// sort control now live in the toolbar next to the map toggle (see
+    /// `.toolbar` above). Kept mounted at all times; the caller animates its
+    /// height/opacity on scroll instead of unmounting it, so a debounced
+    /// search reload never loses keyboard focus.
+    private var searchBar: some View {
         VStack(spacing: PazSpacing.sm) {
             HStack(spacing: PazSpacing.sm) {
                 Image(systemName: "magnifyingglass")
@@ -291,24 +331,6 @@ struct AllLifeGroupsContentView: View {
             }
             .padding(PazSpacing.md)
             .glassCard(radius: PazSpacing.cardRadiusCompact)
-
-            HStack(spacing: PazSpacing.sm) {
-                Toggle(isOn: $kidsSpaceOnly) {
-                    Text("Com crianças")
-                        .font(PazTypography.labelSmall)
-                }
-                .toggleStyle(.switch)
-
-                Spacer()
-
-                Picker("Ordenar", selection: $sortOption) {
-                    ForEach(availableSortOptions) { option in
-                        Text(option.rawValue).tag(option)
-                    }
-                }
-                .pickerStyle(.menu)
-            }
-            .padding(.horizontal, PazSpacing.xs)
 
             if !hasLocation {
                 Text("Ative a localização para ordenar por distância")
