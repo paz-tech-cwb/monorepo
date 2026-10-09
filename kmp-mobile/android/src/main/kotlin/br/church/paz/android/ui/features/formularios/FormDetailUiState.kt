@@ -91,12 +91,24 @@ data class FormDetailUiState(
     val submitSuccess: Boolean = false, // true after a successful submit — shows the success screen
     val guestEntries: List<CasaDePazGuestDraft> = emptyList(), // Casa de Paz roster — kept out of `fields`
     val canAccessCasaDePazLessons: Boolean = false, // leaders only — gates the Casa de Paz lessons shortcut
-)
+    /** Baseline snapshot of `fields` captured right after [FormDetailViewModel.loadForm] seeds
+     * them (e.g. `date` defaults to today) — used to derive [isDirty] without flagging
+     * untouched, seeded values as unsaved data. */
+    val initialFields: Map<String, String> = emptyMap(),
+) {
+    /** True once the user has entered any data diverging from the seeded baseline, or added
+     * any Casa de Paz guest entries — gates the close-button discard confirmation. */
+    val isDirty: Boolean
+        get() = fields != initialFields || guestEntries.isNotEmpty()
+}
 
 sealed class FormDetailEffect {
     data object SubmitSuccess : FormDetailEffect()
 
     data object NavigateBack : FormDetailEffect()
+
+    /** Signals the screen to show the discard-changes confirmation dialog. */
+    data object RequestDiscardConfirmation : FormDetailEffect()
 }
 
 fun FormType.fieldDefs(): List<FormFieldDef> =

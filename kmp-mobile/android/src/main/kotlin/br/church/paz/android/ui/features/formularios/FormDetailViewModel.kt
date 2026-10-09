@@ -68,6 +68,7 @@ class FormDetailViewModel(
                             form = form,
                             isLoading = false,
                             fields = initialFields,
+                            initialFields = initialFields,
                             canAccessCasaDePazLessons = isLeader,
                         )
                     }
@@ -407,6 +408,17 @@ class FormDetailViewModel(
 
     fun onBack() {
         viewModelScope.launch { _effect.send(FormDetailEffect.NavigateBack) }
+    }
+
+    /** Routes both the close button and the back arrow/hardware back (once floored at the
+     * first question) through the same discard check — shows a confirmation dialog when
+     * dirty, else navigates back immediately. */
+    fun onRequestDiscard() {
+        if (_uiState.value.isDirty) {
+            viewModelScope.launch { _effect.send(FormDetailEffect.RequestDiscardConfirmation) }
+        } else {
+            onBack()
+        }
     }
 
     private fun Map<String, String>.req(key: String) = get(key)?.trim() ?: ""

@@ -60,6 +60,8 @@
 		71ABCCDA3D92687839B11506 /* FormDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C3499C673982AA1C0FA8EA5 /* FormDetailView.swift */; };
 		7299DFC19F36C6241FABA1C9 /* LifeGroupStudyEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF38BCC6E4E462431FED6BFB /* LifeGroupStudyEditorView.swift */; };
 		79E078FB98E409C2ED6D2FFB /* PazMeshBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE04531C680EFE7961677C01 /* PazMeshBackground.swift */; };
+		07C86DB8C53D4AD8A0EA49A4 /* PazKeyboardAccessoryBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7C6BCE28A44CC2A9DBD107 /* PazKeyboardAccessoryBar.swift */; };
+		D1BF654FC5314AFBA806000F /* InteractivePopGestureDisabler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90A9A1EBFD7A48EE9E25DF07 /* InteractivePopGestureDisabler.swift */; };
 		81241EF8344367972B2409AF /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0E0ECD6F71C3A9C1F38E441 /* HomeViewModel.swift */; };
 		841A418263A65AA0B6FDC65C /* LifeGroupsMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5F29167AE0FBA90438E386F /* LifeGroupsMapView.swift */; };
 		8696DCD7837887595806B611 /* SkeletonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36DB133997051B82A7D0D38D /* SkeletonView.swift */; };
@@ -206,6 +208,8 @@
 		BD370DAA15EFA1156F789914 /* SectorPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectorPickerSheet.swift; sourceTree = "<group>"; };
 		BDF386921E4FE34F3D834257 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
 		BE04531C680EFE7961677C01 /* PazMeshBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazMeshBackground.swift; sourceTree = "<group>"; };
+		7B7C6BCE28A44CC2A9DBD107 /* PazKeyboardAccessoryBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazKeyboardAccessoryBar.swift; sourceTree = "<group>"; };
+		90A9A1EBFD7A48EE9E25DF07 /* InteractivePopGestureDisabler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractivePopGestureDisabler.swift; sourceTree = "<group>"; };
 		BE4B8D8AE9B398AA3A77DA29 /* AgendaDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgendaDetailView.swift; sourceTree = "<group>"; };
 		BF28DC87154DE4489A6243FF /* AcademyViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcademyViewModel.swift; sourceTree = "<group>"; };
 		C0E0ECD6F71C3A9C1F38E441 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
@@ -408,6 +412,8 @@
 				956C0B652EACA4EB866BDD9C /* PazGoldBadge.swift */,
 				CAC853F6E892CF7A2AE4283F /* PazIconContainer.swift */,
 				BE04531C680EFE7961677C01 /* PazMeshBackground.swift */,
+				7B7C6BCE28A44CC2A9DBD107 /* PazKeyboardAccessoryBar.swift */,
+				90A9A1EBFD7A48EE9E25DF07 /* InteractivePopGestureDisabler.swift */,
 				54FA272FF1C57FE575B4E7E0 /* PazPillButtonStyle.swift */,
 				F62DDEA0026352360D73E873 /* PazPillChip.swift */,
 				117CD9D81AE8526E2FA4B0A7 /* PazStatCard.swift */,
@@ -781,6 +787,8 @@
 				96BF8A72553894BA74F6934B /* PazIconContainer.swift in Sources */,
 				DD355395C1DDEC6848A616DE /* PazMaterial.swift in Sources */,
 				79E078FB98E409C2ED6D2FFB /* PazMeshBackground.swift in Sources */,
+				07C86DB8C53D4AD8A0EA49A4 /* PazKeyboardAccessoryBar.swift in Sources */,
+				D1BF654FC5314AFBA806000F /* InteractivePopGestureDisabler.swift in Sources */,
 				16FDB9DAAF18AC484D49A084 /* PazPillButtonStyle.swift in Sources */,
 				8BBB7655494EE2891298CD78 /* PazPillChip.swift in Sources */,
 				372C31E22C76E58FF5E8FB83 /* PazSpacing.swift in Sources */,

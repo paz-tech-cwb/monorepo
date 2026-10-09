@@ -65,6 +65,9 @@ fun FormDetailScreen(
                     navController.popBackStack()
                 }
                 FormDetailEffect.NavigateBack -> navController.popBackStack()
+                // This screen never calls onRequestDiscard() (no dirty-form flow here, see
+                // FormStepScreen for that) so this branch can never actually fire.
+                FormDetailEffect.RequestDiscardConfirmation -> Unit
             }
         }
     }

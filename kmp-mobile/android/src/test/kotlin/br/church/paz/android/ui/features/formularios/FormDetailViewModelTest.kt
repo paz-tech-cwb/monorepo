@@ -9,6 +9,7 @@ import br.church.paz.shared.domain.repository.FormsRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -72,5 +73,94 @@ class FormDetailViewModelTest {
             testScheduler.advanceUntilIdle()
 
             assertEquals("Tipo de relatório é obrigatório", viewModel.uiState.value.error)
+        }
+
+    @Test
+    fun `isDirty is false immediately after loadForm, including seeded DATE and SELECT fields`() =
+        runTest {
+            val catalog = listOf(
+                FormCatalogItem(id = "service-reports", title = "Rel. Culto", canWrite = true, canRead = false),
+            )
+            coEvery { formsRepository.getCatalog() } returns catalog
+            coEvery { authRepository.currentUser() } returns User(id = "10", name = "Maria", email = "m@t.com")
+
+            val viewModel = FormDetailViewModel("service-reports", formsRepository, authRepository)
+            testScheduler.advanceUntilIdle()
+
+            // "date" (DATE, seeded to today) and "report_type"/"period" (SELECT, seeded to
+            // options[0]/optionValues[0]) are all pre-filled by loadForm — none of that seeding
+            // should register as a user edit.
+            assertEquals(false, viewModel.uiState.value.isDirty)
+        }
+
+    @Test
+    fun `isDirty becomes true after a field edit`() =
+        runTest {
+            val catalog = listOf(
+                FormCatalogItem(id = "service-reports", title = "Rel. Culto", canWrite = true, canRead = false),
+            )
+            coEvery { formsRepository.getCatalog() } returns catalog
+            coEvery { authRepository.currentUser() } returns User(id = "10", name = "Maria", email = "m@t.com")
+
+            val viewModel = FormDetailViewModel("service-reports", formsRepository, authRepository)
+            testScheduler.advanceUntilIdle()
+
+            viewModel.onFieldChanged("atmosphere_responsible", "Maria")
+
+            assertEquals(true, viewModel.uiState.value.isDirty)
+        }
+
+    @Test
+    fun `isDirty becomes true after addGuestEntry`() =
+        runTest {
+            val catalog = listOf(
+                FormCatalogItem(id = "casa-de-paz-reports", title = "Rel. Casa de Paz", canWrite = true, canRead = false),
+            )
+            coEvery { formsRepository.getCatalog() } returns catalog
+            coEvery { authRepository.currentUser() } returns User(id = "10", name = "Maria", email = "m@t.com")
+
+            val viewModel = FormDetailViewModel("casa-de-paz-reports", formsRepository, authRepository)
+            testScheduler.advanceUntilIdle()
+
+            viewModel.addGuestEntry()
+
+            assertEquals(true, viewModel.uiState.value.isDirty)
+        }
+
+    @Test
+    fun `onRequestDiscard emits NavigateBack when not dirty`() =
+        runTest {
+            val catalog = listOf(
+                FormCatalogItem(id = "service-reports", title = "Rel. Culto", canWrite = true, canRead = false),
+            )
+            coEvery { formsRepository.getCatalog() } returns catalog
+            coEvery { authRepository.currentUser() } returns User(id = "10", name = "Maria", email = "m@t.com")
+
+            val viewModel = FormDetailViewModel("service-reports", formsRepository, authRepository)
+            testScheduler.advanceUntilIdle()
+
+            viewModel.onRequestDiscard()
+            val effect = viewModel.effect.first()
+
+            assertEquals(FormDetailEffect.NavigateBack, effect)
+        }
+
+    @Test
+    fun `onRequestDiscard emits RequestDiscardConfirmation when dirty`() =
+        runTest {
+            val catalog = listOf(
+                FormCatalogItem(id = "service-reports", title = "Rel. Culto", canWrite = true, canRead = false),
+            )
+            coEvery { formsRepository.getCatalog() } returns catalog
+            coEvery { authRepository.currentUser() } returns User(id = "10", name = "Maria", email = "m@t.com")
+
+            val viewModel = FormDetailViewModel("service-reports", formsRepository, authRepository)
+            testScheduler.advanceUntilIdle()
+
+            viewModel.onFieldChanged("atmosphere_responsible", "Maria")
+            viewModel.onRequestDiscard()
+            val effect = viewModel.effect.first()
+
+            assertEquals(FormDetailEffect.RequestDiscardConfirmation, effect)
         }
 }

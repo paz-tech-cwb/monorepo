@@ -24,22 +24,26 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
@@ -77,6 +81,7 @@ fun FormStepScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
+    var showDiscardDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -87,13 +92,32 @@ fun FormStepScreen(
                 // the submission actually went through.
                 FormDetailEffect.SubmitSuccess -> Unit
                 FormDetailEffect.NavigateBack -> navController.popBackStack()
+                FormDetailEffect.RequestDiscardConfirmation -> showDiscardDialog = true
             }
         }
     }
 
-    // System back at step > 0 goes to the previous question rather than popping the screen.
-    BackHandler(enabled = uiState.stepIndex > 0) {
-        viewModel.onPreviousStep()
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Descartar alterações?") },
+            text = { Text("Você tem respostas não enviadas que serão perdidas.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDiscardDialog = false
+                    viewModel.onBack()
+                }) { Text("Descartar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) { Text("Continuar editando") }
+            },
+        )
+    }
+
+    // System back at step > 0 goes to the previous question rather than popping the screen;
+    // at the first question it routes through the same discard check as the close button.
+    BackHandler(enabled = !uiState.submitSuccess) {
+        if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onRequestDiscard()
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -102,31 +126,20 @@ fun FormStepScreen(
         Scaffold(
             topBar = {
                 if (!uiState.submitSuccess) {
-                    LargeTopAppBar(
-                        title = { Text(displayTitle(uiState.form?.title ?: "Formulário"), maxLines = 1) },
-                        navigationIcon = {
-                            // The header back arrow steps backward through questions instead of
-                            // always leaving the screen — only pops at the first question.
-                            IconButton(
-                                onClick = {
-                                    if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onBack()
-                                },
-                            ) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, "back")
-                            }
+                    StepHeader(
+                        title = uiState.form?.title ?: "Formulário",
+                        // The header back arrow steps backward through questions instead of
+                        // always leaving the screen — only pops (via the discard check) at
+                        // the first question.
+                        onBack = {
+                            if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onRequestDiscard()
                         },
-                        actions = {
-                            val showCasaDePazLessonsShortcut =
-                                uiState.form?.type == FormType.casa_de_paz_report && uiState.canAccessCasaDePazLessons
-                            if (showCasaDePazLessonsShortcut) {
-                                IconButton(
-                                    onClick = { navController.navigate(Screen.CasaDePazLessonsList.route) },
-                                ) {
-                                    Icon(Icons.Filled.MenuBook, "Conteúdo Casa de Paz")
-                                }
-                            }
+                        onClose = viewModel::onRequestDiscard,
+                        showCasaDePazLessonsShortcut =
+                            uiState.form?.type == FormType.casa_de_paz_report && uiState.canAccessCasaDePazLessons,
+                        onCasaDePazLessonsTapped = {
+                            navController.navigate(Screen.CasaDePazLessonsList.route)
                         },
-                        colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
                     )
                 }
             },
@@ -236,6 +249,40 @@ private fun displayTitle(title: String): String {
         if (title.startsWith(prefix)) return title.removePrefix(prefix)
     }
     return title
+}
+
+@Composable
+private fun StepHeader(
+    title: String,
+    onBack: () -> Unit,
+    onClose: () -> Unit,
+    showCasaDePazLessonsShortcut: Boolean = false,
+    onCasaDePazLessonsTapped: () -> Unit = {},
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, "back", tint = Color.White)
+        }
+        Text(
+            displayTitle(title),
+            style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+        )
+        if (showCasaDePazLessonsShortcut) {
+            IconButton(onClick = onCasaDePazLessonsTapped) {
+                Icon(Icons.Filled.MenuBook, "Conteúdo Casa de Paz", tint = Color.White)
+            }
+        }
+        IconButton(onClick = onClose) {
+            Icon(Icons.Filled.Close, "Fechar", tint = Color.White)
+        }
+    }
 }
 
 @Composable
