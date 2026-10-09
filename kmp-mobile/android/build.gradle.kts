@@ -126,6 +126,9 @@ dependencies {
     implementation(libs.compose.activity)
     implementation(libs.compose.lifecycle)
     implementation(libs.compose.viewmodel)
+    implementation(libs.lifecycle.runtime)
+    implementation(libs.lifecycle.viewmodel)
+    implementation(libs.savedstate)
     debugImplementation(libs.compose.ui.tooling)
 
     implementation(libs.koin.android)
@@ -142,12 +145,19 @@ dependencies {
     implementation(libs.coil.network)
 
     implementation(libs.datastore.android)
-    implementation(libs.ktor.client.cio.jvm)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.chucker)
     implementation(libs.compose.icons.extended)
     implementation(libs.credentials)
     implementation(libs.credentials.play.services)
     implementation(libs.googleid)
     implementation(libs.coroutines.play.services)
+
+    implementation(libs.play.services.location)
+    // OpenStreetMap-tiled map for the Life Group Discovery screen — no API
+    // key/billing needed. Classic View-based lib, hosted inside Compose via
+    // AndroidView (see LifeGroupMapView.kt).
+    implementation(libs.osmdroid.android)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test.junit)
@@ -155,4 +165,9 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.mockk)
     testImplementation(libs.arch.core.testing)
+    // Used to construct a real Ktor ClientRequestException (via a MockEngine
+    // response) in LifeGroupAnalyticsViewModelTest, so the 403-routing test
+    // exercises the exact exception type httpStatusCodeOrNull() recognizes
+    // instead of a generic exception it can never match.
+    testImplementation(libs.ktor.client.mock)
 }

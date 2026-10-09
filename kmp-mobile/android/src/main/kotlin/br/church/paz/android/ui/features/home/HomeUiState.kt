@@ -6,6 +6,7 @@ import br.church.paz.shared.domain.model.Banner
 
 data class HomeUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val banners: List<Banner> = emptyList(),
     val agendaEvents: List<AgendaEvent> = emptyList(),
     val bank: BankInfo? = null,
@@ -15,6 +16,16 @@ data class HomeUiState(
     // Any leadership role (role.isLeader) — gates the "Relatórios de Grupos
     // de Vida" shortcut card.
     val canManage: Boolean = false,
+    // Full upcoming agenda (recurrence-expanded, paginated), loaded lazily
+    // the first time the home agenda section is expanded.
+    val isAgendaExpanded: Boolean = false,
+    val isLoadingFullAgenda: Boolean = false,
+    val fullAgendaEvents: List<AgendaEvent> = emptyList(),
+    val fullAgendaLoadError: String? = null,
+    // Shown only when `getMyLifeGroups()` succeeded AND came back empty —
+    // see HomeViewModel.fetch() for why an error must never be read as "no
+    // group".
+    val showLifeGroupDiscoveryCTA: Boolean = false,
 )
 
 sealed class HomeEffect {

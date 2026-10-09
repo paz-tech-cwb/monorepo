@@ -241,17 +241,25 @@ describe('LifeGroupAnalyticsService', () => {
         [
           {
             id: '1',
+            name: 'Grupo Norte',
             kids_count: '3',
             sector_label: 'Norte',
             member_count: '4',
           },
           {
             id: '2',
+            name: 'Grupo Alfa',
             kids_count: '1',
             sector_label: 'Norte',
             member_count: '2',
           },
-          { id: '3', kids_count: '0', sector_label: null, member_count: '0' },
+          {
+            id: '3',
+            name: 'Grupo Sem Setor',
+            kids_count: '0',
+            sector_label: null,
+            member_count: '0',
+          },
         ],
         [
           { id: '10', life_group_count: '1' },
@@ -268,6 +276,14 @@ describe('LifeGroupAnalyticsService', () => {
       ]);
       expect(result.members_total).toBe(3);
       expect(result.members_in_group).toBe(2);
+      // life_groups reflects only the groups this caller may query via
+      // ?life_group_id=, sorted by name — the scoped source for the
+      // analytics filter dropdown (see root cause B).
+      expect(result.life_groups).toEqual([
+        { id: 2, name: 'Grupo Alfa' },
+        { id: 1, name: 'Grupo Norte' },
+        { id: 3, name: 'Grupo Sem Setor' },
+      ]);
     });
 
     it('returns all zeros when the caller has no access to any life group', async () => {
@@ -279,6 +295,7 @@ describe('LifeGroupAnalyticsService', () => {
         groups_by_sector: [],
         members_in_group: 0,
         members_total: 0,
+        life_groups: [],
       });
       expect(em.createQueryBuilder).toHaveBeenCalledTimes(1);
     });
@@ -355,6 +372,7 @@ describe('LifeGroupAnalyticsService', () => {
         groups_by_sector: [],
         members_in_group: 0,
         members_total: 0,
+        life_groups: [],
       });
       expect(em.createQueryBuilder).toHaveBeenCalledTimes(1);
     });

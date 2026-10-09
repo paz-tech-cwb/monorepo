@@ -11,8 +11,11 @@ interface ChurchRepository {
     suspend fun getChurch(): Church
     @Throws(Exception::class)
     suspend fun getMyLifeGroups(): List<LifeGroup>
+    // `search` filters by group/leader/co-leader name server-side for the
+    // discovery screen; null (default) preserves the existing unfiltered
+    // behavior for all current callers.
     @Throws(Exception::class)
-    suspend fun getAllLifeGroups(): List<LifeGroup>
+    suspend fun getAllLifeGroups(search: String? = null): List<LifeGroup>
     @Throws(Exception::class)
     suspend fun getAllMinistries(): List<Ministry>
     @Throws(Exception::class)
@@ -36,6 +39,8 @@ interface ChurchRepository {
     suspend fun addMinistryMember(ministryId: Int, userId: Int)
     @Throws(Exception::class)
     suspend fun removeMinistryMember(ministryId: Int, userId: Int)
+    @Throws(Exception::class)
+    suspend fun createMinistry(request: CreateMinistryRequest): Ministry
 }
 
 data class UpdateLifeGroupRequest(
@@ -49,4 +54,12 @@ data class UpdateLifeGroupRequest(
 data class UpdateMinistryRequest(
     val name: String? = null,
     val description: String? = null,
+)
+
+data class CreateMinistryRequest(
+    val name: String,
+    val description: String? = null,
+    val leaderId: Int,
+    val coLeaderId: Int? = null,
+    val membershipMode: String = "teams",
 )

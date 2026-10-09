@@ -14,6 +14,7 @@ data class CasaDePazSubmissionEditorUiState(
     val cycles: List<CasaDePazCycleOption> = emptyList(),
     val isSaving: Boolean = false,
     val isDeleting: Boolean = false,
+    val loadError: String? = null,
     val error: String? = null,
 )
 

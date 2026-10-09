@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -22,10 +21,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,6 +56,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingScreen(
     onFinished: () -> Unit,
@@ -71,46 +74,75 @@ fun OnboardingScreen(
         if (state.isFinished) onFinished()
     }
 
+    // Matches iOS's per-step navigationTitle: no nav bar while the welcome video plays
+    // (keeps it full-bleed) or missing-steps are loading, then a native title bar for
+    // each profile-completion step.
+    val topBarTitle =
+        if (state.loadErrorMessage == null && !state.isLoadingMissingSteps) {
+            when (state.currentStep) {
+                OnboardingStep.Video -> null
+                OnboardingStep.Birthday -> "Data de nascimento"
+                OnboardingStep.Whatsapp -> "WhatsApp"
+                OnboardingStep.Address -> "Endereço"
+            }
+        } else {
+            null
+        }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = if (isDark) PazColors.DarkBackground else PazColors.Background,
     ) {
-        when {
-            state.loadErrorMessage != null ->
-                OnboardingLoadError(
-                    message = state.loadErrorMessage!!,
-                    onRetry = viewModel::retryLoad,
-                )
-            state.isLoadingMissingSteps -> OnboardingLoading()
-            else ->
-                when (state.currentStep) {
-                    OnboardingStep.Video -> WelcomeVideoStep(onFinished = viewModel::onVideoFinished)
-                    OnboardingStep.Birthday ->
-                        BirthdayStep(
-                            isSubmitting = state.isSubmitting,
-                            errorMessage = state.errorMessage,
-                            onSubmit = viewModel::onBirthdaySubmitted,
-                            onDismissError = viewModel::onDismissError,
-                        )
-                    OnboardingStep.Whatsapp ->
-                        WhatsappStep(
-                            isSubmitting = state.isSubmitting,
-                            errorMessage = state.errorMessage,
-                            onSubmit = viewModel::onWhatsappSubmitted,
-                            onDismissError = viewModel::onDismissError,
-                        )
-                    OnboardingStep.Address ->
-                        AddressStep(
-                            isSubmitting = state.isSubmitting,
-                            isLookingUpCep = state.isLookingUpCep,
-                            cepResult = state.cepResult,
-                            errorMessage = state.errorMessage,
-                            onLookupCep = viewModel::onLookupCep,
-                            onSubmit = viewModel::onAddressSubmitted,
-                            onSkip = viewModel::onSkipCurrentStep,
-                            onDismissError = viewModel::onDismissError,
-                        )
+        Scaffold(
+            topBar = {
+                if (topBarTitle != null) {
+                    TopAppBar(
+                        title = { Text(topBarTitle) },
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    )
                 }
+            },
+            containerColor = Color.Transparent,
+        ) { innerPadding ->
+            Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
+                when {
+                    state.loadErrorMessage != null ->
+                        OnboardingLoadError(
+                            message = state.loadErrorMessage!!,
+                            onRetry = viewModel::retryLoad,
+                        )
+                    state.isLoadingMissingSteps -> OnboardingLoading()
+                    else ->
+                        when (state.currentStep) {
+                            OnboardingStep.Video -> WelcomeVideoStep(onFinished = viewModel::onVideoFinished)
+                            OnboardingStep.Birthday ->
+                                BirthdayStep(
+                                    isSubmitting = state.isSubmitting,
+                                    errorMessage = state.errorMessage,
+                                    onSubmit = viewModel::onBirthdaySubmitted,
+                                    onDismissError = viewModel::onDismissError,
+                                )
+                            OnboardingStep.Whatsapp ->
+                                WhatsappStep(
+                                    isSubmitting = state.isSubmitting,
+                                    errorMessage = state.errorMessage,
+                                    onSubmit = viewModel::onWhatsappSubmitted,
+                                    onDismissError = viewModel::onDismissError,
+                                )
+                            OnboardingStep.Address ->
+                                AddressStep(
+                                    isSubmitting = state.isSubmitting,
+                                    isLookingUpCep = state.isLookingUpCep,
+                                    cepResult = state.cepResult,
+                                    errorMessage = state.errorMessage,
+                                    onLookupCep = viewModel::onLookupCep,
+                                    onSubmit = viewModel::onAddressSubmitted,
+                                    onSkip = viewModel::onSkipCurrentStep,
+                                    onDismissError = viewModel::onDismissError,
+                                )
+                        }
+                }
+            }
         }
     }
 }
@@ -236,7 +268,6 @@ private fun StepScaffold(
         modifier =
             Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
                 .navigationBarsPadding()
                 .padding(PazSpacing.Xl),
     ) {

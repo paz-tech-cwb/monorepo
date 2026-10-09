@@ -11,6 +11,7 @@ class CourseDetailViewModel {
     var course: CourseDetail?
     var error: String?
     var selectedLessonId: String?
+    var playerError = false
 
     private let courseId: String
     private let courseRepository: CourseRepository
@@ -25,9 +26,11 @@ class CourseDetailViewModel {
         self.courseRepository = courseRepository
     }
 
-    func load() async {
-        isLoading = true
-        error = nil
+    func load(showLoading: Bool = true) async {
+        if showLoading {
+            isLoading = true
+            error = nil
+        }
         do {
             let detail = try await courseRepository.getCourseDetail(courseId: courseId)
             course = detail
@@ -35,14 +38,21 @@ class CourseDetailViewModel {
                 selectedLessonId = detail.lessons.first?.id
             }
         } catch {
-            self.error = error.localizedDescription
+            if showLoading {
+                self.error = error.localizedDescription
+            }
         }
         isLoading = false
     }
 
     func onSelectLesson(_ lessonId: String) {
         lastReportedAtSeconds = 0
+        playerError = false
         selectedLessonId = lessonId
+    }
+
+    func onPlayerError() {
+        playerError = true
     }
 
     /// Called roughly every second by `GatedYouTubePlayerView`; only actually posts every ~10s.
@@ -67,7 +77,7 @@ class CourseDetailViewModel {
                     watchedPercentage: Int32(percentage),
                     positionSeconds: Int32(positionSeconds)
                 )
-                await load()
+                await load(showLoading: false)
             } catch {
                 // Best-effort checkpoint — a transient failure here shouldn't interrupt playback.
             }

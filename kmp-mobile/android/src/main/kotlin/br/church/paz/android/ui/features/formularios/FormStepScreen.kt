@@ -2,16 +2,15 @@ package br.church.paz.android.ui.features.formularios
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.togetherWith
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,13 +19,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -35,13 +35,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
@@ -51,13 +53,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
-import br.church.paz.shared.domain.model.FormType
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazErrorState
+import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.components.PazSuccessState
-import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazSpacing
+import br.church.paz.shared.domain.model.FormType
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -67,6 +69,7 @@ import org.koin.core.parameter.parametersOf
  * [Modifier.imePadding], never requiring scrolling. The header's back arrow steps backward
  * through questions and only leaves the screen once at the first question.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FormStepScreen(
     navController: NavController,
@@ -77,6 +80,7 @@ fun FormStepScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
+    var showDiscardDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -87,45 +91,49 @@ fun FormStepScreen(
                 // the submission actually went through.
                 FormDetailEffect.SubmitSuccess -> Unit
                 FormDetailEffect.NavigateBack -> navController.popBackStack()
+                FormDetailEffect.RequestDiscardConfirmation -> showDiscardDialog = true
             }
         }
     }
 
-    // System back at step > 0 goes to the previous question rather than popping the screen.
-    BackHandler(enabled = uiState.stepIndex > 0) {
-        viewModel.onPreviousStep()
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Descartar alterações?") },
+            text = { Text("Você tem respostas não enviadas que serão perdidas.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDiscardDialog = false
+                    viewModel.onBack()
+                }) { Text("Descartar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) { Text("Continuar editando") }
+            },
+        )
     }
 
-    Scaffold(
-        containerColor = Color.Transparent,
-        bottomBar = {
-            if (!uiState.isLoading && uiState.form != null && !uiState.submitSuccess) {
-                StepBottomBar(
-                    uiState = uiState,
-                    onNext = {
-                        val fieldDefs = uiState.form?.type?.fieldDefs().orEmpty()
-                        val isLast = uiState.stepIndex == fieldDefs.size - 1
-                        if (isLast) viewModel.onSubmit() else viewModel.onNextStep()
-                    },
-                )
-            }
-        },
-    ) { innerPadding ->
-        Column(Modifier.fillMaxSize().padding(bottom = innerPadding.calculateBottomPadding())) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .background(PazGradients.Hero)
-                    .statusBarsPadding(),
-            ) {
+    // System back at step > 0 goes to the previous question rather than popping the screen;
+    // at the first question it routes through the same discard check as the close button.
+    BackHandler(enabled = !uiState.submitSuccess) {
+        if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onRequestDiscard()
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        PazMeshBackground()
+
+        Scaffold(
+            topBar = {
                 if (!uiState.submitSuccess) {
                     StepHeader(
                         title = uiState.form?.title ?: "Formulário",
                         // The header back arrow steps backward through questions instead of
-                        // always leaving the screen — only pops at the first question.
+                        // always leaving the screen — only pops (via the discard check) at
+                        // the first question.
                         onBack = {
-                            if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onBack()
+                            if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onRequestDiscard()
                         },
+                        onClose = viewModel::onRequestDiscard,
                         showCasaDePazLessonsShortcut =
                             uiState.form?.type == FormType.casa_de_paz_report && uiState.canAccessCasaDePazLessons,
                         onCasaDePazLessonsTapped = {
@@ -133,13 +141,25 @@ fun FormStepScreen(
                         },
                     )
                 }
-            }
-
+            },
+            containerColor = Color.Transparent,
+            bottomBar = {
+                if (!uiState.isLoading && uiState.form != null && !uiState.submitSuccess) {
+                    StepBottomBar(
+                        uiState = uiState,
+                        onNext = {
+                            val fieldDefs = uiState.form?.type?.fieldDefs().orEmpty()
+                            val isLast = uiState.stepIndex == fieldDefs.size - 1
+                            if (isLast) viewModel.onSubmit() else viewModel.onNextStep()
+                        },
+                    )
+                }
+            },
+        ) { innerPadding ->
             Box(
                 Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .background(MaterialTheme.colorScheme.background),
+                    .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding()),
             ) {
                 when {
                     uiState.submitSuccess ->
@@ -150,7 +170,10 @@ fun FormStepScreen(
                             message = uiState.error ?: "Formulário não encontrado",
                             onRetry = { navController.popBackStack() },
                         )
-                    uiState.form!!.type.fieldDefs().isEmpty() ->
+                    uiState.form!!
+                        .type
+                        .fieldDefs()
+                        .isEmpty() ->
                         PazErrorState(
                             message = "Este formulário não possui perguntas",
                             onRetry = { navController.popBackStack() },
@@ -170,12 +193,12 @@ fun FormStepScreen(
                         )
                 }
             }
-        }
 
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.padding(PazSpacing.Lg),
-        )
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(PazSpacing.Lg),
+            )
+        }
     }
 
     val pickerState = uiState.pickerState
@@ -206,8 +229,11 @@ fun FormStepScreen(
                     onDismiss = viewModel::closePicker,
                 )
             PickerKind.USER, PickerKind.USER_MULTI -> {
-                val selectedIds = (uiState.fields[pickerState.key] ?: "")
-                    .split(",").filter { it.isNotBlank() }.toSet()
+                val selectedIds =
+                    (uiState.fields[pickerState.key] ?: "")
+                        .split(",")
+                        .filter { it.isNotBlank() }
+                        .toSet()
                 UserPickerSheet(
                     state = pickerState,
                     selectedIds = selectedIds,
@@ -234,6 +260,7 @@ private fun displayTitle(title: String): String {
 private fun StepHeader(
     title: String,
     onBack: () -> Unit,
+    onClose: () -> Unit,
     showCasaDePazLessonsShortcut: Boolean = false,
     onCasaDePazLessonsTapped: () -> Unit = {},
 ) {
@@ -256,6 +283,9 @@ private fun StepHeader(
             IconButton(onClick = onCasaDePazLessonsTapped) {
                 Icon(Icons.Filled.MenuBook, "Conteúdo Casa de Paz", tint = Color.White)
             }
+        }
+        IconButton(onClick = onClose) {
+            Icon(Icons.Filled.Close, "Fechar", tint = Color.White)
         }
     }
 }
@@ -302,9 +332,10 @@ private fun StepContent(
         Spacer(Modifier.height(PazSpacing.Sm))
         Text(
             "${stepIndex + 1} de ${fieldDefs.size}",
-            style = MaterialTheme.typography.labelMedium.copy(
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            ),
+            style =
+                MaterialTheme.typography.labelMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                ),
         )
         Spacer(Modifier.height(PazSpacing.Lg))
 
@@ -354,7 +385,11 @@ private fun StepBottomBar(
     uiState: FormDetailUiState,
     onNext: () -> Unit,
 ) {
-    val fieldDefs = uiState.form?.type?.fieldDefs().orEmpty()
+    val fieldDefs =
+        uiState.form
+            ?.type
+            ?.fieldDefs()
+            .orEmpty()
     val isLast = uiState.stepIndex == fieldDefs.size - 1
 
     Row(

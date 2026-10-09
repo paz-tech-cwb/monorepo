@@ -21,19 +21,24 @@ class FormulariosViewModel(
     val effect = _effect.receiveAsFlow()
 
     init {
-        loadForms()
+        loadForms(showSkeleton = true)
     }
 
-    private fun loadForms() {
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = loadForms(showSkeleton = false, forceRefresh = true)
+
+    private fun loadForms(showSkeleton: Boolean, forceRefresh: Boolean = false) {
         viewModelScope.launch {
-            runCatching { formsRepository.getCatalog() }
-                .onSuccess { forms ->
-                    _uiState.update { it.copy(forms = forms, isLoading = false) }
-                }.onFailure { e ->
-                    _uiState.update {
-                        it.copy(isLoading = false, error = e.message ?: "Erro ao carregar formulários")
-                    }
+            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton, error = null) }
+            runCatching {
+                if (forceRefresh) formsRepository.refreshCatalog() else formsRepository.getCatalog()
+            }.onSuccess { forms ->
+                _uiState.update { it.copy(forms = forms, isLoading = false, isRefreshing = false) }
+            }.onFailure { e ->
+                _uiState.update {
+                    it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Erro ao carregar formulários")
                 }
+            }
         }
     }
 
@@ -54,8 +59,5 @@ class FormulariosViewModel(
         viewModelScope.launch { _effect.send(FormulariosEffect.NavigateBack) }
     }
 
-    fun onRetry() {
-        _uiState.update { it.copy(isLoading = true, error = null) }
-        loadForms()
-    }
+    fun onRetry() = loadForms(showSkeleton = true, forceRefresh = true)
 }

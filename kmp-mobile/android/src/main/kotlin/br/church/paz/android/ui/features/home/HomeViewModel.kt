@@ -4,7 +4,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.shared.domain.model.isLeader
+import br.church.paz.shared.domain.repository.AgendaRepository
 import br.church.paz.shared.domain.repository.AuthRepository
+import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.HomeRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +19,8 @@ import kotlinx.coroutines.launch
 class HomeViewModel(
     private val homeRepository: HomeRepository,
     private val authRepository: AuthRepository,
+    private val agendaRepository: AgendaRepository,
+    private val churchRepository: ChurchRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -28,9 +32,20 @@ class HomeViewModel(
         load()
     }
 
-    fun load() {
+    fun load() = fetch(showSkeleton = true)
+
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = fetch(showSkeleton = false)
+
+    private fun fetch(showSkeleton: Boolean) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = showSkeleton,
+                    isRefreshing = !showSkeleton,
+                    error = null,
+                )
+            }
 
             val user = runCatching { authRepository.currentUser() }.getOrNull()
             val firstName =
@@ -49,6 +64,7 @@ class HomeViewModel(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
+                            isRefreshing = false,
                             banners = content.banners,
                             agendaEvents = content.agenda,
                             bank = content.contribution?.bank,
@@ -59,8 +75,22 @@ class HomeViewModel(
                     }
                 }.onFailure { e ->
                     Log.e("HomeVM", "load failed", e)
-                    _uiState.update { it.copy(isLoading = false, error = e.message ?: e::class.simpleName ?: "Erro desconhecido") }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            error = e.message ?: e::class.simpleName ?: "Erro desconhecido",
+                        )
+                    }
                 }
+
+            // Shown only when getMyLifeGroups() succeeded AND came back empty — an
+            // error fetching the viewer's groups must never be read as "no group",
+            // since that would wrongly nudge an existing member to "discover" a
+            // group they already belong to.
+            runCatching { churchRepository.getMyLifeGroups() }
+                .onSuccess { myGroups -> _uiState.update { it.copy(showLifeGroupDiscoveryCTA = myGroups.isEmpty()) } }
+                .onFailure { _uiState.update { it.copy(showLifeGroupDiscoveryCTA = false) } }
         }
     }
 
@@ -70,5 +100,42 @@ class HomeViewModel(
 
     fun onEventTapped(eventId: String) {
         viewModelScope.launch { _effect.send(HomeEffect.NavigateToAgenda(eventId)) }
+    }
+
+    /**
+     * Expands the home agenda section into the full upcoming (recurrence-
+     * expanded) agenda, loading it lazily on first expand via the same
+     * paginated AgendaRepository the full Agenda list screen uses.
+     */
+    fun onToggleAgendaExpanded() {
+        val expanding = !_uiState.value.isAgendaExpanded
+        _uiState.update { it.copy(isAgendaExpanded = expanding) }
+        if (expanding && _uiState.value.fullAgendaEvents.isEmpty()) {
+            loadFullAgenda()
+        }
+    }
+
+    private fun loadFullAgenda() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingFullAgenda = true, fullAgendaLoadError = null) }
+            runCatching { agendaRepository.getEvents(page = 1, limit = 50) }
+                .onSuccess { events ->
+                    _uiState.update {
+                        it.copy(isLoadingFullAgenda = false, fullAgendaEvents = events, fullAgendaLoadError = null)
+                    }
+                }.onFailure { e ->
+                    Log.e("HomeVM", "loadFullAgenda failed", e)
+                    _uiState.update {
+                        it.copy(
+                            isLoadingFullAgenda = false,
+                            fullAgendaLoadError = e.message ?: e::class.simpleName ?: "Erro desconhecido",
+                        )
+                    }
+                }
+        }
+    }
+
+    fun onRetryFullAgenda() {
+        loadFullAgenda()
     }
 }

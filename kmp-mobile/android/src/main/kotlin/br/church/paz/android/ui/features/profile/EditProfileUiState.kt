@@ -17,12 +17,23 @@ data class EditProfileUiState(
     val isSaving: Boolean = false,
     val isUploadingPicture: Boolean = false,
     val isLookingUpCep: Boolean = false,
+    val cepError: String? = null,
     val error: String? = null,
     val saveSuccess: Boolean = false,
+    /** True once any field diverges from the baseline captured right after [loadProfile]. */
+    val isDirty: Boolean = false,
 )
 
 sealed class EditProfileEffect {
     data object SaveSuccess : EditProfileEffect()
 
     data object NavigateBack : EditProfileEffect()
+
+    /** Signals the screen to show the discard-changes confirmation dialog. */
+    data object RequestDiscardConfirmation : EditProfileEffect()
+
+    /** There is no live Firebase Auth session to upload with and no silent recovery is
+     * possible — the screen forces a full logout since there is no other path back to a
+     * valid session. */
+    data object SessionExpired : EditProfileEffect()
 }

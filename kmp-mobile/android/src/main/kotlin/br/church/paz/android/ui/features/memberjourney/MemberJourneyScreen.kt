@@ -1,6 +1,7 @@
 package br.church.paz.android.ui.features.memberjourney
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,10 +14,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
@@ -25,11 +25,15 @@ import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.Circle
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,9 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazErrorState
+import br.church.paz.android.ui.components.PazMeshBackground
+import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
-import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.JourneyTrack
@@ -52,6 +57,7 @@ import br.church.paz.shared.domain.model.JourneyTrackStep
 import br.church.paz.shared.domain.model.JourneyTrackStepType
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MemberJourneyScreen(
     navController: NavController,
@@ -67,48 +73,67 @@ fun MemberJourneyScreen(
         }
     }
 
-    Column(Modifier.fillMaxSize()) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .background(PazGradients.Hero)
-                .statusBarsPadding(),
-        ) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = { viewModel.onBack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "back", tint = Color.White)
-                }
-                Text(
-                    "Minha Jornada",
-                    style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
+    Box(Modifier.fillMaxSize()) {
+        PazMeshBackground()
 
-        Box(
-            Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(MaterialTheme.colorScheme.background),
-        ) {
-            when {
-                uiState.isLoading -> LoadingState()
-                uiState.error != null -> ErrorState(error = uiState.error!!, onRetry = viewModel::onRetry)
-                uiState.track == null -> NoActiveTrackState()
-                else -> ContentState(track = uiState.track!!)
+        Scaffold(
+            topBar = {
+                LargeTopAppBar(
+                    title = { Text("Minha Jornada") },
+                    navigationIcon = {
+                        IconButton(onClick = { viewModel.onBack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "back")
+                        }
+                    },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
+                )
+            },
+            containerColor = Color.Transparent,
+        ) { innerPadding ->
+            PazPullToRefresh(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = viewModel::refresh,
+                modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
+            ) {
+                when {
+                    uiState.isLoading -> LoadingState()
+                    uiState.error != null -> ErrorState(error = uiState.error!!, onRetry = viewModel::onRetry)
+                    uiState.tracks.isEmpty() ||
+                        (uiState.currentTrackKey == null && uiState.tracks.all { it.progressPercentage >= 100 }) ->
+                        NoActiveTrackState()
+                    else ->
+                        ContentState(
+                            tracks = uiState.tracks,
+                            currentTrackKey = uiState.currentTrackKey,
+                        )
+                }
             }
         }
     }
 }
 
+private enum class TrackStatus { Completed, Current, Available }
+
+/**
+ * Status is derived purely from each track's own completion state, never from its
+ * position in [tracks] (the list is not a linear progression — some tracks, like
+ * baptism/member, run in parallel to the role chain).
+ */
+private fun trackStatus(
+    track: JourneyTrack,
+    currentTrackKey: String?,
+): TrackStatus =
+    when {
+        track.progressPercentage >= 100 -> TrackStatus.Completed
+        track.key == currentTrackKey -> TrackStatus.Current
+        else -> TrackStatus.Available
+    }
+
 @Composable
-private fun ContentState(track: JourneyTrack) {
+private fun ContentState(
+    tracks: List<JourneyTrack>,
+    currentTrackKey: String?,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
@@ -116,9 +141,51 @@ private fun ContentState(track: JourneyTrack) {
     ) {
         item { Spacer(Modifier.height(PazSpacing.Sm)) }
 
-        item { JourneyTrackCard(track = track) }
+        items(tracks, key = { it.key }) { track ->
+            when (trackStatus(track, currentTrackKey)) {
+                TrackStatus.Completed -> CollapsedTrackCard(track = track, status = TrackStatus.Completed)
+                TrackStatus.Current -> JourneyTrackCard(track = track)
+                TrackStatus.Available -> CollapsedTrackCard(track = track, status = TrackStatus.Available)
+            }
+        }
 
         item { Spacer(Modifier.height(PazSpacing.Xl)) }
+    }
+}
+
+@Composable
+private fun CollapsedTrackCard(
+    track: JourneyTrack,
+    status: TrackStatus,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(PazShapes.large)
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(PazSpacing.Lg),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+    ) {
+        Icon(
+            imageVector = if (status == TrackStatus.Completed) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+            contentDescription = null,
+            tint =
+                if (status == TrackStatus.Completed) {
+                    PazColors.Primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                },
+        )
+        Text(
+            track.title,
+            style =
+                MaterialTheme.typography.titleSmall.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                ),
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
@@ -133,6 +200,7 @@ private fun JourneyTrackCard(track: JourneyTrack) {
             Modifier
                 .fillMaxWidth()
                 .clip(PazShapes.large)
+                .border(width = 2.dp, color = PazColors.Primary, shape = PazShapes.large)
                 .background(MaterialTheme.colorScheme.surface),
     ) {
         Column(

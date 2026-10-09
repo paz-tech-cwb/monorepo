@@ -1,7 +1,10 @@
 package br.church.paz.android.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -24,30 +27,37 @@ import br.church.paz.android.ui.features.formularios.FormulariosScreen
 import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsScreen
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceEditorScreen
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryScreen
+import br.church.paz.android.ui.features.lifegroupdiscovery.LifeGroupDiscoveryScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListScreen
 import br.church.paz.android.ui.features.memberjourney.MemberJourneyScreen
+import br.church.paz.android.ui.features.ministries.AllLifeGroupsScreen
+import br.church.paz.android.ui.features.ministries.GroupMembersListScreen
+import br.church.paz.android.ui.features.ministries.GroupMembersType
 import br.church.paz.android.ui.features.ministries.LifeGroupDetailScreen
+import br.church.paz.android.ui.features.ministries.LifeGroupManageScreen
+import br.church.paz.android.ui.features.ministries.LifeGroupsScreen
 import br.church.paz.android.ui.features.ministries.MinistriesScreen
 import br.church.paz.android.ui.features.ministries.MinistryDetailScreen
+import br.church.paz.android.ui.features.ministries.MinistryManageScreen
 import br.church.paz.android.ui.features.notifications.NotificationPrefsScreen
 import br.church.paz.android.ui.features.profile.EditProfileScreen
 import br.church.paz.android.ui.features.profile.ProfileScreen
+import br.church.paz.android.ui.features.reports.ReportsListScreen
 import br.church.paz.android.ui.features.splash.SplashScreen
 
 @Composable
 fun PazNavGraph(startDeepLinkRoute: String? = null) {
     val navController = rememberNavController()
 
-    // When the app is opened from a notification tap, navigate to the target
-    // screen after the graph is ready. We still start at Splash so auth state
-    // is checked first; the navigation only fires after the graph is composed.
-    LaunchedEffect(startDeepLinkRoute) {
-        if (startDeepLinkRoute != null) {
-            navController.navigate(startDeepLinkRoute)
-        }
-    }
+    // When the app is opened from a notification tap, the target route must only be
+    // navigated to AFTER Shell has been pushed on top of Splash — otherwise this races
+    // Splash's own async auth-check navigation (either one can clobber the other,
+    // leaving a broken back stack or silently dropping the deep link). We hold the
+    // route in local state and consume it once Shell is in place, then null it out so
+    // it doesn't re-fire on recomposition/config change.
+    var pendingDeepLinkRoute by remember(startDeepLinkRoute) { mutableStateOf(startDeepLinkRoute) }
 
     NavHost(
         navController = navController,
@@ -58,6 +68,10 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
                 onNavigateToHome = {
                     navController.navigate(Screen.Shell.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                    pendingDeepLinkRoute?.let { route ->
+                        navController.navigate(route)
+                        pendingDeepLinkRoute = null
                     }
                 },
             )
@@ -165,6 +179,51 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
             val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
             LifeGroupDetailScreen(navController = navController, lifeGroupId = lifeGroupId)
         }
+        composable(Screen.LifeGroups.route) {
+            LifeGroupsScreen(navController = navController)
+        }
+        composable(Screen.AllLifeGroups.route) {
+            AllLifeGroupsScreen(navController = navController)
+        }
+        composable(Screen.LifeGroupDiscovery.route) {
+            LifeGroupDiscoveryScreen(navController = navController)
+        }
+        composable(
+            route = Screen.MinistryManage.route,
+            arguments = listOf(androidx.navigation.navArgument("ministryId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val ministryId = backStackEntry.arguments?.getString("ministryId") ?: return@composable
+            MinistryManageScreen(navController = navController, ministryId = ministryId)
+        }
+        composable(
+            route = Screen.LifeGroupManage.route,
+            arguments = listOf(androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
+            LifeGroupManageScreen(navController = navController, lifeGroupId = lifeGroupId)
+        }
+        composable(
+            route = Screen.MinistryMembersList.route,
+            arguments = listOf(androidx.navigation.navArgument("ministryId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val ministryId = backStackEntry.arguments?.getString("ministryId") ?: return@composable
+            GroupMembersListScreen(
+                navController = navController,
+                groupId = ministryId,
+                groupType = GroupMembersType.Ministry,
+            )
+        }
+        composable(
+            route = Screen.LifeGroupMembersList.route,
+            arguments = listOf(androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
+            GroupMembersListScreen(
+                navController = navController,
+                groupId = lifeGroupId,
+                groupType = GroupMembersType.LifeGroup,
+            )
+        }
         composable(Screen.LifeGroupStudyList.route) {
             LifeGroupStudyListScreen(navController = navController)
         }
@@ -220,6 +279,9 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         }
         composable(route = Screen.CasaDePazAnalytics.route) {
             CasaDePazAnalyticsScreen(navController = navController)
+        }
+        composable(Screen.ReportsList.route) {
+            ReportsListScreen(navController = navController)
         }
         composable(Screen.CasaDePazLessonsList.route) {
             CasaDePazLessonsListScreen(navController = navController)

@@ -56,11 +56,18 @@ fun MarkdownText(
 }
 
 private sealed class MarkdownBlock {
-    data class Heading(val level: Int, val text: String) : MarkdownBlock()
+    data class Heading(
+        val level: Int,
+        val text: String,
+    ) : MarkdownBlock()
 
-    data class ListItem(val text: String) : MarkdownBlock()
+    data class ListItem(
+        val text: String,
+    ) : MarkdownBlock()
 
-    data class Paragraph(val text: String) : MarkdownBlock()
+    data class Paragraph(
+        val text: String,
+    ) : MarkdownBlock()
 }
 
 private fun parseMarkdownBlocks(markdown: String): List<MarkdownBlock> =

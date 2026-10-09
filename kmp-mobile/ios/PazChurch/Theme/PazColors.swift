@@ -54,6 +54,15 @@ enum PazColors {
             ? UIColor(hex: "5B9BD5") : UIColor(hex: "032E58")
     })
 
+    /// Title-role text color. Unlike `accent` (which intentionally turns sky
+    /// blue in dark mode for icons/links/charts), title text should stay
+    /// near-neutral in dark mode — near-white, not blue — so headings don't
+    /// read as tappable links or contribute to the "blue haze" complaint.
+    static let titleInk = Color(UIColor {
+        $0.userInterfaceStyle == .dark
+            ? UIColor(hex: "EAEFF7") : UIColor(hex: "032E58")
+    })
+
     // MARK: - Semantic / legacy aliases
 
     static let primary = pazPrimary
@@ -64,6 +73,7 @@ enum PazColors {
     // MARK: - Semantic
 
     static let pazCoral = Color(hex: "E0533D")
+    static let menuFormularios = Color(hex: "6A1B9A")
 
     // MARK: - Gradients
 

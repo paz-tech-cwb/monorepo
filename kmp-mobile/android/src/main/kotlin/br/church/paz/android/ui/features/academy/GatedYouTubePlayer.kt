@@ -40,10 +40,12 @@ fun GatedYouTubePlayer(
     modifier: Modifier = Modifier,
     onTick: (percentage: Int, positionSeconds: Int) -> Unit,
     onPause: (percentage: Int, positionSeconds: Int) -> Unit,
+    onError: () -> Unit = {},
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentOnTick by rememberUpdatedState(onTick)
     val currentOnPause by rememberUpdatedState(onPause)
+    val currentOnError by rememberUpdatedState(onError)
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
 
     DisposableEffect(lifecycleOwner) {
@@ -101,6 +103,19 @@ fun GatedYouTubePlayer(
                         ) {
                             currentOnPause(pct.toInt().coerceIn(0, 100), seconds.toInt().coerceAtLeast(0))
                         }
+
+                        @JavascriptInterface
+                        fun onEnded(
+                            pct: Double,
+                            seconds: Double,
+                        ) {
+                            currentOnPause(pct.toInt().coerceIn(0, 100), seconds.toInt().coerceAtLeast(0))
+                        }
+
+                        @JavascriptInterface
+                        fun onError(code: Double) {
+                            currentOnError()
+                        }
                     },
                     "PazPlayerBridge",
                 )
@@ -117,9 +132,10 @@ fun GatedYouTubePlayer(
 }
 
 /**
- * IFrame Player API HTML: `controls=0&disablekb=1&fs=0&rel=0&modestbranding=1&playsinline=1`
- * hides native player chrome (users can't scrub via visible controls), and a 1s poll blocks any
- * forward jump greater than 2s beyond the last known time via `seekTo` — a JS-level speed-bump,
+ * IFrame Player API HTML: `autoplay=1&disablekb=1&fs=0&rel=0&modestbranding=1&playsinline=1` with
+ * native controls visible (`controls=1`) so the user has something tappable to start/pause the
+ * video — a 1s poll still blocks any forward jump greater than 2s beyond the last known time via
+ * `seekTo`, so visible controls don't defeat the anti-cheat gate. This is a JS-level speed-bump,
  * not a security boundary (the backend's own anti-cheat clamp in `CourseProgressService` is the
  * real source of truth).
  */
@@ -143,22 +159,34 @@ private fun gatedPlayerHtml(youtubeVideoId: String): String =
           player = new YT.Player('player', {
             videoId: '$youtubeVideoId',
             playerVars: {
-              controls: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1,
+              autoplay: 1, controls: 1, disablekb: 1, fs: 0, rel: 0, modestbranding: 1,
               playsinline: 1, origin: 'https://www.youtube.com'
             },
             events: {
-              onStateChange: onPlayerStateChange
+              onReady: onPlayerReady,
+              onStateChange: onPlayerStateChange,
+              onError: onPlayerError
             }
           });
+        }
+
+        function onPlayerReady() {}
+
+        function onPlayerError(event) {
+          if (window.PazPlayerBridge) window.PazPlayerBridge.onError(event.data);
         }
 
         function onPlayerStateChange(event) {
           if (event.data === YT.PlayerState.PLAYING) {
             if (!pollTimer) pollTimer = setInterval(poll, 1000);
-          } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+          } else if (event.data === YT.PlayerState.PAUSED) {
             clearInterval(pollTimer);
             pollTimer = null;
             reportPause();
+          } else if (event.data === YT.PlayerState.ENDED) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+            reportEnded();
           }
         }
 
@@ -186,6 +214,13 @@ private fun gatedPlayerHtml(youtubeVideoId: String): String =
           if (!duration) return;
           var pct = Math.min(100, Math.round((current / duration) * 100));
           if (window.PazPlayerBridge) window.PazPlayerBridge.onPaused(pct, current);
+        }
+
+        function reportEnded() {
+          if (!player || !player.getDuration) return;
+          var duration = player.getDuration();
+          if (!duration) return;
+          if (window.PazPlayerBridge) window.PazPlayerBridge.onEnded(100, duration);
         }
 
         window.pazReportPause = reportPause;

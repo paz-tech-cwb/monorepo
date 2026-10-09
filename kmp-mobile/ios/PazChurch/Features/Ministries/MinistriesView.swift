@@ -4,9 +4,21 @@ import SwiftUI
 
 struct MinistriesView: View {
     @State private var viewModel: MinistriesViewModel
+    @Environment(AuthenticationCoordinator.self) private var authCoordinator
+    @State private var showCreateMinistry = false
+
+    private let churchRepository: ChurchRepository
 
     init(churchRepository: ChurchRepository) {
+        self.churchRepository = churchRepository
         _viewModel = State(initialValue: MinistriesViewModel(churchRepository: churchRepository))
+    }
+
+    /// Mirrors MinistryDetailView's leadership check exactly — same
+    /// non-member/non-guest roles the backend's LEADERSHIP_ROLES enforces,
+    /// not a stricter admin-only rule.
+    private var canManage: Bool {
+        authCoordinator.currentUser?.role.isLeader == true
     }
 
     var body: some View {
@@ -38,6 +50,23 @@ struct MinistriesView: View {
         .navigationTitle("Ministérios")
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            if canManage {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: { showCreateMinistry = true }) {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showCreateMinistry) {
+            MinistryCreateView(
+                churchRepository: churchRepository,
+                formsRepository: IosAppContainer.shared.formsRepository
+            ) { _ in
+                Task { await viewModel.load() }
+            }
+        }
     }
 
     private var loadingState: some View {

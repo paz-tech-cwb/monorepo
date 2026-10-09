@@ -91,12 +91,27 @@ struct LifeGroupsView: View {
     }
 }
 
+enum LifeGroupSortOption: String, CaseIterable, Identifiable {
+    case name = "Nome"
+    case distance = "Distância"
+
+    var id: String { rawValue }
+}
+
 /// The unfiltered, everyone-in-the-church list/map — either the fallback
 /// when the viewer has no group of their own, or reached via "Ver mais
 /// life groups".
 struct AllLifeGroupsContentView: View {
     @State private var viewModel: AllLifeGroupsViewModel
     @State private var showMap = false
+    @State private var locationProvider = LocationProvider()
+    @State private var searchText = ""
+    @State private var kidsSpaceOnly = false
+    @State private var sortOption: LifeGroupSortOption = .name
+    /// Debounces `searchText` → repository calls so every keystroke doesn't
+    /// fire a network request.
+    @State private var searchTask: Task<Void, Never>?
+
     let churchRepository: ChurchRepository
 
     init(churchRepository: ChurchRepository) {
@@ -108,36 +123,122 @@ struct AllLifeGroupsContentView: View {
         !viewModel.isLoading && viewModel.error == nil && !viewModel.lifeGroups.isEmpty
     }
 
+    private var hasLocation: Bool {
+        locationProvider.coordinate != nil
+    }
+
+    /// Geocoded groups (both lat/lng present), used when the view is sorted
+    /// by distance so they can be ranked ahead of non-geocoded groups rather
+    /// than having "unknown distance" silently coerced to "farthest away".
+    private var geocodedGroups: [LifeGroup] {
+        baseFilteredGroups.filter { $0.latitude != nil && $0.longitude != nil }
+    }
+
+    private var nonGeocodedGroups: [LifeGroup] {
+        baseFilteredGroups.filter { $0.latitude == nil || $0.longitude == nil }
+    }
+
+    private var baseFilteredGroups: [LifeGroup] {
+        var groups = viewModel.lifeGroups
+        if kidsSpaceOnly {
+            groups = groups.filter { $0.kidsCount > 0 }
+        }
+        return groups
+    }
+
+    private var displayedGroups: [LifeGroup] {
+        switch sortOption {
+        case .name:
+            return baseFilteredGroups.sorted {
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
+        case .distance:
+            guard let userCoordinate = locationProvider.coordinate else { return baseFilteredGroups }
+            let userLat = KotlinDouble(value: userCoordinate.latitude)
+            let userLon = KotlinDouble(value: userCoordinate.longitude)
+            let sortedGeocoded = geocodedGroups.sorted { (lhs: LifeGroup, rhs: LifeGroup) in
+                let d1 = LifeGroupDistanceKt.haversineDistanceKm(
+                    lat1: userLat, lon1: userLon,
+                    lat2: lhs.latitude, lon2: lhs.longitude
+                )?.doubleValue ?? .greatestFiniteMagnitude
+                let d2 = LifeGroupDistanceKt.haversineDistanceKm(
+                    lat1: userLat, lon1: userLon,
+                    lat2: rhs.latitude, lon2: rhs.longitude
+                )?.doubleValue ?? .greatestFiniteMagnitude
+                return d1 < d2
+            }
+            // Non-geocoded groups are appended after, distinctly from being
+            // interleaved as if they were just "very far away" — the card
+            // itself also marks them so the distinction is visible in the UI.
+            return sortedGeocoded + nonGeocodedGroups
+        }
+    }
+
+    private func distanceKm(to lifeGroup: LifeGroup) -> Double? {
+        guard sortOption == .distance, let userCoordinate = locationProvider.coordinate else { return nil }
+        return LifeGroupDistanceKt.haversineDistanceKm(
+            lat1: KotlinDouble(value: userCoordinate.latitude),
+            lon1: KotlinDouble(value: userCoordinate.longitude),
+            lat2: lifeGroup.latitude, lon2: lifeGroup.longitude
+        )?.doubleValue
+    }
+
     var body: some View {
         Group {
             if viewModel.isLoading {
                 loadingState
-            } else if let error = viewModel.error {
+            } else if let error = viewModel.error, !viewModel.hasLoadedOnce {
                 errorState(error: error)
-            } else if viewModel.lifeGroups.isEmpty {
-                emptyState("Nenhum life group encontrado")
             } else if showMap {
                 // Map is edge-to-edge (ignoresSafeArea) so it reads behind the
-                // translucent nav bar.
-                LifeGroupsMapView(lifeGroups: viewModel.lifeGroups)
+                // translucent nav bar — intentionally without the filter bar,
+                // same as before this fix; only the list mode's zero-result
+                // search needed the filter bar kept alive.
+                LifeGroupsMapView(lifeGroups: displayedGroups, locationProvider: locationProvider)
             } else {
-                ScrollView {
-                    VStack(spacing: PazSpacing.md) {
-                        Spacer().frame(height: PazSpacing.sm)
-                        ForEach(viewModel.lifeGroups, id: \.id) { lifeGroup in
-                            NavigationLink(destination: LifeGroupDetailView(lifeGroup: lifeGroup)) {
-                                LifeGroupCard(lifeGroup: lifeGroup)
+                VStack(spacing: 0) {
+                    filterBar
+                    if let error = viewModel.error {
+                        inlineError(error)
+                    } else if viewModel.isSearching {
+                        searchLoadingState
+                    } else if viewModel.lifeGroups.isEmpty {
+                        emptyState("Nenhum life group encontrado")
+                    } else if displayedGroups.isEmpty {
+                        emptyState("Nenhum life group encontrado para esse filtro")
+                    } else {
+                        ScrollView {
+                            VStack(spacing: PazSpacing.md) {
+                                Spacer().frame(height: PazSpacing.sm)
+                                ForEach(displayedGroups, id: \.id) { lifeGroup in
+                                    NavigationLink(destination: LifeGroupDetailView(lifeGroup: lifeGroup)) {
+                                        LifeGroupCard(
+                                            lifeGroup: lifeGroup,
+                                            distanceKm: distanceKm(to: lifeGroup),
+                                            isSortedByDistance: sortOption == .distance && hasLocation
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                Spacer().frame(height: PazSpacing.xl)
                             }
-                            .buttonStyle(.plain)
+                            .padding(.horizontal, PazSpacing.lg)
                         }
-                        Spacer().frame(height: PazSpacing.xl)
+                        .refreshable { await viewModel.load(search: searchText) }
                     }
-                    .padding(.horizontal, PazSpacing.lg)
                 }
-                .refreshable { await viewModel.load() }
             }
         }
         .background(PazMeshBackground())
+        .task {
+            locationProvider.requestAuthorization()
+        }
+        .onDisappear {
+            searchTask?.cancel()
+        }
+        .onChange(of: hasLocation) { _, nowHasLocation in
+            if !nowHasLocation { sortOption = .name }
+        }
         .toolbar {
             if showsToggle {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -152,6 +253,74 @@ struct AllLifeGroupsContentView: View {
         }
     }
 
+    /// Only offers "Distância" once a location is actually available — a
+    /// `.menu`-style `Picker`'s `.disabled()` on an individual option doesn't
+    /// actually block selection on iOS, so the option is removed from the
+    /// list entirely rather than shown-but-disabled.
+    private var availableSortOptions: [LifeGroupSortOption] {
+        hasLocation ? LifeGroupSortOption.allCases : [.name]
+    }
+
+    private var filterBar: some View {
+        VStack(spacing: PazSpacing.sm) {
+            HStack(spacing: PazSpacing.sm) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.gray)
+                    .accessibilityHidden(true)
+                TextField("Buscar por nome ou líder", text: $searchText)
+                    .textFieldStyle(.plain)
+                    .onChange(of: searchText) { _, newValue in
+                        searchTask?.cancel()
+                        searchTask = Task {
+                            try? await Task.sleep(nanoseconds: 400_000_000)
+                            if Task.isCancelled { return }
+                            await viewModel.load(search: newValue)
+                        }
+                    }
+                if !searchText.isEmpty {
+                    Button {
+                        searchText = ""
+                        searchTask?.cancel()
+                        searchTask = Task { await viewModel.load(search: "") }
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.gray)
+                    }
+                    .accessibilityLabel("Limpar busca")
+                }
+            }
+            .padding(PazSpacing.md)
+            .glassCard(radius: PazSpacing.cardRadiusCompact)
+
+            HStack(spacing: PazSpacing.sm) {
+                Toggle(isOn: $kidsSpaceOnly) {
+                    Text("Com crianças")
+                        .font(PazTypography.labelSmall)
+                }
+                .toggleStyle(.switch)
+
+                Spacer()
+
+                Picker("Ordenar", selection: $sortOption) {
+                    ForEach(availableSortOptions) { option in
+                        Text(option.rawValue).tag(option)
+                    }
+                }
+                .pickerStyle(.menu)
+            }
+            .padding(.horizontal, PazSpacing.xs)
+
+            if !hasLocation {
+                Text("Ative a localização para ordenar por distância")
+                    .font(PazTypography.labelSmall)
+                    .foregroundColor(.gray)
+                    .padding(.horizontal, PazSpacing.xs)
+            }
+        }
+        .padding(.horizontal, PazSpacing.lg)
+        .padding(.top, PazSpacing.sm)
+    }
+
     private var loadingState: some View {
         ScrollView {
             VStack(spacing: PazSpacing.md) {
@@ -163,6 +332,33 @@ struct AllLifeGroupsContentView: View {
             }
             .padding(.horizontal, PazSpacing.lg)
         }
+    }
+
+    /// Lightweight in-place indicator for a debounced search reload — unlike
+    /// `loadingState`, this never replaces `filterBar`, so the TextField
+    /// keeps focus and the keyboard stays up while typing.
+    private var searchLoadingState: some View {
+        VStack {
+            Spacer()
+            ProgressView()
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// A search-triggered error renders inline, below the still-mounted
+    /// `filterBar`, rather than tearing down the whole screen.
+    private func inlineError(_ error: String) -> some View {
+        VStack {
+            Spacer()
+            Text(error)
+                .font(PazTypography.bodySmall)
+                .foregroundColor(.gray)
+            Button("Tentar novamente") { viewModel.onRetry() }
+                .font(PazTypography.labelSmall)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func errorState(error: String) -> some View {
@@ -183,6 +379,18 @@ struct AllLifeGroupsContentView: View {
 
 struct LifeGroupCard: View {
     let lifeGroup: LifeGroup
+    /// Only set when the list is sorted by distance — `.some(km)` for a
+    /// geocoded group, `nil` otherwise. Used only to decide whether to show
+    /// distance-related info at all; see `isSortedByDistance`.
+    var distanceKm: Double? = nil
+    /// True whenever the active sort is "Distância", regardless of whether
+    /// THIS card has coordinates — lets a non-geocoded card show "location
+    /// unavailable" instead of just omitting the row silently.
+    var isSortedByDistance: Bool = false
+
+    private var isMissingLocation: Bool {
+        lifeGroup.latitude == nil || lifeGroup.longitude == nil
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: PazSpacing.md) {
@@ -218,6 +426,15 @@ struct LifeGroupCard: View {
                         .cornerRadius(20)
                     if lifeGroup.kidsCount > 0 {
                         Text("\(lifeGroup.kidsCount) crianças")
+                            .font(PazTypography.labelSmall)
+                            .foregroundColor(.gray)
+                    }
+                    if let distanceKm {
+                        Text(String(format: "%.1f km", distanceKm))
+                            .font(PazTypography.labelSmall)
+                            .foregroundColor(.gray)
+                    } else if isSortedByDistance, isMissingLocation {
+                        Text("Localização não disponível")
                             .font(PazTypography.labelSmall)
                             .foregroundColor(.gray)
                     }
@@ -288,8 +505,28 @@ class LifeGroupsViewModel {
 @Observable
 class AllLifeGroupsViewModel {
     var lifeGroups: [LifeGroup] = []
+    /// True only for the very first load, before the filter bar has ever
+    /// rendered — drives the full-screen skeleton.
     var isLoading = true
+    /// True while a debounced search reload is in flight — the filter bar
+    /// stays mounted and only the content below it reflects this.
+    var isSearching = false
     var error: String?
+
+    /// Remembers the last search term so `onRetry()` (triggered from the
+    /// inline error after a search-triggered failure) retries WITH the
+    /// user's current search rather than silently discarding it.
+    private var lastSearch: String?
+    /// True once a load (initial or search) has ever completed — exposed so
+    /// the view can distinguish "genuine first-load failure" (full-screen
+    /// error, filter bar never shown) from any subsequent failure (inline
+    /// error, filter bar stays mounted).
+    private(set) var hasLoadedOnce = false
+    /// Incremented each time a new load is kicked off; lets `load()` detect
+    /// and discard a stale response if a newer search has started in the
+    /// meantime, since task cancellation alone can't abort an in-flight
+    /// network call.
+    private var searchGeneration = 0
 
     private let churchRepository: ChurchRepository
 
@@ -298,21 +535,38 @@ class AllLifeGroupsViewModel {
         Task { await load() }
     }
 
-    func load() async {
-        isLoading = true
-        do {
-            self.lifeGroups = try await churchRepository.getAllLifeGroups()
-            self.error = nil
-        } catch {
-            self.error = "Erro ao carregar dados"
+    /// `search` is forwarded to the backend (name/leader/co-leader match);
+    /// kids-space filtering and sort stay client-side in the view since they
+    /// only reorder/narrow what's already loaded.
+    func load(search: String? = nil) async {
+        let isInitialLoad = !hasLoadedOnce
+        self.error = nil
+        if isInitialLoad {
+            isLoading = true
+        } else {
+            isSearching = true
         }
+        searchGeneration += 1
+        let generation = searchGeneration
+        do {
+            let results = try await churchRepository.getAllLifeGroups(search: search)
+            guard generation == searchGeneration else { return }
+            self.lifeGroups = results
+            self.error = nil
+            self.lastSearch = search
+            hasLoadedOnce = true
+        } catch {
+            guard generation == searchGeneration else { return }
+            self.error = "Erro ao carregar dados"
+            self.lastSearch = search
+        }
+        guard generation == searchGeneration else { return }
         self.isLoading = false
+        self.isSearching = false
     }
 
     func onRetry() {
-        isLoading = true
-        error = nil
-        Task { await load() }
+        Task { await load(search: lastSearch) }
     }
 }
 

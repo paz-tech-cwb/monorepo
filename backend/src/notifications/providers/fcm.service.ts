@@ -26,7 +26,12 @@ export class FcmService implements OnModuleInit {
    */
   async sendToUser(
     userId: number,
-    payload: { title: string; body: string; data?: Record<string, string> },
+    payload: {
+      title: string;
+      body: string;
+      data?: Record<string, string>;
+      androidChannelId?: string;
+    },
   ): Promise<boolean> {
     const tokens = await this.deviceTokensService.findAllForUser(userId);
     if (tokens.length === 0) return false;
@@ -38,6 +43,13 @@ export class FcmService implements OnModuleInit {
           token: deviceToken.token,
           notification: { title: payload.title, body: payload.body },
           data: payload.data,
+          ...(payload.androidChannelId
+            ? {
+                android: {
+                  notification: { channelId: payload.androidChannelId },
+                },
+              }
+            : {}),
         });
         await this.deviceTokensService.markUsed(deviceToken.token);
         anySuccess = true;

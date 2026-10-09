@@ -1,5 +1,6 @@
 # Gradle
 .gradle/
+.kotlin/
 build/
 **/build/
 !gradle/wrapper/gradle-wrapper.jar
@@ -17,6 +18,7 @@ local.properties
 # Kotlin
 *.class
 *.kotlin_module
+.kotlin/
 !gradle-wrapper.jar
 
 # macOS
@@ -48,3 +50,4 @@ shared/build/
 .env.local
 google-services.json
 GoogleService-Info.plist
+.kotlin/

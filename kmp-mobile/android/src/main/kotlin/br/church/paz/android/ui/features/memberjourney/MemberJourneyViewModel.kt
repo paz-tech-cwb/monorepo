@@ -21,23 +21,29 @@ class MemberJourneyViewModel(
     val effect = _effect.receiveAsFlow()
 
     init {
-        loadJourney()
+        loadJourney(showSkeleton = true)
     }
 
-    private fun loadJourney() {
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = loadJourney(showSkeleton = false)
+
+    private fun loadJourney(showSkeleton: Boolean) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton, error = null) }
             runCatching { memberJourneyRepository.getMemberJourney() }
                 .onSuccess { journey ->
                     _uiState.update {
                         it.copy(
-                            track = journey.track,
-                            allStepsComplete = journey.allStepsComplete,
+                            tracks = journey.tracks,
+                            currentTrackKey = journey.currentTrackKey,
+                            currentTrackComplete = journey.currentTrackComplete,
                             isLoading = false,
+                            isRefreshing = false,
                         )
                     }
                 }.onFailure { e ->
                     _uiState.update {
-                        it.copy(isLoading = false, error = e.message ?: "Erro ao carregar jornada")
+                        it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Erro ao carregar jornada")
                     }
                 }
         }
@@ -47,8 +53,5 @@ class MemberJourneyViewModel(
         viewModelScope.launch { _effect.send(MemberJourneyEffect.NavigateBack) }
     }
 
-    fun onRetry() {
-        _uiState.update { it.copy(isLoading = true, error = null) }
-        loadJourney()
-    }
+    fun onRetry() = loadJourney(showSkeleton = true)
 }

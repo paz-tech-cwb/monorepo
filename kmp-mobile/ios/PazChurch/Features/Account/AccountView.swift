@@ -119,12 +119,18 @@ struct AccountView: View {
                             AccountRow(title: "Jornada do Membro", icon: "figure.walk", tint: PazColors.accent)
                         }
                         .buttonStyle(.plain)
-                        rowDivider
-                        NavigationLink(destination: FormulariosView(formsRepository: IosAppContainer.shared
-                                .formsRepository)) {
-                            AccountRow(title: "Formulários", icon: "list.clipboard", tint: Color(hex: "6A1B9A"))
+                        if user.role.isLeader {
+                            rowDivider
+                            NavigationLink(destination: FormulariosView(formsRepository: IosAppContainer.shared
+                                    .formsRepository)) {
+                                AccountRow(
+                                    title: "Formulários",
+                                    icon: "list.clipboard",
+                                    tint: PazColors.menuFormularios
+                                )
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                         rowDivider
                         NavigationLink(destination: MinistriesView(churchRepository: IosAppContainer.shared
                                 .churchRepository)) {
@@ -137,39 +143,11 @@ struct AccountView: View {
                             AccountRow(title: "Life Groups", icon: "person.3.fill", tint: Color(hex: "2E7D32"))
                         }
                         .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-
-                    sectionLabel("RELATÓRIOS")
-                    menuCard {
-                        NavigationLink(destination: CasaDePazSubmissionsListView(formsRepository: IosAppContainer.shared
-                                .formsRepository)) {
-                            AccountRow(title: "Casa de Paz", icon: "house.fill", tint: Color(hex: "E65100"))
+                        rowDivider
+                        NavigationLink(destination: ReportsListView()) {
+                            AccountRow(title: "Relatórios", icon: "chart.bar.fill", tint: Color(hex: "2E7D32"))
                         }
                         .buttonStyle(.plain)
-                        if user.role.isLeader {
-                            rowDivider
-                            NavigationLink(destination: LifeGroupAnalyticsView(
-                                lifeGroupId: nil,
-                                analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository,
-                                churchRepository: IosAppContainer.shared.churchRepository
-                            )) {
-                                AccountRow(title: "Life Groups", icon: "chart.bar.fill", tint: Color(hex: "2E7D32"))
-                            }
-                            .buttonStyle(.plain)
-                            rowDivider
-                            NavigationLink(destination: CasaDePazAnalyticsView(
-                                analyticsRepository: IosAppContainer.shared.casaDePazAnalyticsRepository
-                            )) {
-                                AccountRow(
-                                    title: "Casa de Paz (Relatório)",
-                                    icon: "chart.pie.fill",
-                                    tint: Color(hex: "E65100")
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)
@@ -211,10 +189,18 @@ struct AccountView: View {
                                     .foregroundStyle(PazColors.slateLight)
                             }
                             .padding(.horizontal, 16).padding(.vertical, 12)
+                            .frame(maxWidth: .infinity)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 20)
+
+                    Spacer().frame(height: 20)
+                    Text("Versão \(Bundle.main.appVersionString)")
+                        .font(PazTypography.labelSmall)
+                        .foregroundStyle(PazColors.slateLight)
+                        .devToolsGate(currentUserRole: user.role)
                 }
 
                 Spacer().frame(height: 32)
@@ -235,8 +221,8 @@ struct AccountView: View {
                         .foregroundStyle(PazColors.accent)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(user.name).font(PazTypography.titleMedium).foregroundStyle(PazColors.accent)
-                    Text(user.email).font(PazTypography.bodySmall).foregroundStyle(PazColors.pazSky).lineLimit(1)
+                    Text(user.name).font(PazTypography.titleMedium).foregroundStyle(PazColors.titleInk)
+                    Text(user.email ?? "").font(PazTypography.bodySmall).foregroundStyle(PazColors.pazSky).lineLimit(1)
                     Spacer().frame(height: 2)
                     Text(user.role.displayName)
                         .font(PazTypography.labelSmall)
@@ -256,7 +242,6 @@ struct AccountView: View {
                 .padding(8)
                 .background(PazMaterial.chip(for: colorScheme))
                 .clipShape(Circle())
-                .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
                 .padding(10)
         }
     }
@@ -307,6 +292,8 @@ private struct AccountRow: View {
             Image(systemName: "chevron.right").font(.system(size: 13)).foregroundStyle(PazColors.slateLight)
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
     }
 }
 

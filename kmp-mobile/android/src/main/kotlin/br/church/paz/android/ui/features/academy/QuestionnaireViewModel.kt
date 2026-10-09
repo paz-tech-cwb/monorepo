@@ -104,4 +104,8 @@ class QuestionnaireViewModel(
                 }
         }
     }
+
+    fun onSubmitErrorShown() {
+        _uiState.update { it.copy(submitError = null) }
+    }
 }

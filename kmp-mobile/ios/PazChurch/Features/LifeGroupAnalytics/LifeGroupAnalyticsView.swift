@@ -3,19 +3,20 @@ import SwiftUI
 
 struct LifeGroupAnalyticsView: View {
     @State private var viewModel: LifeGroupAnalyticsViewModel
-    @State private var shareImage: UIImage?
+    @State private var shareFileURL: URL?
     @State private var showShareSheet = false
+    @State private var isExportingPDF = false
+    @State private var exportError: String?
 
     private static let monthLabels = [
         "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez",
     ]
 
-    init(lifeGroupId: Int32?, analyticsRepository: LifeGroupAnalyticsRepository, churchRepository: ChurchRepository) {
+    init(lifeGroupId: Int32?, analyticsRepository: LifeGroupAnalyticsRepository) {
         _viewModel = State(
             initialValue: LifeGroupAnalyticsViewModel(
                 lifeGroupId: lifeGroupId,
-                analyticsRepository: analyticsRepository,
-                churchRepository: churchRepository
+                analyticsRepository: analyticsRepository
             )
         )
     }
@@ -28,76 +29,122 @@ struct LifeGroupAnalyticsView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: exportImage) {
-                        Image(systemName: "square.and.arrow.up")
+                    Button(action: { Task { await exportPDF() } }) {
+                        if isExportingPDF {
+                            ProgressView()
+                        } else {
+                            Image(systemName: "square.and.arrow.up")
+                        }
                     }
-                    .disabled(viewModel.isLoading || viewModel.error != nil)
+                    .disabled(viewModel.isLoading || viewModel.error != nil || isExportingPDF || viewModel.overview == nil)
+                    .accessibilityLabel("Exportar PDF")
                 }
             }
             .sheet(isPresented: $showShareSheet) {
-                if let shareImage {
-                    ShareSheet(activityItems: [shareImage])
+                if let shareFileURL {
+                    ShareSheet(activityItems: [shareFileURL])
                 }
             }
+            .alert("Não foi possível exportar", isPresented: Binding(
+                get: { exportError != nil },
+                set: { if !$0 { exportError = nil } }
+            )) {
+                Button("OK", role: .cancel) { exportError = nil }
+            } message: {
+                Text(exportError ?? "")
+            }
             .task {
-                await viewModel.loadLifeGroups()
                 // Overview is best-effort and must never block or delay the
                 // main attendance/distribution report — run it concurrently
                 // rather than awaiting it before `load()`, matching Android's
                 // LifeGroupAnalyticsViewModel (launches overview in its own
-                // coroutine).
+                // coroutine). It's also the (scoped) source of the filter
+                // dropdown's groups now, replacing the unscoped
+                // ChurchRepository.getAllLifeGroups() call.
                 async let overview: Void = viewModel.loadOverview()
                 async let main: Void = viewModel.load()
                 _ = await (overview, main)
             }
     }
 
-    /// Rasterizes the chart content (filters excluded — they're controls, not
-    /// report content) to a UIImage and opens the system share sheet, so the
-    /// user can save it as a photo, AirDrop it, or "Print" to a PDF via the
-    /// share sheet's own Print action — no extra PDF library needed on mobile.
-    private func exportImage() {
-        let renderer = ImageRenderer(content:
-            VStack(alignment: .leading, spacing: 20) {
-                attendanceSection
-                distributionSection
+    /// Renders the FULL report (stat cards, overview donuts, attendance
+    /// chart, distribution chart — filters excluded, since they're controls
+    /// not report content) into a paginated PDF via `ReportPDFExporter`, and
+    /// opens the system share sheet with the resulting file.
+    private func exportPDF() async {
+        isExportingPDF = true
+        defer { isExportingPDF = false }
+        do {
+            let url = try await ReportPDFExporter.export(fileName: "relatorio-life-group.pdf") {
+                VStack(alignment: .leading, spacing: 20) {
+                    exportHeaderSection
+                    if let overview = viewModel.overview {
+                        statCardsSection(overview)
+                        overviewChartsSection(overview)
+                    }
+                    attendanceSection
+                    distributionChartSection
+                }
+                .padding(20)
+                .background(PazColors.background)
+                .environment(\.isExportingPDF, true)
+                .environment(\.colorScheme, .light)
             }
-            .padding(20)
-            .background(PazColors.background)
-            .frame(width: UIScreen.main.bounds.width)
-        )
-        renderer.scale = UIScreen.main.scale
-        if let image = renderer.uiImage {
-            shareImage = image
+            shareFileURL = url
             showShareSheet = true
+        } catch {
+            exportError = "Tente novamente em alguns instantes."
         }
     }
 
+    // The filter row is hoisted outside the loading/error branches below and
+    // stays mounted across filter-triggered reloads — only `isLoading` (the
+    // genuine first load) shows the full skeleton INSTEAD of the filters; a
+    // filter-triggered reload sets `isRefreshing` and keeps the filters +
+    // any already rendered content, with a lighter indicator in the report
+    // area (root cause C).
     @ViewBuilder
     private var screenContent: some View {
-        if viewModel.isLoading {
-            loadingState
-        } else if let error = viewModel.error {
-            errorState(message: error)
-        } else {
-            contentState
-        }
-    }
-
-    private var contentState: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 filtersSection
-                if let overview = viewModel.overview {
-                    statCardsSection(overview)
-                    overviewChartsSection(overview)
+                if viewModel.isLoading {
+                    loadingState
+                } else if let error = viewModel.error {
+                    errorState(message: error)
+                } else {
+                    reportState
                 }
-                attendanceSection
-                distributionSection
             }
             .padding(20)
         }
         .refreshable { await viewModel.load() }
+    }
+
+    private var reportState: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            if viewModel.isRefreshing {
+                SkeletonView().frame(height: 220)
+            }
+            // The overview stat cards/donuts are fed by their own independent
+            // endpoint, unrelated to attendance/distribution, so they always
+            // render regardless of either of those failing.
+            if let overview = viewModel.overview {
+                statCardsSection(overview)
+                overviewChartsSection(overview)
+            }
+            attendanceSection
+            distributionSection
+        }
+    }
+
+    private func sectionErrorNotice(title: String, message: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title).font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
+            Text(message).font(PazTypography.bodySmall).foregroundStyle(PazColors.slate)
+        }
+        .padding(16)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 
     // MARK: Overview stat cards + donuts
@@ -244,19 +291,25 @@ struct LifeGroupAnalyticsView: View {
     // MARK: Attendance
 
     private var attendanceSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Frequência de Presença").font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
-            // Monthly rows are always zero-filled for all 12 months, so the
-            // array is never actually empty for that view — check every row
-            // has zero meetings instead of just checking array emptiness.
-            if viewModel.attendanceRows.allSatisfy({ $0.meetingsCount == 0 }) {
-                PazBarChartEmptyView(message: "Nenhum registro de presença encontrado.")
+        Group {
+            if let attendanceError = viewModel.attendanceError {
+                sectionErrorNotice(title: "Frequência de Presença", message: attendanceError)
             } else {
-                PazBarChartView(entries: attendanceChartEntries)
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Frequência de Presença").font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
+                    // Monthly rows are always zero-filled for all 12 months, so the
+                    // array is never actually empty for that view — check every row
+                    // has zero meetings instead of just checking array emptiness.
+                    if viewModel.attendanceRows.allSatisfy({ $0.meetingsCount == 0 }) {
+                        PazBarChartEmptyView(message: "Nenhum registro de presença encontrado.")
+                    } else {
+                        PazBarChartView(entries: attendanceChartEntries)
+                    }
+                }
+                .padding(16)
+                .glassCard(radius: PazSpacing.cardRadiusCompact)
             }
         }
-        .padding(16)
-        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 
     private var attendanceChartEntries: [PazBarChartEntry] {
@@ -278,18 +331,44 @@ struct LifeGroupAnalyticsView: View {
     // MARK: Distribution
 
     private var distributionSection: some View {
+        Group {
+            if let distributionError = viewModel.distributionError {
+                sectionErrorNotice(title: "Distribuição dos Life Groups", message: distributionError)
+            } else {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Distribuição dos Life Groups").font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
+
+                    HStack(spacing: 8) {
+                        ForEach(LifeGroupDistributionTab.allCases) { tab in
+                            FilterChip(label: tab.label, isSelected: viewModel.distributionTab == tab) {
+                                viewModel.distributionTab = tab
+                            }
+                        }
+                    }
+
+                    distributionChartContent
+                }
+                .padding(16)
+                .glassCard(radius: PazSpacing.cardRadiusCompact)
+            }
+        }
+    }
+
+    /// Filter-chip-free version of `distributionSection`'s chart, for reuse
+    /// in the PDF export content — the chip row is a live on-screen control,
+    /// not report content, and shouldn't appear in a static PDF.
+    private var distributionChartSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Distribuição dos Life Groups").font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
+            distributionChartContent
+        }
+        .padding(16)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
+    }
 
-            HStack(spacing: 8) {
-                ForEach(LifeGroupDistributionTab.allCases) { tab in
-                    FilterChip(label: tab.label, isSelected: viewModel.distributionTab == tab) {
-                        viewModel.distributionTab = tab
-                    }
-                }
-            }
-
-            let buckets = viewModel.distributionForSelectedTab
+    private var distributionChartContent: some View {
+        let buckets = viewModel.distributionForSelectedTab
+        return Group {
             if buckets.isEmpty {
                 PazBarChartEmptyView(message: "Nenhum life group com esse dado cadastrado.")
             } else {
@@ -298,9 +377,34 @@ struct LifeGroupAnalyticsView: View {
                 )
             }
         }
-        .padding(16)
-        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
+
+    // MARK: Export header
+
+    private var exportHeaderSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Relatório de Frequência — Life Groups")
+                .font(PazTypography.titleSmall)
+                .foregroundStyle(PazColors.ink)
+            Text(exportScopeLabel)
+                .font(PazTypography.bodySmall)
+                .foregroundStyle(PazColors.slate)
+            Text("Exportado em \(Self.exportDateFormatter.string(from: Date()))")
+                .font(PazTypography.bodySmall)
+                .foregroundStyle(PazColors.slate)
+        }
+    }
+
+    private var exportScopeLabel: String {
+        let monthLabel = viewModel.month.map { Self.monthLabels[Int($0) - 1] } ?? "Todos os meses"
+        return "\(selectedLifeGroupLabel) · \(monthLabel) \(viewModel.year)"
+    }
+
+    private static let exportDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yyyy"
+        return formatter
+    }()
 
     // MARK: States
 
@@ -317,12 +421,8 @@ struct LifeGroupAnalyticsView: View {
     }
 
     private var loadingState: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                Spacer().frame(height: 20)
-                ForEach(0..<3, id: \.self) { _ in SkeletonView().frame(height: 220).padding(.horizontal, 20) }
-                Spacer()
-            }
+        VStack(spacing: 16) {
+            ForEach(0..<3, id: \.self) { _ in SkeletonView().frame(height: 220) }
         }
     }
 }

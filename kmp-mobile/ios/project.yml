@@ -16,6 +16,9 @@ packages:
   Kingfisher:
     url: https://github.com/onevcat/Kingfisher.git
     from: "8.0.0"
+  Pulse:
+    url: https://github.com/kean/Pulse
+    from: "5.1.2"
 
 settings:
   base:
@@ -52,6 +55,11 @@ targets:
       # Kingfisher for image caching
       - package: Kingfisher
         product: Kingfisher
+      # Pulse — in-app network inspector, gated behind DevToolsGate (see Account screen)
+      - package: Pulse
+        product: Pulse
+      - package: Pulse
+        product: PulseUI
     settings:
       base:
         INFOPLIST_FILE: PazChurch/Info.plist
@@ -81,3 +89,12 @@ targets:
           cd "$SRCROOT/.."
           ./gradlew :shared:assembleSharedXCFramework
         basedOnDependencyAnalysis: false
+    # Generate a shared, checked-in scheme (xcodegen rewrites the whole
+    # .xcodeproj package on every `generate`, which otherwise silently
+    # wipes out any manually-maintained xcshareddata/xcschemes — CI's
+    # workflows build with `-scheme PazChurch` and don't run xcodegen).
+    # Note: this also means xcodegen now owns the scheme's LastUpgradeVersion
+    # attribute — a future `xcodegen generate` run may reset it again.
+    scheme:
+      testTargets: []
+      gatherCoverageData: false

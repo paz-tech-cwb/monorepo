@@ -68,6 +68,39 @@ export class EventsService {
   }
 
   async findPaginated(page: number, limit: number) {
+    const occurrences = await this.findUpcomingOccurrences();
+    const skip = (page - 1) * limit;
+    return occurrences.slice(skip, skip + limit);
+  }
+
+  /**
+   * Returns upcoming event occurrences within the next `days` days, filtered by
+   * actual occurrence date rather than a fixed count. This guarantees a complete
+   * "next N days" window even when there are enough recurring events to otherwise
+   * exhaust a fixed-size slice before reaching the end of the window. `maxCount`
+   * caps the total number of rows returned as a safety bound for pathological
+   * cases (e.g. many overlapping daily recurrences), without being the primary
+   * filter.
+   */
+  async findUpcomingWithinDays(days: number, maxCount = 200) {
+    const occurrences = await this.findUpcomingOccurrences();
+
+    // Pad the window by one extra day internally to absorb timezone drift
+    // between the server's local time and clients computing "next N days"
+    // in their own local timezone (e.g. America/Sao_Paulo, UTC-3). Use an
+    // exclusive `<` cutoff to match the clients' comparison.
+    const windowEnd = new Date();
+    windowEnd.setHours(0, 0, 0, 0);
+    windowEnd.setDate(windowEnd.getDate() + days + 1);
+
+    const withinWindow = occurrences.filter(
+      (occurrence) => new Date(occurrence.initial_date) < windowEnd,
+    );
+
+    return withinWindow.slice(0, maxCount);
+  }
+
+  private async findUpcomingOccurrences() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const lookahead = new Date(today);
@@ -104,8 +137,7 @@ export class EventsService {
         new Date(a.initial_date).getTime() - new Date(b.initial_date).getTime(),
     );
 
-    const skip = (page - 1) * limit;
-    return occurrences.slice(skip, skip + limit);
+    return occurrences;
   }
 
   async findOne(id: number) {

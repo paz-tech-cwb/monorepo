@@ -21,40 +21,51 @@ import br.church.paz.android.ui.features.home.HomeViewModel
 import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsViewModel
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceEditorViewModel
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryViewModel
+import br.church.paz.android.ui.features.lifegroupdiscovery.LifeGroupDiscoveryViewModel
+import br.church.paz.android.ui.features.lifegroupdiscovery.LocationProvider
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListViewModel
 import br.church.paz.android.ui.features.memberjourney.MemberJourneyViewModel
+import br.church.paz.android.ui.features.ministries.AllLifeGroupsViewModel
+import br.church.paz.android.ui.features.ministries.GroupMembersListViewModel
+import br.church.paz.android.ui.features.ministries.GroupMembersType
 import br.church.paz.android.ui.features.ministries.LifeGroupDetailViewModel
+import br.church.paz.android.ui.features.ministries.LifeGroupManageViewModel
+import br.church.paz.android.ui.features.ministries.LifeGroupsViewModel
 import br.church.paz.android.ui.features.ministries.MinistriesViewModel
 import br.church.paz.android.ui.features.ministries.MinistryDetailViewModel
+import br.church.paz.android.ui.features.ministries.MinistryManageViewModel
 import br.church.paz.android.ui.features.notifications.NotificationPrefsViewModel
 import br.church.paz.android.ui.features.onboarding.OnboardingViewModel
 import br.church.paz.android.ui.features.profile.EditProfileViewModel
 import br.church.paz.android.ui.features.profile.ProfileViewModel
+import br.church.paz.android.ui.features.reports.ReportsListViewModel
 import br.church.paz.android.ui.features.search.SearchViewModel
 import br.church.paz.android.ui.features.splash.SplashViewModel
 import br.church.paz.android.ui.theme.AppThemeManager
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val androidModule =
     module {
         single { AppThemeManager() }
+        single { LocationProvider(androidContext()) }
         viewModel { SplashViewModel(get(), get()) }
         viewModel { LoginViewModel(get(), get()) }
         viewModel { (pendingBirthDateLogin: (suspend (String) -> Result<Unit>)?) ->
             OnboardingViewModel(get(), pendingBirthDateLogin)
         }
-        viewModel { HomeViewModel(get(), get()) }
-        viewModel { AcademyViewModel(get(), get()) }
+        viewModel { HomeViewModel(get(), get(), get(), get()) }
+        viewModel { AcademyViewModel(get(), get(), get()) }
         viewModel { (videoId: String) -> VideoPlayerViewModel(videoId) }
         viewModel { (courseId: String) -> CourseDetailViewModel(courseId, get()) }
         viewModel { (courseId: String) -> QuestionnaireViewModel(courseId, get()) }
         viewModel { CertificatesViewModel(get()) }
         viewModel { AccountViewModel(get(), get()) }
         viewModel { ProfileViewModel(get()) }
-        viewModel { EditProfileViewModel(get(), get()) } // (UserRepository, OnboardingRepository)
+        viewModel { EditProfileViewModel(get(), get(), get()) } // (UserRepository, OnboardingRepository, AuthRepository)
         viewModel { (eventId: String) -> AgendaDetailViewModel(get(), eventId) }
         viewModel { AgendaListViewModel(get()) } // get() resolves AgendaRepository
         viewModel { FormulariosViewModel(get()) }
@@ -65,9 +76,17 @@ val androidModule =
         viewModel { MemberJourneyViewModel(get()) }
         viewModel { NotificationPrefsViewModel(get()) }
         viewModel { SearchViewModel(get(), get(), get(), get()) }
-        viewModel { MinistriesViewModel(get()) }
-        viewModel { (ministryId: String) -> MinistryDetailViewModel(ministryId, get()) }
+        viewModel { MinistriesViewModel(get(), get(), get()) }
+        viewModel { (ministryId: String) -> MinistryDetailViewModel(ministryId, get(), get()) }
         viewModel { (lifeGroupId: String) -> LifeGroupDetailViewModel(lifeGroupId, get(), get()) }
+        viewModel { LifeGroupsViewModel(get()) }
+        viewModel { AllLifeGroupsViewModel(get()) }
+        viewModel { LifeGroupDiscoveryViewModel(get(), get()) }
+        viewModel { (ministryId: String) -> MinistryManageViewModel(ministryId, get(), get()) }
+        viewModel { (lifeGroupId: String) -> LifeGroupManageViewModel(lifeGroupId, get(), get()) }
+        viewModel { (groupId: String, groupType: GroupMembersType) ->
+            GroupMembersListViewModel(groupId, groupType, get())
+        }
         viewModel { LifeGroupStudyListViewModel(get(), get()) }
         viewModel { (studyId: String) -> LifeGroupStudyDetailViewModel(studyId, get(), get()) }
         viewModel { (studyId: String?) -> LifeGroupStudyEditorViewModel(studyId, get()) }
@@ -75,8 +94,9 @@ val androidModule =
         viewModel { (lifeGroupId: Int, date: String) ->
             LifeGroupAttendanceEditorViewModel(lifeGroupId, date, get())
         }
-        viewModel { (lifeGroupId: Int?) -> LifeGroupAnalyticsViewModel(lifeGroupId, get(), get()) }
+        viewModel { (lifeGroupId: Int?) -> LifeGroupAnalyticsViewModel(lifeGroupId, get()) }
         viewModel { CasaDePazAnalyticsViewModel(get()) }
+        viewModel { ReportsListViewModel(get()) }
         viewModel { CasaDePazLessonsListViewModel(get()) }
         viewModel { (week: Int) -> CasaDePazLessonDetailViewModel(week, get()) }
     }

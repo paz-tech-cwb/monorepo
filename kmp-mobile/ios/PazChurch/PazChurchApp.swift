@@ -1,5 +1,6 @@
 import FirebaseCore
 import FirebaseMessaging
+import Pulse
 import Shared
 import SwiftUI
 import UserNotifications
@@ -15,6 +16,53 @@ struct PazChurchApp: App {
     @State private var themeManager = AppThemeManager()
 
     init() {
+        // Must be first: registers Pulse's URLSessionProxyDelegate so it can intercept
+        // every NSURLSession task, including the one backing the shared Ktor client
+        // below. Once that client's httpClient is lazily constructed (the next
+        // statement touches it via the keychain/auth wiring), it's too late for Pulse
+        // to swap in its proxy delegate.
+        // The refresh-token and social-login endpoints' response bodies contain
+        // live access/refresh tokens. Exclude them from capture entirely via
+        // Pulse's own exclusion mechanism rather than relying on Ktor-level
+        // header sanitization (which does not cover response bodies) — see the
+        // note in PazHttpClient.kt.
+        let pulseLogger = NetworkLogger {
+            $0.excludedURLs = ["*auth/refresh*", "*auth/social-login*"]
+            // The Authorization header carries the live Bearer access token
+            // on every request; redact it so it never appears in the
+            // inspector UI.
+            $0.sensitiveHeaders = ["Authorization"]
+            // Belt-and-braces body-field redaction, in case a token ever shows up
+            // in a request/response body on an endpoint that isn't excluded above.
+            $0.sensitiveDataFields = ["access_token", "refresh_token"]
+        }
+        // Pulse defaults to a 14-day retention window; match Android's explicit
+        // one-hour RetentionManager.Period.ONE_HOUR (see PazApplication.kt) so
+        // captured traffic doesn't linger on-device far beyond the gated
+        // inspector flow's intended lifetime.
+        LoggerStore.shared.configuration.maxAge = 3600
+        URLSessionProxyDelegate.enableAutomaticRegistration(logger: pulseLogger)
+
+        // Pulse excludes its own log directory from backup internally, but only on the
+        // directory's first creation (a library bug: `createDirectoryIfNeeded` returns
+        // `true`, not `false`, when it just created the directory, so Pulse's own
+        // `isExcludedFromBackup` assignment — gated on that return value being `false` —
+        // is skipped on first launch). Set the flag ourselves on every launch so the
+        // request/response bodies Pulse persists there are never swept into iCloud/iTunes
+        // backup, even on a fresh install. `URL.logs` itself is Pulse-internal (package
+        // access), so the same Library/Logs/com.github.kean.logger path is reconstructed
+        // here directly. This relies on `LoggerStore.shared` (above) having already
+        // been touched so Pulse's log directory exists on disk — the `try?` below
+        // silently no-ops if the directory doesn't exist yet, so reordering these two
+        // statements would make this exclusion silently ineffective.
+        var pulseLogsURL = FileManager.default
+            .urls(for: .libraryDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Logs", isDirectory: true)
+            .appendingPathComponent("com.github.kean.logger", isDirectory: true)
+        var pulseLogsResourceValues = URLResourceValues()
+        pulseLogsResourceValues.isExcludedFromBackup = true
+        try? pulseLogsURL.setResourceValues(pulseLogsResourceValues)
+
         // Must run before any repository touches token storage.
         IosKeychainProvider.shared.keychain = KmpKeychainBridge()
 
@@ -25,6 +73,8 @@ struct PazChurchApp: App {
         #if !DEBUG
         IosAppContainer.shared.baseUrl = AppConfig.baseUrl
         #endif
+
+        PazImageCache.configure()
 
         let service = PushNotificationService.shared
         _pushService = State(initialValue: service)

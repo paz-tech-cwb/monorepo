@@ -22,6 +22,8 @@ interface FormsRepository {
     @Throws(Exception::class)
     suspend fun getCatalog(): List<FormCatalogItem>
     @Throws(Exception::class)
+    suspend fun refreshCatalog(): List<FormCatalogItem>
+    @Throws(Exception::class)
     suspend fun searchUsers(query: String): List<User>
     @Throws(Exception::class)
     suspend fun searchLifeGroups(query: String): List<LifeGroupSummary>
@@ -57,4 +59,11 @@ interface FormsRepository {
     suspend fun deleteCasaDePazReport(id: String)
     @Throws(Exception::class)
     suspend fun getCasaDePazCycles(): List<CasaDePazCycle>
+
+    /**
+     * Clears any in-memory caches (forms catalog, sectors) held by this repository.
+     * Must be called on logout so a different account on the same device doesn't
+     * inherit a permission-filtered catalog cached from the previous user.
+     */
+    fun clearCache()
 }

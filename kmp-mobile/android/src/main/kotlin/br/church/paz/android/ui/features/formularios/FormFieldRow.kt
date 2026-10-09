@@ -133,7 +133,11 @@ fun FieldRow(
                             capitalization = KeyboardCapitalization.None,
                             imeAction = imeAction,
                         ),
-                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { onImeAction() }, onDone = { onImeAction() }),
+                    keyboardActions =
+                        androidx.compose.foundation.text.KeyboardActions(
+                            onNext = { onImeAction() },
+                            onDone = { onImeAction() },
+                        ),
                     shape = PazShapes.large,
                 )
 
@@ -151,7 +155,11 @@ fun FieldRow(
                             capitalization = KeyboardCapitalization.Words,
                             imeAction = imeAction,
                         ),
-                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { onImeAction() }, onDone = { onImeAction() }),
+                    keyboardActions =
+                        androidx.compose.foundation.text.KeyboardActions(
+                            onNext = { onImeAction() },
+                            onDone = { onImeAction() },
+                        ),
                     shape = PazShapes.large,
                 )
 
@@ -164,7 +172,11 @@ fun FieldRow(
                     singleLine = true,
                     enabled = !isSubmitting,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = imeAction),
-                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { onImeAction() }, onDone = { onImeAction() }),
+                    keyboardActions =
+                        androidx.compose.foundation.text.KeyboardActions(
+                            onNext = { onImeAction() },
+                            onDone = { onImeAction() },
+                        ),
                     shape = PazShapes.large,
                 )
 
@@ -211,21 +223,23 @@ fun FieldRow(
                 }
 
             FormFieldType.SELECT -> {
-                val displayValue = if (def.optionValues.isEmpty()) {
-                    value
-                } else {
-                    def.options.getOrElse(def.optionValues.indexOf(value)) { value }
-                }
+                val displayValue =
+                    if (def.optionValues.isEmpty()) {
+                        value
+                    } else {
+                        def.options.getOrElse(def.optionValues.indexOf(value)) { value }
+                    }
                 PickerField(
                     value = displayValue,
                     options = def.options,
                     enabled = !isSubmitting,
                     onValueChange = { label ->
-                        val apiValue = if (def.optionValues.isEmpty()) {
-                            label
-                        } else {
-                            def.optionValues.getOrElse(def.options.indexOf(label)) { label }
-                        }
+                        val apiValue =
+                            if (def.optionValues.isEmpty()) {
+                                label
+                            } else {
+                                def.optionValues.getOrElse(def.options.indexOf(label)) { label }
+                            }
                         onValueChange(apiValue)
                     },
                 )
@@ -386,7 +400,11 @@ fun FieldRow(
                             capitalization = KeyboardCapitalization.Sentences,
                             imeAction = imeAction,
                         ),
-                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { onImeAction() }, onDone = { onImeAction() }),
+                    keyboardActions =
+                        androidx.compose.foundation.text.KeyboardActions(
+                            onNext = { onImeAction() },
+                            onDone = { onImeAction() },
+                        ),
                     shape = PazShapes.large,
                 )
         }
@@ -438,7 +456,9 @@ fun MaskedTextField(
         singleLine = true,
         enabled = enabled,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
-        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { onImeAction() }, onDone = { onImeAction() }),
+        keyboardActions =
+            androidx.compose.foundation.text
+                .KeyboardActions(onNext = { onImeAction() }, onDone = { onImeAction() }),
         shape = PazShapes.large,
     )
 }
@@ -482,17 +502,18 @@ fun PickerField(
                         onValueChange(option)
                         expanded = false
                     },
-                    leadingIcon = if (value == option) {
-                        {
-                            Icon(
-                                Icons.Filled.Check,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    } else {
-                        null
-                    },
+                    leadingIcon =
+                        if (value == option) {
+                            {
+                                Icon(
+                                    Icons.Filled.Check,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        } else {
+                            null
+                        },
                 )
             }
         }
@@ -575,7 +596,9 @@ fun TimeFieldRow(
     val (initialHour, initialMinute) =
         remember(value) {
             if (value.isEmpty()) {
-                java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY) to 0
+                java.util.Calendar
+                    .getInstance()
+                    .get(java.util.Calendar.HOUR_OF_DAY) to 0
             } else {
                 val parts = value.split(":")
                 val hour = parts.getOrNull(0)?.toIntOrNull() ?: 0

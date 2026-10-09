@@ -73,7 +73,7 @@ fun SearchScreen(
         Column(
             Modifier
                 .fillMaxWidth()
-                .background(PazGradients.Hero)
+                .background(PazGradients.heroForScheme)
                 .statusBarsPadding()
                 .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
             verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),

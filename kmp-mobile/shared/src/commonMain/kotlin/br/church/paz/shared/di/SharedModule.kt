@@ -55,7 +55,7 @@ val sharedNetworkModule = module {
 }
 
 val sharedRepositoryModule = module {
-    single<AuthRepository>          { AuthRepositoryImpl(get(), get(), get()) }
+    single<AuthRepository>          { AuthRepositoryImpl(get(), get(), get(), get()) }
     single<HomeRepository>          { HomeRepositoryImpl(get()) }
     single<AgendaRepository>        { AgendaRepositoryImpl(get()) }
     single<AcademyRepository>       { AcademyRepositoryImpl(get()) }

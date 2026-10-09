@@ -238,7 +238,7 @@ private fun LoginCard(
             modifier
                 .padding(horizontal = 20.dp)
                 .shadow(
-                    elevation = 20.dp,
+                    elevation = 6.dp,
                     shape = CardShape,
                     ambientColor = PazColors.Primary.copy(alpha = 0.25f),
                     spotColor = PazColors.Primary.copy(alpha = 0.40f),

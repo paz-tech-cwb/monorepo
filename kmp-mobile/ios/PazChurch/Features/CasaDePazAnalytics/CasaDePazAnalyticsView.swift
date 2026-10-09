@@ -5,6 +5,10 @@ struct CasaDePazAnalyticsView: View {
     @State private var viewModel: CasaDePazAnalyticsViewModel
     @State private var editingTarget: DateFilterTarget?
     @State private var draftDate: Date = Date()
+    @State private var shareFileURL: URL?
+    @State private var showShareSheet = false
+    @State private var isExportingPDF = false
+    @State private var exportError: String?
 
     private static let monthLabels = [
         "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez",
@@ -27,10 +31,62 @@ struct CasaDePazAnalyticsView: View {
             .navigationTitle("Casa de Paz")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { Task { await exportPDF() } }) {
+                        if isExportingPDF {
+                            ProgressView()
+                        } else {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                    }
+                    .disabled(viewModel.isLoading || viewModel.error != nil || isExportingPDF || viewModel.summary == nil)
+                    .accessibilityLabel("Exportar PDF")
+                }
+            }
+            .sheet(isPresented: $showShareSheet) {
+                if let shareFileURL {
+                    ShareSheet(activityItems: [shareFileURL])
+                }
+            }
+            .alert("Não foi possível exportar", isPresented: Binding(
+                get: { exportError != nil },
+                set: { if !$0 { exportError = nil } }
+            )) {
+                Button("OK", role: .cancel) { exportError = nil }
+            } message: {
+                Text(exportError ?? "")
+            }
             .task { await viewModel.load() }
             .sheet(item: $editingTarget) { target in
                 dateSheet(for: target)
             }
+    }
+
+    /// Renders the FULL report (stat cards + all charts, filters excluded)
+    /// into a paginated PDF via `ReportPDFExporter` and opens the system
+    /// share sheet with the resulting file.
+    private func exportPDF() async {
+        guard let summary = viewModel.summary else { return }
+        isExportingPDF = true
+        defer { isExportingPDF = false }
+        do {
+            let url = try await ReportPDFExporter.export(fileName: "relatorio-casa-de-paz.pdf") {
+                VStack(alignment: .leading, spacing: 20) {
+                    exportHeaderSection
+                    CasaDePazStatCards(summary: summary)
+                    CasaDePazCharts(summary: summary)
+                }
+                .padding(20)
+                .background(PazColors.background)
+                .environment(\.isExportingPDF, true)
+                .environment(\.colorScheme, .light)
+            }
+            shareFileURL = url
+            showShareSheet = true
+        } catch {
+            exportError = "Tente novamente em alguns instantes."
+        }
     }
 
     @ViewBuilder
@@ -57,6 +113,28 @@ struct CasaDePazAnalyticsView: View {
         }
         .refreshable { await viewModel.load() }
     }
+
+    // MARK: Export header
+
+    private var exportHeaderSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Relatório Casa de Paz")
+                .font(PazTypography.titleSmall)
+                .foregroundStyle(PazColors.ink)
+            Text("Período: \(viewModel.from) a \(viewModel.to)")
+                .font(PazTypography.bodySmall)
+                .foregroundStyle(PazColors.slate)
+            Text("Exportado em \(Self.exportDateFormatter.string(from: Date()))")
+                .font(PazTypography.bodySmall)
+                .foregroundStyle(PazColors.slate)
+        }
+    }
+
+    private static let exportDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yyyy"
+        return formatter
+    }()
 
     // MARK: Filters — free from/to date range, matching admin-ui exactly.
 

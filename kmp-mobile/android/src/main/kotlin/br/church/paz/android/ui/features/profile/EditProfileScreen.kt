@@ -1,6 +1,7 @@
 package br.church.paz.android.ui.features.profile
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,19 +23,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,10 +56,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazGlassField
+import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.theme.PazColors
-import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazSpacing
 import coil3.compose.AsyncImage
 import org.koin.androidx.compose.koinViewModel
@@ -74,11 +79,14 @@ fun EditProfileScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var isDatePickerOpen by remember { mutableStateOf(false) }
+    var showDiscardDialog by remember { mutableStateOf(false) }
 
     val photoPicker =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
             if (uri != null) viewModel.onPictureSelected(context, uri)
         }
+
+    BackHandler(enabled = uiState.isDirty) { viewModel.onRequestDiscard() }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -88,8 +96,30 @@ fun EditProfileScreen(
                     navController.popBackStack()
                 }
                 EditProfileEffect.NavigateBack -> navController.popBackStack()
+                EditProfileEffect.RequestDiscardConfirmation -> showDiscardDialog = true
+                EditProfileEffect.SessionExpired ->
+                    navController.navigate(Screen.Shell.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
             }
         }
+    }
+
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Descartar alterações?") },
+            text = { Text("Você tem alterações não salvas que serão perdidas.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDiscardDialog = false
+                    navController.popBackStack()
+                }) { Text("Descartar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) { Text("Continuar editando") }
+            },
+        )
     }
 
     if (uiState.error != null) {
@@ -99,36 +129,23 @@ fun EditProfileScreen(
     }
 
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize()) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .background(PazGradients.Hero)
-                    .statusBarsPadding(),
-            ) {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(onClick = { viewModel.onBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "back", tint = Color.White)
-                    }
-                    Text(
-                        "Editar Perfil",
-                        style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
+        PazMeshBackground()
 
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .background(MaterialTheme.colorScheme.background),
-            ) {
+        Scaffold(
+            topBar = {
+                LargeTopAppBar(
+                    title = { Text("Editar Perfil") },
+                    navigationIcon = {
+                        IconButton(onClick = { viewModel.onRequestDiscard() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "back")
+                        }
+                    },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
+                )
+            },
+            containerColor = Color.Transparent,
+        ) { innerPadding ->
+            Box(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
@@ -343,6 +360,9 @@ private fun AddressSection(
         )
         if (uiState.isLookingUpCep) {
             Text("Buscando endereço...", style = MaterialTheme.typography.bodySmall, color = PazColors.PrimaryLight)
+        }
+        if (uiState.cepError != null) {
+            Text(uiState.cepError!!, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         }
         PazGlassField(
             value = uiState.street,

@@ -14,11 +14,9 @@ import br.church.paz.shared.domain.model.MemberRegistrationForm
 import br.church.paz.shared.domain.model.MultiplicationForm
 import br.church.paz.shared.domain.model.SectorSupervisorReportForm
 import br.church.paz.shared.domain.model.ServiceReportForm
+import br.church.paz.shared.domain.model.isLeader
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.FormsRepository
-import br.church.paz.shared.domain.model.LifeGroupSummary
-import br.church.paz.shared.domain.model.User
-import br.church.paz.shared.domain.model.isLeader
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -55,12 +53,13 @@ class FormDetailViewModel(
                     val today = brazilianDate.format(Date())
                     val initialFields =
                         form?.type?.fieldDefs()?.associate { def ->
-                            def.key to when {
-                                def.fieldType == FormFieldType.DATE -> today
-                                def.fieldType == FormFieldType.PICKER && def.options.isNotEmpty() -> def.options[0]
-                                def.fieldType == FormFieldType.SELECT && def.optionValues.isNotEmpty() -> def.optionValues[0]
-                                else -> ""
-                            }
+                            def.key to
+                                when {
+                                    def.fieldType == FormFieldType.DATE -> today
+                                    def.fieldType == FormFieldType.PICKER && def.options.isNotEmpty() -> def.options[0]
+                                    def.fieldType == FormFieldType.SELECT && def.optionValues.isNotEmpty() -> def.optionValues[0]
+                                    else -> ""
+                                }
                         } ?: emptyMap()
                     val isLeader = runCatching { authRepository.currentUser() }.getOrNull()?.role?.isLeader == true
                     _uiState.update {
@@ -68,6 +67,7 @@ class FormDetailViewModel(
                             form = form,
                             isLoading = false,
                             fields = initialFields,
+                            initialFields = initialFields,
                             canAccessCasaDePazLessons = isLeader,
                         )
                     }
@@ -109,20 +109,22 @@ class FormDetailViewModel(
     }
 
     fun openPicker(def: FormFieldDef) {
-        val kind = when (def.fieldType) {
-            FormFieldType.LG_PICKER -> PickerKind.LIFE_GROUP
-            FormFieldType.SECTOR_PICKER -> PickerKind.SECTOR
-            FormFieldType.CYCLE_PICKER -> PickerKind.CASA_DE_PAZ_CYCLE
-            FormFieldType.USER_MULTI_PICKER -> PickerKind.USER_MULTI
-            else -> PickerKind.USER
-        }
+        val kind =
+            when (def.fieldType) {
+                FormFieldType.LG_PICKER -> PickerKind.LIFE_GROUP
+                FormFieldType.SECTOR_PICKER -> PickerKind.SECTOR
+                FormFieldType.CYCLE_PICKER -> PickerKind.CASA_DE_PAZ_CYCLE
+                FormFieldType.USER_MULTI_PICKER -> PickerKind.USER_MULTI
+                else -> PickerKind.USER
+            }
         _uiState.update {
             it.copy(
-                pickerState = PickerState(
-                    key = def.key,
-                    label = def.label,
-                    kind = kind,
-                ),
+                pickerState =
+                    PickerState(
+                        key = def.key,
+                        label = def.label,
+                        kind = kind,
+                    ),
             )
         }
         onPickerQueryChanged("") // load the full list immediately, before the user searches
@@ -141,7 +143,8 @@ class FormDetailViewModel(
                     PickerKind.LIFE_GROUP -> formsRepository.searchLifeGroups(query)
                     PickerKind.SECTOR -> formsRepository.searchSectors(query)
                     PickerKind.CASA_DE_PAZ_CYCLE ->
-                        formsRepository.getCasaDePazCycles()
+                        formsRepository
+                            .getCasaDePazCycles()
                             .filter { it.name.contains(query, ignoreCase = true) }
                     PickerKind.USER, PickerKind.USER_MULTI -> formsRepository.searchUsers(query)
                 }
@@ -157,11 +160,17 @@ class FormDetailViewModel(
         }
     }
 
-    fun onPickerSelect(id: String, name: String) {
+    fun onPickerSelect(
+        id: String,
+        name: String,
+    ) {
         val state = _uiState.value.pickerState ?: return
         if (state.kind == PickerKind.USER_MULTI) {
-            val current = (_uiState.value.fields[state.key] ?: "")
-                .split(",").filter { it.isNotBlank() }.toMutableList()
+            val current =
+                (_uiState.value.fields[state.key] ?: "")
+                    .split(",")
+                    .filter { it.isNotBlank() }
+                    .toMutableList()
             if (id in current) current.remove(id) else current.add(id)
             _uiState.update { it.copy(fields = it.fields + (state.key to current.joinToString(","))) }
         } else {
@@ -174,7 +183,10 @@ class FormDetailViewModel(
         }
     }
 
-    fun setSelfOrSearchMode(key: String, isSearch: Boolean) {
+    fun setSelfOrSearchMode(
+        key: String,
+        isSearch: Boolean,
+    ) {
         _uiState.update {
             val newMap = it.selfOrSearchIsSearch.toMutableMap().also { m -> m[key] = isSearch }
             val newFields = if (!isSearch) it.fields + (key to "") else it.fields
@@ -186,7 +198,10 @@ class FormDetailViewModel(
         _uiState.update { it.copy(guestEntries = it.guestEntries + CasaDePazGuestDraft()) }
     }
 
-    fun updateGuestEntry(index: Int, patch: CasaDePazGuestDraft.() -> CasaDePazGuestDraft) {
+    fun updateGuestEntry(
+        index: Int,
+        patch: CasaDePazGuestDraft.() -> CasaDePazGuestDraft,
+    ) {
         _uiState.update { state ->
             state.copy(
                 guestEntries = state.guestEntries.mapIndexed { i, g -> if (i == index) g.patch() else g },
@@ -245,7 +260,12 @@ class FormDetailViewModel(
                         MemberRegistrationForm(
                             fullName = f.req("full_name"),
                             birthDate = f.isoDate("birth_date"),
-                            phone = f.req("phone").filter { it.isDigit() }.let { "+55$it" }.takeIf { it.length > 3 } ?: f.req("phone"),
+                            phone =
+                                f
+                                    .req("phone")
+                                    .filter { it.isDigit() }
+                                    .let { "+55$it" }
+                                    .takeIf { it.length > 3 } ?: f.req("phone"),
                             gender = f.req("gender"),
                             civilState = f.req("civil_state"),
                             sectorId = f.idInt("sector_id"),
@@ -274,11 +294,12 @@ class FormDetailViewModel(
                         ),
                     )
                 FormType.guest -> {
-                    val invitedBy = if (f["invited_by"].isNullOrEmpty()) {
-                        authRepository.currentUser()?.name
-                    } else {
-                        f["invited_by"]
-                    }
+                    val invitedBy =
+                        if (f["invited_by"].isNullOrEmpty()) {
+                            authRepository.currentUser()?.name
+                        } else {
+                            f["invited_by"]
+                        }
                     formsRepository.submitGuest(
                         GuestForm(
                             fullName = f.req("full_name"),
@@ -363,8 +384,10 @@ class FormDetailViewModel(
                             multiplicationCandidates = f.ids("multiplication_candidates"),
                             lifeGroupsCount = f.int("life_groups_count"),
                             lifeGroupsSupervised = f.int("life_groups_supervised"),
-                            lifeGroupObservations = (f.opt("life_group_observations") ?: "")
-                                .split("\n").filter { it.isNotBlank() },
+                            lifeGroupObservations =
+                                (f.opt("life_group_observations") ?: "")
+                                    .split("\n")
+                                    .filter { it.isNotBlank() },
                             notes = f.opt("notes"),
                         ),
                     )
@@ -376,8 +399,10 @@ class FormDetailViewModel(
                             sectorLeadersPastored = f.ids("sector_leaders_pastored"),
                             lifeGroupsCount = f.int("life_groups_count"),
                             lifeGroupsSupervised = f.int("life_groups_supervised"),
-                            lifeGroupObservations = (f.opt("life_group_observations") ?: "")
-                                .split("\n").filter { it.isNotBlank() },
+                            lifeGroupObservations =
+                                (f.opt("life_group_observations") ?: "")
+                                    .split("\n")
+                                    .filter { it.isNotBlank() },
                             notes = f.opt("notes"),
                         ),
                     )
@@ -389,14 +414,15 @@ class FormDetailViewModel(
                             sectorId = f.idInt("sector_id"),
                             casaDePazId = f.req("casa_de_paz_id"),
                             kids = f.int("kids"),
-                            guests = guestEntries.map {
-                                CasaDePazReportGuestEntry(
-                                    name = it.name.trim(),
-                                    email = it.email.trim(),
-                                    birthDate = it.birthDate,
-                                    whatsapp = it.whatsapp.trim().ifEmpty { null },
-                                )
-                            },
+                            guests =
+                                guestEntries.map {
+                                    CasaDePazReportGuestEntry(
+                                        name = it.name.trim(),
+                                        email = it.email.trim(),
+                                        birthDate = it.birthDate,
+                                        whatsapp = it.whatsapp.trim().ifEmpty { null },
+                                    )
+                                },
                             conversions = f.int("conversions"),
                             meetingDay = f.opt("meeting_day"),
                         ),
@@ -407,6 +433,17 @@ class FormDetailViewModel(
 
     fun onBack() {
         viewModelScope.launch { _effect.send(FormDetailEffect.NavigateBack) }
+    }
+
+    /** Routes both the close button and the back arrow/hardware back (once floored at the
+     * first question) through the same discard check — shows a confirmation dialog when
+     * dirty, else navigates back immediately. */
+    fun onRequestDiscard() {
+        if (_uiState.value.isDirty) {
+            viewModelScope.launch { _effect.send(FormDetailEffect.RequestDiscardConfirmation) }
+        } else {
+            onBack()
+        }
     }
 
     private fun Map<String, String>.req(key: String) = get(key)?.trim() ?: ""
@@ -441,6 +478,5 @@ class FormDetailViewModel(
     private fun Map<String, String>.ids(key: String): List<Int> =
         (get(key) ?: "").split(",").filter { it.isNotBlank() }.mapNotNull { it.trim().toIntOrNull() }
 
-    private fun Map<String, String>.idInt(key: String): Int =
-        get(key)?.trim()?.toIntOrNull() ?: 0
+    private fun Map<String, String>.idInt(key: String): Int = get(key)?.trim()?.toIntOrNull() ?: 0
 }

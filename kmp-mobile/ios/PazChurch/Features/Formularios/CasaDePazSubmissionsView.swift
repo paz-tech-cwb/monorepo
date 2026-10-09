@@ -8,9 +8,19 @@ import SwiftUI
 @Observable
 final class CasaDePazSubmissionsListViewModel {
     var submissions: [CasaDePazReportSubmission] = []
+    var cycles: [CasaDePazCycle] = []
+    var selectedCycleId: String?
+    var sections: [CasaDePazReportSection] = []
+    var collapsedDates: Set<String> = []
     var sectorNames: [Int32: String] = [:]
     var isLoading = true
     var error: String?
+
+    var isCyclePickerVisible = false
+
+    var selectedCycleName: String? {
+        cycles.first { $0.id == selectedCycleId }?.name
+    }
 
     private let formsRepository: FormsRepository
 
@@ -23,26 +33,58 @@ final class CasaDePazSubmissionsListViewModel {
         error = nil
         do {
             async let submissionsRaw = formsRepository.getCasaDePazReportSubmissions()
+            async let cyclesRaw = formsRepository.getCasaDePazCycles()
             async let sectorsRaw = formsRepository.searchSectors(query: "")
-            let (resolvedSubmissions, resolvedSectors) = try await (submissionsRaw, sectorsRaw)
-            submissions = ((resolvedSubmissions as? [CasaDePazReportSubmission]) ?? [])
-                .sorted { $0.date > $1.date }
+            let (resolvedSubmissions, resolvedCycles, resolvedSectors) = try await (submissionsRaw, cyclesRaw, sectorsRaw)
+            submissions = (resolvedSubmissions as? [CasaDePazReportSubmission]) ?? []
+            cycles = (resolvedCycles as? [CasaDePazCycle]) ?? []
             let sectors = (resolvedSectors as? [SectorSummary]) ?? []
             sectorNames = Dictionary(uniqueKeysWithValues: sectors.map { ($0.id, $0.name) })
+
+            // Pure domain logic lives in :shared so both platforms group/default the same way.
+            if let current = selectedCycleId, cycles.contains(where: { $0.id == current }) {
+                // keep current selection across reloads (e.g. pull-to-refresh)
+            } else {
+                selectedCycleId = CasaDePazReportSectionsKt.defaultCasaDePazCycleSelection(submissions: submissions, cycles: cycles)
+            }
+            recomputeSections()
         } catch {
             self.error = error.localizedDescription
         }
         isLoading = false
     }
 
+    func recomputeSections() {
+        guard let selectedCycleId else {
+            sections = []
+            return
+        }
+        sections = CasaDePazReportSectionsKt.buildCasaDePazReportSections(submissions: submissions, selectedCycleId: selectedCycleId)
+    }
+
+    func selectCycle(_ id: String) {
+        selectedCycleId = id
+        collapsedDates = []
+        isCyclePickerVisible = false
+        recomputeSections()
+    }
+
+    func toggleSection(_ date: String) {
+        if !collapsedDates.insert(date).inserted {
+            collapsedDates.remove(date)
+        }
+    }
+
     func replace(_ updated: CasaDePazReportSubmission) {
         if let idx = submissions.firstIndex(where: { $0.id == updated.id }) {
             submissions[idx] = updated
         }
+        recomputeSections()
     }
 
     func remove(id: String) {
         submissions.removeAll { $0.id == id }
+        recomputeSections()
     }
 }
 
@@ -56,19 +98,18 @@ struct CasaDePazSubmissionsListView: View {
     var body: some View {
         screenContent
             .background(PazMeshBackground())
-            .navigationTitle("Registros de Casa de Paz")
+            .navigationTitle("Casa de Paz")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
-            // This screen is already the leader's Casa de Paz hub, so no additional role
-            // check is needed here for the lesson content shortcut.
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    NavigationLink(destination: CasaDePazLessonsView()) {
-                        Image(systemName: "book.closed")
-                    }
-                }
-            }
             .task { await viewModel.load() }
+            .sheet(isPresented: $viewModel.isCyclePickerVisible) {
+                CasaDePazCycleSwitcherSheet(
+                    cycles: viewModel.cycles,
+                    selectedId: viewModel.selectedCycleId ?? "",
+                    onSelect: { viewModel.selectCycle($0) },
+                    onDismiss: { viewModel.isCyclePickerVisible = false }
+                )
+            }
     }
 
     @ViewBuilder
@@ -77,44 +118,94 @@ struct CasaDePazSubmissionsListView: View {
             loadingState
         } else if let error = viewModel.error {
             errorState(error)
-        } else if viewModel.submissions.isEmpty {
-            emptyState
         } else {
             contentState
         }
     }
 
+    // Small hub at the top: lesson content shortcut + the restructured reports list below.
+    private var hubHeader: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            NavigationLink(destination: CasaDePazLessonsView()) {
+                HStack(spacing: PazSpacing.sm) {
+                    Image(systemName: "book.closed")
+                    Text("Conteúdo Casa de Paz").font(PazTypography.titleSmall)
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.system(size: 13)).foregroundStyle(PazColors.slateLight)
+                }
+                .padding(PazSpacing.md)
+                .glassCard(radius: PazSpacing.cardRadiusCompact)
+            }
+            .buttonStyle(.plain)
+
+            Text("Relatórios Casa de Paz").font(PazTypography.titleMedium)
+
+            Button { viewModel.isCyclePickerVisible = true } label: {
+                HStack {
+                    Text("Ciclo: \(viewModel.selectedCycleName ?? "Selecionar ciclo")").font(PazTypography.bodyMedium)
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.system(size: 13)).foregroundStyle(PazColors.slateLight)
+                }
+                .padding(PazSpacing.md)
+                .glassCard(radius: PazSpacing.cardRadiusCompact)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 20)
+    }
+
     private var contentState: some View {
         ScrollView {
-            VStack(spacing: 10) {
+            VStack(spacing: 0) {
                 Spacer().frame(height: 8)
-                ForEach(viewModel.submissions, id: \.id) { submission in
-                    NavigationLink(destination: CasaDePazSubmissionDetailView(
-                        submission: submission,
-                        sectorNames: viewModel.sectorNames,
-                        onUpdated: { viewModel.replace($0) },
-                        onDeleted: { viewModel.remove(id: submission.id) }
-                    )) {
-                        SubmissionRow(submission: submission, sectorName: viewModel.sectorNames[submission.sectorId] ?? "Setor removido")
+                hubHeader
+                Spacer().frame(height: 16)
+
+                if viewModel.sections.isEmpty {
+                    emptyState
+                } else {
+                    pazMenuCard {
+                        ForEach(Array(viewModel.sections.enumerated()), id: \.element.date) { index, section in
+                            if index > 0 { pazRowDivider }
+                            SectionHeaderRow(
+                                section: section,
+                                collapsed: viewModel.collapsedDates.contains(section.date),
+                                onTap: { viewModel.toggleSection(section.date) }
+                            )
+                            if !viewModel.collapsedDates.contains(section.date) {
+                                ForEach(section.submissions, id: \.id) { submission in
+                                    pazRowDivider
+                                    NavigationLink(destination: CasaDePazSubmissionDetailView(
+                                        submission: submission,
+                                        sectorNames: viewModel.sectorNames,
+                                        onUpdated: { viewModel.replace($0) },
+                                        onDeleted: { viewModel.remove(id: submission.id) }
+                                    )) {
+                                        SubmissionRow(
+                                            submission: submission,
+                                            sectorName: viewModel.sectorNames[submission.sectorId] ?? "Setor removido"
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
                     }
-                    .buttonStyle(.plain)
                     .padding(.horizontal, 20)
                 }
+
                 Spacer().frame(height: 32)
             }
-            .padding(.top, 8)
         }
         .refreshable { await viewModel.load() }
     }
 
     private var emptyState: some View {
         VStack {
-            Spacer()
             Text("Nenhum registro encontrado").font(PazTypography.titleMedium)
-            Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(20)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
     }
 
     private func errorState(_ message: String) -> some View {
@@ -137,20 +228,79 @@ struct CasaDePazSubmissionsListView: View {
     }
 }
 
+private struct SectionHeaderRow: View {
+    let section: CasaDePazReportSection
+    let collapsed: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack {
+                Text(brDateString(fromISODate: section.date)).font(PazTypography.titleSmall)
+                Spacer()
+                Image(systemName: collapsed ? "chevron.down" : "chevron.up")
+                    .font(.system(size: 13)).foregroundStyle(PazColors.slateLight)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 private struct SubmissionRow: View {
     let submission: CasaDePazReportSubmission
     let sectorName: String
 
     var body: some View {
-        GlassCard(radius: PazSpacing.cardRadiusCompact) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("\(brDateString(fromISODate: submission.date)) · \(sectorName)").font(PazTypography.titleSmall)
+        HStack(spacing: 16) {
+            PazIconContainer(icon: "house.fill", tint: Color(hex: "E65100"))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(sectorName).font(PazTypography.bodyMedium).foregroundStyle(PazColors.ink)
                 Text(submission.facilitator).font(PazTypography.bodySmall).foregroundStyle(PazColors.slate)
                 Text("Crianças: \(submission.kids) · Convidados: \(submission.guests.count) · Conversões: \(submission.conversions)")
-                    .font(PazTypography.bodySmall).foregroundStyle(PazColors.slate)
+                    .font(PazTypography.labelSmall).foregroundStyle(PazColors.slate)
             }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            Spacer()
+            Image(systemName: "chevron.right").font(.system(size: 13)).foregroundStyle(PazColors.slateLight)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+    }
+}
+
+/// Lightweight cycle switcher specific to this screen — the existing `CasaDePazCyclePickerSheet`
+/// is tightly bound to `FormDetailViewModelIOS` (form-field editing flow) and doesn't fit this
+/// read-only "switch which cycle am I viewing reports for" use case, so this is a small,
+/// separate sheet rather than a forced reuse.
+/// Intentionally has no search field (unlike `CasaDePazCyclePickerSheet`) — cycle counts per
+/// sector/year are small enough that search isn't needed here; documented judgment call, not
+/// an oversight.
+private struct CasaDePazCycleSwitcherSheet: View {
+    let cycles: [CasaDePazCycle]
+    let selectedId: String
+    let onSelect: (String) -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            List(cycles, id: \.id) { cycle in
+                HStack {
+                    Text(cycle.name)
+                    Spacer()
+                    if cycle.id == selectedId {
+                        Image(systemName: "checkmark").foregroundColor(PazColors.accent)
+                    }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { onSelect(cycle.id) }
+            }
+            .listStyle(.plain)
+            .navigationTitle("Selecione o ciclo")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Cancelar", action: onDismiss)
+                }
+            }
         }
     }
 }

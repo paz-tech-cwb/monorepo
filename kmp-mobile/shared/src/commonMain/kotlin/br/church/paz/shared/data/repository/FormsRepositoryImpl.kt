@@ -38,11 +38,26 @@ class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
     // an empty/loading sheet, on every single open).
     private var sectorsCache: List<SectorSummary>? = null
 
+    // Forms catalog is fetched once for the forms-list screen and re-looked-up by
+    // id on every single form open — cache it for the same reason as sectorsCache
+    // above, instead of re-hitting the network (and tripping 429s) on every open.
+    private var catalogCache: List<FormCatalogItem>? = null
+
     @Throws(Exception::class)
     override suspend fun getCatalog(): List<FormCatalogItem> {
+        val cached = catalogCache
+        if (cached != null) return cached
         val response = client.get("api/forms")
         response.throwOnClientOrServerError()
-        return response.body()
+        val body: List<FormCatalogItem> = response.body()
+        catalogCache = body
+        return body
+    }
+
+    @Throws(Exception::class)
+    override suspend fun refreshCatalog(): List<FormCatalogItem> {
+        catalogCache = null
+        return getCatalog()
     }
 
     @Throws(Exception::class)
@@ -145,6 +160,11 @@ class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
         val response = client.get("api/casa-de-paz-cycles")
         response.throwOnClientOrServerError()
         return response.body()
+    }
+
+    override fun clearCache() {
+        catalogCache = null
+        sectorsCache = null
     }
 
     private suspend inline fun <reified T : Any> post(path: String, body: T) {

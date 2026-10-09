@@ -202,8 +202,32 @@ export class LifeGroupsService {
     }
   }
 
-  async findAll(viewer?: User) {
+  /**
+   * `search` here filters the full life-group listing (name, leader, or
+   * co-leader name) for the mobile discovery screen — a different concern
+   * from the `search()` method below, which backs the life-group picker
+   * autocomplete in forms and has its own minimal {id, name} response shape.
+   */
+  async findAll(viewer?: User, search?: string) {
     try {
+      if (search?.trim()) {
+        const term = `%${search.trim().toLowerCase()}%`;
+        const lifeGroups = await this.entityManager
+          .createQueryBuilder(LifeGroup, 'lg')
+          .leftJoinAndSelect('lg.leader', 'leader')
+          .leftJoinAndSelect('lg.coLeader', 'coLeader')
+          .leftJoinAndSelect('lg.sector', 'sector')
+          .leftJoinAndSelect('lg.users', 'users')
+          .where(
+            '(LOWER(lg.name) LIKE :term OR LOWER(leader.name) LIKE :term OR LOWER(coLeader.name) LIKE :term)',
+            { term },
+          )
+          .orderBy('lg.name', 'ASC')
+          .take(30)
+          .getMany();
+        return lifeGroups.map((lg) => this.toResponse(lg, viewer));
+      }
+
       const lifeGroups = await this.entityManager.find(LifeGroup, {
         relations: ['leader', 'coLeader', 'sector', 'users'],
         order: { name: 'ASC' },

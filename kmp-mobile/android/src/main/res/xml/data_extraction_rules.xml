@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Excludes Chucker's network-inspector database from Android's cloud backup and
+  device-to-device transfer. Chucker persists full request/response bodies
+  (member PII) to a Room database under databases/; that data must never leave
+  the device via backup, independent of the in-app retention window.
+
+  Also excludes Chucker's spool files under files/ — raw response bodies it
+  writes to context.filesDir before persisting to the database
+  (cacheDirectoryProvider is an internal, non-overridable API, so this is the
+  only hook available). Spool filenames come from an unbounded, never-reset
+  AtomicLong counter, so an enumerated exact-path exclude list can't cover
+  them past the first few requests per cold start; exclude the whole files/
+  subtree instead.
+
+  Excluding the whole files/ domain also drops this app's DataStore/preferences
+  files (e.g. files/datastore/paz_prefs.preferences_pb, which holds auth
+  tokens) from cloud backup and device-transfer. This is intentional, not an
+  oversight: tokens should never be backed up in the first place. The
+  known tradeoff is that users restoring to a new device will need to log in
+  again rather than resuming a backed-up session.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="database" path="chucker.db" />
+        <exclude domain="database" path="chucker.db-wal" />
+        <exclude domain="database" path="chucker.db-shm" />
+        <exclude domain="database" path="chucker.db-journal" />
+        <exclude domain="file" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="database" path="chucker.db" />
+        <exclude domain="database" path="chucker.db-wal" />
+        <exclude domain="database" path="chucker.db-shm" />
+        <exclude domain="database" path="chucker.db-journal" />
+        <exclude domain="file" />
+    </device-transfer>
+</data-extraction-rules>

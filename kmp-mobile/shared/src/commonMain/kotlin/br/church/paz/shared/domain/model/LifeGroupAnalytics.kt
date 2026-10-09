@@ -40,4 +40,9 @@ data class LifeGroupOverview(
     val groupsBySector: List<LifeGroupDistributionBucket>,
     val membersInGroup: Int,
     val membersTotal: Int,
+    // Scoped to groups the current user is actually allowed to query via
+    // ?life_group_id= on the attendance/distribution endpoints — use this
+    // (not the unscoped GET /api/life-groups) to populate the analytics
+    // filter dropdown, so it can never offer a group that 403s.
+    val lifeGroups: List<LifeGroupSummary> = emptyList(),
 )

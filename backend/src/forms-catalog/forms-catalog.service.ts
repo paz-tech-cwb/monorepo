@@ -148,6 +148,13 @@ const FORM_DEFINITIONS = [
   },
 ];
 
+// Narrow derived constant exposing only the catalog's slugs, for callers
+// (e.g. reminder config validation) that need to check slug membership
+// without importing the full form definitions.
+export const FORM_SLUGS: readonly string[] = FORM_DEFINITIONS.map(
+  (f) => f.slug,
+);
+
 @Injectable()
 export class FormsCatalogService {
   constructor(private readonly ministryAccess: MinistryAccessService) {}

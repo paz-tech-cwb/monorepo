@@ -58,7 +58,7 @@ object IosAppContainer {
     }
 
     val authRepository: AuthRepository by lazy {
-        AuthRepositoryImpl(httpClient, tokenStorage, userStore)
+        AuthRepositoryImpl(httpClient, tokenStorage, userStore, formsRepository)
     }
 
     val homeRepository: HomeRepository by lazy { HomeRepositoryImpl(httpClient) }

@@ -27,9 +27,14 @@ class LifeGroupStudyListViewModel(
         load()
     }
 
-    fun load() {
+    fun load() = fetch(showSkeleton = true)
+
+    /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
+    fun refresh() = fetch(showSkeleton = false)
+
+    private fun fetch(showSkeleton: Boolean) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton, error = null) }
             val user = runCatching { authRepository.currentUser() }.getOrNull()
             _uiState.update { it.copy(canPublish = user?.role?.isLeader == true) }
             runCatching { repository.getStudies(page = 1, limit = PAGE_SIZE) }
@@ -37,13 +42,20 @@ class LifeGroupStudyListViewModel(
                     _uiState.update {
                         it.copy(
                             isLoading = false,
+                            isRefreshing = false,
                             studies = pageResult.items,
                             page = pageResult.page,
                             hasMore = pageResult.hasMore,
                         )
                     }
                 }.onFailure { e ->
-                    _uiState.update { it.copy(isLoading = false, error = friendlyErrorMessage(e, "Não foi possível carregar os estudos.")) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            error = friendlyErrorMessage(e, "Não foi possível carregar os estudos."),
+                        )
+                    }
                 }
         }
     }

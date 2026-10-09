@@ -11,6 +11,10 @@ import { FcmService } from './providers/fcm.service';
 import { EmailService } from './providers/email.service';
 import { SmsService } from './providers/sms.service';
 import { WhatsAppService } from './providers/whatsapp.service';
+import {
+  CATEGORY_CHANNEL_MAP,
+  DEFAULT_NOTIFICATION_CHANNEL,
+} from './notification-channel';
 
 const CATEGORY_PREF_MAP: Partial<
   Record<NotificationCategory, keyof UserNotificationPreferences>
@@ -115,13 +119,21 @@ export class NotificationDispatchService {
   ): Promise<boolean> {
     const payload = { title: notification.title, body: notification.message };
     switch (channel) {
-      case 'push':
+      case 'push': {
+        const channelId =
+          CATEGORY_CHANNEL_MAP[notification.category] ??
+          DEFAULT_NOTIFICATION_CHANNEL;
         return this.fcmService.sendToUser(user.id, {
           ...payload,
-          data: notification.deepLink
-            ? { deep_link: notification.deepLink }
-            : undefined,
+          data: {
+            channel_id: channelId,
+            ...(notification.deepLink
+              ? { deep_link: notification.deepLink }
+              : {}),
+          },
+          androidChannelId: channelId,
         });
+      }
       case 'email':
         return this.emailService.sendToUser(user.email, payload);
       case 'sms':

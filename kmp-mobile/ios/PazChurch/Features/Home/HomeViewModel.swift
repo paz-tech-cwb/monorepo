@@ -12,13 +12,34 @@ class HomeViewModel {
     // Any leadership role (role.isLeader) — gates the "Relatórios de Grupos
     // de Vida" shortcut card.
     var canManage = false
+    /// Shown only when `getMyLifeGroups()` succeeded AND came back empty —
+    /// an error fetching the viewer's groups must never be read as "no
+    /// group", since that would wrongly nudge an existing member to
+    /// "discover" a group they already belong to.
+    var showLifeGroupDiscoveryCTA = false
+
+    // Full upcoming agenda (recurrence-expanded, paginated), loaded lazily
+    // the first time the home agenda section is expanded.
+    var isAgendaExpanded = false
+    var isLoadingFullAgenda = false
+    var fullAgendaEvents: [AgendaEvent] = []
+    var fullAgendaLoadError: String?
 
     private let homeRepository: HomeRepository
     private let authRepository: AuthRepository
+    private let agendaRepository: AgendaRepository
+    private let churchRepository: ChurchRepository
 
-    init(homeRepository: HomeRepository, authRepository: AuthRepository) {
+    init(
+        homeRepository: HomeRepository,
+        authRepository: AuthRepository,
+        agendaRepository: AgendaRepository,
+        churchRepository: ChurchRepository
+    ) {
         self.homeRepository = homeRepository
         self.authRepository = authRepository
+        self.agendaRepository = agendaRepository
+        self.churchRepository = churchRepository
     }
 
     /// Called by the view's .task modifier — no Task wrapper needed.
@@ -41,9 +62,42 @@ class HomeViewModel {
             isLoading = false
             self.error = error.localizedDescription
         }
+
+        do {
+            let myGroups = try await churchRepository.getMyLifeGroups()
+            showLifeGroupDiscoveryCTA = myGroups.isEmpty
+        } catch {
+            // Best-effort: on failure, leave the CTA hidden rather than risk
+            // showing it to a member who actually has a group.
+            showLifeGroupDiscoveryCTA = false
+        }
     }
 
     func onRetry() {
         Task { await load() }
+    }
+
+    /// Toggles the home agenda section between the next-7-days preview and
+    /// the full upcoming (recurrence-expanded) agenda, loading the latter
+    /// lazily on first expand via the same paginated AgendaRepository the
+    /// full Agenda list screen uses.
+    func onToggleAgendaExpanded() {
+        isAgendaExpanded.toggle()
+        if isAgendaExpanded, fullAgendaEvents.isEmpty {
+            Task { await loadFullAgenda() }
+        }
+    }
+
+    func loadFullAgenda() async {
+        isLoadingFullAgenda = true
+        fullAgendaLoadError = nil
+        do {
+            fullAgendaEvents = try await agendaRepository.getEvents(page: 1, limit: 50)
+            isLoadingFullAgenda = false
+        } catch {
+            print("[HomeVM] loadFullAgenda() FAILED — \(type(of: error)): \(error)")
+            isLoadingFullAgenda = false
+            fullAgendaLoadError = error.localizedDescription
+        }
     }
 }

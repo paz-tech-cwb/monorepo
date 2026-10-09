@@ -68,7 +68,7 @@ struct LoginView: View {
         GlassCard(radius: PazSpacing.cardRadiusLarge) {
             loginCardContent
         }
-        .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 12)
+        .shadow(color: .black.opacity(0.10), radius: 12, x: 0, y: 6)
     }
 
     private var loginCardContent: some View {
