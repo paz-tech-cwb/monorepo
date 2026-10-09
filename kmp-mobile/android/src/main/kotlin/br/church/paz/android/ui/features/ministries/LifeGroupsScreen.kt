@@ -71,7 +71,7 @@ fun LifeGroupsScreen(
                 LifeGroupsEffect.NavigateToAllLifeGroups ->
                     navController.navigate(Screen.AllLifeGroups.route)
                 LifeGroupsEffect.NavigateToMap ->
-                    navController.navigate(Screen.LifeGroupsMap.route)
+                    navController.navigate(Screen.LifeGroupDiscovery.route)
             }
         }
     }
@@ -165,11 +165,24 @@ private fun MyLifeGroupsContent(
     }
 }
 
-/** Shared card — reused by [LifeGroupsScreen] and `AllLifeGroupsScreen`. */
+/**
+ * Shared card — reused by [LifeGroupsScreen], `AllLifeGroupsScreen`, and the
+ * Life Group Discovery screen.
+ *
+ * @param distanceKm Only set when the list is sorted by distance — `null`
+ * for a non-geocoded group. Used only to decide whether to show
+ * distance-related info at all; see [isSortedByDistance].
+ * @param isSortedByDistance True whenever the active sort is "Distância",
+ * regardless of whether THIS card has coordinates — lets a non-geocoded
+ * card show "location unavailable" instead of just omitting the row
+ * silently.
+ */
 @Composable
 fun LifeGroupCard(
     lifeGroup: LifeGroup,
     onClick: () -> Unit,
+    distanceKm: Double? = null,
+    isSortedByDistance: Boolean = false,
 ) {
     PazGlassCard(modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onClick)) {
         Column(Modifier.padding(PazSpacing.Lg)) {
@@ -215,6 +228,25 @@ fun LifeGroupCard(
                         Spacer(Modifier.height(PazSpacing.Xs))
                         Text(
                             "${lifeGroup.kidsCount} crianças",
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                ),
+                        )
+                    }
+                    if (distanceKm != null) {
+                        Spacer(Modifier.height(PazSpacing.Xs))
+                        Text(
+                            "%.1f km".format(distanceKm),
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                ),
+                        )
+                    } else if (isSortedByDistance && (lifeGroup.latitude == null || lifeGroup.longitude == null)) {
+                        Spacer(Modifier.height(PazSpacing.Xs))
+                        Text(
+                            "Localização não disponível",
                             style =
                                 MaterialTheme.typography.labelSmall.copy(
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),

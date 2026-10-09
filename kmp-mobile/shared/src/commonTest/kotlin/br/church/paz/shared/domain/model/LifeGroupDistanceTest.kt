@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 class LifeGroupDistanceTest {
 
     // Two well-known points in Curitiba: Praça Tiradentes (city center) and
-    // Parque Barigui — roughly 7km apart per public map measurement.
+    // Parque Barigui — roughly 3-5km apart per public map measurement.
     private val pracaTiradentes = -25.4284 to -49.2733
     private val parqueBarigui = -25.4284 to -49.3100
 

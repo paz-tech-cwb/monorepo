@@ -55,7 +55,7 @@ sealed class Screen(
 
     data object AllLifeGroups : Screen("all_life_groups")
 
-    data object LifeGroupsMap : Screen("life_groups_map")
+    data object LifeGroupDiscovery : Screen("life_group_discovery")
 
     data object MinistryManage : Screen("ministry_manage/{ministryId}") {
         fun createRoute(ministryId: String) = "ministry_manage/$ministryId"

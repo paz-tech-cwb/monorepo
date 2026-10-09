@@ -22,6 +22,10 @@ data class HomeUiState(
     val isLoadingFullAgenda: Boolean = false,
     val fullAgendaEvents: List<AgendaEvent> = emptyList(),
     val fullAgendaLoadError: String? = null,
+    // Shown only when `getMyLifeGroups()` succeeded AND came back empty —
+    // see HomeViewModel.fetch() for why an error must never be read as "no
+    // group".
+    val showLifeGroupDiscoveryCTA: Boolean = false,
 )
 
 sealed class HomeEffect {

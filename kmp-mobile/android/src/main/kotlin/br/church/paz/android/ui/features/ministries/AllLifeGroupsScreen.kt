@@ -53,7 +53,7 @@ fun AllLifeGroupsScreen(
                 is AllLifeGroupsEffect.NavigateToLifeGroupDetail ->
                     navController.navigate(Screen.LifeGroupDetail.createRoute(effect.lifeGroupId))
                 AllLifeGroupsEffect.NavigateToMap ->
-                    navController.navigate(Screen.LifeGroupsMap.route)
+                    navController.navigate(Screen.LifeGroupDiscovery.route)
             }
         }
     }

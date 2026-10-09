@@ -43,15 +43,6 @@
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="paz_church_default"/>
 
-        <!-- Google Maps API key — injected via manifestPlaceholders from
-             local.properties (MAPS_API_KEY), gitignored per-developer. See
-             android/build.gradle.kts. TODO: a real key still needs to be
-             provisioned by the team (Google Cloud Console → Maps SDK for
-             Android) and added to CI secrets for release builds. -->
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="${mapsApiKey}"/>
-
         <!-- Grants share-sheet targets temporary read access to exported report images
              (cache/shared_images/) without exposing the whole app's file storage. -->
         <provider

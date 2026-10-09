@@ -1,5 +1,3 @@
-import java.util.Properties
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -9,17 +7,6 @@ plugins {
     alias(libs.plugins.ktlint)
     alias(libs.plugins.firebase.appdistribution)
 }
-
-// Google Maps API key, read from local.properties (gitignored, per-developer) so it's
-// never committed. Mirrors the sdk.dir pattern already used by local.properties —
-// falls back to an empty string so debug builds without a key still compile (the map
-// just won't render tiles); see kmp-mobile/local.properties.example for the key to set.
-val localProperties = Properties()
-val localPropertiesFile = rootProject.file("local.properties")
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.inputStream().use { localProperties.load(it) }
-}
-val mapsApiKey = localProperties.getProperty("MAPS_API_KEY") ?: ""
 
 android {
     // Package name must match Firebase project: com.cwb.pazchurch.app
@@ -32,7 +19,6 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
-        manifestPlaceholders["mapsApiKey"] = mapsApiKey
     }
 
     // Release signing reads from env vars so the real keystore/passwords never
@@ -163,9 +149,11 @@ dependencies {
     implementation(libs.googleid)
     implementation(libs.coroutines.play.services)
 
-    implementation(libs.maps.compose)
-    implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
+    // OpenStreetMap-tiled map for the Life Group Discovery screen — no API
+    // key/billing needed. Classic View-based lib, hosted inside Compose via
+    // AndroidView (see LifeGroupMapView.kt).
+    implementation(libs.osmdroid.android)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test.junit)
