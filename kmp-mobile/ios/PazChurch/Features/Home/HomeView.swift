@@ -187,7 +187,6 @@ struct HomeView: View {
             .padding(16)
             .background(PazMaterial.glass(for: colorScheme))
             .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-            .shadow(color: PazColors.accent.opacity(0.25), radius: 12, x: 0, y: 10)
             .padding(.horizontal, 16)
         }
         .buttonStyle(.plain)
@@ -289,7 +288,6 @@ struct HomeView: View {
         .padding(16)
         .background(PazMaterial.glass(for: colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .shadow(color: PazColors.accent.opacity(0.25), radius: 12, x: 0, y: 10)
         .padding(.horizontal, 16)
     }
 
@@ -432,7 +430,6 @@ private struct FeaturedCardView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .contentShape(RoundedRectangle(cornerRadius: 22))
-        .shadow(color: PazColors.accent.opacity(0.3), radius: 8, x: 0, y: 6)
     }
 }
 

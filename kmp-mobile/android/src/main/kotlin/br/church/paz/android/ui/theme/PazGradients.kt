@@ -1,5 +1,7 @@
 package br.church.paz.android.ui.theme
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -68,4 +70,20 @@ object PazGradients {
             start = Offset(0f, 0f),
             end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
         )
+
+    /**
+     * Pure scheme-selection logic backing [heroForScheme], extracted so it
+     * can be unit-tested without a Compose composition/CompositionLocal.
+     */
+    fun heroGradientFor(isDark: Boolean): Brush = if (isDark) DarkHero else Hero
+
+    /**
+     * Scheme-aware hero gradient: [DarkHero] in dark mode, [Hero] in light
+     * mode. Use this instead of referencing [Hero] directly for any screen
+     * header band, so dark-mode screens get the darker variant automatically.
+     */
+    val heroForScheme: Brush
+        @Composable
+        @ReadOnlyComposable
+        get() = heroGradientFor(LocalPazDarkTheme.current)
 }

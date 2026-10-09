@@ -40,7 +40,7 @@ fun SplashScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().background(PazGradients.Hero),
+        modifier = Modifier.fillMaxSize().background(PazGradients.heroForScheme),
         contentAlignment = Alignment.Center,
     ) {
         Image(

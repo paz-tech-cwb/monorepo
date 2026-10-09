@@ -65,7 +65,7 @@ fun CasaDePazLessonDetailScreen(
         Box(
             Modifier
                 .fillMaxWidth()
-                .background(PazGradients.Hero)
+                .background(PazGradients.heroForScheme)
                 .statusBarsPadding(),
         ) {
             Row(

@@ -123,4 +123,16 @@ object PazColors {
         @Composable
         @ReadOnlyComposable
         get() = if (LocalPazDarkTheme.current) DarkTint else Tint
+
+    /**
+     * Title-role text color. Unlike [accent] (which intentionally turns
+     * bright blue in dark mode for icons/links/charts), title text should
+     * stay near-neutral in dark mode — near-white, not blue/navy — so
+     * headings read correctly and don't look tappable. Mirrors iOS
+     * `PazColors.titleInk`.
+     */
+    val titleInk: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = if (LocalPazDarkTheme.current) DarkOnBackground else Primary
 }

@@ -84,7 +84,8 @@ struct FormStepView: View {
                 }
                 if form.type == .casaDePazReport {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        NavigationLink(destination: CasaDePazSubmissionsListView(formsRepository: IosAppContainer.shared.formsRepository)) {
+                        NavigationLink(destination: CasaDePazSubmissionsListView(formsRepository: IosAppContainer.shared
+                                .formsRepository)) {
                             Image(systemName: "clock.arrow.circlepath")
                         }
                     }
@@ -186,7 +187,8 @@ struct FormStepView: View {
             .padding(.bottom, PazSpacing.xl)
         }
         .sheet(isPresented: Binding(
-            get: { viewModel.pickerKey != nil && (viewModel.pickerKind == .user || viewModel.pickerKind == .userMulti) },
+            get: { viewModel.pickerKey != nil && (viewModel.pickerKind == .user || viewModel.pickerKind == .userMulti)
+            },
             set: { if !$0 { viewModel.closePicker() } }
         )) {
             UserPickerSheet(viewModel: viewModel)

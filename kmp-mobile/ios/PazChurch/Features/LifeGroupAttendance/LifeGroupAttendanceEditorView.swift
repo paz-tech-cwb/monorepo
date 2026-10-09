@@ -59,7 +59,7 @@ struct LifeGroupAttendanceEditorView: View {
                 Section {
                     Text("\(viewModel.entries.filter(\.present).count) de \(viewModel.entries.count) presentes")
                         .font(PazTypography.titleSmall)
-                        .foregroundStyle(PazColors.accent)
+                        .foregroundStyle(PazColors.titleInk)
                 }
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)

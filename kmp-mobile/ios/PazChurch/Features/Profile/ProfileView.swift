@@ -35,7 +35,7 @@ struct ProfileView: View {
                             Circle().fill(PazColors.accent.opacity(0.15)).frame(width: 80, height: 80)
                                 .overlay(
                                     Text(viewModel.user?.name.prefix(1).uppercased() ?? "")
-                                        .font(PazTypography.headlineLarge).foregroundStyle(PazColors.accent)
+                                        .font(PazTypography.headlineLarge).foregroundStyle(PazColors.titleInk)
                                 )
                             Circle().fill(PazColors.pazGold).frame(width: 26, height: 26)
                                 .overlay(Image(systemName: "pencil").font(.system(size: 11, weight: .bold))

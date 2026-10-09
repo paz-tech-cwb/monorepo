@@ -226,7 +226,7 @@ private struct AgendaEventRow: View {
             } else {
                 VStack(spacing: 0) {
                     Text(String(parts[safe: 2]?.prefix(2) ?? "--"))
-                        .font(PazTypography.titleMedium).foregroundStyle(PazColors.accent)
+                        .font(PazTypography.titleMedium).foregroundStyle(PazColors.titleInk)
                     Text(monthAbbrev(parts[safe: 1]))
                         .font(PazTypography.labelSmall).foregroundStyle(PazColors.pazSky)
                 }

@@ -43,13 +43,10 @@ struct GlassCard<Content: View>: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
-            )
-            .shadow(
-                color: Color.black.opacity(isExportingPDF ? 0.05 : 0.10),
-                radius: isExportingPDF ? 4 : 16,
-                x: 0,
-                y: isExportingPDF ? 2 : 8
+                    .strokeBorder(
+                        colorScheme == .dark ? Color.white.opacity(0.18) : PazColors.line,
+                        lineWidth: 0.75
+                    )
             )
     }
 }

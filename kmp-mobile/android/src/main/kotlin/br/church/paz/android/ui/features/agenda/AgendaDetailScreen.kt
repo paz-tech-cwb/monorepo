@@ -88,7 +88,7 @@ private fun ContentState(
             Modifier
                 .fillMaxWidth()
                 .height(300.dp)
-                .background(PazGradients.Hero)
+                .background(PazGradients.heroForScheme)
                 .statusBarsPadding(),
         ) {
             if (!event.imageUrl.isNullOrEmpty()) {

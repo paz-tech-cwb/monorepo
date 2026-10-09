@@ -296,7 +296,7 @@ private fun ProfileCard(
                     Modifier.weight(1f).padding(horizontal = PazSpacing.Md),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    Text(user.name, style = MaterialTheme.typography.titleMedium.copy(color = PazColors.Primary))
+                    Text(user.name, style = MaterialTheme.typography.titleMedium.copy(color = PazColors.titleInk))
                     Text(
                         user.email ?: "",
                         style = MaterialTheme.typography.bodySmall.copy(color = PazColors.Accent),
@@ -326,13 +326,13 @@ private fun ProfileCard(
                     .padding(6.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surface)
-                    .border(1.dp, PazColors.Primary.copy(alpha = 0.13f), CircleShape)
+                    .border(1.dp, PazColors.accent.copy(alpha = 0.13f), CircleShape)
                     .padding(6.dp),
         ) {
             Icon(
                 Icons.Outlined.Edit,
                 contentDescription = null,
-                tint = PazColors.Primary,
+                tint = PazColors.accent,
                 modifier = Modifier.size(14.dp),
             )
         }
@@ -366,7 +366,7 @@ private fun GuestAccountScreen(onSignIn: () -> Unit) {
     ) {
         Text(
             text = "Você está navegando como visitante",
-            style = MaterialTheme.typography.titleMedium.copy(color = PazColors.Primary),
+            style = MaterialTheme.typography.titleMedium.copy(color = PazColors.titleInk),
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(PazSpacing.Sm))
