@@ -19,8 +19,12 @@ struct InteractivePopGestureDisabler: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
         context.coordinator.isDisabled = isDisabled
         context.coordinator.onBlockedSwipeAttempt = onBlockedSwipeAttempt
-        if let navigationController = uiViewController.navigationController {
-            context.coordinator.attach(to: navigationController)
+        attachIfNeeded(uiViewController, coordinator: context.coordinator)
+        // The navigation controller may not be resolvable yet on the first pass
+        // (view hierarchy still settling) — retry shortly so the gesture is reliably
+        // intercepted rather than silently no-op'ing if it wasn't set yet.
+        DispatchQueue.main.async {
+            attachIfNeeded(uiViewController, coordinator: context.coordinator)
         }
     }
 
@@ -30,6 +34,11 @@ struct InteractivePopGestureDisabler: UIViewControllerRepresentable {
 
     static func dismantleUIViewController(_ uiViewController: UIViewController, coordinator: Coordinator) {
         coordinator.detach()
+    }
+
+    private func attachIfNeeded(_ uiViewController: UIViewController, coordinator: Coordinator) {
+        guard let navigationController = uiViewController.navigationController ?? uiViewController.parent?.navigationController else { return }
+        coordinator.attach(to: navigationController)
     }
 
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {

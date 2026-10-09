@@ -28,8 +28,7 @@ struct ReportsListView: View {
                         pazRowDivider
                         NavigationLink(destination: LifeGroupAnalyticsView(
                             lifeGroupId: nil,
-                            analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository,
-                            churchRepository: IosAppContainer.shared.churchRepository
+                            analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository
                         )) {
                             PazListRow(title: "Life Group", icon: "chart.bar.fill", tint: Color(hex: "2E7D32"))
                         }
