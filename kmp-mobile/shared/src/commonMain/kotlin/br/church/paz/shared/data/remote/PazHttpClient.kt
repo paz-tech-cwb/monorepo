@@ -69,6 +69,20 @@ fun createPazHttpClient(
             }
         }
         level = if (debug) LogLevel.BODY else LogLevel.NONE
+        // NOTE: Ktor's Logging plugin only exposes a header-level sanitization hook
+        // (sanitizeHeader below) — there is no equivalent hook for redacting fields
+        // inside response/request BODIES (e.g. access_token/refresh_token in
+        // RefreshResponse). The Pulse (iOS)/Chucker (Android) in-app network
+        // inspectors wired up behind DevToolsGate capture raw request/response
+        // bodies directly at the NSURLSession/OkHttp layer — independent of this
+        // Ktor Logging plugin entirely — which would otherwise let an admin/pastor
+        // user who opens that inspector see a live refresh token in a captured
+        // response body. This is mitigated, not accepted as a gap: the
+        // "api/auth/refresh" and "api/auth/social-login" endpoints are excluded from capture entirely using each
+        // library's own exclusion mechanism — ChuckerInterceptor.Builder.skipPaths
+        // on Android (see PazApplication.kt) and NetworkLogger.Configuration
+        // .excludedURLs on iOS (see PazChurchApp.swift) — rather than attempting a
+        // fragile regex-based body scrub at the interceptor layer.
         sanitizeHeader { header -> header == HttpHeaders.Authorization }
     }
 

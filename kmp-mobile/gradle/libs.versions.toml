@@ -21,11 +21,13 @@ ktlint                  = "12.1.2"
 maps-compose            = "6.4.1"
 play-services-maps      = "19.0.0"
 play-services-location  = "21.3.0"
+chucker                 = "4.1.0"
 
 [libraries]
 # Ktor
 ktor-client-core            = { module = "io.ktor:ktor-client-core",                    version.ref = "ktor" }
 ktor-client-cio             = { module = "io.ktor:ktor-client-cio",                     version.ref = "ktor" }
+ktor-client-okhttp          = { module = "io.ktor:ktor-client-okhttp",                  version.ref = "ktor" }
 ktor-client-darwin          = { module = "io.ktor:ktor-client-darwin",                  version.ref = "ktor" }
 ktor-client-content-neg     = { module = "io.ktor:ktor-client-content-negotiation",     version.ref = "ktor" }
 ktor-client-auth            = { module = "io.ktor:ktor-client-auth",                    version.ref = "ktor" }
@@ -93,6 +95,7 @@ arch-core-testing           = { module = "androidx.arch.core:core-testing",     
 maps-compose                = { module = "com.google.maps.android:maps-compose",           version.ref = "maps-compose" }
 play-services-maps          = { module = "com.google.android.gms:play-services-maps",      version.ref = "play-services-maps" }
 play-services-location      = { module = "com.google.android.gms:play-services-location",  version.ref = "play-services-location" }
+chucker                      = { module = "com.github.chuckerteam.chucker:library",         version.ref = "chucker" }
 
 [plugins]
 kotlin-multiplatform        = { id = "org.jetbrains.kotlin.multiplatform",              version.ref = "kotlin" }

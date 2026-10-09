@@ -221,6 +221,12 @@ struct AccountView: View {
                         .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 20)
+
+                    Spacer().frame(height: 20)
+                    Text("Versão \(Bundle.main.appVersionString)")
+                        .font(PazTypography.labelSmall)
+                        .foregroundStyle(PazColors.slateLight)
+                        .devToolsGate(currentUserRole: user.role)
                 }
 
                 Spacer().frame(height: 32)
