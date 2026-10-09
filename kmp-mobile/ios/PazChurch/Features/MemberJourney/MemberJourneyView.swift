@@ -15,7 +15,7 @@ struct MemberJourneyView: View {
                 loadingState
             } else if let errorMessage = viewModel.error {
                 errorState(message: errorMessage)
-            } else if viewModel.track == nil {
+            } else if viewModel.shouldShowNoActiveTrackState {
                 noActiveTrackState
             } else {
                 contentState
@@ -56,8 +56,19 @@ struct MemberJourneyView: View {
             VStack(alignment: .leading, spacing: PazSpacing.lg) {
                 Spacer().frame(height: PazSpacing.lg)
 
-                if let track = viewModel.track {
-                    JourneyTrackSection(track: track)
+                ForEach(viewModel.tracks, id: \.key) { track in
+                    switch trackStatus(for: track) {
+                    case .completed:
+                        CollapsedTrackRow(track: track, isCompleted: true)
+                    case .current:
+                        JourneyTrackSection(track: track)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: PazSpacing.cardRadiusCompact, style: .continuous)
+                                    .strokeBorder(PazColors.accent, lineWidth: 2)
+                            )
+                    case .available:
+                        CollapsedTrackRow(track: track, isCompleted: false)
+                    }
                 }
 
                 Spacer().frame(height: PazSpacing.xl)
@@ -66,6 +77,17 @@ struct MemberJourneyView: View {
         }
         .background(PazMeshBackground())
         .refreshable { await viewModel.loadJourney() }
+    }
+
+    private enum TrackStatus { case completed, current, available }
+
+    /// Status is derived purely from each track's own completion state, never from its
+    /// position in the list (the tracks are not a linear progression — some, like
+    /// baptism/member, run in parallel to the role chain).
+    private func trackStatus(for track: JourneyTrack) -> TrackStatus {
+        if track.progressPercentage >= 100 { return .completed }
+        if track.key == viewModel.currentTrackKey { return .current }
+        return .available
     }
 
     private var loadingState: some View {
@@ -135,6 +157,24 @@ private struct JourneyTrackSection: View {
                 .padding(.bottom, PazSpacing.lg)
             }
         }
+    }
+}
+
+private struct CollapsedTrackRow: View {
+    let track: JourneyTrack
+    let isCompleted: Bool
+
+    var body: some View {
+        HStack(spacing: PazSpacing.md) {
+            Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                .foregroundStyle(isCompleted ? PazColors.accent : PazColors.slateLight)
+            Text(track.title)
+                .font(PazTypography.titleSmall)
+                .foregroundStyle(isCompleted ? PazColors.ink : PazColors.slate)
+            Spacer()
+        }
+        .padding(PazSpacing.lg)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }
 
@@ -222,10 +262,18 @@ private struct JourneyStepRow: View {
 @MainActor
 @Observable
 class MemberJourneyViewModel {
-    var track: JourneyTrack?
-    var allStepsComplete = false
+    var tracks: [JourneyTrack] = []
+    var currentTrackKey: String?
+    var currentTrackComplete = false
     var isLoading = true
     var error: String?
+
+    /// Show the "Você está em dia!" empty state when there's no track to focus on and
+    /// nothing is actually in progress for this user — not just whenever `tracks` is
+    /// non-empty, since the backend now returns all active tracks for everyone.
+    var shouldShowNoActiveTrackState: Bool {
+        tracks.isEmpty || (currentTrackKey == nil && tracks.allSatisfy { $0.progressPercentage >= 100 })
+    }
 
     private let repository: MemberJourneyRepository
 
@@ -236,8 +284,9 @@ class MemberJourneyViewModel {
     func loadJourney() async {
         do {
             let journey = try await repository.getMemberJourney()
-            self.track = journey.track
-            self.allStepsComplete = journey.allStepsComplete
+            self.tracks = journey.tracks
+            self.currentTrackKey = journey.currentTrackKey
+            self.currentTrackComplete = journey.currentTrackComplete
             self.isLoading = false
         } catch {
             self.error = "Erro ao carregar jornada"

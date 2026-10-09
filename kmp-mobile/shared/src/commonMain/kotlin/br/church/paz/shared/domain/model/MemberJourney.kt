@@ -1,9 +1,14 @@
 package br.church.paz.shared.domain.model
 
 data class MemberJourney(
-    val track: JourneyTrack?,
-    val allStepsComplete: Boolean = false,
-)
+    val tracks: List<JourneyTrack> = emptyList(),
+    val currentTrackKey: String? = null,
+    val currentTrackComplete: Boolean = false,
+) {
+    /** The track matching [currentTrackKey], if present in [tracks]. */
+    val currentTrack: JourneyTrack?
+        get() = tracks.firstOrNull { it.key == currentTrackKey }
+}
 
 data class JourneyTrack(
     val key: String,

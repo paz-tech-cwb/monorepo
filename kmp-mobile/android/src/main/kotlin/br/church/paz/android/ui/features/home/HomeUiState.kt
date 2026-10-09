@@ -15,6 +15,12 @@ data class HomeUiState(
     // Any leadership role (role.isLeader) — gates the "Relatórios de Grupos
     // de Vida" shortcut card.
     val canManage: Boolean = false,
+    // Full upcoming agenda (recurrence-expanded, paginated), loaded lazily
+    // the first time the home agenda section is expanded.
+    val isAgendaExpanded: Boolean = false,
+    val isLoadingFullAgenda: Boolean = false,
+    val fullAgendaEvents: List<AgendaEvent> = emptyList(),
+    val fullAgendaLoadError: String? = null,
 )
 
 sealed class HomeEffect {

@@ -7,7 +7,6 @@ import UIKit
 
 struct HomeView: View {
     @State private var viewModel: HomeViewModel
-    @State private var selectedDayIndex: Int = 2
     @State private var currentFeatureIndex: Int = 0
     @State private var scrolledFeatureID: Int? = 0
     @State private var showAgendaList = false
@@ -18,11 +17,13 @@ struct HomeView: View {
     private let agendaRepository: AgendaRepository
 
     init(homeRepository: HomeRepository, authRepository: AuthRepository) {
+        let agendaRepository = IosAppContainer.shared.agendaRepository
         _viewModel = State(initialValue: HomeViewModel(
             homeRepository: homeRepository,
-            authRepository: authRepository
+            authRepository: authRepository,
+            agendaRepository: agendaRepository
         ))
-        agendaRepository = IosAppContainer.shared.agendaRepository
+        self.agendaRepository = agendaRepository
     }
 
     private var isDark: Bool {
@@ -35,46 +36,6 @@ struct HomeView: View {
 
     private var bank: BankInfo? {
         viewModel.homeContent?.contribution?.bank
-    }
-
-    private var agendaEvents: [AgendaEvent] {
-        Array((viewModel.homeContent?.agenda ?? []).prefix(3))
-    }
-
-    private struct WeekDay {
-        let date: Date
-        let dow: String
-        let day: Int
-        let isToday: Bool
-        var hasEvent: Bool = false
-    }
-
-    private var weekDays: [WeekDay] {
-        let cal = Calendar.current
-        let today = Date()
-        guard let weekInterval = cal.dateInterval(of: .weekOfYear, for: today) else { return [] }
-        let dowLabels = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"]
-        let allEvents = viewModel.homeContent?.agenda ?? []
-        return (0..<7).compactMap { offset -> WeekDay? in
-            guard let date = cal.date(byAdding: .day, value: offset, to: weekInterval.start) else { return nil }
-            let comps = cal.dateComponents([.weekday, .day], from: date)
-            let isToday = cal.isDateInToday(date)
-            let hasEvent = allEvents.contains { event in
-                guard let eventDate = parseEventDate(event.startDate) else { return false }
-                return cal.isDate(eventDate, inSameDayAs: date)
-            }
-            return WeekDay(
-                date: date,
-                dow: dowLabels[(comps.weekday ?? 1) - 1],
-                day: comps.day ?? 0,
-                isToday: isToday,
-                hasEvent: hasEvent
-            )
-        }
-    }
-
-    private var weekHasEvents: Bool {
-        weekDays.contains { $0.hasEvent }
     }
 
     private func parseEventDate(_ str: String) -> Date? {
@@ -92,14 +53,18 @@ struct HomeView: View {
         return nil
     }
 
-    private var selectedDayEvents: [AgendaEvent] {
-        guard weekDays.indices.contains(selectedDayIndex) else { return [] }
-        let selectedDate = weekDays[selectedDayIndex].date
+    /// Events starting from the start of today through the next 7 days inclusive.
+    private var nextSevenDaysEvents: [AgendaEvent] {
         let cal = Calendar.current
-        return (viewModel.homeContent?.agenda ?? []).filter { event in
-            guard let eventDate = parseEventDate(event.startDate) else { return false }
-            return cal.isDate(eventDate, inSameDayAs: selectedDate)
-        }
+        let startOfToday = cal.startOfDay(for: Date())
+        guard let sevenDaysOut = cal.date(byAdding: .day, value: 7, to: startOfToday) else { return [] }
+        let allEvents = viewModel.homeContent?.agenda ?? []
+        return allEvents
+            .filter { event in
+                guard let eventDate = parseEventDate(event.startDate) else { return false }
+                return eventDate >= startOfToday && eventDate < sevenDaysOut
+            }
+            .sorted { (parseEventDate($0.startDate) ?? .distantFuture) < (parseEventDate($1.startDate) ?? .distantFuture) }
     }
 
     private var sectionOrder: [String] {
@@ -135,10 +100,6 @@ struct HomeView: View {
         }
         .task {
             await viewModel.load()
-            let cal = Calendar.current
-            if let todayIndex = weekDays.firstIndex(where: { cal.isDateInToday($0.date) }) {
-                selectedDayIndex = todayIndex
-            }
         }
         .sheet(isPresented: $showAgendaList) {
             AgendaListView(agendaRepository: agendaRepository)
@@ -158,10 +119,10 @@ struct HomeView: View {
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(delay), value: banners.count)
 
-                case "agenda" where !(viewModel.homeContent?.agenda ?? []).isEmpty:
+                case "agenda":
                     agendaSection
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
-                        .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(delay), value: agendaEvents.count)
+                        .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(delay), value: nextSevenDaysEvents.count)
 
                 case "contribution":
                     if let bank {
@@ -299,46 +260,51 @@ struct HomeView: View {
             .padding(.horizontal, 18)
             .padding(.bottom, 13)
 
-            if weekHasEvents {
-                // Sticky week strip — scrollable, partial peek reveals continuity
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: PazSpacing.sm) {
-                        ForEach(Array(weekDays.enumerated()), id: \.offset) { index, item in
-                            DayPillView(
-                                dow: item.dow,
-                                day: item.day,
-                                isSelected: index == selectedDayIndex,
-                                isToday: item.isToday,
-                                hasEvent: item.hasEvent
-                            )
-                            .frame(width: 52)
-                            .onTapGesture {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    selectedDayIndex = index
-                                }
-                            }
+            let eventsToShow = viewModel.isAgendaExpanded ? viewModel.fullAgendaEvents : nextSevenDaysEvents
+
+            if !viewModel.isAgendaExpanded, nextSevenDaysEvents.isEmpty {
+                // No events in the next 7 days — keep only the entry point to
+                // the full agenda ("Ver tudo" above), without the detailed
+                // week-list view or expand toggle.
+                Spacer().frame(height: 4)
+            } else {
+                if viewModel.isAgendaExpanded, viewModel.isLoadingFullAgenda {
+                    VStack(spacing: 12) {
+                        ForEach(0..<3, id: \.self) { _ in
+                            HomeSkeletonView().frame(height: 60)
                         }
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 12)
-                }
-                .padding(.bottom, 4)
-            } else {
-                Spacer().frame(height: 8)
-            }
-
-            // Event list filtered to selected day
-            if selectedDayEvents.isEmpty {
-                EmptyAgendaView(
-                    hasUpcomingEvents: !(viewModel.homeContent?.agenda ?? []).isEmpty
-                )
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-            } else {
-                VStack(spacing: 12) {
-                    ForEach(selectedDayEvents, id: \.id) { event in
-                        EventCardView(event: event)
+                    .padding(.horizontal, 16)
+                } else if viewModel.isAgendaExpanded, let fullAgendaLoadError = viewModel.fullAgendaLoadError {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Não foi possível carregar a agenda completa.")
+                            .font(PazTypography.bodyMedium)
+                            .foregroundStyle(PazColors.ink)
+                        Button(action: { Task { await viewModel.loadFullAgenda() } }) {
+                            Text("Tentar novamente")
+                                .font(PazTypography.labelMedium)
+                                .foregroundStyle(PazColors.accent)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .background(PazColors.surface, in: RoundedRectangle(cornerRadius: 14))
+                    .padding(.horizontal, 16)
+                } else {
+                    VStack(spacing: 12) {
+                        ForEach(eventsToShow, id: \.id) { event in
+                            EventCardView(event: event)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+
+                Button(action: { withAnimation { viewModel.onToggleAgendaExpanded() } }) {
+                    Text(viewModel.isAgendaExpanded ? "Ver menos" : "Ver próximos eventos")
+                        .font(PazTypography.labelMedium)
+                        .foregroundStyle(PazColors.accent)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
@@ -475,87 +441,6 @@ private struct DizimosPixButton: View {
                 .clipShape(Capsule())
         }
         .buttonStyle(.plain)
-    }
-}
-
-// MARK: - DayPillView
-
-private struct DayPillView: View {
-    let dow: String
-    let day: Int
-    let isSelected: Bool
-    let isToday: Bool
-    let hasEvent: Bool
-
-    private var dotColor: Color {
-        if isToday { return PazColors.pazGold }
-        if hasEvent { return PazColors.accent }
-        return .clear
-    }
-
-    var body: some View {
-        VStack(spacing: 3) {
-            Text(dow)
-                .font(PazTypography.labelSmall)
-                .foregroundStyle(isSelected ? .white.opacity(0.72) : PazColors.slateLight)
-            Text("\(day)")
-                .font(.system(size: 21, weight: .bold))
-                .foregroundStyle(isSelected ? .white : PazColors.ink)
-            Circle()
-                .fill(dotColor)
-                .frame(width: 4, height: 4)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 74)
-        .background(
-            Group {
-                if isSelected {
-                    RoundedRectangle(cornerRadius: 18)
-                        .fill(PazColors.dayPillSelectedGradient)
-                } else if isToday {
-                    RoundedRectangle(cornerRadius: 18)
-                        .fill(PazColors.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 18)
-                                .strokeBorder(PazColors.accent.opacity(0.5), lineWidth: 1.5)
-                        )
-                } else {
-                    RoundedRectangle(cornerRadius: 18)
-                        .fill(PazColors.surface)
-                        .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(PazColors.line))
-                }
-            }
-        )
-        .shadow(
-            color: isSelected ? PazColors.accent.opacity(0.4) : Color.black.opacity(0.06),
-            radius: isSelected ? 8 : 4,
-            x: 0,
-            y: isSelected ? 6 : 2
-        )
-    }
-}
-
-// MARK: - EmptyAgendaView
-
-private struct EmptyAgendaView: View {
-    let hasUpcomingEvents: Bool
-
-    var body: some View {
-        VStack(spacing: 8) {
-            Text(hasUpcomingEvents ? "Nenhum evento para esta semana" : "Nenhum evento agendado")
-                .font(PazTypography.titleLarge)
-                .foregroundStyle(PazColors.ink)
-                .multilineTextAlignment(.center)
-
-            Text(hasUpcomingEvents ? "Confira todos os eventos na agenda." :
-                "Aguarde novos eventos para o futuro.")
-                .font(PazTypography.bodyMedium)
-                .foregroundStyle(PazColors.slate)
-                .multilineTextAlignment(.center)
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity)
-        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }
 

@@ -43,6 +43,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -50,7 +51,6 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -69,14 +69,12 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
-import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazCardSkeleton
 import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazSkeleton
@@ -140,8 +138,14 @@ fun HomeScreen(
                     agendaEvents = uiState.agendaEvents,
                     bank = uiState.bank,
                     sectionOrder = uiState.sectionOrder,
+                    isAgendaExpanded = uiState.isAgendaExpanded,
+                    isLoadingFullAgenda = uiState.isLoadingFullAgenda,
+                    fullAgendaEvents = uiState.fullAgendaEvents,
+                    fullAgendaLoadError = uiState.fullAgendaLoadError,
                     onBannerTap = viewModel::onBannerTapped,
                     onEventTap = viewModel::onEventTapped,
+                    onToggleAgendaExpanded = viewModel::onToggleAgendaExpanded,
+                    onRetryFullAgenda = viewModel::onRetryFullAgenda,
                     onSeeAllEvents = { navController.navigate(Screen.AgendaList.route) },
                     contentPadding = adjustedPadding,
                 )
@@ -237,15 +241,18 @@ private fun HomeContent(
     agendaEvents: List<AgendaEvent>,
     bank: BankInfo?,
     sectionOrder: List<String>,
+    isAgendaExpanded: Boolean,
+    isLoadingFullAgenda: Boolean,
+    fullAgendaEvents: List<AgendaEvent>,
+    fullAgendaLoadError: String?,
     onBannerTap: (String?) -> Unit,
     onEventTap: (String) -> Unit,
+    onToggleAgendaExpanded: () -> Unit,
+    onRetryFullAgenda: () -> Unit,
     onSeeAllEvents: () -> Unit,
     contentPadding: PaddingValues,
 ) {
-    val weekDays = remember(agendaEvents) { buildWeekDays(agendaEvents) }
-    val weekHasEvents = remember(weekDays) { weekDays.any { it.hasEvent } }
-    val todayIndex = remember(weekDays) { weekDays.indexOfFirst { it.isToday }.coerceAtLeast(0) }
-    var selectedDay by remember { mutableIntStateOf(todayIndex) }
+    val nextSevenDaysEvents = remember(agendaEvents) { filterNextSevenDays(agendaEvents) }
 
     LazyColumn(
         contentPadding = contentPadding,
@@ -272,21 +279,22 @@ private fun HomeContent(
                             }
                         }
                     }
-                "agenda" -> {
+                "agenda" ->
                     item(key = "agenda") {
                         AnimatedSection(index = index) {
                             AgendaSection(
-                                weekDays = weekDays,
-                                allEvents = agendaEvents,
-                                weekHasEvents = weekHasEvents,
-                                selectedDay = selectedDay,
-                                onDaySelected = { selectedDay = it },
+                                nextSevenDaysEvents = nextSevenDaysEvents,
+                                isExpanded = isAgendaExpanded,
+                                isLoadingFullAgenda = isLoadingFullAgenda,
+                                fullAgendaEvents = fullAgendaEvents,
+                                fullAgendaLoadError = fullAgendaLoadError,
+                                onToggleExpanded = onToggleAgendaExpanded,
+                                onRetryFullAgenda = onRetryFullAgenda,
                                 onEventTap = onEventTap,
                                 onSeeAll = onSeeAllEvents,
                             )
                         }
                     }
-                }
             }
         }
     }
@@ -612,96 +620,51 @@ private fun DizimosButton(
 
 // ── Agenda section ────────────────────────────────────────────────────────────
 
-private data class DayItem(
-    val dow: String,
-    val day: Int,
-    val date: Calendar,
-    val isToday: Boolean,
-    val hasEvent: Boolean,
-)
-
-private val dowLabels = listOf("DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB")
-
-private fun buildWeekDays(events: List<AgendaEvent>): List<DayItem> {
-    fun parseDate(str: String): Calendar? {
-        val instant = runCatching { java.time.Instant.parse(str) }.getOrNull()
-        if (instant != null) {
-            return Calendar.getInstance().also { it.timeInMillis = instant.toEpochMilli() }
-        }
-        val localFmt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US)
-        val dateFmt = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        val date =
-            runCatching { localFmt.parse(str) }.getOrNull()
-                ?: runCatching { dateFmt.parse(str) }.getOrNull()
-                ?: return null
-        return Calendar.getInstance().also { it.time = date }
+private fun parseEventDate(str: String): Calendar? {
+    val instant = runCatching { java.time.Instant.parse(str) }.getOrNull()
+    if (instant != null) {
+        return Calendar.getInstance().also { it.timeInMillis = instant.toEpochMilli() }
     }
+    val localFmt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US)
+    val dateFmt = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US)
+    val date =
+        runCatching { localFmt.parse(str) }.getOrNull()
+            ?: runCatching { dateFmt.parse(str) }.getOrNull()
+            ?: return null
+    return Calendar.getInstance().also { it.time = date }
+}
 
-    val today = Calendar.getInstance()
-    val weekStart =
+/** Events starting from the start of today through the next 7 days inclusive. */
+private fun filterNextSevenDays(events: List<AgendaEvent>): List<AgendaEvent> {
+    val startOfToday =
         Calendar.getInstance().apply {
-            set(Calendar.DAY_OF_WEEK, firstDayOfWeek)
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
-    return (0 until 7).map { offset ->
-        val day = (weekStart.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, offset) }
-        val dowIndex = day.get(Calendar.DAY_OF_WEEK) - 1
-        val isToday =
-            day.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
-                day.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
-        val hasEvent =
-            events.any { event ->
-                val ed = parseDate(event.startDate) ?: return@any false
-                ed.get(Calendar.YEAR) == day.get(Calendar.YEAR) &&
-                    ed.get(Calendar.DAY_OF_YEAR) == day.get(Calendar.DAY_OF_YEAR)
-            }
-        DayItem(
-            dow = dowLabels[dowIndex],
-            day = day.get(Calendar.DAY_OF_MONTH),
-            date = day,
-            isToday = isToday,
-            hasEvent = hasEvent,
-        )
-    }
+    val sevenDaysOut = (startOfToday.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, 7) }
+
+    return events
+        .filter { event ->
+            val ed = parseEventDate(event.startDate) ?: return@filter false
+            !ed.before(startOfToday) && ed.before(sevenDaysOut)
+        }.sortedBy { parseEventDate(it.startDate)?.timeInMillis ?: Long.MAX_VALUE }
 }
 
 @Composable
 private fun AgendaSection(
-    weekDays: List<DayItem>,
-    allEvents: List<AgendaEvent>,
-    weekHasEvents: Boolean,
-    selectedDay: Int,
-    onDaySelected: (Int) -> Unit,
+    nextSevenDaysEvents: List<AgendaEvent>,
+    isExpanded: Boolean,
+    isLoadingFullAgenda: Boolean,
+    fullAgendaEvents: List<AgendaEvent>,
+    fullAgendaLoadError: String?,
+    onToggleExpanded: () -> Unit,
+    onRetryFullAgenda: () -> Unit,
     onEventTap: (String) -> Unit,
     onSeeAll: () -> Unit,
 ) {
-    fun parseDate(str: String): Calendar? {
-        val instant = runCatching { java.time.Instant.parse(str) }.getOrNull()
-        if (instant != null) {
-            return Calendar.getInstance().also { it.timeInMillis = instant.toEpochMilli() }
-        }
-        val localFmt = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US)
-        val dateFmt = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        val date =
-            runCatching { localFmt.parse(str) }.getOrNull()
-                ?: runCatching { dateFmt.parse(str) }.getOrNull()
-                ?: return null
-        return Calendar.getInstance().also { it.time = date }
-    }
-
-    val selectedDate = weekDays.getOrNull(selectedDay)?.date
-    val dayEvents =
-        remember(selectedDay, allEvents) {
-            if (selectedDate == null) return@remember emptyList()
-            allEvents.filter { event ->
-                val ed = parseDate(event.startDate) ?: return@filter false
-                ed.get(Calendar.YEAR) == selectedDate.get(Calendar.YEAR) &&
-                    ed.get(Calendar.DAY_OF_YEAR) == selectedDate.get(Calendar.DAY_OF_YEAR)
-            }
-        }
+    val eventsToShow = if (isExpanded) fullAgendaEvents else nextSevenDaysEvents
 
     Column(Modifier.padding(top = PazSpacing.Xl)) {
         Row(
@@ -726,43 +689,28 @@ private fun AgendaSection(
             }
         }
 
-        if (weekHasEvents) {
+        if (!isExpanded && nextSevenDaysEvents.isEmpty()) {
+            // No events in the next 7 days — keep only the entry point to the
+            // full agenda, without the detailed week-list view.
+            Spacer(Modifier.height(PazSpacing.Sm))
+        } else {
             Spacer(Modifier.height(PazSpacing.Md))
 
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = PazSpacing.Lg)
-                        .padding(vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
-            ) {
-                weekDays.forEachIndexed { index, item ->
-                    DayPill(
-                        item = item,
-                        isSelected = index == selectedDay,
-                        modifier = Modifier.weight(1f),
-                        onClick = { onDaySelected(index) },
-                    )
-                }
-            }
-        }
-
-        Spacer(Modifier.height(PazSpacing.Md))
-
-        if (dayEvents.isEmpty()) {
-            EmptyAgendaCard(
-                hasUpcomingEvents = allEvents.isNotEmpty(),
-                onSeeAll = onSeeAll,
-            )
-        } else {
             Column(
                 Modifier.padding(horizontal = PazSpacing.Lg),
                 verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
             ) {
-                dayEvents.forEach { event ->
-                    EventCard(event = event, onClick = { onEventTap(event.id) })
+                if (isExpanded && isLoadingFullAgenda) {
+                    repeat(3) { PazCardSkeleton() }
+                } else if (isExpanded && fullAgendaLoadError != null) {
+                    FullAgendaErrorRow(error = fullAgendaLoadError, onRetry = onRetryFullAgenda)
+                } else {
+                    eventsToShow.forEach { event ->
+                        EventCard(event = event, onClick = { onEventTap(event.id) })
+                    }
                 }
+
+                AgendaExpandToggle(isExpanded = isExpanded, onClick = onToggleExpanded)
             }
         }
         Spacer(Modifier.height(PazSpacing.Lg))
@@ -770,144 +718,49 @@ private fun AgendaSection(
 }
 
 @Composable
-private fun EmptyAgendaCard(
-    hasUpcomingEvents: Boolean,
-    onSeeAll: () -> Unit,
+private fun FullAgendaErrorRow(
+    error: String,
+    onRetry: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(20.dp)
     Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = PazSpacing.Lg)
-                .shadow(
-                    elevation = 6.dp,
-                    shape = shape,
-                    spotColor = PazColors.ShadowNavy.copy(alpha = 0.20f),
-                    ambientColor = PazColors.ShadowNavy.copy(alpha = 0.04f),
-                ).clip(shape)
-                .background(MaterialTheme.colorScheme.surface)
-                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), shape)
-                .padding(PazSpacing.Lg),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(PazSpacing.Lg),
+        verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
     ) {
         Text(
-            text = if (hasUpcomingEvents) "Nenhum evento para esta semana" else "Nenhum evento agendado",
-            style =
-                MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp,
-                ),
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text =
-                if (hasUpcomingEvents) {
-                    "Confira todos os eventos clicando no botão abaixo."
-                } else {
-                    "Aguarde novos eventos para o futuro."
-                },
+            "Não foi possível carregar a agenda completa. ($error)",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
         )
-        if (hasUpcomingEvents) {
-            Spacer(Modifier.height(PazSpacing.Lg))
-            PazButton(
-                text = "Ver próximos eventos",
-                onClick = onSeeAll,
-                modifier = Modifier.fillMaxWidth(0.9f),
-            )
+        TextButton(onClick = onRetry) {
+            Text("Tentar novamente", style = MaterialTheme.typography.labelMedium.copy(color = PazColors.PrimaryLight))
         }
     }
 }
 
 @Composable
-private fun DayPill(
-    item: DayItem,
-    isSelected: Boolean,
-    modifier: Modifier = Modifier,
+private fun AgendaExpandToggle(
+    isExpanded: Boolean,
     onClick: () -> Unit,
 ) {
-    val pillShape = RoundedCornerShape(18.dp)
-    val activeGradient =
-        remember {
-            Brush.linearGradient(
-                colors = listOf(PazColors.DayPillStart, PazColors.DayPillEnd),
-                start = Offset(0f, 0f),
-                end = Offset(0f, Float.POSITIVE_INFINITY),
-            )
-        }
-    val dotColor =
-        when {
-            item.isToday -> PazColors.Gold
-            item.hasEvent -> PazColors.Primary
-            else -> Color.Transparent
-        }
-    Box(
-        modifier
-            .height(74.dp)
-            .shadow(
-                elevation = if (isSelected) 8.dp else 2.dp,
-                shape = pillShape,
-                spotColor = if (isSelected) PazColors.Primary.copy(alpha = 0.70f) else PazColors.ShadowNavy,
-                ambientColor = PazColors.ShadowNavy.copy(alpha = 0.04f),
-            ).clip(pillShape)
-            .then(
-                when {
-                    isSelected -> Modifier.background(activeGradient)
-                    item.isToday ->
-                        Modifier
-                            .background(MaterialTheme.colorScheme.surface)
-                            .border(1.5.dp, PazColors.Primary.copy(alpha = 0.5f), pillShape)
-                    else ->
-                        Modifier
-                            .background(MaterialTheme.colorScheme.surface)
-                            .border(1.dp, MaterialTheme.colorScheme.outline, pillShape)
-                },
-            ).clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = PazSpacing.Md),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                item.dow,
-                style =
-                    MaterialTheme.typography.labelSmall.copy(
-                        color =
-                            if (isSelected) {
-                                Color.White.copy(alpha = 0.72f)
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                        fontSize = 11.sp,
-                        letterSpacing = 0.5.sp,
-                    ),
-            )
-            Text(
-                item.day.toString(),
-                style =
-                    MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 21.sp,
-                        color =
-                            if (isSelected) {
-                                Color.White
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            },
-                    ),
-            )
-            Box(
-                Modifier
-                    .padding(top = 2.dp)
-                    .size(4.dp)
-                    .background(color = dotColor, shape = CircleShape),
+                text = if (isExpanded) "Ver menos" else "Ver próximos eventos",
+                style = MaterialTheme.typography.labelMedium.copy(color = PazColors.PrimaryLight),
             )
         }
     }

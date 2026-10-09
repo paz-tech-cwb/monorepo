@@ -1,6 +1,7 @@
 package br.church.paz.android.ui.features.memberjourney
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -100,15 +102,41 @@ fun MemberJourneyScreen(
             when {
                 uiState.isLoading -> LoadingState()
                 uiState.error != null -> ErrorState(error = uiState.error!!, onRetry = viewModel::onRetry)
-                uiState.track == null -> NoActiveTrackState()
-                else -> ContentState(track = uiState.track!!)
+                uiState.tracks.isEmpty() ||
+                    (uiState.currentTrackKey == null && uiState.tracks.all { it.progressPercentage >= 100 }) ->
+                    NoActiveTrackState()
+                else ->
+                    ContentState(
+                        tracks = uiState.tracks,
+                        currentTrackKey = uiState.currentTrackKey,
+                    )
             }
         }
     }
 }
 
+private enum class TrackStatus { Completed, Current, Available }
+
+/**
+ * Status is derived purely from each track's own completion state, never from its
+ * position in [tracks] (the list is not a linear progression — some tracks, like
+ * baptism/member, run in parallel to the role chain).
+ */
+private fun trackStatus(
+    track: JourneyTrack,
+    currentTrackKey: String?,
+): TrackStatus =
+    when {
+        track.progressPercentage >= 100 -> TrackStatus.Completed
+        track.key == currentTrackKey -> TrackStatus.Current
+        else -> TrackStatus.Available
+    }
+
 @Composable
-private fun ContentState(track: JourneyTrack) {
+private fun ContentState(
+    tracks: List<JourneyTrack>,
+    currentTrackKey: String?,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
@@ -116,9 +144,51 @@ private fun ContentState(track: JourneyTrack) {
     ) {
         item { Spacer(Modifier.height(PazSpacing.Sm)) }
 
-        item { JourneyTrackCard(track = track) }
+        items(tracks, key = { it.key }) { track ->
+            when (trackStatus(track, currentTrackKey)) {
+                TrackStatus.Completed -> CollapsedTrackCard(track = track, status = TrackStatus.Completed)
+                TrackStatus.Current -> JourneyTrackCard(track = track)
+                TrackStatus.Available -> CollapsedTrackCard(track = track, status = TrackStatus.Available)
+            }
+        }
 
         item { Spacer(Modifier.height(PazSpacing.Xl)) }
+    }
+}
+
+@Composable
+private fun CollapsedTrackCard(
+    track: JourneyTrack,
+    status: TrackStatus,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(PazShapes.large)
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(PazSpacing.Lg),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+    ) {
+        Icon(
+            imageVector = if (status == TrackStatus.Completed) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+            contentDescription = null,
+            tint =
+                if (status == TrackStatus.Completed) {
+                    PazColors.Primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                },
+        )
+        Text(
+            track.title,
+            style =
+                MaterialTheme.typography.titleSmall.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                ),
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
@@ -133,6 +203,7 @@ private fun JourneyTrackCard(track: JourneyTrack) {
             Modifier
                 .fillMaxWidth()
                 .clip(PazShapes.large)
+                .border(width = 2.dp, color = PazColors.Primary, shape = PazShapes.large)
                 .background(MaterialTheme.colorScheme.surface),
     ) {
         Column(
