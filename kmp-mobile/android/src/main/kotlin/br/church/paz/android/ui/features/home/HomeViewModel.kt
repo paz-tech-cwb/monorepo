@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.shared.domain.model.isLeader
 import br.church.paz.shared.domain.repository.AuthRepository
+import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.HomeRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +18,7 @@ import kotlinx.coroutines.launch
 class HomeViewModel(
     private val homeRepository: HomeRepository,
     private val authRepository: AuthRepository,
+    private val churchRepository: ChurchRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -79,6 +81,14 @@ class HomeViewModel(
                         )
                     }
                 }
+
+            // Shown only when getMyLifeGroups() succeeded AND came back empty — an
+            // error fetching the viewer's groups must never be read as "no group",
+            // since that would wrongly nudge an existing member to "discover" a
+            // group they already belong to.
+            runCatching { churchRepository.getMyLifeGroups() }
+                .onSuccess { myGroups -> _uiState.update { it.copy(showLifeGroupDiscoveryCTA = myGroups.isEmpty()) } }
+                .onFailure { _uiState.update { it.copy(showLifeGroupDiscoveryCTA = false) } }
         }
     }
 

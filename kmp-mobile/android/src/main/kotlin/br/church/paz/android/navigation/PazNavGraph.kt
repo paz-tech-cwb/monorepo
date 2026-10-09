@@ -24,6 +24,7 @@ import br.church.paz.android.ui.features.formularios.FormulariosScreen
 import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsScreen
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceEditorScreen
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryScreen
+import br.church.paz.android.ui.features.lifegroupdiscovery.LifeGroupDiscoveryScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListScreen
@@ -33,7 +34,6 @@ import br.church.paz.android.ui.features.ministries.GroupMembersListScreen
 import br.church.paz.android.ui.features.ministries.GroupMembersType
 import br.church.paz.android.ui.features.ministries.LifeGroupDetailScreen
 import br.church.paz.android.ui.features.ministries.LifeGroupManageScreen
-import br.church.paz.android.ui.features.ministries.LifeGroupsMapScreen
 import br.church.paz.android.ui.features.ministries.LifeGroupsScreen
 import br.church.paz.android.ui.features.ministries.MinistriesScreen
 import br.church.paz.android.ui.features.ministries.MinistryDetailScreen
@@ -178,8 +178,8 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         composable(Screen.AllLifeGroups.route) {
             AllLifeGroupsScreen(navController = navController)
         }
-        composable(Screen.LifeGroupsMap.route) {
-            LifeGroupsMapScreen(navController = navController)
+        composable(Screen.LifeGroupDiscovery.route) {
+            LifeGroupDiscoveryScreen(navController = navController)
         }
         composable(
             route = Screen.MinistryManage.route,

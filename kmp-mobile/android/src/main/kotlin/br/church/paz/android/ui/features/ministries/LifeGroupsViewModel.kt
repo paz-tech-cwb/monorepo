@@ -35,8 +35,8 @@ class LifeGroupsViewModel(
     fun refresh() = fetch(showSkeleton = false)
 
     private fun fetch(showSkeleton: Boolean) {
+        _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton, error = null) }
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton, error = null) }
             runCatching { churchRepository.getMyLifeGroups() }
                 .onSuccess { myGroups ->
                     if (myGroups.isNotEmpty()) {
@@ -121,8 +121,8 @@ class AllLifeGroupsViewModel(
     fun refresh() = fetch(showSkeleton = false)
 
     private fun fetch(showSkeleton: Boolean) {
+        _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton, error = null) }
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton, error = null) }
             runCatching { churchRepository.getAllLifeGroups() }
                 .onSuccess { groups ->
                     _uiState.update {

@@ -148,9 +148,11 @@ fun HomeScreen(
                             agendaEvents = uiState.agendaEvents,
                             bank = uiState.bank,
                             sectionOrder = uiState.sectionOrder,
+                            showLifeGroupDiscoveryCTA = uiState.showLifeGroupDiscoveryCTA,
                             onBannerTap = viewModel::onBannerTapped,
                             onEventTap = viewModel::onEventTapped,
                             onSeeAllEvents = { navController.navigate(Screen.AgendaList.route) },
+                            onLifeGroupDiscoveryTap = { navController.navigate(Screen.LifeGroupDiscovery.route) },
                             contentPadding = adjustedPadding,
                         )
                 }
@@ -178,9 +180,11 @@ private fun HomeContent(
     agendaEvents: List<AgendaEvent>,
     bank: BankInfo?,
     sectionOrder: List<String>,
+    showLifeGroupDiscoveryCTA: Boolean,
     onBannerTap: (String?) -> Unit,
     onEventTap: (String) -> Unit,
     onSeeAllEvents: () -> Unit,
+    onLifeGroupDiscoveryTap: () -> Unit,
     contentPadding: PaddingValues,
 ) {
     val weekDays = remember(agendaEvents) { buildWeekDays(agendaEvents) }
@@ -229,6 +233,89 @@ private fun HomeContent(
                             }
                         }
                     }
+            }
+        }
+
+        // Client-side addition after the ordered sections — not a new
+        // backend `sectionOrder` key, per plan.
+        if (showLifeGroupDiscoveryCTA) {
+            item(key = "life_group_discovery_cta") {
+                AnimatedSection(index = sectionOrder.size) {
+                    LifeGroupDiscoveryCTA(
+                        onClick = onLifeGroupDiscoveryTap,
+                        modifier =
+                            Modifier
+                                .padding(horizontal = PazSpacing.Lg)
+                                .padding(top = PazSpacing.Xl),
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ── Life group discovery CTA ─────────────────────────────────────────────────
+
+@Composable
+private fun LifeGroupDiscoveryCTA(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    androidx.compose.material3.Surface(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape =
+            androidx.compose.foundation.shape
+                .RoundedCornerShape(PazSpacing.CardRadiusLarge),
+        color = androidx.compose.ui.graphics.Color.Transparent,
+    ) {
+        PazGlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = PazSpacing.CardRadiusLarge) {
+            Column(Modifier.padding(PazSpacing.Lg)) {
+                Text(
+                    "LIFE GROUPS",
+                    style =
+                        MaterialTheme.typography.labelMedium.copy(
+                            color = PazColors.accent.copy(alpha = 0.7f),
+                        ),
+                )
+                Spacer(Modifier.height(PazSpacing.Xs))
+                Text(
+                    "Encontre um grupo perto de você",
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                )
+                Spacer(Modifier.height(PazSpacing.Sm))
+                Text(
+                    "Você ainda não faz parte de um Life Group. Veja no mapa os grupos mais próximos e comece a participar.",
+                    style =
+                        MaterialTheme.typography.bodySmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        ),
+                )
+                Spacer(Modifier.height(PazSpacing.Md))
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(PazSpacing.PillButtonHeight)
+                        .clip(PazShapePill)
+                        .background(PazColors.accent.copy(alpha = 0.78f)),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Filled.LocationOn,
+                        contentDescription = null,
+                        tint = androidx.compose.ui.graphics.Color.White,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "Ver Life Groups",
+                        style =
+                            MaterialTheme.typography.titleMedium.copy(
+                                color = androidx.compose.ui.graphics.Color.White,
+                            ),
+                    )
+                }
             }
         }
     }

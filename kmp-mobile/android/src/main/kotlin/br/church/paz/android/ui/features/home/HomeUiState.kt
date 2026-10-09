@@ -16,6 +16,10 @@ data class HomeUiState(
     // Any leadership role (role.isLeader) — gates the "Relatórios de Grupos
     // de Vida" shortcut card.
     val canManage: Boolean = false,
+    // Shown only when `getMyLifeGroups()` succeeded AND came back empty —
+    // see HomeViewModel.fetch() for why an error must never be read as "no
+    // group".
+    val showLifeGroupDiscoveryCTA: Boolean = false,
 )
 
 sealed class HomeEffect {
