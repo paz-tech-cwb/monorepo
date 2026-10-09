@@ -46,7 +46,7 @@ struct FormulariosView: View {
             }
             .padding(.top, 8)
         }
-        .refreshable { await viewModel.load() }
+        .refreshable { await viewModel.refresh() }
     }
 
     private var emptyState: some View {
@@ -134,6 +134,17 @@ class FormulariosViewModel {
             self.error = error.localizedDescription
         }
         isLoading = false
+    }
+
+    /// Bypasses the shared forms-catalog cache — used by pull-to-refresh so a
+    /// stuck/stale cache isn't permanent for the lifetime of the session.
+    func refresh() async {
+        error = nil
+        do {
+            forms = try await (formsRepository.refreshCatalog() as? [FormCatalogItem]) ?? []
+        } catch {
+            self.error = error.localizedDescription
+        }
     }
 }
 

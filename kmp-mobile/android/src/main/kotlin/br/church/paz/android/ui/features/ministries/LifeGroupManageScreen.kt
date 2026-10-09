@@ -153,7 +153,7 @@ fun LifeGroupManageScreen(
                 results = uiState.addMemberResults,
                 isSearching = uiState.isSearchingMembers,
                 onQueryChanged = viewModel::onAddMemberQueryChanged,
-                onSelect = { user -> viewModel.onMemberSelected(user.id, user.name, user.email) },
+                onSelect = { user -> viewModel.onMemberSelected(user.id, user.name, user.email ?: "") },
                 onDismiss = viewModel::onAddMemberDismiss,
             )
         }

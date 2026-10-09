@@ -330,7 +330,7 @@ private fun ProfileCard(
                 ) {
                     Text(user.name, style = MaterialTheme.typography.titleMedium.copy(color = PazColors.Primary))
                     Text(
-                        user.email,
+                        user.email ?: "",
                         style = MaterialTheme.typography.bodySmall.copy(color = PazColors.Accent),
                         maxLines = 1,
                     )

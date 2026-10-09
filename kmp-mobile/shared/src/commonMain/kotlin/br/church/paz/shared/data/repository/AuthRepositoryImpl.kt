@@ -6,6 +6,7 @@ import br.church.paz.shared.data.remote.clearBearerTokenCache
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.BirthDateRequiredException
+import br.church.paz.shared.domain.repository.FormsRepository
 import br.church.paz.shared.util.safeRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.request.post
@@ -29,6 +30,7 @@ class AuthRepositoryImpl(
     private val httpClient: HttpClient,
     private val tokenStorage: TokenStorage,
     private val userStore: UserStore,
+    private val formsRepository: FormsRepository,
 ) : AuthRepository {
 
     override suspend fun socialLogin(idToken: String, provider: String, birthDate: String?): Result<User> {
@@ -61,6 +63,10 @@ class AuthRepositoryImpl(
             // request re-reads the freshly-saved token instead of sending none.
             httpClient.clearBearerTokenCache()
             userStore.save(response.user)
+            // A new session must never inherit a forms/sectors cache from whatever
+            // ended the previous session (explicit logout, forced teardown on
+            // token-refresh failure, etc.) — always start cold.
+            formsRepository.clearCache()
             response.user
         }
     }
@@ -76,6 +82,9 @@ class AuthRepositoryImpl(
             tokenStorage.clear()
             httpClient.clearBearerTokenCache()
             userStore.clear()
+            // A different account signing in on the same device must not inherit a
+            // permission-filtered forms catalog (or sectors list) cached from this user.
+            formsRepository.clearCache()
         }
     }
 

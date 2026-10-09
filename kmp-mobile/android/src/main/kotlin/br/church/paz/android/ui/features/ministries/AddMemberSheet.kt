@@ -75,7 +75,7 @@ fun AddMemberSheet(
                         items(results, key = { it.id }) { user ->
                             ListItem(
                                 headlineContent = { Text(user.name) },
-                                supportingContent = { Text(user.email) },
+                                supportingContent = { Text(user.email ?: "") },
                                 modifier =
                                     Modifier
                                         .fillMaxWidth()

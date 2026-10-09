@@ -131,7 +131,10 @@ private fun LoggedInState(
                     }
                 }
                 Text(user.name, style = MaterialTheme.typography.headlineSmall)
-                Text(user.email, style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.5f)))
+                Text(
+                    user.email ?: "",
+                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.5f)),
+                )
                 Box(
                     Modifier
                         .clip(RoundedCornerShape(20.dp))

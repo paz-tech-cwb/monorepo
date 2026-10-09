@@ -29,8 +29,8 @@ struct UserPickerSheet: View {
                         HStack {
                             VStack(alignment: .leading) {
                                 Text(user.name)
-                                if !user.email.isEmpty {
-                                    Text(user.email).font(.caption).foregroundColor(.secondary)
+                                if let email = user.email, !email.isEmpty {
+                                    Text(email).font(.caption).foregroundColor(.secondary)
                                 }
                             }
                             Spacer()
