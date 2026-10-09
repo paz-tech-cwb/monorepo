@@ -140,6 +140,9 @@ dependencies {
     implementation(libs.compose.activity)
     implementation(libs.compose.lifecycle)
     implementation(libs.compose.viewmodel)
+    implementation(libs.lifecycle.runtime)
+    implementation(libs.lifecycle.viewmodel)
+    implementation(libs.savedstate)
     debugImplementation(libs.compose.ui.tooling)
 
     implementation(libs.koin.android)

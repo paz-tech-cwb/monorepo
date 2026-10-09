@@ -3,8 +3,10 @@ import SwiftUI
 
 struct LifeGroupAnalyticsView: View {
     @State private var viewModel: LifeGroupAnalyticsViewModel
-    @State private var shareImage: UIImage?
+    @State private var shareFileURL: URL?
     @State private var showShareSheet = false
+    @State private var isExportingPDF = false
+    @State private var exportError: String?
 
     private static let monthLabels = [
         "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez",
@@ -28,16 +30,29 @@ struct LifeGroupAnalyticsView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: exportImage) {
-                        Image(systemName: "square.and.arrow.up")
+                    Button(action: { Task { await exportPDF() } }) {
+                        if isExportingPDF {
+                            ProgressView()
+                        } else {
+                            Image(systemName: "square.and.arrow.up")
+                        }
                     }
-                    .disabled(viewModel.isLoading || viewModel.error != nil)
+                    .disabled(viewModel.isLoading || viewModel.error != nil || isExportingPDF || viewModel.overview == nil)
+                    .accessibilityLabel("Exportar PDF")
                 }
             }
             .sheet(isPresented: $showShareSheet) {
-                if let shareImage {
-                    ShareSheet(activityItems: [shareImage])
+                if let shareFileURL {
+                    ShareSheet(activityItems: [shareFileURL])
                 }
+            }
+            .alert("Não foi possível exportar", isPresented: Binding(
+                get: { exportError != nil },
+                set: { if !$0 { exportError = nil } }
+            )) {
+                Button("OK", role: .cancel) { exportError = nil }
+            } message: {
+                Text(exportError ?? "")
             }
             .task {
                 await viewModel.loadLifeGroups()
@@ -52,24 +67,33 @@ struct LifeGroupAnalyticsView: View {
             }
     }
 
-    /// Rasterizes the chart content (filters excluded — they're controls, not
-    /// report content) to a UIImage and opens the system share sheet, so the
-    /// user can save it as a photo, AirDrop it, or "Print" to a PDF via the
-    /// share sheet's own Print action — no extra PDF library needed on mobile.
-    private func exportImage() {
-        let renderer = ImageRenderer(content:
-            VStack(alignment: .leading, spacing: 20) {
-                attendanceSection
-                distributionSection
+    /// Renders the FULL report (stat cards, overview donuts, attendance
+    /// chart, distribution chart — filters excluded, since they're controls
+    /// not report content) into a paginated PDF via `ReportPDFExporter`, and
+    /// opens the system share sheet with the resulting file.
+    private func exportPDF() async {
+        isExportingPDF = true
+        defer { isExportingPDF = false }
+        do {
+            let url = try await ReportPDFExporter.export(fileName: "relatorio-life-group.pdf") {
+                VStack(alignment: .leading, spacing: 20) {
+                    exportHeaderSection
+                    if let overview = viewModel.overview {
+                        statCardsSection(overview)
+                        overviewChartsSection(overview)
+                    }
+                    attendanceSection
+                    distributionChartSection
+                }
+                .padding(20)
+                .background(PazColors.background)
+                .environment(\.isExportingPDF, true)
+                .environment(\.colorScheme, .light)
             }
-            .padding(20)
-            .background(PazColors.background)
-            .frame(width: UIScreen.main.bounds.width)
-        )
-        renderer.scale = UIScreen.main.scale
-        if let image = renderer.uiImage {
-            shareImage = image
+            shareFileURL = url
             showShareSheet = true
+        } catch {
+            exportError = "Tente novamente em alguns instantes."
         }
     }
 
@@ -289,7 +313,27 @@ struct LifeGroupAnalyticsView: View {
                 }
             }
 
-            let buckets = viewModel.distributionForSelectedTab
+            distributionChartContent
+        }
+        .padding(16)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
+    }
+
+    /// Filter-chip-free version of `distributionSection`'s chart, for reuse
+    /// in the PDF export content — the chip row is a live on-screen control,
+    /// not report content, and shouldn't appear in a static PDF.
+    private var distributionChartSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Distribuição dos Life Groups").font(PazTypography.titleSmall).foregroundStyle(PazColors.ink)
+            distributionChartContent
+        }
+        .padding(16)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
+    }
+
+    private var distributionChartContent: some View {
+        let buckets = viewModel.distributionForSelectedTab
+        return Group {
             if buckets.isEmpty {
                 PazBarChartEmptyView(message: "Nenhum life group com esse dado cadastrado.")
             } else {
@@ -298,9 +342,34 @@ struct LifeGroupAnalyticsView: View {
                 )
             }
         }
-        .padding(16)
-        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
+
+    // MARK: Export header
+
+    private var exportHeaderSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Relatório de Frequência — Life Groups")
+                .font(PazTypography.titleSmall)
+                .foregroundStyle(PazColors.ink)
+            Text(exportScopeLabel)
+                .font(PazTypography.bodySmall)
+                .foregroundStyle(PazColors.slate)
+            Text("Exportado em \(Self.exportDateFormatter.string(from: Date()))")
+                .font(PazTypography.bodySmall)
+                .foregroundStyle(PazColors.slate)
+        }
+    }
+
+    private var exportScopeLabel: String {
+        let monthLabel = viewModel.month.map { Self.monthLabels[Int($0) - 1] } ?? "Todos os meses"
+        return "\(selectedLifeGroupLabel) · \(monthLabel) \(viewModel.year)"
+    }
+
+    private static let exportDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yyyy"
+        return formatter
+    }()
 
     // MARK: States
 

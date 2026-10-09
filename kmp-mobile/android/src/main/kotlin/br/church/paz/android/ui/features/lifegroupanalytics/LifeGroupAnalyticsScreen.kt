@@ -1,7 +1,7 @@
 package br.church.paz.android.ui.features.lifegroupanalytics
 
+import android.app.Activity
 import android.content.Intent
-import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -22,6 +23,8 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.ChildCare
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -34,6 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -46,11 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.graphics.layer.drawLayer
-import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -70,14 +70,14 @@ import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazStatCard
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
+import br.church.paz.android.util.ReportPdfExporter
 import br.church.paz.shared.domain.model.LifeGroupAttendancePoint
 import br.church.paz.shared.domain.model.LifeGroupOverview
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
-import java.io.File
-import java.io.FileOutputStream
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 private val MONTH_LABELS =
     listOf("Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez")
@@ -91,9 +91,10 @@ fun LifeGroupAnalyticsScreen(
         koinViewModel(parameters = { parametersOf(lifeGroupId?.toIntOrNull()) }),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val graphicsLayer = rememberGraphicsLayer()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var isExportingPdf by remember { mutableStateOf(false) }
+    var exportError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -103,26 +104,48 @@ fun LifeGroupAnalyticsScreen(
         }
     }
 
-    // Rasterizes the report content (including the filter chips, unlike iOS's
-    // narrower capture — acceptable here since this single screen is small)
-    // to a PNG in the cache dir and opens the system share sheet — the user
-    // can save it, send it, or "Print" to PDF via the share sheet's own
-    // Print action, no extra PDF library needed on mobile.
+    // Renders the FULL report (stat cards, overview donuts, attendance chart,
+    // distribution chart — filters excluded, since they're controls, not
+    // report content) off-screen into a paginated PDF via [ReportPdfExporter]
+    // and opens the system share sheet with the resulting file. Replaces the
+    // previous viewport-clipped `graphicsLayer` screenshot export, which only
+    // captured whatever was currently scrolled into view.
     fun exportAndShare() {
+        val activity =
+            context as? Activity ?: run {
+                exportError = "Não foi possível exportar o relatório. Tente novamente."
+                return
+            }
         scope.launch {
-            val bitmap = graphicsLayer.toImageBitmap().asAndroidBitmap()
-            val dir = File(context.cacheDir, "shared_images").apply { mkdirs() }
-            val file = File(dir, "relatorio-life-group-${System.currentTimeMillis()}.png")
-            FileOutputStream(file).use { out -> bitmap.compress(Bitmap.CompressFormat.PNG, 100, out) }
-            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-            val intent =
-                Intent(Intent.ACTION_SEND).apply {
-                    type = "image/png"
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-            context.startActivity(Intent.createChooser(intent, "Compartilhar relatório"))
+            isExportingPdf = true
+            try {
+                val file =
+                    ReportPdfExporter.export(activity, "relatorio-life-group-${System.currentTimeMillis()}.pdf") {
+                        LifeGroupReportExportContent(uiState)
+                    }
+                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                val intent =
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = "application/pdf"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                context.startActivity(Intent.createChooser(intent, "Compartilhar relatório"))
+            } catch (_: Exception) {
+                exportError = "Não foi possível exportar o relatório. Tente novamente."
+            } finally {
+                isExportingPdf = false
+            }
         }
+    }
+
+    if (exportError != null) {
+        AlertDialog(
+            onDismissRequest = { exportError = null },
+            title = { Text("Não foi possível exportar") },
+            text = { Text(exportError.orEmpty()) },
+            confirmButton = { TextButton(onClick = { exportError = null }) { Text("OK") } },
+        )
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -139,8 +162,12 @@ fun LifeGroupAnalyticsScreen(
                     },
                     actions = {
                         if (!uiState.isLoading && uiState.error == null) {
-                            IconButton(onClick = ::exportAndShare) {
-                                Icon(Icons.Filled.Share, "compartilhar")
+                            IconButton(onClick = ::exportAndShare, enabled = !isExportingPdf) {
+                                if (isExportingPdf) {
+                                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                                } else {
+                                    Icon(Icons.Filled.Share, "exportar PDF")
+                                }
                             }
                         }
                     },
@@ -152,11 +179,7 @@ fun LifeGroupAnalyticsScreen(
             Box(
                 Modifier
                     .fillMaxSize()
-                    .padding(top = innerPadding.calculateTopPadding())
-                    .drawWithContent {
-                        graphicsLayer.record { this@drawWithContent.drawContent() }
-                        drawLayer(graphicsLayer)
-                    },
+                    .padding(top = innerPadding.calculateTopPadding()),
             ) {
                 PazPullToRefresh(
                     isRefreshing = uiState.isRefreshing,
@@ -178,6 +201,75 @@ fun LifeGroupAnalyticsScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * Plain [Column] (not [LazyColumn] — needs unbounded height so
+ * [ReportPdfExporter] can measure the full report) rendering every section
+ * of the Life Group report for PDF export: stat cards, overview donuts,
+ * attendance chart, distribution chart. Filters are excluded — they're
+ * controls, not report content. Uses a plain white background (no
+ * [PazMeshBackground] mesh/glass chrome) since [PdfDocument]'s software
+ * canvas can't reliably render hardware-accelerated-only effects, and a
+ * plain background reads better in a printed/shared PDF anyway.
+ */
+@Composable
+private fun LifeGroupReportExportContent(uiState: LifeGroupAnalyticsUiState) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(PazSpacing.Lg),
+        verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
+    ) {
+        ExportHeader(
+            title = "Relatório de Frequência — Life Groups",
+            scopeLabel =
+                buildString {
+                    append(uiState.lifeGroups.firstOrNull { it.first == uiState.lifeGroupId }?.second ?: "Todos os grupos")
+                    append(" · ")
+                    append(uiState.month?.let { MONTH_LABELS.getOrNull(it - 1) } ?: "Todos os meses")
+                    append(" ")
+                    append(uiState.year)
+                },
+        )
+        uiState.overview?.let { overview ->
+            LifeGroupStatCards(overview)
+            LifeGroupOverviewCharts(overview)
+        }
+        SectionCard(title = "Frequência de Presença") {
+            if (uiState.attendanceRows.all { it.meetingsCount == 0 }) {
+                PazBarChartEmpty("Nenhum registro de presença encontrado.")
+            } else {
+                PazBarChart(entries = uiState.attendanceRows.toChartEntries(uiState.month != null))
+            }
+        }
+        SectionCard(title = "Distribuição dos Life Groups") {
+            val bucketEntries = uiState.distributionForSelectedTab
+            if (bucketEntries.isEmpty()) {
+                PazBarChartEmpty("Nenhum life group com esse dado cadastrado.")
+            } else {
+                PazBarChart(entries = bucketEntries.map { PazBarChartEntry(it.label, it.count.toFloat()) })
+            }
+        }
+    }
+}
+
+/** Simple title + scope/date metadata block shown at the top of the exported PDF. */
+@Composable
+private fun ExportHeader(
+    title: String,
+    scopeLabel: String,
+) {
+    Column {
+        Text(title, style = MaterialTheme.typography.titleSmall)
+        Text(scopeLabel, style = MaterialTheme.typography.bodySmall)
+        Text(
+            "Exportado em ${DateTimeFormatter.ofPattern("dd/MM/yyyy").format(LocalDate.now())}",
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }
 

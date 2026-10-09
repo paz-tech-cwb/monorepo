@@ -3,4 +3,7 @@
     <!-- Matches File(context.cacheDir, "shared_images") used when exporting a
          report as an image to share. -->
     <cache-path name="shared_images" path="shared_images/"/>
+    <!-- Matches File(context.cacheDir, "shared_reports") used by
+         ReportPdfExporter when exporting a full report as a PDF to share. -->
+    <cache-path name="shared_reports" path="shared_reports/"/>
 </paths>

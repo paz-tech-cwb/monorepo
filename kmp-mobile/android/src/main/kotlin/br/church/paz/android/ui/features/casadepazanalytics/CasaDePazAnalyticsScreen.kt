@@ -1,5 +1,8 @@
 package br.church.paz.android.ui.features.casadepazanalytics
 
+import android.app.Activity
+import android.content.Intent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,9 +11,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,10 +37,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazButton
@@ -41,6 +52,9 @@ import br.church.paz.android.ui.components.PazCardSkeleton
 import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.theme.PazSpacing
+import br.church.paz.android.util.ReportPdfExporter
+import br.church.paz.shared.domain.model.CasaDePazAnalyticsSummary
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import java.time.Instant
 import java.time.LocalDate
@@ -56,6 +70,10 @@ fun CasaDePazAnalyticsScreen(
     viewModel: CasaDePazAnalyticsViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var isExportingPdf by remember { mutableStateOf(false) }
+    var exportError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -63,6 +81,49 @@ fun CasaDePazAnalyticsScreen(
                 CasaDePazAnalyticsEffect.NavigateBack -> navController.popBackStack()
             }
         }
+    }
+
+    // Renders the FULL report (stat cards + all charts, filters excluded,
+    // since they're controls, not report content) off-screen into a
+    // paginated PDF via [ReportPdfExporter] and opens the system share
+    // sheet with the resulting file.
+    fun exportAndShare() {
+        val summary = uiState.summary ?: return
+        val activity =
+            context as? Activity ?: run {
+                exportError = "Não foi possível exportar o relatório. Tente novamente."
+                return
+            }
+        scope.launch {
+            isExportingPdf = true
+            try {
+                val file =
+                    ReportPdfExporter.export(activity, "relatorio-casa-de-paz-${System.currentTimeMillis()}.pdf") {
+                        CasaDePazReportExportContent(summary, uiState.from, uiState.to)
+                    }
+                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                val intent =
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = "application/pdf"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                context.startActivity(Intent.createChooser(intent, "Compartilhar relatório"))
+            } catch (_: Exception) {
+                exportError = "Não foi possível exportar o relatório. Tente novamente."
+            } finally {
+                isExportingPdf = false
+            }
+        }
+    }
+
+    if (exportError != null) {
+        AlertDialog(
+            onDismissRequest = { exportError = null },
+            title = { Text("Não foi possível exportar") },
+            text = { Text(exportError.orEmpty()) },
+            confirmButton = { TextButton(onClick = { exportError = null }) { Text("OK") } },
+        )
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -75,6 +136,17 @@ fun CasaDePazAnalyticsScreen(
                     navigationIcon = {
                         IconButton(onClick = viewModel::onBack) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "voltar")
+                        }
+                    },
+                    actions = {
+                        if (!uiState.isLoading && uiState.error == null && uiState.summary != null) {
+                            IconButton(onClick = ::exportAndShare, enabled = !isExportingPdf) {
+                                if (isExportingPdf) {
+                                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                                } else {
+                                    Icon(Icons.Filled.Share, "exportar PDF")
+                                }
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
@@ -99,6 +171,59 @@ fun CasaDePazAnalyticsScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * Plain [Column] (not [LazyColumn] — needs unbounded height so
+ * [ReportPdfExporter] can measure the full report) rendering every section
+ * of the Casa de Paz report for PDF export: stat cards + all five charts.
+ * Date filters are excluded — they're controls, not report content. Uses a
+ * plain white background (no [PazMeshBackground] mesh/glass chrome) since
+ * [android.graphics.pdf.PdfDocument]'s software canvas can't reliably
+ * render hardware-accelerated-only effects, and a plain background reads
+ * better in a printed/shared PDF anyway.
+ */
+@Composable
+private fun CasaDePazReportExportContent(
+    summary: CasaDePazAnalyticsSummary,
+    from: String,
+    to: String,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(PazSpacing.Lg),
+        verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
+    ) {
+        ExportHeader(
+            title = "Relatório Casa de Paz",
+            scopeLabel = "Período: $from a $to",
+        )
+        CasaDePazStatCards(summary)
+        CasaDePazHousesActivityChart(summary)
+        CasaDePazAttendanceChart(summary)
+        CasaDePazNewPeopleChart(summary)
+        CasaDePazBySectorChart(summary)
+        CasaDePazByDayChart(summary)
+    }
+}
+
+/** Simple title + scope/date metadata block shown at the top of the exported PDF. */
+@Composable
+private fun ExportHeader(
+    title: String,
+    scopeLabel: String,
+) {
+    Column {
+        Text(title, style = MaterialTheme.typography.titleSmall)
+        Text(scopeLabel, style = MaterialTheme.typography.bodySmall)
+        Text(
+            "Exportado em ${DateTimeFormatter.ofPattern("dd/MM/yyyy").format(LocalDate.now())}",
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }
 

@@ -105,6 +105,7 @@
 		DD355395C1DDEC6848A616DE /* PazMaterial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57FD6DC40B6A7E3C8C56FD20 /* PazMaterial.swift */; };
 		E111D004E3CD35D07B1252C8 /* AuthenticationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0E4F5F057D2C920865C94F /* AuthenticationCoordinator.swift */; };
 		E1410C3996707FD9EE3B84C5 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D52E9AA381B5524BF375AF56 /* ShareSheet.swift */; };
+		CE2590D03CE74C4BBE9E10C1 /* ReportPDFExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32AFBB774A8A41CE8575A564 /* ReportPDFExporter.swift */; };
 		E14AB35C85A65F0E85EBBD68 /* ErrorStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20CF68CE0958124973A70BA /* ErrorStateView.swift */; };
 		E190A056BE4865FE452D5735 /* CasaDePazLessonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18FB511E4D840081FD61266D /* CasaDePazLessonsView.swift */; };
 		E5E4F215F16D5A592885DDBD /* LifeGroupAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1D0B28C097FED3187839E /* LifeGroupAnalyticsView.swift */; };
@@ -218,6 +219,7 @@
 		CFC5B8B6E66286582CCC1CFA /* MarkdownBodyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownBodyView.swift; sourceTree = "<group>"; };
 		D33772BE7A618459F8F98DA2 /* NotificationPrefsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPrefsView.swift; sourceTree = "<group>"; };
 		D52E9AA381B5524BF375AF56 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
+		32AFBB774A8A41CE8575A564 /* ReportPDFExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportPDFExporter.swift; sourceTree = "<group>"; };
 		D664B1D68AD1FA25AAA7C11C /* dm_sans_regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = dm_sans_regular.ttf; sourceTree = "<group>"; };
 		E20CF68CE0958124973A70BA /* ErrorStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorStateView.swift; sourceTree = "<group>"; };
 		E26C4C9D1BDF91892972FE27 /* MinistryManageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinistryManageView.swift; sourceTree = "<group>"; };
@@ -412,6 +414,7 @@
 				F62DDEA0026352360D73E873 /* PazPillChip.swift */,
 				117CD9D81AE8526E2FA4B0A7 /* PazStatCard.swift */,
 				D52E9AA381B5524BF375AF56 /* ShareSheet.swift */,
+				32AFBB774A8A41CE8575A564 /* ReportPDFExporter.swift */,
 				36DB133997051B82A7D0D38D /* SkeletonView.swift */,
 				8E1AAFC2AB540CB8A4697D76 /* SuccessStateView.swift */,
 			);
@@ -794,6 +797,7 @@
 				217CFACC8706FD29156A10AA /* SearchView.swift in Sources */,
 				3E295F7FDD74E8D83905B305 /* SectorPickerSheet.swift in Sources */,
 				E1410C3996707FD9EE3B84C5 /* ShareSheet.swift in Sources */,
+				CE2590D03CE74C4BBE9E10C1 /* ReportPDFExporter.swift in Sources */,
 				8696DCD7837887595806B611 /* SkeletonView.swift in Sources */,
 				AAAF2E1B88EE9F9B1FAA5BC7 /* SuccessStateView.swift in Sources */,
 				C726B4A3686B02098E88F5CF /* UserPickerSheet.swift in Sources */,
