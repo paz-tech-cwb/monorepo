@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
-import { Plus, MoreHorizontal, Edit, Trash2, ArrowUp, ArrowDown, Loader2, PlayCircle } from "lucide-react"
+import { Plus, MoreHorizontal, Edit, Trash2, ArrowUp, ArrowDown, Loader2, PlayCircle, ImageIcon } from "lucide-react"
 import {
   useCourseLessons,
   useCreateCourseLesson,
@@ -38,6 +38,7 @@ export function LessonsTab({ courseId }: LessonsTabProps) {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null)
   const [deletingLessonId, setDeletingLessonId] = useState<string | null>(null)
+  const [brokenThumbnailIds, setBrokenThumbnailIds] = useState<Set<string>>(new Set())
 
   const sortedLessons = [...lessons].sort((a, b) => a.sort_order - b.sort_order)
 
@@ -55,6 +56,12 @@ export function LessonsTab({ courseId }: LessonsTabProps) {
     try {
       if (editingLesson) {
         await updateMutation.mutateAsync({ lessonId: editingLesson.id, data })
+        setBrokenThumbnailIds((prev) => {
+          if (!prev.has(editingLesson.id)) return prev
+          const next = new Set(prev)
+          next.delete(editingLesson.id)
+          return next
+        })
       } else {
         await createMutation.mutateAsync(data as CreateLessonRequest)
       }
@@ -118,6 +125,7 @@ export function LessonsTab({ courseId }: LessonsTabProps) {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[90px]">Ordem</TableHead>
+                <TableHead className="w-[80px]">Miniatura</TableHead>
                 <TableHead>Lição</TableHead>
                 <TableHead>Vídeo</TableHead>
                 <TableHead>Duração</TableHead>
@@ -148,6 +156,23 @@ export function LessonsTab({ courseId }: LessonsTabProps) {
                         <ArrowDown className="h-3.5 w-3.5" />
                       </Button>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {lesson.thumbnail_url && !brokenThumbnailIds.has(lesson.id) ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={lesson.thumbnail_url}
+                        alt=""
+                        className="h-10 w-16 rounded object-cover border border-border"
+                        onError={() =>
+                          setBrokenThumbnailIds((prev) => new Set(prev).add(lesson.id))
+                        }
+                      />
+                    ) : (
+                      <div className="flex h-10 w-16 items-center justify-center rounded border border-dashed border-muted-foreground/30 bg-muted/30">
+                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div>

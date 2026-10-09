@@ -22,6 +22,7 @@ export class CourseLessonsService {
       description: lesson.description ?? null,
       youtube_video_id: lesson.youtubeVideoId,
       duration_seconds: lesson.durationSeconds ?? null,
+      thumbnail_url: lesson.thumbnailUrl ?? null,
       sort_order: lesson.sortOrder,
       created_at: lesson.createdAt,
       updated_at: lesson.updatedAt,
@@ -49,14 +50,21 @@ export class CourseLessonsService {
     return lesson;
   }
 
+  private defaultThumbnailUrl(youtubeVideoId: string): string {
+    return `https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`;
+  }
+
   async create(courseId: string, dto: CreateCourseLessonDto) {
     const youtubeVideoId = extractYoutubeId(dto.youtube_video_id);
+    const thumbnailUrl =
+      dto.thumbnail_url || this.defaultThumbnailUrl(youtubeVideoId);
     const lesson = this.entityManager.create(CourseLesson, {
       courseId,
       title: dto.title,
       description: dto.description ?? null,
       youtubeVideoId,
       durationSeconds: dto.duration_seconds ?? null,
+      thumbnailUrl,
       sortOrder: dto.sort_order ?? 0,
     });
     const saved = await this.entityManager.save(lesson);
@@ -66,13 +74,30 @@ export class CourseLessonsService {
   async update(courseId: string, lessonId: string, dto: UpdateCourseLessonDto) {
     const lesson = await this.findOneEntity(courseId, lessonId);
 
+    const oldYoutubeVideoId = lesson.youtubeVideoId;
+    const oldThumbnailUrl = lesson.thumbnailUrl;
+
     if (dto.title !== undefined) lesson.title = dto.title;
     if (dto.description !== undefined) lesson.description = dto.description;
+
+    let newYoutubeVideoId = oldYoutubeVideoId;
     if (dto.youtube_video_id !== undefined) {
-      lesson.youtubeVideoId = extractYoutubeId(dto.youtube_video_id);
+      newYoutubeVideoId = extractYoutubeId(dto.youtube_video_id);
+      lesson.youtubeVideoId = newYoutubeVideoId;
     }
+    const youtubeVideoIdChanged = newYoutubeVideoId !== oldYoutubeVideoId;
+
     if (dto.duration_seconds !== undefined)
       lesson.durationSeconds = dto.duration_seconds;
+    if (dto.thumbnail_url !== undefined) {
+      lesson.thumbnailUrl = dto.thumbnail_url || null;
+    } else if (youtubeVideoIdChanged) {
+      const oldThumbnailWasAutoDerived =
+        oldThumbnailUrl === this.defaultThumbnailUrl(oldYoutubeVideoId);
+      if (oldThumbnailWasAutoDerived) {
+        lesson.thumbnailUrl = this.defaultThumbnailUrl(newYoutubeVideoId);
+      }
+    }
     if (dto.sort_order !== undefined) lesson.sortOrder = dto.sort_order;
 
     const saved = await this.entityManager.save(CourseLesson, lesson);

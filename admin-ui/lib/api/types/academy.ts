@@ -7,6 +7,7 @@ export interface Lesson {
   description?: string | null
   youtube_video_id: string
   duration_seconds?: number | null
+  thumbnail_url?: string | null
   sort_order: number
   created_at: string
   updated_at: string
@@ -17,6 +18,7 @@ export interface CreateLessonRequest {
   description?: string | null
   youtube_video_id: string
   duration_seconds?: number | null
+  thumbnail_url?: string | null
   sort_order?: number
 }
 
@@ -25,6 +27,7 @@ export interface UpdateLessonRequest {
   description?: string | null
   youtube_video_id?: string
   duration_seconds?: number | null
+  thumbnail_url?: string | null
   sort_order?: number
 }
 

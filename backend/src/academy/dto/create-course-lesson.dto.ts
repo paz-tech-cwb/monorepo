@@ -26,4 +26,9 @@ export class CreateCourseLessonDto {
   @IsInt()
   @Min(0)
   sort_order?: number;
+
+  @Expose()
+  @IsOptional()
+  @IsString()
+  thumbnail_url?: string | null;
 }
