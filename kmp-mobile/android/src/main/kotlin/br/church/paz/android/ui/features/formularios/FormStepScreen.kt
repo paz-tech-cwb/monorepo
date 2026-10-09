@@ -26,7 +26,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -35,10 +37,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -77,6 +82,7 @@ fun FormStepScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
+    var showDiscardDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -87,13 +93,32 @@ fun FormStepScreen(
                 // the submission actually went through.
                 FormDetailEffect.SubmitSuccess -> Unit
                 FormDetailEffect.NavigateBack -> navController.popBackStack()
+                FormDetailEffect.RequestDiscardConfirmation -> showDiscardDialog = true
             }
         }
     }
 
-    // System back at step > 0 goes to the previous question rather than popping the screen.
-    BackHandler(enabled = uiState.stepIndex > 0) {
-        viewModel.onPreviousStep()
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Descartar alterações?") },
+            text = { Text("Você tem respostas não enviadas que serão perdidas.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDiscardDialog = false
+                    viewModel.onBack()
+                }) { Text("Descartar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) { Text("Continuar editando") }
+            },
+        )
+    }
+
+    // System back at step > 0 goes to the previous question rather than popping the screen;
+    // at the first question it routes through the same discard check as the close button.
+    BackHandler(enabled = !uiState.submitSuccess) {
+        if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onRequestDiscard()
     }
 
     Scaffold(
@@ -122,10 +147,12 @@ fun FormStepScreen(
                     StepHeader(
                         title = uiState.form?.title ?: "Formulário",
                         // The header back arrow steps backward through questions instead of
-                        // always leaving the screen — only pops at the first question.
+                        // always leaving the screen — only pops (via the discard check) at
+                        // the first question.
                         onBack = {
-                            if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onBack()
+                            if (uiState.stepIndex > 0) viewModel.onPreviousStep() else viewModel.onRequestDiscard()
                         },
+                        onClose = viewModel::onRequestDiscard,
                         showCasaDePazLessonsShortcut =
                             uiState.form?.type == FormType.casa_de_paz_report && uiState.canAccessCasaDePazLessons,
                         onCasaDePazLessonsTapped = {
@@ -234,6 +261,7 @@ private fun displayTitle(title: String): String {
 private fun StepHeader(
     title: String,
     onBack: () -> Unit,
+    onClose: () -> Unit,
     showCasaDePazLessonsShortcut: Boolean = false,
     onCasaDePazLessonsTapped: () -> Unit = {},
 ) {
@@ -256,6 +284,9 @@ private fun StepHeader(
             IconButton(onClick = onCasaDePazLessonsTapped) {
                 Icon(Icons.Filled.MenuBook, "Conteúdo Casa de Paz", tint = Color.White)
             }
+        }
+        IconButton(onClick = onClose) {
+            Icon(Icons.Filled.Close, "Fechar", tint = Color.White)
         }
     }
 }

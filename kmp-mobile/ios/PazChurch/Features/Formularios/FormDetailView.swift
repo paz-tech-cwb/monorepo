@@ -79,6 +79,17 @@ class FormDetailViewModelIOS {
     private let formId: String
     private var currentUserName: String = ""
 
+    /// Baseline snapshot of `fields` captured right after [loadForm] seeds them (e.g. the
+    /// `date` field defaults to today) — used to derive [isDirty] without flagging untouched,
+    /// seeded values as unsaved data.
+    private var initialFieldsSnapshot: [String: String] = [:]
+
+    /// True once the user has entered any data diverging from the seeded baseline, or added
+    /// any Casa de Paz guest entries — gates the close-button discard confirmation.
+    var isDirty: Bool {
+        fields != initialFieldsSnapshot || !guestEntries.isEmpty
+    }
+
     init(formId: String, formsRepository: FormsRepository, authRepository: AuthRepository) {
         self.formId = formId
         self.formsRepository = formsRepository
@@ -110,6 +121,7 @@ class FormDetailViewModelIOS {
                     }
                     return (def.key, initial)
                 })
+                self.initialFieldsSnapshot = self.fields
                 self.isLoading = false
             } catch {
                 self.error = error.localizedDescription

@@ -30,7 +30,9 @@ struct QuestionnaireView: View {
         }
         .background(PazMeshBackground().ignoresSafeArea())
         .navigationTitle(viewModel.result == nil ? (viewModel.questionnaire?.title ?? "Questionário") : "")
-        .navigationBarTitleDisplayMode(.large)
+        // `.inline` instead of `.large` — a large title resizes as scroll content height
+        // changes per step, which read as visual jank mid-flow (mirrors FormStepView).
+        .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -96,15 +98,14 @@ struct QuestionnaireView: View {
     }
 
     private func bottomBar(isLast: Bool) -> some View {
-        Button(action: { isLast ? viewModel.onSubmit() : viewModel.nextStep() }) {
-            Text(isLast ? (viewModel.isSubmitting ? "Enviando..." : "Enviar") : "Continuar")
-                .frame(maxWidth: .infinity)
+        PazKeyboardAccessoryBar {
+            Button(action: { isLast ? viewModel.onSubmit() : viewModel.nextStep() }) {
+                Text(isLast ? (viewModel.isSubmitting ? "Enviando..." : "Enviar") : "Continuar")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.pazPillPrimary)
+            .disabled(viewModel.isSubmitting)
         }
-        .buttonStyle(.pazPillPrimary)
-        .disabled(viewModel.isSubmitting)
-        .padding(.horizontal, PazSpacing.lg)
-        .padding(.vertical, PazSpacing.md)
-        .background(.ultraThinMaterial)
     }
 
     private func resultState(result: QuestionnaireResult) -> some View {

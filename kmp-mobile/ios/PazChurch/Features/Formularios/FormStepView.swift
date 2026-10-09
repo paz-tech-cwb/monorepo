@@ -17,6 +17,7 @@ struct FormStepView: View {
     @State private var viewModel: FormDetailViewModelIOS
     @FocusState private var inputFocused: Bool
     @Environment(\.dismiss) var dismiss
+    @State private var showDiscardDialog = false
 
     /// Strips a leading "Relatório de/do/da " so long catalog names (e.g. "Relatório de Casa
     /// de Paz") don't overflow the nav bar title — the step counter already gives context.
@@ -59,8 +60,14 @@ struct FormStepView: View {
             }
         }
         .background(PazMeshBackground().ignoresSafeArea())
+        .background(InteractivePopGestureDisabler(
+            isDisabled: viewModel.isDirty,
+            onBlockedSwipeAttempt: { showDiscardDialog = true }
+        ))
         .navigationTitle(viewModel.submitSuccess ? "" : displayTitle)
-        .navigationBarTitleDisplayMode(.large)
+        // `.inline` instead of `.large` — a large title resizes as scroll content height
+        // changes per step, which read as visual jank mid-flow (item 15).
+        .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -68,6 +75,11 @@ struct FormStepView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: goBack) {
                         Image(systemName: "chevron.left")
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: requestClose) {
+                        Image(systemName: "xmark")
                     }
                 }
                 if form.type == .casaDePazReport {
@@ -89,11 +101,30 @@ struct FormStepView: View {
         // Applies only to the scroll view inside stepContent (see below) — the keyboard must
         // stay open while the user taps Continuar without the scroll gesture dismissing it.
         .scrollDismissesKeyboard(.never)
+        .confirmationDialog(
+            "Descartar alterações?",
+            isPresented: $showDiscardDialog,
+            titleVisibility: .visible
+        ) {
+            Button("Descartar", role: .destructive) { dismiss() }
+            Button("Continuar editando", role: .cancel) {}
+        }
     }
 
     private func goBack() {
         if viewModel.stepIndex > 0 {
             viewModel.previousStep()
+        } else {
+            requestClose()
+        }
+    }
+
+    /// Shared by the close (xmark) button and the back chevron once it floors at the first
+    /// question — shows a discard-confirmation dialog only when the user has actually entered
+    /// data, dismissing immediately otherwise.
+    private func requestClose() {
+        if viewModel.isDirty {
+            showDiscardDialog = true
         } else {
             dismiss()
         }
@@ -114,8 +145,11 @@ struct FormStepView: View {
 
                 Text(def.label)
                     .font(PazTypography.headlineSmall)
-                    .id(stepIndex) // only the label transitions — not the input field
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                    // `.contentTransition(.opacity)` cross-fades the label text in place as
+                    // `def.label` changes, without `.id(stepIndex)` + `.transition` (which
+                    // needs an enclosing animation scope to fire consistently and was
+                    // combined inconsistently with the per-step identity change below).
+                    .contentTransition(.opacity)
                     .animation(.easeInOut(duration: 0.2), value: stepIndex)
 
                 FieldRow(
@@ -176,11 +210,17 @@ struct FormStepView: View {
             CasaDePazCyclePickerSheet(viewModel: viewModel)
         }
         .task(id: viewModel.stepIndex) {
-            // Re-request focus for the stable text field when landing on a text-input step;
-            // clear it for non-text steps (date pickers, selects, switches, pickers, etc).
+            // Re-request focus for the stable text field when landing on a text-input step.
+            // Only clear it for non-text steps when the field was ACTUALLY focused — writing
+            // `inputFocused = false` unconditionally on every non-text step (even when it's
+            // already false) was pure focus-binding churn that contributed to keyboard
+            // flicker/jank without changing any real state. The full fix for keeping the
+            // keyboard open across inline date/select steps needs the `inputView` bridge
+            // (deferred — see FormStepView doc comment / PR notes); this only removes the
+            // unnecessary redundant writes.
             if def.fieldType.isTextInput {
                 inputFocused = true
-            } else {
+            } else if inputFocused {
                 inputFocused = false
             }
         }
@@ -192,17 +232,16 @@ struct FormStepView: View {
     @ViewBuilder
     private func bottomBar(defs: [FormFieldDef], stepIndex: Int) -> some View {
         let isLast = stepIndex == defs.count - 1
-        Button(action: {
-            if isLast { viewModel.onSubmit() } else { viewModel.nextStep() }
-        }) {
-            Text(isLast ? (viewModel.isSubmitting ? "Enviando..." : "Enviar") : "Continuar")
-                .frame(maxWidth: .infinity)
+        PazKeyboardAccessoryBar {
+            Button(action: {
+                if isLast { viewModel.onSubmit() } else { viewModel.nextStep() }
+            }) {
+                Text(isLast ? (viewModel.isSubmitting ? "Enviando..." : "Enviar") : "Continuar")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.pazPillPrimary)
+            .disabled(viewModel.isSubmitting)
         }
-        .buttonStyle(.pazPillPrimary)
-        .disabled(viewModel.isSubmitting)
-        .padding(.horizontal, PazSpacing.lg)
-        .padding(.vertical, PazSpacing.md)
-        .background(BottomBarBackground())
     }
 
     private var loadingState: some View {
@@ -214,24 +253,6 @@ struct FormStepView: View {
             Spacer()
         }
         .padding(PazSpacing.lg)
-    }
-}
-
-/// `.ultraThinMaterial` reads well over the dark mesh background but is too transparent for
-/// contrast in light mode, where the button nearly disappears into the background — use a
-/// more opaque surface there instead, leaving dark mode untouched.
-private struct BottomBarBackground: View {
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        if colorScheme == .dark {
-            Rectangle().fill(.ultraThinMaterial)
-        } else {
-            Rectangle()
-                .fill(PazColors.surface.opacity(0.96))
-                .overlay(Rectangle().fill(.ultraThinMaterial).opacity(0.3))
-                .shadow(color: .black.opacity(0.08), radius: 8, y: -2)
-        }
     }
 }
 
