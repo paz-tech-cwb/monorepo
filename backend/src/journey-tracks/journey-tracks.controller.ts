@@ -17,6 +17,7 @@ import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 import { JourneyProgressService } from './journey-progress.service';
 import { ApproveStepDto } from './dto/approve-step.dto';
 import { User } from '../users/entities/user.entity';
+import { trackKeyForRole } from './role-track-map';
 
 type AuthedRequest = Request & { user: User };
 
@@ -34,6 +35,28 @@ export class JourneyTracksController {
   @Get('me')
   getMyJourney(@Req() req: AuthedRequest) {
     return this.journeyProgressService.getCurrentTrackForMember(req.user.id);
+  }
+
+  /**
+   * Member-facing full-journey view: unlike `GET /journey-tracks/me` (which
+   * only resolves the single track matching the member's current role),
+   * this returns every active track with progress so the mobile client can
+   * render the whole progression (completed/current/locked tracks), not
+   * just the current one. No role gate beyond JWT auth — a member reading
+   * their own full progress is not a leadership action.
+   */
+  @Get('me/all')
+  async getMyFullJourney(@Req() req: AuthedRequest) {
+    const [tracks, current] = await Promise.all([
+      this.journeyProgressService.getForMember(req.user.id),
+      this.journeyProgressService.getCurrentTrackForMember(req.user.id),
+    ]);
+
+    return {
+      tracks,
+      current_track_key: trackKeyForRole(req.user.role?.slug),
+      current_track_complete: current.all_steps_complete,
+    };
   }
 
   @Get('member/:memberId')

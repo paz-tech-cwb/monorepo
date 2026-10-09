@@ -34,8 +34,9 @@ class MemberJourneyViewModel(
                 .onSuccess { journey ->
                     _uiState.update {
                         it.copy(
-                            track = journey.track,
-                            allStepsComplete = journey.allStepsComplete,
+                            tracks = journey.tracks,
+                            currentTrackKey = journey.currentTrackKey,
+                            currentTrackComplete = journey.currentTrackComplete,
                             isLoading = false,
                             isRefreshing = false,
                         )

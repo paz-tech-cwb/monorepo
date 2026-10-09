@@ -130,4 +130,60 @@ describe('EventsService', () => {
       expect(result.length).toBeLessThanOrEqual(731);
     });
   });
+
+  describe('findUpcomingWithinDays', () => {
+    function startOfToday(): Date {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+
+    it('includes an event exactly at the window boundary (day `days`, padded)', async () => {
+      const boundary = startOfToday();
+      boundary.setDate(boundary.getDate() + 7);
+      const event = makeEvent({ initialDate: boundary });
+      mockRepo.find.mockResolvedValue([event]);
+
+      const result = await service.findUpcomingWithinDays(7);
+
+      expect(result).toHaveLength(1);
+    });
+
+    it('excludes an event just after the padded window', async () => {
+      const afterWindow = startOfToday();
+      // days=7 is internally padded by +1 day, so the exclusive cutoff is
+      // day 8 at 00:00 — an event on day 8 should be excluded.
+      afterWindow.setDate(afterWindow.getDate() + 8);
+      const event = makeEvent({ initialDate: afterWindow });
+      mockRepo.find.mockResolvedValue([event]);
+
+      const result = await service.findUpcomingWithinDays(7);
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('returns only in-window occurrences for a daily recurring event spanning the boundary', async () => {
+      const base = startOfToday();
+      base.setDate(base.getDate() - 2);
+      const daily = makeEvent({ initialDate: base, recurrenceType: 'DAILY' });
+      mockRepo.find.mockResolvedValue([daily]);
+
+      const result = await service.findUpcomingWithinDays(7);
+
+      const windowEndExclusive = startOfToday();
+      windowEndExclusive.setDate(windowEndExclusive.getDate() + 8);
+      result.forEach((occurrence) => {
+        const occurrenceDate = new Date(occurrence.initial_date);
+        expect(occurrenceDate.getTime()).toBeLessThan(
+          windowEndExclusive.getTime(),
+        );
+        expect(occurrenceDate.getTime()).toBeGreaterThanOrEqual(
+          startOfToday().getTime(),
+        );
+      });
+      // Daily occurrences from today through day 7 inclusive (padded by 1
+      // extra day internally) should all be present.
+      expect(result.length).toBeGreaterThanOrEqual(8);
+    });
+  });
 });
