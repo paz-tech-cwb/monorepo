@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { MarkdownEditor } from "@/components/markdown-editor"
 import { FormDrawer } from "@/components/ui/form-drawer"
+import { ImageField } from "@/components/ui/image-field"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Search, Plus, MoreHorizontal, Edit, Trash2, Megaphone, Image, Link } from "lucide-react"
@@ -316,10 +317,11 @@ export function AnnouncementsManagement() {
             <Label htmlFor="subtitle">Subtítulo</Label>
             <Input id="subtitle" value={formData.subtitle} onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })} placeholder="Subtítulo do aviso" />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="image_url">URL da Imagem</Label>
-            <Input id="image_url" value={formData.image_url} onChange={(e) => setFormData({ ...formData, image_url: e.target.value })} placeholder="https://exemplo.com/imagem.jpg" />
-          </div>
+          <ImageField
+            value={formData.image_url}
+            onChange={(url) => setFormData({ ...formData, image_url: url })}
+            category="announcements"
+          />
           <div className="space-y-1.5">
             <Label htmlFor="action_url">URL de Ação (opcional)</Label>
             <Input id="action_url" value={formData.action_url} onChange={(e) => setFormData({ ...formData, action_url: e.target.value })} placeholder="https://exemplo.com/acao" />
@@ -356,10 +358,11 @@ export function AnnouncementsManagement() {
             <Label htmlFor="edit-subtitle">Subtítulo</Label>
             <Input id="edit-subtitle" value={formData.subtitle} onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })} placeholder="Subtítulo do aviso" />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-image_url">URL da Imagem</Label>
-            <Input id="edit-image_url" value={formData.image_url} onChange={(e) => setFormData({ ...formData, image_url: e.target.value })} placeholder="https://exemplo.com/imagem.jpg" />
-          </div>
+          <ImageField
+            value={formData.image_url}
+            onChange={(url) => setFormData({ ...formData, image_url: url })}
+            category="announcements"
+          />
           <div className="space-y-1.5">
             <Label htmlFor="edit-action_url">URL de Ação (opcional)</Label>
             <Input id="edit-action_url" value={formData.action_url} onChange={(e) => setFormData({ ...formData, action_url: e.target.value })} placeholder="https://exemplo.com/acao" />

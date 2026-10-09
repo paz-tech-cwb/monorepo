@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useUpdateCasaDePazSubmission } from "@/lib/hooks/use-casa-de-paz-analytics"
 import { useSectors } from "@/lib/hooks/use-sectors"
 import { useCasaDePazCycles } from "@/lib/hooks/use-casa-de-paz-cycles"
+import { getCasaDePazCycleLabels } from "@/lib/utils/casa-de-paz-cycle-label"
 import type {
   CasaDePazReportGuestInput,
   CasaDePazReportSubmission,
@@ -50,6 +51,8 @@ export function CasaDePazEditDialog({ submission, onOpenChange }: CasaDePazEditD
   // Rows loaded from the server (already persisted) vs. ones added in this
   // editing session — only the former need a confirm before removal.
   const [persistedCount, setPersistedCount] = useState(0)
+
+  const cycleLabels = useMemo(() => getCasaDePazCycleLabels(cycles), [cycles])
 
   const mostRecentCycleId = useMemo(() => {
     if (cycles.length === 0) return undefined
@@ -173,17 +176,17 @@ export function CasaDePazEditDialog({ submission, onOpenChange }: CasaDePazEditD
           </div>
 
           <div className="space-y-2 col-span-2">
-            <Label htmlFor="cdp-cycle">Ciclo</Label>
+            <Label htmlFor="cdp-cycle">Mês do ciclo</Label>
             <Select
               value={form.casa_de_paz_id ?? ""}
               onValueChange={(v) => setForm((f) => ({ ...f, casa_de_paz_id: v }))}
             >
               <SelectTrigger id="cdp-cycle" className="w-full">
-                <SelectValue placeholder="Selecione o ciclo" />
+                <SelectValue placeholder="Selecione o mês do ciclo" />
               </SelectTrigger>
               <SelectContent>
                 {cycles.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  <SelectItem key={c.id} value={c.id}>{cycleLabels.get(c.id) ?? c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

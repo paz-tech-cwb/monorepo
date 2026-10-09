@@ -8,6 +8,7 @@ export interface LifeGroup {
   id: number
   name: string
   location: string | null
+  image_url: string | null
   meeting_day: string | null
   meeting_time: string | null
   leader_id: number | null
@@ -25,6 +26,7 @@ export interface LifeGroup {
 export interface CreateLifeGroupRequest {
   name: string
   location?: string | null
+  image_url?: string | null
   meeting_day?: string | null
   meeting_time?: string | null
   leader_id?: number | null

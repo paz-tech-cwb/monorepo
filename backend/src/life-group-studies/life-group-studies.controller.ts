@@ -17,6 +17,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { plainToInstance } from 'class-transformer';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 import { LifeGroupStudiesService } from './life-group-studies.service';
 import { CreateLifeGroupStudyDto } from './dto/create-life-group-study.dto';
 import { UpdateLifeGroupStudyDto } from './dto/update-life-group-study.dto';
@@ -70,6 +71,8 @@ export class LifeGroupStudiesController {
   }
 
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles(...LEADERSHIP_ROLES)
   async create(
     @Body() dto: CreateLifeGroupStudyDto,
     @Req() req: AuthenticatedRequest,
@@ -117,6 +120,8 @@ export class LifeGroupStudiesController {
   }
 
   @Patch(':id')
+  @UseGuards(RolesGuard)
+  @Roles(...LEADERSHIP_ROLES)
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateLifeGroupStudyDto,
@@ -129,6 +134,8 @@ export class LifeGroupStudiesController {
   }
 
   @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(...LEADERSHIP_ROLES)
   remove(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: AuthenticatedRequest,

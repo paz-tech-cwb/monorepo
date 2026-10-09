@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { FormDrawer } from "@/components/ui/form-drawer"
+import { ImageField } from "@/components/ui/image-field"
 import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog"
 import { Search, Plus, MoreHorizontal, Edit, Trash2, BookOpen, Clock, Link as LinkIcon, Image, Loader2 } from "lucide-react"
 import { useCourses, useCourseStats, useCreateCourse, useUpdateCourse, useDeleteCourse } from "@/lib/hooks/use-courses"
@@ -245,15 +246,11 @@ export function CoursesManagement() {
           placeholder="https://..."
         />
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="course-image_url">URL da imagem (opcional)</Label>
-        <Input
-          id="course-image_url"
-          value={formData.image_url}
-          onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-          placeholder="https://..."
-        />
-      </div>
+      <ImageField
+        value={formData.image_url}
+        onChange={(url) => setFormData({ ...formData, image_url: url })}
+        category="courses"
+      />
       <Separator />
       <div className="flex items-center justify-between">
         <Label htmlFor="course-published">Publicado</Label>

@@ -116,6 +116,7 @@ export class LifeGroupsService {
       co_leader_phone: lifeGroup.coLeader?.phoneNumber ?? null,
       sector_id: lifeGroup.sector?.id ?? null,
       location: lifeGroup.location ?? null,
+      image_url: lifeGroup.imageUrl ?? null,
       latitude: lifeGroup.latitude ?? null,
       longitude: lifeGroup.longitude ?? null,
       city: lifeGroup.city ?? null,
@@ -151,6 +152,7 @@ export class LifeGroupsService {
         coLeader: dto.co_leader_id ? ({ id: dto.co_leader_id } as User) : null,
         sector: dto.sector_id ? { id: dto.sector_id } : null,
         location: dto.location ?? null,
+        imageUrl: dto.image_url ?? null,
         latitude: coords?.latitude ?? null,
         longitude: coords?.longitude ?? null,
         city: coords?.city ?? null,
@@ -301,6 +303,7 @@ export class LifeGroupsService {
         lifeGroup.neighborhood = coords?.neighborhood ?? null;
         lifeGroup.state = coords?.state ?? null;
       }
+      if (dto.image_url !== undefined) lifeGroup.imageUrl = dto.image_url;
       if (dto.kids_count !== undefined) lifeGroup.kidsCount = dto.kids_count;
       if (dto.meeting_day !== undefined) lifeGroup.meetingDay = dto.meeting_day;
       if (dto.meeting_time !== undefined)
