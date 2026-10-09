@@ -35,6 +35,7 @@ import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
@@ -46,11 +47,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -168,9 +169,23 @@ fun LifeGroupDiscoveryScreen(
                         // conditionally removed, per plan) — only its
                         // wrapping container's height animates on scroll, so a
                         // debounced search reload never loses keyboard focus.
-                        val isSearchBarVisible by remember {
-                            derivedStateOf {
-                                listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 24
+                        // Dead band between the show/hide thresholds avoids flicker when the
+                        // scroll offset hovers right around a single bare cutoff.
+                        var isSearchBarVisible by remember { mutableStateOf(true) }
+                        LaunchedEffect(listState) {
+                            snapshotFlow {
+                                if (listState.firstVisibleItemIndex == 0) {
+                                    listState.firstVisibleItemScrollOffset
+                                } else {
+                                    Int.MAX_VALUE
+                                }
+                            }.collect { offset ->
+                                isSearchBarVisible =
+                                    when {
+                                        offset < 8 -> true
+                                        offset > 24 -> false
+                                        else -> isSearchBarVisible
+                                    }
                             }
                         }
 
@@ -338,7 +353,7 @@ private fun FilterSortMenu(
                 Text("Com crianças", style = MaterialTheme.typography.labelSmall)
                 Switch(checked = uiState.kidsOnly, onCheckedChange = onKidsOnlyToggled)
             }
-            androidx.compose.material3.HorizontalDivider()
+            HorizontalDivider()
             uiState.availableSortOptions.forEach { option ->
                 DropdownMenuItem(
                     text = { Text(option.label) },

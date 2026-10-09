@@ -51,6 +51,9 @@ class MinistriesViewModelTest {
 
             val guest = buildViewModel(User(id = "4", name = "Guest", email = "g@t.com", role = UserRole.guest))
             assertFalse(guest.uiState.value.canManage)
+
+            val discipler = buildViewModel(User(id = "5", name = "Discipler", email = "d@t.com", role = UserRole.discipler))
+            assertFalse(discipler.uiState.value.canManage)
         }
 
     @Test

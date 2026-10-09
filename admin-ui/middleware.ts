@@ -26,6 +26,7 @@ const protectedRoutes = [
   "/formularios",
   "/areas",
   "/sectors",
+  "/conversions",
 ]
 
 export function middleware(request: NextRequest) {
@@ -90,5 +91,7 @@ export const config = {
     "/areas/:path*",
     "/sectors",
     "/sectors/:path*",
+    "/conversions",
+    "/conversions/:path*",
   ],
 }

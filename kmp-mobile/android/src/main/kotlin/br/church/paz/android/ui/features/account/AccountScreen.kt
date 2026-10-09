@@ -207,6 +207,7 @@ fun AccountScreen(
                                     icon = Icons.Outlined.Groups,
                                     iconTint = PazColors.MenuLifeGroups,
                                     onClick = viewModel::onLifeGroups,
+                                    showDivider = user.role.isLeader,
                                 )
                                 if (user.role.isLeader) {
                                     PazMenuRow(

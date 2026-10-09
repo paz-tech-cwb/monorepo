@@ -20,18 +20,15 @@ class HomeViewModel {
 
     private let homeRepository: HomeRepository
     private let authRepository: AuthRepository
-    private let agendaRepository: AgendaRepository
     private let churchRepository: ChurchRepository
 
     init(
         homeRepository: HomeRepository,
         authRepository: AuthRepository,
-        agendaRepository: AgendaRepository,
         churchRepository: ChurchRepository
     ) {
         self.homeRepository = homeRepository
         self.authRepository = authRepository
-        self.agendaRepository = agendaRepository
         self.churchRepository = churchRepository
     }
 

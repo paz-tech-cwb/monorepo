@@ -21,7 +21,6 @@ struct HomeView: View {
         _viewModel = State(initialValue: HomeViewModel(
             homeRepository: homeRepository,
             authRepository: authRepository,
-            agendaRepository: agendaRepository,
             churchRepository: IosAppContainer.shared.churchRepository
         ))
         self.agendaRepository = agendaRepository

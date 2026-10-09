@@ -239,7 +239,13 @@ struct AllLifeGroupsContentView: View {
                         .onScrollGeometryChange(for: CGFloat.self) { geometry in
                             geometry.contentOffset.y
                         } action: { _, newOffset in
-                            isSearchBarVisible = newOffset < 24
+                            // Dead band between the show/hide thresholds avoids flicker when
+                            // the scroll offset hovers right around a single bare cutoff.
+                            if newOffset < 8 {
+                                isSearchBarVisible = true
+                            } else if newOffset > 24 {
+                                isSearchBarVisible = false
+                            }
                         }
                         .refreshable { await viewModel.load(search: searchText) }
                     }

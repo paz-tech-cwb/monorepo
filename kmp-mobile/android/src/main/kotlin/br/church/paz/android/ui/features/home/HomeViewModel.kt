@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.shared.domain.model.isLeader
-import br.church.paz.shared.domain.repository.AgendaRepository
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.HomeRepository
@@ -19,7 +18,6 @@ import kotlinx.coroutines.launch
 class HomeViewModel(
     private val homeRepository: HomeRepository,
     private val authRepository: AuthRepository,
-    private val agendaRepository: AgendaRepository,
     private val churchRepository: ChurchRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())

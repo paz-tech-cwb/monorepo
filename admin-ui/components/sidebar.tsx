@@ -30,6 +30,7 @@ import {
   Milestone,
   CalendarRange,
   BookText,
+  NotebookText,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -63,7 +64,7 @@ const sidebarSections = [
     items: [
       { name: "Organização", href: "/organizacao", icon: Network, roles: LEADERSHIP_ROLES },
       { name: "Organograma", href: "/organizacao/organograma", icon: GitBranch, roles: LEADERSHIP_ROLES },
-      { name: "Registros Casa de Paz", href: "/casa-de-paz-registros", icon: ClipboardList, roles: LEADERSHIP_ROLES },
+      { name: "Registros Casa de Paz", href: "/casa-de-paz-registros", icon: NotebookText, roles: LEADERSHIP_ROLES },
       { name: "Life Groups", href: "/life-groups", icon: Users2, roles: LEADERSHIP_ROLES },
       { name: "Ministérios", href: "/ministerios", icon: Waves, roles: LEADERSHIP_ROLES },
       { name: "Formulários", href: "/formularios", icon: ClipboardList, roles: LEADERSHIP_ROLES },
@@ -131,7 +132,9 @@ const NavSection = memo(function NavSection({
 }: {
   section: typeof sidebarSections[number]
   pathname: string
-  role: AdminRole | "member" | "guest" | null
+  // `undefined` means "still loading" — render unfiltered to avoid a
+  // flash of a nearly-empty sidebar before the auth role rehydrates.
+  role: AdminRole | "member" | "guest" | null | undefined
 }) {
   const items = section.items as ReadonlyArray<{
     name: string
@@ -141,6 +144,7 @@ const NavSection = memo(function NavSection({
   }>
   const visibleItems = items.filter((item) => {
     if (!item.roles) return true
+    if (role === undefined) return true
     return !!role && (item.roles as readonly string[]).includes(role)
   })
 
@@ -261,7 +265,7 @@ function ThemeToggle() {
 
 export const SidebarContent = memo(function SidebarContent({ className }: { className?: string }) {
   const pathname = usePathname()
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
 
   return (
     <div className={cn("flex h-full flex-col bg-sidebar border-r border-sidebar-border", className)}>
@@ -276,7 +280,7 @@ export const SidebarContent = memo(function SidebarContent({ className }: { clas
               key={section.title}
               section={section}
               pathname={pathname}
-              role={user?.role ?? null}
+              role={isLoading ? undefined : user?.role ?? null}
             />
           ))}
         </nav>
