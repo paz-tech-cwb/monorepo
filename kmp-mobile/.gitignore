@@ -17,6 +17,7 @@ local.properties
 # Kotlin
 *.class
 *.kotlin_module
+.kotlin/
 !gradle-wrapper.jar
 
 # macOS

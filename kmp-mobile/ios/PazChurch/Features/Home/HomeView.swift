@@ -200,13 +200,12 @@ struct HomeView: View {
                 }
             }
             .scrollTargetLayout()
-            .padding(.bottom, 28)
         }
         .contentMargins(.horizontal, 32, for: .scrollContent)
         .contentMargins(.vertical, 16, for: .scrollContent)
         .scrollTargetBehavior(.viewAligned)
         .scrollPosition(id: $scrolledFeatureID)
-        .frame(height: 224)
+        .frame(height: 212)
         .onAppear { startAutoScroll() }
         .onDisappear { stopAutoScroll() }
         .onChange(of: currentFeatureIndex) { _, _ in
@@ -448,7 +447,6 @@ private struct CrossWatermarkView: View {
 private struct DizimosPixButton: View {
     let pixKey: String?
     @State private var copied = false
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Button {
@@ -459,22 +457,12 @@ private struct DizimosPixButton: View {
                 withAnimation(.easeInOut(duration: 0.2)) { copied = false }
             }
         } label: {
-            Text(copied ? "Copiado!" : "Copiar PIX")
-                .font(PazTypography.titleMedium)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: PazSpacing.pillButtonHeight)
-                // Blue-tinted glass: the same material as the card underneath,
-                // with a brand-color tint layered on top so the button reads
-                // as a distinct tappable surface rather than disappearing
-                // into the frosted card behind it.
-                .background {
-                    Capsule().fill(PazMaterial.glass(for: colorScheme))
-                    Capsule().fill(PazColors.accent.opacity(0.78))
-                }
-                .clipShape(Capsule())
+            HStack(spacing: 8) {
+                Image(systemName: copied ? "checkmark" : "doc.on.doc.fill")
+                Text(copied ? "Copiado!" : "Copiar PIX").font(PazTypography.titleMedium)
+            }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pazPillPrimary)
     }
 }
 

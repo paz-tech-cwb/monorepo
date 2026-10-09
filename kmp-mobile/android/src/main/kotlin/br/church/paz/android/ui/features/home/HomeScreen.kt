@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -12,8 +11,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +34,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -63,7 +62,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
@@ -81,11 +79,11 @@ import br.church.paz.android.ui.components.PazCardSkeleton
 import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazGlassCard
 import br.church.paz.android.ui.components.PazMeshBackground
+import br.church.paz.android.ui.components.PazPillPrimaryButton
 import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
-import br.church.paz.android.ui.theme.PazShapePill
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.AgendaEvent
 import br.church.paz.shared.domain.model.BankInfo
@@ -403,10 +401,6 @@ private fun DizimosCard(
     bank: BankInfo,
     modifier: Modifier = Modifier,
 ) {
-    val clipboardManager = LocalClipboardManager.current
-    val scope = rememberCoroutineScope()
-    var copied by remember { mutableStateOf(false) }
-
     PazGlassCard(
         modifier = modifier.fillMaxWidth(),
         cornerRadius = PazSpacing.CardRadiusCompact,
@@ -441,59 +435,30 @@ private fun DizimosCard(
             val pixKey = bank.pixKey
             if (pixKey != null) {
                 Spacer(Modifier.height(PazSpacing.Lg))
-                DizimosPixButton(
-                    copied = copied,
-                    onClick = {
-                        clipboardManager.setText(AnnotatedString(pixKey))
-                        copied = true
-                        scope.launch {
-                            delay(1500)
-                            copied = false
-                        }
-                    },
-                )
+                PixCopyButton(pixKey = pixKey)
             }
         }
     }
 }
 
 @Composable
-private fun DizimosPixButton(
-    copied: Boolean,
-    onClick: () -> Unit,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.97f else 1f,
-        animationSpec = tween(120),
-        label = "pixBtnScale",
+private fun PixCopyButton(pixKey: String) {
+    val clipboardManager = LocalClipboardManager.current
+    var copied by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    PazPillPrimaryButton(
+        text = if (copied) "Copiado!" else "Copiar PIX",
+        icon = if (copied) Icons.Filled.Check else Icons.Filled.ContentCopy,
+        onClick = {
+            clipboardManager.setText(AnnotatedString(pixKey))
+            copied = true
+            scope.launch {
+                delay(1500)
+                copied = false
+            }
+        },
     )
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(PazSpacing.PillButtonHeight)
-                .shadow(elevation = 8.dp, shape = PazShapePill, spotColor = Color.Black.copy(alpha = 0.33f))
-                .clip(PazShapePill)
-                .background(PazColors.accent.copy(alpha = 0.78f))
-                .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                },
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            if (copied) "Copiado!" else "Copiar PIX",
-            style =
-                MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.5.sp,
-                    color = Color.White,
-                ),
-        )
-    }
 }
 
 // ── Agenda section ────────────────────────────────────────────────────────────
