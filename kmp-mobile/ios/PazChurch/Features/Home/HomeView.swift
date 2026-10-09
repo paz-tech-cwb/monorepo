@@ -21,7 +21,8 @@ struct HomeView: View {
         _viewModel = State(initialValue: HomeViewModel(
             homeRepository: homeRepository,
             authRepository: authRepository,
-            agendaRepository: agendaRepository
+            agendaRepository: agendaRepository,
+            churchRepository: IosAppContainer.shared.churchRepository
         ))
         self.agendaRepository = agendaRepository
     }
@@ -136,7 +137,60 @@ struct HomeView: View {
                     EmptyView()
                 }
             }
+
+            if viewModel.showLifeGroupDiscoveryCTA {
+                lifeGroupDiscoveryCard
+                    .padding(.top, 32)
+            }
         }
+    }
+
+    // MARK: - Life group discovery CTA
+
+    private var lifeGroupDiscoveryCard: some View {
+        NavigationLink {
+            AllLifeGroupsContentView(churchRepository: IosAppContainer.shared.churchRepository)
+                .navigationTitle("Todos os Life Groups")
+                .navigationBarTitleDisplayMode(.inline)
+        } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("LIFE GROUPS")
+                        .font(PazTypography.labelMedium)
+                        .foregroundStyle(PazColors.accent.opacity(0.7))
+
+                    Text("Encontre um grupo perto de você")
+                        .font(.system(size: 24, weight: .heavy))
+                        .foregroundStyle(PazColors.ink)
+                }
+
+                Text("Você ainda não faz parte de um Life Group. Veja no mapa os grupos mais próximos e comece a participar.")
+                    .font(PazTypography.bodySmall)
+                    .foregroundStyle(PazColors.ink.opacity(0.7))
+                    .lineSpacing(2)
+
+                HStack(spacing: 6) {
+                    Image(systemName: "map.fill")
+                    Text("Ver Life Groups")
+                }
+                .font(PazTypography.titleMedium)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: PazSpacing.pillButtonHeight)
+                .background {
+                    Capsule().fill(PazMaterial.glass(for: colorScheme))
+                    Capsule().fill(PazColors.accent.opacity(0.78))
+                }
+                .clipShape(Capsule())
+                .padding(.top, 10)
+            }
+            .padding(16)
+            .background(PazMaterial.glass(for: colorScheme))
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .shadow(color: PazColors.accent.opacity(0.25), radius: 12, x: 0, y: 10)
+            .padding(.horizontal, 16)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Featured section

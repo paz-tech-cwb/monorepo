@@ -8,6 +8,18 @@ import UIKit
 struct LifeGroupsMapView: View {
     let lifeGroups: [LifeGroup]
 
+    /// Accepts an optionally injected `LocationProvider` so the map doesn't
+    /// spin up a second, redundant `CLLocationManager` session when it's
+    /// shown as a child of a view that already owns one (e.g.
+    /// `AllLifeGroupsContentView`). Falls back to owning its own when used
+    /// standalone.
+    @State private var locationProvider: LocationProvider
+
+    init(lifeGroups: [LifeGroup], locationProvider: LocationProvider? = nil) {
+        self.lifeGroups = lifeGroups
+        _locationProvider = State(initialValue: locationProvider ?? LocationProvider())
+    }
+
     /// `.automatic` fits the bounding box of everything drawn on the map —
     /// the user's own dot (`UserAnnotation`) plus every group marker — so it
     /// starts zoomed out enough to show them all, rather than the tight,
@@ -57,6 +69,9 @@ struct LifeGroupsMapView: View {
             .mapControls {}
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .ignoresSafeArea(edges: .top)
+            .task {
+                locationProvider.requestAuthorization()
+            }
             .overlay(alignment: .bottomTrailing) {
                 VStack(spacing: PazSpacing.sm) {
                     MapCompass(scope: mapScope)

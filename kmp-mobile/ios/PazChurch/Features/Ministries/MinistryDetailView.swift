@@ -148,7 +148,7 @@ struct LifeGroupDetailView: View {
     /// No single-life-group fetch endpoint exists on the client yet, so
     /// refresh re-fetches the full list and picks this group back out by id.
     private func refresh() async {
-        guard let refreshed = try? await IosAppContainer.shared.churchRepository.getAllLifeGroups()
+        guard let refreshed = try? await IosAppContainer.shared.churchRepository.getAllLifeGroups(search: nil)
             .first(where: { $0.id == lifeGroup.id })
         else { return }
         lifeGroup = refreshed

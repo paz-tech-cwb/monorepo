@@ -67,7 +67,7 @@ class LifeGroupAnalyticsViewModel {
 
     func loadLifeGroups() async {
         do {
-            let groups = try await churchRepository.getAllLifeGroups()
+            let groups = try await churchRepository.getAllLifeGroups(search: nil)
             lifeGroups = groups.map { (id: $0.id, name: $0.name) }
         } catch {
             // Best-effort: the filter dropdown just stays empty on failure.

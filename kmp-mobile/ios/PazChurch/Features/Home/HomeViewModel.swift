@@ -12,6 +12,11 @@ class HomeViewModel {
     // Any leadership role (role.isLeader) — gates the "Relatórios de Grupos
     // de Vida" shortcut card.
     var canManage = false
+    /// Shown only when `getMyLifeGroups()` succeeded AND came back empty —
+    /// an error fetching the viewer's groups must never be read as "no
+    /// group", since that would wrongly nudge an existing member to
+    /// "discover" a group they already belong to.
+    var showLifeGroupDiscoveryCTA = false
 
     // Full upcoming agenda (recurrence-expanded, paginated), loaded lazily
     // the first time the home agenda section is expanded.
@@ -23,11 +28,18 @@ class HomeViewModel {
     private let homeRepository: HomeRepository
     private let authRepository: AuthRepository
     private let agendaRepository: AgendaRepository
+    private let churchRepository: ChurchRepository
 
-    init(homeRepository: HomeRepository, authRepository: AuthRepository, agendaRepository: AgendaRepository) {
+    init(
+        homeRepository: HomeRepository,
+        authRepository: AuthRepository,
+        agendaRepository: AgendaRepository,
+        churchRepository: ChurchRepository
+    ) {
         self.homeRepository = homeRepository
         self.authRepository = authRepository
         self.agendaRepository = agendaRepository
+        self.churchRepository = churchRepository
     }
 
     /// Called by the view's .task modifier — no Task wrapper needed.
@@ -49,6 +61,15 @@ class HomeViewModel {
             print("[HomeVM] load() FAILED — \(type(of: error)): \(error)")
             isLoading = false
             self.error = error.localizedDescription
+        }
+
+        do {
+            let myGroups = try await churchRepository.getMyLifeGroups()
+            showLifeGroupDiscoveryCTA = myGroups.isEmpty
+        } catch {
+            // Best-effort: on failure, leave the CTA hidden rather than risk
+            // showing it to a member who actually has a group.
+            showLifeGroupDiscoveryCTA = false
         }
     }
 

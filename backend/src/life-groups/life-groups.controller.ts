@@ -43,9 +43,13 @@ export class LifeGroupsController {
   }
 
   @Get()
-  findAll(@Req() req: AuthenticatedRequest, @Query('q') q?: string) {
+  findAll(
+    @Req() req: AuthenticatedRequest,
+    @Query('q') q?: string,
+    @Query('search') search?: string,
+  ) {
     if (q?.trim()) return this.lifeGroupsService.search(q);
-    return this.lifeGroupsService.findAll(req.user);
+    return this.lifeGroupsService.findAll(req.user, search);
   }
 
   // Must be declared before `:id` — otherwise Express would match "me" as

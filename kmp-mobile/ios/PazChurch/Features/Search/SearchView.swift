@@ -57,7 +57,7 @@ class SearchViewModel {
         async let academyResult = academyRepository.getAcademyContent()
         async let formsResult = formsRepository.getCatalog()
         async let ministriesResult = churchRepository.getAllMinistries()
-        async let lifeGroupsResult = churchRepository.getAllLifeGroups()
+        async let lifeGroupsResult = churchRepository.getAllLifeGroups(search: nil)
 
         let home = try? await homeResult
         let academy = try? await academyResult

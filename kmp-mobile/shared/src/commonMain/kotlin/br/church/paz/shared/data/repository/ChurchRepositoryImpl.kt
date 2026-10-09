@@ -14,6 +14,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.delete
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -33,8 +34,12 @@ class ChurchRepositoryImpl(private val client: HttpClient) : ChurchRepository {
         client.get("api/life-groups/me").body()
 
     @Throws(Exception::class)
-    override suspend fun getAllLifeGroups(): List<LifeGroup> =
-        client.get("api/life-groups").body()
+    override suspend fun getAllLifeGroups(search: String?): List<LifeGroup> =
+        client.get("api/life-groups") {
+            if (!search.isNullOrBlank()) {
+                parameter("search", search)
+            }
+        }.body()
 
     @Throws(Exception::class)
     override suspend fun getAllMinistries(): List<Ministry> =
