@@ -1,5 +1,23 @@
 import SwiftUI
 
+// MARK: - Export mode environment key
+
+/// Set to `true` while rendering content for `ImageRenderer`-based PDF
+/// export. `ImageRenderer` does not render SwiftUI `Material` (e.g.
+/// `.thinMaterial`/`.ultraThinMaterial`) — fills using it come out fully
+/// transparent, so views that need an opaque surface for export (like
+/// `GlassCard`) should check this flag and swap to a plain opaque fill.
+private struct IsExportingPDFKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var isExportingPDF: Bool {
+        get { self[IsExportingPDFKey.self] }
+        set { self[IsExportingPDFKey.self] = newValue }
+    }
+}
+
 // MARK: - GlassCard
 
 /// A frosted, translucent card container used for the 2026-09 glassmorphic restyle.
@@ -11,18 +29,28 @@ struct GlassCard<Content: View>: View {
     @ViewBuilder var content: Content
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.isExportingPDF) private var isExportingPDF
 
     var body: some View {
         content
             .background(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(PazMaterial.glass(for: colorScheme))
+                    .fill(
+                        isExportingPDF
+                            ? AnyShapeStyle(PazColors.surface)
+                            : AnyShapeStyle(PazMaterial.glass(for: colorScheme))
+                    )
             )
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
             )
-            .shadow(color: Color.black.opacity(0.10), radius: 16, x: 0, y: 8)
+            .shadow(
+                color: Color.black.opacity(isExportingPDF ? 0.05 : 0.10),
+                radius: isExportingPDF ? 4 : 16,
+                x: 0,
+                y: isExportingPDF ? 2 : 8
+            )
     }
 }
 
