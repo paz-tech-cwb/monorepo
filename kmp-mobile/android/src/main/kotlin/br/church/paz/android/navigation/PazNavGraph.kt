@@ -41,6 +41,7 @@ import br.church.paz.android.ui.features.ministries.MinistryManageScreen
 import br.church.paz.android.ui.features.notifications.NotificationPrefsScreen
 import br.church.paz.android.ui.features.profile.EditProfileScreen
 import br.church.paz.android.ui.features.profile.ProfileScreen
+import br.church.paz.android.ui.features.reports.ReportsListScreen
 import br.church.paz.android.ui.features.splash.SplashScreen
 
 @Composable
@@ -272,6 +273,9 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         }
         composable(route = Screen.CasaDePazAnalytics.route) {
             CasaDePazAnalyticsScreen(navController = navController)
+        }
+        composable(Screen.ReportsList.route) {
+            ReportsListScreen(navController = navController)
         }
         composable(Screen.CasaDePazLessonsList.route) {
             CasaDePazLessonsListScreen(navController = navController)

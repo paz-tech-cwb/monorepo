@@ -143,38 +143,11 @@ struct AccountView: View {
                             AccountRow(title: "Life Groups", icon: "person.3.fill", tint: Color(hex: "2E7D32"))
                         }
                         .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-
-                    sectionLabel("RELATÓRIOS")
-                    menuCard {
-                        NavigationLink(destination: CasaDePazSubmissionsListView(formsRepository: IosAppContainer.shared
-                                .formsRepository)) {
-                            AccountRow(title: "Casa de Paz", icon: "house.fill", tint: Color(hex: "E65100"))
+                        rowDivider
+                        NavigationLink(destination: ReportsListView()) {
+                            AccountRow(title: "Relatórios", icon: "chart.bar.fill", tint: Color(hex: "2E7D32"))
                         }
                         .buttonStyle(.plain)
-                        if user.role.isLeader {
-                            rowDivider
-                            NavigationLink(destination: LifeGroupAnalyticsView(
-                                lifeGroupId: nil,
-                                analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository
-                            )) {
-                                AccountRow(title: "Life Groups", icon: "chart.bar.fill", tint: Color(hex: "2E7D32"))
-                            }
-                            .buttonStyle(.plain)
-                            rowDivider
-                            NavigationLink(destination: CasaDePazAnalyticsView(
-                                analyticsRepository: IosAppContainer.shared.casaDePazAnalyticsRepository
-                            )) {
-                                AccountRow(
-                                    title: "Casa de Paz (Relatório)",
-                                    icon: "chart.pie.fill",
-                                    tint: Color(hex: "E65100")
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)

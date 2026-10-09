@@ -74,11 +74,7 @@ class AccountViewModel(
 
     fun onLifeGroups() = emit(AccountEffect.NavigateToLifeGroups)
 
-    fun onCasaDePaz() = emit(AccountEffect.NavigateToCasaDePaz)
-
-    fun onLifeGroupAnalytics() = emit(AccountEffect.NavigateToLifeGroupAnalytics)
-
-    fun onCasaDePazAnalytics() = emit(AccountEffect.NavigateToCasaDePazAnalytics)
+    fun onReports() = emit(AccountEffect.NavigateToReports)
 
     fun onNotificationPrefs() = emit(AccountEffect.NavigateToNotificationPrefs)
 

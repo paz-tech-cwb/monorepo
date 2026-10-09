@@ -73,6 +73,8 @@
 		9531A2BAD6ADBC340F6DD4DD /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B554E6B77B5313AFF3EEAD09 /* OnboardingCoordinator.swift */; };
 		96BF8A72553894BA74F6934B /* PazIconContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC853F6E892CF7A2AE4283F /* PazIconContainer.swift */; };
 		9713458591D4950B97EE77BA /* CasaDePazCyclePickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19BCE06C2D7FAA81524F09DE /* CasaDePazCyclePickerSheet.swift */; };
+		2C9839F4653E4D3989265FFA /* PazListRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68B77423DD3A4E4A937B29C6 /* PazListRow.swift */; };
+		1130D7FE44704C0386DDFA1F /* ReportsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22EF0B35F2514FB698CEB3E7 /* ReportsListView.swift */; };
 		9B35B93C7F743C40EC9D2013 /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2792E4E00D06402A139D1665 /* GlassCard.swift */; };
 		9B9A6148AFFD0C8167085DD0 /* MinistryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDD6B4FBC968ED037D73EAA9 /* MinistryDetailView.swift */; };
 		9FC7139DF9C1E4F65329A028 /* CourseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A47D9B2BCAEA98860B58CF7 /* CourseDetailView.swift */; };
@@ -149,6 +151,8 @@
 		1235A4B8BC89050828199B43 /* GatedYouTubePlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GatedYouTubePlayerView.swift; sourceTree = "<group>"; };
 		18FB511E4D840081FD61266D /* CasaDePazLessonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CasaDePazLessonsView.swift; sourceTree = "<group>"; };
 		19BCE06C2D7FAA81524F09DE /* CasaDePazCyclePickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CasaDePazCyclePickerSheet.swift; sourceTree = "<group>"; };
+		68B77423DD3A4E4A937B29C6 /* PazListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazListRow.swift; sourceTree = "<group>"; };
+		22EF0B35F2514FB698CEB3E7 /* ReportsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsListView.swift; sourceTree = "<group>"; };
 		19E3E44DBCB2C6495E5BB60D /* PazColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazColors.swift; sourceTree = "<group>"; };
 		1A78FBD0E12C138DD1D1835C /* FormulariosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulariosView.swift; sourceTree = "<group>"; };
 		2019A7167B120D6FEB1A5E7B /* FormStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormStepView.swift; sourceTree = "<group>"; };
@@ -345,6 +349,7 @@
 				23C7D2740D252722209A1DB5 /* Notifications */,
 				D803C345A209B17B4B6A0EDE /* Onboarding */,
 				D693032B5B8C44453E934096 /* Profile */,
+				B4865C2BC31048B4A4EE48F7 /* Reports */,
 				E4B1DED23E50E129CCA71F73 /* Search */,
 			);
 			path = Features;
@@ -417,6 +422,7 @@
 				C7AB7D082CBCFBF7C089DB6B /* PazCharts.swift */,
 				956C0B652EACA4EB866BDD9C /* PazGoldBadge.swift */,
 				CAC853F6E892CF7A2AE4283F /* PazIconContainer.swift */,
+				68B77423DD3A4E4A937B29C6 /* PazListRow.swift */,
 				BE04531C680EFE7961677C01 /* PazMeshBackground.swift */,
 				7B7C6BCE28A44CC2A9DBD107 /* PazKeyboardAccessoryBar.swift */,
 				90A9A1EBFD7A48EE9E25DF07 /* InteractivePopGestureDisabler.swift */,
@@ -428,6 +434,14 @@
 				8E1AAFC2AB540CB8A4697D76 /* SuccessStateView.swift */,
 			);
 			path = Components;
+			sourceTree = "<group>";
+		};
+		B4865C2BC31048B4A4EE48F7 /* Reports */ = {
+			isa = PBXGroup;
+			children = (
+				22EF0B35F2514FB698CEB3E7 /* ReportsListView.swift */,
+			);
+			path = Reports;
 			sourceTree = "<group>";
 		};
 		7096A0159D24C4D44279E9D4 /* Products */ = {
@@ -735,6 +749,8 @@
 				A882169C3987D03873848621 /* CasaDePazAnalyticsViewModel.swift in Sources */,
 				52095A3054AD258F46DBE6CF /* CasaDePazCharts.swift in Sources */,
 				9713458591D4950B97EE77BA /* CasaDePazCyclePickerSheet.swift in Sources */,
+				2C9839F4653E4D3989265FFA /* PazListRow.swift in Sources */,
+				1130D7FE44704C0386DDFA1F /* ReportsListView.swift in Sources */,
 				8F38AE17F7E00C2819DDAE9F /* CasaDePazLessonDetailView.swift in Sources */,
 				E190A056BE4865FE452D5735 /* CasaDePazLessonsView.swift in Sources */,
 				D9EDA323E8F4F684C92AC609 /* CasaDePazLessonsViewModels.swift in Sources */,

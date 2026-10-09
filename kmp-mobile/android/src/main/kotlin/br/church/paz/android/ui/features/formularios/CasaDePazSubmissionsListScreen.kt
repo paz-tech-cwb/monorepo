@@ -12,10 +12,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -35,9 +41,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazButton
+import br.church.paz.android.ui.components.PazMenuRow
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
+import br.church.paz.shared.domain.model.CasaDePazReportSection
 import br.church.paz.shared.domain.model.CasaDePazReportSubmission
 import org.koin.androidx.compose.koinViewModel
 
@@ -71,9 +79,27 @@ fun CasaDePazSubmissionsListScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    if (uiState.isCyclePickerVisible) {
+        CasaDePazCyclePickerSheet(
+            state =
+                PickerState(
+                    key = "casaDePazId",
+                    label = "Selecione o ciclo",
+                    kind = PickerKind.CASA_DE_PAZ_CYCLE,
+                    query = uiState.cyclePickerQuery,
+                    results = viewModel.filteredCycles,
+                    isLoading = false,
+                    error = null,
+                ),
+            selectedId = uiState.selectedCycleId ?: "",
+            onQueryChanged = viewModel::onCyclePickerQueryChanged,
+            onSelect = { id, _ -> viewModel.onCycleSelected(id) },
+            onDismiss = viewModel::onDismissCyclePicker,
+        )
+    }
+
     Column(Modifier.fillMaxSize().padding(PazSpacing.Lg)) {
-        // Entry point to the Casa de Paz weekly lesson content — this screen is already the
-        // leader's Casa de Paz hub, so no additional role check is needed here.
+        // Hub entry point to the Casa de Paz weekly lesson content.
         Row(
             Modifier
                 .fillMaxWidth()
@@ -81,12 +107,23 @@ fun CasaDePazSubmissionsListScreen(
                 .background(MaterialTheme.colorScheme.surface)
                 .clickable { navController.navigate(Screen.CasaDePazLessonsList.route) }
                 .padding(PazSpacing.Md),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
         ) {
             Icon(Icons.Filled.MenuBook, contentDescription = null)
             Text("Conteúdo Casa de Paz", style = MaterialTheme.typography.titleSmall)
+            Spacer(Modifier.weight(1f))
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
         }
+        Spacer(Modifier.height(PazSpacing.Sm))
+
+        Text("Relatórios Casa de Paz", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(PazSpacing.Sm))
+
+        CycleSwitcher(
+            cycleName = uiState.selectedCycleName ?: "Selecionar ciclo",
+            onClick = viewModel::onOpenCyclePicker,
+        )
         Spacer(Modifier.height(PazSpacing.Sm))
 
         when {
@@ -96,25 +133,79 @@ fun CasaDePazSubmissionsListScreen(
                     Text(uiState.error!!, style = MaterialTheme.typography.bodySmall)
                     PazButton(text = "Tentar Novamente", onClick = viewModel::onRetry)
                 }
-            uiState.submissions.isEmpty() ->
+            uiState.sections.isEmpty() ->
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
                     Text("Nenhum registro encontrado", style = MaterialTheme.typography.titleMedium)
                 }
             else ->
-                LazyColumn(
-                    contentPadding = PaddingValues(vertical = PazSpacing.Sm),
-                    verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
-                ) {
-                    items(uiState.submissions) { submission ->
-                        SubmissionRow(
-                            submission = submission,
-                            sectorName = uiState.sectorNames[submission.sectorId] ?: "Setor removido",
-                            onClick = { viewModel.onRowTap(submission.id) },
-                        )
+                LazyColumn(contentPadding = PaddingValues(vertical = PazSpacing.Sm)) {
+                    uiState.sections.forEach { section ->
+                        val collapsed = uiState.collapsedDates.contains(section.date)
+                        item(key = "header-${section.date}") {
+                            SectionHeaderRow(
+                                section = section,
+                                collapsed = collapsed,
+                                onClick = { viewModel.onToggleSection(section.date) },
+                            )
+                        }
+                        if (!collapsed) {
+                            items(section.submissions) { submission ->
+                                SubmissionRow(
+                                    submission = submission,
+                                    sectorName = uiState.sectorNames[submission.sectorId] ?: "Setor removido",
+                                    onClick = { viewModel.onRowTap(submission.id) },
+                                )
+                            }
+                        }
                     }
                 }
         }
     }
+}
+
+@Composable
+private fun CycleSwitcher(
+    cycleName: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(PazShapes.large)
+            .background(MaterialTheme.colorScheme.surface)
+            .clickable(onClick = onClick)
+            .padding(PazSpacing.Md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("Ciclo: $cycleName", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+    }
+}
+
+@Composable
+private fun SectionHeaderRow(
+    section: CasaDePazReportSection,
+    collapsed: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            section.date,
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            imageVector = if (collapsed) Icons.Filled.ExpandMore else Icons.Filled.ExpandLess,
+            contentDescription = null,
+        )
+    }
+    HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 0.5.dp)
 }
 
 @Composable
@@ -123,20 +214,27 @@ private fun SubmissionRow(
     sectorName: String,
     onClick: () -> Unit,
 ) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(PazShapes.large)
-            .background(MaterialTheme.colorScheme.surface)
-            .clickable(onClick = onClick)
-            .padding(PazSpacing.Md),
-    ) {
-        Text("${submission.date} · $sectorName", style = MaterialTheme.typography.titleSmall)
-        Text(submission.facilitator, style = MaterialTheme.typography.bodySmall)
-        Text(
-            "Crianças: ${submission.kids} · Convidados: ${submission.guests.size} · " +
-                "Conversões: ${submission.conversions}",
-            style = MaterialTheme.typography.bodySmall,
-        )
-    }
+    PazMenuRow(
+        title = sectorName,
+        icon = Icons.Filled.MenuBook,
+        onClick = onClick,
+        trailing = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(submission.facilitator, style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        "Crianças: ${submission.kids} · Convidados: ${submission.guests.size} · " +
+                            "Conversões: ${submission.conversions}",
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+                Spacer(Modifier.width(PazSpacing.Sm))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        },
+    )
 }
