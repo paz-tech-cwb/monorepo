@@ -13,6 +13,7 @@
 		133044023D8AFC650E9E9FAB /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDF386921E4FE34F3D834257 /* ProfileViewModel.swift */; };
 		14045D80B33A84CAE8070AC7 /* PazTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82E14328F3FC3C44E1C3AC60 /* PazTypography.swift */; };
 		16B832FD065C7338B522ABFA /* AppThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21EFE728C0EA836F247AB28D /* AppThemeManager.swift */; };
+		A1B2C3D4E5F6071829384756 /* LocationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829384757 /* LocationProvider.swift */; };
 		16FDB9DAAF18AC484D49A084 /* PazPillButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54FA272FF1C57FE575B4E7E0 /* PazPillButtonStyle.swift */; };
 		1CB207F6227C85FD1293E3A2 /* Shared.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9089E1E2EF61D9C3A28227C1 /* Shared.xcframework */; };
 		1E73813601B5D626FF99A87A /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 62F32151BE1564943B93F90E /* FirebaseStorage */; };
@@ -149,6 +150,7 @@
 		1A78FBD0E12C138DD1D1835C /* FormulariosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulariosView.swift; sourceTree = "<group>"; };
 		2019A7167B120D6FEB1A5E7B /* FormStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormStepView.swift; sourceTree = "<group>"; };
 		21EFE728C0EA836F247AB28D /* AppThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppThemeManager.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6071829384757 /* LocationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationProvider.swift; sourceTree = "<group>"; };
 		22597D6E893E60A78DA0327F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		234779E01AE25F665C7BB9EB /* LifeGroupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupsView.swift; sourceTree = "<group>"; };
 		2792E4E00D06402A139D1665 /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCard.swift; sourceTree = "<group>"; };
@@ -287,6 +289,7 @@
 				21EFE728C0EA836F247AB28D /* AppThemeManager.swift */,
 				BB0E4F5F057D2C920865C94F /* AuthenticationCoordinator.swift */,
 				C737DAE09240790962AA668E /* KeychainService.swift */,
+				A1B2C3D4E5F6071829384757 /* LocationProvider.swift */,
 				5AD2DBF8ABF3E564BDA14950 /* PushNotificationService.swift */,
 			);
 			path = Services;
@@ -750,6 +753,7 @@
 				214CF4956D0B65E1AFA723F8 /* HomeView.swift in Sources */,
 				81241EF8344367972B2409AF /* HomeViewModel.swift in Sources */,
 				C81CB606C64CB0B6AA3D8743 /* KeychainService.swift in Sources */,
+				A1B2C3D4E5F6071829384756 /* LocationProvider.swift in Sources */,
 				E5E4F215F16D5A592885DDBD /* LifeGroupAnalyticsView.swift in Sources */,
 				8D8430332E05F42EED9AD97A /* LifeGroupAnalyticsViewModel.swift in Sources */,
 				36011969A58624733978F622 /* LifeGroupAttendanceEditorView.swift in Sources */,

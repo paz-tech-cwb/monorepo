@@ -120,7 +120,7 @@ struct LifeGroupDetailDeepLinkView: View {
         .task {
             do {
                 let wantedId = Int32(lifeGroupId)
-                let groups = try await churchRepository.getAllLifeGroups()
+                let groups = try await churchRepository.getAllLifeGroups(search: nil)
                 lifeGroup = groups.first { $0.id == wantedId }
             } catch {}
             isLoading = false
