@@ -48,6 +48,8 @@ class PazFirebaseMessagingService : FirebaseMessagingService() {
         deepLink: String?,
         channelId: String,
     ) {
+        val notificationId = System.currentTimeMillis().toInt()
+
         val intent =
             Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -57,9 +59,9 @@ class PazFirebaseMessagingService : FirebaseMessagingService() {
         val pendingIntent =
             PendingIntent.getActivity(
                 this,
-                0,
+                notificationId,
                 intent,
-                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
         val notification =
@@ -75,7 +77,7 @@ class PazFirebaseMessagingService : FirebaseMessagingService() {
                 .build()
 
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(System.currentTimeMillis().toInt(), notification)
+        manager.notify(notificationId, notification)
     }
 
     private fun ensureChannels(context: Context) {

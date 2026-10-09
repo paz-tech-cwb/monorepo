@@ -41,17 +41,17 @@ struct MainTabView: View {
             guard newValue != nil,
                   let destination = pushService.deepLinkDestination
             else { return }
-            handleDeepLink(destination, consume: destination.isAgendaDestination)
+            handleDeepLink(destination, consume: destination.usesHomeStack)
         }
     }
 
     private func handleDeepLink(_ destination: DeepLinkDestination, consume: Bool) {
         switch destination {
-        case .agendaDetail:
+        case .agendaDetail, .lifeGroupAttendanceEditor:
             selectedTab = 0
             agendaPath = [destination]
 
-        case .formDetail, .ministryDetail, .lifeGroupDetail, .lifeGroupStudyDetail, .lifeGroupAttendanceEditor,
+        case .formDetail, .ministryDetail, .lifeGroupDetail, .lifeGroupStudyDetail,
              .formularios, .memberJourney, .account:
             // Switch tab only — AccountView observes pendingDeepLink and pushes its own path
             selectedTab = 2
@@ -96,7 +96,8 @@ struct MainTabView: View {
             LifeGroupAttendanceEditorDeepLinkView(
                 lifeGroupId: lifeGroupId,
                 meetingDate: meetingDate,
-                repository: IosAppContainer.shared.lifeGroupAttendanceRepository
+                repository: IosAppContainer.shared.lifeGroupAttendanceRepository,
+                onDismiss: { if !agendaPath.isEmpty { agendaPath.removeLast() } }
             )
 
         default:

@@ -13,9 +13,13 @@ enum DeepLinkDestination: Hashable {
 }
 
 extension DeepLinkDestination {
-    var isAgendaDestination: Bool {
-        if case .agendaDetail = self { return true }
-        return false
+    /// Destinations pushed onto the Home tab's navigation stack (as opposed to
+    /// destinations routed through AccountView's own navigation path).
+    var usesHomeStack: Bool {
+        switch self {
+        case .agendaDetail, .lifeGroupAttendanceEditor: return true
+        default: return false
+        }
     }
 
     static func from(parsedRoute: String) -> DeepLinkDestination? {
