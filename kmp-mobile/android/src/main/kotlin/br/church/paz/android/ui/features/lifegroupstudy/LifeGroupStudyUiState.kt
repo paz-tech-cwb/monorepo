@@ -15,7 +15,9 @@ data class LifeGroupStudyListUiState(
 )
 
 sealed class LifeGroupStudyListEffect {
-    data class NavigateToDetail(val studyId: String) : LifeGroupStudyListEffect()
+    data class NavigateToDetail(
+        val studyId: String,
+    ) : LifeGroupStudyListEffect()
 
     data object NavigateToCreate : LifeGroupStudyListEffect()
 }
@@ -31,7 +33,9 @@ data class LifeGroupStudyDetailUiState(
 sealed class LifeGroupStudyDetailEffect {
     data object NavigateBack : LifeGroupStudyDetailEffect()
 
-    data class NavigateToEdit(val studyId: String) : LifeGroupStudyDetailEffect()
+    data class NavigateToEdit(
+        val studyId: String,
+    ) : LifeGroupStudyDetailEffect()
 }
 
 data class LifeGroupStudyEditorUiState(
@@ -41,6 +45,7 @@ data class LifeGroupStudyEditorUiState(
     val author: String = "",
     val bodyMarkdown: TextFieldValue = TextFieldValue(""),
     val imageUrl: String = "",
+    val loadError: String? = null,
     val error: String? = null,
     val isEditMode: Boolean = false,
 ) {
@@ -48,7 +53,9 @@ data class LifeGroupStudyEditorUiState(
 }
 
 sealed class LifeGroupStudyEditorEffect {
-    data class Saved(val studyId: String) : LifeGroupStudyEditorEffect()
+    data class Saved(
+        val studyId: String,
+    ) : LifeGroupStudyEditorEffect()
 
     data object NavigateBack : LifeGroupStudyEditorEffect()
 }

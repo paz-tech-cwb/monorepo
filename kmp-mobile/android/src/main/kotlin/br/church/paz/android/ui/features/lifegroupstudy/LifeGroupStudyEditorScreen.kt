@@ -1,6 +1,5 @@
 package br.church.paz.android.ui.features.lifegroupstudy
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,8 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FormatBold
@@ -26,6 +25,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -39,7 +39,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazMeshBackground
+import br.church.paz.android.ui.components.PazToastEffect
+import br.church.paz.android.ui.components.rememberPazToastHost
 import br.church.paz.android.ui.theme.PazSpacing
 import coil3.compose.AsyncImage
 import org.koin.androidx.compose.koinViewModel
@@ -64,6 +67,7 @@ fun LifeGroupStudyEditorScreen(
     viewModel: LifeGroupStudyEditorViewModel = koinViewModel(parameters = { parametersOf(studyId) }),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val toastHost = rememberPazToastHost()
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -76,6 +80,8 @@ fun LifeGroupStudyEditorScreen(
 
     Box(Modifier.fillMaxSize()) {
         PazMeshBackground()
+
+        PazToastEffect(message = uiState.error, hostState = toastHost, onShown = viewModel::onErrorShown)
 
         Scaffold(
             topBar = {
@@ -90,81 +96,91 @@ fun LifeGroupStudyEditorScreen(
                 )
             },
             containerColor = Color.Transparent,
+            snackbarHost = { SnackbarHost(toastHost) },
         ) { innerPadding ->
-            Column(
+            Box(
                 Modifier
                     .fillMaxSize()
-                    .padding(top = innerPadding.calculateTopPadding())
-                    .verticalScroll(rememberScrollState())
-                    .padding(PazSpacing.Lg),
-                verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
+                    .padding(top = innerPadding.calculateTopPadding()),
             ) {
-                Spacer(Modifier.height(PazSpacing.Sm))
-
-                if (uiState.error != null) {
-                    Text(uiState.error!!, style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.error))
+                if (uiState.loadError != null) {
+                    PazErrorState(
+                        message = uiState.loadError ?: "Não foi possível carregar o estudo",
+                        onRetry = viewModel::loadExisting,
+                    )
+                    return@Box
                 }
 
-                OutlinedTextField(
-                    value = uiState.title,
-                    onValueChange = viewModel::onTitleChange,
-                    label = { Text("Título") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
+                Column(
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(PazSpacing.Lg),
+                    verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
+                ) {
+                    Spacer(Modifier.height(PazSpacing.Sm))
 
-                OutlinedTextField(
-                    value = uiState.author,
-                    onValueChange = viewModel::onAuthorChange,
-                    label = { Text("Autor") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
-
-                Column(verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
-                    Text("Imagem de capa (opcional)", style = MaterialTheme.typography.labelMedium)
-                    if (uiState.imageUrl.isNotBlank()) {
-                        AsyncImage(
-                            model = uiState.imageUrl,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(12.dp)),
-                        )
-                    }
                     OutlinedTextField(
-                        value = uiState.imageUrl,
-                        onValueChange = viewModel::onImageUrlChange,
-                        label = { Text("URL da imagem") },
+                        value = uiState.title,
+                        onValueChange = viewModel::onTitleChange,
+                        label = { Text("Título") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                     )
-                }
 
-                Column(verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
-                    Text("Conteúdo", style = MaterialTheme.typography.labelMedium)
-                    MarkdownToolbar(viewModel = viewModel)
                     OutlinedTextField(
-                        value = uiState.bodyMarkdown,
-                        onValueChange = viewModel::onBodyChange,
-                        modifier = Modifier.fillMaxWidth().height(260.dp),
-                        placeholder = { Text("Escreva o estudo em Markdown...") },
+                        value = uiState.author,
+                        onValueChange = viewModel::onAuthorChange,
+                        label = { Text("Autor") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
                     )
-                    // uiState.bodyMarkdown is a TextFieldValue so the markdown toolbar
-                    // (applyMarkdownWrap) can wrap the actual selection instead of only
-                    // appending markers at the end of the document.
+
+                    Column(verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
+                        Text("Imagem de capa (opcional)", style = MaterialTheme.typography.labelMedium)
+                        if (uiState.imageUrl.isNotBlank()) {
+                            AsyncImage(
+                                model = uiState.imageUrl,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(12.dp)),
+                            )
+                        }
+                        OutlinedTextField(
+                            value = uiState.imageUrl,
+                            onValueChange = viewModel::onImageUrlChange,
+                            label = { Text("URL da imagem") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                        )
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
+                        Text("Conteúdo", style = MaterialTheme.typography.labelMedium)
+                        MarkdownToolbar(viewModel = viewModel)
+                        OutlinedTextField(
+                            value = uiState.bodyMarkdown,
+                            onValueChange = viewModel::onBodyChange,
+                            modifier = Modifier.fillMaxWidth().height(260.dp),
+                            placeholder = { Text("Escreva o estudo em Markdown...") },
+                        )
+                        // uiState.bodyMarkdown is a TextFieldValue so the markdown toolbar
+                        // (applyMarkdownWrap) can wrap the actual selection instead of only
+                        // appending markers at the end of the document.
+                    }
+
+                    HorizontalDivider()
+
+                    br.church.paz.android.ui.components.PazButton(
+                        text = if (uiState.isEditMode) "Salvar alterações" else "Publicar estudo",
+                        onClick = viewModel::onSave,
+                        enabled = uiState.isValid && !uiState.isSaving,
+                        loading = uiState.isSaving,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    Spacer(Modifier.height(PazSpacing.Xl))
                 }
-
-                HorizontalDivider()
-
-                br.church.paz.android.ui.components.PazButton(
-                    text = if (uiState.isEditMode) "Salvar alterações" else "Publicar estudo",
-                    onClick = viewModel::onSave,
-                    enabled = uiState.isValid && !uiState.isSaving,
-                    loading = uiState.isSaving,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                Spacer(Modifier.height(PazSpacing.Xl))
             }
         }
     }

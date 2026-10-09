@@ -1,3 +1,4 @@
+import Kingfisher
 import PhotosUI
 import Shared
 import SwiftUI
@@ -111,11 +112,10 @@ struct EditProfileView: View {
                         if viewModel.isUploadingPicture {
                             ProgressView()
                         } else if let urlString = viewModel.pictureUrl, let url = URL(string: urlString) {
-                            AsyncImage(url: url) { image in
-                                image.resizable().aspectRatio(contentMode: .fill)
-                            } placeholder: {
-                                ProgressView()
-                            }
+                            KFImage(url)
+                                .resizable()
+                                .placeholder { ProgressView() }
+                                .aspectRatio(contentMode: .fill)
                         } else {
                             Image(systemName: "person.fill")
                                 .font(.system(size: 40))

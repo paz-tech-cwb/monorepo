@@ -130,6 +130,7 @@ class LifeGroupStudyEditorViewModel {
     var imageUrl = ""
     var isLoading = false
     var isSaving = false
+    var loadError: String?
     var error: String?
 
     let isEditMode: Bool
@@ -151,6 +152,7 @@ class LifeGroupStudyEditorViewModel {
     func loadIfNeeded() async {
         guard let studyId else { return }
         isLoading = true
+        loadError = nil
         do {
             let existing = try await repository.getStudy(id: studyId)
             title = existing.title
@@ -158,7 +160,7 @@ class LifeGroupStudyEditorViewModel {
             bodyMarkdown = existing.bodyMarkdown
             imageUrl = existing.imageUrl ?? ""
         } catch {
-            self.error = error.localizedDescription
+            self.loadError = error.localizedDescription
         }
         isLoading = false
     }

@@ -18,12 +18,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
-import br.church.paz.android.ui.components.PazButton
+import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
@@ -51,10 +51,10 @@ fun FormSubmissionsListScreen(
         when {
             uiState.isLoading -> repeat(3) { PazSkeleton(height = 72.dp) }
             uiState.error != null ->
-                Column {
-                    Text(uiState.error!!, style = MaterialTheme.typography.bodySmall)
-                    PazButton(text = "Tentar Novamente", onClick = viewModel::onRetry)
-                }
+                PazErrorState(
+                    message = uiState.error ?: "Não foi possível carregar os registros",
+                    onRetry = viewModel::onRetry,
+                )
             uiState.submissions.isEmpty() ->
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
                     Text("Nenhum registro encontrado", style = MaterialTheme.typography.titleMedium)
@@ -107,22 +107,23 @@ fun FormSubmissionDetailScreen(
         if (submission == null) {
             Text("Registro não encontrado", style = MaterialTheme.typography.bodyMedium)
         } else {
-            val rows = listOf(
-                "Data" to submission.date,
-                "Tipo" to submission.reportType,
-                "Período" to submission.period,
-                "Responsável" to submission.atmosphereResponsible,
-                "Adultos (Tadel)" to submission.tadelAdults.toString(),
-                "Crianças (Tadel)" to submission.tadelKids.toString(),
-                "Carros" to submission.vehiclesCars.toString(),
-                "Motos" to submission.vehiclesMotos.toString(),
-                "Bicicletas" to submission.vehiclesBikes.toString(),
-                "Voluntários Atmosfera" to submission.volunteersAtmosfera.toString(),
-                "Voluntários Louvor" to submission.volunteersLouvor.toString(),
-                "Voluntários Mídia" to submission.volunteersMiddia.toString(),
-                "Voluntários Dança" to submission.volunteersDanca.toString(),
-                "Observações" to (submission.notes ?: "-"),
-            )
+            val rows =
+                listOf(
+                    "Data" to submission.date,
+                    "Tipo" to submission.reportType,
+                    "Período" to submission.period,
+                    "Responsável" to submission.atmosphereResponsible,
+                    "Adultos (Tadel)" to submission.tadelAdults.toString(),
+                    "Crianças (Tadel)" to submission.tadelKids.toString(),
+                    "Carros" to submission.vehiclesCars.toString(),
+                    "Motos" to submission.vehiclesMotos.toString(),
+                    "Bicicletas" to submission.vehiclesBikes.toString(),
+                    "Voluntários Atmosfera" to submission.volunteersAtmosfera.toString(),
+                    "Voluntários Louvor" to submission.volunteersLouvor.toString(),
+                    "Voluntários Mídia" to submission.volunteersMiddia.toString(),
+                    "Voluntários Dança" to submission.volunteersDanca.toString(),
+                    "Observações" to (submission.notes ?: "-"),
+                )
             LazyColumn(verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
                 items(rows) { (label, value) ->
                     Column {

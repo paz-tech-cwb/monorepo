@@ -40,7 +40,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
-import br.church.paz.android.ui.components.PazButton
+import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazMenuRow
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazShapes
@@ -129,10 +129,10 @@ fun CasaDePazSubmissionsListScreen(
         when {
             uiState.isLoading -> repeat(3) { PazSkeleton(height = 72.dp) }
             uiState.error != null ->
-                Column {
-                    Text(uiState.error!!, style = MaterialTheme.typography.bodySmall)
-                    PazButton(text = "Tentar Novamente", onClick = viewModel::onRetry)
-                }
+                PazErrorState(
+                    message = uiState.error ?: "Não foi possível carregar os registros",
+                    onRetry = viewModel::onRetry,
+                )
             uiState.sections.isEmpty() ->
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
                     Text("Nenhum registro encontrado", style = MaterialTheme.typography.titleMedium)

@@ -9,7 +9,9 @@ data class CasaDePazLessonsListUiState(
 )
 
 sealed class CasaDePazLessonsListEffect {
-    data class NavigateToDetail(val week: Int) : CasaDePazLessonsListEffect()
+    data class NavigateToDetail(
+        val week: Int,
+    ) : CasaDePazLessonsListEffect()
 
     data object NavigateBack : CasaDePazLessonsListEffect()
 }

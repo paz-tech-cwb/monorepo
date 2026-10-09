@@ -27,7 +27,8 @@ class CasaDePazSubmissionEditorViewModel(
         load()
     }
 
-    private fun load() {
+    fun load() {
+        _uiState.update { it.copy(isLoading = true, loadError = null) }
         viewModelScope.launch {
             runCatching {
                 val submissions = formsRepository.getCasaDePazReportSubmissions()
@@ -46,14 +47,15 @@ class CasaDePazSubmissionEditorViewModel(
                         sectorId = submission.sectorId,
                         casaDePazId = submission.casaDePazId,
                         kids = submission.kids.toString(),
-                        guests = submission.guests.map { g ->
-                            CasaDePazGuestDraft(
-                                name = g.name,
-                                email = g.email,
-                                birthDate = g.birthDate,
-                                whatsapp = g.whatsapp ?: "",
-                            )
-                        },
+                        guests =
+                            submission.guests.map { g ->
+                                CasaDePazGuestDraft(
+                                    name = g.name,
+                                    email = g.email,
+                                    birthDate = g.birthDate,
+                                    whatsapp = g.whatsapp ?: "",
+                                )
+                            },
                         conversions = submission.conversions.toString(),
                         meetingDay = submission.meetingDay ?: "",
                         sectorNames = sectorNames,
@@ -61,7 +63,7 @@ class CasaDePazSubmissionEditorViewModel(
                     )
                 }
             }.onFailure { e ->
-                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Erro ao carregar registro") }
+                _uiState.update { it.copy(isLoading = false, loadError = e.message ?: "Erro ao carregar registro") }
             }
         }
     }
@@ -82,7 +84,10 @@ class CasaDePazSubmissionEditorViewModel(
 
     fun onAddGuest() = _uiState.update { it.copy(guests = it.guests + CasaDePazGuestDraft()) }
 
-    fun onUpdateGuest(index: Int, patch: CasaDePazGuestDraft.() -> CasaDePazGuestDraft) {
+    fun onUpdateGuest(
+        index: Int,
+        patch: CasaDePazGuestDraft.() -> CasaDePazGuestDraft,
+    ) {
         _uiState.update { state ->
             state.copy(guests = state.guests.mapIndexed { i, g -> if (i == index) g.patch() else g })
         }
@@ -105,14 +110,15 @@ class CasaDePazSubmissionEditorViewModel(
                     sectorId = sectorId,
                     casaDePazId = casaDePazId,
                     kids = state.kids.toIntOrNull() ?: 0,
-                    guests = state.guests.map {
-                        CasaDePazReportGuestEntry(
-                            name = it.name.trim(),
-                            email = it.email.trim(),
-                            birthDate = it.birthDate,
-                            whatsapp = it.whatsapp.trim().ifEmpty { null },
-                        )
-                    },
+                    guests =
+                        state.guests.map {
+                            CasaDePazReportGuestEntry(
+                                name = it.name.trim(),
+                                email = it.email.trim(),
+                                birthDate = it.birthDate,
+                                whatsapp = it.whatsapp.trim().ifEmpty { null },
+                            )
+                        },
                     conversions = state.conversions.toIntOrNull() ?: 0,
                     meetingDay = state.meetingDay.ifBlank { null },
                 )
@@ -141,5 +147,9 @@ class CasaDePazSubmissionEditorViewModel(
 
     fun onBack() {
         viewModelScope.launch { _effect.send(CasaDePazSubmissionEditorEffect.NavigateBack) }
+    }
+
+    fun onErrorShown() {
+        _uiState.update { it.copy(error = null) }
     }
 }

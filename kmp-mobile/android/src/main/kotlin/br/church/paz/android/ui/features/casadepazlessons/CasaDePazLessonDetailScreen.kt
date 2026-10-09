@@ -36,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.ui.components.MarkdownText
 import br.church.paz.android.ui.components.PazButton
+import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.components.YouTubeWebView
 import br.church.paz.android.ui.theme.PazGradients
@@ -99,16 +100,10 @@ fun CasaDePazLessonDetailScreen(
                         PazSkeleton(height = 120.dp)
                     }
                 uiState.error != null ->
-                    Box(Modifier.fillMaxSize(), Alignment.Center) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                            modifier = Modifier.padding(PazSpacing.Xl),
-                        ) {
-                            Text(uiState.error!!, style = MaterialTheme.typography.bodySmall)
-                            PazButton(text = "Tentar Novamente", onClick = viewModel::load, modifier = Modifier.fillMaxWidth())
-                        }
-                    }
+                    PazErrorState(
+                        message = uiState.error ?: "Não foi possível carregar a aula",
+                        onRetry = viewModel::load,
+                    )
                 uiState.lesson != null -> LessonDetailContent(lesson = uiState.lesson!!)
                 else ->
                     Box(Modifier.fillMaxSize(), Alignment.Center) {

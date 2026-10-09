@@ -26,6 +26,8 @@ struct PazChurchApp: App {
         IosAppContainer.shared.baseUrl = AppConfig.baseUrl
         #endif
 
+        PazImageCache.configure()
+
         let service = PushNotificationService.shared
         _pushService = State(initialValue: service)
 

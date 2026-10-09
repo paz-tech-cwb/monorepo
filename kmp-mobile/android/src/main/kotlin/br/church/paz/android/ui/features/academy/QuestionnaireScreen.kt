@@ -39,6 +39,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -57,6 +58,8 @@ import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazSkeleton
+import br.church.paz.android.ui.components.PazToastEffect
+import br.church.paz.android.ui.components.rememberPazToastHost
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
@@ -78,6 +81,7 @@ fun QuestionnaireScreen(
     viewModel: QuestionnaireViewModel = koinViewModel(parameters = { parametersOf(courseId) }),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val toastHost = rememberPazToastHost()
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -86,6 +90,8 @@ fun QuestionnaireScreen(
             }
         }
     }
+
+    PazToastEffect(message = uiState.submitError, hostState = toastHost, onShown = viewModel::onSubmitErrorShown)
 
     val questions = uiState.questionnaire?.questions.orEmpty()
     BackHandler(enabled = uiState.stepIndex > 0 && uiState.result == null) { viewModel.onPreviousStep() }
@@ -110,6 +116,7 @@ fun QuestionnaireScreen(
                 }
             },
             containerColor = Color.Transparent,
+            snackbarHost = { SnackbarHost(toastHost) },
             bottomBar = {
                 if (!uiState.isLoading && uiState.questionnaire != null && uiState.result == null && questions.isNotEmpty()) {
                     QuestionnaireBottomBar(
@@ -223,11 +230,6 @@ private fun QuestionnaireStepContent(
                         }
                     }
                 }
-        }
-
-        if (uiState.submitError != null) {
-            Spacer(Modifier.height(PazSpacing.Md))
-            Text(uiState.submitError, style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.error))
         }
     }
 }

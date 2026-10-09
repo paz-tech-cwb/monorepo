@@ -135,7 +135,10 @@ private fun CasaDePazPresencasCard(
 }
 
 @Composable
-private fun CasaDePazBreakdownRow(label: String, value: String) {
+private fun CasaDePazBreakdownRow(
+    label: String,
+    value: String,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,

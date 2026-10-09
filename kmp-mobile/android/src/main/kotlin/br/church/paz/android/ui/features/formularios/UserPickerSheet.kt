@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.User
 
@@ -72,7 +73,10 @@ fun UserPickerSheet(
                     ) {
                         CircularProgressIndicator()
                     }
-                state.error != null -> Text(state.error, color = MaterialTheme.colorScheme.error)
+                state.error != null ->
+                    Box(Modifier.fillMaxWidth().height(200.dp)) {
+                        PazErrorState(message = state.error, onRetry = { onQueryChanged(state.query) })
+                    }
                 state.results.isEmpty() && state.query.isNotBlank() -> Text("Nenhum resultado")
                 else -> {
                     @Suppress("UNCHECKED_CAST")

@@ -29,8 +29,7 @@ class FormSubmissionsListViewModel(
             runCatching { formsRepository.getServiceReportSubmissions() }
                 .onSuccess { submissions ->
                     _uiState.update { it.copy(submissions = submissions, isLoading = false) }
-                }
-                .onFailure { e ->
+                }.onFailure { e ->
                     _uiState.update {
                         it.copy(isLoading = false, error = e.message ?: "Erro ao carregar registros")
                     }

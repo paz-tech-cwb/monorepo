@@ -54,15 +54,10 @@ struct MinistryManageView: View {
                         Label("Adicionar membro", systemImage: "person.badge.plus")
                     }
                 }
-
-                if let errorMessage {
-                    Text(errorMessage)
-                        .font(PazTypography.bodySmall)
-                        .foregroundColor(.red)
-                }
             }
             .navigationTitle("Gerenciar ministério")
             .navigationBarTitleDisplayMode(.inline)
+            .pazToast(message: $errorMessage)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancelar") { dismiss() }

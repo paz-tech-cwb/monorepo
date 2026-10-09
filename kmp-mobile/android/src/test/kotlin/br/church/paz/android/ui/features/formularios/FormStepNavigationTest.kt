@@ -83,7 +83,10 @@ class FormStepNavigationTest {
             val viewModel = FormDetailViewModel("service-reports", formsRepository, authRepository)
             testScheduler.advanceUntilIdle()
 
-            val fieldDefs = viewModel.uiState.value.form!!.type.fieldDefs()
+            val fieldDefs =
+                viewModel.uiState.value.form!!
+                    .type
+                    .fieldDefs()
             val lastIndex = fieldDefs.size - 1
 
             // Fill every required field and advance repeatedly past the end.

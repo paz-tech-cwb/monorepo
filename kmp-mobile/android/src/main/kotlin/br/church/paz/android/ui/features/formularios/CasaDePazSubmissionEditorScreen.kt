@@ -36,6 +36,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazButton
+import br.church.paz.android.ui.components.PazErrorState
+import br.church.paz.android.ui.components.PazToastEffect
+import br.church.paz.android.ui.components.PazToastScaffold
+import br.church.paz.android.ui.components.rememberPazToastHost
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import org.koin.androidx.compose.koinViewModel
@@ -49,6 +53,7 @@ fun CasaDePazSubmissionEditorScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    val toastHost = rememberPazToastHost()
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -77,144 +82,163 @@ fun CasaDePazSubmissionEditorScreen(
         )
     }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(PazSpacing.Lg),
-        verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
-    ) {
-        Text("Editar Registro", style = MaterialTheme.typography.headlineMedium)
+    PazToastEffect(message = uiState.error, hostState = toastHost, onShown = viewModel::onErrorShown)
 
-        if (uiState.error != null) {
-            Text(uiState.error!!, style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.error))
+    PazToastScaffold(hostState = toastHost) { contentPadding ->
+        if (uiState.loadError != null) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .padding(contentPadding),
+            ) {
+                PazErrorState(
+                    message = uiState.loadError ?: "Não foi possível carregar o registro",
+                    onRetry = viewModel::load,
+                )
+            }
+            return@PazToastScaffold
         }
 
-        if (!uiState.isLoading) {
-            OutlinedTextField(
-                value = uiState.date,
-                onValueChange = viewModel::onDateChange,
-                label = { Text("Data (AAAA-MM-DD)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(PazSpacing.Lg),
+            verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
+        ) {
+            Text("Editar Registro", style = MaterialTheme.typography.headlineMedium)
 
-            OutlinedTextField(
-                value = uiState.facilitator,
-                onValueChange = viewModel::onFacilitatorChange,
-                label = { Text("Facilitador") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
+            if (!uiState.isLoading) {
+                OutlinedTextField(
+                    value = uiState.date,
+                    onValueChange = viewModel::onDateChange,
+                    label = { Text("Data (AAAA-MM-DD)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
 
-            SectorDropdown(
-                sectorNames = uiState.sectorNames,
-                selectedId = uiState.sectorId,
-                onSelected = viewModel::onSectorChange,
-            )
+                OutlinedTextField(
+                    value = uiState.facilitator,
+                    onValueChange = viewModel::onFacilitatorChange,
+                    label = { Text("Facilitador") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
 
-            CycleDropdown(
-                cycles = uiState.cycles,
-                selectedId = uiState.casaDePazId,
-                onSelected = viewModel::onCycleChange,
-            )
+                SectorDropdown(
+                    sectorNames = uiState.sectorNames,
+                    selectedId = uiState.sectorId,
+                    onSelected = viewModel::onSectorChange,
+                )
 
-            MeetingDayDropdown(
-                selected = uiState.meetingDay,
-                onSelected = viewModel::onMeetingDayChange,
-            )
+                CycleDropdown(
+                    cycles = uiState.cycles,
+                    selectedId = uiState.casaDePazId,
+                    onSelected = viewModel::onCycleChange,
+                )
 
-            OutlinedTextField(
-                value = uiState.kids,
-                onValueChange = viewModel::onKidsChange,
-                label = { Text("Crianças") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
+                MeetingDayDropdown(
+                    selected = uiState.meetingDay,
+                    onSelected = viewModel::onMeetingDayChange,
+                )
 
-            OutlinedTextField(
-                value = uiState.conversions,
-                onValueChange = viewModel::onConversionsChange,
-                label = { Text("Conversões") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
+                OutlinedTextField(
+                    value = uiState.kids,
+                    onValueChange = viewModel::onKidsChange,
+                    label = { Text("Crianças") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
 
-            Text("Convidados", style = MaterialTheme.typography.titleSmall)
-            uiState.guests.forEachIndexed { index, guest ->
-                Surface(shape = PazShapes.large, color = MaterialTheme.colorScheme.surfaceVariant) {
-                    Column(
-                        Modifier.fillMaxWidth().padding(PazSpacing.Md),
-                        verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
-                    ) {
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                OutlinedTextField(
+                    value = uiState.conversions,
+                    onValueChange = viewModel::onConversionsChange,
+                    label = { Text("Conversões") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+
+                Text("Convidados", style = MaterialTheme.typography.titleSmall)
+                uiState.guests.forEachIndexed { index, guest ->
+                    Surface(shape = PazShapes.large, color = MaterialTheme.colorScheme.surfaceVariant) {
+                        Column(
+                            Modifier.fillMaxWidth().padding(PazSpacing.Md),
+                            verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
                         ) {
-                            Text("Convidado ${index + 1}", style = MaterialTheme.typography.labelMedium)
-                            IconButton(onClick = { viewModel.onRemoveGuest(index) }) {
-                                Icon(Icons.Filled.Close, "remover convidado")
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text("Convidado ${index + 1}", style = MaterialTheme.typography.labelMedium)
+                                IconButton(onClick = { viewModel.onRemoveGuest(index) }) {
+                                    Icon(Icons.Filled.Close, "remover convidado")
+                                }
                             }
-                        }
-                        OutlinedTextField(
-                            value = guest.name,
-                            onValueChange = { v -> viewModel.onUpdateGuest(index) { copy(name = v) } },
-                            label = { Text("Nome") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                        )
-                        OutlinedTextField(
-                            value = guest.email,
-                            onValueChange = { v -> viewModel.onUpdateGuest(index) { copy(email = v) } },
-                            label = { Text("E-mail") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                        )
-                        OutlinedTextField(
-                            value = guest.birthDate,
-                            onValueChange = { v -> viewModel.onUpdateGuest(index) { copy(birthDate = v) } },
-                            label = { Text("Data de nascimento (AAAA-MM-DD)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                        )
-                        OutlinedTextField(
-                            value = guest.whatsapp,
-                            onValueChange = { v -> viewModel.onUpdateGuest(index) { copy(whatsapp = v) } },
-                            label = { Text("WhatsApp (opcional)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                        )
-                        if (!guest.isValid) {
-                            Text(
-                                "Nome, e-mail e data de nascimento são obrigatórios.",
-                                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.error),
+                            OutlinedTextField(
+                                value = guest.name,
+                                onValueChange = { v -> viewModel.onUpdateGuest(index) { copy(name = v) } },
+                                label = { Text("Nome") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
                             )
+                            OutlinedTextField(
+                                value = guest.email,
+                                onValueChange = { v -> viewModel.onUpdateGuest(index) { copy(email = v) } },
+                                label = { Text("E-mail") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                            )
+                            OutlinedTextField(
+                                value = guest.birthDate,
+                                onValueChange = { v -> viewModel.onUpdateGuest(index) { copy(birthDate = v) } },
+                                label = { Text("Data de nascimento (AAAA-MM-DD)") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                            )
+                            OutlinedTextField(
+                                value = guest.whatsapp,
+                                onValueChange = { v -> viewModel.onUpdateGuest(index) { copy(whatsapp = v) } },
+                                label = { Text("WhatsApp (opcional)") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                            )
+                            if (!guest.isValid) {
+                                Text(
+                                    "Nome, e-mail e data de nascimento são obrigatórios.",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.error),
+                                )
+                            }
                         }
                     }
                 }
+                TextButton(onClick = viewModel::onAddGuest) { Text("+ Adicionar convidado") }
+
+                PazButton(
+                    text = "Salvar",
+                    onClick = viewModel::onSave,
+                    enabled =
+                        uiState.sectorId != null &&
+                            uiState.casaDePazId != null &&
+                            uiState.guests.all { it.isValid } &&
+                            !uiState.isSaving &&
+                            !uiState.isDeleting,
+                    loading = uiState.isSaving,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                PazButton(
+                    text = "Excluir registro",
+                    onClick = { showDeleteConfirm = true },
+                    enabled = !uiState.isSaving && !uiState.isDeleting,
+                    loading = uiState.isDeleting,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
-            TextButton(onClick = viewModel::onAddGuest) { Text("+ Adicionar convidado") }
-
-            PazButton(
-                text = "Salvar",
-                onClick = viewModel::onSave,
-                enabled = uiState.sectorId != null && uiState.casaDePazId != null &&
-                    uiState.guests.all { it.isValid } && !uiState.isSaving && !uiState.isDeleting,
-                loading = uiState.isSaving,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            PazButton(
-                text = "Excluir registro",
-                onClick = { showDeleteConfirm = true },
-                enabled = !uiState.isSaving && !uiState.isDeleting,
-                loading = uiState.isDeleting,
-                modifier = Modifier.fillMaxWidth(),
-            )
         }
     }
 }

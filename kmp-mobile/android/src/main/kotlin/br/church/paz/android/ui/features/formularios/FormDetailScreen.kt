@@ -140,8 +140,11 @@ fun FormDetailScreen(
                     onDismiss = viewModel::closePicker,
                 )
             PickerKind.USER, PickerKind.USER_MULTI -> {
-                val selectedIds = (uiState.fields[pickerState.key] ?: "")
-                    .split(",").filter { it.isNotBlank() }.toSet()
+                val selectedIds =
+                    (uiState.fields[pickerState.key] ?: "")
+                        .split(",")
+                        .filter { it.isNotBlank() }
+                        .toSet()
                 UserPickerSheet(
                     state = pickerState,
                     selectedIds = selectedIds,
@@ -168,12 +171,13 @@ private fun FormContent(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(
-            start = PazSpacing.Lg,
-            end = PazSpacing.Lg,
-            top = PazSpacing.Lg,
-            bottom = PazSpacing.Xl,
-        ),
+        contentPadding =
+            PaddingValues(
+                start = PazSpacing.Lg,
+                end = PazSpacing.Lg,
+                top = PazSpacing.Lg,
+                bottom = PazSpacing.Xl,
+            ),
         verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
     ) {
         item { Spacer(Modifier.height(PazSpacing.Sm)) }
