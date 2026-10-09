@@ -5,8 +5,10 @@ import SwiftUI
 struct EditProfileView: View {
     @State private var viewModel: EditProfileViewModel
     @Environment(\.dismiss) var dismiss
+    @Environment(AuthenticationCoordinator.self) private var authCoordinator
     @State private var showDatePicker = false
     @State private var pickerItem: PhotosPickerItem?
+    @State private var showDiscardDialog = false
 
     init() {
         _viewModel = State(initialValue: EditProfileViewModel(
@@ -35,14 +37,42 @@ struct EditProfileView: View {
                     .font(PazTypography.titleMedium)
             }
             .buttonStyle(.pazPillPrimary)
-            .disabled(viewModel.isSaving || viewModel.isUploadingPicture || viewModel.name.trimmingCharacters(in: .whitespaces).isEmpty)
+            .disabled(viewModel.isSaving || viewModel.isUploadingPicture || viewModel.name
+                .trimmingCharacters(in: .whitespaces).isEmpty)
             .padding(.horizontal, PazSpacing.lg)
             .padding(.vertical, PazSpacing.md)
         }
         .background(PazMeshBackground())
         .navigationTitle("Editar Perfil")
         .navigationBarTitleDisplayMode(.large)
+        .navigationBarBackButtonHidden(true)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: requestDismiss) {
+                    Image(systemName: "chevron.backward")
+                }
+            }
+        }
+        .confirmationDialog(
+            "Descartar alterações?",
+            isPresented: $showDiscardDialog,
+            titleVisibility: .visible
+        ) {
+            Button("Descartar", role: .destructive) { dismiss() }
+            Button("Continuar editando", role: .cancel) {}
+        }
+        // The default back button is hidden above, but the interactive swipe-back
+        // gesture still pops the stack directly — bypass that by installing a gesture
+        // delegate that blocks the swipe (via `gestureRecognizerShouldBegin`) while
+        // there are unsaved changes, forwarding to the nav controller's original
+        // delegate otherwise. On teardown (screen popped/dismissed), the original
+        // delegate is always restored since the recognizer belongs to the SHARED
+        // navigation controller, not this screen.
+        .background(InteractivePopGestureDisabler(
+            isDisabled: viewModel.isDirty,
+            onBlockedSwipeAttempt: { showDiscardDialog = true }
+        ))
         .onChange(of: viewModel.saveSuccess) { _, success in
             if success { dismiss() }
         }
@@ -52,6 +82,23 @@ struct EditProfileView: View {
                     viewModel.onPictureSelected(data: data)
                 }
             }
+        }
+        .onChange(of: viewModel.sessionExpired) { _, expired in
+            // No recovery path for a dead Firebase session short of a full logout —
+            // force the user back to login instead of leaving them stuck on a dead-end toast.
+            if expired { authCoordinator.logout() }
+        }
+    }
+
+    /// Routes the custom back button through the same discard check used by the
+    /// `InteractivePopGestureDisabler` below: when dirty, the interactive swipe-back
+    /// gesture is disabled (not popped) and this handler is invoked instead so the
+    /// same confirmation dialog shown here is also surfaced on a blocked swipe attempt.
+    private func requestDismiss() {
+        if viewModel.isDirty {
+            showDiscardDialog = true
+        } else {
+            dismiss()
         }
     }
 
@@ -128,9 +175,10 @@ struct EditProfileView: View {
                     .font(PazTypography.bodyMedium)
                     .padding(.horizontal, PazSpacing.md)
                     .frame(height: 56)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
-                .glassCard(radius: 12)
 
                 if showDatePicker {
                     DatePicker(
@@ -145,22 +193,22 @@ struct EditProfileView: View {
                     .datePickerStyle(.graphical)
                     .tint(PazColors.accent)
                     .onChange(of: viewModel.birthDate) { _, _ in showDatePicker = false }
-                    .glassCard(radius: 12)
+                    .padding(PazSpacing.sm)
+                    .background(PazColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
 
             if let error = viewModel.error {
                 Text(error)
                     .font(PazTypography.bodySmall)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(PazColors.error)
                     .padding(PazSpacing.md)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.red.opacity(0.1))
+                    .background(PazColors.error.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
-        .padding(PazSpacing.lg)
-        .glassCard(radius: PazSpacing.cardRadiusLarge)
     }
 
     private var addressCard: some View {
@@ -182,6 +230,12 @@ struct EditProfileView: View {
                 }
             }
 
+            if let cepError = viewModel.cepError {
+                Text(cepError)
+                    .font(PazTypography.bodySmall)
+                    .foregroundStyle(PazColors.error)
+            }
+
             TextField("Rua", text: $viewModel.street).profileFieldStyle()
 
             HStack(spacing: PazSpacing.sm) {
@@ -201,8 +255,6 @@ struct EditProfileView: View {
                     .frame(width: 80)
             }
         }
-        .padding(PazSpacing.lg)
-        .glassCard(radius: PazSpacing.cardRadiusLarge)
     }
 }
 
@@ -251,19 +303,104 @@ private struct ProfileField<Content: View>: View {
 }
 
 private extension View {
-    /// Every profile field uses the same frosted GlassCard material as the rest of the
-    /// app — no flat/opaque field backgrounds.
+    /// Flat chrome matching `FormFieldRow`'s fields — `PazColors.surface` background,
+    /// 12pt corner radius, 56pt tall. No frosted/glass material: profile fields are
+    /// plain inputs, not cards.
     func profileFieldStyle() -> some View {
         self
             .font(PazTypography.bodyMedium)
             .padding(.horizontal, PazSpacing.md)
             .frame(height: 56)
-            .glassCard(radius: 12)
+            .background(PazColors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 
 #Preview {
     NavigationStack {
         EditProfileView()
+    }
+}
+
+/// Intercepts `UINavigationController.interactivePopGestureRecognizer` for the hosting
+/// navigation controller — SwiftUI has no native API to intercept swipe-back on a
+/// `NavigationStack` push, so this reaches into UIKit the same way `navigationBarBackButtonHidden`
+/// alone cannot stop the gesture. While `isDisabled`, a swipe attempt is blocked and
+/// `onBlockedSwipeAttempt` fires so the caller can surface the same discard-confirmation
+/// dialog the explicit back button shows, instead of the swipe silently doing nothing.
+private struct InteractivePopGestureDisabler: UIViewControllerRepresentable {
+    let isDisabled: Bool
+    let onBlockedSwipeAttempt: () -> Void
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        UIViewController()
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        context.coordinator.isDisabled = isDisabled
+        context.coordinator.onBlockedSwipeAttempt = onBlockedSwipeAttempt
+        attachIfNeeded(uiViewController, coordinator: context.coordinator)
+        // The navigation controller may not be resolvable yet on the first pass
+        // (view hierarchy still settling) — retry shortly so the gesture is reliably
+        // intercepted rather than silently no-op'ing if `parent` wasn't set yet.
+        DispatchQueue.main.async {
+            attachIfNeeded(uiViewController, coordinator: context.coordinator)
+        }
+    }
+
+    static func dismantleUIViewController(_ uiViewController: UIViewController, coordinator: Coordinator) {
+        // The gesture recognizer belongs to the SHARED navigation controller, not this
+        // screen — always restore it on teardown regardless of `isDisabled` at the time,
+        // so a dismiss while dirty (e.g. "Descartar") never leaves swipe-back disabled
+        // for the rest of the app's nav stack.
+        guard let gesture = coordinator.gesture else { return }
+        gesture.isEnabled = true
+        gesture.delegate = coordinator.originalDelegate
+    }
+
+    private func attachIfNeeded(_ uiViewController: UIViewController, coordinator: Coordinator) {
+        guard coordinator.gesture == nil,
+              let gesture = uiViewController.parent?.navigationController?.interactivePopGestureRecognizer
+        else { return }
+        coordinator.gesture = gesture
+        coordinator.originalDelegate = gesture.delegate
+        gesture.delegate = coordinator
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var isDisabled = false
+        var onBlockedSwipeAttempt: (() -> Void)?
+        weak var gesture: UIGestureRecognizer?
+        weak var originalDelegate: UIGestureRecognizerDelegate?
+
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            if isDisabled {
+                onBlockedSwipeAttempt?()
+                return false
+            }
+            return originalDelegate?.gestureRecognizerShouldBegin?(gestureRecognizer) ?? true
+        }
+
+        // The navigation controller's own pop-gesture delegate also implements these two
+        // methods — forward to it so replacing the delegate wholesale doesn't silently drop
+        // its real touch/simultaneous-recognition logic for the lifetime of this screen.
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldReceive touch: UITouch
+        ) -> Bool {
+            originalDelegate?.gestureRecognizer?(gestureRecognizer, shouldReceive: touch) ?? true
+        }
+
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            originalDelegate?.gestureRecognizer?(
+                gestureRecognizer,
+                shouldRecognizeSimultaneouslyWith: otherGestureRecognizer
+            ) ?? false
+        }
     }
 }
