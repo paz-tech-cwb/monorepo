@@ -5,7 +5,6 @@ import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -13,8 +12,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +32,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,6 +52,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,10 +64,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -79,17 +80,18 @@ import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazCardSkeleton
 import br.church.paz.android.ui.components.PazErrorState
+import br.church.paz.android.ui.components.PazPillPrimaryButton
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.LocalPazDarkTheme
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
-import br.church.paz.android.ui.theme.PazShapePill
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.AgendaEvent
 import br.church.paz.shared.domain.model.BankInfo
 import br.church.paz.shared.domain.model.Banner
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -553,61 +555,32 @@ private fun DizimosCard(
                 modifier = Modifier.padding(top = PazSpacing.Xs),
             )
             Spacer(Modifier.height(PazSpacing.Lg))
-            Row(horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md)) {
-                if (bank.pixKey != null) {
-                    DizimosButton("PIX", primary = true, modifier = Modifier.weight(1f), onClick = {})
-                }
-                DizimosButton("Cartão", primary = false, modifier = Modifier.weight(1f), onClick = {})
+            val pixKey = bank.pixKey
+            if (pixKey != null) {
+                PixCopyButton(pixKey = pixKey)
             }
         }
     }
 }
 
 @Composable
-private fun DizimosButton(
-    label: String,
-    primary: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.97f else 1f,
-        animationSpec = tween(120),
-        label = "btnScale",
+private fun PixCopyButton(pixKey: String) {
+    val clipboardManager = LocalClipboardManager.current
+    var copied by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    PazPillPrimaryButton(
+        text = if (copied) "Copiado!" else "Copiar PIX",
+        icon = if (copied) Icons.Filled.Check else Icons.Filled.ContentCopy,
+        onClick = {
+            clipboardManager.setText(AnnotatedString(pixKey))
+            copied = true
+            scope.launch {
+                delay(1500)
+                copied = false
+            }
+        },
     )
-    Box(
-        modifier =
-            modifier
-                .height(52.dp)
-                .shadow(
-                    elevation = if (primary) 8.dp else 0.dp,
-                    shape = PazShapePill,
-                    spotColor = Color.Black.copy(alpha = 0.33f),
-                ).clip(PazShapePill)
-                .background(if (primary) Color.White else Color.White.copy(alpha = 0.13f))
-                .border(
-                    width = if (primary) 0.dp else 1.dp,
-                    color = if (primary) Color.Transparent else Color.White.copy(alpha = 0.24f),
-                    shape = PazShapePill,
-                ).clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                },
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            label,
-            style =
-                MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.5.sp,
-                    color = if (primary) PazColors.NavyText else Color.White,
-                ),
-        )
-    }
 }
 
 // ── Agenda section ────────────────────────────────────────────────────────────

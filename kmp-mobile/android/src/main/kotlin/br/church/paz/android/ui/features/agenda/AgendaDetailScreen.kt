@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material3.Icon
@@ -28,13 +27,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -44,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazGoldBadge
+import br.church.paz.android.ui.components.PazPillPrimaryButton
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
@@ -77,13 +73,15 @@ fun AgendaDetailScreen(
     }
 }
 
+// "Confirmar presença" is hidden for now — kept in code, not deleted, in case
+// the feature is re-enabled later.
+private const val ATTENDANCE_CONFIRMATION_ENABLED = false
+
 @Composable
 private fun ContentState(
     event: AgendaEvent,
     onBack: () -> Unit,
 ) {
-    var selectedTab by remember { mutableStateOf("geral") }
-
     Box(Modifier.fillMaxSize()) {
         // Hero area (300dp)
         Box(
@@ -136,7 +134,8 @@ private fun ContentState(
             }
         }
 
-        // Scrollable body — bottom padding reserves space for the pinned button
+        // Scrollable body — reaches the bottom edge of the screen now that
+        // the pinned button is hidden (no bottom padding reserved for it).
         Box(
             Modifier
                 .fillMaxSize()
@@ -146,103 +145,54 @@ private fun ContentState(
         ) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 96.dp),
+                contentPadding = PaddingValues(bottom = PazSpacing.Lg),
                 verticalArrangement = Arrangement.spacedBy(PazSpacing.Lg),
             ) {
                 item { Spacer(Modifier.height(PazSpacing.Lg)) }
 
-                // Meta chips
-                item {
-                    Row(Modifier.padding(horizontal = PazSpacing.Lg), horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
-                        MetaChip(icon = Icons.Outlined.CalendarToday, label = formatDetailDate(event.startDate))
-                        if (!event.location.isNullOrEmpty()) {
+                // Meta chips — location only (the date is already shown by
+                // the PazGoldBadge in the hero area, so no duplicate
+                // calendar chip here).
+                if (!event.location.isNullOrEmpty()) {
+                    item {
+                        Row(Modifier.padding(horizontal = PazSpacing.Lg), horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
                             MetaChip(icon = Icons.Outlined.LocationOn, label = event.location!!)
                         }
                     }
                 }
 
-                // Tab bar
+                // Description rendered inline — no "Geral"/"Informações" tabs.
                 item {
-                    Row(Modifier.padding(horizontal = PazSpacing.Lg), horizontalArrangement = Arrangement.spacedBy(PazSpacing.Xl)) {
-                        listOf("geral" to "Geral", "info" to "Informações").forEach { (key, label) ->
-                            Column(Modifier.clickable { selectedTab = key }, horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    label,
-                                    style =
-                                        MaterialTheme.typography.titleSmall.copy(
-                                            color =
-                                                if (selectedTab ==
-                                                    key
-                                                ) {
-                                                    PazColors.Primary
-                                                } else {
-                                                    MaterialTheme.colorScheme.onSurface.copy(.5f)
-                                                },
-                                        ),
-                                )
-                                Spacer(Modifier.height(6.dp))
-                                Box(
-                                    Modifier
-                                        .height(2.5.dp)
-                                        .size(width = 48.dp, height = 2.5.dp)
-                                        .background(if (selectedTab == key) PazColors.Primary else Color.Transparent),
-                                )
-                            }
-                        }
+                    Column(Modifier.padding(horizontal = PazSpacing.Lg)) {
+                        Text("Descrição", style = MaterialTheme.typography.titleSmall)
+                        Spacer(Modifier.height(PazSpacing.Sm))
+                        Text(
+                            event.description?.takeIf { it.isNotEmpty() } ?: "Descrição em breve.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                     }
                 }
 
-                // Tab content
-                if (selectedTab == "geral") {
-                    if (!event.description.isNullOrEmpty()) {
-                        item {
-                            Column(Modifier.padding(horizontal = PazSpacing.Lg)) {
-                                Text("Descrição", style = MaterialTheme.typography.titleSmall)
-                                Spacer(Modifier.height(PazSpacing.Sm))
-                                Text(event.description!!, style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
-                } else {
-                    item {
-                        Column(Modifier.padding(horizontal = PazSpacing.Lg)) {
-                            Text("Detalhes do Evento", style = MaterialTheme.typography.titleSmall)
-                            Spacer(Modifier.height(PazSpacing.Sm))
-                            Text("Informações adicionais em breve.", style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                }
+                item { Spacer(Modifier.navigationBarsPadding()) }
             }
         }
 
         // Pinned "Confirmar presença" button at the bottom
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .background(MaterialTheme.colorScheme.background)
-                    .navigationBarsPadding()
-                    .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
-        ) {
+        if (ATTENDANCE_CONFIRMATION_ENABLED) {
             Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .shadow(
-                        12.dp,
-                        RoundedCornerShape(16.dp),
-                        ambientColor = PazColors.PrimaryMid.copy(.4f),
-                        spotColor = PazColors.PrimaryMid.copy(.4f),
-                    ).clip(RoundedCornerShape(16.dp))
-                    .background(Brush.horizontalGradient(listOf(PazColors.PrimaryMid, PazColors.PrimaryLight)))
-                    .clickable { },
-                Alignment.Center,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .background(MaterialTheme.colorScheme.background)
+                        .navigationBarsPadding()
+                        .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
-                    Icon(Icons.Outlined.Favorite, null, tint = Color.White, modifier = Modifier.size(20.dp))
-                    Text("Confirmar presença", style = MaterialTheme.typography.titleSmall.copy(color = Color.White))
-                }
+                PazPillPrimaryButton(
+                    text = "Confirmar presença",
+                    icon = Icons.Outlined.Favorite,
+                    onClick = { },
+                )
             }
         }
     }
