@@ -35,6 +35,9 @@ export class CourseLesson {
   @Column({ name: 'duration_seconds', type: 'int', nullable: true })
   durationSeconds: number | null;
 
+  @Column({ name: 'thumbnail_url', type: 'text', nullable: true })
+  thumbnailUrl: string | null;
+
   @Column({ name: 'sort_order', type: 'int', default: 0 })
   sortOrder: number;
 
