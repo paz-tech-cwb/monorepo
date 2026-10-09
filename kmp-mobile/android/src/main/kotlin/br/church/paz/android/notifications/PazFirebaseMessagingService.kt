@@ -38,7 +38,6 @@ class PazFirebaseMessagingService : FirebaseMessagingService() {
         val deepLink = message.data["deep_link"]
         val channelId = message.data["channel_id"] ?: CHANNELS.first().first
 
-        ensureChannels(applicationContext)
         showNotification(title, body, deepLink, channelId)
     }
 
@@ -78,19 +77,9 @@ class PazFirebaseMessagingService : FirebaseMessagingService() {
         manager.notify(System.currentTimeMillis().toInt(), notification)
     }
 
-    private fun ensureChannels(context: Context) {
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        CHANNELS.forEach { (id, name) ->
-            if (manager.getNotificationChannel(id) == null) {
-                manager.createNotificationChannel(
-                    NotificationChannel(id, name, NotificationManager.IMPORTANCE_DEFAULT),
-                )
-            }
-        }
-    }
-
     companion object {
         const val EXTRA_DEEP_LINK = "deep_link"
+        private const val DEFAULT_CHANNEL_ID = "paz_church_default"
 
         val CHANNELS =
             listOf(
@@ -102,6 +91,26 @@ class PazFirebaseMessagingService : FirebaseMessagingService() {
                 "paz_member_journey" to "Jornada do Membro",
                 "paz_contributions" to "Contribuições",
                 "paz_admin_alerts" to "Alertas Administrativos",
+                DEFAULT_CHANNEL_ID to "Paz Church",
             )
+
+        /**
+         * Creates all notification channels (idempotent). Must run eagerly at app startup
+         * (see `PazApplication.onCreate`), not just reactively from [onMessageReceived] —
+         * background/killed-state FCM messages that carry a top-level `notification` block
+         * are rendered natively by the FCM SDK and never invoke [onMessageReceived], so a
+         * fresh install's channels (including the manifest-declared default fallback,
+         * [DEFAULT_CHANNEL_ID]) must already exist before the first push arrives.
+         */
+        fun ensureChannels(context: Context) {
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            CHANNELS.forEach { (id, name) ->
+                if (manager.getNotificationChannel(id) == null) {
+                    manager.createNotificationChannel(
+                        NotificationChannel(id, name, NotificationManager.IMPORTANCE_DEFAULT),
+                    )
+                }
+            }
+        }
     }
 }

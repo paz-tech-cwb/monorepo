@@ -48,3 +48,4 @@ shared/build/
 .env.local
 google-services.json
 GoogleService-Info.plist
+.kotlin/

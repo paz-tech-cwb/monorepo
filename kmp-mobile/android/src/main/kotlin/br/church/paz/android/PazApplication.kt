@@ -6,6 +6,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import br.church.paz.android.di.androidModule
+import br.church.paz.android.notifications.PazFirebaseMessagingService
 import br.church.paz.shared.di.sharedModules
 import br.church.paz.shared.media.VideoCache
 import com.cwb.pazchurch.app.BuildConfig
@@ -24,6 +25,13 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class PazApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+
+        // Create notification channels eagerly: background/killed-state FCM messages that
+        // carry a top-level `notification` block are rendered natively by the FCM SDK and
+        // never reach PazFirebaseMessagingService.onMessageReceived(), so the channels (and
+        // the manifest-declared default fallback) must already exist before the first push.
+        PazFirebaseMessagingService.ensureChannels(applicationContext)
+
         startKoin {
             androidContext(this@PazApplication)
             properties(
