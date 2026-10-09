@@ -66,6 +66,7 @@
 		841A418263A65AA0B6FDC65C /* LifeGroupsMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5F29167AE0FBA90438E386F /* LifeGroupsMapView.swift */; };
 		8696DCD7837887595806B611 /* SkeletonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36DB133997051B82A7D0D38D /* SkeletonView.swift */; };
 		8BBB7655494EE2891298CD78 /* PazPillChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62DDEA0026352360D73E873 /* PazPillChip.swift */; };
+		8C6BACE0C1147A1725F899AB /* PulseUI in Frameworks */ = {isa = PBXBuildFile; productRef = 21FE29FC6B66BCA9BE34376B /* PulseUI */; };
 		8CED05A41A291F12C62B6836 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E82BF64ABC060C59D814EBA /* OnboardingView.swift */; };
 		8D8430332E05F42EED9AD97A /* LifeGroupAnalyticsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1CD6337A2A4FD69B304F33C /* LifeGroupAnalyticsViewModel.swift */; };
 		8F38AE17F7E00C2819DDAE9F /* CasaDePazLessonDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADB1B6A6945AD2405ED7AEFF /* CasaDePazLessonDetailView.swift */; };
@@ -77,6 +78,7 @@
 		9FC7139DF9C1E4F65329A028 /* CourseDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A47D9B2BCAEA98860B58CF7 /* CourseDetailView.swift */; };
 		A0CCE565617A81DD9C6404A9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = F04B442417CCD3B5A58BC0DF /* FirebaseAuth */; };
 		A1DD2AC7CAB0A0304F69AA98 /* LifeGroupStudyDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7C1B1E186EEC6A2736CFBA9 /* LifeGroupStudyDetailView.swift */; };
+		A31C398425A937C979302F26 /* Pulse in Frameworks */ = {isa = PBXBuildFile; productRef = 4F234C1E2F7298A93E2038AF /* Pulse */; };
 		A3BC32CA15C40B172DC54DF8 /* MinistryManageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E26C4C9D1BDF91892972FE27 /* MinistryManageView.swift */; };
 		A6A324E081B9ECFCDDA55B20 /* LifeGroupAttendanceViewModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0AED721D9C3F11A210BEFE7 /* LifeGroupAttendanceViewModels.swift */; };
 		A882169C3987D03873848621 /* CasaDePazAnalyticsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55EE9DE213ACF28C74E15157 /* CasaDePazAnalyticsViewModel.swift */; };
@@ -114,6 +116,8 @@
 		E1410C3996707FD9EE3B84C5 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D52E9AA381B5524BF375AF56 /* ShareSheet.swift */; };
 		E14AB35C85A65F0E85EBBD68 /* ErrorStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20CF68CE0958124973A70BA /* ErrorStateView.swift */; };
 		E190A056BE4865FE452D5735 /* CasaDePazLessonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18FB511E4D840081FD61266D /* CasaDePazLessonsView.swift */; };
+		E2827E1CF564F40E109FB978 /* DevToolsGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3943B0D99B42667DFE03E9C /* DevToolsGate.swift */; };
+		E28C0046E7673B2A54F90B02 /* Bundle+AppVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 382CD997C72F5A972785BCAC /* Bundle+AppVersion.swift */; };
 		E5E4F215F16D5A592885DDBD /* LifeGroupAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A1D0B28C097FED3187839E /* LifeGroupAnalyticsView.swift */; };
 		F16C5E3B1FFA34FE5BA06943 /* CasaDePazAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 112A275F2799289F69B2259C /* CasaDePazAnalyticsView.swift */; };
 		F44D2FA2EA14E8B29A866F25 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8BEE46E84E5D0C0BE0786C7 /* AppDelegate.swift */; };
@@ -165,6 +169,7 @@
 		2E82BF64ABC060C59D814EBA /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		3009383DC317C06BE5558E43 /* DateFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatting.swift; sourceTree = "<group>"; };
 		36DB133997051B82A7D0D38D /* SkeletonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonView.swift; sourceTree = "<group>"; };
+		382CD997C72F5A972785BCAC /* Bundle+AppVersion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Bundle+AppVersion.swift"; sourceTree = "<group>"; };
 		38C8C61A6074F8094F36146E /* QuestionnaireView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestionnaireView.swift; sourceTree = "<group>"; };
 		3B09921331A9C0A41304A36A /* dm_sans_bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = dm_sans_bold.ttf; sourceTree = "<group>"; };
 		43523C0C1306C6777492969E /* dm_sans_medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = dm_sans_medium.ttf; sourceTree = "<group>"; };
@@ -243,6 +248,7 @@
 		ED7FC2DFCBCEC5F849235F0C /* DeepLinkViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkViews.swift; sourceTree = "<group>"; };
 		EDD6B4FBC968ED037D73EAA9 /* MinistryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinistryDetailView.swift; sourceTree = "<group>"; };
 		EF907E68FA85FA69FAE6B591 /* playfair_display_extrabold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = playfair_display_extrabold.ttf; sourceTree = "<group>"; };
+		F3943B0D99B42667DFE03E9C /* DevToolsGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevToolsGate.swift; sourceTree = "<group>"; };
 		F4875A9AA294C151A07AFC55 /* ReportsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportsListView.swift; sourceTree = "<group>"; };
 		F4E8B24F234A85954C568595 /* ReportPDFExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportPDFExporter.swift; sourceTree = "<group>"; };
 		F62DDEA0026352360D73E873 /* PazPillChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazPillChip.swift; sourceTree = "<group>"; };
@@ -265,12 +271,22 @@
 				1E73813601B5D626FF99A87A /* FirebaseStorage in Frameworks */,
 				5171876776DB984B0FC857E5 /* GoogleSignIn in Frameworks */,
 				FB53C426B3DC5069915B79F2 /* Kingfisher in Frameworks */,
+				A31C398425A937C979302F26 /* Pulse in Frameworks */,
+				8C6BACE0C1147A1725F899AB /* PulseUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0121A66626BEE20FA4F63061 /* DevTools */ = {
+			isa = PBXGroup;
+			children = (
+				F3943B0D99B42667DFE03E9C /* DevToolsGate.swift */,
+			);
+			path = DevTools;
+			sourceTree = "<group>";
+		};
 		0E08E2571AD28D4B6DAFCFC6 /* Formularios */ = {
 			isa = PBXGroup;
 			children = (
@@ -346,6 +362,7 @@
 				CDB19A2D2D5B6981617D8234 /* Auth */,
 				A4C62A9DADA43415DE1C4BC4 /* CasaDePazAnalytics */,
 				10D780A48948B8909422C178 /* CasaDePazLessons */,
+				0121A66626BEE20FA4F63061 /* DevTools */,
 				0E08E2571AD28D4B6DAFCFC6 /* Formularios */,
 				9583323C0C4D778E6E30C67E /* Home */,
 				4572C86A42A72B7ABC777BAE /* LifeGroupAnalytics */,
@@ -609,6 +626,7 @@
 		E2D08B96CAA481EA75EAA3E3 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				382CD997C72F5A972785BCAC /* Bundle+AppVersion.swift */,
 				3009383DC317C06BE5558E43 /* DateFormatting.swift */,
 			);
 			path = Extensions;
@@ -654,6 +672,8 @@
 				62F32151BE1564943B93F90E /* FirebaseStorage */,
 				2D74D60AD3C0597184B72C20 /* GoogleSignIn */,
 				14D3154CD353A1E73ECC271B /* Kingfisher */,
+				4F234C1E2F7298A93E2038AF /* Pulse */,
+				21FE29FC6B66BCA9BE34376B /* PulseUI */,
 			);
 			productName = PazChurch;
 			productReference = 01FFDF96B4BA2F02238FEF09 /* PazChurch.app */;
@@ -687,6 +707,7 @@
 				1FE66062384A01E6B73D3198 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				4BF6352E4A89663882C292AC /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				96EB51DB675FF756632E0F01 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				768D9B831E8127C84C24786C /* XCRemoteSwiftPackageReference "Pulse" */,
 			);
 			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
@@ -754,6 +775,7 @@
 				F44D2FA2EA14E8B29A866F25 /* AppDelegate.swift in Sources */,
 				16B832FD065C7338B522ABFA /* AppThemeManager.swift in Sources */,
 				E111D004E3CD35D07B1252C8 /* AuthenticationCoordinator.swift in Sources */,
+				E28C0046E7673B2A54F90B02 /* Bundle+AppVersion.swift in Sources */,
 				F16C5E3B1FFA34FE5BA06943 /* CasaDePazAnalyticsView.swift in Sources */,
 				A882169C3987D03873848621 /* CasaDePazAnalyticsViewModel.swift in Sources */,
 				52095A3054AD258F46DBE6CF /* CasaDePazCharts.swift in Sources */,
@@ -770,6 +792,7 @@
 				30F27BB9E2BEAF34B8FD3B89 /* DateFormatting.swift in Sources */,
 				B4FC0579C2B5583942712E28 /* DeepLinkDestination.swift in Sources */,
 				6D217BB3230C36B8D247FDE9 /* DeepLinkViews.swift in Sources */,
+				E2827E1CF564F40E109FB978 /* DevToolsGate.swift in Sources */,
 				4A82A695C9D2A71805FA21F2 /* EditProfileView.swift in Sources */,
 				65323BAB5459A81F682BE7B1 /* EditProfileViewModel.swift in Sources */,
 				E14AB35C85A65F0E85EBBD68 /* ErrorStateView.swift in Sources */,
@@ -1066,6 +1089,14 @@
 				minimumVersion = 7.0.0;
 			};
 		};
+		768D9B831E8127C84C24786C /* XCRemoteSwiftPackageReference "Pulse" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kean/Pulse";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.1.2;
+			};
+		};
 		96EB51DB675FF756632E0F01 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
@@ -1082,10 +1113,20 @@
 			package = 96EB51DB675FF756632E0F01 /* XCRemoteSwiftPackageReference "Kingfisher" */;
 			productName = Kingfisher;
 		};
+		21FE29FC6B66BCA9BE34376B /* PulseUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 768D9B831E8127C84C24786C /* XCRemoteSwiftPackageReference "Pulse" */;
+			productName = PulseUI;
+		};
 		2D74D60AD3C0597184B72C20 /* GoogleSignIn */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 4BF6352E4A89663882C292AC /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignIn;
+		};
+		4F234C1E2F7298A93E2038AF /* Pulse */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 768D9B831E8127C84C24786C /* XCRemoteSwiftPackageReference "Pulse" */;
+			productName = Pulse;
 		};
 		62F32151BE1564943B93F90E /* FirebaseStorage */ = {
 			isa = XCSwiftPackageProductDependency;

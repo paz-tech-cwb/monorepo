@@ -65,12 +65,14 @@ import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSectionHeader
 import br.church.paz.android.ui.features.auth.LoginScreen
+import br.church.paz.android.ui.features.devtools.devToolsGate
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.model.displayName
 import br.church.paz.shared.domain.model.isLeader
+import com.cwb.pazchurch.app.BuildConfig
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -266,6 +268,19 @@ fun AccountScreen(
                                     tintIcon = false,
                                 )
                             }
+                        }
+
+                        item { Spacer(Modifier.height(PazSpacing.Lg)) }
+                        item {
+                            Text(
+                                text = "Versão ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                                style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Slate),
+                                textAlign = TextAlign.Center,
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .devToolsGate(currentUserRole = user.role),
+                            )
                         }
 
                         item { Spacer(Modifier.height(PazSpacing.Xl)) }

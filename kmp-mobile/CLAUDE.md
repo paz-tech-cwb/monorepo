@@ -66,6 +66,8 @@ Quick summary:
 - **Koin for DI** — `sharedModules` wired in `PazApplication`, feature ViewModels via `koinViewModel()`
 - **UDF** — `UiState` data class + `UiEffect` sealed class per screen; `StateFlow` + `Channel`
 - **No `Modifier.clickable` on non-interactive containers** — use `Button` or `Surface(onClick=)`
+- **Android network engine is OkHttp, not CIO** — swapped so Chucker (network inspector) can hook in as an OkHttp interceptor; keep this in mind if you ever touch `PazApplication`'s `HttpClientEngineFactory` binding or `:shared`'s `androidMain` Ktor dependency
+- **Hidden network inspector exists on both platforms** (Pulse on iOS, Chucker on Android), gated behind a secret trigger + admin/pastor role check — see `DevToolsGate` on each platform for where it's wired up; do not document the trigger mechanics anywhere in the repo
 
 ## Environments (staging vs production)
 

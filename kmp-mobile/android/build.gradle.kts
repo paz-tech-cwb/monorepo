@@ -145,7 +145,8 @@ dependencies {
     implementation(libs.coil.network)
 
     implementation(libs.datastore.android)
-    implementation(libs.ktor.client.cio.jvm)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.chucker)
     implementation(libs.compose.icons.extended)
     implementation(libs.credentials)
     implementation(libs.credentials.play.services)
