@@ -17,25 +17,25 @@ struct PazMeshBackground: View {
             PazColors.background
 
             Circle()
-                .fill(PazColors.pazPrimaryLight.opacity(isDark ? 0.35 : 0.28))
+                .fill(PazColors.pazPrimaryLight.opacity(isDark ? 0.10 : 0.28))
                 .frame(width: 420, height: 420)
                 .blur(radius: 120)
                 .offset(x: -140, y: -260)
 
             Circle()
-                .fill(PazColors.pazSky.opacity(isDark ? 0.28 : 0.22))
+                .fill(PazColors.pazSky.opacity(isDark ? 0.08 : 0.22))
                 .frame(width: 380, height: 380)
                 .blur(radius: 110)
                 .offset(x: 160, y: -60)
 
             Circle()
-                .fill(PazColors.pazPrimaryMid.opacity(isDark ? 0.32 : 0.20))
+                .fill(PazColors.pazPrimaryMid.opacity(isDark ? 0.09 : 0.20))
                 .frame(width: 460, height: 460)
                 .blur(radius: 130)
                 .offset(x: -120, y: 320)
 
             Circle()
-                .fill(PazColors.pazGold.opacity(isDark ? 0.10 : 0.08))
+                .fill(PazColors.pazGold.opacity(isDark ? 0.04 : 0.08))
                 .frame(width: 300, height: 300)
                 .blur(radius: 100)
                 .offset(x: 150, y: 380)

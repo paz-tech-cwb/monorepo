@@ -241,7 +241,7 @@ struct AccountView: View {
                         .foregroundStyle(PazColors.accent)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(user.name).font(PazTypography.titleMedium).foregroundStyle(PazColors.accent)
+                    Text(user.name).font(PazTypography.titleMedium).foregroundStyle(PazColors.titleInk)
                     Text(user.email).font(PazTypography.bodySmall).foregroundStyle(PazColors.pazSky).lineLimit(1)
                     Spacer().frame(height: 2)
                     Text(user.role.displayName)
@@ -262,7 +262,6 @@ struct AccountView: View {
                 .padding(8)
                 .background(PazMaterial.chip(for: colorScheme))
                 .clipShape(Circle())
-                .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
                 .padding(10)
         }
     }

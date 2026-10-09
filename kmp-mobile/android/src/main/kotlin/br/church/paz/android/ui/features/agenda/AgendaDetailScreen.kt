@@ -34,7 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -90,7 +89,7 @@ private fun ContentState(
             Modifier
                 .fillMaxWidth()
                 .height(300.dp)
-                .background(PazGradients.Hero)
+                .background(PazGradients.heroForScheme)
                 .statusBarsPadding(),
         ) {
             if (!event.imageUrl.isNullOrEmpty()) {
@@ -229,12 +228,7 @@ private fun ContentState(
                 Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .shadow(
-                        12.dp,
-                        RoundedCornerShape(16.dp),
-                        ambientColor = PazColors.PrimaryMid.copy(.4f),
-                        spotColor = PazColors.PrimaryMid.copy(.4f),
-                    ).clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(Brush.horizontalGradient(listOf(PazColors.PrimaryMid, PazColors.PrimaryLight)))
                     .clickable { },
                 Alignment.Center,

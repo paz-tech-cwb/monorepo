@@ -20,9 +20,11 @@ struct GlassCard<Content: View>: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
+                    .strokeBorder(
+                        colorScheme == .dark ? Color.white.opacity(0.18) : PazColors.line,
+                        lineWidth: 0.75
+                    )
             )
-            .shadow(color: Color.black.opacity(0.10), radius: 16, x: 0, y: 8)
     }
 }
 

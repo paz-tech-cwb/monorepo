@@ -280,7 +280,7 @@ private fun AgendaEventCard(
                 ) {
                     Text(
                         parts.getOrNull(2)?.substringBefore("T") ?: "--",
-                        style = MaterialTheme.typography.titleMedium.copy(color = PazColors.Primary),
+                        style = MaterialTheme.typography.titleMedium.copy(color = PazColors.titleInk),
                     )
                     Text(
                         monthAbbrev(parts.getOrNull(1)),

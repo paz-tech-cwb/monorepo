@@ -58,7 +58,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -314,12 +313,7 @@ private fun FeaturedCard(
         Modifier
             .fillMaxWidth()
             .height(180.dp)
-            .shadow(
-                elevation = 12.dp,
-                shape = shape,
-                spotColor = PazColors.Primary.copy(alpha = 0.70f),
-                ambientColor = PazColors.Primary.copy(alpha = 0.10f),
-            ).clip(shape)
+            .clip(shape)
             .clickable(onClick = onClick),
     ) {
         if (banner.imageUrl.isNotEmpty()) {
@@ -474,9 +468,9 @@ private fun DizimosPixButton(
             Modifier
                 .fillMaxWidth()
                 .height(PazSpacing.PillButtonHeight)
-                .shadow(elevation = 8.dp, shape = PazShapePill, spotColor = Color.Black.copy(alpha = 0.33f))
                 .clip(PazShapePill)
                 .background(PazColors.accent.copy(alpha = 0.78f))
+                .border(1.dp, Color.White.copy(alpha = 0.25f), PazShapePill)
                 .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
                 .graphicsLayer {
                     scaleX = scale
@@ -714,12 +708,7 @@ private fun DayPill(
     Box(
         modifier
             .height(74.dp)
-            .shadow(
-                elevation = if (isSelected) 8.dp else 2.dp,
-                shape = pillShape,
-                spotColor = if (isSelected) PazColors.Primary.copy(alpha = 0.70f) else PazColors.ShadowNavy,
-                ambientColor = PazColors.ShadowNavy.copy(alpha = 0.04f),
-            ).clip(pillShape)
+            .clip(pillShape)
             .then(
                 when {
                     isSelected -> Modifier.background(activeGradient)
@@ -790,12 +779,7 @@ private fun EventCard(
     Row(
         Modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(18.dp),
-                spotColor = PazColors.ShadowNavy.copy(alpha = 0.21f),
-                ambientColor = PazColors.ShadowNavy.copy(alpha = 0.04f),
-            ).clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(18.dp))
             .background(MaterialTheme.colorScheme.surface)
             .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
             .clickable(onClick = onClick)

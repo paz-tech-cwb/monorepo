@@ -68,7 +68,6 @@ struct AgendaDetailView: View {
                 Text(event.title)
                     .font(PazTypography.headlineMedium)
                     .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 20)
