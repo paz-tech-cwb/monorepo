@@ -1,7 +1,10 @@
 package br.church.paz.android.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -48,14 +51,13 @@ import br.church.paz.android.ui.features.splash.SplashScreen
 fun PazNavGraph(startDeepLinkRoute: String? = null) {
     val navController = rememberNavController()
 
-    // When the app is opened from a notification tap, navigate to the target
-    // screen after the graph is ready. We still start at Splash so auth state
-    // is checked first; the navigation only fires after the graph is composed.
-    LaunchedEffect(startDeepLinkRoute) {
-        if (startDeepLinkRoute != null) {
-            navController.navigate(startDeepLinkRoute)
-        }
-    }
+    // When the app is opened from a notification tap, the target route must only be
+    // navigated to AFTER Shell has been pushed on top of Splash — otherwise this races
+    // Splash's own async auth-check navigation (either one can clobber the other,
+    // leaving a broken back stack or silently dropping the deep link). We hold the
+    // route in local state and consume it once Shell is in place, then null it out so
+    // it doesn't re-fire on recomposition/config change.
+    var pendingDeepLinkRoute by remember(startDeepLinkRoute) { mutableStateOf(startDeepLinkRoute) }
 
     NavHost(
         navController = navController,
@@ -66,6 +68,10 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
                 onNavigateToHome = {
                     navController.navigate(Screen.Shell.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                    pendingDeepLinkRoute?.let { route ->
+                        navController.navigate(route)
+                        pendingDeepLinkRoute = null
                     }
                 },
             )

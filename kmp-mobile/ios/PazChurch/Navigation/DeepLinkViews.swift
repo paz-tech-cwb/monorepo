@@ -72,6 +72,7 @@ struct LifeGroupAttendanceEditorDeepLinkView: View {
     let lifeGroupId: String
     let meetingDate: String
     let repository: LifeGroupAttendanceRepository
+    let onDismiss: () -> Void
 
     var body: some View {
         Group {
@@ -80,8 +81,8 @@ struct LifeGroupAttendanceEditorDeepLinkView: View {
                     lifeGroupId: id,
                     meetingDate: meetingDate,
                     repository: repository,
-                    onSaved: {},
-                    onCancel: {}
+                    onSaved: onDismiss,
+                    onCancel: onDismiss
                 )
             } else {
                 ContentUnavailableView(
