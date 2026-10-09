@@ -72,7 +72,7 @@ val androidModule =
         viewModel { MemberJourneyViewModel(get()) }
         viewModel { NotificationPrefsViewModel(get()) }
         viewModel { SearchViewModel(get(), get(), get(), get()) }
-        viewModel { MinistriesViewModel(get()) }
+        viewModel { MinistriesViewModel(get(), get(), get()) }
         viewModel { (ministryId: String) -> MinistryDetailViewModel(ministryId, get(), get()) }
         viewModel { (lifeGroupId: String) -> LifeGroupDetailViewModel(lifeGroupId, get(), get()) }
         viewModel { LifeGroupsViewModel(get()) }

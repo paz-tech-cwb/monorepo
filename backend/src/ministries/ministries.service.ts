@@ -51,7 +51,7 @@ export class MinistriesService {
   }
 
   async createMinistry(dto: CreateMinistryDto) {
-    return this.ministryRepo.save(
+    const saved = await this.ministryRepo.save(
       this.ministryRepo.create({
         name: dto.name,
         description: dto.description ?? null,
@@ -60,6 +60,7 @@ export class MinistriesService {
         coLeader: this.ref(dto.coLeaderId),
       }),
     );
+    return this.findMinistry(saved.id);
   }
 
   async updateMinistry(id: number, dto: UpdateMinistryDto) {

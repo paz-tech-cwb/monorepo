@@ -78,6 +78,7 @@
 		A0CCE565617A81DD9C6404A9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = F04B442417CCD3B5A58BC0DF /* FirebaseAuth */; };
 		A1DD2AC7CAB0A0304F69AA98 /* LifeGroupStudyDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7C1B1E186EEC6A2736CFBA9 /* LifeGroupStudyDetailView.swift */; };
 		A3BC32CA15C40B172DC54DF8 /* MinistryManageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E26C4C9D1BDF91892972FE27 /* MinistryManageView.swift */; };
+		E8A0DFD77F02CA68AC20E391 /* MinistryCreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AB882888AB1729A8FA666C6 /* MinistryCreateView.swift */; };
 		A6A324E081B9ECFCDDA55B20 /* LifeGroupAttendanceViewModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0AED721D9C3F11A210BEFE7 /* LifeGroupAttendanceViewModels.swift */; };
 		A882169C3987D03873848621 /* CasaDePazAnalyticsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55EE9DE213ACF28C74E15157 /* CasaDePazAnalyticsViewModel.swift */; };
 		A98EE8C9CC199B26F49D75EB /* AgendaDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE4B8D8AE9B398AA3A77DA29 /* AgendaDetailView.swift */; };
@@ -225,6 +226,7 @@
 		D664B1D68AD1FA25AAA7C11C /* dm_sans_regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = dm_sans_regular.ttf; sourceTree = "<group>"; };
 		E20CF68CE0958124973A70BA /* ErrorStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorStateView.swift; sourceTree = "<group>"; };
 		E26C4C9D1BDF91892972FE27 /* MinistryManageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinistryManageView.swift; sourceTree = "<group>"; };
+		3AB882888AB1729A8FA666C6 /* MinistryCreateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinistryCreateView.swift; sourceTree = "<group>"; };
 		E70B0D6A12BA7B5BD464CD5A /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		E732114B3963933049EFF4A1 /* DeepLinkDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkDestination.swift; sourceTree = "<group>"; };
 		E8ED14052DB30DEC694C772C /* PazChurchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazChurchApp.swift; sourceTree = "<group>"; };
@@ -361,6 +363,7 @@
 				A5F29167AE0FBA90438E386F /* LifeGroupsMapView.swift */,
 				234779E01AE25F665C7BB9EB /* LifeGroupsView.swift */,
 				A10DAE923513B1C91EC22B66 /* MinistriesView.swift */,
+				3AB882888AB1729A8FA666C6 /* MinistryCreateView.swift */,
 				EDD6B4FBC968ED037D73EAA9 /* MinistryDetailView.swift */,
 				E26C4C9D1BDF91892972FE27 /* MinistryManageView.swift */,
 			);
@@ -776,6 +779,7 @@
 				1F3D35E5FF143FC6C08A16BC /* MinistriesView.swift in Sources */,
 				9B9A6148AFFD0C8167085DD0 /* MinistryDetailView.swift in Sources */,
 				A3BC32CA15C40B172DC54DF8 /* MinistryManageView.swift in Sources */,
+				E8A0DFD77F02CA68AC20E391 /* MinistryCreateView.swift in Sources */,
 				09EDC02009417BFD3B3FA3BC /* NotificationPrefsView.swift in Sources */,
 				9531A2BAD6ADBC340F6DD4DD /* OnboardingCoordinator.swift in Sources */,
 				8CED05A41A291F12C62B6836 /* OnboardingView.swift in Sources */,

@@ -17,8 +17,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
@@ -99,6 +101,35 @@ fun MinistriesScreen(
                         )
                 }
             }
+        }
+
+        if (uiState.canManage) {
+            FloatingActionButton(
+                onClick = { viewModel.onCreateMinistryOpen() },
+                containerColor = PazColors.Primary,
+                contentColor = Color.White,
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(PazSpacing.Lg),
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "Criar ministério")
+            }
+        }
+
+        uiState.createForm?.let { formState ->
+            MinistryCreateSheet(
+                state = formState,
+                onDismiss = viewModel::onCreateMinistryDismiss,
+                onNameChanged = viewModel::onCreateNameChanged,
+                onDescriptionChanged = viewModel::onCreateDescriptionChanged,
+                onMembershipModeChanged = viewModel::onCreateMembershipModeChanged,
+                onLeaderQueryChanged = { viewModel.onLeaderSearchQueryChanged(MinistryLeaderPickerTarget.LEADER, it) },
+                onLeaderSelected = viewModel::onLeaderSelected,
+                onCoLeaderQueryChanged = { viewModel.onLeaderSearchQueryChanged(MinistryLeaderPickerTarget.CO_LEADER, it) },
+                onCoLeaderSelected = viewModel::onCoLeaderSelected,
+                onConfirm = viewModel::onCreateConfirm,
+            )
         }
     }
 }
