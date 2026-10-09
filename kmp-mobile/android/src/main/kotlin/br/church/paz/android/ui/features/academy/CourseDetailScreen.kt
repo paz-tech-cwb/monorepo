@@ -1,5 +1,7 @@
 package br.church.paz.android.ui.features.academy
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,10 +32,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -88,18 +93,20 @@ fun CourseDetailScreen(
         }
 
         when {
-            uiState.isLoading -> CourseDetailSkeleton()
-            uiState.error != null ->
-                PazErrorState(message = uiState.error ?: "Não foi possível carregar o curso", onRetry = viewModel::load)
+            uiState.isLoading && uiState.course == null -> CourseDetailSkeleton()
+            uiState.error != null && uiState.course == null ->
+                PazErrorState(message = uiState.error ?: "Não foi possível carregar o curso", onRetry = { viewModel.load() })
             uiState.course == null ->
-                PazErrorState(message = "Curso não encontrado", onRetry = viewModel::load)
+                PazErrorState(message = "Curso não encontrado", onRetry = { viewModel.load() })
             else ->
                 CourseDetailContent(
                     course = uiState.course!!,
                     selectedLesson = uiState.selectedLesson,
+                    playerError = uiState.playerError,
                     onSelectLesson = viewModel::onSelectLesson,
                     onPlaybackTick = viewModel::onPlaybackTick,
                     onPlaybackPaused = viewModel::onPlaybackPaused,
+                    onPlayerError = viewModel::onPlayerError,
                     onQuestionnaireTapped = viewModel::onQuestionnaireTapped,
                 )
         }
@@ -110,67 +117,85 @@ fun CourseDetailScreen(
 private fun CourseDetailContent(
     course: CourseDetail,
     selectedLesson: Lesson?,
+    playerError: Boolean,
     onSelectLesson: (String) -> Unit,
     onPlaybackTick: (Int, Int) -> Unit,
     onPlaybackPaused: (Int, Int) -> Unit,
+    onPlayerError: () -> Unit,
     onQuestionnaireTapped: () -> Unit,
 ) {
-    LazyColumn(Modifier.fillMaxSize()) {
-        item {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
-                    .background(Color.Black),
-            ) {
-                if (selectedLesson != null) {
-                    GatedYouTubePlayer(
-                        youtubeVideoId = selectedLesson.youtubeVideoId,
-                        modifier = Modifier.fillMaxSize(),
-                        onTick = onPlaybackTick,
-                        onPause = onPlaybackPaused,
+    val context = LocalContext.current
+
+    Column(Modifier.fillMaxSize()) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .background(Color.Black),
+        ) {
+            if (selectedLesson != null) {
+                if (playerError) {
+                    VideoErrorOverlay(
+                        onOpenYouTube = {
+                            val url = "https://www.youtube.com/watch?v=${selectedLesson.youtubeVideoId}"
+                            runCatching {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                            }
+                        },
                     )
+                } else {
+                    key(selectedLesson.id) {
+                        GatedYouTubePlayer(
+                            youtubeVideoId = selectedLesson.youtubeVideoId,
+                            modifier = Modifier.fillMaxSize(),
+                            onTick = onPlaybackTick,
+                            onPause = onPlaybackPaused,
+                            onError = onPlayerError,
+                        )
+                    }
                 }
             }
         }
 
-        item {
-            Column(Modifier.padding(PazSpacing.Lg)) {
-                Text(selectedLesson?.title ?: course.title, style = MaterialTheme.typography.titleMedium)
-                if (!course.description.isNullOrBlank()) {
+        LazyColumn(Modifier.fillMaxSize()) {
+            item {
+                Column(Modifier.padding(PazSpacing.Lg)) {
+                    Text(selectedLesson?.title ?: course.title, style = MaterialTheme.typography.titleMedium)
+                    if (!course.description.isNullOrBlank()) {
+                        Spacer(Modifier.height(PazSpacing.Sm))
+                        Text(
+                            course.description!!,
+                            style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.6f)),
+                        )
+                    }
+                }
+            }
+
+            item {
+                Column(Modifier.padding(horizontal = PazSpacing.Lg)) {
+                    Text("Aulas", style = MaterialTheme.typography.titleSmall)
                     Spacer(Modifier.height(PazSpacing.Sm))
-                    Text(
-                        course.description!!,
-                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.6f)),
-                    )
                 }
             }
-        }
 
-        item {
-            Column(Modifier.padding(horizontal = PazSpacing.Lg)) {
-                Text("Aulas", style = MaterialTheme.typography.titleSmall)
-                Spacer(Modifier.height(PazSpacing.Sm))
+            items(course.lessons, key = { it.id }) { lesson ->
+                LessonRow(
+                    lesson = lesson,
+                    selected = lesson.id == selectedLesson?.id,
+                    onClick = { onSelectLesson(lesson.id) },
+                    modifier = Modifier.padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Xs / 2),
+                )
             }
-        }
 
-        items(course.lessons, key = { it.id }) { lesson ->
-            LessonRow(
-                lesson = lesson,
-                selected = lesson.id == selectedLesson?.id,
-                onClick = { onSelectLesson(lesson.id) },
-                modifier = Modifier.padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Xs / 2),
-            )
-        }
-
-        item {
-            Spacer(Modifier.height(PazSpacing.Lg))
-            QuestionnaireCta(
-                course = course,
-                onClick = onQuestionnaireTapped,
-                modifier = Modifier.padding(horizontal = PazSpacing.Lg),
-            )
-            Spacer(Modifier.height(PazSpacing.Xl))
+            item {
+                Spacer(Modifier.height(PazSpacing.Lg))
+                QuestionnaireCta(
+                    course = course,
+                    onClick = onQuestionnaireTapped,
+                    modifier = Modifier.padding(horizontal = PazSpacing.Lg),
+                )
+                Spacer(Modifier.height(PazSpacing.Xl))
+            }
         }
     }
 }
@@ -239,6 +264,27 @@ private fun QuestionnaireCta(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun VideoErrorOverlay(onOpenYouTube: () -> Unit) {
+    Column(
+        Modifier.fillMaxSize().padding(PazSpacing.Lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            "Não foi possível carregar o vídeo desta aula",
+            style = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(PazSpacing.Md))
+        PazButton(
+            text = "Abrir no YouTube",
+            onClick = onOpenYouTube,
+            variant = PazButtonVariant.Secondary,
+        )
     }
 }
 

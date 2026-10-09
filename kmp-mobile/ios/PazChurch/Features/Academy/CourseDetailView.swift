@@ -1,9 +1,12 @@
 import Shared
 import SwiftUI
+import UIKit
+import WebKit
 
 struct CourseDetailView: View {
     let courseId: String
     @State private var viewModel: CourseDetailViewModel
+    @State private var webViewBox = WebViewBox()
     @Environment(\.dismiss) var dismiss
 
     init(courseId: String, courseRepository: CourseRepository) {
@@ -13,9 +16,9 @@ struct CourseDetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if viewModel.isLoading {
+            if viewModel.isLoading && viewModel.course == nil {
                 loadingState
-            } else if let error = viewModel.error {
+            } else if let error = viewModel.error, viewModel.course == nil {
                 ErrorStateView(message: error, onRetry: { Task { await viewModel.load() } })
             } else if let course = viewModel.course {
                 content(course: course)
@@ -28,6 +31,7 @@ struct CourseDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .task { await viewModel.load() }
+        .onDisappear { GatedYouTubePlayerView.flushPause(webViewBox.webView) }
     }
 
     private func content(course: CourseDetail) -> some View {
@@ -36,16 +40,23 @@ struct CourseDetailView: View {
                 ZStack {
                     Color.black
                     if let lesson = viewModel.selectedLesson {
-                        GatedYouTubePlayerView(
-                            youtubeVideoId: lesson.youtubeVideoId,
-                            onTick: { pct, seconds in
-                                viewModel.onPlaybackTick(percentage: pct, positionSeconds: seconds)
-                            },
-                            onPause: { pct, seconds in viewModel.onPlaybackPaused(
-                                percentage: pct,
-                                positionSeconds: seconds
-                            ) }
-                        )
+                        if viewModel.playerError {
+                            VideoErrorOverlay(youtubeVideoId: lesson.youtubeVideoId)
+                        } else {
+                            GatedYouTubePlayerView(
+                                youtubeVideoId: lesson.youtubeVideoId,
+                                onTick: { pct, seconds in
+                                    viewModel.onPlaybackTick(percentage: pct, positionSeconds: seconds)
+                                },
+                                onPause: { pct, seconds in viewModel.onPlaybackPaused(
+                                    percentage: pct,
+                                    positionSeconds: seconds
+                                ) },
+                                onError: { viewModel.onPlayerError() },
+                                webViewBox: webViewBox
+                            )
+                            .id(lesson.id)
+                        }
                     }
                 }
                 .aspectRatio(16 / 9, contentMode: .fit)
@@ -89,6 +100,29 @@ struct CourseDetailView: View {
             SkeletonView().frame(height: 200)
             SkeletonView().frame(width: 200, height: 24)
             ForEach(0..<3, id: \.self) { _ in SkeletonView().frame(height: 56) }
+        }
+        .padding(PazSpacing.lg)
+    }
+}
+
+private struct VideoErrorOverlay: View {
+    let youtubeVideoId: String
+
+    var body: some View {
+        VStack(spacing: PazSpacing.md) {
+            Text("Não foi possível carregar o vídeo desta aula")
+                .font(PazTypography.bodyMedium)
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+
+            Button {
+                if let url = URL(string: "https://www.youtube.com/watch?v=\(youtubeVideoId)") {
+                    UIApplication.shared.open(url)
+                }
+            } label: {
+                Text("Abrir no YouTube")
+            }
+            .buttonStyle(.pazPillPrimary)
         }
         .padding(PazSpacing.lg)
     }

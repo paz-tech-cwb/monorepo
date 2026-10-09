@@ -29,9 +29,9 @@ class CourseDetailViewModel(
         load()
     }
 
-    fun load() {
+    fun load(showLoading: Boolean = true) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            if (showLoading) _uiState.update { it.copy(isLoading = true, error = null) }
             runCatching { courseRepository.getCourseDetail(courseId) }
                 .onSuccess { course ->
                     _uiState.update {
@@ -42,14 +42,23 @@ class CourseDetailViewModel(
                         )
                     }
                 }.onFailure { e ->
-                    _uiState.update { it.copy(isLoading = false, error = e.message) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = if (showLoading) e.message else it.error,
+                        )
+                    }
                 }
         }
     }
 
     fun onSelectLesson(lessonId: String) {
         lastReportedAtSeconds = 0
-        _uiState.update { it.copy(selectedLessonId = lessonId) }
+        _uiState.update { it.copy(selectedLessonId = lessonId, playerError = false) }
+    }
+
+    fun onPlayerError() {
+        _uiState.update { it.copy(playerError = true) }
     }
 
     /** Called by [GatedYouTubePlayer] roughly every second; only actually posts every ~10s. */
@@ -79,7 +88,7 @@ class CourseDetailViewModel(
         viewModelScope.launch {
             runCatching {
                 courseRepository.reportLessonProgress(lessonId, percentage, positionSeconds)
-            }.onSuccess { load() }
+            }.onSuccess { load(showLoading = false) }
         }
     }
 

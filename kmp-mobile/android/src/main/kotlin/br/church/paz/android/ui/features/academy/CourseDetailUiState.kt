@@ -8,6 +8,7 @@ data class CourseDetailUiState(
     val course: CourseDetail? = null,
     val error: String? = null,
     val selectedLessonId: String? = null,
+    val playerError: Boolean = false,
 ) {
     val selectedLesson: Lesson?
         get() = course?.lessons?.firstOrNull { it.id == selectedLessonId } ?: course?.lessons?.firstOrNull()
