@@ -207,6 +207,35 @@ class OnboardingRepositoryImplTest {
     }
 
     @Test
+    fun `submitAddress strips the UI display mask so the backend varchar8 column is never truncated`() = runTest {
+        // EditProfileViewModel (iOS and Android) masks the CEP field as `#####-###` for
+        // display; submitAddress must still send plain digits — the backend column is
+        // varchar(8), so sending the masked value would silently truncate/corrupt it.
+        var capturedBody: String? = null
+        val tokenStorage = FakeTokenStorage()
+        val engine = MockEngine { request ->
+            capturedBody = (request.body as io.ktor.http.content.TextContent).text
+            respond("{}", HttpStatusCode.OK, jsonHeaders)
+        }
+        val client = createPazHttpClient(tokenStorage, "http://test", engine)
+        val repository = OnboardingRepositoryImpl(client, FakeUserRepository(null))
+
+        val result = repository.submitAddress(
+            street = "Rua Um",
+            number = "123",
+            complement = null,
+            neighborhood = "Centro",
+            city = "Curitiba",
+            state = "PR",
+            zipCode = "80000-000", // masked UI display value
+        )
+
+        assertTrue(result.isSuccess)
+        assertTrue(capturedBody!!.contains("\"zip_code\":\"80000000\""))
+        assertTrue(!capturedBody!!.contains("80000-000"))
+    }
+
+    @Test
     fun `submitWhatsapp returns failure on non-2xx`() = runTest {
         val repository = buildRepo(response = "{}", status = HttpStatusCode.BadRequest)
 

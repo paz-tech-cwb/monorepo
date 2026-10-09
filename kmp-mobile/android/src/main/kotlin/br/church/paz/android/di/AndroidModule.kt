@@ -54,7 +54,7 @@ val androidModule =
         viewModel { CertificatesViewModel(get()) }
         viewModel { AccountViewModel(get(), get()) }
         viewModel { ProfileViewModel(get()) }
-        viewModel { EditProfileViewModel(get(), get()) } // (UserRepository, OnboardingRepository)
+        viewModel { EditProfileViewModel(get(), get(), get()) } // (UserRepository, OnboardingRepository, AuthRepository)
         viewModel { (eventId: String) -> AgendaDetailViewModel(get(), eventId) }
         viewModel { AgendaListViewModel(get()) } // get() resolves AgendaRepository
         viewModel { FormulariosViewModel(get()) }

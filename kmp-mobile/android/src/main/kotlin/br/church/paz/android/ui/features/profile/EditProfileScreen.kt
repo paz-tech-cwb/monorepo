@@ -1,6 +1,7 @@
 package br.church.paz.android.ui.features.profile
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -52,6 +54,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazGlassField
 import br.church.paz.android.ui.theme.PazColors
@@ -74,11 +77,14 @@ fun EditProfileScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     var isDatePickerOpen by remember { mutableStateOf(false) }
+    var showDiscardDialog by remember { mutableStateOf(false) }
 
     val photoPicker =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
             if (uri != null) viewModel.onPictureSelected(context, uri)
         }
+
+    BackHandler(enabled = uiState.isDirty) { viewModel.onRequestDiscard() }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -88,8 +94,30 @@ fun EditProfileScreen(
                     navController.popBackStack()
                 }
                 EditProfileEffect.NavigateBack -> navController.popBackStack()
+                EditProfileEffect.RequestDiscardConfirmation -> showDiscardDialog = true
+                EditProfileEffect.SessionExpired ->
+                    navController.navigate(Screen.Shell.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
             }
         }
+    }
+
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Descartar alterações?") },
+            text = { Text("Você tem alterações não salvas que serão perdidas.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDiscardDialog = false
+                    navController.popBackStack()
+                }) { Text("Descartar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) { Text("Continuar editando") }
+            },
+        )
     }
 
     if (uiState.error != null) {
@@ -112,7 +140,7 @@ fun EditProfileScreen(
                         .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = { viewModel.onBack() }) {
+                    IconButton(onClick = { viewModel.onRequestDiscard() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "back", tint = Color.White)
                     }
                     Text(
@@ -343,6 +371,9 @@ private fun AddressSection(
         )
         if (uiState.isLookingUpCep) {
             Text("Buscando endereço...", style = MaterialTheme.typography.bodySmall, color = PazColors.PrimaryLight)
+        }
+        if (uiState.cepError != null) {
+            Text(uiState.cepError!!, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         }
         PazGlassField(
             value = uiState.street,
