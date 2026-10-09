@@ -41,6 +41,7 @@ import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
 import br.church.paz.android.ui.components.MarkdownText
 import br.church.paz.android.ui.components.PazButton
+import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazSpacing
@@ -131,16 +132,10 @@ fun LifeGroupStudyDetailScreen(
                         PazSkeleton(height = 120.dp)
                     }
                 uiState.error != null ->
-                    Box(Modifier.fillMaxSize(), Alignment.Center) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                            modifier = Modifier.padding(PazSpacing.Xl),
-                        ) {
-                            Text(uiState.error!!, style = MaterialTheme.typography.bodySmall)
-                            PazButton(text = "Tentar Novamente", onClick = viewModel::load, modifier = Modifier.fillMaxWidth())
-                        }
-                    }
+                    PazErrorState(
+                        message = uiState.error ?: "Não foi possível carregar o estudo",
+                        onRetry = viewModel::load,
+                    )
                 uiState.study != null -> StudyDetailContent(study = uiState.study!!)
                 else ->
                     Box(Modifier.fillMaxSize(), Alignment.Center) {

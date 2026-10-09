@@ -1,3 +1,4 @@
+import Kingfisher
 import Shared
 import SwiftUI
 
@@ -28,13 +29,28 @@ struct LifeGroupStudyEditorView: View {
     }
 
     var body: some View {
-        Form {
-            if let error = viewModel.error {
-                Section {
-                    Text(error).foregroundStyle(.red).font(PazTypography.bodySmall)
+        Group {
+            if let loadError = viewModel.loadError {
+                ErrorStateView(message: loadError) {
+                    Task { await viewModel.loadIfNeeded() }
                 }
+            } else {
+                editorForm
             }
+        }
+        .navigationTitle(viewModel.isEditMode ? "Editar estudo" : "Novo estudo")
+        .navigationBarTitleDisplayMode(.inline)
+        .pazToast(message: $viewModel.error)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancelar", action: onCancel)
+            }
+        }
+        .task { await viewModel.loadIfNeeded() }
+    }
 
+    private var editorForm: some View {
+        Form {
             Section("Título") {
                 TextField("Título do estudo", text: $viewModel.title)
             }
@@ -45,14 +61,13 @@ struct LifeGroupStudyEditorView: View {
 
             Section("Imagem de capa (opcional)") {
                 if !viewModel.imageUrl.isEmpty, let url = URL(string: viewModel.imageUrl) {
-                    AsyncImage(url: url) { image in
-                        image.resizable().scaledToFill()
-                    } placeholder: {
-                        Color.clear
-                    }
-                    .frame(height: 140)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .clipped()
+                    KFImage(url)
+                        .resizable()
+                        .placeholder { Color.clear }
+                        .scaledToFill()
+                        .frame(height: 140)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .clipped()
                 }
                 TextField("URL da imagem", text: $viewModel.imageUrl)
                     .autocorrectionDisabled()
@@ -86,14 +101,6 @@ struct LifeGroupStudyEditorView: View {
                 .listRowBackground(Color.clear)
             }
         }
-        .navigationTitle(viewModel.isEditMode ? "Editar estudo" : "Novo estudo")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancelar", action: onCancel)
-            }
-        }
-        .task { await viewModel.loadIfNeeded() }
     }
 }
 

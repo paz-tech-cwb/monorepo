@@ -52,14 +52,6 @@ struct NotificationPrefsView: View {
                         isOn: $viewModel.contributionsNotifications
                     )
 
-                    if let error = viewModel.error {
-                        Text(error)
-                            .font(PazTypography.bodySmall)
-                            .foregroundColor(.red)
-                            .padding(PazSpacing.lg)
-                            .background(Color.red.opacity(0.1))
-                            .cornerRadius(12)
-                    }
                 }
                 .padding(.horizontal, PazSpacing.lg)
             }
@@ -76,6 +68,7 @@ struct NotificationPrefsView: View {
         .navigationTitle("Notificações")
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .pazToast(message: $viewModel.error)
         .task { await viewModel.loadPreferences() }
     }
 }

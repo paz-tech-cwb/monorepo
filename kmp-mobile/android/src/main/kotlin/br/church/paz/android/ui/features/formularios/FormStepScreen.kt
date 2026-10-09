@@ -2,16 +2,15 @@ package br.church.paz.android.ui.features.formularios
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.togetherWith
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,13 +50,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import br.church.paz.android.navigation.Screen
-import br.church.paz.shared.domain.model.FormType
 import br.church.paz.android.ui.components.PazButton
 import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.components.PazSuccessState
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazSpacing
+import br.church.paz.shared.domain.model.FormType
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -103,7 +102,11 @@ fun FormStepScreen(
                 StepBottomBar(
                     uiState = uiState,
                     onNext = {
-                        val fieldDefs = uiState.form?.type?.fieldDefs().orEmpty()
+                        val fieldDefs =
+                            uiState.form
+                                ?.type
+                                ?.fieldDefs()
+                                .orEmpty()
                         val isLast = uiState.stepIndex == fieldDefs.size - 1
                         if (isLast) viewModel.onSubmit() else viewModel.onNextStep()
                     },
@@ -150,7 +153,10 @@ fun FormStepScreen(
                             message = uiState.error ?: "Formulário não encontrado",
                             onRetry = { navController.popBackStack() },
                         )
-                    uiState.form!!.type.fieldDefs().isEmpty() ->
+                    uiState.form!!
+                        .type
+                        .fieldDefs()
+                        .isEmpty() ->
                         PazErrorState(
                             message = "Este formulário não possui perguntas",
                             onRetry = { navController.popBackStack() },
@@ -206,8 +212,11 @@ fun FormStepScreen(
                     onDismiss = viewModel::closePicker,
                 )
             PickerKind.USER, PickerKind.USER_MULTI -> {
-                val selectedIds = (uiState.fields[pickerState.key] ?: "")
-                    .split(",").filter { it.isNotBlank() }.toSet()
+                val selectedIds =
+                    (uiState.fields[pickerState.key] ?: "")
+                        .split(",")
+                        .filter { it.isNotBlank() }
+                        .toSet()
                 UserPickerSheet(
                     state = pickerState,
                     selectedIds = selectedIds,
@@ -302,9 +311,10 @@ private fun StepContent(
         Spacer(Modifier.height(PazSpacing.Sm))
         Text(
             "${stepIndex + 1} de ${fieldDefs.size}",
-            style = MaterialTheme.typography.labelMedium.copy(
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            ),
+            style =
+                MaterialTheme.typography.labelMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                ),
         )
         Spacer(Modifier.height(PazSpacing.Lg))
 
@@ -354,7 +364,11 @@ private fun StepBottomBar(
     uiState: FormDetailUiState,
     onNext: () -> Unit,
 ) {
-    val fieldDefs = uiState.form?.type?.fieldDefs().orEmpty()
+    val fieldDefs =
+        uiState.form
+            ?.type
+            ?.fieldDefs()
+            .orEmpty()
     val isLast = uiState.stepIndex == fieldDefs.size - 1
 
     Row(

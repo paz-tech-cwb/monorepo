@@ -20,7 +20,10 @@ struct UserPickerSheet: View {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if let error = viewModel.pickerError {
-                    Text(error).foregroundStyle(PazColors.error).padding()
+                    ErrorStateView(message: error) {
+                        viewModel.onPickerQueryChanged(viewModel.pickerQuery)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     let users = viewModel.pickerResults.compactMap { $0 as? User }
                     let selectedIds = Set((viewModel.fields[viewModel.pickerKey ?? ""] ?? "")

@@ -25,15 +25,16 @@ class FormDetailViewModelTest {
     @Test
     fun `member-only ministry member (global role member, canRead false) can submit service-reports`() =
         runTest {
-            val catalog = listOf(
-                FormCatalogItem(
-                    id = "service-reports",
-                    title = "Relatório do Culto",
-                    description = null,
-                    canWrite = true,
-                    canRead = false,
-                ),
-            )
+            val catalog =
+                listOf(
+                    FormCatalogItem(
+                        id = "service-reports",
+                        title = "Relatório do Culto",
+                        description = null,
+                        canWrite = true,
+                        canRead = false,
+                    ),
+                )
             coEvery { formsRepository.getCatalog() } returns catalog
             coEvery { authRepository.currentUser() } returns User(id = "10", name = "Maria", email = "maria@test.com")
             coEvery { formsRepository.submitServiceReport(any()) } returns Unit
@@ -57,9 +58,10 @@ class FormDetailViewModelTest {
     @Test
     fun `required SELECT field with empty value blocks submit`() =
         runTest {
-            val catalog = listOf(
-                FormCatalogItem(id = "service-reports", title = "Rel. Culto", canWrite = true, canRead = false),
-            )
+            val catalog =
+                listOf(
+                    FormCatalogItem(id = "service-reports", title = "Rel. Culto", canWrite = true, canRead = false),
+                )
             coEvery { formsRepository.getCatalog() } returns catalog
             coEvery { authRepository.currentUser() } returns User(id = "10", name = "Maria", email = "m@t.com")
 
