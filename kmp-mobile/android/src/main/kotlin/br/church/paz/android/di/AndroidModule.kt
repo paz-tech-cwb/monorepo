@@ -32,6 +32,7 @@ import br.church.paz.android.ui.features.notifications.NotificationPrefsViewMode
 import br.church.paz.android.ui.features.onboarding.OnboardingViewModel
 import br.church.paz.android.ui.features.profile.EditProfileViewModel
 import br.church.paz.android.ui.features.profile.ProfileViewModel
+import br.church.paz.android.ui.features.reports.ReportsListViewModel
 import br.church.paz.android.ui.features.search.SearchViewModel
 import br.church.paz.android.ui.features.splash.SplashViewModel
 import br.church.paz.android.ui.theme.AppThemeManager
@@ -77,6 +78,7 @@ val androidModule =
         }
         viewModel { (lifeGroupId: Int?) -> LifeGroupAnalyticsViewModel(lifeGroupId, get(), get()) }
         viewModel { CasaDePazAnalyticsViewModel(get()) }
+        viewModel { ReportsListViewModel(get()) }
         viewModel { CasaDePazLessonsListViewModel(get()) }
         viewModel { (week: Int) -> CasaDePazLessonDetailViewModel(week, get()) }
     }

@@ -18,11 +18,7 @@ sealed class AccountEffect {
 
     data object NavigateToMinistries : AccountEffect()
 
-    data object NavigateToCasaDePaz : AccountEffect()
-
-    data object NavigateToLifeGroupAnalytics : AccountEffect()
-
-    data object NavigateToCasaDePazAnalytics : AccountEffect()
+    data object NavigateToReports : AccountEffect()
 
     data object NavigateToNotificationPrefs : AccountEffect()
 

@@ -22,7 +22,6 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DynamicForm
-import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Notifications
@@ -80,9 +79,7 @@ fun AccountScreen(
                 AccountEffect.NavigateToMemberJourney -> navController.navigate(Screen.MemberJourney.route)
                 AccountEffect.NavigateToFormularios -> navController.navigate(Screen.FormulariosList.route)
                 AccountEffect.NavigateToMinistries -> navController.navigate(Screen.Ministries.route)
-                AccountEffect.NavigateToCasaDePaz -> navController.navigate(Screen.CasaDePazSubmissionsList.route)
-                AccountEffect.NavigateToLifeGroupAnalytics -> navController.navigate(Screen.LifeGroupAnalytics.createRoute())
-                AccountEffect.NavigateToCasaDePazAnalytics -> navController.navigate(Screen.CasaDePazAnalytics.route)
+                AccountEffect.NavigateToReports -> navController.navigate(Screen.ReportsList.route)
                 AccountEffect.NavigateToNotificationPrefs -> navController.navigate(Screen.NotificationPrefs.route)
                 AccountEffect.LoggedOut -> Unit
             }
@@ -193,40 +190,14 @@ fun AccountScreen(
                                 icon = Icons.Outlined.MusicNote,
                                 iconTint = Color(0xFFE65100),
                                 onClick = viewModel::onMinistries,
+                            )
+                            PazMenuRow(
+                                title = "Relatórios",
+                                icon = Icons.Outlined.BarChart,
+                                iconTint = Color(0xFF2E7D32),
+                                onClick = viewModel::onReports,
                                 showDivider = false,
                             )
-                        }
-                    }
-
-                    item { Spacer(Modifier.height(PazSpacing.Lg)) }
-
-                    item {
-                        PazSectionHeader(title = "Relatórios", modifier = Modifier.padding(horizontal = PazSpacing.Lg + 4.dp))
-                        Spacer(Modifier.height(PazSpacing.Sm))
-                        MenuCard(modifier = Modifier.padding(horizontal = PazSpacing.Lg)) {
-                            PazMenuRow(
-                                title = "Casa de Paz",
-                                icon = Icons.Outlined.Home,
-                                iconTint = Color(0xFFE65100),
-                                onClick = viewModel::onCasaDePaz,
-                                showDivider = user.role.isLeader,
-                            )
-                            if (user.role.isLeader) {
-                                PazMenuRow(
-                                    title = "Life Groups",
-                                    icon = Icons.Outlined.BarChart,
-                                    iconTint = Color(0xFF2E7D32),
-                                    onClick = viewModel::onLifeGroupAnalytics,
-                                    showDivider = true,
-                                )
-                                PazMenuRow(
-                                    title = "Casa de Paz (Relatório)",
-                                    icon = Icons.Outlined.BarChart,
-                                    iconTint = Color(0xFFE65100),
-                                    onClick = viewModel::onCasaDePazAnalytics,
-                                    showDivider = false,
-                                )
-                            }
                         }
                     }
 

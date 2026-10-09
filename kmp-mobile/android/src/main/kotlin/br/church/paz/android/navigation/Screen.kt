@@ -107,6 +107,8 @@ sealed class Screen(
 
     data object CasaDePazAnalytics : Screen("casa_de_paz_analytics")
 
+    data object ReportsList : Screen("reports_list")
+
     data object CasaDePazLessonsList : Screen("casa_de_paz_lessons_list")
 
     data object CasaDePazLessonDetail : Screen("casa_de_paz_lesson_detail/{week}") {
