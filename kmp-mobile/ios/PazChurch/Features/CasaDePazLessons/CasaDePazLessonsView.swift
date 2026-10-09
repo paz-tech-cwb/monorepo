@@ -88,8 +88,6 @@ private struct LessonRow: View {
                 Text("Semana \(lesson.week)").font(PazTypography.labelSmall).foregroundStyle(PazColors.slate)
                 Text(lesson.title).font(PazTypography.titleSmall).foregroundStyle(PazColors.ink).lineLimit(2)
             }
-            Spacer()
-            Image(systemName: "chevron.right").foregroundStyle(PazColors.slate)
         }
         .padding(12)
         .glassCard(radius: PazSpacing.cardRadiusCompact)

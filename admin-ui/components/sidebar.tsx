@@ -30,54 +30,69 @@ import {
   Milestone,
   CalendarRange,
   BookText,
+  NotebookText,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
 import type { AdminRole } from "@/lib/api/types"
+
+// Leadership roles that can authenticate into admin-ui at all (enforced
+// server-side in AuthService.socialLogin — see backend LEADERSHIP_ROLES).
+// Per-item `roles` below is defense-in-depth: it hides admin-only areas
+// (course tracks, courses writes) from the rest of leadership, it does not
+// gate login itself.
+const LEADERSHIP_ROLES: AdminRole[] = [
+  "admin",
+  "pastor",
+  "area_leader",
+  "sector_leader",
+  "life_group_leader",
+]
 
 const sidebarSections = [
   {
     title: "Principal",
     items: [
       { name: "Inicio", href: "/dashboard", icon: Home },
-      { name: "Membros", href: "/members", icon: Users },
-      { name: "Convidados", href: "/guests", icon: UserPlus },
-      { name: "Trilhos do Membro", href: "/journey-tracks", icon: Milestone },
+      { name: "Membros", href: "/members", icon: Users, roles: LEADERSHIP_ROLES },
+      { name: "Convidados", href: "/guests", icon: UserPlus, roles: LEADERSHIP_ROLES },
+      { name: "Trilhos do Membro", href: "/journey-tracks", icon: Milestone, roles: LEADERSHIP_ROLES },
     ],
   },
   {
     title: "Igreja",
     items: [
-      { name: "Organização", href: "/organizacao", icon: Network },
-      { name: "Organograma", href: "/organizacao/organograma", icon: GitBranch },
-      { name: "Life Groups", href: "/life-groups", icon: Users2 },
-      { name: "Ministérios", href: "/ministerios", icon: Waves },
-      { name: "Formulários", href: "/formularios", icon: ClipboardList },
-      { name: "Relatórios", href: "/relatorios", icon: BarChart3 },
-      { name: "Ciclos Casa de Paz", href: "/casa-de-paz-ciclos", icon: CalendarRange },
-      { name: "Conteúdo Casa de Paz", href: "/casa-de-paz-conteudo", icon: BookText },
+      { name: "Organização", href: "/organizacao", icon: Network, roles: LEADERSHIP_ROLES },
+      { name: "Organograma", href: "/organizacao/organograma", icon: GitBranch, roles: LEADERSHIP_ROLES },
+      { name: "Registros Casa de Paz", href: "/casa-de-paz-registros", icon: NotebookText, roles: LEADERSHIP_ROLES },
+      { name: "Life Groups", href: "/life-groups", icon: Users2, roles: LEADERSHIP_ROLES },
+      { name: "Ministérios", href: "/ministerios", icon: Waves, roles: LEADERSHIP_ROLES },
+      { name: "Formulários", href: "/formularios", icon: ClipboardList, roles: LEADERSHIP_ROLES },
+      { name: "Relatórios", href: "/relatorios", icon: BarChart3, roles: LEADERSHIP_ROLES },
+      { name: "Ciclos Casa de Paz", href: "/casa-de-paz-ciclos", icon: CalendarRange, roles: LEADERSHIP_ROLES },
+      { name: "Conteúdo Casa de Paz", href: "/casa-de-paz-conteudo", icon: BookText, roles: LEADERSHIP_ROLES },
     ],
   },
   {
     title: "Comunicação",
     items: [
-      { name: "Notificações", href: "/notifications", icon: Bell },
-      { name: "Avisos", href: "/announcements", icon: Megaphone },
-      { name: "Calendário", href: "/events", icon: CalendarDays },
+      { name: "Notificações", href: "/notifications", icon: Bell, roles: LEADERSHIP_ROLES },
+      { name: "Avisos", href: "/announcements", icon: Megaphone, roles: LEADERSHIP_ROLES },
+      { name: "Calendário", href: "/events", icon: CalendarDays, roles: LEADERSHIP_ROLES },
     ],
   },
   {
     title: "Estudo",
     items: [
-      { name: "Trilhos de Cursos", href: "/course-tracks", icon: Route },
-      { name: "Cursos", href: "/courses", icon: BookOpen },
-      { name: "Estudo do Life", href: "/estudo-do-life", icon: BookMarked },
+      { name: "Trilhos de Cursos", href: "/course-tracks", icon: Route, roles: ["admin"] as AdminRole[] },
+      { name: "Cursos", href: "/courses", icon: BookOpen, roles: ["admin"] as AdminRole[] },
+      { name: "Estudo do Life", href: "/estudo-do-life", icon: BookMarked, roles: LEADERSHIP_ROLES },
     ],
   },
   {
     title: "Configurações",
     items: [
-      { name: "Dados da igreja", href: "/church-data", icon: Building2 },
+      { name: "Dados da igreja", href: "/church-data", icon: Building2, roles: LEADERSHIP_ROLES },
     ],
   },
 ] as const
@@ -112,18 +127,36 @@ const NavItem = memo(function NavItem({
 
 const NavSection = memo(function NavSection({
   section,
-  pathname
+  pathname,
+  role
 }: {
   section: typeof sidebarSections[number]
   pathname: string
+  // `undefined` means "still loading" — render unfiltered to avoid a
+  // flash of a nearly-empty sidebar before the auth role rehydrates.
+  role: AdminRole | "member" | "guest" | null | undefined
 }) {
+  const items = section.items as ReadonlyArray<{
+    name: string
+    href: string
+    icon: typeof Home
+    roles?: readonly AdminRole[]
+  }>
+  const visibleItems = items.filter((item) => {
+    if (!item.roles) return true
+    if (role === undefined) return true
+    return !!role && (item.roles as readonly string[]).includes(role)
+  })
+
+  if (visibleItems.length === 0) return null
+
   return (
     <div>
       <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
         {section.title}
       </h3>
       <div className="space-y-1">
-        {section.items.map((item) => (
+        {visibleItems.map((item) => (
           <NavItem
             key={item.href}
             href={item.href}
@@ -232,6 +265,7 @@ function ThemeToggle() {
 
 export const SidebarContent = memo(function SidebarContent({ className }: { className?: string }) {
   const pathname = usePathname()
+  const { user, isLoading } = useAuth()
 
   return (
     <div className={cn("flex h-full flex-col bg-sidebar border-r border-sidebar-border", className)}>
@@ -246,6 +280,7 @@ export const SidebarContent = memo(function SidebarContent({ className }: { clas
               key={section.title}
               section={section}
               pathname={pathname}
+              role={isLoading ? undefined : user?.role ?? null}
             />
           ))}
         </nav>

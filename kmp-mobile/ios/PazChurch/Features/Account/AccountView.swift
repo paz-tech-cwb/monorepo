@@ -143,11 +143,13 @@ struct AccountView: View {
                             AccountRow(title: "Life Groups", icon: "person.3.fill", tint: Color(hex: "2E7D32"))
                         }
                         .buttonStyle(.plain)
-                        rowDivider
-                        NavigationLink(destination: ReportsListView()) {
-                            AccountRow(title: "Relatórios", icon: "chart.bar.fill", tint: Color(hex: "2E7D32"))
+                        if user.role.isLeader {
+                            rowDivider
+                            NavigationLink(destination: ReportsListView()) {
+                                AccountRow(title: "Relatórios", icon: "chart.bar.fill", tint: Color(hex: "2E7D32"))
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)

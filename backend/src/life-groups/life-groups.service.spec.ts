@@ -177,6 +177,87 @@ describe('LifeGroupsService', () => {
     });
   });
 
+  describe('create', () => {
+    it('persists image_url and round-trips it in the response', async () => {
+      mockEntityManager.create.mockReturnValue({ id: 10 });
+      mockEntityManager.save.mockResolvedValue({ id: 10 });
+      mockEntityManager.findOne.mockResolvedValue({
+        ...groupAlpha,
+        id: 10,
+        imageUrl: 'https://example.com/photo.jpg',
+      });
+
+      const result = await service.create({
+        name: 'Alpha Group',
+        image_url: 'https://example.com/photo.jpg',
+      } as never);
+
+      expect(mockEntityManager.create).toHaveBeenCalledWith(
+        LifeGroup,
+        expect.objectContaining({ imageUrl: 'https://example.com/photo.jpg' }),
+      );
+      expect(result.image_url).toBe('https://example.com/photo.jpg');
+    });
+
+    it('stays null when image_url is omitted', async () => {
+      mockEntityManager.create.mockReturnValue({ id: 11 });
+      mockEntityManager.save.mockResolvedValue({ id: 11 });
+      mockEntityManager.findOne.mockResolvedValue({
+        ...groupAlpha,
+        id: 11,
+        imageUrl: null,
+      });
+
+      const result = await service.create({ name: 'Alpha Group' } as never);
+
+      expect(mockEntityManager.create).toHaveBeenCalledWith(
+        LifeGroup,
+        expect.objectContaining({ imageUrl: null }),
+      );
+      expect(result.image_url).toBeNull();
+    });
+  });
+
+  describe('update', () => {
+    it('updates image_url and round-trips it in the response', async () => {
+      const existing = {
+        ...groupAlpha,
+        imageUrl: null,
+      } as unknown as LifeGroup;
+      mockEntityManager.findOne
+        .mockResolvedValueOnce(existing)
+        .mockResolvedValueOnce({
+          ...existing,
+          imageUrl: 'https://example.com/new.jpg',
+        });
+      mockEntityManager.save.mockResolvedValue(existing);
+
+      const result = await service.update(1, {
+        image_url: 'https://example.com/new.jpg',
+      } as never);
+
+      expect(result.image_url).toBe('https://example.com/new.jpg');
+    });
+
+    it('leaves image_url untouched when not provided in the update payload', async () => {
+      const existing = {
+        ...groupAlpha,
+        imageUrl: 'https://example.com/keep.jpg',
+      } as unknown as LifeGroup;
+      mockEntityManager.findOne
+        .mockResolvedValueOnce(existing)
+        .mockResolvedValueOnce(existing);
+      mockEntityManager.save.mockResolvedValue(existing);
+
+      await service.update(1, { name: 'Renamed' } as never);
+
+      expect(mockEntityManager.save).toHaveBeenCalledWith(
+        LifeGroup,
+        expect.objectContaining({ imageUrl: 'https://example.com/keep.jpg' }),
+      );
+    });
+  });
+
   describe('search (untouched ?q= endpoint)', () => {
     it('still returns only {id, name} and uses its own query shape', async () => {
       const qb = makeQueryBuilder([groupAlpha]);

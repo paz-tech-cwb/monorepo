@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Plus } from "lucide-react"
 import { Card } from "@/components/ui/card"
@@ -26,6 +26,7 @@ import {
   useCreateCasaDePazCycle,
   useCloseCasaDePazCycle,
 } from "@/lib/hooks/use-casa-de-paz-cycles"
+import { getCasaDePazCycleLabels } from "@/lib/utils/casa-de-paz-cycle-label"
 
 const COLUMN_COUNT = 3
 
@@ -42,18 +43,18 @@ export function CasaDePazCyclesManagement() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [month, setMonth] = useState("")
-  const [name, setName] = useState("")
   const [closingId, setClosingId] = useState<string | null>(null)
+
+  const cycleLabels = useMemo(() => getCasaDePazCycleLabels(cycles), [cycles])
 
   const resetCreateForm = () => {
     setMonth("")
-    setName("")
   }
 
   const handleCreate = async () => {
     if (!month) return
     try {
-      await createMutation.mutateAsync({ month, name: name.trim() || undefined })
+      await createMutation.mutateAsync({ month })
       toast.success("Ciclo criado")
       resetCreateForm()
       setIsCreateOpen(false)
@@ -108,7 +109,7 @@ export function CasaDePazCyclesManagement() {
             <TableBody>
               {cycles.map((cycle) => (
                 <TableRow key={cycle.id}>
-                  <TableCell>{cycle.name}</TableCell>
+                  <TableCell>{cycleLabels.get(cycle.id) ?? cycle.name}</TableCell>
                   <TableCell>{formatMonth(cycle.month)}</TableCell>
                   <TableCell>
                     <Badge variant={cycle.status === "open" ? "default" : "secondary"}>
@@ -142,15 +143,6 @@ export function CasaDePazCyclesManagement() {
                 type="month"
                 value={month}
                 onChange={(e) => setMonth(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="cdp-cycle-name">Nome (opcional)</Label>
-              <Input
-                id="cdp-cycle-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Deixe em branco para gerar automaticamente"
               />
             </div>
           </div>

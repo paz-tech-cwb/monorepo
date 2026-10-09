@@ -40,7 +40,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -55,7 +54,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -143,15 +141,9 @@ fun HomeScreen(
                             agendaEvents = uiState.agendaEvents,
                             bank = uiState.bank,
                             sectionOrder = uiState.sectionOrder,
-                            isAgendaExpanded = uiState.isAgendaExpanded,
-                            isLoadingFullAgenda = uiState.isLoadingFullAgenda,
-                            fullAgendaEvents = uiState.fullAgendaEvents,
-                            fullAgendaLoadError = uiState.fullAgendaLoadError,
                             showLifeGroupDiscoveryCTA = uiState.showLifeGroupDiscoveryCTA,
                             onBannerTap = viewModel::onBannerTapped,
                             onEventTap = viewModel::onEventTapped,
-                            onToggleAgendaExpanded = viewModel::onToggleAgendaExpanded,
-                            onRetryFullAgenda = viewModel::onRetryFullAgenda,
                             onSeeAllEvents = { navController.navigate(Screen.AgendaList.route) },
                             onLifeGroupDiscoveryTap = { navController.navigate(Screen.LifeGroupDiscovery.route) },
                             contentPadding = adjustedPadding,
@@ -181,20 +173,14 @@ private fun HomeContent(
     agendaEvents: List<AgendaEvent>,
     bank: BankInfo?,
     sectionOrder: List<String>,
-    isAgendaExpanded: Boolean,
-    isLoadingFullAgenda: Boolean,
-    fullAgendaEvents: List<AgendaEvent>,
-    fullAgendaLoadError: String?,
     showLifeGroupDiscoveryCTA: Boolean,
     onBannerTap: (String?) -> Unit,
     onEventTap: (String) -> Unit,
-    onToggleAgendaExpanded: () -> Unit,
-    onRetryFullAgenda: () -> Unit,
     onSeeAllEvents: () -> Unit,
     onLifeGroupDiscoveryTap: () -> Unit,
     contentPadding: PaddingValues,
 ) {
-    val nextSevenDaysEvents = remember(agendaEvents) { filterNextSevenDays(agendaEvents) }
+    val nextSevenDaysEvents = remember(agendaEvents) { filterNextSevenDays(agendaEvents).take(7) }
 
     LazyColumn(
         contentPadding = contentPadding,
@@ -226,12 +212,6 @@ private fun HomeContent(
                         AnimatedSection(index = index) {
                             AgendaSection(
                                 nextSevenDaysEvents = nextSevenDaysEvents,
-                                isExpanded = isAgendaExpanded,
-                                isLoadingFullAgenda = isLoadingFullAgenda,
-                                fullAgendaEvents = fullAgendaEvents,
-                                fullAgendaLoadError = fullAgendaLoadError,
-                                onToggleExpanded = onToggleAgendaExpanded,
-                                onRetryFullAgenda = onRetryFullAgenda,
                                 onEventTap = onEventTap,
                                 onSeeAll = onSeeAllEvents,
                             )
@@ -586,17 +566,9 @@ private fun filterNextSevenDays(events: List<AgendaEvent>): List<AgendaEvent> {
 @Composable
 private fun AgendaSection(
     nextSevenDaysEvents: List<AgendaEvent>,
-    isExpanded: Boolean,
-    isLoadingFullAgenda: Boolean,
-    fullAgendaEvents: List<AgendaEvent>,
-    fullAgendaLoadError: String?,
-    onToggleExpanded: () -> Unit,
-    onRetryFullAgenda: () -> Unit,
     onEventTap: (String) -> Unit,
     onSeeAll: () -> Unit,
 ) {
-    val eventsToShow = if (isExpanded) fullAgendaEvents else nextSevenDaysEvents
-
     Column(Modifier.padding(top = PazSpacing.Xl)) {
         Row(
             Modifier
@@ -620,7 +592,7 @@ private fun AgendaSection(
             }
         }
 
-        if (!isExpanded && nextSevenDaysEvents.isEmpty()) {
+        if (nextSevenDaysEvents.isEmpty()) {
             // No events in the next 7 days — keep only the entry point to the
             // full agenda, without the detailed week-list view.
             Spacer(Modifier.height(PazSpacing.Sm))
@@ -631,69 +603,12 @@ private fun AgendaSection(
                 Modifier.padding(horizontal = PazSpacing.Lg),
                 verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
             ) {
-                if (isExpanded && isLoadingFullAgenda) {
-                    repeat(3) { PazCardSkeleton() }
-                } else if (isExpanded && fullAgendaLoadError != null) {
-                    FullAgendaErrorRow(error = fullAgendaLoadError, onRetry = onRetryFullAgenda)
-                } else {
-                    eventsToShow.forEach { event ->
-                        EventCard(event = event, onClick = { onEventTap(event.id) })
-                    }
+                nextSevenDaysEvents.forEach { event ->
+                    EventCard(event = event, onClick = { onEventTap(event.id) })
                 }
-
-                AgendaExpandToggle(isExpanded = isExpanded, onClick = onToggleExpanded)
             }
         }
         Spacer(Modifier.height(PazSpacing.Lg))
-    }
-}
-
-@Composable
-private fun FullAgendaErrorRow(
-    error: String,
-    onRetry: () -> Unit,
-) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(PazSpacing.Lg),
-        verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
-    ) {
-        Text(
-            "Não foi possível carregar a agenda completa. ($error)",
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        TextButton(onClick = onRetry) {
-            Text("Tentar novamente", style = MaterialTheme.typography.labelMedium.copy(color = PazColors.PrimaryLight))
-        }
-    }
-}
-
-@Composable
-private fun AgendaExpandToggle(
-    isExpanded: Boolean,
-    onClick: () -> Unit,
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surface,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = PazSpacing.Md),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = if (isExpanded) "Ver menos" else "Ver próximos eventos",
-                style = MaterialTheme.typography.labelMedium.copy(color = PazColors.PrimaryLight),
-            )
-        }
     }
 }
 

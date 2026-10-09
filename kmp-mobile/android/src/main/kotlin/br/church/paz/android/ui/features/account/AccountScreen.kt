@@ -207,14 +207,17 @@ fun AccountScreen(
                                     icon = Icons.Outlined.Groups,
                                     iconTint = PazColors.MenuLifeGroups,
                                     onClick = viewModel::onLifeGroups,
+                                    showDivider = user.role.isLeader,
                                 )
-                                PazMenuRow(
-                                    title = "Relatórios",
-                                    icon = Icons.Outlined.BarChart,
-                                    iconTint = PazColors.MenuLifeGroups,
-                                    onClick = viewModel::onReports,
-                                    showDivider = false,
-                                )
+                                if (user.role.isLeader) {
+                                    PazMenuRow(
+                                        title = "Relatórios",
+                                        icon = Icons.Outlined.BarChart,
+                                        iconTint = PazColors.MenuLifeGroups,
+                                        onClick = viewModel::onReports,
+                                        showDivider = false,
+                                    )
+                                }
                             }
                         }
 
