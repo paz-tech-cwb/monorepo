@@ -36,6 +36,8 @@ interface ChurchRepository {
     suspend fun addMinistryMember(ministryId: Int, userId: Int)
     @Throws(Exception::class)
     suspend fun removeMinistryMember(ministryId: Int, userId: Int)
+    @Throws(Exception::class)
+    suspend fun createMinistry(request: CreateMinistryRequest): Ministry
 }
 
 data class UpdateLifeGroupRequest(
@@ -49,4 +51,12 @@ data class UpdateLifeGroupRequest(
 data class UpdateMinistryRequest(
     val name: String? = null,
     val description: String? = null,
+)
+
+data class CreateMinistryRequest(
+    val name: String,
+    val description: String? = null,
+    val leaderId: Int,
+    val coLeaderId: Int? = null,
+    val membershipMode: String = "teams",
 )

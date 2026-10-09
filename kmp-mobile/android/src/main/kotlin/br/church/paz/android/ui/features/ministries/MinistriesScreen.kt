@@ -16,8 +16,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -64,69 +66,100 @@ fun MinistriesScreen(
         }
     }
 
-    Column(Modifier.fillMaxSize()) {
-        // Hero header
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .background(PazGradients.Hero)
-                .statusBarsPadding(),
-        ) {
-            Row(
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+            // Hero header
+            Box(
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
-                verticalAlignment = Alignment.CenterVertically,
+                    .background(PazGradients.Hero)
+                    .statusBarsPadding(),
             ) {
-                IconButton(onClick = { viewModel.onBack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "back", tint = Color.White)
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Md),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = { viewModel.onBack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "back", tint = Color.White)
+                    }
+                    Text(
+                        "Ministérios & Grupos",
+                        style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
+                        modifier = Modifier.weight(1f),
+                    )
                 }
-                Text(
-                    "Ministérios & Grupos",
-                    style = MaterialTheme.typography.headlineMedium.copy(color = Color.White),
-                    modifier = Modifier.weight(1f),
+            }
+
+            // Tab selector
+            TabRow(
+                selectedTabIndex = uiState.selectedTab.ordinal,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = PazColors.Primary,
+            ) {
+                Tab(
+                    selected = uiState.selectedTab == MinistriesTab.Ministries,
+                    onClick = { viewModel.onTabSelected(MinistriesTab.Ministries) },
+                    text = { Text("Ministérios") },
+                )
+                Tab(
+                    selected = uiState.selectedTab == MinistriesTab.LifeGroups,
+                    onClick = { viewModel.onTabSelected(MinistriesTab.LifeGroups) },
+                    text = { Text("Life Groups") },
                 )
             }
-        }
 
-        // Tab selector
-        TabRow(
-            selectedTabIndex = uiState.selectedTab.ordinal,
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = PazColors.Primary,
-        ) {
-            Tab(
-                selected = uiState.selectedTab == MinistriesTab.Ministries,
-                onClick = { viewModel.onTabSelected(MinistriesTab.Ministries) },
-                text = { Text("Ministérios") },
-            )
-            Tab(
-                selected = uiState.selectedTab == MinistriesTab.LifeGroups,
-                onClick = { viewModel.onTabSelected(MinistriesTab.LifeGroups) },
-                text = { Text("Life Groups") },
-            )
-        }
-
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
-        ) {
-            when {
-                uiState.isLoading -> LoadingState()
-                uiState.error != null && uiState.ministries.isEmpty() && uiState.lifeGroups.isEmpty() ->
-                    ErrorState(error = uiState.error!!, onRetry = viewModel::onRetry)
-                uiState.selectedTab == MinistriesTab.Ministries ->
-                    MinistriesTab(
-                        ministries = uiState.ministries,
-                        onTap = viewModel::onMinistryTap,
-                    )
-                else ->
-                    LifeGroupsTab(
-                        lifeGroups = uiState.lifeGroups,
-                        onTap = viewModel::onLifeGroupTap,
-                    )
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+            ) {
+                when {
+                    uiState.isLoading -> LoadingState()
+                    uiState.error != null && uiState.ministries.isEmpty() && uiState.lifeGroups.isEmpty() ->
+                        ErrorState(error = uiState.error!!, onRetry = viewModel::onRetry)
+                    uiState.selectedTab == MinistriesTab.Ministries ->
+                        MinistriesTab(
+                            ministries = uiState.ministries,
+                            onTap = viewModel::onMinistryTap,
+                        )
+                    else ->
+                        LifeGroupsTab(
+                            lifeGroups = uiState.lifeGroups,
+                            onTap = viewModel::onLifeGroupTap,
+                        )
+                }
             }
+        }
+
+        if (uiState.canManage && uiState.selectedTab == MinistriesTab.Ministries) {
+            FloatingActionButton(
+                onClick = { viewModel.onCreateMinistryOpen() },
+                containerColor = PazColors.Primary,
+                contentColor = Color.White,
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(PazSpacing.Lg),
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "Criar ministério")
+            }
+        }
+
+        uiState.createForm?.let { formState ->
+            MinistryCreateSheet(
+                state = formState,
+                onDismiss = viewModel::onCreateMinistryDismiss,
+                onNameChanged = viewModel::onCreateNameChanged,
+                onDescriptionChanged = viewModel::onCreateDescriptionChanged,
+                onMembershipModeChanged = viewModel::onCreateMembershipModeChanged,
+                onLeaderQueryChanged = { viewModel.onLeaderSearchQueryChanged(MinistryLeaderPickerTarget.LEADER, it) },
+                onLeaderSelected = viewModel::onLeaderSelected,
+                onCoLeaderQueryChanged = { viewModel.onLeaderSearchQueryChanged(MinistryLeaderPickerTarget.CO_LEADER, it) },
+                onCoLeaderSelected = viewModel::onCoLeaderSelected,
+                onConfirm = viewModel::onCreateConfirm,
+            )
         }
     }
 }

@@ -5,7 +5,9 @@ import br.church.paz.shared.domain.model.Church
 import br.church.paz.shared.domain.model.LifeGroup
 import br.church.paz.shared.domain.model.Ministry
 import br.church.paz.shared.domain.model.Sector
+import br.church.paz.shared.data.remote.throwOnClientOrServerError
 import br.church.paz.shared.domain.repository.ChurchRepository
+import br.church.paz.shared.domain.repository.CreateMinistryRequest
 import br.church.paz.shared.domain.repository.UpdateLifeGroupRequest
 import br.church.paz.shared.domain.repository.UpdateMinistryRequest
 import io.ktor.client.HttpClient
@@ -87,6 +89,24 @@ class ChurchRepositoryImpl(private val client: HttpClient) : ChurchRepository {
     override suspend fun removeMinistryMember(ministryId: Int, userId: Int) {
         client.delete("api/ministries/$ministryId/members/$userId")
     }
+
+    @Throws(Exception::class)
+    override suspend fun createMinistry(request: CreateMinistryRequest): Ministry {
+        val response = client.post("api/ministries") {
+            contentType(ContentType.Application.Json)
+            setBody(
+                CreateMinistryBody(
+                    name = request.name,
+                    description = request.description,
+                    leaderId = request.leaderId,
+                    coLeaderId = request.coLeaderId,
+                    membershipMode = request.membershipMode,
+                ),
+            )
+        }
+        response.throwOnClientOrServerError()
+        return response.body()
+    }
 }
 
 @Serializable
@@ -102,4 +122,13 @@ private data class UpdateLifeGroupBody(
 private data class UpdateMinistryBody(
     val name: String? = null,
     val description: String? = null,
+)
+
+@Serializable
+private data class CreateMinistryBody(
+    val name: String,
+    val description: String? = null,
+    @SerialName("leader_id") val leaderId: Int,
+    @SerialName("co_leader_id") val coLeaderId: Int? = null,
+    @SerialName("membership_mode") val membershipMode: String = "teams",
 )
