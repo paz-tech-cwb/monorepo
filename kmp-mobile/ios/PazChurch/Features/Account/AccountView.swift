@@ -10,10 +10,11 @@ struct AccountView: View {
     @State private var path: [DeepLinkDestination] = []
     @Environment(\.colorScheme) private var colorScheme
 
-    init(userRepository: UserRepository, authRepository: AuthRepository) {
+    init(userRepository: UserRepository, authRepository: AuthRepository, churchRepository: ChurchRepository) {
         _viewModel = State(initialValue: AccountViewModel(
             userRepository: userRepository,
-            authRepository: authRepository
+            authRepository: authRepository,
+            churchRepository: churchRepository
         ))
     }
 
@@ -109,7 +110,7 @@ struct AccountView: View {
                 // rendering completely blank instead of showing content.
                 if let user = viewModel.user ?? authCoordinator.currentUser {
                     NavigationLink(destination: EditProfileView()) {
-                        userCard(user: user)
+                        userCard(user: user, churchName: viewModel.churchName)
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 20)
@@ -230,7 +231,7 @@ struct AccountView: View {
 
     // MARK: - Helpers
 
-    private func userCard(user: Shared.User) -> some View {
+    private func userCard(user: Shared.User, churchName: String?) -> some View {
         ZStack(alignment: .topTrailing) {
             HStack(spacing: 12) {
                 ZStack {
@@ -248,6 +249,13 @@ struct AccountView: View {
                         .padding(.horizontal, 8).padding(.vertical, 2)
                         .background(PazColors.accent.opacity(0.12))
                         .clipShape(Capsule())
+                    if let churchName, !churchName.isEmpty {
+                        Spacer().frame(height: 2)
+                        Text(churchName)
+                            .font(PazTypography.labelSmall)
+                            .foregroundStyle(PazColors.slateLight)
+                            .lineLimit(1)
+                    }
                 }
                 Spacer()
             }
@@ -318,7 +326,8 @@ private struct AccountRow: View {
 #Preview("Light") {
     AccountView(
         userRepository: IosAppContainer.shared.userRepository,
-        authRepository: IosAppContainer.shared.authRepository
+        authRepository: IosAppContainer.shared.authRepository,
+        churchRepository: IosAppContainer.shared.churchRepository
     )
     .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
     .environment(AppThemeManager())
@@ -327,7 +336,8 @@ private struct AccountRow: View {
 #Preview("Dark") {
     AccountView(
         userRepository: IosAppContainer.shared.userRepository,
-        authRepository: IosAppContainer.shared.authRepository
+        authRepository: IosAppContainer.shared.authRepository,
+        churchRepository: IosAppContainer.shared.churchRepository
     )
     .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
     .environment(AppThemeManager())

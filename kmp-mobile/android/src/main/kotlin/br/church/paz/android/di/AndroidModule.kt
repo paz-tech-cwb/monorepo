@@ -63,7 +63,7 @@ val androidModule =
         viewModel { (courseId: String) -> CourseDetailViewModel(courseId, get()) }
         viewModel { (courseId: String) -> QuestionnaireViewModel(courseId, get(), get()) }
         viewModel { CertificatesViewModel(get()) }
-        viewModel { AccountViewModel(get(), get()) }
+        viewModel { AccountViewModel(get(), get(), get()) }
         viewModel { ProfileViewModel(get()) }
         viewModel { EditProfileViewModel(get(), get(), get()) } // (UserRepository, OnboardingRepository, AuthRepository)
         viewModel { (eventId: String) -> AgendaDetailViewModel(get(), eventId) }

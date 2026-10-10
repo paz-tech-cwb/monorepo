@@ -172,6 +172,7 @@ fun AccountScreen(
                         item {
                             ProfileCard(
                                 user = user,
+                                churchName = uiState.churchName,
                                 onClick = viewModel::onEditProfile,
                                 modifier = Modifier.padding(horizontal = PazSpacing.Lg),
                             )
@@ -311,6 +312,7 @@ private fun ProfileCard(
     user: User,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    churchName: String? = null,
 ) {
     Box(modifier = modifier) {
         PazGlassCard(
@@ -342,6 +344,14 @@ private fun ProfileCard(
                         Text(
                             user.role.displayName,
                             style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Primary),
+                        )
+                    }
+                    if (!churchName.isNullOrBlank()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            churchName,
+                            style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Slate),
+                            maxLines = 1,
                         )
                     }
                 }

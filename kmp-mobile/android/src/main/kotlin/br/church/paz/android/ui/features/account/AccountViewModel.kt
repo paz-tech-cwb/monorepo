@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.android.ui.theme.AppThemeManager
 import br.church.paz.shared.domain.repository.AuthRepository
+import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.push.getFcmToken
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 class AccountViewModel(
     private val authRepository: AuthRepository,
     private val themeManager: AppThemeManager,
+    private val churchRepository: ChurchRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AccountUiState())
     val uiState: StateFlow<AccountUiState> = _uiState.asStateFlow()
@@ -31,6 +33,7 @@ class AccountViewModel(
         viewModelScope.launch {
             val user = authRepository.currentUser()
             _uiState.update { it.copy(user = user, isLoading = false, isGuestMode = false) }
+            loadChurchName()
         }
     }
 
@@ -39,6 +42,17 @@ class AccountViewModel(
             _uiState.update { it.copy(isRefreshing = true) }
             val user = authRepository.currentUser()
             _uiState.update { it.copy(user = user, isRefreshing = false, isGuestMode = false) }
+            loadChurchName()
+        }
+    }
+
+    // Display-only: resolves to the member's primary filial via the backend
+    // JWT — no client-side church id plumbing needed. Best-effort; a
+    // failure here shouldn't block the rest of the Account screen.
+    private fun loadChurchName() {
+        viewModelScope.launch {
+            val churchName = runCatching { churchRepository.getChurch().name }.getOrNull()
+            _uiState.update { it.copy(churchName = churchName) }
         }
     }
 
