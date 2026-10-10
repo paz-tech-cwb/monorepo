@@ -48,11 +48,14 @@ describe('AreasService', () => {
       updatedAt: new Date(),
     });
 
-    const result = await service.create({
-      name: 'Norte',
-      leader_id: 10,
-      co_leader_id: 20,
-    });
+    const result = await service.create(
+      {
+        name: 'Norte',
+        leader_id: 10,
+        co_leader_id: 20,
+      },
+      1,
+    );
 
     expect(result.leader_id).toBe(10);
     expect(result.co_leader_id).toBe(20);
@@ -60,7 +63,7 @@ describe('AreasService', () => {
 
   it('rejects the same leader and co-leader', async () => {
     await expect(
-      service.create({ name: 'Norte', leader_id: 10, co_leader_id: 10 }),
+      service.create({ name: 'Norte', leader_id: 10, co_leader_id: 10 }, 1),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -94,11 +97,14 @@ describe('AreasService', () => {
       updatedAt: new Date(),
     });
 
-    const result = await service.create({
-      name: 'Norte',
-      pastor_id: 30,
-      co_pastor_id: 40,
-    });
+    const result = await service.create(
+      {
+        name: 'Norte',
+        pastor_id: 30,
+        co_pastor_id: 40,
+      },
+      1,
+    );
 
     expect(em.create).toHaveBeenCalledWith(
       Area,
@@ -113,7 +119,7 @@ describe('AreasService', () => {
 
   it('rejects the same pastor and co-pastor', async () => {
     await expect(
-      service.create({ name: 'Norte', pastor_id: 30, co_pastor_id: 30 }),
+      service.create({ name: 'Norte', pastor_id: 30, co_pastor_id: 30 }, 1),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 

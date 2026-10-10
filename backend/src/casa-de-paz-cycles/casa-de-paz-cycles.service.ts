@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { CasaDePazCycle } from './entities/casa-de-paz-cycle.entity';
 import { CreateCasaDePazCycleDto } from './dto/create-casa-de-paz-cycle.dto';
 import { User } from '../users/entities/user.entity';
+import { Church } from '../church/entities/church.entity';
 
 export interface CasaDePazCycleResponse {
   id: string;
@@ -50,14 +51,18 @@ export class CasaDePazCyclesService {
     return { id: m.id, name: m.name, month: m.month, status: m.status };
   }
 
-  async list(): Promise<CasaDePazCycleResponse[]> {
-    const rows = await this.repo.find({ order: { month: 'DESC' } });
+  async list(churchId?: number): Promise<CasaDePazCycleResponse[]> {
+    const rows = await this.repo.find({
+      where: churchId ? { church: { id: churchId } } : {},
+      order: { month: 'DESC' },
+    });
     return rows.map((r) => this.toResponse(r));
   }
 
   async create(
     dto: CreateCasaDePazCycleDto,
     actorId: number,
+    churchId: number,
   ): Promise<CasaDePazCycleResponse> {
     const monthDate = `${dto.month}-01`;
     const name = dto.name?.trim() || monthNameFor(monthDate);
@@ -67,6 +72,7 @@ export class CasaDePazCyclesService {
           month: monthDate,
           name,
           createdBy: { id: actorId } as User,
+          church: { id: churchId } as Church,
         }),
       );
       return this.toResponse(entity);
@@ -93,29 +99,37 @@ export class CasaDePazCyclesService {
   // Used by callers needing a default cycle selection (e.g. future
   // onboarding/report pickers): prefers the most recently created open
   // cycle, falling back to the most recent cycle overall if none is open.
-  async mostRecentOpenOrLatest(): Promise<CasaDePazCycle | null> {
+  async mostRecentOpenOrLatest(
+    churchId?: number,
+  ): Promise<CasaDePazCycle | null> {
+    const churchFilter = churchId ? { church: { id: churchId } } : {};
     const open = await this.repo.findOne({
-      where: { status: 'open' },
+      where: { ...churchFilter, status: 'open' },
       order: { month: 'DESC' },
     });
     if (open) return open;
-    return this.repo.findOne({ order: { month: 'DESC' } });
+    return this.repo.findOne({ where: churchFilter, order: { month: 'DESC' } });
   }
 
   // Finds (or creates) the cycle for a given normalized month date
-  // ("YYYY-MM-01"). Used by the historical backfill path and any other
-  // internal caller that needs to resolve a report's month to a cycle.
+  // ("YYYY-MM-01") within a given church. Used by the historical backfill
+  // path and any other internal caller that needs to resolve a report's
+  // month to a cycle.
   async resolveOrCreateForMonth(
     monthDate: string,
     actorId: number,
+    churchId: number,
   ): Promise<CasaDePazCycle> {
-    const existing = await this.repo.findOne({ where: { month: monthDate } });
+    const existing = await this.repo.findOne({
+      where: { month: monthDate, church: { id: churchId } },
+    });
     if (existing) return existing;
     return this.repo.save(
       this.repo.create({
         month: monthDate,
         name: monthNameFor(monthDate),
         createdBy: { id: actorId } as User,
+        church: { id: churchId } as Church,
       }),
     );
   }

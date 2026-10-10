@@ -3,6 +3,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Event } from './entities/event.entity';
+import { Church } from '../church/entities/church.entity';
 import { IsNull, MoreThanOrEqual, Not, Repository } from 'typeorm';
 
 function toResponse(event: Event, overrideDate?: Date) {
@@ -45,9 +46,10 @@ export class EventsService {
     private eventsRepository: Repository<Event>,
   ) {}
 
-  async create(createEventDto: CreateEventDto) {
+  async create(createEventDto: CreateEventDto, churchId: number) {
     const event = this.eventsRepository.create({
       title: createEventDto.title,
+      church: { id: churchId } as Church,
       initialDate: new Date(createEventDto.initial_date),
       finalDate: createEventDto.final_date
         ? new Date(createEventDto.final_date)
@@ -60,15 +62,16 @@ export class EventsService {
     return toResponse(saved);
   }
 
-  async findAll() {
+  async findAll(churchId?: number) {
     const events = await this.eventsRepository.find({
+      where: churchId ? { church: { id: churchId } } : {},
       order: { initialDate: 'ASC' },
     });
     return events.map((e) => toResponse(e));
   }
 
-  async findPaginated(page: number, limit: number) {
-    const occurrences = await this.findUpcomingOccurrences();
+  async findPaginated(page: number, limit: number, churchId?: number) {
+    const occurrences = await this.findUpcomingOccurrences(churchId);
     const skip = (page - 1) * limit;
     return occurrences.slice(skip, skip + limit);
   }
@@ -82,8 +85,12 @@ export class EventsService {
    * cases (e.g. many overlapping daily recurrences), without being the primary
    * filter.
    */
-  async findUpcomingWithinDays(days: number, maxCount = 200) {
-    const occurrences = await this.findUpcomingOccurrences();
+  async findUpcomingWithinDays(
+    days: number,
+    maxCount = 200,
+    churchId?: number,
+  ) {
+    const occurrences = await this.findUpcomingOccurrences(churchId);
 
     // Pad the window by one extra day internally to absorb timezone drift
     // between the server's local time and clients computing "next N days"
@@ -100,16 +107,17 @@ export class EventsService {
     return withinWindow.slice(0, maxCount);
   }
 
-  private async findUpcomingOccurrences() {
+  private async findUpcomingOccurrences(churchId?: number) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const lookahead = new Date(today);
     lookahead.setFullYear(lookahead.getFullYear() + 2);
 
+    const churchFilter = churchId ? { church: { id: churchId } } : {};
     const events = await this.eventsRepository.find({
       where: [
-        { recurrenceType: Not(IsNull()) },
-        { initialDate: MoreThanOrEqual(today) },
+        { ...churchFilter, recurrenceType: Not(IsNull()) },
+        { ...churchFilter, initialDate: MoreThanOrEqual(today) },
       ],
     });
 

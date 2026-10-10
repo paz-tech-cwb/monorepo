@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -7,6 +8,7 @@ import {
   Param,
   Delete,
   Query,
+  Request,
   SerializeOptions,
   UseGuards,
 } from '@nestjs/common';
@@ -17,6 +19,7 @@ import { UpdateEventDto } from './dto/update-event.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
+import { User } from '../users/entities/user.entity';
 
 @Controller('events')
 @SerializeOptions({
@@ -29,18 +32,34 @@ export class EventsController {
   @Post()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(...LEADERSHIP_ROLES)
-  create(@Body() createEventDto: CreateEventDto) {
-    return this.eventsService.create(createEventDto);
+  create(
+    @Request() req: { user: User },
+    @Body() createEventDto: CreateEventDto,
+  ) {
+    if (!req.user.churchId) {
+      throw new BadRequestException(
+        'User has no associated church; cannot create an event.',
+      );
+    }
+    return this.eventsService.create(createEventDto, req.user.churchId);
   }
 
+  // No auth guard: this is a public/mobile read endpoint. When called
+  // unauthenticated (no req.user), results are unscoped across all
+  // filiais, matching the prior single-church behavior.
   @Get()
-  findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
+  findAll(
+    @Request() req: { user?: User },
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const churchId = req.user?.churchId ?? undefined;
     if (page !== undefined && limit !== undefined) {
       const pageNum = Math.max(1, parseInt(page, 10) || 1);
       const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
-      return this.eventsService.findPaginated(pageNum, limitNum);
+      return this.eventsService.findPaginated(pageNum, limitNum, churchId);
     }
-    return this.eventsService.findAll();
+    return this.eventsService.findAll(churchId);
   }
 
   @Get(':id')

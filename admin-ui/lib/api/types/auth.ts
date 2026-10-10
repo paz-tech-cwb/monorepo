@@ -12,6 +12,7 @@ export interface User {
   name: string
   picture: string
   role: AdminRole | "member" | "guest" | null
+  church_id?: number | null
 }
 
 export interface AuthResponse {

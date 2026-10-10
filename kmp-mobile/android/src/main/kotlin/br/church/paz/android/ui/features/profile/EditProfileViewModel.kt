@@ -290,7 +290,12 @@ class EditProfileViewModel(
                         },
                 )
             runCatching { userRepository.updateProfile(request) }
-                .onSuccess {
+                .onSuccess { updatedUser ->
+                    // PUT /me's response is the only up-to-date source for the user's picture
+                    // URL (and everything else just saved) — without refreshing the cached
+                    // session user here, the Account/Home screens keep showing the login-time
+                    // snapshot (including the OLD picture) until the next full sign-in.
+                    runCatching { authRepository.updateCachedUser(updatedUser) }
                     _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
                     _effect.send(EditProfileEffect.SaveSuccess)
                 }.onFailure { e ->

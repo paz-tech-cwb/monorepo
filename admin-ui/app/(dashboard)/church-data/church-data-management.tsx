@@ -17,6 +17,8 @@ import { Separator } from "@/components/ui/separator"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { FormDrawer } from "@/components/ui/form-drawer"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Building2, MapPin, Clock, CreditCard, Phone, Globe, Save, Plus, MoreHorizontal, Edit, Trash2, Search, DollarSign } from "lucide-react"
 import {
   useContributions,
@@ -24,7 +26,7 @@ import {
   useUpdateContribution,
   useDeleteContribution,
 } from "@/lib/hooks/use-contributions"
-import { useChurch, useUpdateChurch } from "@/lib/hooks/use-church"
+import { useChurches, useChurch, useCreateChurch, useUpdateChurch } from "@/lib/hooks/use-church"
 import { TableSkeleton } from "@/components/ui/skeleton-components"
 import type { Contribution, CreateContributionRequest, UpdateContributionRequest } from "@/lib/api/types"
 import { AddressForm, type AddressFormData } from "@/components/ui/address-form"
@@ -117,8 +119,46 @@ export function ChurchDataManagement() {
     router.replace(`?${params.toString()}`, { scroll: false })
   }
 
-  const { data: church, isLoading: isLoadingChurch } = useChurch()
-  const churchUpdateMutation = useUpdateChurch()
+  // Filiais (churches) — list + per-filial selection. Defaults to the
+  // requester's primary filial (first row returned by the legacy bare
+  // `GET /church`) once the list has loaded.
+  const { data: churches = [], isLoading: isLoadingChurches } = useChurches()
+  const { data: primaryChurch } = useChurch()
+  const [selectedChurchId, setSelectedChurchId] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (selectedChurchId !== null) return
+    if (primaryChurch) {
+      setSelectedChurchId(primaryChurch.id)
+    } else if (churches.length > 0) {
+      setSelectedChurchId(churches[0].id)
+    }
+  }, [selectedChurchId, primaryChurch, churches])
+
+  const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false)
+  const [newChurchData, setNewChurchData] = useState({ name: "", slug: "", is_active: true })
+  const createChurchMutation = useCreateChurch()
+
+  const resetNewChurchForm = () => setNewChurchData({ name: "", slug: "", is_active: true })
+
+  const handleCreateChurch = async () => {
+    try {
+      const created = await createChurchMutation.mutateAsync({
+        name: newChurchData.name,
+        slug: newChurchData.slug || null,
+        is_active: newChurchData.is_active,
+      })
+      toast.success("Filial criada com sucesso!")
+      resetNewChurchForm()
+      setIsCreateDrawerOpen(false)
+      setSelectedChurchId(created.id)
+    } catch {
+      toast.error("Erro ao criar filial. Tente novamente.")
+    }
+  }
+
+  const { data: church, isLoading: isLoadingChurch } = useChurch(selectedChurchId ?? undefined)
+  const churchUpdateMutation = useUpdateChurch(selectedChurchId ?? undefined)
 
   const [churchData, setChurchData] = useState<ChurchFormData>(emptyFormData)
 
@@ -319,12 +359,91 @@ export function ChurchDataManagement() {
               Ultima atualizacao: <Badge variant="outline">{lastSaved}</Badge>
             </div>
           )}
-          <Button onClick={handleSave} disabled={churchUpdateMutation.isPending || isLoadingChurch}>
+          <Button onClick={handleSave} disabled={churchUpdateMutation.isPending || isLoadingChurch || !selectedChurchId}>
             <Save className="mr-2 h-4 w-4" />
             {churchUpdateMutation.isPending ? "Salvando..." : "Salvar Alteracoes"}
           </Button>
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                Filiais
+              </CardTitle>
+              <CardDescription>Selecione a filial que deseja visualizar ou editar</CardDescription>
+            </div>
+            <Button variant="outline" onClick={() => setIsCreateDrawerOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Filial
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoadingChurches ? (
+            <Skeleton className="h-10 w-full max-w-sm" />
+          ) : (
+            <Select
+              value={selectedChurchId ? String(selectedChurchId) : undefined}
+              onValueChange={(value) => setSelectedChurchId(Number(value))}
+            >
+              <SelectTrigger className="w-full max-w-sm">
+                <SelectValue placeholder="Selecione uma filial" />
+              </SelectTrigger>
+              <SelectContent>
+                {churches.map((c) => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.name}
+                    {!c.is_active ? " (inativa)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </CardContent>
+      </Card>
+
+      <FormDrawer
+        open={isCreateDrawerOpen}
+        onOpenChange={setIsCreateDrawerOpen}
+        title="Nova Filial"
+        description="Preencha os dados basicos da nova filial"
+        isLoading={createChurchMutation.isPending}
+        onSubmit={handleCreateChurch}
+        submitLabel="Criar Filial"
+      >
+        <div className="grid gap-4">
+          <div>
+            <Label htmlFor="new-church-name">Nome</Label>
+            <Input
+              id="new-church-name"
+              value={newChurchData.name}
+              onChange={(e) => setNewChurchData({ ...newChurchData, name: e.target.value })}
+              placeholder="Nome da filial"
+            />
+          </div>
+          <div>
+            <Label htmlFor="new-church-slug">Slug</Label>
+            <Input
+              id="new-church-slug"
+              value={newChurchData.slug}
+              onChange={(e) => setNewChurchData({ ...newChurchData, slug: e.target.value })}
+              placeholder="ex: curitiba-centro"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="new-church-active">Ativa</Label>
+            <Switch
+              id="new-church-active"
+              checked={newChurchData.is_active}
+              onCheckedChange={(checked) => setNewChurchData({ ...newChurchData, is_active: checked })}
+            />
+          </div>
+        </div>
+      </FormDrawer>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">

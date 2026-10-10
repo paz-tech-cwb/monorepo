@@ -2,21 +2,39 @@ import Observation
 import Shared
 import SwiftUI
 
+/// Lightweight, lossily-durable snapshot of in-progress questionnaire answers, persisted to
+/// `UserDefaults` keyed by `courseId` so state survives iOS terminating the app under memory
+/// pressure while backgrounded (process death doesn't restore `@Observable` in-memory state the
+/// way Android's `SavedStateHandle` does). Intentionally minimal — just the fields already held
+/// in-memory by `QuestionnaireViewModel`, no redesign of the questionnaire flow.
+private struct QuestionnaireDraft: Codable {
+    var stepIndex: Int
+    var selectedOptionIds: [String: Set<String>]
+    var freeTextAnswers: [String: String]
+}
+
 @MainActor
 @Observable
 class QuestionnaireViewModel {
     var isLoading = true
     var questionnaire: Questionnaire?
     var error: String?
-    var stepIndex = 0
-    var selectedOptionIds: [String: Set<String>] = [:]
-    var freeTextAnswers: [String: String] = [:]
+    var stepIndex = 0 {
+        didSet { persistDraft() }
+    }
+    var selectedOptionIds: [String: Set<String>] = [:] {
+        didSet { persistDraft() }
+    }
+    var freeTextAnswers: [String: String] = [:] {
+        didSet { persistDraft() }
+    }
     var isSubmitting = false
     var submitError: String?
     var result: QuestionnaireResult?
 
     private let courseId: String
     private let courseRepository: CourseRepository
+    private let draftKey: String
 
     var progress: Double {
         guard let count = questionnaire?.questions.count, count > 0 else { return 0 }
@@ -31,6 +49,8 @@ class QuestionnaireViewModel {
     init(courseId: String, courseRepository: CourseRepository) {
         self.courseId = courseId
         self.courseRepository = courseRepository
+        self.draftKey = "questionnaire_draft_\(courseId)"
+        restoreDraft()
     }
 
     func load() async {
@@ -85,10 +105,34 @@ class QuestionnaireViewModel {
             }
             do {
                 result = try await courseRepository.submitQuestionnaire(courseId: courseId, answers: answers)
+                clearDraft()
             } catch {
                 submitError = error.localizedDescription
             }
             isSubmitting = false
         }
+    }
+
+    private func persistDraft() {
+        let draft = QuestionnaireDraft(
+            stepIndex: stepIndex,
+            selectedOptionIds: selectedOptionIds,
+            freeTextAnswers: freeTextAnswers
+        )
+        guard let data = try? JSONEncoder().encode(draft) else { return }
+        UserDefaults.standard.set(data, forKey: draftKey)
+    }
+
+    private func restoreDraft() {
+        guard let data = UserDefaults.standard.data(forKey: draftKey),
+              let draft = try? JSONDecoder().decode(QuestionnaireDraft.self, from: data)
+        else { return }
+        stepIndex = draft.stepIndex
+        selectedOptionIds = draft.selectedOptionIds
+        freeTextAnswers = draft.freeTextAnswers
+    }
+
+    private func clearDraft() {
+        UserDefaults.standard.removeObject(forKey: draftKey)
     }
 }

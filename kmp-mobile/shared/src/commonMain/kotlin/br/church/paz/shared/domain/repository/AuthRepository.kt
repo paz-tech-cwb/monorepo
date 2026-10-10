@@ -10,6 +10,18 @@ interface AuthRepository {
     suspend fun currentUser(): User?
     @Throws(Exception::class)
     suspend fun storedTokens(): TokenPair?
+
+    /**
+     * Overwrites the locally cached session [User] (read by [currentUser]) with [user].
+     *
+     * Call this right after any successful write that returns a fresher [User] than the one
+     * cached at login — e.g. `PUT /users/me` from the edit-profile flow. Without it, every
+     * screen that reads [currentUser] (Account, Home, etc.) keeps showing the login-time
+     * snapshot — including a stale profile picture URL — until the next full sign-in, even
+     * though the backend record already changed.
+     */
+    @Throws(Exception::class)
+    suspend fun updateCachedUser(user: User)
 }
 
 /**

@@ -24,6 +24,7 @@ describe('AnnouncementsController', () => {
 
   const mockAnnouncement: Announcement = {
     id: 1,
+    church: { id: 1 } as Announcement['church'],
     imageUrl: 'https://example.com/image.png',
     title: 'Title',
     subtitle: 'Subtitle',
@@ -32,6 +33,10 @@ describe('AnnouncementsController', () => {
     createdAt: new Date('2024-01-01T00:00:00.000Z'),
     updatedAt: new Date('2024-01-02T00:00:00.000Z'),
   };
+
+  const mockReq = { user: { churchId: 1 } } as Parameters<
+    AnnouncementsController['findAll']
+  >[0];
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -102,7 +107,7 @@ describe('AnnouncementsController', () => {
       .spyOn(controller['announcementsService'], 'findAll')
       .mockResolvedValue([mockAnnouncement]);
 
-    const result = await controller.findAll();
+    const result = await controller.findAll(mockReq);
     const plain = instanceToPlain(result);
 
     expect(plain).toEqual([

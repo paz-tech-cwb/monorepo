@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -29,8 +30,8 @@ export class CasaDePazCyclesController {
   // leadership gate here, so the future guest-facing picker can consume
   // this endpoint without additional access changes.
   @Get()
-  list() {
-    return this.svc.list();
+  list(@Req() req: { user: { churchId?: number | null } }) {
+    return this.svc.list(req.user.churchId ?? undefined);
   }
 
   @Post()
@@ -38,9 +39,14 @@ export class CasaDePazCyclesController {
   @Roles('admin', 'pastor')
   create(
     @Body() dto: CreateCasaDePazCycleDto,
-    @Req() req: { user: { id: number } },
+    @Req() req: { user: { id: number; churchId?: number | null } },
   ) {
-    return this.svc.create(dto, req.user.id);
+    if (!req.user.churchId) {
+      throw new BadRequestException(
+        'User has no associated church; cannot create a cycle.',
+      );
+    }
+    return this.svc.create(dto, req.user.id, req.user.churchId);
   }
 
   @Patch(':id/close')

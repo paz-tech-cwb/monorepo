@@ -73,35 +73,3 @@ export interface Certificate {
   certificate_url?: string | null
 }
 
-export interface CourseTrackCourse {
-  id: string
-  title: string
-  description?: string | null
-  thumbnail_url?: string | null
-  url?: string | null
-  sort_order: number
-}
-
-export interface CourseTrack {
-  id: number
-  title: string
-  description?: string | null
-  sort_order: number
-  courses: CourseTrackCourse[]
-}
-
-export interface CreateCourseTrackRequest {
-  title: string
-  description?: string | null
-  sort_order?: number
-}
-
-export interface UpdateCourseTrackRequest {
-  title?: string
-  description?: string | null
-  sort_order?: number
-}
-
-export interface SetTrackCoursesRequest {
-  course_ids: string[]
-}

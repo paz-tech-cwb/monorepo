@@ -263,7 +263,13 @@ class EditProfileViewModel {
                     birthDate: birthStr,
                     address: address
                 )
-                _ = try await userRepository.updateProfile(request: request)
+                let updatedUser = try await userRepository.updateProfile(request: request)
+                // PUT /me's response is the only up-to-date source for the user's picture URL
+                // (and everything else just saved) — without refreshing the cached session
+                // user here, every screen that reads AuthRepository.currentUser() (Account,
+                // Home, etc.) keeps showing the login-time snapshot, including the OLD picture,
+                // until the next full sign-in.
+                try? await authRepository.updateCachedUser(user: updatedUser)
                 saveSuccess = true
                 isSaving = false
             } catch {
