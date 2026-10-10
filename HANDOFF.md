@@ -48,21 +48,24 @@ merged.
      switcher — backend already scopes by the JWT's primary church).
 7. **Debug tooling** — fixed Android Chucker not capturing response bodies
    (`alwaysReadResponseBody(true)`).
+8. **iOS Pulse (debug network inspector)** — root cause was the soft-deprecated
+   `URLSessionProxyDelegate.enableAutomaticRegistration` not reliably wrapping
+   Ktor's Darwin-engine-owned session/delegate. Switched to
+   `NetworkLogger.enableProxy` (`PulseProxy` SPM product), which swizzles
+   `URLSessionTask` directly — now captures request/response bodies
+   regardless of how the session was constructed.
+9. **Profile image not refreshing after upload** — NOT a stale-cache-URL bug
+   (uploads are already UUID-named, unique per save). Real cause: `PUT
+   /users/me`'s updated `User` response was discarded on both platforms, so
+   the session cache (`UserStore`, only ever written at login) kept serving
+   the login-time snapshot with the old picture URL forever. Fixed via a new
+   `AuthRepository.updateCachedUser`, called after a successful profile
+   update on both platforms.
 
 ## Still missing / in progress
 
-1. **iOS Pulse (debug network inspector)** — only the Android half (Chucker)
-   is fixed. iOS still doesn't show request/response bodies in the hidden
-   inspector. A background agent was mid-investigation when this file was
-   written — check for a follow-up commit, or re-dispatch.
-2. **Profile image not refreshing after upload** — user reports Firebase
-   Storage upload + `PUT /me` both succeed, but the new avatar never appears,
-   even after a full app restart. Two suspected causes, not yet confirmed/
-   fixed: (a) Coil/Kingfisher caching the old bytes against a fixed storage
-   URL (needs cache-busting), (b) local session/user state not refreshed
-   in-memory after the `PUT /me` response. Same background agent as above was
-   covering this — check for a follow-up commit, or re-dispatch.
-3. **Brazilian locale formatting sweep** — not started. Deliberately
+1. **Brazilian locale formatting sweep** — not started, and explicitly
+   deferred by the user to continue on another machine. Deliberately
    scheduled last since it touches files every other workstream also
    modified (OnboardingView.swift, MemberJourneyView/Screen, Account
    screens, church-data-management.tsx, Academy/courses admin pages).
@@ -77,7 +80,7 @@ merged.
    actually needed yet). Mobile (Android + iOS) is mostly already pt-BR
    correct; a handful of iOS `DateFormatter`s are missing explicit
    `locale`/`calendar` (safe on a pt-BR/Gregorian device today, but fragile).
-4. **Follow-up noted, not a blocker**: admin-ui's areas/events/announcements/
+2. **Follow-up noted, not a blocker**: admin-ui's areas/events/announcements/
    casa-de-paz-cycles management pages don't yet filter their list views by
    the selected filial (the selector + context exist, but most list/query
    hooks aren't wired to it yet).
@@ -106,4 +109,5 @@ git clone https://github.com/paz-tech-cwb/monorepo.git church
 cd church
 git checkout feature/permissions-journey-locale-filial
 ```
-Then pick up items 1–3 above.
+Then pick up the Brazilian locale formatting sweep (item 1 above) — that's
+the only remaining work. Everything else in this PR is done.
