@@ -8,8 +8,6 @@ import { CourseQuestionnairesController } from './course-questionnaires.controll
 import { CourseProgressService } from './course-progress.service';
 import { CourseCertificatesService } from './course-certificates.service';
 import { CourseCertificatesController } from './course-certificates.controller';
-import { CourseTracksService } from './course-tracks.service';
-import { CourseTracksController } from './course-tracks.controller';
 import { JourneyTracksModule } from '../journey-tracks/journey-tracks.module';
 
 @Module({
@@ -19,7 +17,6 @@ import { JourneyTracksModule } from '../journey-tracks/journey-tracks.module';
     CourseLessonsController,
     CourseQuestionnairesController,
     CourseCertificatesController,
-    CourseTracksController,
   ],
   providers: [
     AcademyService,
@@ -27,7 +24,6 @@ import { JourneyTracksModule } from '../journey-tracks/journey-tracks.module';
     CourseQuestionnairesService,
     CourseProgressService,
     CourseCertificatesService,
-    CourseTracksService,
   ],
 })
 export class AcademyModule {}

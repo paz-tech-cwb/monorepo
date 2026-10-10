@@ -17,6 +17,8 @@ sealed class AccountEffect {
 
     data object NavigateToFormularios : AccountEffect()
 
+    data object NavigateToGuestForm : AccountEffect()
+
     data object NavigateToMinistries : AccountEffect()
 
     data object NavigateToLifeGroups : AccountEffect()

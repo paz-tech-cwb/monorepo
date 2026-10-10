@@ -18,6 +18,7 @@ import { CourseQuestionnaireResponse } from '../academy/entities/course-question
 import { CourseCertificate } from '../academy/entities/course-certificate.entity';
 import { Notification } from '../notifications/entities/notification.entity';
 import { Church } from '../church/entities/church.entity';
+import { UserChurch } from '../church/entities/user-church.entity';
 import { Area } from '../areas/entities/area.entity';
 import { Sector } from '../sectors/entities/sector.entity';
 import { LifeGroup } from '../life-groups/entities/life-group.entity';
@@ -74,6 +75,7 @@ export const AppDataSource = new DataSource({
     CourseTrack,
     Notification,
     Church,
+    UserChurch,
     Area,
     Sector,
     LifeGroup,

@@ -6,7 +6,10 @@ import { User } from '../users/entities/user.entity';
 import { Role } from '../roles/entities/role.entity';
 import { CreateFormGuestDto } from './dto/create-form-guest.dto';
 import { UpdateFormGuestDto } from './dto/update-form-guest.dto';
-import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
+import {
+  ResolvedScope,
+  ScopeResolverService,
+} from '../forms-core/services/scope-resolver.service';
 import { FormSubmissionPolicyService } from '../forms-core/services/form-submission-policy.service';
 import { FormSubmissionAuditService } from '../forms-core/services/form-submission-audit.service';
 import { UsersService } from '../users/users.service';
@@ -23,9 +26,58 @@ export class FormGuestsService {
     private readonly policy: FormSubmissionPolicyService,
     private readonly audit: FormSubmissionAuditService,
     private readonly guestOriginsService: GuestOriginsService,
+    private readonly scopeResolver: ScopeResolverService,
   ) {}
 
+  /**
+   * area_id/sector_id/life_group_id are client-supplied — without this check
+   * any authenticated submitter (including plain members, who gained write
+   * access to this form alongside the Convidado shortcut) could attribute a
+   * guest to an org unit they have no authority over. Leadership roles may
+   * only tag within their resolved scope; member/discipler (no resolvable
+   * scope) may never tag an org unit at all.
+   */
+  private async sanitizeScope(
+    dto: CreateFormGuestDto,
+    actorId: number,
+  ): Promise<{
+    areaId: number | null;
+    sectorId: number | null;
+    lifeGroupId: number | null;
+  }> {
+    const requested = {
+      areaId: dto.areaId ?? null,
+      sectorId: dto.sectorId ?? null,
+      lifeGroupId: dto.lifeGroupId ?? null,
+    };
+    if (!requested.areaId && !requested.sectorId && !requested.lifeGroupId) {
+      return requested;
+    }
+
+    const scope: ResolvedScope = await this.scopeResolver.resolve(actorId);
+    if (scope.unrestricted) {
+      return requested;
+    }
+
+    return {
+      areaId:
+        requested.areaId && scope.areaIds.includes(requested.areaId)
+          ? requested.areaId
+          : null,
+      sectorId:
+        requested.sectorId && scope.sectorIds.includes(requested.sectorId)
+          ? requested.sectorId
+          : null,
+      lifeGroupId:
+        requested.lifeGroupId &&
+        scope.lifeGroupIds.includes(requested.lifeGroupId)
+          ? requested.lifeGroupId
+          : null,
+    };
+  }
+
   async create(dto: CreateFormGuestDto, actorId: number): Promise<FormGuest> {
+    const scoped = await this.sanitizeScope(dto, actorId);
     const entity = await this.repo.save(
       this.repo.create({
         fullName: dto.fullName,
@@ -38,9 +90,9 @@ export class FormGuestsService {
         filledBy: dto.filledBy ?? null,
         notes: dto.notes ?? null,
         viaCasaDePaz: dto.viaCasaDePaz ?? false,
-        areaId: dto.areaId ?? null,
-        sectorId: dto.sectorId ?? null,
-        lifeGroupId: dto.lifeGroupId ?? null,
+        areaId: scoped.areaId,
+        sectorId: scoped.sectorId,
+        lifeGroupId: scoped.lifeGroupId,
         submittedBy: { id: actorId } as User,
       }),
     );

@@ -11,6 +11,8 @@ import {
   HttpStatus,
   SerializeOptions,
   ParseIntPipe,
+  Request,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -19,6 +21,7 @@ import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 import { AreasService } from './areas.service';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
+import { User } from '../users/entities/user.entity';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @SerializeOptions({
@@ -31,24 +34,29 @@ export class AreasController {
 
   @Post()
   @Roles(...LEADERSHIP_ROLES)
-  create(@Body() createAreaDto: CreateAreaDto) {
-    return this.areasService.create(createAreaDto);
+  create(@Request() req: { user: User }, @Body() createAreaDto: CreateAreaDto) {
+    if (!req.user.churchId) {
+      throw new BadRequestException(
+        'User has no associated church; cannot create an area.',
+      );
+    }
+    return this.areasService.create(createAreaDto, req.user.churchId);
   }
 
   @Get()
-  findAll() {
-    return this.areasService.findAll();
+  findAll(@Request() req: { user: User }) {
+    return this.areasService.findAll(req.user.churchId ?? undefined);
   }
 
   @Get('hierarchy')
-  getHierarchy() {
-    return this.areasService.getHierarchy();
+  getHierarchy(@Request() req: { user: User }) {
+    return this.areasService.getHierarchy(req.user.churchId ?? undefined);
   }
 
   @Get('org-chart')
   @Roles(...LEADERSHIP_ROLES)
-  getOrgChart() {
-    return this.areasService.getOrgChart();
+  getOrgChart(@Request() req: { user: User }) {
+    return this.areasService.getOrgChart(req.user.churchId ?? undefined);
   }
 
   @Get(':id')

@@ -10,6 +10,7 @@ import { Area } from './entities/area.entity';
 import { Sector } from '../sectors/entities/sector.entity';
 import { LifeGroup } from '../life-groups/entities/life-group.entity';
 import { User } from '../users/entities/user.entity';
+import { Church } from '../church/entities/church.entity';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
 
@@ -79,13 +80,14 @@ export class AreasService {
     }
   }
 
-  async create(dto: CreateAreaDto) {
+  async create(dto: CreateAreaDto, churchId: number) {
     this.assertDistinctLeaders(dto.leader_id, dto.co_leader_id);
     this.assertDistinctLeaders(dto.pastor_id, dto.co_pastor_id, 'Pastor');
     await this.assertPastorRoles(dto.pastor_id, dto.co_pastor_id);
     try {
       const area = this.entityManager.create(Area, {
         name: dto.name,
+        church: { id: churchId } as Church,
         leader: dto.leader_id ? ({ id: dto.leader_id } as User) : null,
         coLeader: dto.co_leader_id ? ({ id: dto.co_leader_id } as User) : null,
         pastor: dto.pastor_id ? ({ id: dto.pastor_id } as User) : null,
@@ -101,9 +103,10 @@ export class AreasService {
     }
   }
 
-  async findAll() {
+  async findAll(churchId?: number) {
     try {
       const areas = await this.entityManager.find(Area, {
+        where: churchId ? { church: { id: churchId } } : {},
         relations: ['leader', 'coLeader', 'pastor', 'coPastor'],
         order: { name: 'ASC' },
       });
@@ -195,8 +198,9 @@ export class AreasService {
     await this.entityManager.remove(Area, area);
   }
 
-  async getHierarchy() {
+  async getHierarchy(churchId?: number) {
     const areas = await this.entityManager.find(Area, {
+      where: churchId ? { church: { id: churchId } } : {},
       relations: ['leader', 'coLeader'],
       order: { name: 'ASC' },
     });
@@ -243,8 +247,9 @@ export class AreasService {
     }));
   }
 
-  async getOrgChart() {
+  async getOrgChart(churchId?: number) {
     const areas = await this.entityManager.find(Area, {
+      where: churchId ? { church: { id: churchId } } : {},
       relations: ['leader', 'coLeader', 'pastor', 'coPastor'],
       order: { name: 'ASC' },
     });

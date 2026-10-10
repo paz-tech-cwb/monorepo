@@ -70,6 +70,8 @@ class AccountViewModel(
 
     fun onFormularios() = emit(AccountEffect.NavigateToFormularios)
 
+    fun onGuestForm() = emit(AccountEffect.NavigateToGuestForm)
+
     fun onMinistries() = emit(AccountEffect.NavigateToMinistries)
 
     fun onLifeGroups() = emit(AccountEffect.NavigateToLifeGroups)

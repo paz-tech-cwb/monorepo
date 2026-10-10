@@ -21,11 +21,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { userId: number; email: string }) {
+  async validate(payload: {
+    userId: number;
+    email: string;
+    churchId?: number | null;
+  }) {
     const user = await this.userRepo.findOne({ where: { id: payload.userId } });
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    return user; // req.user is the full User entity (role loaded via eager)
+    // Carries the primary filial id from the JWT onto req.user, so
+    // controllers can scope reads without an extra DB round trip. Assigned
+    // onto the loaded User instance (not spread into a new object) to keep
+    // `role` eager-loading and other User behavior intact.
+    return Object.assign(user, { churchId: payload.churchId ?? null });
   }
 }

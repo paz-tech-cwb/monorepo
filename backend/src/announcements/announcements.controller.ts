@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -7,6 +8,7 @@ import {
   Put,
   Param,
   Delete,
+  Request,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -18,6 +20,7 @@ import { AnnouncementsService } from './announcements.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
 import { AnnouncementResponseDto } from './dto/announcement-response.dto';
+import { User } from '../users/entities/user.entity';
 
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 @Controller('announcements')
@@ -26,13 +29,28 @@ export class AnnouncementsController {
 
   @Post()
   @Roles(...LEADERSHIP_ROLES)
-  create(@Body() createAnnouncementDto: CreateAnnouncementDto): Promise<void> {
-    return this.announcementsService.create(createAnnouncementDto);
+  create(
+    @Request() req: { user: User },
+    @Body() createAnnouncementDto: CreateAnnouncementDto,
+  ): Promise<void> {
+    if (!req.user.churchId) {
+      throw new BadRequestException(
+        'User has no associated church; cannot create an announcement.',
+      );
+    }
+    return this.announcementsService.create(
+      createAnnouncementDto,
+      req.user.churchId,
+    );
   }
 
   @Get()
-  async findAll(): Promise<AnnouncementResponseDto[]> {
-    const announcements = await this.announcementsService.findAll();
+  async findAll(
+    @Request() req: { user: User },
+  ): Promise<AnnouncementResponseDto[]> {
+    const announcements = await this.announcementsService.findAll(
+      req.user.churchId ?? undefined,
+    );
     return plainToInstance(AnnouncementResponseDto, announcements, {
       excludeExtraneousValues: true,
     });

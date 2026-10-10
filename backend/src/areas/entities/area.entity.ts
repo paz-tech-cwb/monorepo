@@ -8,11 +8,19 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { Church } from '../../church/entities/church.entity';
 
 @Entity('areas')
 export class Area {
   @PrimaryGeneratedColumn()
   id: number;
+
+  // Areas are the root of the org tree (Area -> Sector -> LifeGroup); every
+  // org-tree query is scoped by this FK, so Sector/LifeGroup don't need their
+  // own church_id.
+  @ManyToOne(() => Church, { nullable: false })
+  @JoinColumn({ name: 'church_id' })
+  church: Church;
 
   @Column({ type: 'varchar', length: 255 })
   name: string;

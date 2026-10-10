@@ -19,6 +19,7 @@ import { Sector } from '../../sectors/entities/sector.entity';
 import { LifeGroup } from '../../life-groups/entities/life-group.entity';
 import { Course } from '../../courses/entities/course.entity';
 import { Area } from '../../areas/entities/area.entity';
+import { UserChurch } from '../../church/entities/user-church.entity';
 
 @Entity('users')
 export class User {
@@ -78,6 +79,17 @@ export class User {
     nullable: true,
   })
   accounts: UserAccount[];
+
+  // A user may belong to multiple filiais; see UserChurch for the
+  // "isPrimary" (home filial) flag.
+  @OneToMany(() => UserChurch, (userChurch) => userChurch.user)
+  userChurches: UserChurch[];
+
+  // Transient (not persisted) — populated onto req.user by JwtStrategy from
+  // the JWT's `churchId` claim so controllers can read the requester's
+  // primary filial without an extra query. Not present on entities loaded
+  // directly from the database.
+  churchId?: number | null;
 
   @OneToOne(() => Area, { nullable: true, eager: false })
   @JoinColumn({ name: 'leading_area_id' })

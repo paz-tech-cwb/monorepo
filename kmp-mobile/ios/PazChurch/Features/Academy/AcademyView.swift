@@ -6,7 +6,6 @@ struct AcademyView: View {
     @State private var viewModel: AcademyViewModel
     @Environment(AuthenticationCoordinator.self) private var authCoordinator
     @State private var showLoginSheet = false
-    @State private var selectedTrackIndex = 0
 
     private let lifeGroupStudyRepository: LifeGroupStudyRepository
 
@@ -43,9 +42,9 @@ struct AcademyView: View {
             loadingState
         } else if let error = viewModel.error {
             errorState(message: error)
-        } else if !authCoordinator.isAuthenticated, viewModel.tracks.isEmpty {
+        } else if !authCoordinator.isAuthenticated, viewModel.courses.isEmpty {
             loggedOutPromo
-        } else if viewModel.tracks.isEmpty {
+        } else if viewModel.courses.isEmpty {
             emptyState
         } else {
             contentState
@@ -74,32 +73,7 @@ struct AcademyView: View {
                         .padding(.bottom, 12)
                 }
 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(viewModel.tracks.indices, id: \.self) { i in
-                            PazPillChip(
-                                label: viewModel.tracks[i].title,
-                                selected: selectedTrackIndex == i,
-                                onTap: { selectedTrackIndex = i }
-                            )
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                }
-                .padding(.top, viewModel.resumeCourse == nil ? 20 : 0)
-                .padding(.bottom, 12)
-
-                let track = viewModel.tracks[safe: selectedTrackIndex] ?? viewModel.tracks[0]
-
-                if let desc = track.description_, !desc.isEmpty {
-                    Text(desc)
-                        .font(PazTypography.bodySmall)
-                        .foregroundStyle(PazColors.slate)
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 12)
-                }
-
-                ForEach(Array(track.courses.enumerated()), id: \.element.id) { index, course in
+                ForEach(Array(viewModel.courses.enumerated()), id: \.element.id) { index, course in
                     Group {
                         if authCoordinator.isAuthenticated {
                             NavigationLink {
@@ -116,11 +90,12 @@ struct AcademyView: View {
                         }
                     }
                     .padding(.horizontal, 20)
+                    .padding(.top, index == 0 && viewModel.resumeCourse == nil ? 20 : 0)
                     .padding(.bottom, 12)
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
                     .animation(
                         .spring(response: 0.6, dampingFraction: 0.8).delay(Double(index) * 0.065),
-                        value: selectedTrackIndex
+                        value: viewModel.courses.count
                     )
                 }
 
@@ -337,12 +312,6 @@ private struct CourseCardBody: View {
             .padding(12)
             .glassCard(radius: PazSpacing.cardRadiusCompact)
         }
-    }
-}
-
-private extension Array {
-    subscript(safe index: Int) -> Element? {
-        indices.contains(index) ? self[index] : nil
     }
 }
 

@@ -110,8 +110,9 @@ export class UsersController {
 
   // Self-profile endpoints — MUST be before /:id routes
   @Get('me')
-  async getMe(@Request() req: { user: { id: number } }) {
-    return this.usersService.findOne(req.user.id);
+  async getMe(@Request() req: { user: User }) {
+    const profile = await this.usersService.findOne(req.user.id);
+    return { ...profile, church_id: req.user.churchId ?? null };
   }
 
   @Put('me')

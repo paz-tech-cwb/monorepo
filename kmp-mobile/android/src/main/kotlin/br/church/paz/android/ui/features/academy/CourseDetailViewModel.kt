@@ -54,11 +54,16 @@ class CourseDetailViewModel(
 
     fun onSelectLesson(lessonId: String) {
         lastReportedAtSeconds = 0
-        _uiState.update { it.copy(selectedLessonId = lessonId, playerError = false) }
+        _uiState.update { it.copy(selectedLessonId = lessonId, playerError = null) }
     }
 
-    fun onPlayerError() {
-        _uiState.update { it.copy(playerError = true) }
+    fun onPlayerError(code: Int) {
+        _uiState.update { it.copy(playerError = VideoPlaybackError.fromCode(code)) }
+    }
+
+    /** Clears the error state so the player composable is recreated and retries loading. */
+    fun onRetryPlayback() {
+        _uiState.update { it.copy(playerError = null) }
     }
 
     /** Called by [GatedYouTubePlayer] roughly every second; only actually posts every ~10s. */

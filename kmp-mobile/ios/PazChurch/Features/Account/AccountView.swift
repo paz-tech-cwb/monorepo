@@ -38,7 +38,10 @@ struct AccountView: View {
                     FormulariosView(formsRepository: IosAppContainer.shared.formsRepository)
 
                 case .memberJourney:
-                    MemberJourneyView(memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository)
+                    MemberJourneyView(
+                        memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository,
+                        detectJourneyLevelUpUseCase: IosAppContainer.shared.detectJourneyLevelUpUseCase
+                    )
 
                 case let .formDetail(formId):
                     FormDetailDeepLinkView(
@@ -114,13 +117,15 @@ struct AccountView: View {
 
                     sectionLabel("MINHA IGREJA")
                     menuCard {
-                        NavigationLink(destination: MemberJourneyView(memberJourneyRepository: IosAppContainer.shared
-                                .memberJourneyRepository)) {
+                        NavigationLink(destination: MemberJourneyView(
+                            memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository,
+                            detectJourneyLevelUpUseCase: IosAppContainer.shared.detectJourneyLevelUpUseCase
+                        )) {
                             AccountRow(title: "Jornada do Membro", icon: "figure.walk", tint: PazColors.accent)
                         }
                         .buttonStyle(.plain)
+                        rowDivider
                         if user.role.isLeader {
-                            rowDivider
                             NavigationLink(destination: FormulariosView(formsRepository: IosAppContainer.shared
                                     .formsRepository)) {
                                 AccountRow(
@@ -130,13 +135,24 @@ struct AccountView: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                        } else {
+                            NavigationLink(destination: FormStepView(form: .convidadoShortcut)) {
+                                AccountRow(
+                                    title: "Convidado",
+                                    icon: "person.badge.plus",
+                                    tint: PazColors.menuFormularios
+                                )
+                            }
+                            .buttonStyle(.plain)
                         }
-                        rowDivider
-                        NavigationLink(destination: MinistriesView(churchRepository: IosAppContainer.shared
-                                .churchRepository)) {
-                            AccountRow(title: "Ministérios", icon: "music.note", tint: Color(hex: "E65100"))
+                        if user.role.isLeader {
+                            rowDivider
+                            NavigationLink(destination: MinistriesView(churchRepository: IosAppContainer.shared
+                                    .churchRepository)) {
+                                AccountRow(title: "Ministérios", icon: "music.note", tint: Color(hex: "E65100"))
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                         rowDivider
                         NavigationLink(destination: LifeGroupsView(churchRepository: IosAppContainer.shared
                                 .churchRepository)) {

@@ -16,7 +16,6 @@ import {
   CalendarDays,
   Users2,
   BookOpen,
-  Route,
   LogOut,
   Megaphone,
   GitBranch,
@@ -84,7 +83,6 @@ const sidebarSections = [
   {
     title: "Estudo",
     items: [
-      { name: "Trilhos de Cursos", href: "/course-tracks", icon: Route, roles: ["admin"] as AdminRole[] },
       { name: "Cursos", href: "/courses", icon: BookOpen, roles: ["admin"] as AdminRole[] },
       { name: "Estudo do Life", href: "/estudo-do-life", icon: BookMarked, roles: LEADERSHIP_ROLES },
     ],
