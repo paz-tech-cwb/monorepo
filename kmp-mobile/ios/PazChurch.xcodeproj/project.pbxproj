@@ -14,6 +14,7 @@
 		14045D80B33A84CAE8070AC7 /* PazTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82E14328F3FC3C44E1C3AC60 /* PazTypography.swift */; };
 		16B832FD065C7338B522ABFA /* AppThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21EFE728C0EA836F247AB28D /* AppThemeManager.swift */; };
 		16FDB9DAAF18AC484D49A084 /* PazPillButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54FA272FF1C57FE575B4E7E0 /* PazPillButtonStyle.swift */; };
+		171CAD8D0367A6425919DB72 /* JourneyLevelUpOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4B9321DD1F129270FE1BDF7 /* JourneyLevelUpOverlay.swift */; };
 		1CB207F6227C85FD1293E3A2 /* Shared.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9089E1E2EF61D9C3A28227C1 /* Shared.xcframework */; };
 		1E73813601B5D626FF99A87A /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 62F32151BE1564943B93F90E /* FirebaseStorage */; };
 		1F3D35E5FF143FC6C08A16BC /* MinistriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10DAE923513B1C91EC22B66 /* MinistriesView.swift */; };
@@ -24,6 +25,7 @@
 		22DDBD8E3BB65560C6406787 /* AgendaListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0491D02C62D5E21EE162AEBE /* AgendaListViewModel.swift */; };
 		245FBBF5EAF56C06C93568A6 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6756FF82393E3C2B725AFCC /* AppConfig.swift */; };
 		248E988BE3A3B136BB610D84 /* CourseDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7829451BC72C8FB824A8A690 /* CourseDetailViewModel.swift */; };
+		2514967A7D6814475C10CE7F /* PlayerLayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E5ED4DD6DAA5F5C1F526828 /* PlayerLayerView.swift */; };
 		264EC5A6A5C1DCB55BBB0AA9 /* dm_sans_medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 43523C0C1306C6777492969E /* dm_sans_medium.ttf */; };
 		2793855F821689FC2DFCA082 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79F54E72B01670D1FF11B3CB /* MainTabView.swift */; };
 		2BDADC15A7FA399B64EF3840 /* AccountViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFCF04B5FB518B8BB0F8B54B /* AccountViewModel.swift */; };
@@ -51,6 +53,7 @@
 		59CA01257938C71435415ABE /* CertificatesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F0FB3B1EB376B17132F9FA2 /* CertificatesViewModel.swift */; };
 		5B2B7669BFE226EBCE026CA6 /* CertificatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C140852B1438F871918EB6D /* CertificatesView.swift */; };
 		643DD272E3E5374F92A3FEA9 /* Shared.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9089E1E2EF61D9C3A28227C1 /* Shared.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		645C3FB52C3DDE6A2401B8E9 /* PulseProxy in Frameworks */ = {isa = PBXBuildFile; productRef = 0218298500E9F32FD29807C5 /* PulseProxy */; };
 		65323BAB5459A81F682BE7B1 /* EditProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667C5328F0D1720F48DB35B2 /* EditProfileViewModel.swift */; };
 		65BD6B55FF25446AC29997D2 /* LifeGroupManageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CFDDAAC64560191F60AE952 /* LifeGroupManageView.swift */; };
 		6950DE80AA3AEFC53F348F31 /* ReportsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4875A9AA294C151A07AFC55 /* ReportsListView.swift */; };
@@ -81,6 +84,7 @@
 		A31C398425A937C979302F26 /* Pulse in Frameworks */ = {isa = PBXBuildFile; productRef = 4F234C1E2F7298A93E2038AF /* Pulse */; };
 		A3BC32CA15C40B172DC54DF8 /* MinistryManageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E26C4C9D1BDF91892972FE27 /* MinistryManageView.swift */; };
 		A6A324E081B9ECFCDDA55B20 /* LifeGroupAttendanceViewModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0AED721D9C3F11A210BEFE7 /* LifeGroupAttendanceViewModels.swift */; };
+		A78D3EF107B7B18D4367A4DB /* PazGlassField.swift in Sources */ = {isa = PBXBuildFile; fileRef = E43E6A5F49B74CE192300832 /* PazGlassField.swift */; };
 		A882169C3987D03873848621 /* CasaDePazAnalyticsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55EE9DE213ACF28C74E15157 /* CasaDePazAnalyticsViewModel.swift */; };
 		A98EE8C9CC199B26F49D75EB /* AgendaDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE4B8D8AE9B398AA3A77DA29 /* AgendaDetailView.swift */; };
 		AA41B490FC6E88A04E144BD3 /* LifeGroupStudyViewModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 468BD9A5B9CE5FFC54DF7CC0 /* LifeGroupStudyViewModels.swift */; };
@@ -95,6 +99,7 @@
 		BD6852735FDBC471DA8AC835 /* LifeGroupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 234779E01AE25F665C7BB9EB /* LifeGroupsView.swift */; };
 		BDFEB77ACA79918920040484 /* FormulariosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A78FBD0E12C138DD1D1835C /* FormulariosView.swift */; };
 		BE870E73E9E5B0DD60510DB7 /* GatedYouTubePlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1235A4B8BC89050828199B43 /* GatedYouTubePlayerView.swift */; };
+		C06B3510576D1B68DF5946E1 /* FormCatalogItem+Shortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F22256B52066A6FC4092138 /* FormCatalogItem+Shortcuts.swift */; };
 		C0E4309453D319198AA46239 /* PazListRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF4260B2134AEB925A29A03C /* PazListRow.swift */; };
 		C144F3BA85753AE6A686AFD0 /* GlassBlurBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBE9259B746D236383598F3 /* GlassBlurBackground.swift */; };
 		C726B4A3686B02098E88F5CF /* UserPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B85B3442F48DE8B02EE0E4CB /* UserPickerSheet.swift */; };
@@ -161,11 +166,13 @@
 		19BCE06C2D7FAA81524F09DE /* CasaDePazCyclePickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CasaDePazCyclePickerSheet.swift; sourceTree = "<group>"; };
 		19E3E44DBCB2C6495E5BB60D /* PazColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazColors.swift; sourceTree = "<group>"; };
 		1A78FBD0E12C138DD1D1835C /* FormulariosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulariosView.swift; sourceTree = "<group>"; };
+		1F22256B52066A6FC4092138 /* FormCatalogItem+Shortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FormCatalogItem+Shortcuts.swift"; sourceTree = "<group>"; };
 		2019A7167B120D6FEB1A5E7B /* FormStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormStepView.swift; sourceTree = "<group>"; };
 		21EFE728C0EA836F247AB28D /* AppThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppThemeManager.swift; sourceTree = "<group>"; };
 		22597D6E893E60A78DA0327F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		234779E01AE25F665C7BB9EB /* LifeGroupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupsView.swift; sourceTree = "<group>"; };
 		2792E4E00D06402A139D1665 /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCard.swift; sourceTree = "<group>"; };
+		2E5ED4DD6DAA5F5C1F526828 /* PlayerLayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerLayerView.swift; sourceTree = "<group>"; };
 		2E82BF64ABC060C59D814EBA /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		3009383DC317C06BE5558E43 /* DateFormatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateFormatting.swift; sourceTree = "<group>"; };
 		36DB133997051B82A7D0D38D /* SkeletonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonView.swift; sourceTree = "<group>"; };
@@ -213,6 +220,7 @@
 		A6CF7432C3804DACAD979BE9 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		ADB1B6A6945AD2405ED7AEFF /* CasaDePazLessonDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CasaDePazLessonDetailView.swift; sourceTree = "<group>"; };
 		B334D6F59293FC45EE9E6BC0 /* CasaDePazSubmissionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CasaDePazSubmissionsView.swift; sourceTree = "<group>"; };
+		B4B9321DD1F129270FE1BDF7 /* JourneyLevelUpOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JourneyLevelUpOverlay.swift; sourceTree = "<group>"; };
 		B554E6B77B5313AFF3EEAD09 /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
 		B6756FF82393E3C2B725AFCC /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		B85B3442F48DE8B02EE0E4CB /* UserPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserPickerSheet.swift; sourceTree = "<group>"; };
@@ -240,6 +248,7 @@
 		D664B1D68AD1FA25AAA7C11C /* dm_sans_regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = dm_sans_regular.ttf; sourceTree = "<group>"; };
 		E20CF68CE0958124973A70BA /* ErrorStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorStateView.swift; sourceTree = "<group>"; };
 		E26C4C9D1BDF91892972FE27 /* MinistryManageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MinistryManageView.swift; sourceTree = "<group>"; };
+		E43E6A5F49B74CE192300832 /* PazGlassField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazGlassField.swift; sourceTree = "<group>"; };
 		E70B0D6A12BA7B5BD464CD5A /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		E732114B3963933049EFF4A1 /* DeepLinkDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkDestination.swift; sourceTree = "<group>"; };
 		E8ED14052DB30DEC694C772C /* PazChurchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazChurchApp.swift; sourceTree = "<group>"; };
@@ -273,6 +282,7 @@
 				FB53C426B3DC5069915B79F2 /* Kingfisher in Frameworks */,
 				A31C398425A937C979302F26 /* Pulse in Frameworks */,
 				8C6BACE0C1147A1725F899AB /* PulseUI in Frameworks */,
+				645C3FB52C3DDE6A2401B8E9 /* PulseProxy in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -292,6 +302,7 @@
 			children = (
 				19BCE06C2D7FAA81524F09DE /* CasaDePazCyclePickerSheet.swift */,
 				B334D6F59293FC45EE9E6BC0 /* CasaDePazSubmissionsView.swift */,
+				1F22256B52066A6FC4092138 /* FormCatalogItem+Shortcuts.swift */,
 				7C3499C673982AA1C0FA8EA5 /* FormDetailView.swift */,
 				5B51C64F53D18957F80B0D96 /* FormFieldDefs.swift */,
 				51E3689D243F95178E26E682 /* FormFieldRow.swift */,
@@ -445,6 +456,7 @@
 				7A8041FC44617197AFCCA64C /* InteractivePopGestureDisabler.swift */,
 				CFC5B8B6E66286582CCC1CFA /* MarkdownBodyView.swift */,
 				C7AB7D082CBCFBF7C089DB6B /* PazCharts.swift */,
+				E43E6A5F49B74CE192300832 /* PazGlassField.swift */,
 				956C0B652EACA4EB866BDD9C /* PazGoldBadge.swift */,
 				CAC853F6E892CF7A2AE4283F /* PazIconContainer.swift */,
 				EC6E17547A850E772BD290D5 /* PazKeyboardAccessoryBar.swift */,
@@ -454,6 +466,7 @@
 				F62DDEA0026352360D73E873 /* PazPillChip.swift */,
 				117CD9D81AE8526E2FA4B0A7 /* PazStatCard.swift */,
 				C6E8495D9B9286ED202EBFDC /* PazToast.swift */,
+				2E5ED4DD6DAA5F5C1F526828 /* PlayerLayerView.swift */,
 				F4E8B24F234A85954C568595 /* ReportPDFExporter.swift */,
 				D52E9AA381B5524BF375AF56 /* ShareSheet.swift */,
 				36DB133997051B82A7D0D38D /* SkeletonView.swift */,
@@ -643,6 +656,7 @@
 		F1CD9530F50CB5214AE5DF32 /* MemberJourney */ = {
 			isa = PBXGroup;
 			children = (
+				B4B9321DD1F129270FE1BDF7 /* JourneyLevelUpOverlay.swift */,
 				BACF273449137A8036EAB8D4 /* MemberJourneyView.swift */,
 			);
 			path = MemberJourney;
@@ -674,6 +688,7 @@
 				14D3154CD353A1E73ECC271B /* Kingfisher */,
 				4F234C1E2F7298A93E2038AF /* Pulse */,
 				21FE29FC6B66BCA9BE34376B /* PulseUI */,
+				0218298500E9F32FD29807C5 /* PulseProxy */,
 			);
 			productName = PazChurch;
 			productReference = 01FFDF96B4BA2F02238FEF09 /* PazChurch.app */;
@@ -796,6 +811,7 @@
 				4A82A695C9D2A71805FA21F2 /* EditProfileView.swift in Sources */,
 				65323BAB5459A81F682BE7B1 /* EditProfileViewModel.swift in Sources */,
 				E14AB35C85A65F0E85EBBD68 /* ErrorStateView.swift in Sources */,
+				C06B3510576D1B68DF5946E1 /* FormCatalogItem+Shortcuts.swift in Sources */,
 				71ABCCDA3D92687839B11506 /* FormDetailView.swift in Sources */,
 				6AC1D3FAE126D76B239C5D48 /* FormFieldDefs.swift in Sources */,
 				BB6D5DE39E2D2E8DD57930C2 /* FormFieldRow.swift in Sources */,
@@ -808,6 +824,7 @@
 				214CF4956D0B65E1AFA723F8 /* HomeView.swift in Sources */,
 				81241EF8344367972B2409AF /* HomeViewModel.swift in Sources */,
 				DF21AEDC064DBA45469FB713 /* InteractivePopGestureDisabler.swift in Sources */,
+				171CAD8D0367A6425919DB72 /* JourneyLevelUpOverlay.swift in Sources */,
 				C81CB606C64CB0B6AA3D8743 /* KeychainService.swift in Sources */,
 				E5E4F215F16D5A592885DDBD /* LifeGroupAnalyticsView.swift in Sources */,
 				8D8430332E05F42EED9AD97A /* LifeGroupAnalyticsViewModel.swift in Sources */,
@@ -838,6 +855,7 @@
 				095D13AF163EB2FBF81E44A4 /* PazCharts.swift in Sources */,
 				DBED4836D8DD1B07E3FBB55E /* PazChurchApp.swift in Sources */,
 				21F50B565FBD16CF5729BD56 /* PazColors.swift in Sources */,
+				A78D3EF107B7B18D4367A4DB /* PazGlassField.swift in Sources */,
 				21E6A6FA6FF1C5D57AB1224E /* PazGoldBadge.swift in Sources */,
 				96BF8A72553894BA74F6934B /* PazIconContainer.swift in Sources */,
 				F9E158D7EA77D89EAD61EE4B /* PazImageCache.swift in Sources */,
@@ -851,6 +869,7 @@
 				BBAB718D008BF385951D549E /* PazStatCard.swift in Sources */,
 				D499E5384407D030EBA3D880 /* PazToast.swift in Sources */,
 				14045D80B33A84CAE8070AC7 /* PazTypography.swift in Sources */,
+				2514967A7D6814475C10CE7F /* PlayerLayerView.swift in Sources */,
 				33943BF3AA2F4343BF694389 /* ProfileView.swift in Sources */,
 				133044023D8AFC650E9E9FAB /* ProfileViewModel.swift in Sources */,
 				391121609552AED4FF2FC082 /* PushNotificationService.swift in Sources */,
@@ -1108,6 +1127,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		0218298500E9F32FD29807C5 /* PulseProxy */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 768D9B831E8127C84C24786C /* XCRemoteSwiftPackageReference "Pulse" */;
+			productName = PulseProxy;
+		};
 		14D3154CD353A1E73ECC271B /* Kingfisher */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 96EB51DB675FF756632E0F01 /* XCRemoteSwiftPackageReference "Kingfisher" */;
