@@ -136,3 +136,8 @@ No iOS test target exists (`project.yml` has `testTargets: []`), so no unit test
 
 - Syntax-transpiled (VS Code bundled TS, 0 diagnostics) markdown-editor.tsx, life-group-tasks-management.tsx, life-group-task-template-form.tsx, use-life-group-tasks.ts, life-group-tasks.ts types.
 - NOT done: tsc type-check, lint, build, browser/manual test of split preview and drag-and-drop (no node available). Types cross-checked by reading (DragEvent handler variance, mutation context typing).
+
+## Gap fixes (mobile)
+
+- iOS: `xcrun swiftc -parse` OK on HomeViewModel/HomeView/LifeGroupTaskMarkdownView. Scratch macOS executable compiling the real `LifeGroupTaskMarkdown` + `DeepLinkDestination.swift` sources: fenced code (incl. unclosed, `#` inside kept verbatim), quotes (incl. bare `>` and indented), paragraph flush before quote, http/https-only link sanitizing (javascript:/tel: dropped, link inside inline code literal), inline code intent present, deep link `tarefa/{id}` / blank / extra segments: ALL OK.
+- NOT done: Android Gradle build/unit tests (java is a stub; new `MarkdownParserTest` cases and `HomeViewModelTest` unverified, only read-checked), iOS full app compile (needs Shared.xcframework), no iOS test target (see changes.md).
