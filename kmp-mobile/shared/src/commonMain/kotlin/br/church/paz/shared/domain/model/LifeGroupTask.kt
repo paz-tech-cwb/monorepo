@@ -59,6 +59,9 @@ data class LifeGroupTaskMember(
     val eligibilitySource: LifeGroupTaskEligibilitySource,
     val presentCount: Int,
     val minPresentMeetings: Int,
+    // Existing member grandfathered by the migration: "back to automatic" must not be offered
+    // (it would drop an established member from the rotation).
+    val grandfathered: Boolean = false,
     // Leader-only note. Never shown to the member.
     val note: String?,
     val excludedTemplateIds: List<Int>,

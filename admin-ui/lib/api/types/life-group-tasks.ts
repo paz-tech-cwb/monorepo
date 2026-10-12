@@ -112,7 +112,10 @@ export interface LifeGroupTaskMember {
   eligibility_source: LifeGroupTaskEligibilitySource
   present_count: number
   min_present_meetings: number
-  // Leader-only note.
+  // True when the member was grandfathered by the migration: do not offer
+  // "back to automatic" (it would drop an established member).
+  grandfathered: boolean
+  // Leader-only note (the system grandfather note is never returned).
   reason: string | null
   excluded_template_ids: number[]
 }

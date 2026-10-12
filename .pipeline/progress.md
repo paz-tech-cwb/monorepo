@@ -11,9 +11,9 @@ Life group rotating tasks: admin-defined task templates, fair random weekly assi
 - [x] User approval of spec / open questions (decisions 1-8 recorded in spec)
 - [ ] First branch commit created
 - [ ] PR opened
-- [ ] Implementation complete
-- [ ] Tests complete
-- [ ] Review complete
+- [x] Implementation complete (not compiled: no node/java on machine)
+- [ ] Tests complete (written, not executed)
+- [x] Review complete (REQUEST CHANGES; M1/M2 fixed, see changes.md Review/Fix)
 
 ## Timeline
 
@@ -27,12 +27,14 @@ Life group rotating tasks: admin-defined task templates, fair random weekly assi
 - PR: pending
 
 ## Phase status
-- B1 pending
-- B2 pending
-- B3 pending
-- A1 pending
-- M1 pending
-- M2 pending
-- M3 pending
-- M4 pending
-- Docs pending
+- B1 done-unvalidated (not compiled/run)
+- B2 done-unvalidated (not compiled/run)
+- B3 done-unvalidated (not compiled/run)
+- A1 done-unvalidated (not compiled/run)
+- M1 done-unvalidated (not compiled/run)
+- M2 done-unvalidated (not compiled/run)
+- M3 done-unvalidated (not compiled/run)
+- M4 done-unvalidated (not compiled/run)
+- Docs done-unvalidated (not compiled/run)
+
+- 2026-10-12 — Review: 0 blockers, 2 majors. Arnold fixed M1 (assignments user FK cascade) and M2 (grandfathered flag), plus m1, m4, m6, m8. Still unvalidated: needs jest/build/gradle/xcode run.

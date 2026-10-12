@@ -10,7 +10,10 @@ import {
 } from './life-group-task-access';
 import { LifeGroupTaskRosterService } from './life-group-task-roster.service';
 import { LifeGroupTaskGroupSetting } from './entities/life-group-task-group-setting.entity';
-import { LifeGroupTaskMemberSetting } from './entities/life-group-task-member-setting.entity';
+import {
+  GRANDFATHERED_REASON,
+  LifeGroupTaskMemberSetting,
+} from './entities/life-group-task-member-setting.entity';
 import { LifeGroupTaskOverride } from './entities/life-group-task-override.entity';
 import { LifeGroupTaskSkip } from './entities/life-group-task-skip.entity';
 import { LifeGroupTaskTemplate } from './entities/life-group-task-template.entity';
@@ -145,8 +148,16 @@ export class LifeGroupTaskConfigService {
       eligibility_source: m.source,
       present_count: m.presentCount,
       min_present_meetings: minPresentMeetings,
+      // True for members grandfathered by the migration (explicit
+      // eligible=true row with the system note). Clients must not offer
+      // "back to automatic" for them: it would drop an established member.
+      grandfathered: m.setting?.reason === GRANDFATHERED_REASON,
       // Leader-only note: this endpoint is leader/admin-only by design.
-      reason: m.setting?.reason ?? null,
+      // The system grandfather note is never exposed.
+      reason:
+        m.setting?.reason && m.setting.reason !== GRANDFATHERED_REASON
+          ? m.setting.reason
+          : null,
       excluded_template_ids: m.setting?.excludedTemplateIds ?? [],
     }));
   }
@@ -226,7 +237,14 @@ export class LifeGroupTaskConfigService {
         });
       setting.eligible = entry.eligible;
       if (entry.reason !== undefined) {
-        setting.reason = blankToNull(entry.reason);
+        const reason = blankToNull(entry.reason);
+        // Clients never see the system grandfather note, so a blank note from
+        // them must not erase the marker (it keeps the member flagged as
+        // grandfathered). A real leader note replaces it.
+        setting.reason =
+          reason === null && setting.reason === GRANDFATHERED_REASON
+            ? GRANDFATHERED_REASON
+            : reason;
       }
       if (entry.excludedTemplateIds !== undefined) {
         setting.excludedTemplateIds =

@@ -75,6 +75,31 @@ class MarkdownParserTest {
     }
 
     @Test
+    fun `unterminated markers do not swallow the rest of the line`() {
+        assertEquals(
+            listOf(InlineSpan.Plain("so ** aberto "), InlineSpan.Link("x", "https://a.com")),
+            parseInline("so ** aberto [x](https://a.com)"),
+        )
+        assertEquals(
+            listOf(InlineSpan.Plain("2 * 3 e "), InlineSpan.Bold("ok")),
+            parseInline("2 * 3 e **ok**"),
+        )
+    }
+
+    @Test
+    fun `underscores inside words and urls stay literal`() {
+        assertEquals(listOf(InlineSpan.Plain("snake_case_word")), parseInline("snake_case_word"))
+        assertEquals(
+            listOf(InlineSpan.Plain("veja https://x.com/a_b_c ok")),
+            parseInline("veja https://x.com/a_b_c ok"),
+        )
+        assertEquals(
+            listOf(InlineSpan.Plain("a "), InlineSpan.Italic("b"), InlineSpan.Plain(".")),
+            parseInline("a _b_."),
+        )
+    }
+
+    @Test
     fun `parses http and https links`() {
         assertEquals(
             listOf(

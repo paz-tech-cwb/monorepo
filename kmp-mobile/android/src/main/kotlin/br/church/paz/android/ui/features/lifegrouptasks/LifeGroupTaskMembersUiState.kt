@@ -47,7 +47,7 @@ sealed class LifeGroupTaskMembersEffect {
 /** Source badge text: manual / leader default / automatic / pending (with present count vs minimum). */
 fun LifeGroupTaskMember.sourceBadgeLabel(): String =
     when (eligibilitySource) {
-        LifeGroupTaskEligibilitySource.MANUAL -> "Manual"
+        LifeGroupTaskEligibilitySource.MANUAL -> if (grandfathered) "Membro antigo · participa" else "Manual"
         LifeGroupTaskEligibilitySource.LEADER -> "Liderança"
         LifeGroupTaskEligibilitySource.AUTO -> "Automático · $presentCount de $minPresentMeetings presenças"
         LifeGroupTaskEligibilitySource.PENDING -> "Pendente · $presentCount de $minPresentMeetings presenças"

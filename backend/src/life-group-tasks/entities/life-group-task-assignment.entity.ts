@@ -46,7 +46,7 @@ export class LifeGroupTaskAssignment {
   @Column({ name: 'user_id', type: 'int' })
   userId: number;
 
-  @ManyToOne(() => User, { nullable: false })
+  @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 

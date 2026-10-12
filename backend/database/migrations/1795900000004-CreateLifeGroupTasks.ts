@@ -36,7 +36,7 @@ export class CreateLifeGroupTasks1795900000004 implements MigrationInterface {
         "life_group_id" int NOT NULL REFERENCES "life_groups"("id") ON DELETE CASCADE,
         "template_id" int NOT NULL REFERENCES "life_group_task_templates"("id"),
         "meeting_date" date NOT NULL,
-        "user_id" int NOT NULL REFERENCES "users"("id"),
+        "user_id" int NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
         "task_name" varchar(150) NOT NULL,
         "task_description" text NOT NULL DEFAULT '',
         "task_guidance" text NOT NULL DEFAULT '',

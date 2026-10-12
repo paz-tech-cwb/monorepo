@@ -30,7 +30,7 @@ struct LifeGroupTaskMemberDraft: Identifiable {
     var sourceBadgeLabel: String {
         if resetToAutomatic { return "Voltará ao automático ao salvar" }
         switch member.eligibilitySource {
-        case .manual: return "Manual"
+        case .manual: return member.grandfathered ? "Membro antigo (participa)" : "Manual"
         case .leader: return "Liderança"
         case .auto: return "Automático · \(member.presentCount) de \(member.minPresentMeetings) presenças"
         case .pending: return "Pendente · \(member.presentCount) de \(member.minPresentMeetings) presenças"
@@ -38,7 +38,8 @@ struct LifeGroupTaskMemberDraft: Identifiable {
         }
     }
 
-    var isManual: Bool { member.eligibilitySource == .manual }
+    /// Grandfathered members are explicit rows too, but resetting them would drop them from the rotation.
+    var isManual: Bool { member.eligibilitySource == .manual && !member.grandfathered }
 
     /// The backend requires `eligible` unless resetting, and keeps note/exclusions only on an
     /// explicit row, so any edit sends the draft's eligibility (pinning it as a manual decision).

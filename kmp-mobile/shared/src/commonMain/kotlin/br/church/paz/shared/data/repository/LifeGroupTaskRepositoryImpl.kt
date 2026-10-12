@@ -185,6 +185,7 @@ private data class TaskMemberDto(
     @SerialName("eligibility_source") val eligibilitySource: String = "",
     @SerialName("present_count") val presentCount: Int = 0,
     @SerialName("min_present_meetings") val minPresentMeetings: Int = 0,
+    val grandfathered: Boolean = false,
     val reason: String? = null,
     @SerialName("excluded_template_ids") val excludedTemplateIds: List<Int> = emptyList(),
 ) {
@@ -198,6 +199,7 @@ private data class TaskMemberDto(
             eligibilitySource = parseSource(eligibilitySource),
             presentCount = presentCount,
             minPresentMeetings = minPresentMeetings,
+            grandfathered = grandfathered,
             note = reason,
             excludedTemplateIds = excludedTemplateIds,
         )

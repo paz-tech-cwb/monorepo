@@ -113,7 +113,7 @@ class LifeGroupTaskRepositoryTest {
     fun `getTaskMembers maps eligibility fields and renames reason to note`() = runTest {
         val engine = MockEngine {
             respond(
-                """[{"user_id":1,"name":"Alice","is_leader":true,"is_co_leader":false,"eligible":true,"eligibility_source":"leader","present_count":4,"min_present_meetings":3,"reason":"on sabbatical","excluded_template_ids":[2,5]},{"user_id":2,"name":"Bob","is_leader":false,"is_co_leader":false,"eligible":false,"eligibility_source":"pending","present_count":1,"min_present_meetings":3,"reason":null,"excluded_template_ids":[]}]""",
+                """[{"user_id":1,"name":"Alice","is_leader":true,"is_co_leader":false,"eligible":true,"eligibility_source":"leader","present_count":4,"min_present_meetings":3,"reason":"on sabbatical","excluded_template_ids":[2,5]},{"user_id":2,"name":"Bob","is_leader":false,"is_co_leader":false,"eligible":false,"eligibility_source":"pending","present_count":1,"min_present_meetings":3,"grandfathered":false,"reason":null,"excluded_template_ids":[]},{"user_id":3,"name":"Cleo","is_leader":false,"is_co_leader":false,"eligible":true,"eligibility_source":"manual","present_count":0,"min_present_meetings":3,"grandfathered":true,"reason":null,"excluded_template_ids":[]}]""",
                 HttpStatusCode.OK,
                 jsonHeaders,
             )
@@ -122,7 +122,7 @@ class LifeGroupTaskRepositoryTest {
 
         val result = repo.getTaskMembers(7)
 
-        assertEquals(2, result.size)
+        assertEquals(3, result.size)
         assertEquals(LifeGroupTaskEligibilitySource.LEADER, result[0].eligibilitySource)
         assertEquals("on sabbatical", result[0].note)
         assertEquals(listOf(2, 5), result[0].excludedTemplateIds)
@@ -130,6 +130,10 @@ class LifeGroupTaskRepositoryTest {
         assertFalse(result[1].eligible)
         assertEquals(LifeGroupTaskEligibilitySource.PENDING, result[1].eligibilitySource)
         assertNull(result[1].note)
+        assertFalse(result[1].grandfathered)
+        assertTrue(result[2].grandfathered)
+        assertEquals(LifeGroupTaskEligibilitySource.MANUAL, result[2].eligibilitySource)
+        assertNull(result[2].note)
     }
 
     @Test

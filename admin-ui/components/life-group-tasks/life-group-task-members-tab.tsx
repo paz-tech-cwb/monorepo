@@ -28,6 +28,9 @@ import type { LifeGroupTaskMember } from "@/lib/api/types"
 function sourceBadge(member: LifeGroupTaskMember) {
   switch (member.eligibility_source) {
     case "manual":
+      if (member.grandfathered) {
+        return { label: "Membro antigo (participa)", variant: "default" as const }
+      }
       return { label: "Definido pelo líder", variant: "default" as const }
     case "leader":
       return { label: "Líder do grupo", variant: "secondary" as const }
@@ -210,7 +213,7 @@ function MemberRow({ lifeGroupId, member }: { lifeGroupId: number; member: LifeG
               )}
             </div>
           </div>
-          {member.eligibility_source === "manual" && (
+          {member.eligibility_source === "manual" && !member.grandfathered && (
             <Button variant="ghost" size="sm" disabled={save.isPending} onClick={handleReset}>
               <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
               Voltar ao automático

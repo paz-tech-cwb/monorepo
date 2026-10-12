@@ -12,6 +12,7 @@ import {
   WEEKDAY_INDEX,
   dateKeyOf,
   nextMeetingDate,
+  shiftDays,
   weekdayOfDateString,
   zonedParts,
 } from '../life-group-attendance/meeting-day.util';
@@ -35,6 +36,10 @@ import { LifeGroupTaskAssignment } from './entities/life-group-task-assignment.e
 import { LifeGroupTaskOverride } from './entities/life-group-task-override.entity';
 import { LifeGroupTaskSkip } from './entities/life-group-task-skip.entity';
 import { LifeGroupTaskTemplate } from './entities/life-group-task-template.entity';
+
+// Window accepted by the manual generate endpoint.
+const MAX_DAYS_BACK = 7;
+const MAX_DAYS_AHEAD = 60;
 
 interface EnabledTemplate {
   template: LifeGroupTaskTemplate;
@@ -95,6 +100,28 @@ export class LifeGroupTaskAssignmentsService {
     if (weekdayOfDateString(meetingDate) !== expected) {
       throw new BadRequestException(
         `${meetingDate} is not a ${lifeGroup.meetingDay} — this life group meets on ${lifeGroup.meetingDay}.`,
+      );
+    }
+  }
+
+  /**
+   * Manual generation only accepts dates close to now: a short grace window
+   * in the past (late draws) and a bounded horizon ahead. Dates far away would
+   * pollute the fairness history (it counts every non-skipped date).
+   */
+  private assertMeetingDateInWindow(meetingDate: string): void {
+    const today = zonedParts(new Date());
+    const earliest = dateKeyOf(shiftDays(today, -MAX_DAYS_BACK));
+    const latest = dateKeyOf(shiftDays(today, MAX_DAYS_AHEAD));
+    // YYYY-MM-DD strings compare chronologically.
+    if (meetingDate < earliest) {
+      throw new BadRequestException(
+        `meeting_date cannot be more than ${MAX_DAYS_BACK} days in the past.`,
+      );
+    }
+    if (meetingDate > latest) {
+      throw new BadRequestException(
+        `meeting_date cannot be more than ${MAX_DAYS_AHEAD} days ahead.`,
       );
     }
   }
@@ -332,6 +359,7 @@ export class LifeGroupTaskAssignmentsService {
       );
     }
     this.assertMatchesMeetingDay(lifeGroup, meetingDate);
+    this.assertMeetingDateInWindow(meetingDate);
     const result = await this.generateForGroup(lifeGroup, meetingDate);
     const roster = await this.roster.resolveRoster(lifeGroup);
     return {

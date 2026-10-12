@@ -91,19 +91,20 @@ internal fun parseInline(text: String): List<InlineSpan> {
             text.startsWith("**", i) -> {
                 val end = text.indexOf("**", i + 2)
                 if (end == -1) {
-                    addPlain(text.substring(i))
-                    i = text.length
+                    // Unmatched marker: keep it literal and carry on, so later
+                    // bold/links on the same line are still parsed.
+                    addPlain("**")
+                    i += 2
                 } else {
                     spans += InlineSpan.Bold(text.substring(i + 2, end))
                     i = end + 2
                 }
             }
-            text.startsWith("*", i) || text.startsWith("_", i) -> {
-                val marker = text[i]
-                val end = text.indexOf(marker, i + 1)
+            text[i] == '*' || text[i] == '_' -> {
+                val end = findItalicEnd(text, i)
                 if (end == -1) {
-                    addPlain(text.substring(i))
-                    i = text.length
+                    addPlain(text[i].toString())
+                    i++
                 } else {
                     spans += InlineSpan.Italic(text.substring(i + 1, end))
                     i = end + 1
@@ -133,4 +134,29 @@ internal fun parseInline(text: String): List<InlineSpan> {
         }
     }
     return spans
+}
+
+/**
+ * Index of the marker closing the italic span opened at [start], or -1 when
+ * the marker must stay literal. `_` only opens/closes at a word boundary so
+ * `snake_case_word` and URLs keep their underscores; the span must not be empty.
+ */
+private fun findItalicEnd(
+    text: String,
+    start: Int,
+): Int {
+    val marker = text[start]
+    // Like CommonMark: the opener must be followed by non-space (so "2 * 3" stays literal).
+    if (start + 1 >= text.length || text[start + 1].isWhitespace()) return -1
+    if (marker == '_' && start > 0 && text[start - 1].isLetterOrDigit()) return -1
+    var end = text.indexOf(marker, start + 1)
+    while (end != -1) {
+        val closes =
+            end > start + 1 &&
+                !text[end - 1].isWhitespace() &&
+                (if (marker == '*') text.getOrNull(end + 1) != '*' else (end + 1 >= text.length || !text[end + 1].isLetterOrDigit()))
+        if (closes) return end
+        end = text.indexOf(marker, end + 1)
+    }
+    return -1
 }

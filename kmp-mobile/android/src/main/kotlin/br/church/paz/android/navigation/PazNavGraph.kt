@@ -290,7 +290,10 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
             route = Screen.LifeGroupTaskMembers.route,
             arguments = listOf(androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType }),
         ) { backStackEntry ->
-            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
+            // The screen needs a numeric id; ignore a malformed route argument instead of crashing.
+            val lifeGroupId =
+                backStackEntry.arguments?.getString("lifeGroupId")?.takeIf { it.toIntOrNull() != null }
+                    ?: return@composable
             LifeGroupTaskMembersScreen(navController = navController, lifeGroupId = lifeGroupId)
         }
         composable(route = Screen.CasaDePazAnalytics.route) {

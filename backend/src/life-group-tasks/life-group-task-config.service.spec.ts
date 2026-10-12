@@ -4,7 +4,10 @@ import { LifeGroup } from '../life-groups/entities/life-group.entity';
 import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
 import { LifeGroupTaskConfigService } from './life-group-task-config.service';
 import { LifeGroupTaskRosterService } from './life-group-task-roster.service';
-import { LifeGroupTaskMemberSetting } from './entities/life-group-task-member-setting.entity';
+import {
+  GRANDFATHERED_REASON,
+  LifeGroupTaskMemberSetting,
+} from './entities/life-group-task-member-setting.entity';
 import { LifeGroupTaskOverride } from './entities/life-group-task-override.entity';
 import { LifeGroupTaskTemplate } from './entities/life-group-task-template.entity';
 import { LifeGroupTaskGroupSetting } from './entities/life-group-task-group-setting.entity';
@@ -158,6 +161,7 @@ describe('LifeGroupTaskConfigService', () => {
         eligible: false,
         eligibility_source: 'manual',
         reason: 'prefere nao participar',
+        grandfathered: false,
         excluded_template_ids: [1],
         present_count: 1,
         min_present_meetings: 3,
@@ -168,6 +172,29 @@ describe('LifeGroupTaskConfigService', () => {
         eligibility_source: 'leader',
         is_leader: true,
       });
+    });
+
+    it('flags grandfathered members and hides the system note', async () => {
+      const { service } = makeService({
+        settings: [
+          {
+            userId: 1,
+            eligible: true,
+            reason: GRANDFATHERED_REASON,
+            excludedTemplateIds: null,
+          },
+        ],
+      });
+      const members = await service.getMembers(7, unrestricted, { id: 1 });
+      expect(members.find((m) => m.user_id === 1)).toMatchObject({
+        eligible: true,
+        eligibility_source: 'manual',
+        grandfathered: true,
+        reason: null,
+      });
+      expect(
+        members.filter((m) => m.user_id !== 1).every((m) => !m.grandfathered),
+      ).toBe(true);
     });
 
     it('marks a new member below the threshold as pending', async () => {
@@ -225,6 +252,26 @@ describe('LifeGroupTaskConfigService', () => {
           excludedTemplateIds: null,
           updatedBy: 42,
         }),
+      ]);
+    });
+
+    it('keeps the grandfather marker when a client sends a blank note', async () => {
+      const existing = {
+        userId: 1,
+        lifeGroupId: 7,
+        eligible: true,
+        reason: GRANDFATHERED_REASON,
+        excludedTemplateIds: null,
+      };
+      const { service, em } = makeService({ settings: [existing] });
+      await service.putMembers(
+        7,
+        [{ userId: 1, eligible: true, reason: null }],
+        unrestricted,
+        { id: 42 },
+      );
+      expect(em.save).toHaveBeenCalledWith([
+        expect.objectContaining({ userId: 1, reason: GRANDFATHERED_REASON }),
       ]);
     });
 

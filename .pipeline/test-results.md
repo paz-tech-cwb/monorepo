@@ -121,3 +121,11 @@ Java is a stub, so `./gradlew :android:testDebugUnitTest`, `:android:assembleDeb
 - Added `LifeGroupTaskMembersViewModelTest` (13 tests: load mapping/enabled-only templates/failures, dirty tracking, save payload shape (changed members only, eligible pinned, note/exclusion clear semantics, reset flag), settings-first ordering, clamping, failed save, note length, badge labels). Expected values traced by hand against the ViewModel.
 - Cross-checked against the shared API (`LifeGroupTaskMember`, `LifeGroupTaskMemberUpdate`, `LifeGroupTaskSettings`, `LifeGroupTaskTemplateSummary`, repository signatures) and backend DTO limits (`min_present_meetings` 0..52, `reason` <= 1000, `eligible` required unless reset). Icons used exist in the project already (`Outlined.Person`, `Filled.Add/Remove`).
 - NOT verified: compilation, test execution, ktlint, runtime UI. Re-run: `cd kmp-mobile && ./gradlew :android:testDebugUnitTest :android:assembleDebug ktlintCheck`.
+
+## Phase M3 / M4 (iOS) results
+
+No iOS test target exists (`project.yml` has `testTargets: []`), so no unit tests were added. The shared XCFramework cannot be built (no Java), so the app was NOT compiled, and `xcodebuild` was not run.
+- `xcrun swiftc -parse` passed on every new/modified Swift file (syntax only).
+- The pure markdown logic (`LifeGroupTaskMarkdown.parseBlocks`, `isSafeLinkURL`, `attributed`) was extracted into a scratch macOS executable and run: headings/paragraph joining/nested bullets/`1.`/`2)` lists parsed as expected; https/http accepted; `javascript:`, `tel:`, `file:`, `paz://`, host-less https rejected; the link attribute was stripped from `[bad](javascript:...)` and kept for https.
+- `plutil -lint` passes on `project.pbxproj` after hand-editing.
+- NOT verified: compilation against `Shared`, SwiftUI runtime rendering, swiftformat/swiftlint (not run), the deep link on device. Re-run: `cd kmp-mobile && ./gradlew :shared:assembleSharedXCFramework`, then build the `PazChurch` scheme.

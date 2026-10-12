@@ -34,6 +34,7 @@ class LifeGroupTaskMembersViewModelTest {
         presentCount: Int = 4,
         note: String? = null,
         excluded: List<Int> = emptyList(),
+        grandfathered: Boolean = false,
     ) = LifeGroupTaskMember(
         userId = userId,
         name = name,
@@ -43,6 +44,7 @@ class LifeGroupTaskMembersViewModelTest {
         eligibilitySource = source,
         presentCount = presentCount,
         minPresentMeetings = 3,
+        grandfathered = grandfathered,
         note = note,
         excludedTemplateIds = excluded,
     )
@@ -79,6 +81,14 @@ class LifeGroupTaskMembersViewModelTest {
             assertEquals(3, state.minPresentMeetings)
             assertFalse(state.hasChanges)
         }
+
+    @Test
+    fun `grandfathered members get a dedicated badge instead of Manual`() {
+        val legacy = member(3, "Carla", source = LifeGroupTaskEligibilitySource.MANUAL, grandfathered = true)
+        val manual = member(4, "Davi", source = LifeGroupTaskEligibilitySource.MANUAL)
+        assertEquals("Membro antigo · participa", legacy.sourceBadgeLabel())
+        assertEquals("Manual", manual.sourceBadgeLabel())
+    }
 
     @Test
     fun `load failure surfaces an error`() =

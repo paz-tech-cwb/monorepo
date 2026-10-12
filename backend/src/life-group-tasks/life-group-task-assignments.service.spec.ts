@@ -7,6 +7,11 @@ import {
 import { EntityManager } from 'typeorm';
 import { LifeGroup } from '../life-groups/entities/life-group.entity';
 import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
+import {
+  dateKeyOf,
+  shiftDays,
+  zonedParts,
+} from '../life-group-attendance/meeting-day.util';
 import { LifeGroupTaskAssignmentsService } from './life-group-task-assignments.service';
 import { LifeGroupTaskRosterService } from './life-group-task-roster.service';
 import { LifeGroupTaskNotifier } from './life-group-task-notifier';
@@ -15,6 +20,10 @@ import { LifeGroupTaskMemberSetting } from './entities/life-group-task-member-se
 import { LifeGroupTaskOverride } from './entities/life-group-task-override.entity';
 import { LifeGroupTaskSkip } from './entities/life-group-task-skip.entity';
 import { LifeGroupTaskTemplate } from './entities/life-group-task-template.entity';
+
+// A date inside the manual-generate window (today, church timezone). The
+// default test group has no fixed weekday, so any date passes the weekday check.
+const MEETING = dateKeyOf(zonedParts(new Date()));
 
 const unrestricted: ResolvedScope = {
   unrestricted: true,
@@ -165,7 +174,7 @@ function row(overrides: Record<string, unknown> = {}) {
     id: 'a-1',
     lifeGroupId: 7,
     templateId: 1,
-    meetingDate: '2999-01-01',
+    meetingDate: MEETING,
     userId: 1,
     user: bob,
     taskName: 'Palavra',
@@ -184,7 +193,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
     it('forbids a user with no scope who is neither leader nor co-leader', async () => {
       const { service, insertQb } = makeService(makeWorld());
       await expect(
-        service.generate(7, '2999-01-01', noAccess, { id: 99 }),
+        service.generate(7, MEETING, noAccess, { id: 99 }),
       ).rejects.toBeInstanceOf(ForbiddenException);
       expect(insertQb.execute).not.toHaveBeenCalled();
     });
@@ -192,10 +201,10 @@ describe('LifeGroupTaskAssignmentsService', () => {
     it('allows the co_leader_id fallback and the leader_id fallback', async () => {
       for (const id of [11, 10]) {
         const { service } = makeService(makeWorld());
-        const result = await service.generate(7, '2999-01-01', noAccess, {
+        const result = await service.generate(7, MEETING, noAccess, {
           id,
         });
-        expect(result.meeting_date).toBe('2999-01-01');
+        expect(result.meeting_date).toBe(MEETING);
       }
     });
 
@@ -208,6 +217,31 @@ describe('LifeGroupTaskAssignmentsService', () => {
       await expect(
         service.generate(7, '2026-06-11', unrestricted, { id: 1 }),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejects dates too far in the past or too far ahead', async () => {
+      const today = zonedParts(new Date());
+      const past = dateKeyOf(shiftDays(today, -30));
+      const future = dateKeyOf(shiftDays(today, 90));
+      const { service, insertQb } = makeService(makeWorld());
+      await expect(
+        service.generate(7, past, unrestricted, { id: 1 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.generate(7, future, unrestricted, { id: 1 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(insertQb.execute).not.toHaveBeenCalled();
+      // A few days back and a month ahead are still accepted.
+      await expect(
+        service.generate(7, dateKeyOf(shiftDays(today, -3)), unrestricted, {
+          id: 1,
+        }),
+      ).resolves.toBeDefined();
+      await expect(
+        service.generate(7, dateKeyOf(shiftDays(today, 30)), unrestricted, {
+          id: 1,
+        }),
+      ).resolves.toBeDefined();
     });
 
     it('defaults meeting_date to the next meeting and needs one without a fixed day', async () => {
@@ -230,7 +264,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
     it('list and reroll also enforce access', async () => {
       const { service } = makeService(makeWorld());
       await expect(
-        service.list(7, '2999-01-01', noAccess, { id: 99 }),
+        service.list(7, MEETING, noAccess, { id: 99 }),
       ).rejects.toBeInstanceOf(ForbiddenException);
       await expect(
         service.reroll(7, 'a-1', noAccess, { id: 99 }),
@@ -261,7 +295,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
       });
       const { service, insertQb } = makeService(world);
 
-      const result = await service.generate(7, '2999-01-01', unrestricted, {
+      const result = await service.generate(7, MEETING, unrestricted, {
         id: 1,
       });
 
@@ -280,7 +314,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
         status: 'assigned',
         source: 'auto',
         lifeGroupId: 7,
-        meetingDate: '2999-01-01',
+        meetingDate: MEETING,
       });
       expect(ofertaRow).toMatchObject({ taskGuidance: 'guia oferta' });
       expect(result.assignments).toHaveLength(2);
@@ -293,7 +327,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
         assignmentFinds: [[], [row({ userId: 10, user: leader })]],
       });
       const { service, insertQb } = makeService(world);
-      await service.generate(7, '2999-01-01', unrestricted, { id: 1 });
+      await service.generate(7, MEETING, unrestricted, { id: 1 });
       const values = insertQb.values.mock.calls[0][0] as {
         templateId: number;
       }[];
@@ -308,7 +342,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
       const world = makeWorld({ assignmentFinds: [existing] });
       const { service, insertQb, em } = makeService(world);
 
-      const result = await service.generate(7, '2999-01-01', unrestricted, {
+      const result = await service.generate(7, MEETING, unrestricted, {
         id: 1,
       });
 
@@ -327,7 +361,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
         ],
       });
       const { service, insertQb } = makeService(world);
-      await service.generate(7, '2999-01-01', unrestricted, { id: 1 });
+      await service.generate(7, MEETING, unrestricted, { id: 1 });
       const values = insertQb.values.mock.calls[0][0] as {
         templateId: number;
       }[];
@@ -337,7 +371,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
     it('does nothing for a skipped date', async () => {
       const world = makeWorld({ skip: { id: 's-1' } });
       const { service, insertQb } = makeService(world);
-      const result = await service.generate(7, '2999-01-01', unrestricted, {
+      const result = await service.generate(7, MEETING, unrestricted, {
         id: 1,
       });
       expect(result.skipped).toBe(true);
@@ -352,7 +386,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
       });
       for (let i = 0; i < 20; i++) {
         const { service, insertQb } = makeService(world);
-        await service.generate(7, '2999-01-01', unrestricted, { id: 1 });
+        await service.generate(7, MEETING, unrestricted, { id: 1 });
         const values = insertQb.values.mock.calls[0][0] as {
           userId: number;
         }[];
@@ -370,7 +404,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
         ],
       });
       const { service, insertQb, notifier } = makeService(world);
-      const result = await service.generate(7, '2999-01-01', unrestricted, {
+      const result = await service.generate(7, MEETING, unrestricted, {
         id: 1,
       });
       // Only the leader is eligible and is excluded from template 1.
@@ -387,7 +421,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
       ]);
       expect(notifier.notifyUnassignable).toHaveBeenCalledWith({
         lifeGroupId: 7,
-        meetingDate: '2999-01-01',
+        meetingDate: MEETING,
         taskNames: ['Palavra'],
       });
     });
@@ -399,7 +433,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
         assignmentFinds: [[], []],
       });
       const { service, insertQb, notifier } = makeService(world);
-      await service.generate(7, '2999-01-01', unrestricted, { id: 1 });
+      await service.generate(7, MEETING, unrestricted, { id: 1 });
       expect(insertQb.execute).not.toHaveBeenCalled();
       expect(notifier.notifyUnassignable).toHaveBeenCalledWith(
         expect.objectContaining({ taskNames: ['Palavra', 'Oferta'] }),
@@ -416,7 +450,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
         assignmentFinds: [[], []],
       });
       const { service, insertQb, em } = makeService(world);
-      await service.generate(7, '2999-01-01', unrestricted, { id: 1 });
+      await service.generate(7, MEETING, unrestricted, { id: 1 });
       const values = insertQb.values.mock.calls[0][0] as { userId: number }[];
       expect(values[0].userId).toBe(1);
       const historySql = (em.query.mock.calls as [string][])
@@ -582,7 +616,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
       );
       expect(notifier.notifyUnassignable).toHaveBeenCalledWith({
         lifeGroupId: 7,
-        meetingDate: '2999-01-01',
+        meetingDate: MEETING,
         taskNames: ['Palavra'],
       });
       expect(result.reassigned).toBe(false);

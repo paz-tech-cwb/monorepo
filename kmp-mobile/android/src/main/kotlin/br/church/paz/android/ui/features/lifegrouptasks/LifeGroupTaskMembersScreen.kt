@@ -204,7 +204,8 @@ private fun MemberCard(
 ) {
     val member = draft.member
     var expanded by rememberSaveable(member.userId) { mutableStateOf(false) }
-    val isManual = member.eligibilitySource == LifeGroupTaskEligibilitySource.MANUAL
+    // Grandfathered members are explicit rows too, but resetting them would drop them from the rotation.
+    val isManual = member.eligibilitySource == LifeGroupTaskEligibilitySource.MANUAL && !member.grandfathered
 
     PazGlassCard(
         modifier = Modifier.fillMaxWidth().clip(PazShapes.large),

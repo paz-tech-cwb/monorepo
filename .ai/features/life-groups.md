@@ -75,7 +75,12 @@ group members in rotation. Module: `backend/src/life-group-tasks/`.
   entries in `life_group_attendance_entries` for that group. Interpretation
   (to be confirmed with product): "3 weeks of presence" = 3 present attendance
   records, not 3 consecutive weeks and not days since joining. Members existing
-  at migration time were grandfathered with explicit eligible=true rows.
+  at migration time were grandfathered with explicit eligible=true rows carrying
+  the system note `grandfathered at migration`; `GET task-members` never returns
+  that note and instead exposes `grandfathered: true`, and clients hide "Voltar ao
+  automático" for those rows (resetting would drop an established member below
+  the presence threshold). A blank note from a client keeps the marker; a real
+  leader note replaces it.
   `user_life_groups.joined_at` (default now()) is stored for display/audit only.
   Leader notes on a member are never returned to member endpoints; per-template
   exclusions are supported; `reset_to_automatic` deletes the explicit row.
@@ -91,13 +96,14 @@ group members in rotation. Module: `backend/src/life-group-tasks/`.
 Endpoints (prefix `/api`):
 
 - Admin: `GET/POST /life-group-task-templates`, `PATCH/DELETE /life-group-task-templates/:id`, `PUT /life-group-task-templates/reorder`.
-- Leader/co-leader/admin: `GET/PUT /life-groups/:id/task-overrides|task-members|task-settings`, `GET/POST /life-groups/:id/task-skips`, `DELETE /life-groups/:id/task-skips/:date`, `GET /life-groups/:id/tasks?date=`, `POST .../tasks/generate` (`meeting_date` optional, defaults to next meeting), `POST .../tasks/reroll`, `PATCH .../tasks/:assignmentId`.
+- Leader/co-leader/admin: `GET/PUT /life-groups/:id/task-overrides|task-members|task-settings`, `GET/POST /life-groups/:id/task-skips`, `DELETE /life-groups/:id/task-skips/:date`, `GET /life-groups/:id/tasks?date=`, `POST .../tasks/generate` (`meeting_date` optional, defaults to next meeting; must be at most 7 days in the past and 60 days ahead, else 400), `POST .../tasks/reroll`, `PATCH .../tasks/:assignmentId`.
 - Member: `GET /me/life-group-tasks`, `GET /me/life-group-tasks/:id`, `POST /me/life-group-tasks/:id/decline`.
 
 Tables (migration `1795900000004-CreateLifeGroupTasks`): templates, overrides,
 assignments, member_settings, group_settings, skips, plus `user_life_groups.joined_at`.
 Migration `1795900000003-AddLifeGroupTasksEnumValues` adds the enum values
 (separate because Postgres cannot use a new enum value in the same transaction).
+Assignments cascade on `users` delete (account deletion must not fail on task history).
 Running migrations and deploying are human gates; they have not been run by agents.
 
 Clients: admin-ui "Tarefas do Life" page (templates) plus a "Tarefas" panel on

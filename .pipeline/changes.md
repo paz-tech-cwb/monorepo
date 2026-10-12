@@ -156,3 +156,39 @@
 - The route arg is the group id as String; the screen converts with `toInt()` like the attendance screens.
 - Same inline pt-BR strings convention as M2.
 - iOS parity: route `life_group_task_members/{lifeGroupId}`; endpoints `GET/PUT /life-groups/:id/task-members`, `GET/PUT /life-groups/:id/task-settings`, `GET /life-groups/:id/task-overrides` (templates) via `LifeGroupTaskRepository`.
+
+## Phase M3 (iOS: task guide, Minhas tarefas card, deep link)
+
+### Files (under `kmp-mobile/ios/PazChurch/`)
+- New `Features/LifeGroupTasks/`: `LifeGroupTaskGuideView.swift` + `LifeGroupTaskGuideViewModel.swift` (`@Observable @MainActor`; name, group, `dd/MM/yyyy` meeting date, "Sobre a tarefa" description, "Guia" markdown, destructive "Não posso" with confirmation alert, "Tarefa devolvida" state whose copy depends on `reassigned`, skeleton, `ErrorStateView` retry, pull-to-refresh), `LifeGroupMyTasksCard.swift`, `LifeGroupTaskMarkdownView.swift`.
+- Markdown: small custom block renderer (headings, bullet/ordered lists incl. indent, paragraphs) with inline bold/italic/links via `AttributedString(markdown:)` in inline-only mode. Links are tappable only for http/https with a host; any other scheme has its link attribute stripped (label stays plain text). Existing `MarkdownBodyView` was left untouched (no list numbering/link sanitizing; used by studies).
+- `Navigation/DeepLinkDestination.swift`: `.lifeGroupTaskGuide(assignmentId:)` (home stack), parsing of `tarefa/{id}` (blank id or extra path segments -> nil, same as Android). `Services/PushNotificationService.swift`: `paz://tarefa/` -> `tarefa/{id}`. `Navigation/MainTabView.swift`: tab 0 + destination view.
+- `Features/Ministries/MinistryDetailView.swift` (`LifeGroupDetailView`): "Minhas tarefas" card; `getMyTasks()` best-effort (failure -> hidden), filters `ASSIGNED` of this group, sorted by date; loaded in `.task` and on pull-to-refresh; card hidden when empty.
+- `PazChurch.xcodeproj/project.pbxproj`: hand-edited (xcodegen not installed; the pbxproj is checked in with explicit file refs): new `LifeGroupTasks` group + file refs/build files. `plutil -lint` OK.
+
+### Notes / deviations
+- Home screen card not added (parity with Android). No `onDismiss` plumbing for the guide: "Voltar" uses `dismiss()`, which pops both the Home-stack deep link and the pushed card route.
+- iOS copy is inline pt-BR, identical to Android.
+
+## Phase M4 (iOS: leader eligibility screen)
+
+### Files
+- New `Features/LifeGroupTasks/LifeGroupTaskMembersView.swift` + `LifeGroupTaskMembersViewModel.swift` (includes `LifeGroupTaskMemberDraft`). "Elegibilidade para tarefas": explanatory leader-only note, "Presenças mínimas" `Stepper` 0..52, per-member card with eligibility `Toggle`, role (Líder/Co-líder), source badge (Manual / Liderança / "Automático · N de M presenças" / "Pendente · N de M presenças" / "Voltará ao automático ao salvar"), expandable details (note field capped at 1000, per-template exclusion checkboxes for enabled templates only, "decisão manual" hint), "Voltar ao automático" (MANUAL only) with "Desfazer", pull-to-refresh, skeleton/error/empty states, "Salvar" button (disabled without changes).
+- Save semantics identical to Android: `updateTaskSettings` first when the minimum changed, then `updateTaskMembers` with only dirty members (or `getTaskMembers` when only the setting changed); eligible always sent unless reset; note/exclusions only when changed (empty clears); reset sends only `resetToAutomatic`; response replaces drafts.
+- Entry point: card in `LifeGroupDetailView`, shown under the existing `canManageAttendance` leader/co-leader gate. pbxproj updated.
+
+### Notes
+- Shared API bridging assumptions (unverified without a framework build): Kotlin `description` property -> `description_`; `List<Int>` -> `[KotlinInt]`; nullable `Boolean` -> `KotlinBoolean?`; enums -> `.assigned/.manual/...`; `LifeGroupTaskMemberUpdate` init takes every parameter (no Kotlin defaults in Swift).
+
+## Review / Fix (Arnold)
+
+Fixed from `.pipeline/review.md`:
+- M1: `life_group_task_assignments.user_id` now `ON DELETE CASCADE` (migration 1795900000004, edited in place since it has not run; entity `onDelete: 'CASCADE'`). Other new FKs already fine: member_settings.user_id CASCADE, updated_by/created_by SET NULL, group FKs CASCADE; assignments.template_id has no cascade on purpose (template delete is refused once used; deactivate instead).
+- M2: `buildMembers` hides the `grandfathered at migration` note (`reason: null`) and returns `grandfathered: boolean` (constant `GRANDFATHERED_REASON` in the member-setting entity). `putMembers` keeps the marker when a client sends a blank note (clients no longer see it, so "Salvar detalhes" must not erase it). admin-ui, Android (`LifeGroupTaskMember.grandfathered`, shared DTO default false) and iOS hide "Voltar ao automático" for grandfathered rows and label them "Membro antigo (participa)". Tests: config.service.spec, repository test, Android ViewModel test.
+- m1: Android `parseInline`: `_` italics only at word boundaries, `*`/`_` openers must be followed by non-space and closers preceded by non-space, unmatched `**`/`*`/`_` become literal and parsing continues (tests added).
+- m4: `generate` rejects meeting_date > 7 days in the past or > 60 days ahead (400); spec updated, existing specs switched to a date computed from today.
+- m6: admin-ui `nextMeetingDate` computes "today" in America/Sao_Paulo.
+- m8: `PazNavGraph` ignores a non-numeric `lifeGroupId` route arg instead of crashing.
+
+Left as follow-ups: m2 (preview vs mobile markdown subset), m3 (no notification after manual generate inside the offset window), m5 (decline ping-pong: the row is reassigned in place so earlier decliners are not tracked; fixing it needs a decliner history column, not trivial), m7 (index/constraint names vs TypeORM), m9 (evaluator claim-then-send), m10 (nothing compiled or run). Known edge: a leader who writes a real note on a grandfathered member replaces the marker, after which the reset button reappears.
+

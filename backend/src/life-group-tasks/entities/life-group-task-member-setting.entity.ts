@@ -11,6 +11,13 @@ import {
 import { LifeGroup } from '../../life-groups/entities/life-group.entity';
 import { User } from '../../users/entities/user.entity';
 
+/**
+ * System note written by the 1795900000004 migration on the explicit
+ * eligible=true rows that grandfather existing members. It is never shown to
+ * leaders; the API exposes a `grandfathered` flag instead.
+ */
+export const GRANDFATHERED_REASON = 'grandfathered at migration';
+
 // Explicit per-member setting; always wins over the automatic eligibility
 // rule. `reason` is a leader-only note and must never reach member endpoints.
 @Entity('life_group_task_member_settings')
