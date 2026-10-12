@@ -25,6 +25,8 @@ import br.church.paz.android.ui.features.formularios.FormSubmissionDetailScreen
 import br.church.paz.android.ui.features.formularios.FormSubmissionsListScreen
 import br.church.paz.android.ui.features.formularios.FormulariosScreen
 import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsScreen
+import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportDetailScreen
+import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportsScreen
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceEditorScreen
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryScreen
 import br.church.paz.android.ui.features.lifegroupdiscovery.LifeGroupDiscoveryScreen
@@ -278,6 +280,23 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         ) { backStackEntry ->
             val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId")
             LifeGroupAnalyticsScreen(navController = navController, lifeGroupId = lifeGroupId)
+        }
+        composable(
+            route = Screen.LifeGroupReports.route,
+            arguments = listOf(androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            // The screen needs a numeric id; ignore a malformed route argument instead of crashing.
+            val lifeGroupId =
+                backStackEntry.arguments?.getString("lifeGroupId")?.takeIf { it.toIntOrNull() != null }
+                    ?: return@composable
+            LifeGroupReportsScreen(navController = navController, lifeGroupId = lifeGroupId)
+        }
+        composable(
+            route = Screen.LifeGroupReportDetail.route,
+            arguments = listOf(androidx.navigation.navArgument("reportId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val reportId = backStackEntry.arguments?.getString("reportId") ?: return@composable
+            LifeGroupReportDetailScreen(navController = navController, reportId = reportId)
         }
         composable(
             route = Screen.LifeGroupTaskGuide.route,

@@ -277,3 +277,24 @@ Phase 1 (`backend/src/life-group-reports/`):
 - admin-ui: no change needed. `LifeGroupReport`/`FormSubmissionMeta` types and `_columns.tsx` already expect snake_case plus `submitted_by:{id,name}`, which the list now actually returns (previously `{}`). Not run: admin-ui tsc/eslint (untouched).
 - Docs: `.ai/features/life-groups.md` (new "Weekly life group reports (read API)" section), `.ai/apps/backend.md`. Postman: still no collection in the repo (`.ai/apps/postman-files.md`), nothing updated.
 - Wire contract for mobile: `GET api/forms/life-group-reports?life_group_id={int}` -> JSON array of the snake_case objects above; `GET api/forms/life-group-reports/{uuid}` -> one object; errors 403 (filter group not accessible), 404 (detail not visible), 400 (non-numeric id).
+
+## Shared + Android (home-card branch)
+
+Owen. Backend wire contract verified against commit d53f9a9 (`toResponse` snake_case, `submitted_by {id,name}`, 403 on filter outside scope, 404 detail out of scope).
+
+Shared (`kmp-mobile/shared`, commit a059f3e):
+- `domain/model/LifeGroupReport.kt`: `LifeGroupWeeklyReport` (domain; multi-value fields are `List<String>`, `offering` String).
+- `domain/repository/LifeGroupReportRepository.kt` + `data/repository/LifeGroupReportRepositoryImpl.kt`: `getReports(lifeGroupId: Int)` -> `GET api/forms/life-group-reports?life_group_id=`, `getReport(reportId: String)`; private snake_case DTO, tolerant of array/string and number/string variants.
+- DI: `SharedModule` (`single<LifeGroupReportRepository>`), `IosAppContainer.lifeGroupReportRepository`.
+- `domain/model/HomeLifeGroupCard.kt`: `HomeLifeGroupCard`, `HomeLifeGroupCards`, `selectUpcomingLifeGroupTasks`, `buildHomeLifeGroupCards`.
+- Tests: `LifeGroupReportRepositoryTest` (5), `HomeLifeGroupCardTest` (7).
+
+Android (`kmp-mobile/android`):
+- Home: `HomeUiState` (`lifeGroupCards`, `hiddenLifeGroupsCount`, `legacyTasks`; `myTasks` removed), `HomeViewModel` (independent groups/tasks fetches, cancellation rethrown, `onLifeGroupTapped`, `onSeeAllLifeGroupsTapped`; wrapper `selectUpcomingTasks` removed in favour of the shared function), `HomeScreen` (`LifeGroupHomeCard`, "Ver todos (N)", legacy `MyTasksCard` only when groups failed). Constructor of `HomeViewModel` unchanged (Koin `get()` count stays 4).
+- `ministries/MinistryDetailScreen.kt`: `MyTasksRows` extracted from `MyTasksCard` and reused by the home card; "Relatórios" gate -> `canViewGroupReports`; new "Relatórios semanais" row; meeting line via new `LifeGroupMeetingLabel.kt`. `MinistryDetailViewModel.kt`: `canViewLifeGroupReports` (pure, internal), `onReportsTap`, effect `NavigateToReports`. `LifeGroupDetailViewModel` constructor unchanged.
+- New `ui/features/lifegroupreports/`: `LifeGroupReportsViewModel` + `LifeGroupReportDetailViewModel`, UiState/Effect, `LifeGroupReportsScreen`, `LifeGroupReportDetailScreen`.
+- Analytics: `isScopedToGroup` (set when a `lifeGroupId` is supplied) hides the group dropdown.
+- Nav: `Screen.LifeGroupReports` (`life_group_reports/{lifeGroupId}`), `Screen.LifeGroupReportDetail` (`life_group_report/{reportId}`), `PazNavGraph`; Koin in `AndroidModule`: `LifeGroupReportsViewModel(lifeGroupId: Int, get())`, `LifeGroupReportDetailViewModel(reportId: String, get())`.
+- Tests: `HomeViewModelTest` rewritten for cards/fallback (8), `LifeGroupDetailViewModelTest` gate matrix (+2), new `LifeGroupReportsViewModelTest` (10), `LifeGroupAnalyticsViewModelTest` scoped (+1).
+- Deviation: `LifeGroupHomeCard` header uses `Surface(onClick=)` per kmp-mobile guidelines; no role chip on the card (spec marked it optional).
+- Docs: `.ai/features/mobile-app.md`, `.ai/apps/mobile.md` (Android+shared; the stale "no iOS unit-test target" paragraph is left for the iOS agent).

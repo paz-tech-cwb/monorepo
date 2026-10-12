@@ -241,7 +241,8 @@ private fun LifeGroupReportExportContent(uiState: LifeGroupAnalyticsUiState) {
             title = "Relatório de Frequência — Life Groups",
             scopeLabel =
                 buildString {
-                    append(uiState.lifeGroups.firstOrNull { it.first == uiState.lifeGroupId }?.second ?: "Todos os grupos")
+                    val fallbackLabel = if (uiState.isScopedToGroup) "Este grupo" else "Todos os grupos"
+                    append(uiState.lifeGroups.firstOrNull { it.first == uiState.lifeGroupId }?.second ?: fallbackLabel)
                     append(" · ")
                     append(uiState.month?.let { MONTH_LABELS.getOrNull(it - 1) } ?: "Todos os meses")
                     append(" ")
@@ -507,11 +508,14 @@ private fun AnalyticsFilters(
             }
         }
 
-        LifeGroupDropdown(
-            lifeGroups = uiState.lifeGroups,
-            selectedId = uiState.lifeGroupId,
-            onSelected = onLifeGroupSelected,
-        )
+        // Opened from a group's detail: locked to that group, no way to widen the scope.
+        if (!uiState.isScopedToGroup) {
+            LifeGroupDropdown(
+                lifeGroups = uiState.lifeGroups,
+                selectedId = uiState.lifeGroupId,
+                onSelected = onLifeGroupSelected,
+            )
+        }
     }
 }
 

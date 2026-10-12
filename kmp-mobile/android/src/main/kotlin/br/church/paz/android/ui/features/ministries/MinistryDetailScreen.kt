@@ -251,6 +251,11 @@ fun LifeGroupDetailScreen(
                         br.church.paz.android.navigation.Screen.LifeGroupManage
                             .createRoute(effect.lifeGroupId),
                     )
+                is LifeGroupDetailEffect.NavigateToReports ->
+                    navController.navigate(
+                        br.church.paz.android.navigation.Screen.LifeGroupReports
+                            .createRoute(effect.lifeGroupId),
+                    )
                 is LifeGroupDetailEffect.NavigateToTaskMembers ->
                     navController.navigate(
                         br.church.paz.android.navigation.Screen.LifeGroupTaskMembers
@@ -303,7 +308,8 @@ fun LifeGroupDetailScreen(
                 myTasks = uiState.myTasks,
                 onTaskTap = viewModel::onTaskTap,
                 onTaskMembersTap = viewModel::onTaskMembersTap,
-                canManage = uiState.canManage,
+                canViewGroupReports = uiState.canViewGroupReports,
+                onReportsTap = viewModel::onReportsTap,
                 onAnalyticsTap = {
                     navController.navigate(
                         br.church.paz.android.navigation.Screen.LifeGroupAnalytics
@@ -324,7 +330,8 @@ private fun LifeGroupContent(
     myTasks: List<LifeGroupTask>,
     onTaskTap: (String) -> Unit,
     onTaskMembersTap: () -> Unit,
-    canManage: Boolean,
+    canViewGroupReports: Boolean,
+    onReportsTap: () -> Unit,
     onAnalyticsTap: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -414,12 +421,7 @@ private fun LifeGroupContent(
                         InfoRow(
                             icon = Icons.Default.CalendarToday,
                             label = "Reunião",
-                            value =
-                                buildString {
-                                    lifeGroup.meetingDay?.let { append(it) }
-                                    if (!lifeGroup.meetingDay.isNullOrEmpty() && !lifeGroup.meetingTime.isNullOrEmpty()) append(" às ")
-                                    lifeGroup.meetingTime?.let { append(it) }
-                                },
+                            value = lifeGroupMeetingLabel(lifeGroup).orEmpty(),
                         )
                     }
                     lifeGroup.location?.let {
@@ -566,7 +568,7 @@ private fun LifeGroupContent(
             }
         }
 
-        if (canManage || canManageAttendance) {
+        if (canViewGroupReports) {
             item {
                 PazGlassCard(
                     modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onAnalyticsTap),
@@ -584,6 +586,31 @@ private fun LifeGroupContent(
                             modifier = Modifier.size(22.dp),
                         )
                         Text("Relatórios", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        Icon(
+                            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                        )
+                    }
+                }
+            }
+            item {
+                PazGlassCard(
+                    modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onReportsTap),
+                    cornerRadius = PazSpacing.CardRadiusCompact,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(PazSpacing.Lg),
+                        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Outlined.Assignment,
+                            contentDescription = null,
+                            tint = PazColors.Primary,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Text("Relatórios semanais", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                         Icon(
                             Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                             contentDescription = null,
@@ -619,33 +646,45 @@ internal fun MyTasksCard(
                 )
                 Text("Minhas tarefas", style = MaterialTheme.typography.titleSmall)
             }
-            tasks.forEach { task ->
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(PazShapes.medium)
-                            .clickable { onTaskTap(task.id) }
-                            .padding(vertical = PazSpacing.Sm),
-                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(task.name, style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            brDateString(task.meetingDate),
-                            style =
-                                MaterialTheme.typography.labelSmall.copy(
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                                ),
-                        )
-                    }
-                    Icon(
-                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+            MyTasksRows(tasks = tasks, onTaskTap = onTaskTap)
+        }
+    }
+}
+
+/** The tappable task rows of "Minhas tarefas", shared by the detail card and the home life group card. */
+@Composable
+internal fun MyTasksRows(
+    tasks: List<LifeGroupTask>,
+    onTaskTap: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
+        tasks.forEach { task ->
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(PazShapes.medium)
+                        .clickable { onTaskTap(task.id) }
+                        .padding(vertical = PazSpacing.Sm),
+                horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(task.name, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        brDateString(task.meetingDate),
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            ),
                     )
                 }
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                )
             }
         }
     }

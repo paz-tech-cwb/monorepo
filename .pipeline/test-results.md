@@ -237,3 +237,12 @@ Tooling: Node v22.23.3 (scratchpad download), existing `backend/node_modules`.
 | `npx prettier --check src/life-group-reports` | PASS |
 | Full `npx jest` | 72 suites pass, 6 fail = baseline set (auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens); 5 failed tests, none new |
 | admin-ui tsc/eslint | NOT RUN (admin-ui untouched) |
+
+## Shared + Android (home-card branch)
+
+Tooling: JDK 17.0.20 (scratchpad), `GRADLE_USER_HOME`/`KONAN_DATA_DIR` in scratchpad.
+
+| Check | Result |
+|---|---|
+| `./gradlew :shared:iosSimulatorArm64Test` (kmp-mobile) | BUILD SUCCESSFUL; new `LifeGroupReportRepositoryTest` 5/5, `HomeLifeGroupCardTest` 7/7, no failures |
+| `:android:testDebugUnitTest`, `:android:assembleDebug`, `ktlintCheck` | NOT RUN (Android SDK not installed); validated by CI. Android code cross-checked by hand against real files (imports, Koin `get()` counts: HomeViewModel 4 and LifeGroupDetailViewModel 4 unchanged; new VMs take 1 `get()` each; every test constructing changed VMs reviewed) |

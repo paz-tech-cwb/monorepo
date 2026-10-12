@@ -31,10 +31,19 @@ Keep platform implementations visually aligned unless intentionally redesigning.
 ## Life group tasks (Android + iOS)
 
 - Task guide screen: name, group, meeting date, description, markdown guidance, destructive "Não posso" (confirmation; "Tarefa devolvida" state).
-- "Minhas tarefas" card on life group detail (assigned tasks of that group; hidden when empty) AND on the home screen (up to 3 upcoming assigned tasks across groups, `meetingDate >= today`, soonest first; each row opens the guide; fetched best-effort in the home view model, hidden when empty or on failure).
+- "Minhas tarefas" card on life group detail (assigned tasks of that group; hidden when empty) AND folded into the home life group card(s) (see below; up to 3 upcoming assigned tasks per group, `meetingDate >= today`, soonest first; each row opens the guide).
 - Leader/co-leader-only "Elegibilidade para tarefas" screen (route `life_group_task_members/{lifeGroupId}`): min-presence stepper, per-member eligibility, note, template exclusions, "Voltar ao automático".
 - Shared KMP: `LifeGroupTaskRepository` (Ktor, Koin; iOS via `IosAppContainer.lifeGroupTaskRepository`).
 - Markdown rendering is hand-rolled on both platforms: headings, lists, bold/italic, fenced code blocks, inline code, blockquotes, links limited to http/https. Clients only rely on the member DTO `grandfathered` boolean (never on a note marker string); `declined_user_ids` is backend-internal. Copy is inline pt-BR.
+
+## Life group home card and per-group reports (shared + Android; iOS follows)
+
+- Home: one card per life group the viewer belongs to (`GET /life-groups/me`): name, "Líder: X", meeting "day às time" (`lifeGroupMeetingLabel`), member count, tap opens the group detail; the viewer's upcoming tasks for that group are folded in ("Minhas tarefas", max 3 per card). Replaces the standalone tasks card. Order: groups the viewer leads/co-leads first, then by name; max 3 cards, then a "Ver todos (N)" row opening the Life Groups screen. Hidden with no group (discovery CTA instead, mutually exclusive). Pure builder `buildHomeLifeGroupCards` / `selectUpcomingLifeGroupTasks` in `:shared` (`HomeLifeGroupCard.kt`) so both platforms share one rule.
+- Degradation (never a home error): groups fetch fails -> no cards and no discovery CTA, but if tasks loaded the legacy tasks-only card still renders (only case where it does); tasks fetch fails -> cards without the tasks section; both fail -> nothing. Fetches are independent; cancellation is rethrown.
+- Life group detail gate `canViewGroupReports` (`canViewLifeGroupReports`): this group's leader/co-leader (id match, works for a co-leader with role `member`) OR role admin/pastor/area_leader/sector_leader. A `life_group_leader` of another group, members, disciplers and guests do not see the entries. Backend stays the source of truth (403/404 for out-of-scope groups).
+- Two sibling rows when the gate passes: "Relatórios" (existing analytics, now locked to the group: `LifeGroupAnalyticsUiState.isScopedToGroup` hides the "Todos os grupos" dropdown) and "Relatórios semanais" (new, read-only).
+- "Relatórios semanais": list of the group's weekly reports (`LifeGroupReportRepository.getReports(lifeGroupId)` -> `GET /forms/life-group-reports?life_group_id=`, newest first, pull-to-refresh, loading/error/empty "Nenhum relatório enviado"/no-access states; 403 = no access) and read-only detail (`getReport(id)`; 403/404 = "Relatório não encontrado ou sem acesso"). Android routes `life_group_reports/{lifeGroupId}`, `life_group_report/{reportId}`; package `ui/features/lifegroupreports/`. No "Novo relatório" (mobile submission payload does not match the backend DTO; separate ticket).
+- Shared KMP: `LifeGroupReportRepository` + `LifeGroupWeeklyReport` (tolerant parsing of array/string multi-value fields, string/number `offering`); iOS via `IosAppContainer.lifeGroupReportRepository`.
 
 ## Agent notes
 
