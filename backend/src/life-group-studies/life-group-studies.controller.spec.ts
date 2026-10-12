@@ -116,4 +116,17 @@ describe('LifeGroupStudiesController', () => {
     expect(grantRoles).toEqual(['admin']);
     expect(revokeRoles).toEqual(['admin']);
   });
+
+  it('create/update/remove carry no @Roles guard so an assigned writer with the member role slug reaches the service canPublish check', () => {
+    /* eslint-disable @typescript-eslint/unbound-method */
+    for (const fn of [
+      LifeGroupStudiesController.prototype.create,
+      LifeGroupStudiesController.prototype.update,
+      LifeGroupStudiesController.prototype.remove,
+    ]) {
+      expect(Reflect.getMetadata('roles', fn)).toBeUndefined();
+      expect(Reflect.getMetadata(GUARDS_METADATA, fn)).toBeUndefined();
+    }
+    /* eslint-enable @typescript-eslint/unbound-method */
+  });
 });

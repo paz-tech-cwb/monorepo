@@ -45,13 +45,13 @@ describe('LifeGroupStudyAccessService', () => {
       expect(mockEntityManager.count).not.toHaveBeenCalled();
     });
 
-    it('returns false for a plain member with no co-leadership and no grant', async () => {
+    it('returns false for a plain member with no leadership and no grant', async () => {
       mockEntityManager.count.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
       const user = buildUser('member');
       await expect(service.canPublish(user)).resolves.toBe(false);
     });
 
-    it('returns true when user is a life group co-leader', async () => {
+    it('returns true when user is leader or co-leader of a life group (matched by assignment, not role slug)', async () => {
       mockEntityManager.count.mockResolvedValueOnce(1);
       const user = buildUser('member');
       await expect(service.canPublish(user)).resolves.toBe(true);
@@ -63,6 +63,44 @@ describe('LifeGroupStudyAccessService', () => {
         .mockResolvedValueOnce(1); // has a grant
       const user = buildUser('member');
       await expect(service.canPublish(user)).resolves.toBe(true);
+    });
+  });
+
+  describe('resolveNotificationRecipients', () => {
+    const u = (id: number) => ({ id }) as User;
+    const qb = (rows: unknown[]) => ({
+      innerJoin: jest.fn().mockReturnThis(),
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue(rows),
+    });
+
+    it('unions roster, leaders, co-leaders and leadership roles, deduped, excluding the publisher', async () => {
+      mockEntityManager.createQueryBuilder
+        .mockReturnValueOnce(qb([u(1), u(2), u(3)])) // roster
+        .mockReturnValueOnce(
+          qb([
+            { leader: u(4), coLeader: u(2) },
+            { leader: null, coLeader: u(5) },
+          ]),
+        ) // groups
+        .mockReturnValueOnce(qb([u(6), u(3)])); // leadership roles
+
+      const result = await service.resolveNotificationRecipients(1);
+
+      expect(result.map((r) => r.id).sort((a, b) => a - b)).toEqual([
+        2, 3, 4, 5, 6,
+      ]);
+    });
+
+    it('includes an ordinary rostered member (previously never notified)', async () => {
+      mockEntityManager.createQueryBuilder
+        .mockReturnValueOnce(qb([u(10)]))
+        .mockReturnValueOnce(qb([]))
+        .mockReturnValueOnce(qb([]));
+
+      const result = await service.resolveNotificationRecipients();
+      expect(result.map((r) => r.id)).toEqual([10]);
     });
   });
 

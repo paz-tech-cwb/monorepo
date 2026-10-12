@@ -35,7 +35,7 @@ class PazFirebaseMessagingService : FirebaseMessagingService() {
         super.onMessageReceived(message)
         val title = message.notification?.title ?: message.data["title"] ?: return
         val body = message.notification?.body ?: message.data["body"] ?: ""
-        val deepLink = message.data["deep_link"]
+        val deepLink = message.data[EXTRA_DEEP_LINK]
         val channelId = message.data["channel_id"] ?: CHANNELS.first().first
 
         showNotification(title, body, deepLink, channelId)
@@ -80,7 +80,7 @@ class PazFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     companion object {
-        const val EXTRA_DEEP_LINK = "deep_link"
+        const val EXTRA_DEEP_LINK = PushNotificationHelper.KEY_DEEP_LINK
         private const val DEFAULT_CHANNEL_ID = "paz_church_default"
 
         val CHANNELS =

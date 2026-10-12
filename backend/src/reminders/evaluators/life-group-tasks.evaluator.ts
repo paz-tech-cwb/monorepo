@@ -139,7 +139,31 @@ export class LifeGroupTasksReminderEvaluator implements ReminderEvaluator {
     let keepClaim = false;
     try {
       let processed: number;
-      if (generates) {
+      let doGenerate = generates;
+      let reminders: LifeGroupTaskAssignment[] = [];
+      if (!doGenerate) {
+        reminders = await this.em.find(LifeGroupTaskAssignment, {
+          where: {
+            lifeGroupId,
+            meetingDate,
+            status: 'assigned',
+            remindedAt: IsNull(),
+          },
+          relations: ['user'],
+        });
+        // Late-setup catch-up: a group configured after its generating offset
+        // (e.g. a meeting day set at D-2) has no assignments at all for this
+        // meeting. Generate (idempotent) instead of only reminding nobody.
+        // Groups that already have rows (even declined/all-reminded) are left
+        // alone so leader rerolls/removals are never overridden.
+        if (reminders.length === 0) {
+          const existing = await this.em.count(LifeGroupTaskAssignment, {
+            where: { lifeGroupId, meetingDate },
+          });
+          doGenerate = existing === 0;
+        }
+      }
+      if (doGenerate) {
         const result = await this.tasks.generateForMeeting(
           lifeGroupId,
           meetingDate,
@@ -174,15 +198,7 @@ export class LifeGroupTasksReminderEvaluator implements ReminderEvaluator {
         if (pending.length > 0 && sent === 0 && failed > 0) return;
         processed = sent;
       } else {
-        const pending = await this.em.find(LifeGroupTaskAssignment, {
-          where: {
-            lifeGroupId,
-            meetingDate,
-            status: 'assigned',
-            remindedAt: IsNull(),
-          },
-          relations: ['user'],
-        });
+        const pending = reminders;
         // Nothing to remind yet: release the claim so a later run (e.g. the
         // leader assigned manually in the meantime) can still send.
         if (pending.length === 0) return;

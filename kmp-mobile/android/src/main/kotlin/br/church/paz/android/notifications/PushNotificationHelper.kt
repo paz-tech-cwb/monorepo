@@ -54,20 +54,50 @@ object PushNotificationHelper {
         launcher.launch(permission)
     }
 
+    /** Key of the deep link in the FCM `data` payload (and thus in the launcher Intent extras). */
+    const val KEY_DEEP_LINK = "deep_link"
+
+    /** Legacy/alternate spelling accepted defensively when reading extras. */
+    private const val KEY_DEEP_LINK_CAMEL = "deepLink"
+
+    /**
+     * Resolves a navigation route from the extras of the Intent that opened the app.
+     *
+     * Two producers feed this: (1) our own [PazFirebaseMessagingService] notification
+     * (extra [KEY_DEEP_LINK]), shown while the app is in the foreground, and (2) the system-tray
+     * notification the FCM SDK renders itself when the app is in the background/killed — it
+     * launches the launcher activity with every `data` key as an Intent extra, never going
+     * through [PazFirebaseMessagingService]. [readExtra] abstracts `Intent.getStringExtra`
+     * so this stays a pure, JVM-testable function.
+     */
+    fun routeFromExtras(readExtra: (String) -> String?): String? {
+        val deepLink = readExtra(KEY_DEEP_LINK) ?: readExtra(KEY_DEEP_LINK_CAMEL)
+        return deepLink?.takeIf { it.isNotBlank() }?.let { parseDeepLink(it) }
+    }
+
+    // MainActivity is exported, so any app can send an Intent with a `deep_link` extra: ids are
+    // interpolated into route strings (and later API paths) and must be a single safe segment
+    // (numeric, uuid or slug); the attendance date must be yyyy-MM-dd.
+    private val ID_PATTERN = Regex("^[A-Za-z0-9_-]+$")
+    private val DATE_PATTERN = Regex("^\\d{4}-\\d{2}-\\d{2}$")
+
     // Parse a deep link string from a notification tap into a navigation route.
-    fun parseDeepLink(deepLink: String): String? =
-        when {
-            deepLink.startsWith("paz://agenda/") -> "agenda_detail/${deepLink.removePrefix("paz://agenda/")}"
-            deepLink.startsWith("paz://form/") -> "form_detail/${deepLink.removePrefix("paz://form/")}"
-            deepLink.startsWith("paz://ministry/") -> "ministry_detail/${deepLink.removePrefix("paz://ministry/")}"
-            deepLink.startsWith("paz://lifegroup/") -> "life_group_detail/${deepLink.removePrefix("paz://lifegroup/")}"
+    fun parseDeepLink(rawDeepLink: String): String? {
+        val deepLink = rawDeepLink.trim()
+        return when {
+            deepLink.startsWith("paz://agenda/") -> singleIdRoute(deepLink, "paz://agenda/", "agenda_detail")
+            deepLink.startsWith("paz://form/") -> singleIdRoute(deepLink, "paz://form/", "form_detail")
+            deepLink.startsWith("paz://ministry/") -> singleIdRoute(deepLink, "paz://ministry/", "ministry_detail")
+            deepLink.startsWith("paz://lifegroup/") -> singleIdRoute(deepLink, "paz://lifegroup/", "life_group_detail")
             deepLink.startsWith("paz://estudo-do-life/") ->
-                "life_group_study_detail/${deepLink.removePrefix("paz://estudo-do-life/")}"
+                singleIdRoute(deepLink, "paz://estudo-do-life/", "life_group_study_detail")
             deepLink.startsWith("paz://presenca/") -> {
-                val parts = deepLink.removePrefix("paz://presenca/").split("/", limit = 2)
+                val parts = deepLink.removePrefix("paz://presenca/").trimEnd('/').split("/", limit = 2)
                 val lifeGroupId = parts.getOrNull(0)
                 val meetingDate = parts.getOrNull(1)
-                if (lifeGroupId.isNullOrBlank() || meetingDate.isNullOrBlank()) {
+                if (lifeGroupId == null || meetingDate == null ||
+                    !ID_PATTERN.matches(lifeGroupId) || !DATE_PATTERN.matches(meetingDate)
+                ) {
                     null
                 } else {
                     "life_group_attendance_editor/$lifeGroupId/$meetingDate"
@@ -75,11 +105,26 @@ object PushNotificationHelper {
             }
             deepLink.startsWith("paz://tarefa/") -> {
                 val assignmentId = deepLink.removePrefix("paz://tarefa/").trim('/')
-                if (assignmentId.isBlank() || assignmentId.contains('/')) null else "life_group_task/$assignmentId"
+                if (!ID_PATTERN.matches(assignmentId)) null else "life_group_task/$assignmentId"
             }
             deepLink.startsWith("paz://formularios") -> "formularios"
             deepLink.startsWith("paz://journey") -> "member_journey"
             deepLink.startsWith("paz://account") -> "account"
             else -> null
         }
+    }
+
+    /**
+     * `prefix{id}` -> `route/{id}`. A blank id or extra path segments yield null: navigating to
+     * an unmatched route (e.g. `agenda_detail/`) throws IllegalArgumentException in Navigation; ids
+     * that are not a single `[A-Za-z0-9_-]` segment are rejected.
+     */
+    private fun singleIdRoute(
+        deepLink: String,
+        prefix: String,
+        route: String,
+    ): String? {
+        val id = deepLink.removePrefix(prefix).trim('/')
+        return if (!ID_PATTERN.matches(id)) null else "$route/$id"
+    }
 }

@@ -42,7 +42,7 @@ final class HomeViewModelTests: XCTestCase {
             id: id, name: name, leaderId: leaderId.map { KotlinInt(value: $0) }, leader: nil, leaderPhone: nil,
             coLeaderId: coLeaderId.map { KotlinInt(value: $0) }, coLeaderName: nil, coLeaderPhone: nil,
             sectorId: nil, location: nil, latitude: nil, longitude: nil, meetingDay: day, meetingTime: time,
-            membersCount: 5, kidsCount: 0, members: nil
+            membersCount: 5, kidsCount: 0, members: nil, relationship: nil, isSupervised: false
         )
     }
 

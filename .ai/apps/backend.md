@@ -28,7 +28,7 @@ Before editing backend, inspect:
 assignments/roster/notifications, controllers for admin templates,
 `life-groups/:id/*` and `/me/life-group-tasks`. Reminder evaluator:
 `reminders/evaluators/life-group-tasks.evaluator.ts`. Migrations
-`1795900000003`/`1795900000004` are pending: running them and deploying are
+`1795900000006`/`1795900000007`/`1795900000008` are pending: running them and deploying are
 human gates. `dispatch-claim.ts` holds the claim-first ReminderDispatchLog
 helpers shared by the evaluator and notifications service; notifications use
 conditional per-assignment claims (see `features/notifications.md`). New columns:

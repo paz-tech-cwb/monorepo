@@ -161,10 +161,10 @@ Endpoints (prefix `/api`):
 - Leader/co-leader/admin: `GET/PUT /life-groups/:id/task-overrides|task-members|task-settings`, `GET/POST /life-groups/:id/task-skips`, `DELETE /life-groups/:id/task-skips/:date`, `GET /life-groups/:id/tasks?date=`, `POST .../tasks/generate` (`meeting_date` optional, defaults to next meeting; must be at most 7 days in the past and 60 days ahead, else 400), `POST .../tasks/reroll`, `PATCH .../tasks/:assignmentId`.
 - Member: `GET /me/life-group-tasks`, `GET /me/life-group-tasks/:id`, `POST /me/life-group-tasks/:id/decline`.
 
-Tables (migration `1795900000004-CreateLifeGroupTasks`): templates, overrides,
+Tables (migration `1795900000007-CreateLifeGroupTasks`): templates, overrides,
 assignments (incl. `declined_user_ids int[]`), member_settings (incl. `grandfathered`),
 group_settings, skips, plus `user_life_groups.joined_at`.
-Migration `1795900000003-AddLifeGroupTasksEnumValues` adds the enum values
+Migration `1795900000006-AddLifeGroupTasksEnumValues` adds the enum values
 (separate because Postgres cannot use a new enum value in the same transaction).
 Assignments cascade on `users` delete (account deletion must not fail on task history).
 Running migrations and deploying are human gates; they have not been run by agents.
@@ -172,6 +172,56 @@ Running migrations and deploying are human gates; they have not been run by agen
 Clients: admin-ui "Tarefas do Life" page (templates) plus a "Tarefas" panel on
 life groups; mobile task guide screen, "Minhas tarefas" card on life group
 detail, and leader-only "Elegibilidade para tarefas" screen. Deep link: `paz://tarefa/{assignmentId}`.
+
+Late setup: the largest offset (D-3) generates. A smaller offset (D-1) also
+generates, with the normal assignee push, when the meeting has no assignment rows
+at all (e.g. the group's meeting day was set at D-2). If any rows exist (even all
+declined) it only reminds, so leader rerolls are never overridden. A group set up
+on D-1 after 09:00 or later still needs a manual generate. Generation is admin-ui
+only (`POST /life-groups/:id/tasks/generate`); the mobile apps have no generate
+action (leaders see "Elegibilidade para tarefas" and members see their tasks).
+
+Templates are NOT seeded. Admin creates them in admin-ui "Tarefas do Life". A
+ready-to-paste pt-BR starter set (name / description / guidance markdown):
+
+1. **Palavra** / "Conduzir a palavra do encontro." / "## Como preparar\n- Leia o estudo da semana com antecedência.\n- Escolha 2 ou 3 pontos principais e uma pergunta para o grupo.\n- Reserve cerca de 20 minutos."
+2. **Louvor/Ministração** / "Conduzir o momento de louvor e oração." / "## Como preparar\n- Escolha 2 ou 3 canções conhecidas pelo grupo.\n- Avise o grupo se precisar de ajuda com instrumento ou som.\n- Termine com um momento de oração."
+3. **Oferta** / "Conduzir o momento da oferta e recolher o valor." / "## Como preparar\n- Faça uma breve fala sobre generosidade.\n- Recolha a oferta e entregue ao líder ao final.\n- Registre o valor para o relatório."
+4. **Church Vision** / "Compartilhar uma mensagem sobre a visão da igreja." / "## Como preparar\n- Leia o material de visão indicado pela liderança.\n- Prepare uma fala de 5 a 10 minutos.\n- Conecte a visão com a vida do grupo."
+
+Eligibility: an explicit per-member setting always wins (including "not eligible"
+for a leader); otherwise leader/co-leader are eligible; otherwise a member needs
+the group's minimum present records since `joined_at` (default 3).
+
+
+## Estudo do Life (study)
+
+Module: `backend/src/life-group-studies/`. Studies are church-wide (no per-group
+targeting) and there is no draft state: creating a study IS publishing it.
+
+- Write access (`LifeGroupStudyAccessService.canPublish`): leadership role slug
+  (`admin`, `pastor`, `area_leader`, `sector_leader`, `life_group_leader`), OR
+  `leader_id`/`co_leader_id` of any life group (matched by assignment, so a
+  `member`-role leader counts), OR an admin grant in `life_group_study_publishers`
+  ("assigned writer", managed in admin-ui `estudo-do-life/publicadores`). The
+  controller has NO `@Roles` guard on create/update/delete (it used to block grant
+  holders and `member`-role leaders before the service ran); the service decides.
+  Edit/delete: admin, or the original publisher while still holding publish rights.
+- Read: `canView` = `canPublish` OR on the roster of any life group.
+- Push on create (once; `update` never re-notifies, there is no republish
+  transition): category `life_group_study`, channel `paz_life_group_study`, deep
+  link `paz://estudo-do-life/{id}`. Audience: every rostered member of any life
+  group, every group leader and co-leader, and users with a leadership role,
+  deduplicated, publisher excluded. The explicit ids are stored in
+  `segment.filters.user_ids`. Dispatch failure never fails the create.
+- Migration `1795900000008-AddLifeGroupStudyNotificationCategory` adds
+  `life_group_study` to `notification_category_enum` (it was missing: on a
+  migration-built DB the notification INSERT failed, so the push never went out).
+- Clients: both mobile apps have list/detail/editor screens; the "new study"
+  button shows when the signed-in role `isLeader`, so a `member`-role grant holder
+  can write through the API but has no button on mobile (give them the
+  `life_group_leader` role or publish on their behalf). admin-ui login is limited
+  to leadership roles, so a plain `member` writer cannot use it either.
 
 ## Weekly life group reports (read API)
 

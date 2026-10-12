@@ -18,8 +18,16 @@ Send push notifications and route users to the correct screen when notifications
 | `contributions` | Account/contributions area | `paz://account` |
 | `life_group_attendance` | Life group attendance editor | `paz://presenca/{lifeGroupId}/{date}` |
 | `life_group_task` | Life group task guide | `paz://tarefa/{assignmentId}` |
+| `life_group_study` | Estudo do Life detail | `paz://estudo-do-life/{studyId}` |
 
 Entity-specific notifications must include IDs in the data payload.
+
+`life_group_study` is sent once when a study is created (see
+`features/life-groups.md`, "Estudo do Life") to roster members, leaders,
+co-leaders and leadership roles via explicit `segment.filters.user_ids`; channel
+`paz_life_group_study`. It requires the `notification_category_enum` value added by
+migration `1795900000008`. The tasks reminder's d1 pass also generates when a
+meeting has no assignments yet (late setup).
 
 ## Automatic reminders
 
@@ -68,12 +76,48 @@ the largest-offset day itself while the Sao Paulo hour is still before the
 rule's `hour`, since the evaluator will send it later that day with
 `notified_at` left NULL).
 
+## Push payload and tap routing (real flow)
+
+Backend (`NotificationDispatchService` -> `FcmService.sendToUser`) sends one FCM message per
+device token: `notification {title, body}`, `data {channel_id, deep_link?}` (all strings) and
+`android.notification.channelId`. Clients must read exactly `deep_link` / `channel_id`
+(locked by `notification-dispatch.service.spec.ts` and `providers/fcm.service.spec.ts`).
+
+Android tap handling (`MainActivity`, `PushNotificationHelper`, `PazNavGraph`):
+- App in background/killed: the FCM SDK renders the tray notification (our
+  `PazFirebaseMessagingService.onMessageReceived` is NOT invoked) and a tap launches
+  `MainActivity` with the `data` entries as Intent extras. Foreground messages go through
+  `onMessageReceived`, whose own PendingIntent carries the same `deep_link` extra.
+- `MainActivity` is `launchMode="singleTop"`: with the app task alive the tap arrives in
+  `onNewIntent` (before this was a standard activity with no `onNewIntent`, so the existing task
+  was just resumed on Home and the extra was lost - the "attendance push opens Home" bug).
+  Killed app: `onCreate`.
+- Both paths call `PushNotificationHelper.routeFromExtras` -> pending route state ->
+  `PazNavGraph` navigates once the current destination is past Splash (auth/onboarding done),
+  then consumes it. Unknown/blank links resolve to null (never crash `navigate`).
+
+iOS tap handling (`AppDelegate`, `PushNotificationService`, `DeepLinkDestination`,
+`MainTabView`, `AccountView`):
+- FCM data keys are top-level `userInfo` keys. The `UNUserNotificationCenter` delegate is
+  installed in `AppDelegate.didFinishLaunching` (a cold-start tap is delivered right after launch;
+  installing it after the splash lost it). The tap sets `pendingDeepLink`.
+- `MainTabView`/`AccountView` observe it with `onChange(..., initial: true)` because on a cold
+  start the value is set before those views exist, and the Account tab is built lazily.
+  Home-stack destinations (agenda, attendance, task) and `.account` are consumed by `MainTabView`;
+  the rest are pushed by `AccountView`.
+
+Manual verification on real devices: `.pipeline/push-qa-checklist.md`.
+
 ## Change checklist
 
 - Backend category enum and payload producer updated.
 - Admin UI category/role/channel management updated if exposed.
 - Android/iOS deep-link parsing updated.
-- Tests or manual test notes cover notification tap behavior.
+- Tests or manual test notes cover notification tap behavior
+  (Android `PushNotificationHelperTest`, iOS `DeepLinkDestinationTests`, backend payload specs,
+  device checklist `.pipeline/push-qa-checklist.md`).
+- Deep link prefix added on one platform must be added on both
+  (`PushNotificationHelper.parseDeepLink`, `DeepLinkDestination.parsedRoute`).
 
 ## 2026-10 bug investigation: forms deep-link 404 + Android channel routing
 

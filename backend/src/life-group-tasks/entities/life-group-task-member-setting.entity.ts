@@ -47,7 +47,7 @@ export class LifeGroupTaskMemberSetting {
   })
   excludedTemplateIds: number[] | null;
 
-  // True for rows inserted by the 1795900000004 migration to grandfather
+  // True for rows inserted by the 1795900000007 migration to grandfather
   // members that existed before the feature. Never changed by leader edits.
   @Column({ type: 'boolean', default: false })
   grandfathered: boolean;

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -211,6 +212,12 @@ private fun MinistryContent(
                     horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Icon(
+                        Icons.Outlined.People,
+                        contentDescription = null,
+                        tint = PazColors.Primary,
+                        modifier = Modifier.size(22.dp),
+                    )
                     Text("Membros", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                     Text(
                         "${ministry.members.size}",

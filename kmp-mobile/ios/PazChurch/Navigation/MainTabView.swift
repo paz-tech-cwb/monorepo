@@ -7,6 +7,7 @@ struct MainTabView: View {
 
     @State private var selectedTab = 0
     @State private var agendaPath: [DeepLinkDestination] = []
+    @State private var accountDestination: DeepLinkDestination?
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -32,32 +33,34 @@ struct MainTabView: View {
             AccountView(
                 userRepository: IosAppContainer.shared.userRepository,
                 authRepository: IosAppContainer.shared.authRepository,
-                churchRepository: IosAppContainer.shared.churchRepository
+                churchRepository: IosAppContainer.shared.churchRepository,
+                pendingDestination: $accountDestination
             )
             .tabItem { Label("Conta", systemImage: "person.fill") }
             .tag(2)
         }
         .tint(PazColors.accent)
-        .onChange(of: pushService.pendingDeepLink) { _, newValue in
+        // `initial: true`: on a cold start the tap is recorded while the splash is still up,
+        // i.e. before this view exists, so a plain onChange would never see the value.
+        .onChange(of: pushService.pendingDeepLink, initial: true) { _, newValue in
             guard newValue != nil,
                   let destination = pushService.deepLinkDestination
             else { return }
-            handleDeepLink(destination, consume: destination.usesHomeStack)
+            handleDeepLink(destination)
         }
     }
 
-    private func handleDeepLink(_ destination: DeepLinkDestination, consume: Bool) {
-        switch destination {
-        case .agendaDetail, .lifeGroupAttendanceEditor, .lifeGroupTaskGuide:
+    /// MainTabView is the single consumer of the pending push link: it switches the tab and, for
+    /// account-stack destinations, hands the destination to AccountView through a binding.
+    private func handleDeepLink(_ destination: DeepLinkDestination) {
+        if destination.usesHomeStack {
             selectedTab = 0
             agendaPath = [destination]
-
-        case .formDetail, .ministryDetail, .lifeGroupDetail, .lifeGroupStudyDetail,
-             .formularios, .memberJourney, .account:
-            // Switch tab only — AccountView observes pendingDeepLink and pushes its own path
+        } else {
             selectedTab = 2
+            if destination.usesAccountStack { accountDestination = destination }
         }
-        if consume { pushService.consumeDeepLink() }
+        pushService.consumeDeepLink()
     }
 
     @ViewBuilder
