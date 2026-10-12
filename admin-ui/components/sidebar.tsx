@@ -31,6 +31,7 @@ import {
   CalendarRange,
   BookText,
   NotebookText,
+  ClipboardCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
@@ -87,6 +88,7 @@ const sidebarSections = [
       { name: "Trilhos de Cursos", href: "/course-tracks", icon: Route, roles: ["admin"] as AdminRole[] },
       { name: "Cursos", href: "/courses", icon: BookOpen, roles: ["admin"] as AdminRole[] },
       { name: "Estudo do Life", href: "/estudo-do-life", icon: BookMarked, roles: LEADERSHIP_ROLES },
+      { name: "Tarefas do Life", href: "/tarefas-life", icon: ClipboardCheck, roles: ["admin"] as AdminRole[] },
     ],
   },
   {

@@ -89,3 +89,13 @@ Substitute validation (VS Code bundled TypeScript via `ELECTRON_RUN_AS_NODE`, sc
 - NOT executed (need real `@nestjs/testing`/Reflect metadata): `reminders.service.spec.ts` (extended with life_group_tasks validation cases), `life-group-task-templates.controller.spec.ts`, other pre-existing suites (`reminder-scheduler`, `notification-dispatch`, etc.) which are untouched.
 - NOT verified: strict type-check, eslint/prettier, Nest DI graph at boot (new import chain: `RemindersModule -> LifeGroupTasksModule -> NotificationsModule/FormsCoreModule`, no cycle).
 - Re-run in CI/local: `cd backend && npm ci && npx jest src/life-group-tasks src/reminders src/life-group-attendance src/notifications && npm run build && npx eslint src/life-group-tasks src/reminders src/notifications src/life-group-attendance/meeting-day.util*.ts`.
+
+---
+
+## Phase A1 results
+
+No Node/npm/`node_modules`: `npm run build`, `tsc`, `eslint` NOT run; no admin-ui test runner exists in this repo.
+- Syntax-only transpile (VS Code bundled TypeScript via `ELECTRON_RUN_AS_NODE`, all 19 changed/new `.ts/.tsx` files): 0 diagnostics.
+- Manual cross-check of types/endpoints against backend DTOs/services (`life-group-tasks/dto`, config/assignments/templates services) and of every imported UI component/hook against existing files.
+- NOT verified: strict type-check, lint, runtime rendering/behavior in a browser.
+- Re-run locally: `cd admin-ui && pnpm install && pnpm lint && pnpm build` (note next.config ignores TS/ESLint errors during build, so also run `npx tsc --noEmit`).

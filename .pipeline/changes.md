@@ -89,3 +89,22 @@
 ### Not done
 - Postman: the repo has no API collection (only an empty `admin-ui/postman/globals` file and `.postman/config.json` with no collections), so there was nothing to update; the endpoint list is in the B2 section above.
 - `.ai/` docs and admin-ui/mobile category/rule-type lists are left to the docs / A1 / M phases.
+
+---
+
+## Phase A1 — admin-ui (life group rotating tasks)
+
+### Files (under `admin-ui/`)
+- New: `lib/api/types/life-group-tasks.ts` (exported from `types/index.ts`), `lib/api/endpoints/life-group-tasks.ts` (`lifeGroupTaskTemplatesApi`, `lifeGroupTasksApi`), `lib/hooks/use-life-group-tasks.ts`; typed analytics events added in `lib/firebase/analytics.ts`.
+- New page `app/(dashboard)/tarefas-life/` (`page.tsx`, `life-group-tasks-management.tsx`, `life-group-task-template-form.tsx`): template table, create/edit dialog (name, description, markdown guidance via the existing `MarkdownEditor`), active toggle, up/down reorder (`PUT /life-group-task-templates/reorder`), delete with 409 handling (explains and suggests deactivating). Sidebar entry "Tarefas do Life" (Estudo section) is `roles: ["admin"]`; the page also shows a no-permission message for non-admins.
+- New `components/life-group-tasks/`: `life-group-tasks-panel.tsx` (tabs), `life-group-task-meeting-tab.tsx` (date picker defaulting to next meeting weekday via `next-meeting-date.ts`, generate, per-task re-roll, manual reassign select, skip/unskip date, unassigned-task warning, "not eligible" badge), `life-group-task-overrides-tab.tsx` (enable/disable + guidance override with markdown editor, "use default guidance"), `life-group-task-members-tab.tsx` (group setting `min_present_meetings`, per-member eligibility toggle, source badge manual/leader/auto/pending with present count, "voltar ao automático", per-template exclusions, leader-only note).
+- `app/(dashboard)/life-groups/life-groups-management.tsx`: new "Tarefas" row action opening a dialog with the panel.
+- Reminder rules: `ReminderRuleType` + `LifeGroupTasksReminderConfig` types; `reminder-settings.tsx` titles/descriptions and `LifeGroupTasksControls` (days_before_meeting list, hour, title/message, reminder_title/message; client-side validation 0-30, non-empty).
+- Notification category `life_group_task`: `NotificationCategory` type and the category list/labels in `notifications/notification-system.tsx`.
+
+### Notes / deviations
+- Markdown "live preview" uses the existing `MarkdownEditor` Escrever/Visualizar tabs (preview re-renders from live state) rather than a side-by-side pane; avoided refactoring the shared editor without being able to build.
+- Reorder uses up/down buttons (no drag-and-drop dependency added; no new package.json dependency needed, `react-markdown`/`remark-gfm` already present).
+- Backend stores reason/exclusions only on an explicit member-setting row, so "Salvar detalhes" pins the current eligibility as manual (stated in the UI).
+- Next-meeting date is computed client-side from the group's `meeting_day` label (browser local date; the backend validates the weekday on generate).
+- Not done: `.ai/` docs (docs phase). Pre-existing gap left untouched: backend rule type `life_group_attendance` is not in the admin-ui `ReminderRuleType`/title maps.
