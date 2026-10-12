@@ -69,6 +69,9 @@ struct MinistryDetailView: View {
                     )
                 } label: {
                     HStack(spacing: PazSpacing.md) {
+                        Image(systemName: "person.2")
+                            .font(.system(size: 18))
+                            .foregroundColor(PazColors.accent)
                         Text("Membros")
                             .font(PazTypography.titleSmall)
                             .foregroundColor(PazColors.ink)
@@ -315,6 +318,9 @@ struct LifeGroupDetailView: View {
                             )
                         } label: {
                             HStack(spacing: PazSpacing.md) {
+                                Image(systemName: "person.2")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(PazColors.accent)
                                 Text("Membros")
                                     .font(PazTypography.titleSmall)
                                     .foregroundColor(PazColors.ink)
