@@ -189,7 +189,10 @@ export class LifeGroupTaskNotificationsService extends LifeGroupTaskNotifier {
    * `notified_at` is null (same claim as the evaluator, so nobody gets it
    * twice). Skipped when the rule is disabled, the meeting is in the past,
    * or it is farther away than the largest configured offset (the evaluator
-   * will notify them at that offset).
+   * will notify them at that offset). Also skipped when today IS that largest
+   * offset day but the rule's configured `hour` has not been reached yet in
+   * America/Sao_Paulo: the evaluator still runs later today and sends it
+   * (`notified_at` stays NULL).
    */
   async notifyGenerated(notices: LifeGroupTaskNotice[]): Promise<void> {
     if (notices.length === 0) return;
@@ -206,8 +209,12 @@ export class LifeGroupTaskNotificationsService extends LifeGroupTaskNotifier {
     const today = zonedParts(new Date());
     const earliest = dateKeyOf(today);
     const latest = dateKeyOf(shiftDays(today, Math.max(...offsets)));
+    const evaluatorStillToRunToday = today.hour < cfg.hour;
     const due = notices.filter(
-      (n) => n.meetingDate >= earliest && n.meetingDate <= latest,
+      (n) =>
+        n.meetingDate >= earliest &&
+        n.meetingDate <= latest &&
+        !(evaluatorStillToRunToday && n.meetingDate === latest),
     );
     if (due.length === 0) return;
 

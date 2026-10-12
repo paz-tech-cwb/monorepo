@@ -327,4 +327,59 @@ describe('LifeGroupTasksReminderEvaluator', () => {
     expect(tasks.generateForMeeting).toHaveBeenCalledTimes(2);
     expect(notifications.notifyAssignee).toHaveBeenCalledTimes(1);
   });
+
+  describe('per-assignment failure handling (largest offset)', () => {
+    const three = [
+      assignment({ id: 'a-1', user: bob }),
+      assignment({ id: 'a-2', userId: 2, user: ana }),
+      assignment({ id: 'a-3', userId: 3, user: { id: 3, name: 'Cy' } }),
+    ];
+
+    it('one assignment throwing does not stop the others and the group claim is kept', async () => {
+      const { evaluator, notifications, em } = setup({ generated: three });
+      notifications.notifyAssignee.mockImplementation((a: unknown) =>
+        (a as { id: string }).id === 'a-2'
+          ? Promise.reject(new Error('fcm'))
+          : Promise.resolve(undefined),
+      );
+      await expect(evaluator.run(rule, sundayNine)).resolves.toBeUndefined();
+      expect(notifications.notifyAssignee).toHaveBeenCalledTimes(3);
+      // At least one went out: the d3 dispatch row stays (no release).
+      expect(em.delete).not.toHaveBeenCalled();
+    });
+
+    it('releases the group claim only when every attempted send failed', async () => {
+      const { evaluator, notifications, em } = setup({ generated: three });
+      notifications.notifyAssignee.mockRejectedValue(new Error('fcm'));
+      await evaluator.run(rule, sundayNine);
+      expect(notifications.notifyAssignee).toHaveBeenCalledTimes(3);
+      expect(em.delete).toHaveBeenCalledWith(ReminderDispatchLog, {
+        ruleType: 'life_group_tasks',
+        dedupeKey: 'life_group_tasks:7:2026-06-10:d3',
+      });
+    });
+
+    it('keeps the group claim when nothing is pending (all already notified)', async () => {
+      const { evaluator, notifications, em } = setup({
+        generated: [assignment({ notifiedAt: new Date() })],
+      });
+      await evaluator.run(rule, sundayNine);
+      expect(notifications.notifyAssignee).not.toHaveBeenCalled();
+      expect(em.delete).not.toHaveBeenCalled();
+    });
+
+    it('smaller offset: one reminder throwing does not stop the others', async () => {
+      const { evaluator, notifications, em } = setup({
+        pendingReminders: three,
+      });
+      notifications.remindAssignee.mockImplementation((a: unknown) =>
+        (a as { id: string }).id === 'a-1'
+          ? Promise.reject(new Error('fcm'))
+          : Promise.resolve(undefined),
+      );
+      await evaluator.run(rule, tuesdayNine);
+      expect(notifications.remindAssignee).toHaveBeenCalledTimes(3);
+      expect(em.delete).not.toHaveBeenCalled();
+    });
+  });
 });

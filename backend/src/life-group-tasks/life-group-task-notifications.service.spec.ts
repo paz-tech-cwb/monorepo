@@ -339,6 +339,48 @@ describe('LifeGroupTaskNotificationsService', () => {
       expect(dispatch.dispatch).not.toHaveBeenCalled();
     });
 
+    describe('before the evaluator hour on the largest-offset day', () => {
+      afterEach(() => jest.useRealTimers());
+      const rule = {
+        enabled: true,
+        config: { days_before_meeting: [3, 1], hour: 9 },
+      };
+      // 2026-06-07 is 3 days before 2026-06-10 (largest offset).
+      const largestDay = '2026-06-10';
+      const smallerDay = '2026-06-09';
+
+      it('leaves notified_at NULL (no push) at 08:00 so the 09:00 evaluator sends it', async () => {
+        jest
+          .useFakeTimers()
+          .setSystemTime(new Date('2026-06-07T08:00:00-03:00'));
+        const { service, dispatch, em } = makeService({ rule });
+        await service.notifyGenerated([mk('a-1', 1, largestDay)]);
+        expect(dispatch.dispatch).not.toHaveBeenCalled();
+        expect(em.update).not.toHaveBeenCalled();
+      });
+
+      it('still pushes meetings inside the window but not on the largest-offset day at 08:00', async () => {
+        jest
+          .useFakeTimers()
+          .setSystemTime(new Date('2026-06-07T08:00:00-03:00'));
+        const { service, dispatch } = makeService({ rule });
+        await service.notifyGenerated([
+          mk('a-1', 1, largestDay),
+          mk('a-2', 2, smallerDay),
+        ]);
+        expect(dispatch.dispatch).toHaveBeenCalledTimes(1);
+      });
+
+      it('pushes at/after the configured hour (the evaluator tick may have passed)', async () => {
+        jest
+          .useFakeTimers()
+          .setSystemTime(new Date('2026-06-07T09:30:00-03:00'));
+        const { service, dispatch } = makeService({ rule });
+        await service.notifyGenerated([mk('a-1', 1, largestDay)]);
+        expect(dispatch.dispatch).toHaveBeenCalledTimes(1);
+      });
+    });
+
     it('keeps notifying the others when one push fails (claim released)', async () => {
       const { service, dispatch, em } = makeService();
       dispatch.dispatch.mockRejectedValueOnce(new Error('fcm'));
