@@ -13,6 +13,7 @@ import br.church.paz.shared.data.repository.CourseRepositoryImpl
 import br.church.paz.shared.data.repository.FormsRepositoryImpl
 import br.church.paz.shared.data.repository.HomeRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupAnalyticsRepositoryImpl
+import br.church.paz.shared.data.repository.LifeGroupReportRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupAttendanceRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupTaskRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupStudyRepositoryImpl
@@ -31,6 +32,7 @@ import br.church.paz.shared.domain.repository.CourseRepository
 import br.church.paz.shared.domain.repository.FormsRepository
 import br.church.paz.shared.domain.repository.HomeRepository
 import br.church.paz.shared.domain.repository.LifeGroupAnalyticsRepository
+import br.church.paz.shared.domain.repository.LifeGroupReportRepository
 import br.church.paz.shared.domain.repository.LifeGroupAttendanceRepository
 import br.church.paz.shared.domain.repository.LifeGroupTaskRepository
 import br.church.paz.shared.domain.repository.LifeGroupStudyRepository
@@ -70,6 +72,7 @@ val sharedRepositoryModule = module {
     single<LifeGroupAttendanceRepository> { LifeGroupAttendanceRepositoryImpl(get()) }
     single<LifeGroupTaskRepository> { LifeGroupTaskRepositoryImpl(get()) }
     single<LifeGroupAnalyticsRepository>  { LifeGroupAnalyticsRepositoryImpl(get()) }
+    single<LifeGroupReportRepository>     { LifeGroupReportRepositoryImpl(get()) }
     single<CasaDePazAnalyticsRepository>  { CasaDePazAnalyticsRepositoryImpl(get()) }
     single<OnboardingRepository>    { OnboardingRepositoryImpl(get(), get()) }
     single<CasaDePazLessonRepository> { CasaDePazLessonRepositoryImpl(get()) }
