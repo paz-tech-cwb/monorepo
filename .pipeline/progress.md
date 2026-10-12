@@ -17,7 +17,7 @@ Life group rotating tasks: admin-defined task templates, fair random weekly assi
 
 ## Timeline
 
-- 2026-10-12 — Hammond: ticket-implementation mode; Grant spec stage run; verified prior plan against code (see spec "Verified against code"). Stopped at spec gate awaiting answers to open questions.
+- 2026-10-12 — Hammond: ticket-implementation mode; Grant spec stage run; verified prior plan against code (see spec "Verified against code"). Added per-member eligibility requirement (member_settings table, task-members endpoints, engine filter, UI, OQ13-16). Stopped at spec gate awaiting answers to open questions.
 
 ## Current branch / PR
 
