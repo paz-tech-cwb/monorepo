@@ -99,3 +99,10 @@ No Node/npm/`node_modules`: `npm run build`, `tsc`, `eslint` NOT run; no admin-u
 - Manual cross-check of types/endpoints against backend DTOs/services (`life-group-tasks/dto`, config/assignments/templates services) and of every imported UI component/hook against existing files.
 - NOT verified: strict type-check, lint, runtime rendering/behavior in a browser.
 - Re-run locally: `cd admin-ui && pnpm install && pnpm lint && pnpm build` (note next.config ignores TS/ESLint errors during build, so also run `npx tsc --noEmit`).
+
+## Phase M1 results
+
+Java is a stub on this machine (`java -version`: "Unable to locate a Java Runtime"), so `./gradlew :shared:allTests` / `:shared:compileKotlinMetadata` were NOT run. Nothing compiled.
+- Added `LifeGroupTaskRepositoryTest` (8 tests: member list/get mapping, unknown status fallback, decline POST + reassigned, decline 409 throws, members mapping incl. reason->note, PUT members omits unchanged fields / explicit clears, settings round trip, templates derived from task-overrides).
+- Manual cross-check of DTO field names against backend `my-life-group-tasks.controller`, `toMemberItem`, `buildMembers`, `buildOverrides`, `getSettings`, `decline` return shapes and admin-ui `life-group-tasks.ts`.
+- NOT verified: compilation, test execution, iOS framework export. Re-run: `cd kmp-mobile && ./gradlew :shared:allTests`.

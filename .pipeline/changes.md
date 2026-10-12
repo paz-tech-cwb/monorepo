@@ -108,3 +108,19 @@
 - Backend stores reason/exclusions only on an explicit member-setting row, so "Salvar detalhes" pins the current eligibility as manual (stated in the UI).
 - Next-meeting date is computed client-side from the group's `meeting_day` label (browser local date; the backend validates the weekday on generate).
 - Not done: `.ai/` docs (docs phase). Pre-existing gap left untouched: backend rule type `life_group_attendance` is not in the admin-ui `ReminderRuleType`/title maps.
+
+## Phase M1 (kmp-mobile/shared: domain, repository, DI)
+
+### Files (under `kmp-mobile/shared/src/`)
+- New `commonMain/.../domain/model/LifeGroupTask.kt`: `LifeGroupTask` (id, lifeGroupId, lifeGroupName, meetingDate, name, description, guidance (markdown), status), `LifeGroupTaskStatus` (ASSIGNED/DECLINED/COMPLETED/UNKNOWN), `LifeGroupTaskDeclineResult` (id, status, reassigned), `LifeGroupTaskMember` (userId, name, isLeader, isCoLeader, eligible, eligibilitySource, presentCount, minPresentMeetings, note (leader-only), excludedTemplateIds), `LifeGroupTaskEligibilitySource` (MANUAL/LEADER/AUTO/PENDING/UNKNOWN), `LifeGroupTaskMemberUpdate` (write model), `LifeGroupTaskSettings`, `LifeGroupTaskTemplateSummary` (templateId, name, description, isEnabled).
+- New `commonMain/.../domain/repository/LifeGroupTaskRepository.kt`: `getMyTasks()`, `getMyTask(id)`, `declineTask(id)`, `getTaskMembers(lgId)`, `updateTaskMembers(lgId, updates)`, `getTaskSettings(lgId)`, `updateTaskSettings(lgId, min)`, `getTaskTemplates(lgId)`.
+- New `commonMain/.../data/repository/LifeGroupTaskRepositoryImpl.kt` (Ktor, private DTOs with `@SerialName` snake_case, `throwOnClientOrServerError`, `@Throws(Exception::class)` like attendance).
+- Edited `commonMain/.../di/SharedModule.kt` (Koin `single<LifeGroupTaskRepository>`) and `iosMain/.../di/IosAppContainer.kt` (`lifeGroupTaskRepository` lazy property).
+- New `commonTest/.../LifeGroupTaskRepositoryTest.kt` (MockEngine, 8 tests).
+
+### Notes / deviations
+- Backend has no non-admin template listing, so `getTaskTemplates` derives from `GET /life-groups/{id}/task-overrides` (active templates only, with per-group `isEnabled`).
+- Member `PUT task-members` body is built with `buildJsonObject` so null update fields are OMITTED (backend treats omitted as "unchanged"); `note = ""` clears the note, `excludedTemplateIds = emptyList()` clears exclusions. The wire field `reason` is exposed as `note` in the domain.
+- Status/eligibility source are enums with an UNKNOWN fallback (forward-compat) rather than raw strings.
+- Member endpoints map only the fields the backend returns (no note, no other members).
+- No separate iOS wrapper: iOS uses `IosAppContainer.lifeGroupTaskRepository`, same as attendance.
