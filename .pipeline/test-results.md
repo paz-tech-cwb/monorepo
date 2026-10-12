@@ -76,3 +76,16 @@ Substitute validation (VS Code bundled TypeScript via `ELECTRON_RUN_AS_NODE=1 ..
 - `life-group-task-templates.controller.spec.ts` (Reflect metadata on guards/roles) needs real Nest decorators and was NOT executed; the controllers/DTOs themselves load without errors under the harness.
 - NOT verified: strict type-check (`nest build`), real jest, eslint/prettier (lines hand-wrapped to <=80 cols except long import lines/strings), Nest DI wiring at boot.
 - Re-run in CI/local: `cd backend && npm ci && npx jest src/life-group-tasks && npm run build && npx eslint src/life-group-tasks src/app.module.ts`.
+
+---
+
+## Phase B3 results
+
+Same environment limits as B2 (no Node/npm/`node_modules`): `npx jest`, `npm run build`, `npx eslint`/prettier NOT run.
+
+Substitute validation (VS Code bundled TypeScript via `ELECTRON_RUN_AS_NODE`, scratch mini-jest harness outside the repo, `@nestjs/*`/`typeorm`/`class-*` stubbed):
+- Syntax diagnostics: 0.
+- 105 passed, 0 failed across: `eligibility`, `assignment-engine`, `life-group-task-assignments.service`, `life-group-task-config.service`, `life-group-task-templates.service`, `life-group-task-notifications.service`, `life-group-tasks.evaluator`, `meeting-day.util`, `reminder-config`, the UNCHANGED `life-group-attendance-reminder.evaluator.spec`, and `notification-channel`.
+- NOT executed (need real `@nestjs/testing`/Reflect metadata): `reminders.service.spec.ts` (extended with life_group_tasks validation cases), `life-group-task-templates.controller.spec.ts`, other pre-existing suites (`reminder-scheduler`, `notification-dispatch`, etc.) which are untouched.
+- NOT verified: strict type-check, eslint/prettier, Nest DI graph at boot (new import chain: `RemindersModule -> LifeGroupTasksModule -> NotificationsModule/FormsCoreModule`, no cycle).
+- Re-run in CI/local: `cd backend && npm ci && npx jest src/life-group-tasks src/reminders src/life-group-attendance src/notifications && npm run build && npx eslint src/life-group-tasks src/reminders src/notifications src/life-group-attendance/meeting-day.util*.ts`.

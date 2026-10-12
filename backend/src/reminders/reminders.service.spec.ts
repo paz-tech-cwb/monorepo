@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { RemindersService } from './reminders.service';
 import { ReminderRule } from './entities/reminder-rule.entity';
@@ -52,5 +52,33 @@ describe('RemindersService', () => {
     });
     expect(result.enabled).toBe(true);
     expect(repo.save).toHaveBeenCalled();
+  });
+
+  it('update rejects an invalid life_group_tasks config', async () => {
+    repo.findOne.mockResolvedValue({
+      id: 2,
+      type: 'life_group_tasks',
+      enabled: true,
+      config: {},
+    } as ReminderRule);
+    await expect(
+      service.update(2, {
+        config: { days_before_meeting: [], hour: 9 } as never,
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(repo.save).not.toHaveBeenCalled();
+  });
+
+  it('update accepts a valid life_group_tasks config', async () => {
+    repo.findOne.mockResolvedValue({
+      id: 2,
+      type: 'life_group_tasks',
+      enabled: true,
+      config: {},
+    } as ReminderRule);
+    const result = await service.update(2, {
+      config: { days_before_meeting: [3, 1], hour: 9 } as never,
+    });
+    expect(result.config).toEqual({ days_before_meeting: [3, 1], hour: 9 });
   });
 });

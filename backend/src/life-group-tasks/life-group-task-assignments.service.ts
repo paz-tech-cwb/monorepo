@@ -10,7 +10,10 @@ import { LifeGroup } from '../life-groups/entities/life-group.entity';
 import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
 import {
   WEEKDAY_INDEX,
+  dateKeyOf,
+  nextMeetingDate,
   weekdayOfDateString,
+  zonedParts,
 } from '../life-group-attendance/meeting-day.util';
 import {
   assertCanAccessLifeGroup,
@@ -58,12 +61,7 @@ export interface GenerationResult {
 
 // Today's calendar date in the church timezone (YYYY-MM-DD).
 function todayKey(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Sao_Paulo',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now);
+  return dateKeyOf(zonedParts(now));
 }
 
 @Injectable()
@@ -311,18 +309,28 @@ export class LifeGroupTaskAssignmentsService {
     );
   }
 
+  /** `meetingDate` defaults to the group's next meeting when omitted. */
   async generate(
     lifeGroupId: number,
-    meetingDate: string,
+    requestedDate: string | undefined,
     scope: ResolvedScope,
     actor: TaskActor,
   ) {
-    assertValidDateString(meetingDate, 'meeting_date');
+    if (requestedDate !== undefined) {
+      assertValidDateString(requestedDate, 'meeting_date');
+    }
     const lifeGroup = await this.loadAccessibleGroup(
       lifeGroupId,
       scope,
       actor,
     );
+    const meetingDate =
+      requestedDate ?? nextMeetingDate(new Date(), lifeGroup.meetingDay);
+    if (!meetingDate) {
+      throw new BadRequestException(
+        'meeting_date is required for a life group without a fixed meeting day.',
+      );
+    }
     this.assertMatchesMeetingDay(lifeGroup, meetingDate);
     const result = await this.generateForGroup(lifeGroup, meetingDate);
     const roster = await this.roster.resolveRoster(lifeGroup);

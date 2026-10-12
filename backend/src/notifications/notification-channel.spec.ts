@@ -30,4 +30,9 @@ describe('CATEGORY_CHANNEL_MAP', () => {
       );
     }
   });
+
+  it('routes life_group_task pushes to the life group channel', () => {
+    expect(NOTIFICATION_CATEGORIES).toContain('life_group_task');
+    expect(CATEGORY_CHANNEL_MAP.life_group_task).toBe('paz_life_group');
+  });
 });

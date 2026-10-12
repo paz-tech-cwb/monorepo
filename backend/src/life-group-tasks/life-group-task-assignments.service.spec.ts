@@ -210,6 +210,23 @@ describe('LifeGroupTaskAssignmentsService', () => {
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
+    it('defaults meeting_date to the next meeting and needs one without a fixed day', async () => {
+      const world = makeWorld({
+        group: makeGroup({ meetingDay: 'Quarta-feira' }),
+      });
+      const { service } = makeService(world);
+      const result = await service.generate(7, undefined, unrestricted, {
+        id: 1,
+      });
+      // The next Wednesday (today counts) is always a valid ISO date.
+      expect(result.meeting_date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+
+      const noDay = makeService(makeWorld());
+      await expect(
+        noDay.service.generate(7, undefined, unrestricted, { id: 1 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
     it('list and reroll also enforce access', async () => {
       const { service } = makeService(makeWorld());
       await expect(

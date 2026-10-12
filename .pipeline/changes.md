@@ -68,3 +68,24 @@
 - `PUT task-members` per entry: omitted `reason`/`excluded_template_ids` = unchanged; `reset_to_automatic: true` deletes the explicit row (the `eligible` column is NOT NULL so "automatic" == no row). Leader notes are only returned by `GET/PUT task-members`; member endpoints build responses from an explicit field list.
 - Manual reassign accepts any active roster member (leader's explicit choice), including one the rule would consider ineligible.
 - `GET /me/life-group-tasks` returns assigned/completed tasks from today (America/Sao_Paulo) onward.
+
+---
+
+## Phase B3 — reminders evaluator, notifications, meeting-day helpers
+
+### Files (under `backend/src/`)
+- `reminders/types/reminder-config.ts`: `'life_group_tasks'` in `ReminderRuleType`; `LifeGroupTasksReminderConfig` (`days_before_meeting: number[]`, `hour`, `title`, `message`, `reminder_title`, `reminder_message`); `DEFAULT_CONFIGS` ([3,1], hour 9); new `validateReminderConfig()` (only constrains `life_group_tasks`), wired into `RemindersService.update` (400 on invalid). `reminders/entities/reminder-rule.entity.ts` enum list extended.
+- `life-group-attendance/meeting-day.util.ts`: now exports `CHURCH_TIME_ZONE`, `ZonedParts`, `zonedParts`, `weekdayOf`, `dateKeyOf`, `shiftDays` (moved verbatim from the attendance evaluator, which now imports them; behavior and spec unchanged) and the new `nextMeetingDate(now, meetingDay)`.
+- `reminders/evaluators/life-group-tasks.evaluator.ts` (+ spec), registered in `reminders.module.ts` (`REMINDER_EVALUATORS`; module imports `LifeGroupTasksModule`).
+- `life-group-tasks/life-group-task-notifications.service.ts` (+ spec): real `LifeGroupTaskNotifier` (replaces the B2 no-op, which was deleted); also exposes `notifyAssignee`/`remindAssignee` for the evaluator. `LifeGroupTasksModule` now imports `NotificationsModule`.
+- `notifications/notification-category.ts` (`life_group_task`), `notification-channel.ts` (-> `paz_life_group`); NOT added to `CATEGORY_PREF_MAP` (not opt-outable). `notification-channel.spec.ts` extended.
+- `POST /life-groups/:id/tasks/generate`: `meeting_date` is now optional (defaults to `nextMeetingDate`, 400 if the group has no fixed day).
+
+### Behavior
+- Evaluator (hourly cron, acts when the church-timezone hour == `hour`): per group with fixed day/time and per offset, the meeting `offset` days ahead must fall on the group weekday. Largest offset: `generateForMeeting` (idempotent) then push to assigned, not-yet-notified members (`notified_at`); smaller offsets: push only to `assigned` members with `reminded_at IS NULL`, never generating. Skipped dates are ignored. Dedupe via `ReminderDispatchLog` key `life_group_tasks:{groupId}:{date}:d{offset}` (23505 tolerated); the `d{n}` key for reminder offsets is only written when someone was reminded. A failing group is logged and does not stop others.
+- Push: category `life_group_task`, deep link `paz://tarefa/{assignmentId}`, `{task}` placeholder in message templates is replaced by the task name. Config rows seeded by the B1 migration lack `reminder_title/reminder_message`; the evaluator falls back to the defaults for any missing field (migration left untouched).
+- Reroll/decline/manual: new assignee is pushed immediately (sets `notified_at`, so the d1 reminder still reaches them via `reminded_at`); decline and reroll also push the leader/co-leader; "no eligible member" pushes leader/co-leader (deduped per group/date/task set via `ReminderDispatchLog`).
+
+### Not done
+- Postman: the repo has no API collection (only an empty `admin-ui/postman/globals` file and `.postman/config.json` with no collections), so there was nothing to update; the endpoint list is in the B2 section above.
+- `.ai/` docs and admin-ui/mobile category/rule-type lists are left to the docs / A1 / M phases.

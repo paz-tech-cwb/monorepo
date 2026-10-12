@@ -27,6 +27,7 @@ import {
   UpsertTaskOverridesDto,
 } from './dto/life-group-task-config.dto';
 import {
+  GenerateTasksDto,
   ReassignTaskDto,
   RerollTaskDto,
 } from './dto/life-group-task-assignment.dto';
@@ -169,7 +170,7 @@ export class LifeGroupTasksController {
   @Post('tasks/generate')
   generate(
     @Param('lifeGroupId', ParseIntPipe) lifeGroupId: number,
-    @Body() dto: TaskMeetingDateDto,
+    @Body() dto: GenerateTasksDto,
     @Req() req: RequestWithScope,
   ) {
     return this.assignments.generate(
