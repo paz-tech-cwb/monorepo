@@ -7,7 +7,10 @@ import { LifeGroupStudy } from './entities/life-group-study.entity';
 import { UpdateLifeGroupStudyDto } from './dto/update-life-group-study.dto';
 import { LifeGroupStudyPublisher } from './entities/life-group-study-publisher.entity';
 import { User } from '../users/entities/user.entity';
+import { Notification } from '../notifications/entities/notification.entity';
 import { Role } from '../roles/entities/role.entity';
+
+const dto2 = () => ({ title: 'T', author: 'A', bodyMarkdown: 'b' }) as never;
 
 describe('LifeGroupStudiesService', () => {
   const adminRole = { id: 1, slug: 'admin' } as Role;
@@ -165,7 +168,7 @@ describe('LifeGroupStudiesService', () => {
   });
 
   describe('create', () => {
-    it('resolves with the saved study even when leadership notification dispatch fails', async () => {
+    it('resolves with the saved study even when audience notification dispatch fails', async () => {
       const author = makeUser({ id: 1, role: adminRole });
       const leader = makeUser({ id: 2, role: adminRole });
       const { service, entityManager, dispatchService } = createService(
@@ -197,7 +200,107 @@ describe('LifeGroupStudiesService', () => {
       expect(entityManager.save).toHaveBeenCalled();
       expect(dispatchMock).toHaveBeenCalled();
       expect(loggerErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to notify leadership'),
+        expect.stringContaining('Failed to notify audience'),
+      );
+    });
+  });
+
+  describe('publish notification', () => {
+    const dto = { title: 'T', author: 'A', bodyMarkdown: 'b' } as never;
+
+    it('pushes the study deep link to the resolved audience, excluding the publisher', async () => {
+      const publisher = makeUser({ id: 1, role: adminRole });
+      const recipients = [makeUser({ id: 2 }), makeUser({ id: 3 })];
+      const { service, entityManager, accessService, dispatchService } =
+        createService(
+          {},
+          {
+            resolveNotificationRecipients: jest
+              .fn()
+              .mockResolvedValue(recipients),
+          },
+        );
+
+      await service.create(dto, publisher);
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(accessService.resolveNotificationRecipients).toHaveBeenCalledWith(
+        1,
+      );
+      const createCalls = (entityManager.create as jest.Mock).mock
+        .calls as unknown[][];
+      const created = createCalls.find((c) => c[0] === Notification)?.[1];
+      expect(created).toMatchObject({
+        category: 'life_group_study',
+        channels: ['push'],
+        deepLink: expect.stringMatching(/^paz:\/\/estudo-do-life\//) as string,
+        segment: { type: 'filtered', filters: { user_ids: [2, 3] } },
+      });
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(dispatchService.dispatch).toHaveBeenCalledTimes(1);
+      const dispatchCalls = (dispatchService.dispatch as jest.Mock).mock
+        .calls as unknown[][];
+      expect(dispatchCalls[0][1]).toBe(recipients);
+    });
+
+    it('does not notify again on update (push happens once, at publish)', async () => {
+      const owner = makeUser({ id: 1, role: memberRole });
+      const { service, dispatchService, accessService } = createService({
+        findOne: jest.fn().mockResolvedValue(makeStudy({ publishedById: 1 })),
+      });
+
+      await service.update(
+        'study-1',
+        { title: 'Edited' } as UpdateLifeGroupStudyDto,
+        owner,
+      );
+
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(dispatchService.dispatch).not.toHaveBeenCalled();
+      expect(
+        // eslint-disable-next-line @typescript-eslint/unbound-method
+        accessService.resolveNotificationRecipients,
+      ).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('assigned writer (member role with a publisher grant)', () => {
+    it('can create a study when canPublish is true despite the member role slug', async () => {
+      const writer = makeUser({ id: 9, role: memberRole });
+      const { service } = createService();
+
+      await expect(service.create(dto2(), writer)).resolves.toMatchObject({
+        publishedById: 9,
+      });
+    });
+
+    it('cannot create when canPublish is false', async () => {
+      const { service } = createService(
+        {},
+        { canPublish: jest.fn().mockResolvedValue(false) },
+      );
+      await expect(
+        service.create(dto2(), makeUser({ id: 9, role: memberRole })),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('a publisher whose grant was revoked can no longer edit or delete their study', async () => {
+      const writer = makeUser({ id: 9, role: memberRole });
+      const { service } = createService(
+        {
+          findOne: jest.fn().mockResolvedValue(makeStudy({ publishedById: 9 })),
+        },
+        { canPublish: jest.fn().mockResolvedValue(false) },
+      );
+      await expect(
+        service.update(
+          'study-1',
+          { title: 'x' } as UpdateLifeGroupStudyDto,
+          writer,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      await expect(service.remove('study-1', writer)).rejects.toThrow(
+        ForbiddenException,
       );
     });
   });

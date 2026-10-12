@@ -12,10 +12,7 @@ import { LifeGroupStudyPublisher } from './entities/life-group-study-publisher.e
 import { CreateLifeGroupStudyDto } from './dto/create-life-group-study.dto';
 import { UpdateLifeGroupStudyDto } from './dto/update-life-group-study.dto';
 import { User } from '../users/entities/user.entity';
-import {
-  LifeGroupStudyAccessService,
-  LIFE_GROUP_STUDY_LEADERSHIP_ROLES,
-} from './life-group-study-access.service';
+import { LifeGroupStudyAccessService } from './life-group-study-access.service';
 import {
   Notification,
   NotificationCategory,
@@ -67,14 +64,14 @@ export class LifeGroupStudiesService {
     }
 
     // The study is already persisted at this point. A failure to dispatch
-    // the leadership notification must not surface as a failed create
+    // the audience notification must not surface as a failed create
     // request (which would prompt client retries and duplicate studies).
     try {
-      await this.notifyLeadership(saved);
+      await this.notifyAudience(saved, user);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(
-        `Failed to notify leadership for Estudo do Life ${saved.id}: ${message}`,
+        `Failed to notify audience for Estudo do Life ${saved.id}: ${message}`,
       );
     }
 
@@ -128,7 +125,7 @@ export class LifeGroupStudiesService {
     user: User,
   ): Promise<LifeGroupStudy> {
     const study = await this.findOneEntity(id);
-    this.assertOwnerOrAdmin(study, user);
+    await this.assertCanModify(study, user);
 
     Object.assign(study, {
       ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
@@ -144,7 +141,7 @@ export class LifeGroupStudiesService {
 
   async remove(id: string, user: User): Promise<void> {
     const study = await this.findOneEntity(id);
-    this.assertOwnerOrAdmin(study, user);
+    await this.assertCanModify(study, user);
     await this.entityManager.remove(LifeGroupStudy, study);
   }
 
@@ -203,29 +200,42 @@ export class LifeGroupStudiesService {
     return study;
   }
 
-  private assertOwnerOrAdmin(study: LifeGroupStudy, user: User): void {
-    const isAdmin = user.role?.slug === 'admin';
-    const isOwner = study.publishedById === user.id;
-    if (!isAdmin && !isOwner) {
+  /**
+   * Admins can always modify. Otherwise the caller must be the original
+   * publisher AND still hold publish rights (a revoked grant stops editing).
+   */
+  private async assertCanModify(
+    study: LifeGroupStudy,
+    user: User,
+  ): Promise<void> {
+    if (user.role?.slug === 'admin') return;
+    if (
+      study.publishedById !== user.id ||
+      !(await this.accessService.canPublish(user))
+    ) {
       throw new ForbiddenException(
         'Only the original publisher or an admin can modify this Estudo do Life.',
       );
     }
   }
 
-  private async notifyLeadership(study: LifeGroupStudy): Promise<void> {
-    const recipients = await this.accessService.resolveNotificationRecipients();
+  /**
+   * Pushes the new study to its audience. Runs exactly once per study: only
+   * `create` (publish == create, there is no draft state) calls it; `update`
+   * never re-notifies.
+   */
+  private async notifyAudience(
+    study: LifeGroupStudy,
+    publisher: User,
+  ): Promise<void> {
+    const recipients = await this.accessService.resolveNotificationRecipients(
+      publisher.id,
+    );
 
-    // Co-leaders have no dedicated role slug, so they can't be expressed via
-    // `filters.roles` alone. Persist their user ids explicitly in the
-    // segment so that any future re-dispatch (e.g. NotificationsService's
-    // `runDispatch`) resolves the same true recipient set instead of
-    // silently dropping co-leaders.
-    const roleSlugs = new Set<string>(LIFE_GROUP_STUDY_LEADERSHIP_ROLES);
-    const coLeaderIds = recipients
-      .filter((u) => !u.role?.slug || !roleSlugs.has(u.role.slug))
-      .map((u) => u.id);
-
+    // Persist the explicit recipient ids in the segment (not a role filter):
+    // the audience includes rostered members and co-leaders that no role
+    // filter can express, so any future re-dispatch (NotificationsService
+    // `runDispatch`) resolves the same set.
     const notification = this.entityManager.create(Notification, {
       title: `Novo Estudo do Life: ${study.title}`,
       message: study.title,
@@ -234,10 +244,7 @@ export class LifeGroupStudiesService {
       channels: ['push'],
       segment: {
         type: 'filtered',
-        filters: {
-          roles: [...LIFE_GROUP_STUDY_LEADERSHIP_ROLES],
-          ...(coLeaderIds.length > 0 ? { user_ids: coLeaderIds } : {}),
-        },
+        filters: { user_ids: recipients.map((u) => u.id) },
       },
       status: 'pending',
       origin: 'automatic',
