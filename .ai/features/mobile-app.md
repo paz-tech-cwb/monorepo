@@ -49,3 +49,4 @@ Keep platform implementations visually aligned unless intentionally redesigning.
 
 - Read kmp-mobile's local files before proposing mobile changes.
 - Keep auth refresh behavior consistent with backend contract.
+- The "Membros" row in ministry and life group detail (iOS) / ministry detail (Android) carries a people icon like its neighbor rows. Android's life group detail has no Membros list row (only the "N membros" count in the header).
