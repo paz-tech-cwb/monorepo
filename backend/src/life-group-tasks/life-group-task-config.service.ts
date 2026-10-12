@@ -174,11 +174,7 @@ export class LifeGroupTaskConfigService {
     scope: ResolvedScope,
     actor: TaskActor,
   ) {
-    const lifeGroup = await this.loadAccessibleGroup(
-      lifeGroupId,
-      scope,
-      actor,
-    );
+    const lifeGroup = await this.loadAccessibleGroup(lifeGroupId, scope, actor);
     const { members } = await this.roster.resolveRoster(lifeGroup);
     const rosterIds = new Set(members.map((m) => m.user.id));
     const outsiders = entries
@@ -298,11 +294,7 @@ export class LifeGroupTaskConfigService {
 
   // ---- skipped dates ---------------------------------------------------
 
-  async listSkips(
-    lifeGroupId: number,
-    scope: ResolvedScope,
-    actor: TaskActor,
-  ) {
+  async listSkips(lifeGroupId: number, scope: ResolvedScope, actor: TaskActor) {
     await this.loadAccessibleGroup(lifeGroupId, scope, actor);
     const skips = await this.em.find(LifeGroupTaskSkip, {
       where: { lifeGroupId },

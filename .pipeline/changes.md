@@ -235,3 +235,21 @@ Left as follow-ups: m2 (preview vs mobile markdown subset), m3 (no notification 
 - Manual generate only pushes when the meeting is within today..today+largest offset (past dates and farther dates are left to the evaluator): pushing a meeting weeks ahead would use up `notified_at` and suppress the real d-3 push. Because `notified_at` gates each assignee, the evaluator does not double-send; no extra group-level ReminderDispatchLog key is written by the manual path.
 - A process killed between claim and release leaves that dispatch key claimed (that offset is not retried); accepted trade-off of claim-first.
 - Postman: no collection exists in the repo (`admin-ui/postman/globals/workspace.postman_globals.json` is an empty globals file, `admin-ui/.postman/config.json` is workspace config only), so nothing was updated.
+
+## Round 2 fixes (Arnold)
+
+- [M3] `backend/database/migrations/1795900000004-CreateLifeGroupTasks.ts`: now safe for DBs that ran an earlier revision. After the CREATE TABLEs: `ADD COLUMN IF NOT EXISTS declined_user_ids int[] NOT NULL DEFAULT '{}'` (assignments), `ADD COLUMN IF NOT EXISTS grandfathered boolean NOT NULL DEFAULT false` (member settings), `UPDATE ... SET grandfathered = true, reason = NULL WHERE reason = 'grandfathered at migration'`, and a `DO $$` block that finds an `assignments.user_id -> users` FK whose `confdeltype <> 'c'` and re-creates it with ON DELETE CASCADE. All idempotent; `down()` unchanged (drops the tables and `joined_at`). Not exercised against a live Postgres (none available).
+- Lint/format: `prettier --write` + typed-mock fixes (`jest.fn<Ret, Args>`, `asError` helper for rejections, `saveMock` in reminders spec) on the 49 feature files only; scoped eslint has 0 errors, no rule disabled.
+- admin-ui `life-group-task-meeting-tab.tsx`: skip toggle branches `removeSkip.mutate` / `addSkip.mutate` with one shared typed options object (tsc back to the 28 baseline).
+- m12: evaluator generate/remind loops catch and log per assignment and continue; the group claim is released only when every attempted send failed (so the next tick retries), otherwise it is kept (per-assignment claims dedupe the rest).
+- m13: `applyReassignment` wraps `notifyReassigned` in try/catch + log; the committed reassignment is returned instead of a 500.
+- m16: roster SQL takes `CHURCH_TIME_ZONE` as bind `$2`.
+- m17: `useIsWide` subscribe/getSnapshot/getServerSnapshot hoisted to module scope.
+- m15: optional `joined_at` declared in admin-ui `LifeGroupTaskMember` (`joined_at?: string | null`), Kotlin `TaskMemberDto` (`joinedAt: String? = null`) and domain `LifeGroupTaskMember` (`joinedAt: String? = null`, last param). Swift untouched (reads Kotlin model, field simply unused).
+- m20: iOS `HomeViewModel.load` uses do/catch; `CancellationError` returns without clearing `myTasks`, other errors clear it (matches Android).
+
+### Accepted follow-ups (not fixed)
+- m11: a process crash/restart between the claim and the push leaves the claim set with nothing sent (stuck claim, at-most-once); small window.
+- m14: manual generate may push before the configured hour when the leader generates on the largest-offset day (e.g. 02:00).
+- m18: drag-drop `draggable` is on the whole `<tr>` and there is no `onSettled` invalidate.
+- m19: Android/iOS markdown paragraph/bullet minor differences.

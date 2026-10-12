@@ -29,7 +29,10 @@ describe('assignTasks', () => {
   it('gives each task to a different member when members >= tasks', () => {
     for (let seed = 1; seed <= 50; seed++) {
       const { assignments } = assignTasks(
-        base({ tasks: [task(1), task(2), task(3)], rng: createSeededRng(seed) }),
+        base({
+          tasks: [task(1), task(2), task(3)],
+          rng: createSeededRng(seed),
+        }),
       );
       expect(new Set(assignments.map((a) => a.userId)).size).toBe(3);
     }

@@ -105,11 +105,15 @@ export function LifeGroupTaskMeetingTab({ lifeGroup }: { lifeGroup: LifeGroup })
   }
 
   const handleToggleSkip = () => {
-    const mutation = skipped ? removeSkip : addSkip
-    mutation.mutate(date, {
+    const options = {
       onSuccess: () => toast.success(skipped ? "Data reativada" : "Data marcada como sem encontro"),
-      onError: (err) => toast.error(getApiErrorMessage(err, "Falha ao atualizar a data.")),
-    })
+      onError: (err: unknown) => toast.error(getApiErrorMessage(err, "Falha ao atualizar a data.")),
+    }
+    if (skipped) {
+      removeSkip.mutate(date, options)
+    } else {
+      addSkip.mutate(date, options)
+    }
   }
 
   const isBusy =

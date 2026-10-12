@@ -146,3 +146,41 @@ No iOS test target exists (`project.yml` has `testTargets: []`), so no unit test
 
 - No node/npm: ran the specs with the scratchpad mini-jest shim (VS Code bundled TS transpile, typeorm/nest stubbed): notifications, assignments, config, roster (new), life-group-tasks evaluator, eligibility, assignment-engine specs: 104 passed, 1 shim limitation (`not.toHaveProperty` is not implemented in the shim; the assertion itself is trivially valid). Transpile diagnostics 0 on all changed .ts files incl. the migration.
 - NOT done: real `npx jest`, `npm run build` / tsc type-check (jest.fn typings in the new specs unverified), eslint/prettier, running the migration against Postgres, and real-DB verification of the new `joined_at` present-count SQL and of `UPDATE ... IsNull()` claims (affected row count) against TypeORM/pg.
+
+## Sattler validation (real toolchain)
+
+Toolchain: official Node v22.23.3 darwin-arm64 (SHA256 verified against nodejs.org SHASUMS256.txt, matches Dockerfiles' node:22), extracted under scratchpad and used via PATH only. pnpm 9.15.9 via npx (lockfile v9). No source edited, nothing committed. Generated dirs (node_modules, backend/dist, admin-ui/.next, next-env.d.ts, tsconfig.tsbuildinfo) are all gitignored. Baseline comparisons were done in a temporary git worktree of `main` (removed afterwards).
+
+### Backend
+- `npm ci`: OK, lockfile untouched.
+- `npx jest src/life-group-tasks src/reminders src/life-group-attendance src/notifications`: 21 suites PASS, 1 FAIL; 184/184 tests pass. The failing suite is `src/notifications/dto/reach.dto.spec.ts` ("Reflect.getMetadata is not a function", missing reflect-metadata import at suite load). It fails identically on `main` (pre-existing, not touched by branch).
+- `npm run build` (nest build): PASS.
+- Full `npx jest`: branch 6 failed / 70 passed suites, 5 failed / 494 passed tests. `main` baseline: same 6 failed suites (auth.controller, forms-core/notification-sender, home.controller, member-registrations/onboarding.service, notifications/dto/reach.dto, users/user-device-tokens.service), 5 failed / 366 passed. NO regressions; branch adds 128 passing tests.
+- `npx eslint` on the 49 changed/added backend .ts files (no --fix): 60 errors, 0 in logic beyond style/typing. Non-spec files: only prettier/prettier errors in `life-group-task-assignments.service.ts` (373, 456, 610, 641) and `life-group-task-config.service.ts` (177, 301) (multi-line param lists that prettier wants collapsed). Spec files: prettier issues in assignment-engine.spec, life-group-task-assignments.service.spec (+7 no-unsafe-member-access), life-group-task-notifications.service.spec (14 prettier, 8 no-unsafe-assignment, 2 prefer-promise-reject-errors, 2 no-unused-vars, 1 unnecessary assertion), life-group-task-roster.service.spec (5 prettier), reminders/evaluators/life-group-tasks.evaluator.spec (3 prefer-promise-reject-errors, 2 unused `_a`, 4 prettier, 1 unnecessary assertion), reminders.service.spec (2 unbound-method at 54, 69). Fix: `npx prettier --write` on those files, then tidy spec typing.
+- `npx prettier --check`: 7 files fail: assignment-engine.spec.ts, life-group-task-assignments.service.spec.ts, life-group-task-assignments.service.ts, life-group-task-config.service.ts, life-group-task-notifications.service.spec.ts, life-group-task-roster.service.spec.ts, life-group-tasks.evaluator.spec.ts.
+
+### admin-ui
+- `pnpm install --frozen-lockfile`: OK, lockfile untouched.
+- `npx tsc --noEmit`: 30 errors on branch vs 28 on `main`. The 28 are pre-existing (agenda.ts, analytics query types, AnalyticsEventName in course/journey hooks, etc.). The branch ADDS 2, both in `components/life-group-tasks/life-group-task-meeting-tab.tsx`: line 109:27 TS2559 and 111:17 TS7006. Cause: `const mutation = skipped ? removeSkip : addSkip; mutation.mutate(date, {...})` calls a union of two differently-typed mutations. Likely fix: `if (skipped) removeSkip.mutate(date, opts) else addSkip.mutate(date, opts)` (shared opts object typed once).
+- `npx eslint` on changed .ts/.tsx files: clean (0 problems).
+- `npm run build` (next build): PASS (/tarefas-life, /life-groups, /notifications compiled). Note next.config.mjs sets `typescript.ignoreBuildErrors` and `eslint.ignoreDuringBuilds`, so build success does not prove type correctness; see tsc above.
+
+### Mobile
+- Android/KMP Gradle tests (shared commonTest, android unit tests): COULD NOT RUN. `java` is the macOS stub; no JDK (no /usr/libexec/java_home result, no ~/Library/Java, no Android Studio jbr). Not validated.
+- iOS: `xcrun swiftc -parse` on all 12 changed .swift files: 0 syntax errors each. This is parse-only; no xcodebuild/type-check was run (depends on KMP framework).
+
+### Verdict
+Backend: PASS functionally (build ok, tests ok, no regressions); FAIL on lint/prettier cleanliness (new files). admin-ui: build/eslint PASS, tsc FAIL (+2 new errors in meeting-tab.tsx). Mobile Gradle: NOT RUN.
+
+## Round 2 fixes (Arnold re-run, real toolchain, Node v22.23.3)
+
+Backend (`cd backend`):
+- `npx jest src/life-group-tasks src/reminders src/life-group-attendance src/notifications`: 21 suites passed, 1 failed (pre-existing `reach.dto.spec.ts`, fails on main); 184/184 tests pass.
+- Full `npx jest`: 6 failed / 70 passed suites, 5 failed / 494 passed tests: identical to the pre-fix branch run and to the main baseline failures (auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens). No new failures.
+- `npm run build` (nest build): PASS.
+- `eslint` (no --fix) on the 49 changed backend .ts files + the migration: 0 errors. `prettier --check`: all files formatted. Prettier only touched feature files (confirmed via git status).
+admin-ui:
+- `tsc --noEmit`: 28 errors = main baseline (the 2 new meeting-tab errors are gone). eslint on changed files: clean. `npm run build`: PASS.
+Mobile:
+- Gradle not run (no JDK). Kotlin changes (nullable `joinedAt` with default null in DTO and domain model; the only constructor call sites are the DTO mapper and a test that uses named args) cross-read. `xcrun swiftc -parse` on `HomeViewModel.swift`: OK.
+Not validated: the migration against a real Postgres.

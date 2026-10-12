@@ -13,6 +13,9 @@ interface MockQueryBuilder {
   getMany: jest.Mock<Promise<unknown[]>, []>;
 }
 
+const asError = (e: unknown): Error =>
+  e instanceof Error ? e : Object.assign(new Error('mock error'), e as object);
+
 describe('LifeGroupTasksReminderEvaluator', () => {
   const rule = {
     id: 5,
@@ -95,7 +98,7 @@ describe('LifeGroupTasksReminderEvaluator', () => {
       ),
       insert: jest.fn(() =>
         opts.insertError
-          ? Promise.reject(opts.insertError)
+          ? Promise.reject(asError(opts.insertError))
           : Promise.resolve(undefined),
       ),
       delete: jest.fn().mockResolvedValue(undefined),
@@ -112,14 +115,14 @@ describe('LifeGroupTasksReminderEvaluator', () => {
       ),
     };
     const notifications = {
-      notifyAssignee: jest.fn((..._a: unknown[]) =>
+      notifyAssignee: jest.fn<Promise<undefined>, unknown[]>(() =>
         opts.notifyError
-          ? Promise.reject(opts.notifyError)
+          ? Promise.reject(asError(opts.notifyError))
           : Promise.resolve(undefined),
       ),
-      remindAssignee: jest.fn((..._a: unknown[]) =>
+      remindAssignee: jest.fn<Promise<undefined>, unknown[]>(() =>
         opts.notifyError
-          ? Promise.reject(opts.notifyError)
+          ? Promise.reject(asError(opts.notifyError))
           : Promise.resolve(undefined),
       ),
     };
@@ -169,10 +172,12 @@ describe('LifeGroupTasksReminderEvaluator', () => {
       'Lembrete',
       'Não esqueça de {task}',
     );
-    const findCall = (em.find.mock.calls as unknown as [
-      unknown,
-      { where: Record<string, unknown> },
-    ][])[0];
+    const findCall = (
+      em.find.mock.calls as unknown as [
+        unknown,
+        { where: Record<string, unknown> },
+      ][]
+    )[0];
     expect(findCall[1].where).toMatchObject({
       lifeGroupId: 7,
       meetingDate: '2026-06-10',
@@ -300,7 +305,7 @@ describe('LifeGroupTasksReminderEvaluator', () => {
       pendingReminders: [assignment()],
     });
     await evaluator.run(legacy, tuesdayNine);
-    const call = notifications.remindAssignee.mock.calls[0] as unknown[];
+    const call = notifications.remindAssignee.mock.calls[0];
     expect(call[2]).toBe('Lembrete: sua tarefa no Life Group');
     expect(typeof call[3]).toBe('string');
   });

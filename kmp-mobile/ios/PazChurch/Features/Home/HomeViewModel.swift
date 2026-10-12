@@ -69,9 +69,13 @@ class HomeViewModel {
         }
 
         // Best-effort: a failure hides the card and never surfaces as a home error.
-        if let tasks = try? await taskRepository.getMyTasks() {
+        do {
+            let tasks = try await taskRepository.getMyTasks()
             myTasks = Self.upcomingTasks(tasks, today: Self.todayISODate())
-        } else {
+        } catch is CancellationError {
+            // View task cancelled: keep the current card instead of clearing it.
+            return
+        } catch {
             myTasks = []
         }
     }

@@ -12,11 +12,13 @@ function makeRoster(opts: {
   minPresent?: number;
 }) {
   const em = {
-    findOne: jest.fn().mockResolvedValue(
-      opts.minPresent === undefined
-        ? null
-        : { minPresentMeetings: opts.minPresent },
-    ),
+    findOne: jest
+      .fn()
+      .mockResolvedValue(
+        opts.minPresent === undefined
+          ? null
+          : { minPresentMeetings: opts.minPresent },
+      ),
     find: jest.fn().mockResolvedValue([]),
     query: jest.fn((sql: string) =>
       Promise.resolve(
@@ -47,7 +49,7 @@ describe('LifeGroupTaskRosterService joined_at rule (decision 11)', () => {
     expect(sql).toContain('e.present = true');
     expect(sql).toContain('ulg.joined_at IS NULL');
     expect(sql).toContain('a.meeting_date >=');
-    expect(sql).toContain("AT TIME ZONE 'America/Sao_Paulo'");
+    expect(sql).toContain('AT TIME ZONE $2');
   });
 
   it('uses the (already join-filtered) count against min_present_meetings', async () => {

@@ -35,22 +35,18 @@ function makeService(
     [2, ana],
   ]);
   const em = {
-    findOne: jest.fn(
-      (entity: unknown, options: { where: { id?: number } }) => {
-        if (entity === User) {
-          return Promise.resolve(users.get(options.where.id as number));
-        }
-        if (entity === LifeGroup) {
-          return Promise.resolve(
-            opts.group ?? { id: 7, leader, coLeader },
-          );
-        }
-        if (entity === ReminderRule) {
-          return Promise.resolve(opts.rule ?? null);
-        }
-        return Promise.resolve(null);
-      },
-    ),
+    findOne: jest.fn((entity: unknown, options: { where: { id?: number } }) => {
+      if (entity === User) {
+        return Promise.resolve(users.get(options.where.id as number));
+      }
+      if (entity === LifeGroup) {
+        return Promise.resolve(opts.group ?? { id: 7, leader, coLeader });
+      }
+      if (entity === ReminderRule) {
+        return Promise.resolve(opts.rule ?? null);
+      }
+      return Promise.resolve(null);
+    }),
     find: jest.fn((entity: unknown) =>
       Promise.resolve(entity === User ? [bob, ana] : []),
     ),
@@ -59,27 +55,27 @@ function makeService(
       Promise.resolve({ id: 99, ...(value as object) }),
     ),
     // Conditional UPDATE ... WHERE col IS NULL: affected=0 => lost the claim.
-    update: jest.fn(
-      (
-        _entity: unknown,
-        criteria: Record<string, unknown>,
-        _patch?: unknown,
-      ) =>
-        Promise.resolve({
-          affected:
-            opts.claimed === false && Object.keys(criteria).length > 1 ? 0 : 1,
-        }),
+    update: jest.fn<
+      Promise<{ affected: number }>,
+      [unknown, Record<string, unknown>, unknown?]
+    >((_entity, criteria) =>
+      Promise.resolve({
+        affected:
+          opts.claimed === false && Object.keys(criteria).length > 1 ? 0 : 1,
+      }),
     ),
     insert: jest.fn(() =>
       opts.insertError
-        ? Promise.reject(opts.insertError)
+        ? Promise.reject(asError(opts.insertError))
         : Promise.resolve(undefined),
     ),
     delete: jest.fn().mockResolvedValue(undefined),
   };
   const dispatch = {
-    dispatch: jest.fn((..._args: unknown[]) =>
-      opts.sendError ? Promise.reject(opts.sendError) : Promise.resolve(),
+    dispatch: jest.fn<Promise<void>, unknown[]>(() =>
+      opts.sendError
+        ? Promise.reject(asError(opts.sendError))
+        : Promise.resolve(),
     ),
   };
   const service = new LifeGroupTaskNotificationsService(
@@ -88,6 +84,9 @@ function makeService(
   );
   return { service, em, dispatch };
 }
+
+const asError = (e: unknown): Error =>
+  e instanceof Error ? e : Object.assign(new Error('mock error'), e as object);
 
 const notice = {
   assignmentId: 'a-1',
@@ -130,8 +129,8 @@ describe('LifeGroupTaskNotificationsService', () => {
     // Claim-first: conditional UPDATE (id + notified_at IS NULL) before sending.
     expect(em.update).toHaveBeenCalledWith(
       LifeGroupTaskAssignment,
-      { id: 'a-1', notifiedAt: expect.anything() },
-      { notifiedAt: expect.any(Date) },
+      { id: 'a-1', notifiedAt: expect.anything() as unknown },
+      { notifiedAt: expect.any(Date) as unknown },
     );
     expect(em.update.mock.invocationCallOrder[0]).toBeLessThan(
       dispatch.dispatch.mock.invocationCallOrder[0],
@@ -177,8 +176,8 @@ describe('LifeGroupTaskNotificationsService', () => {
     );
     expect(em.update).toHaveBeenCalledWith(
       LifeGroupTaskAssignment,
-      { id: 'a-1', remindedAt: expect.anything() },
-      { remindedAt: expect.any(Date) },
+      { id: 'a-1', remindedAt: expect.anything() as unknown },
+      { remindedAt: expect.any(Date) as unknown },
     );
   });
 
@@ -215,8 +214,8 @@ describe('LifeGroupTaskNotificationsService', () => {
     expect(leaderNote.message).toContain('Ana');
     expect(em.update).toHaveBeenCalledWith(
       LifeGroupTaskAssignment,
-      { id: 'a-1', notifiedAt: expect.anything() },
-      { notifiedAt: expect.any(Date) },
+      { id: 'a-1', notifiedAt: expect.anything() as unknown },
+      { notifiedAt: expect.any(Date) as unknown },
     );
   });
 
@@ -236,9 +235,7 @@ describe('LifeGroupTaskNotificationsService', () => {
       meetingDate: '2026-06-10',
       taskNames: ['Palavra', 'Oferta'],
     });
-    const recipients = dispatch.dispatch.mock.calls[0][1] as unknown as {
-      id: number;
-    }[];
+    const recipients = dispatch.dispatch.mock.calls[0][1] as { id: number }[];
     expect(recipients.map((u) => u.id)).toEqual([10, 11]);
     const saved = em.save.mock.calls[0][0] as {
       deepLink: string | null;
@@ -317,8 +314,8 @@ describe('LifeGroupTaskNotificationsService', () => {
       );
       expect(em.update).toHaveBeenCalledWith(
         LifeGroupTaskAssignment,
-        { id: 'a-2', notifiedAt: expect.anything() },
-        { notifiedAt: expect.any(Date) },
+        { id: 'a-2', notifiedAt: expect.anything() as unknown },
+        { notifiedAt: expect.any(Date) as unknown },
       );
     });
 
@@ -330,10 +327,7 @@ describe('LifeGroupTaskNotificationsService', () => {
 
     it('leaves meetings outside the offset window to the evaluator, and skips past meetings', async () => {
       const { service, dispatch } = makeService();
-      await service.notifyGenerated([
-        mk('a-1', 1, tooFar),
-        mk('a-2', 2, past),
-      ]);
+      await service.notifyGenerated([mk('a-1', 1, tooFar), mk('a-2', 2, past)]);
       expect(dispatch.dispatch).not.toHaveBeenCalled();
     });
 

@@ -8,6 +8,7 @@ import {
   DEFAULT_MIN_PRESENT_MEETINGS,
   LifeGroupTaskGroupSetting,
 } from './entities/life-group-task-group-setting.entity';
+import { CHURCH_TIME_ZONE } from '../life-group-attendance/meeting-day.util';
 import { LifeGroupTaskMemberSetting } from './entities/life-group-task-member-setting.entity';
 
 export interface RosterMember {
@@ -87,10 +88,10 @@ export class LifeGroupTaskRosterService {
          AND e.present = true
          AND (
            ulg.joined_at IS NULL
-           OR a.meeting_date >= (ulg.joined_at AT TIME ZONE 'America/Sao_Paulo')::date
+           OR a.meeting_date >= (ulg.joined_at AT TIME ZONE $2)::date
          )
        GROUP BY e.user_id`,
-      [lifeGroup.id],
+      [lifeGroup.id, CHURCH_TIME_ZONE],
     );
     const joinedRows: JoinedAtRow[] = await this.em.query(
       `SELECT user_id, joined_at FROM user_life_groups WHERE life_group_id = $1`,

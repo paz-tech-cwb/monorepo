@@ -8,8 +8,10 @@ import { ReminderRule } from './entities/reminder-rule.entity';
 describe('RemindersService', () => {
   let service: RemindersService;
   let repo: jest.Mocked<Repository<ReminderRule>>;
+  let saveMock: jest.Mock;
 
   beforeEach(async () => {
+    saveMock = jest.fn((x: unknown) => Promise.resolve(x));
     const moduleRef = await Test.createTestingModule({
       providers: [
         RemindersService,
@@ -18,7 +20,7 @@ describe('RemindersService', () => {
           useValue: {
             find: jest.fn(),
             findOne: jest.fn(),
-            save: jest.fn((x) => Promise.resolve(x)),
+            save: saveMock,
           },
         },
       ],
@@ -51,7 +53,7 @@ describe('RemindersService', () => {
       config: { lead_times_hours: [12, 1] } as never,
     });
     expect(result.enabled).toBe(true);
-    expect(repo.save).toHaveBeenCalled();
+    expect(saveMock).toHaveBeenCalled();
   });
 
   it('update rejects an invalid life_group_tasks config', async () => {
@@ -66,7 +68,7 @@ describe('RemindersService', () => {
         config: { days_before_meeting: [], hour: 9 } as never,
       }),
     ).rejects.toThrow(BadRequestException);
-    expect(repo.save).not.toHaveBeenCalled();
+    expect(saveMock).not.toHaveBeenCalled();
   });
 
   it('update accepts a valid life_group_tasks config', async () => {

@@ -120,6 +120,8 @@ export interface LifeGroupTaskMember {
   // Leader-only note: the leader's own text only, never system marker text.
   reason: string | null
   excluded_template_ids: number[]
+  // ISO timestamp of when the member joined the group; null for leaders not in the join table.
+  joined_at?: string | null
 }
 
 export interface LifeGroupTaskMemberEntry {

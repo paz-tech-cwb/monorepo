@@ -150,15 +150,29 @@ export class LifeGroupTasksReminderEvaluator implements ReminderEvaluator {
         );
         // notifyAssignee also claims each assignment (notified_at IS NULL),
         // so a manual generate that already pushed them is not repeated.
+        let sent = 0;
+        let failed = 0;
         for (const assignment of pending) {
-          await this.notifications.notifyAssignee(
-            assignment,
-            assignment.user,
-            cfg.title,
-            cfg.message,
-          );
+          try {
+            await this.notifications.notifyAssignee(
+              assignment,
+              assignment.user,
+              cfg.title,
+              cfg.message,
+            );
+            sent++;
+          } catch (err: unknown) {
+            failed++;
+            this.logger.error(
+              `life_group_tasks: notify assignment ${assignment.id} failed`,
+              err instanceof Error ? err.stack : undefined,
+            );
+          }
         }
-        processed = pending.length;
+        // Release the group claim only when nothing at all went out, so the
+        // next tick retries; per-assignment claims dedupe the rest.
+        if (pending.length > 0 && sent === 0 && failed > 0) return;
+        processed = sent;
       } else {
         const pending = await this.em.find(LifeGroupTaskAssignment, {
           where: {
@@ -172,15 +186,27 @@ export class LifeGroupTasksReminderEvaluator implements ReminderEvaluator {
         // Nothing to remind yet: release the claim so a later run (e.g. the
         // leader assigned manually in the meantime) can still send.
         if (pending.length === 0) return;
+        let sent = 0;
+        let failed = 0;
         for (const assignment of pending) {
-          await this.notifications.remindAssignee(
-            assignment,
-            assignment.user,
-            cfg.reminder_title,
-            cfg.reminder_message,
-          );
+          try {
+            await this.notifications.remindAssignee(
+              assignment,
+              assignment.user,
+              cfg.reminder_title,
+              cfg.reminder_message,
+            );
+            sent++;
+          } catch (err: unknown) {
+            failed++;
+            this.logger.error(
+              `life_group_tasks: remind assignment ${assignment.id} failed`,
+              err instanceof Error ? err.stack : undefined,
+            );
+          }
         }
-        processed = pending.length;
+        if (sent === 0 && failed > 0) return;
+        processed = sent;
       }
 
       keepClaim = true;

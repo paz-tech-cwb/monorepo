@@ -117,6 +117,50 @@ export class CreateLifeGroupTasks1795900000004 implements MigrationInterface {
       ON CONFLICT ("life_group_id", "user_id") DO NOTHING
     `);
 
+    // Defensive upgrade for databases that ran an earlier revision of this
+    // migration (CREATE TABLE IF NOT EXISTS above is a no-op for them).
+    await queryRunner.query(`
+      ALTER TABLE "life_group_task_assignments"
+        ADD COLUMN IF NOT EXISTS "declined_user_ids" int[] NOT NULL DEFAULT '{}'
+    `);
+    await queryRunner.query(`
+      ALTER TABLE "life_group_task_member_settings"
+        ADD COLUMN IF NOT EXISTS "grandfathered" boolean NOT NULL DEFAULT false
+    `);
+    await queryRunner.query(`
+      UPDATE "life_group_task_member_settings"
+         SET "grandfathered" = true, "reason" = NULL
+       WHERE "reason" = 'grandfathered at migration'
+    `);
+    // Re-create the assignments.user_id FK with ON DELETE CASCADE if an earlier
+    // revision created it without cascade.
+    await queryRunner.query(`
+      DO $$
+      DECLARE fk_name text;
+      BEGIN
+        SELECT c.conname INTO fk_name
+          FROM pg_constraint c
+          JOIN pg_attribute a
+            ON a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey)
+         WHERE c.conrelid = 'life_group_task_assignments'::regclass
+           AND c.contype = 'f'
+           AND c.confrelid = 'users'::regclass
+           AND a.attname = 'user_id'
+           AND c.confdeltype <> 'c'
+         LIMIT 1;
+        IF fk_name IS NOT NULL THEN
+          EXECUTE format(
+            'ALTER TABLE "life_group_task_assignments" DROP CONSTRAINT %I',
+            fk_name
+          );
+          ALTER TABLE "life_group_task_assignments"
+            ADD CONSTRAINT "fk_life_group_task_assignments_user"
+            FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+        END IF;
+      END
+      $$
+    `);
+
     // Seeded enabled by default. The enum value is added in
     // AddLifeGroupTasksEnumValues1795900000003 (must run first).
     await queryRunner.query(`

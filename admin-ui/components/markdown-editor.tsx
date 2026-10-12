@@ -163,16 +163,24 @@ function MarkdownPreviewContent({ value }: { value: string }) {
 
 // Wide viewport detection (Tailwind `lg`, 1024px). Server snapshot is false so
 // SSR renders the narrow (tabbed) layout.
+const WIDE_QUERY = "(min-width: 1024px)"
+
+function subscribeIsWide(notify: () => void) {
+  const mql = window.matchMedia(WIDE_QUERY)
+  mql.addEventListener("change", notify)
+  return () => mql.removeEventListener("change", notify)
+}
+
+function getIsWideSnapshot() {
+  return window.matchMedia(WIDE_QUERY).matches
+}
+
+function getIsWideServerSnapshot() {
+  return false
+}
+
 function useIsWide() {
-  return useSyncExternalStore(
-    (notify) => {
-      const mql = window.matchMedia("(min-width: 1024px)")
-      mql.addEventListener("change", notify)
-      return () => mql.removeEventListener("change", notify)
-    },
-    () => window.matchMedia("(min-width: 1024px)").matches,
-    () => false
-  )
+  return useSyncExternalStore(subscribeIsWide, getIsWideSnapshot, getIsWideServerSnapshot)
 }
 
 export function MarkdownEditor({ value, onChange, placeholder, splitPreview = false }: MarkdownEditorProps) {

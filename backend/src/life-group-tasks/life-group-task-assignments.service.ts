@@ -370,11 +370,7 @@ export class LifeGroupTaskAssignmentsService {
     if (requestedDate !== undefined) {
       assertValidDateString(requestedDate, 'meeting_date');
     }
-    const lifeGroup = await this.loadAccessibleGroup(
-      lifeGroupId,
-      scope,
-      actor,
-    );
+    const lifeGroup = await this.loadAccessibleGroup(lifeGroupId, scope, actor);
     const meetingDate =
       requestedDate ?? nextMeetingDate(new Date(), lifeGroup.meetingDay);
     if (!meetingDate) {
@@ -453,11 +449,7 @@ export class LifeGroupTaskAssignmentsService {
     actor: TaskActor,
   ) {
     assertValidDateString(meetingDate, 'date');
-    const lifeGroup = await this.loadAccessibleGroup(
-      lifeGroupId,
-      scope,
-      actor,
-    );
+    const lifeGroup = await this.loadAccessibleGroup(lifeGroupId, scope, actor);
     const skip = await this.em.findOne(LifeGroupTaskSkip, {
       where: { lifeGroupId, meetingDate },
     });
@@ -569,10 +561,19 @@ export class LifeGroupTaskAssignmentsService {
       relations: ['user'],
     });
     if (!updated) throw new NotFoundException('Task assignment not found');
-    await this.notifier.notifyReassigned(this.notice(updated), {
-      previousUserId,
-      reason,
-    });
+    try {
+      await this.notifier.notifyReassigned(this.notice(updated), {
+        previousUserId,
+        reason,
+      });
+    } catch (err) {
+      // The reassignment is already committed; a push failure must not turn it
+      // into a 500.
+      this.logger.error(
+        'Could not notify reassignment',
+        err instanceof Error ? err.stack : undefined,
+      );
+    }
     return updated;
   }
 
@@ -607,11 +608,7 @@ export class LifeGroupTaskAssignmentsService {
     scope: ResolvedScope,
     actor: TaskActor,
   ) {
-    const lifeGroup = await this.loadAccessibleGroup(
-      lifeGroupId,
-      scope,
-      actor,
-    );
+    const lifeGroup = await this.loadAccessibleGroup(lifeGroupId, scope, actor);
     const assignment = await this.findGroupAssignment(
       lifeGroupId,
       assignmentId,
@@ -638,11 +635,7 @@ export class LifeGroupTaskAssignmentsService {
     scope: ResolvedScope,
     actor: TaskActor,
   ) {
-    const lifeGroup = await this.loadAccessibleGroup(
-      lifeGroupId,
-      scope,
-      actor,
-    );
+    const lifeGroup = await this.loadAccessibleGroup(lifeGroupId, scope, actor);
     const assignment = await this.findGroupAssignment(
       lifeGroupId,
       assignmentId,

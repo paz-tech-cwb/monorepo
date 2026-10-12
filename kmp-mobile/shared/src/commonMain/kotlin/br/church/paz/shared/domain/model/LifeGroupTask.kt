@@ -65,6 +65,8 @@ data class LifeGroupTaskMember(
     // Leader-only note. Never shown to the member.
     val note: String?,
     val excludedTemplateIds: List<Int>,
+    // ISO timestamp of when the member joined the group; null for leaders not in the join table.
+    val joinedAt: String? = null,
 )
 
 /**

@@ -103,7 +103,7 @@ function makeService(world: World) {
   const insertQb = {
     insert: jest.fn().mockReturnThis(),
     into: jest.fn().mockReturnThis(),
-    values: jest.fn().mockReturnThis(),
+    values: jest.fn<unknown, [Record<string, unknown>[]]>().mockReturnThis(),
     orIgnore: jest.fn().mockReturnThis(),
     execute: jest.fn().mockResolvedValue(undefined),
   };
@@ -161,7 +161,9 @@ function makeService(world: World) {
   const notifier = {
     notifyReassigned: jest.fn().mockResolvedValue(undefined),
     notifyUnassignable: jest.fn().mockResolvedValue(undefined),
-    notifyGenerated: jest.fn().mockResolvedValue(undefined),
+    notifyGenerated: jest
+      .fn<Promise<void>, [{ assignmentId: string }[]]>()
+      .mockResolvedValue(undefined),
   };
   const roster = new LifeGroupTaskRosterService(em as unknown as EntityManager);
   const service = new LifeGroupTaskAssignmentsService(
@@ -304,10 +306,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
       });
 
       expect(insertQb.orIgnore).toHaveBeenCalledTimes(1);
-      const values = insertQb.values.mock.calls[0][0] as Record<
-        string,
-        unknown
-      >[];
+      const values = insertQb.values.mock.calls[0][0];
       expect(values).toHaveLength(2);
       const palavraRow = values.find((v) => v.templateId === 1);
       const ofertaRow = values.find((v) => v.templateId === 2);
@@ -761,9 +760,9 @@ describe('LifeGroupTaskAssignmentsService', () => {
     it('404s when the assignment belongs to someone else', async () => {
       const world = makeWorld({ assignmentOne: null });
       const { service } = makeService(world);
-      await expect(
-        service.decline('a-1', { id: 5 }),
-      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.decline('a-1', { id: 5 })).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('conflicts when already declined and rejects past meetings', async () => {
@@ -823,9 +822,9 @@ describe('LifeGroupTaskAssignmentsService', () => {
 
     it('getMine 404s for another member task', async () => {
       const { service } = makeService(makeWorld({ assignmentOne: null }));
-      await expect(
-        service.getMine('a-1', { id: 99 }),
-      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.getMine('a-1', { id: 99 })).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('listMine only returns guide fields for the requesting user', async () => {

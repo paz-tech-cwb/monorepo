@@ -188,6 +188,7 @@ private data class TaskMemberDto(
     val grandfathered: Boolean = false,
     val reason: String? = null,
     @SerialName("excluded_template_ids") val excludedTemplateIds: List<Int> = emptyList(),
+    @SerialName("joined_at") val joinedAt: String? = null,
 ) {
     fun toDomain() =
         LifeGroupTaskMember(
@@ -202,6 +203,7 @@ private data class TaskMemberDto(
             grandfathered = grandfathered,
             note = reason,
             excludedTemplateIds = excludedTemplateIds,
+            joinedAt = joinedAt,
         )
 }
 
