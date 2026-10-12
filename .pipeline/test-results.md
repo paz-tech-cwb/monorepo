@@ -288,3 +288,21 @@ Test log noise (`localhost:3001` connection refused) comes from the hosted app l
 - Full jest: 6 failed suites (same baseline), 73 passed; 547 tests pass, 5 fail (baseline). `nest build` exit 0; eslint on `src/life-group-studies` exit 0; prettier --check clean.
 - iOS `xcodebuild test -only-testing:PazChurchTests` on TestPhone (temporary fake GoogleService-Info.plist, deleted afterwards): rc=0, DeepLinkDestinationTests 15 tests, 0 failures (new: unsafe ids, uuid/slug/numeric accepted, presenca id/date, account-stack classification).
 - Android: cross-read only (new PushNotificationHelperTest cases: unsafe ids, accepted id shapes, presenca validation); CI validates.
+
+## Merge with develop (#89/#93) validation
+
+Backend (node 22, scratchpad):
+- `nest build` OK. Scoped jest (life-group-studies, life-group-tasks, reminders, notifications, forms-core, life-groups, life-group-attendance, life-group-reports, casa-de-paz): 35 suites pass; the only failures are `forms-core/services/notification-sender.spec` and `notifications/dto/reach.dto.spec` (both inherited).
+- Full `npx jest`: 7 failed suites / 27 failed tests / 551 passed. Same run on a separate worktree of origin/develop: 7 failed suites / 27 failed tests / 532 passed. The failing suite set and the failing test names are identical (auth.controller, auth.service, home.controller, onboarding.service, user-device-tokens, notification-sender, reach.dto): all INHERITED (e.g. AuthService spec cannot resolve `UserChurchRepository` after #89). No failures caused by this branch.
+- eslint (no --fix) and prettier --check on the 14 changed backend .ts files: clean.
+
+Migrations on throwaway embedded Postgres 17.5 (new scratchpad dir, 127.0.0.1:54911, creds pgtest/pw_throwaway, env on the CLI process only):
+- Full chain from empty DB: 86 migrations OK (#89 `...03/04/05` then ours `...06/07/08`); second run "No migrations are pending"; 6 `life_group_task*` tables; `notification_category_enum` includes `life_group_task`, `life_group_study`.
+- Revert x3 (08, 07, 06): OK, 83 left, 0 task tables; re-run applies the 3 again; another run: nothing pending.
+- Prod-state emulation: develop's chain (85 migrations, incl. old `AddLifeGroupTasksEnumValues1795900000003`, `CreateLifeGroupTasks1795900000004`, #89's 3/4/5) from a develop worktree, then this branch's `migration:run`: 6/7/8 applied cleanly on top (idempotent), then nothing pending; exactly 1 `life_group_tasks` reminder rule.
+- Cleanup: server stopped with pg_ctl; worktree removed; `rm -rf` of the scratch data dir was denied by the sandbox, so the (stopped) scratchpad `pg4` dir remains.
+
+iOS (Xcode 26.6, TestPhone, scratchpad JDK17/Gradle/Konan):
+- `./gradlew :shared:assembleSharedDebugXCFramework :shared:iosSimulatorArm64Test`: BUILD SUCCESSFUL, 92 tests, 0 failures.
+- `xcodebuild test` PazChurch on TestPhone: first run FAILED to compile `HomeViewModelTests.swift:41` (missing `relationship`/`isSupervised`, from #93, inherited on develop). After the one-line test fix: TEST SUCCEEDED (15+9+12+6 = 42 tests, 0 failures). Temporary fake GoogleService-Info.plist (39-char key) deleted afterwards, never committed.
+- Android: not buildable locally (no SDK); cross-read only: Android files changed by #89 (AccountViewModel, AndroidModule, Academy, MemberJourney) do not overlap ours (MainActivity, PazNavGraph, push helper, MinistryDetailScreen).

@@ -340,3 +340,9 @@ Arnold, from Malcolm's `.pipeline/review.md`.
 - Android: `paz://account` no longer navigates to the nested-only `account` route (pops to the Shell instead); ids must match `^[A-Za-z0-9_-]+$` and the attendance date `^\d{4}-\d{2}-\d{2}$` in `PushNotificationHelper`.
 - iOS: same allowlist in `DeepLinkDestination.parsedRoute/from(parsedRoute:)`; MainTabView is now the single consumer of the pending link and hands account-stack destinations to AccountView through a binding (no cold-start ordering dependency).
 - Deferred follow-ups: singleTop with another activity on top, activity recreation before Splash, inactive-user filter in study recipients, m9 automated UI coverage.
+
+## Merge with develop (#89/#93) validation
+
+- Merge 381faaf (origin/develop into fix/pilot-readiness). `git diff origin/develop...HEAD` is only our 41 files; textual overlap was AccountView.swift and MainTabView.swift (our push-routing rewrite on top of #89's `churchRepository`), no other overlap with #89/#93 backend (scope-resolver, life-groups.service, casa-de-paz, analytics) or Android DI.
+- Migrations renumbered to avoid #89's 1795900000003..5: `AddLifeGroupTasksEnumValues1795900000006`, `CreateLifeGroupTasks1795900000007`, `AddLifeGroupStudyNotificationCategory1795900000008`. Develop already carried the tasks migrations under the old names (`...0003`/`...0004`); a DB that ran those will run 6/7 again, which is safe because both are idempotent (IF NOT EXISTS, ON CONFLICT DO NOTHING).
+- Semantic conflict found and fixed: #93 added required Swift-visible `relationship`/`isSupervised` params to the shared `LifeGroup` model, which broke compilation of `HomeViewModelTests.swift` (from #92) on develop itself. Fixed in the test helper (`relationship: nil, isSupervised: false`).
