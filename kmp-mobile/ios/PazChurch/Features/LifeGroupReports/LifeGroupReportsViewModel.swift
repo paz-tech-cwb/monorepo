@@ -60,6 +60,8 @@ class LifeGroupReportsViewModel {
     var error: String?
     /// The backend answered 403: the group is outside the viewer's scope.
     var noAccess = false
+    /// Transient failure of a refresh while content is already on screen (list is kept).
+    var refreshError: String?
 
     private let lifeGroupId: Int32
     private let repository: LifeGroupReportRepository
@@ -73,6 +75,7 @@ class LifeGroupReportsViewModel {
     /// after content) keep the current content visible.
     func load() async {
         let showSkeleton = reports.isEmpty
+        refreshError = nil
         isLoading = showSkeleton
         isRefreshing = !showSkeleton
         error = nil
@@ -94,7 +97,12 @@ class LifeGroupReportsViewModel {
                 message: error.localizedDescription
             )
             noAccess = failure.noAccess
-            self.error = failure.error
+            if !showSkeleton, !failure.noAccess {
+                // Keep the list the user is reading; report the failure transiently.
+                refreshError = failure.error
+            } else {
+                self.error = failure.error
+            }
         }
         isLoading = false
         isRefreshing = false
@@ -125,9 +133,13 @@ class LifeGroupReportDetailViewModel {
         do {
             report = try await repository.getReport(reportId: reportId)
         } catch is CancellationError {
+            isLoading = false
             return
         } catch {
-            if Task.isCancelled { return }
+            if Task.isCancelled {
+                isLoading = false
+                return
+            }
             let failure = LifeGroupReportsPresentation.detailFailure(
                 statusCode: lifeGroupReportsHTTPStatus(error),
                 message: error.localizedDescription

@@ -311,3 +311,18 @@ Owen. Mirrors the Android implementation; uses the shared `buildHomeLifeGroupCar
 - Tests: `HomeViewModelTests` (+7: card ordering/folding, cap + hidden count, groups-failed legacy fallback with no CTA, both failed, tasks failed, empty groups CTA, meeting label), new `LifeGroupReportsTests` (gate matrix, failure mapping, formatting, list/detail view models with a fake repository).
 - Docs: `.ai/apps/mobile.md` (stale "no iOS unit-test target" paragraph replaced; iOS sections), `.ai/features/mobile-app.md`.
 - Deviations: none from the spec. No role chip on the card (same as Android). Swift stale-key note: Kotlin enum `UserRole.area_leader` is `.areaLeader` in Swift.
+
+## Review fixes (home-card branch)
+
+Arnold, from Malcolm's `.pipeline/review.md`.
+
+- M1 (backend): `LifeGroupReportsService.auditLog` maps rows to the admin-ui `AuditLogEntry` shape `{id, form_slug, submission_id, action, diff, created_at, actor:{id,name}}`; the actor `User` is no longer serialized (no email/phone). Service and controller specs updated, with assertions that no `email`/`phoneNumber` is present.
+- Minor 1: ASCII import order fixed in `AndroidModule.kt`, `PazNavGraph.kt`, `SharedModule.kt`, `IosAppContainer.kt` (incl. the older `LifeGroupTask`/`LifeGroupStudy` pairs). A scan of every `.kt` file touched by the branch found no other violations (`java.*`/`kotlin.*` last, per the ktlint layout).
+- Minor 2: `LifeGroupDetailView.canViewGroupReports` is now `nonisolated static` (pure), so the gate tests need no actor isolation. Verified by compiling and running the tests.
+- Minor 3: Android `LifeGroupReportsViewModel.load()`/`refresh()` are block-bodied.
+- Minor 4: a failed refresh with a populated list keeps the list. Android emits a new `LifeGroupReportsEffect.ShowError` (snackbar); iOS sets a transient `refreshError` (alert). A failure with no content, or a 403, behaves as before. Tests added or adjusted on both platforms.
+- Minor 5: `Modifier.fillMaxWidth()` on the Android home-card header `Surface`.
+- Minor 6 (backend): `findEntity` no longer grants read access to the original submitter, so detail/audit visibility equals list visibility (form scope plus led groups). The alternative (adding the submitter to the list filter) was not chosen because it needs a join-column assumption that cannot be verified cheaply. Service spec updated; docs corrected.
+- Minor 7: iOS `LifeGroupReportDetailViewModel.load` resets `isLoading` on cancellation (the next `.task` run sets it again).
+- Minor 8: no change. `canManage` (Android `LifeGroupDetailUiState` and iOS `MinistryDetailView`) is still read by `onManageTap` / the manage entry, so it is not unused.
+- Minor 9 (Postman): no life-group-reports entry exists in `.ai/apps/postman-files.md` and no collection exists in the repo, so nothing was updated. The spec's Postman deliverable remains not done.

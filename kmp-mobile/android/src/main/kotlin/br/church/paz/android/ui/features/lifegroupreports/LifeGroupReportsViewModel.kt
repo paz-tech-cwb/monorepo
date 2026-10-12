@@ -27,10 +27,14 @@ class LifeGroupReportsViewModel(
         load(showSkeleton = true)
     }
 
-    fun load() = load(showSkeleton = true)
+    fun load() {
+        load(showSkeleton = true)
+    }
 
     /** Pull-to-refresh entry point — re-invokes the same load path without the full-screen skeleton. */
-    fun refresh() = load(showSkeleton = false)
+    fun refresh() {
+        load(showSkeleton = false)
+    }
 
     private fun load(showSkeleton: Boolean) {
         viewModelScope.launch {
@@ -50,14 +54,19 @@ class LifeGroupReportsViewModel(
                 throw e
             } catch (e: Exception) {
                 val forbidden = e.httpStatusCodeOrNull() == 403
+                val message = e.message ?: "Erro ao carregar relatórios"
+                // A failed refresh must not wipe a list the user is already reading:
+                // keep it and surface the failure transiently instead.
+                val keepContent = !forbidden && _uiState.value.reports.isNotEmpty()
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         isRefreshing = false,
                         noAccess = forbidden,
-                        error = if (forbidden) null else e.message ?: "Erro ao carregar relatórios",
+                        error = if (forbidden || keepContent) null else message,
                     )
                 }
+                if (keepContent) _effect.send(LifeGroupReportsEffect.ShowError(message))
             }
         }
     }

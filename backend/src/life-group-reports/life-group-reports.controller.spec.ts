@@ -61,7 +61,22 @@ describe('LifeGroupReportsController (global pipe + serializer)', () => {
   const em = { createQueryBuilder: jest.fn().mockReturnValue(lgQb) };
   const audit = {
     record: jest.fn(),
-    listForSubmission: jest.fn().mockResolvedValue([{ id: 'a1' }]),
+    listForSubmission: jest.fn().mockResolvedValue([
+      {
+        id: 'a1',
+        formSlug: 'life-group-reports',
+        submissionId: 'r-1',
+        action: 'create',
+        diff: null,
+        createdAt: new Date('2026-10-02T10:00:00Z'),
+        actor: {
+          id: 7,
+          name: 'Leader',
+          email: 'leader@example.com',
+          phoneNumber: '+5511999999999',
+        },
+      },
+    ]),
   };
 
   beforeAll(async () => {
@@ -192,6 +207,17 @@ describe('LifeGroupReportsController (global pipe + serializer)', () => {
     const res = await request(app.getHttpServer())
       .get('/forms/life-group-reports/r-1/audit')
       .expect(200);
-    expect(res.body).toEqual([{ id: 'a1' }]);
+    expect(res.body).toEqual([
+      {
+        id: 'a1',
+        form_slug: 'life-group-reports',
+        submission_id: 'r-1',
+        action: 'create',
+        diff: null,
+        created_at: '2026-10-02T10:00:00.000Z',
+        actor: { id: 7, name: 'Leader' },
+      },
+    ]);
+    expect(JSON.stringify(res.body)).not.toMatch(/email|phoneNumber/);
   });
 });

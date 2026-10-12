@@ -260,3 +260,16 @@ Environment as in "Mobile validation (real toolchain)" (Xcode 26.6, 'TestPhone' 
 | swiftformat / swiftlint | NOT RUN (not checked/installed in this session) |
 
 Test log noise (`localhost:3001` connection refused) comes from the hosted app launching with no backend; unrelated to results. UI layout (cards, detail rows) is verified by build only; use the manual QA checklist in the spec.
+
+## Review fixes (home-card branch)
+
+| Check | Result |
+|---|---|
+| `npx jest src/life-group-reports` | PASS: 2 suites, 27 tests (audit mapping/no-PII asserted; submitter-404 case replaces the old submitter-allowed case) |
+| backend `eslint src/life-group-reports` | 0 errors, 8 pre-existing `no-unsafe-argument` warnings (controller spec) |
+| backend `prettier --check src/life-group-reports` | clean |
+| `npm run build` (nest build) | OK |
+| Full `npx jest` | 72 suites pass, 6 fail = baseline set; 5 failed / 528 passed tests, none new |
+| `./gradlew :shared:iosSimulatorArm64Test :shared:assembleSharedDebugXCFramework` | BUILD SUCCESSFUL (import reorder only in shared) |
+| `xcodebuild -scheme PazChurch -destination TestPhone CODE_SIGNING_ALLOWED=NO test` (JAVA_HOME set for the Gradle build phase) | TEST SUCCEEDED: 32 tests, 0 failures, with `nonisolated static canViewGroupReports` called from non-isolated tests. Temporary fake `GoogleService-Info.plist` (39-char API key) deleted afterwards, gitignored, never committed. |
+| Android (`testDebugUnitTest`, assemble, ktlint) | NOT RUN (no SDK); cross-read. New test `failed refresh keeps the loaded list and emits a transient error`; exhaustive `when` over `LifeGroupReportsEffect` only exists in `LifeGroupReportsScreen` (ShowError branch added). |

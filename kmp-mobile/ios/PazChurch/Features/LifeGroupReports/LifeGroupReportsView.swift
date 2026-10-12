@@ -18,6 +18,15 @@ struct LifeGroupReportsView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
             .task { await viewModel.load() }
+            .alert(
+                "Não foi possível atualizar",
+                isPresented: Binding(
+                    get: { viewModel.refreshError != nil },
+                    set: { if !$0 { viewModel.refreshError = nil } }
+                ),
+                actions: { Button("OK", role: .cancel) {} },
+                message: { Text(viewModel.refreshError ?? "") }
+            )
     }
 
     @ViewBuilder

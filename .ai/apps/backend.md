@@ -40,7 +40,7 @@ in `features/life-groups.md`.
 `src/life-group-reports/`: list takes optional `?life_group_id=` (DTO field
 needs `@Expose()` because of the global `excludeExtraneousValues` pipe), scopes
 by form scope plus leader/co-leader groups, `GET :id` and `:id/audit` are
-scope-aware (404 out of scope), responses are snake_case via `toResponse` with
+scope-aware (404 out of scope; `:id/audit` mapped to `AuditLogEntry`, no actor PII), responses are snake_case via `toResponse` with
 `@SerializeOptions(exposeAll)`. Details in `features/life-groups.md`. Specs:
 `life-group-reports.service.spec.ts`, `life-group-reports.controller.spec.ts`
 (real global pipe + `ClassSerializerInterceptor`).

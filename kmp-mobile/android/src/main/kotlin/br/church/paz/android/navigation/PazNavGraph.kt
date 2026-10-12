@@ -25,11 +25,11 @@ import br.church.paz.android.ui.features.formularios.FormSubmissionDetailScreen
 import br.church.paz.android.ui.features.formularios.FormSubmissionsListScreen
 import br.church.paz.android.ui.features.formularios.FormulariosScreen
 import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsScreen
-import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportDetailScreen
-import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportsScreen
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceEditorScreen
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryScreen
 import br.church.paz.android.ui.features.lifegroupdiscovery.LifeGroupDiscoveryScreen
+import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportDetailScreen
+import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportsScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListScreen

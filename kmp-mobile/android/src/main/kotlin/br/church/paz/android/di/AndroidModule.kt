@@ -19,12 +19,12 @@ import br.church.paz.android.ui.features.formularios.FormSubmissionsListViewMode
 import br.church.paz.android.ui.features.formularios.FormulariosViewModel
 import br.church.paz.android.ui.features.home.HomeViewModel
 import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsViewModel
-import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportDetailViewModel
-import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportsViewModel
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceEditorViewModel
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryViewModel
 import br.church.paz.android.ui.features.lifegroupdiscovery.LifeGroupDiscoveryViewModel
 import br.church.paz.android.ui.features.lifegroupdiscovery.LocationProvider
+import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportDetailViewModel
+import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportsViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListViewModel

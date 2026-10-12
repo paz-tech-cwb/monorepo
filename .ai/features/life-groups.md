@@ -142,7 +142,10 @@ groups = form scope (admin/pastor unrestricted, area/sector leader scope,
 `co_leader_id` (so a co-leader with role `member` works, and a leader of two
 groups sees both). `life_group_id` outside that set => 403 (same as analytics).
 `GET :id` and `:id/audit` answer 404 (not 403) when the report's group is not
-visible, unless the viewer submitted it. Create/update/delete policy is
+visible (same rule as the list; being the submitter grants no extra read access).
+`/:id/audit` is mapped to the admin-ui `AuditLogEntry` shape
+(`id, form_slug, submission_id, action, diff, created_at, actor:{id,name}`); the
+actor `User` entity is never serialized. Create/update/delete policy is
 unchanged (`@Roles` on create still excludes co-leaders with role `member`).
 
 Response is an explicit snake_case object (`toResponse`, controller uses

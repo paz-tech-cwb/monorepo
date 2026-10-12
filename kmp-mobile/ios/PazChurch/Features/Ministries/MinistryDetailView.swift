@@ -201,7 +201,7 @@ struct LifeGroupDetailView: View {
     /// admin/pastor/area leader/sector leader (the client cannot know their scope; the backend
     /// answers 403/404 for out-of-scope groups). A `life_group_leader` of ANOTHER group, plain
     /// members, disciplers and guests never see them. Pure and non-private for unit tests.
-    static func canViewGroupReports(role: UserRole?, isGroupLeadership: Bool) -> Bool {
+    nonisolated static func canViewGroupReports(role: UserRole?, isGroupLeadership: Bool) -> Bool {
         isGroupLeadership
             || role == .admin
             || role == .pastor

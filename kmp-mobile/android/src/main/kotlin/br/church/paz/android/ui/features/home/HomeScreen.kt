@@ -332,6 +332,7 @@ private fun LifeGroupHomeCard(
         Column(Modifier.padding(PazSpacing.Lg), verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
             androidx.compose.material3.Surface(
                 onClick = onGroupTap,
+                modifier = Modifier.fillMaxWidth(),
                 color = Color.Transparent,
                 shape = PazShapes.medium,
             ) {

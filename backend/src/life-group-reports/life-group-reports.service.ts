@@ -187,7 +187,8 @@ export class LifeGroupReportsService {
   // scope/actor are optional so internal callers (update) that apply their own
   // policy can load unscoped; the controller's GET :id and :id/audit routes
   // MUST pass both. Out-of-scope reads answer 404 (not 403) so ids cannot be
-  // probed. Mirrors CasaDePazReportsService.findEntity.
+  // probed. Visibility matches list(): form scope plus groups the actor leads
+  // or co-leads. Being the original submitter grants no extra read access.
   private async findEntity(
     id: string,
     scope?: ResolvedScope,
@@ -201,9 +202,7 @@ export class LifeGroupReportsService {
     if (scope && !scope.unrestricted) {
       const allowed =
         scope.lifeGroupIds.includes(m.lifeGroupId) ||
-        (!!actor &&
-          (m.submittedBy?.id === actor.id ||
-            (await this.ledGroupIds(actor)).includes(m.lifeGroupId)));
+        (!!actor && (await this.ledGroupIds(actor)).includes(m.lifeGroupId));
       if (!allowed) throw new NotFoundException();
     }
     return m;
@@ -256,6 +255,17 @@ export class LifeGroupReportsService {
 
   async auditLog(id: string, scope: ResolvedScope, actor: Actor) {
     await this.findEntity(id, scope, actor); // same visibility rule as findOne
-    return this.audit.listForSubmission(SLUG, id);
+    const rows = await this.audit.listForSubmission(SLUG, id);
+    // Map explicitly (admin-ui AuditLogEntry shape): returning the entities
+    // would expose the whole eager-joined actor User (email, phone, ...).
+    return rows.map((r) => ({
+      id: r.id,
+      form_slug: r.formSlug,
+      submission_id: r.submissionId,
+      action: r.action,
+      diff: r.diff,
+      created_at: r.createdAt,
+      actor: { id: r.actor?.id, name: r.actor?.name },
+    }));
   }
 }

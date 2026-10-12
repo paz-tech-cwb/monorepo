@@ -137,7 +137,9 @@ final class LifeGroupReportsTests: XCTestCase {
         XCTAssertFalse(vm.isLoading)
         XCTAssertFalse(vm.isRefreshing)
         XCTAssertEqual(vm.reports.count, 1)
-        XCTAssertNotNil(vm.error)
+        XCTAssertNil(vm.error)
+        XCTAssertNotNil(vm.refreshError)
+        XCTAssertFalse(vm.noAccess)
     }
 
     @MainActor

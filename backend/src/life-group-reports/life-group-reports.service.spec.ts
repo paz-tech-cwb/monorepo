@@ -43,6 +43,30 @@ function makeReport(overrides: Partial<LifeGroupReport> = {}): LifeGroupReport {
   } as Partial<LifeGroupReport>);
 }
 
+const AUDIT_ROW = {
+  id: 'a1',
+  formSlug: 'life-group-reports',
+  submissionId: 'r-1',
+  action: 'create',
+  diff: null,
+  createdAt: new Date('2026-10-02T10:00:00Z'),
+  actor: {
+    id: 7,
+    name: 'Leader',
+    email: 'leader@example.com',
+    phoneNumber: '+5511999999999',
+  },
+};
+const AUDIT_ENTRY = {
+  id: 'a1',
+  form_slug: 'life-group-reports',
+  submission_id: 'r-1',
+  action: 'create',
+  diff: null,
+  created_at: new Date('2026-10-02T10:00:00Z'),
+  actor: { id: 7, name: 'Leader' },
+};
+
 describe('LifeGroupReportsService', () => {
   function createService(ledGroupIds: number[] = []) {
     const qb = {
@@ -70,7 +94,7 @@ describe('LifeGroupReportsService', () => {
     const policy = { assertCanEdit: jest.fn(), assertCanDelete: jest.fn() };
     const audit = {
       record: jest.fn().mockResolvedValue(undefined),
-      listForSubmission: jest.fn().mockResolvedValue([{ id: 'a1' }]),
+      listForSubmission: jest.fn().mockResolvedValue([AUDIT_ROW]),
     };
     const service = new LifeGroupReportsService(
       repo as unknown as Repository<LifeGroupReport>,
@@ -230,12 +254,12 @@ describe('LifeGroupReportsService', () => {
       );
     });
 
-    it('returns the report to its submitter', async () => {
+    it('answers 404 to the submitter once they no longer lead the group (matches list)', async () => {
       const { service, repo } = createService();
       repo.findOne.mockResolvedValue(makeReport());
       await expect(
         service.findOne('r-1', NO_SCOPE, { id: 7 }),
-      ).resolves.toEqual(expect.objectContaining({ id: 'r-1' }));
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('answers 404 for an out-of-scope actor', async () => {
@@ -265,9 +289,9 @@ describe('LifeGroupReportsService', () => {
     it('auditLog returns the trail only when the report is visible', async () => {
       const { service, repo, audit } = createService([10]);
       repo.findOne.mockResolvedValue(makeReport());
-      await expect(service.auditLog('r-1', NO_SCOPE, actor)).resolves.toEqual([
-        { id: 'a1' },
-      ]);
+      const res = await service.auditLog('r-1', NO_SCOPE, actor);
+      expect(res).toEqual([AUDIT_ENTRY]);
+      expect(JSON.stringify(res)).not.toMatch(/email|phoneNumber/);
       expect(audit.listForSubmission).toHaveBeenCalledWith(
         'life-group-reports',
         'r-1',

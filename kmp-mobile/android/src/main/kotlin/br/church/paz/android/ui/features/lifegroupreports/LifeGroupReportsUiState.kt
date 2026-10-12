@@ -15,6 +15,11 @@ data class LifeGroupReportsUiState(
 sealed class LifeGroupReportsEffect {
     data object NavigateBack : LifeGroupReportsEffect()
 
+    /** Transient failure while content is already on screen (e.g. a failed pull-to-refresh). */
+    data class ShowError(
+        val message: String,
+    ) : LifeGroupReportsEffect()
+
     data class NavigateToDetail(
         val reportId: String,
     ) : LifeGroupReportsEffect()

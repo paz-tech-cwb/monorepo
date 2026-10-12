@@ -140,6 +140,26 @@ class LifeGroupReportsViewModelTest {
         }
 
     @Test
+    fun `failed refresh keeps the loaded list and emits a transient error`() =
+        runTest {
+            coEvery { repository.getReports(7) } returns listOf(report("a", "2026-10-08"))
+            val viewModel = LifeGroupReportsViewModel(7, repository)
+            testScheduler.advanceUntilIdle()
+
+            coEvery { repository.getReports(7) } throws RuntimeException("boom")
+            viewModel.effect.test {
+                viewModel.refresh()
+                testScheduler.advanceUntilIdle()
+
+                assertEquals(LifeGroupReportsEffect.ShowError("boom"), awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertNull(viewModel.uiState.value.error)
+            assertFalse(viewModel.uiState.value.isRefreshing)
+            assertEquals(listOf("a"), viewModel.uiState.value.reports.map { it.id })
+        }
+
+    @Test
     fun `tapping a report emits navigation to its detail`() =
         runTest {
             coEvery { repository.getReports(7) } returns listOf(report("a", "2026-10-08"))
