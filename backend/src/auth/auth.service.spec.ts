@@ -14,6 +14,7 @@ import { User } from 'src/users/entities/user.entity';
 import { UserAccount } from 'src/users/entities/account.entity';
 import { Role } from 'src/roles/entities/role.entity';
 import { UserDeviceToken } from 'src/users/entities/user-device-token.entity';
+import { UserChurch } from '../church/entities/user-church.entity';
 import { AuditLog } from './entities/audit-log.entity';
 import { AuditLogger } from './audit.logger';
 import { GuestOriginsService } from '../guest-origins/guest-origins.service';
@@ -121,6 +122,10 @@ describe('AuthService', () => {
         {
           provide: getRepositoryToken(UserDeviceToken),
           useValue: userDeviceTokenRepo,
+        },
+        {
+          provide: getRepositoryToken(UserChurch),
+          useValue: { find: jest.fn().mockResolvedValue([]) },
         },
         { provide: getRepositoryToken(AuditLog), useValue: auditLogRepo },
         { provide: ConfigService, useValue: configServiceMock },
