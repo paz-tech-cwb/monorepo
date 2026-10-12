@@ -5,14 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AcademyContent(
-    val tracks: List<CourseTrack> = emptyList(),
-)
-
-@Serializable
-data class CourseTrack(
-    val id: String,
-    val title: String,
-    val description: String? = null,
     val courses: List<Course> = emptyList(),
 )
 

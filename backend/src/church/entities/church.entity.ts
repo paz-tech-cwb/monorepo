@@ -50,6 +50,17 @@ export class Church {
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
+  // Short, URL-safe identifier for a filial (e.g. "curitiba-matriz"). Nullable
+  // because historical/singleton rows predate this concept; new filiais
+  // created through the admin-ui should always set one.
+  @Column({ type: 'varchar', length: 100, nullable: true, unique: true })
+  slug: string | null;
+
+  // Lets admin-ui hide/retire a filial without deleting its historical data
+  // (areas/events/announcements/casa-de-paz cycles still reference it).
+  @Column({ name: 'is_active', type: 'boolean', default: true })
+  isActive: boolean;
+
   @Column({ type: 'text', nullable: true })
   description: string | null;
 

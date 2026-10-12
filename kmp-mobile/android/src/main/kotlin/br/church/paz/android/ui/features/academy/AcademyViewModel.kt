@@ -45,7 +45,7 @@ class AcademyViewModel(
             runCatching { academyRepository.getAcademyContent() }
                 .onSuccess { content ->
                     _uiState.update {
-                        it.copy(isLoading = false, isRefreshing = false, tracks = content.tracks)
+                        it.copy(isLoading = false, isRefreshing = false, courses = content.courses)
                     }
                 }.onFailure { e ->
                     _uiState.update { it.copy(isLoading = false, isRefreshing = false, error = e.message) }

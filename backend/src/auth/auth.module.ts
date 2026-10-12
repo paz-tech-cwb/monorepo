@@ -11,6 +11,7 @@ import { AuditLog } from './entities/audit-log.entity';
 import { JwtStrategy } from './jwt.strategy';
 import { AuditLogger } from './audit.logger';
 import { GuestOriginsModule } from '../guest-origins/guest-origins.module';
+import { UserChurch } from '../church/entities/user-church.entity';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { GuestOriginsModule } from '../guest-origins/guest-origins.module';
       Role,
       UserDeviceToken,
       AuditLog,
+      UserChurch,
     ]),
     GuestOriginsModule,
   ],

@@ -1,6 +1,7 @@
 import FirebaseCore
 import FirebaseMessaging
 import Pulse
+import PulseProxy
 import Shared
 import SwiftUI
 import UserNotifications
@@ -16,11 +17,27 @@ struct PazChurchApp: App {
     @State private var themeManager = AppThemeManager()
 
     init() {
-        // Must be first: registers Pulse's URLSessionProxyDelegate so it can intercept
-        // every NSURLSession task, including the one backing the shared Ktor client
-        // below. Once that client's httpClient is lazily constructed (the next
-        // statement touches it via the keychain/auth wiring), it's too late for Pulse
-        // to swap in its proxy delegate.
+        // Must be first: registers Pulse's network interception so it captures every
+        // NSURLSession task, including the one backing the shared Ktor client below.
+        // Once that client's httpClient is lazily constructed (the next statement
+        // touches it via the keychain/auth wiring), it's too late for Pulse to swap
+        // in its interception.
+        //
+        // NetworkLogger.enableProxy(logger:) (PulseProxy target) is used here instead
+        // of Pulse's own URLSessionProxyDelegate.enableAutomaticRegistration — the
+        // latter is soft-deprecated since Pulse 5.0 and only works by swizzling
+        // URLSession's delegate-based init to wrap whatever delegate is passed in.
+        // Ktor's Darwin engine (backing the shared Ktor client) builds and owns its
+        // own internal NSURLSessionDataDelegate, and in practice that delegate chain
+        // doesn't get reliably wrapped by that init-swizzle: `NetworkLogger
+        // .logDataTask(_:didReceive:)` — the call Pulse requires to accumulate
+        // response bytes — never fires for Ktor's tasks, so the inspector shows the
+        // request/response line (status, timing) but the body is always empty.
+        // PulseProxy instead swizzles `URLSessionTask.resume()` and the private
+        // underlying `__NSCFURLSessionTask`/`__NSCFURLLocalSessionConnection` classes
+        // directly, which captures task data regardless of which delegate object (if
+        // any) the session was constructed with, so it reliably captures Ktor/Darwin
+        // traffic too.
         // The refresh-token and social-login endpoints' response bodies contain
         // live access/refresh tokens. Exclude them from capture entirely via
         // Pulse's own exclusion mechanism rather than relying on Ktor-level
@@ -41,7 +58,7 @@ struct PazChurchApp: App {
         // captured traffic doesn't linger on-device far beyond the gated
         // inspector flow's intended lifetime.
         LoggerStore.shared.configuration.maxAge = 3600
-        URLSessionProxyDelegate.enableAutomaticRegistration(logger: pulseLogger)
+        NetworkLogger.enableProxy(logger: pulseLogger)
 
         // Pulse excludes its own log directory from backup internally, but only on the
         // directory's first creation (a library bug: `createDirectoryIfNeeded` returns

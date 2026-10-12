@@ -40,8 +40,12 @@ struct CourseDetailView: View {
                 ZStack {
                     Color.black
                     if let lesson = viewModel.selectedLesson {
-                        if viewModel.playerError {
-                            VideoErrorOverlay(youtubeVideoId: lesson.youtubeVideoId)
+                        if let playerError = viewModel.playerError {
+                            VideoErrorOverlay(
+                                youtubeVideoId: lesson.youtubeVideoId,
+                                error: playerError,
+                                onRetry: { viewModel.onRetryPlayback() }
+                            )
                         } else {
                             GatedYouTubePlayerView(
                                 youtubeVideoId: lesson.youtubeVideoId,
@@ -52,7 +56,7 @@ struct CourseDetailView: View {
                                     percentage: pct,
                                     positionSeconds: seconds
                                 ) },
-                                onError: { viewModel.onPlayerError() },
+                                onError: { code in viewModel.onPlayerError(code: code) },
                                 webViewBox: webViewBox
                             )
                             .id(lesson.id)
@@ -107,24 +111,43 @@ struct CourseDetailView: View {
 
 private struct VideoErrorOverlay: View {
     let youtubeVideoId: String
+    let error: VideoPlaybackError
+    let onRetry: () -> Void
 
     var body: some View {
         VStack(spacing: PazSpacing.md) {
-            Text("Não foi possível carregar o vídeo desta aula")
+            Text(message)
                 .font(PazTypography.bodyMedium)
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
 
-            Button {
-                if let url = URL(string: "https://www.youtube.com/watch?v=\(youtubeVideoId)") {
-                    UIApplication.shared.open(url)
+            switch error {
+            case .retryable:
+                Button(action: onRetry) {
+                    Text("Tentar novamente")
                 }
-            } label: {
-                Text("Abrir no YouTube")
+                .buttonStyle(.pazPillPrimary)
+            case .unavailable:
+                Button {
+                    if let url = URL(string: "https://www.youtube.com/watch?v=\(youtubeVideoId)") {
+                        UIApplication.shared.open(url)
+                    }
+                } label: {
+                    Text("Abrir no YouTube")
+                }
+                .buttonStyle(.pazPillPrimary)
             }
-            .buttonStyle(.pazPillPrimary)
         }
         .padding(PazSpacing.lg)
+    }
+
+    private var message: String {
+        switch error {
+        case .retryable:
+            "Não foi possível carregar o vídeo desta aula"
+        case .unavailable:
+            "Este vídeo não está disponível para reprodução aqui"
+        }
     }
 }
 

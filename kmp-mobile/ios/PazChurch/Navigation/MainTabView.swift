@@ -31,7 +31,8 @@ struct MainTabView: View {
 
             AccountView(
                 userRepository: IosAppContainer.shared.userRepository,
-                authRepository: IosAppContainer.shared.authRepository
+                authRepository: IosAppContainer.shared.authRepository,
+                churchRepository: IosAppContainer.shared.churchRepository
             )
             .tabItem { Label("Conta", systemImage: "person.fill") }
             .tag(2)

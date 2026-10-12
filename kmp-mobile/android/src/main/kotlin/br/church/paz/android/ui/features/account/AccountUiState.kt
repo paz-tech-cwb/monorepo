@@ -8,6 +8,10 @@ data class AccountUiState(
     val isRefreshing: Boolean = false,
     val isDarkMode: Boolean = false,
     val isGuestMode: Boolean = false,
+    // Display-only — name of the member's filial (church). `null` while
+    // loading or if it couldn't be resolved; the screen simply omits the
+    // label in that case rather than erroring out.
+    val churchName: String? = null,
 )
 
 sealed class AccountEffect {
@@ -16,6 +20,8 @@ sealed class AccountEffect {
     data object NavigateToMemberJourney : AccountEffect()
 
     data object NavigateToFormularios : AccountEffect()
+
+    data object NavigateToGuestForm : AccountEffect()
 
     data object NavigateToMinistries : AccountEffect()
 

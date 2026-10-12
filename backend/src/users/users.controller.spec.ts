@@ -64,12 +64,12 @@ describe('UsersController', () => {
   describe('GET /users/me', () => {
     it('calls usersService.findOne with the authenticated user id', async () => {
       usersService.findOne.mockResolvedValue(mockUserResponse as any);
-      const req = { user: { id: 1 } };
+      const req = { user: { id: 1, churchId: null } } as any;
 
       const result = await controller.getMe(req);
 
       expect(usersService.findOne).toHaveBeenCalledWith(1);
-      expect(result).toEqual(mockUserResponse);
+      expect(result).toEqual({ ...mockUserResponse, church_id: null });
     });
   });
 

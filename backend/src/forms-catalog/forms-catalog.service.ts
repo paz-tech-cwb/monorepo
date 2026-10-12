@@ -118,6 +118,8 @@ const FORM_DEFINITIONS = [
       'area_leader',
       'sector_leader',
       'life_group_leader',
+      'member',
+      'discipler',
     ],
     read: [
       'admin',

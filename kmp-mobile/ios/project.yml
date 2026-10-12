@@ -55,11 +55,23 @@ targets:
       # Kingfisher for image caching
       - package: Kingfisher
         product: Kingfisher
-      # Pulse — in-app network inspector, gated behind DevToolsGate (see Account screen)
+      # Pulse — in-app network inspector, gated behind DevToolsGate (see Account screen).
+      # PulseProxy (NetworkLogger.enableProxy) is used instead of the Pulse target's own
+      # URLSessionProxyDelegate.enableAutomaticRegistration (soft-deprecated since Pulse
+      # 5.0) — see the comment in PazChurchApp.swift for why: automatic registration only
+      # intercepts URLSession's delegate-based init, and Ktor's Darwin engine recreates its
+      # internal NSURLSessionDataDelegate in a way that automatic registration's init-swizzle
+      # doesn't reliably wrap, so `logDataTask(_:didReceive:)` (required for response bodies)
+      # never fires — the request/response line shows in the inspector but bodies are always
+      # empty. PulseProxy swizzles URLSessionTask.resume() and the private underlying
+      # connection class directly, which is unaffected by how/where the session's delegate
+      # was constructed.
       - package: Pulse
         product: Pulse
       - package: Pulse
         product: PulseUI
+      - package: Pulse
+        product: PulseProxy
     settings:
       base:
         INFOPLIST_FILE: PazChurch/Info.plist

@@ -38,6 +38,8 @@ export interface ChurchSocialMedia {
 export interface Church {
   id: number
   name: string
+  slug?: string | null
+  is_active: boolean
   description?: string | null
   address: ChurchAddress
   contact: ChurchContact
@@ -46,8 +48,21 @@ export interface Church {
   updated_at: string
 }
 
+export interface CreateChurchRequest {
+  name: string
+  slug?: string | null
+  is_active?: boolean
+  description?: string | null
+  address?: Partial<ChurchAddress>
+  contact?: Partial<ChurchContact>
+  schedule?: Partial<ChurchSchedule>
+  social_media?: Partial<ChurchSocialMedia>
+}
+
 export interface UpdateChurchRequest {
   name?: string
+  slug?: string | null
+  is_active?: boolean
   description?: string | null
   address?: Partial<ChurchAddress>
   contact?: Partial<ChurchContact>

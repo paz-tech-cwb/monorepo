@@ -1,3 +1,4 @@
+import AVFAudio
 import SwiftUI
 import WebKit
 
@@ -26,7 +27,7 @@ struct GatedYouTubePlayerView: UIViewRepresentable {
     let youtubeVideoId: String
     let onTick: (_ percentage: Int, _ positionSeconds: Int) -> Void
     let onPause: (_ percentage: Int, _ positionSeconds: Int) -> Void
-    var onError: () -> Void = {}
+    var onError: (_ code: Int) -> Void = { _ in }
     /// Exposes the underlying WebView so the host view can flush a pending progress checkpoint
     /// on disappear (see `flushPause`). A reference-type holder, not a `Binding`, since assigning
     /// to a `@State`-backed `Binding` from `makeUIView` (called during SwiftUI's view-update pass)
@@ -53,10 +54,23 @@ struct GatedYouTubePlayerView: UIViewRepresentable {
         webView.isOpaque = false
         context.coordinator.webView = webView
         webViewBox?.webView = webView
-        webView.loadHTMLString(
-            Self.html(youtubeVideoId: youtubeVideoId),
-            baseURL: URL(string: "https://www.youtube.com")
-        )
+
+        // `loadHTMLString(_:baseURL:)` gives the WebView an opaque/null document origin
+        // regardless of `baseURL`, which can make the YouTube IFrame API's own origin check
+        // fail and misreport spurious errors. Writing the HTML to a file and loading it via
+        // `loadFileURL` gives the WebView a genuine `file://` origin instead, and we drop the
+        // explicit `origin` player var so the IFrame API infers it from that real origin rather
+        // than asserting a mismatched `https://www.youtube.com` value.
+        if let fileURL = Self.writeTemporaryHTMLFile(youtubeVideoId: youtubeVideoId) {
+            webView.loadFileURL(fileURL, allowingReadAccessTo: fileURL.deletingLastPathComponent())
+        } else {
+            webView.loadHTMLString(
+                Self.html(youtubeVideoId: youtubeVideoId),
+                baseURL: URL(string: "https://www.youtube.com")
+            )
+        }
+
+        Self.configureAudioSession()
         return webView
     }
 
@@ -64,6 +78,40 @@ struct GatedYouTubePlayerView: UIViewRepresentable {
 
     static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "pazPlayer")
+        deactivateAudioSession()
+    }
+
+    /// Writes the player HTML to a temporary file so the WebView loads it with a real `file://`
+    /// origin (see `makeUIView`). Returns `nil` on failure so callers can fall back to
+    /// `loadHTMLString`.
+    private static func writeTemporaryHTMLFile(youtubeVideoId: String) -> URL? {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GatedYouTubePlayer", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let fileURL = directory.appendingPathComponent("\(youtubeVideoId).html")
+            try html(youtubeVideoId: youtubeVideoId).write(to: fileURL, atomically: true, encoding: .utf8)
+            return fileURL
+        } catch {
+            return nil
+        }
+    }
+
+    /// Lesson audio otherwise respects the hardware mute switch under the default ambient audio
+    /// session category. Configured locally here (rather than at the app level) since this is the
+    /// only Academy player gated enough to warrant unmuted playback; `VideoPlayerView`'s open
+    /// catalog player is left untouched.
+    private static func configureAudioSession() {
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            // Best-effort — playback still works via the default session, just possibly muted.
+        }
+    }
+
+    private static func deactivateAudioSession() {
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
     /// Called on view disappear/pause — flushes the current position immediately.
@@ -75,12 +123,12 @@ struct GatedYouTubePlayerView: UIViewRepresentable {
         weak var webView: WKWebView?
         let onTick: (_ percentage: Int, _ positionSeconds: Int) -> Void
         let onPause: (_ percentage: Int, _ positionSeconds: Int) -> Void
-        let onError: () -> Void
+        let onError: (_ code: Int) -> Void
 
         init(
             onTick: @escaping (_ percentage: Int, _ positionSeconds: Int) -> Void,
             onPause: @escaping (_ percentage: Int, _ positionSeconds: Int) -> Void,
-            onError: @escaping () -> Void
+            onError: @escaping (_ code: Int) -> Void
         ) {
             self.onTick = onTick
             self.onPause = onPause
@@ -97,7 +145,8 @@ struct GatedYouTubePlayerView: UIViewRepresentable {
 
             let kind = body["kind"] as? String ?? "tick"
             if kind == "error" {
-                onError()
+                let code = Int((body["code"] as? Double) ?? -1)
+                onError(code)
                 return
             }
 
@@ -120,6 +169,12 @@ struct GatedYouTubePlayerView: UIViewRepresentable {
             decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
         ) {
             if let targetFrame = navigationAction.targetFrame, !targetFrame.isMainFrame {
+                decisionHandler(.allow)
+                return
+            }
+            // The initial load is the locally-bundled `file://` HTML (see `makeUIView`); only
+            // subsequent navigations need to be restricted to the YouTube origin.
+            if navigationAction.request.url?.isFileURL == true {
                 decisionHandler(.allow)
                 return
             }
@@ -150,7 +205,7 @@ struct GatedYouTubePlayerView: UIViewRepresentable {
                 videoId: '\(youtubeVideoId)',
                 playerVars: {
                   autoplay: 1, controls: 1, disablekb: 1, fs: 0, rel: 0, modestbranding: 1,
-                  playsinline: 1, origin: 'https://www.youtube.com'
+                  playsinline: 1
                 },
                 events: {
                   onReady: onPlayerReady,

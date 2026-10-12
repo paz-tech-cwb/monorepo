@@ -40,7 +40,7 @@ fun GatedYouTubePlayer(
     modifier: Modifier = Modifier,
     onTick: (percentage: Int, positionSeconds: Int) -> Unit,
     onPause: (percentage: Int, positionSeconds: Int) -> Unit,
-    onError: () -> Unit = {},
+    onError: (code: Int) -> Unit = {},
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val currentOnTick by rememberUpdatedState(onTick)
@@ -114,7 +114,7 @@ fun GatedYouTubePlayer(
 
                         @JavascriptInterface
                         fun onError(code: Double) {
-                            currentOnError()
+                            currentOnError(code.toInt())
                         }
                     },
                     "PazPlayerBridge",

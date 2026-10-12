@@ -12,6 +12,7 @@ interface MeResponse {
   email: string | null
   role: string | null
   avatar: string | null
+  church_id?: number | null
 }
 
 export const authApi = {

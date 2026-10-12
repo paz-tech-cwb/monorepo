@@ -145,6 +145,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               email: me.email ?? cachedUser.email,
               picture: me.avatar ?? cachedUser.picture,
               role: (me.role as User["role"]) ?? null,
+              church_id: me.church_id ?? cachedUser.church_id ?? null,
             }
             setUser(refreshed)
             persistUser(refreshed)

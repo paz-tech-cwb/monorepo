@@ -1,5 +1,7 @@
 package br.church.paz.android.ui.features.memberjourney
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -109,6 +111,11 @@ fun MemberJourneyScreen(
                 }
             }
         }
+
+        JourneyLevelUpOverlay(
+            track = uiState.celebratingTrack,
+            onDismiss = viewModel::onCelebrationDismissed,
+        )
     }
 }
 
@@ -141,6 +148,8 @@ private fun ContentState(
     ) {
         item { Spacer(Modifier.height(PazSpacing.Sm)) }
 
+        item { JourneyIntroCard() }
+
         items(tracks, key = { it.key }) { track ->
             when (trackStatus(track, currentTrackKey)) {
                 TrackStatus.Completed -> CollapsedTrackCard(track = track, status = TrackStatus.Completed)
@@ -150,6 +159,45 @@ private fun ContentState(
         }
 
         item { Spacer(Modifier.height(PazSpacing.Xl)) }
+    }
+}
+
+/**
+ * Brief explanatory framing shown once above the track list — `eligibilityText` on each
+ * [JourneyTrack] already explains per-track "why", so this stays short on purpose.
+ */
+@Composable
+private fun JourneyIntroCard() {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(PazShapes.large)
+                .background(PazColors.PrimaryTint)
+                .padding(PazSpacing.Lg),
+        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Icon(
+            Icons.Filled.Info,
+            contentDescription = null,
+            tint = PazColors.Primary,
+            modifier = Modifier.size(22.dp),
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(PazSpacing.Xs)) {
+            Text(
+                "O que é a Jornada do Membro?",
+                style = MaterialTheme.typography.titleSmall.copy(color = PazColors.Primary),
+            )
+            Text(
+                "É o caminho que você percorre na igreja, passo a passo. Completar uma trilha " +
+                    "libera a próxima etapa da sua caminhada com a gente.",
+                style =
+                    MaterialTheme.typography.bodySmall.copy(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    ),
+            )
+        }
     }
 }
 
@@ -165,7 +213,7 @@ private fun CollapsedTrackCard(
                 .clip(PazShapes.large)
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(PazSpacing.Lg),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
     ) {
         Icon(
@@ -178,14 +226,25 @@ private fun CollapsedTrackCard(
                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                 },
         )
-        Text(
-            track.title,
-            style =
-                MaterialTheme.typography.titleSmall.copy(
-                    color = MaterialTheme.colorScheme.onSurface,
-                ),
-            modifier = Modifier.weight(1f),
-        )
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(PazSpacing.Xs)) {
+            Text(
+                track.title,
+                style =
+                    MaterialTheme.typography.titleSmall.copy(
+                        color = MaterialTheme.colorScheme.onSurface,
+                    ),
+            )
+            val eligibilityText = track.eligibilityText
+            if (status == TrackStatus.Available && !eligibilityText.isNullOrEmpty()) {
+                Text(
+                    eligibilityText,
+                    style =
+                        MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        ),
+                )
+            }
+        }
     }
 }
 
@@ -232,14 +291,31 @@ private fun JourneyTrackCard(track: JourneyTrack) {
             }
 
             if (totalTrackedSteps > 0) {
+                val animatedProgress by
+                    animateFloatAsState(
+                        targetValue = track.progressPercentage / 100f,
+                        animationSpec = tween(durationMillis = 600),
+                        label = "journeyTrackProgress",
+                    )
                 LinearProgressIndicator(
-                    progress = { track.progressPercentage / 100f },
+                    progress = { animatedProgress },
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .clip(PazShapes.small),
                     color = PazColors.Primary,
                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                )
+            }
+
+            val eligibilityText = track.eligibilityText
+            if (!eligibilityText.isNullOrEmpty()) {
+                Text(
+                    eligibilityText,
+                    style =
+                        MaterialTheme.typography.labelSmall.copy(
+                            color = PazColors.Gold,
+                        ),
                 )
             }
         }
