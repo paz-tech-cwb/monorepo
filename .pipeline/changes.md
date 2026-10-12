@@ -124,3 +124,20 @@
 - Status/eligibility source are enums with an UNKNOWN fallback (forward-compat) rather than raw strings.
 - Member endpoints map only the fields the backend returns (no note, no other members).
 - No separate iOS wrapper: iOS uses `IosAppContainer.lifeGroupTaskRepository`, same as attendance.
+
+## Phase M2 (kmp-mobile/android: task guide screen)
+
+### Files (under `kmp-mobile/android/src/`)
+- New `main/.../ui/features/lifegrouptasks/`: `LifeGroupTaskGuideScreen.kt`, `LifeGroupTaskGuideViewModel.kt`, `LifeGroupTaskGuideUiState.kt` (UiState + `LifeGroupTaskGuideEffect.NavigateBack`). Shows task name, group name, meeting date (`dd/MM/yyyy` via `brDateString`), description, markdown guidance, and a destructive "Não posso" button with an `AlertDialog` confirmation; after decline shows a "Tarefa devolvida" state (copy differs when `reassigned`). Loading skeleton, `PazErrorState` retry, pull-to-refresh.
+- Markdown: no markdown library exists in the version catalog, but `ui/components/MarkdownText.kt` (hand-rolled, used by the Estudo do Life screen) already did. Reused and extended it instead of adding a dependency: parsing moved to new pure `ui/components/MarkdownParser.kt` (`parseMarkdownBlocks`, `parseInline`, `isSafeLinkUrl`; `internal`, unit-tested); added ordered lists ("1. "), indented list items and `[label](url)` links (rendered with `LinkAnnotation.Url`, **only http/https**; other schemes such as `javascript:`/`intent:`/`file:` render the label as plain text). Existing heading/bold/italic/bullet behavior preserved.
+- `navigation/Screen.kt`: `LifeGroupTaskGuide` = `life_group_task/{assignmentId}`; `PazNavGraph.kt`: composable for it (String arg `assignmentId`).
+- `notifications/PushNotificationHelper.kt`: `paz://tarefa/{assignmentId}` -> `life_group_task/{assignmentId}` (null for a blank id or extra path segments).
+- `di/AndroidModule.kt`: `viewModel { (assignmentId: String) -> LifeGroupTaskGuideViewModel(assignmentId, get()) }`; `LifeGroupDetailViewModel` now gets a third `get()` (LifeGroupTaskRepository).
+- "Minhas tarefas" card on the life group detail screen (`ministries/MinistryDetailScreen.kt`, `MinistryDetailViewModel.kt`, `MinistryDetailUiState.kt`): `LifeGroupDetailViewModel` loads `getMyTasks()` best-effort (failure -> empty, never breaks the screen), keeps `ASSIGNED` tasks of this group sorted by meeting date; the card lists each task (name + date) and taps to the guide (`LifeGroupDetailEffect.NavigateToTask`). Card hidden when empty. Refreshes on resume like the rest of the screen.
+- Tests: `LifeGroupTaskGuideViewModelTest`, `LifeGroupDetailViewModelTest` (tasks filtering/failure isolation), `MarkdownParserTest`, 3 new cases in `PushNotificationHelperTest`.
+
+### Notes / deviations
+- Strings are inline pt-BR literals, not `strings.xml`/`stringResource`: the whole Android app (0 `stringResource` usages; `strings.xml` only has `app_name`) follows that convention, so I matched it.
+- Home screen card NOT added (not trivial: HomeViewModel/state would need extra wiring); the entry points are the life group detail card and the push deep link.
+- `PazColors`/`MaterialTheme` tokens only; no new colors/dp tokens beyond the 20/22dp icon sizes already used on the same screen.
+- iOS parity: route name `life_group_task/{assignmentId}`; deep link `paz://tarefa/{assignmentId}`.

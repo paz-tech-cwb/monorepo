@@ -2,9 +2,13 @@ package br.church.paz.android.ui.features.ministries
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import br.church.paz.shared.domain.model.LifeGroupTask
+import br.church.paz.shared.domain.model.LifeGroupTaskStatus
 import br.church.paz.shared.domain.model.isLeader
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.ChurchRepository
+import br.church.paz.shared.domain.repository.LifeGroupTaskRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -68,6 +72,7 @@ class LifeGroupDetailViewModel(
     private val lifeGroupId: String,
     private val churchRepository: ChurchRepository,
     private val authRepository: AuthRepository,
+    private val taskRepository: LifeGroupTaskRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(LifeGroupDetailUiState())
     val uiState: StateFlow<LifeGroupDetailUiState> = _uiState.asStateFlow()
@@ -87,6 +92,8 @@ class LifeGroupDetailViewModel(
             _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton) }
             val currentUser = runCatching { authRepository.currentUser() }.getOrNull()
             val currentUserId = currentUser?.id?.toIntOrNull()
+            // Best-effort: "Minhas tarefas" is additive, so a failure must not break the screen.
+            val myTasks = loadMyTasksForThisGroup()
             runCatching { churchRepository.getAllLifeGroups() }
                 .onSuccess { lifeGroups ->
                     val group = lifeGroups.find { it.id.toString() == lifeGroupId }
@@ -102,6 +109,7 @@ class LifeGroupDetailViewModel(
                             error = if (group == null) "Grupo não encontrado" else null,
                             canManageAttendance = canManageAttendance,
                             canManage = currentUser?.role?.isLeader == true,
+                            myTasks = myTasks,
                         )
                     }
                 }.onFailure { e ->
@@ -112,8 +120,26 @@ class LifeGroupDetailViewModel(
         }
     }
 
+    // The member's upcoming assigned tasks (backend returns today onward), scoped to this group
+    // and ordered by meeting date.
+    private suspend fun loadMyTasksForThisGroup(): List<LifeGroupTask> =
+        try {
+            taskRepository
+                .getMyTasks()
+                .filter { it.lifeGroupId.toString() == lifeGroupId && it.status == LifeGroupTaskStatus.ASSIGNED }
+                .sortedBy { it.meetingDate }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            emptyList()
+        }
+
     fun onManageTap() {
         viewModelScope.launch { _effect.send(LifeGroupDetailEffect.NavigateToManage(lifeGroupId)) }
+    }
+
+    fun onTaskTap(assignmentId: String) {
+        viewModelScope.launch { _effect.send(LifeGroupDetailEffect.NavigateToTask(assignmentId)) }
     }
 
     fun onBack() {

@@ -73,6 +73,10 @@ object PushNotificationHelper {
                     "life_group_attendance_editor/$lifeGroupId/$meetingDate"
                 }
             }
+            deepLink.startsWith("paz://tarefa/") -> {
+                val assignmentId = deepLink.removePrefix("paz://tarefa/").trim('/')
+                if (assignmentId.isBlank() || assignmentId.contains('/')) null else "life_group_task/$assignmentId"
+            }
             deepLink.startsWith("paz://formularios") -> "formularios"
             deepLink.startsWith("paz://journey") -> "member_journey"
             deepLink.startsWith("paz://account") -> "account"

@@ -106,3 +106,11 @@ Java is a stub on this machine (`java -version`: "Unable to locate a Java Runtim
 - Added `LifeGroupTaskRepositoryTest` (8 tests: member list/get mapping, unknown status fallback, decline POST + reassigned, decline 409 throws, members mapping incl. reason->note, PUT members omits unchanged fields / explicit clears, settings round trip, templates derived from task-overrides).
 - Manual cross-check of DTO field names against backend `my-life-group-tasks.controller`, `toMemberItem`, `buildMembers`, `buildOverrides`, `getSettings`, `decline` return shapes and admin-ui `life-group-tasks.ts`.
 - NOT verified: compilation, test execution, iOS framework export. Re-run: `cd kmp-mobile && ./gradlew :shared:allTests`.
+
+## Phase M2 results
+
+Java is a stub (`java -version`: "Unable to locate a Java Runtime"), so `./gradlew :android:testDebugUnitTest`, `:android:assembleDebug` and `ktlintCheck` were NOT run. Nothing compiled.
+- Tests added (not executed): `LifeGroupTaskGuideViewModelTest` (7), `LifeGroupDetailViewModelTest` (2), `MarkdownParserTest` (9), `PushNotificationHelperTest` (+3).
+- Manual verification: every import/symbol checked against real files (`PazButton`/`PazButtonVariant`, `PazErrorState`, `PazPullToRefresh`, `PazGlassCard`, `PazSkeleton`, `PazMeshBackground`, `PazSpacing`, `PazShapes`, `PazColors.Success`, `brDateString`, shared `LifeGroupTask*` models/repository, `User`, `LifeGroup`); expected values in the parser tests traced by hand against the parser; Compose APIs (`LinkAnnotation.Url`, `TextLinkStyles`, `withLink`) exist in the compose-bom 2025.04.00 (ui-text 1.8). New lines kept <= 140 cols (editorconfig); import order kept lexicographic.
+- NOT verified: compilation, test execution, ktlint, runtime rendering.
+- Re-run: `cd kmp-mobile && ./gradlew :android:testDebugUnitTest :android:assembleDebug ktlintCheck`.

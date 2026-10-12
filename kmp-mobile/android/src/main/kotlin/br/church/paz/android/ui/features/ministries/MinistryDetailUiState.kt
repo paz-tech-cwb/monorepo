@@ -25,6 +25,8 @@ data class LifeGroupDetailUiState(
     // broader gate than canManageAttendance, which is scoped to just this
     // group's own leader/co-leader.
     val canManage: Boolean = false,
+    // The signed-in member's upcoming assigned tasks in this group ("Minhas tarefas").
+    val myTasks: List<br.church.paz.shared.domain.model.LifeGroupTask> = emptyList(),
 )
 
 sealed class MinistryDetailEffect {
@@ -37,6 +39,10 @@ sealed class MinistryDetailEffect {
 
 sealed class LifeGroupDetailEffect {
     data object NavigateBack : LifeGroupDetailEffect()
+
+    data class NavigateToTask(
+        val assignmentId: String,
+    ) : LifeGroupDetailEffect()
 
     data class NavigateToManage(
         val lifeGroupId: String,

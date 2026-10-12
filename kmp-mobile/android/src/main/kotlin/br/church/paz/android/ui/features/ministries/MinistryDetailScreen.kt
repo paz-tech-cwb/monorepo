@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Assignment
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
@@ -63,7 +64,9 @@ import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
+import br.church.paz.android.util.brDateString
 import br.church.paz.shared.domain.model.LifeGroup
+import br.church.paz.shared.domain.model.LifeGroupTask
 import br.church.paz.shared.domain.model.Ministry
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -247,6 +250,11 @@ fun LifeGroupDetailScreen(
                         br.church.paz.android.navigation.Screen.LifeGroupManage
                             .createRoute(effect.lifeGroupId),
                     )
+                is LifeGroupDetailEffect.NavigateToTask ->
+                    navController.navigate(
+                        br.church.paz.android.navigation.Screen.LifeGroupTaskGuide
+                            .createRoute(effect.assignmentId),
+                    )
             }
         }
     }
@@ -286,6 +294,8 @@ fun LifeGroupDetailScreen(
                             .createRoute(group.id.toString()),
                     )
                 },
+                myTasks = uiState.myTasks,
+                onTaskTap = viewModel::onTaskTap,
                 canManage = uiState.canManage,
                 onAnalyticsTap = {
                     navController.navigate(
@@ -304,6 +314,8 @@ private fun LifeGroupContent(
     canManageAttendance: Boolean,
     onStudyTap: () -> Unit,
     onAttendanceTap: () -> Unit,
+    myTasks: List<LifeGroupTask>,
+    onTaskTap: (String) -> Unit,
     canManage: Boolean,
     onAnalyticsTap: () -> Unit,
 ) {
@@ -459,6 +471,10 @@ private fun LifeGroupContent(
             }
         }
 
+        if (myTasks.isNotEmpty()) {
+            item { MyTasksCard(tasks = myTasks, onTaskTap = onTaskTap) }
+        }
+
         item {
             PazGlassCard(
                 modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onStudyTap),
@@ -542,6 +558,58 @@ private fun LifeGroupContent(
         }
 
         item { Spacer(Modifier.height(PazSpacing.Xl)) }
+    }
+}
+
+/** "Minhas tarefas": the signed-in member's upcoming assigned tasks for this group. */
+@Composable
+private fun MyTasksCard(
+    tasks: List<LifeGroupTask>,
+    onTaskTap: (String) -> Unit,
+) {
+    PazGlassCard(
+        modifier = Modifier.fillMaxWidth().clip(PazShapes.large),
+        cornerRadius = PazSpacing.CardRadiusCompact,
+    ) {
+        Column(Modifier.padding(PazSpacing.Lg), verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md), verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.AutoMirrored.Outlined.Assignment,
+                    contentDescription = null,
+                    tint = PazColors.Primary,
+                    modifier = Modifier.size(22.dp),
+                )
+                Text("Minhas tarefas", style = MaterialTheme.typography.titleSmall)
+            }
+            tasks.forEach { task ->
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(PazShapes.medium)
+                            .clickable { onTaskTap(task.id) }
+                            .padding(vertical = PazSpacing.Sm),
+                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(task.name, style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            brDateString(task.meetingDate),
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                ),
+                        )
+                    }
+                    Icon(
+                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    )
+                }
+            }
+        }
     }
 }
 
