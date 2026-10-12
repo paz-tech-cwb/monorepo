@@ -10,7 +10,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -69,12 +68,12 @@ class CourseDetailViewModelTest {
             val viewModel = CourseDetailViewModel("course-1", courseRepository)
             testScheduler.advanceUntilIdle()
 
-            viewModel.onPlayerError()
-            assertTrue(viewModel.uiState.value.playerError)
+            viewModel.onPlayerError(2)
+            assertEquals(VideoPlaybackError.Retryable, viewModel.uiState.value.playerError)
 
             viewModel.onSelectLesson("lesson-2")
 
-            assertEquals(false, viewModel.uiState.value.playerError)
+            assertNull(viewModel.uiState.value.playerError)
             assertEquals("lesson-2", viewModel.uiState.value.selectedLessonId)
         }
 }
