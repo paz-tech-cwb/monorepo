@@ -63,17 +63,16 @@ export class LifeGroupStudiesService {
       );
     }
 
-    // The study is already persisted at this point. A failure to dispatch
-    // the audience notification must not surface as a failed create
-    // request (which would prompt client retries and duplicate studies).
-    try {
-      await this.notifyAudience(saved, user);
-    } catch (error: unknown) {
+    // The study is already persisted at this point. Dispatch is fire-and-forget
+    // so the request latency does not scale with the audience size, and a
+    // failure must not surface as a failed create request (which would prompt
+    // client retries and duplicate studies). Runs exactly once per create.
+    void this.notifyAudience(saved, user).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(
         `Failed to notify audience for Estudo do Life ${saved.id}: ${message}`,
       );
-    }
+    });
 
     return saved;
   }
@@ -231,6 +230,12 @@ export class LifeGroupStudiesService {
     const recipients = await this.accessService.resolveNotificationRecipients(
       publisher.id,
     );
+
+    // Never persist a notification with an empty `user_ids` segment:
+    // `NotificationsService.resolveSegment` treats an empty list as "no
+    // filter" (every user), so a stored row could later be re-dispatched to
+    // the whole user base.
+    if (recipients.length === 0) return;
 
     // Persist the explicit recipient ids in the segment (not a role filter):
     // the audience includes rostered members and co-leaders that no role

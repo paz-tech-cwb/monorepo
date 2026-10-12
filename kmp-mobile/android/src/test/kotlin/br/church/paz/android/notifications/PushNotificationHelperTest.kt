@@ -188,4 +188,42 @@ class PushNotificationHelperTest {
         assertNull(PushNotificationHelper.parseDeepLink("paz://estudo-do-life//"))
         assertNull(PushNotificationHelper.parseDeepLink("paz://lifegroup/1/2"))
     }
+
+    @Test
+    fun `rejects ids with unsafe characters`() {
+        listOf(
+            "paz://agenda/a?x=1",
+            "paz://agenda/a#frag",
+            "paz://agenda/a%2Fb",
+            "paz://agenda/a b",
+            "paz://form/..",
+            "paz://ministry/a.b",
+            "paz://lifegroup/a/b",
+            "paz://estudo-do-life/a/b",
+            "paz://tarefa/a?x",
+            "paz://tarefa/a/b",
+        ).forEach { assertNull(PushNotificationHelper.parseDeepLink(it), it) }
+    }
+
+    @Test
+    fun `accepts numeric uuid and slug ids`() {
+        assertEquals("agenda_detail/42", PushNotificationHelper.parseDeepLink("paz://agenda/42"))
+        assertEquals(
+            "life_group_task/3f2b8c1e-9a4d-4e6f-8b1a-0c9d7e5f4a3b",
+            PushNotificationHelper.parseDeepLink("paz://tarefa/3f2b8c1e-9a4d-4e6f-8b1a-0c9d7e5f4a3b"),
+        )
+        assertEquals(
+            "form_detail/relatorio_semanal-2",
+            PushNotificationHelper.parseDeepLink("paz://form/relatorio_semanal-2"),
+        )
+    }
+
+    @Test
+    fun `presenca validates id and date`() {
+        assertNull(PushNotificationHelper.parseDeepLink("paz://presenca/42/2026-10-5"))
+        assertNull(PushNotificationHelper.parseDeepLink("paz://presenca/42/2026-10-05/extra"))
+        assertNull(PushNotificationHelper.parseDeepLink("paz://presenca/42/2026-10-05?x=1"))
+        assertNull(PushNotificationHelper.parseDeepLink("paz://presenca/4?2/2026-10-05"))
+        assertNull(PushNotificationHelper.parseDeepLink("paz://presenca/42"))
+    }
 }

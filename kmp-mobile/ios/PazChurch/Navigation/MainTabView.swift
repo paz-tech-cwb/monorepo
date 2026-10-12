@@ -7,6 +7,7 @@ struct MainTabView: View {
 
     @State private var selectedTab = 0
     @State private var agendaPath: [DeepLinkDestination] = []
+    @State private var accountDestination: DeepLinkDestination?
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -31,7 +32,8 @@ struct MainTabView: View {
 
             AccountView(
                 userRepository: IosAppContainer.shared.userRepository,
-                authRepository: IosAppContainer.shared.authRepository
+                authRepository: IosAppContainer.shared.authRepository,
+                pendingDestination: $accountDestination
             )
             .tabItem { Label("Conta", systemImage: "person.fill") }
             .tag(2)
@@ -43,22 +45,21 @@ struct MainTabView: View {
             guard newValue != nil,
                   let destination = pushService.deepLinkDestination
             else { return }
-            handleDeepLink(destination, consume: destination.usesHomeStack || destination == .account)
+            handleDeepLink(destination)
         }
     }
 
-    private func handleDeepLink(_ destination: DeepLinkDestination, consume: Bool) {
-        switch destination {
-        case .agendaDetail, .lifeGroupAttendanceEditor, .lifeGroupTaskGuide:
+    /// MainTabView is the single consumer of the pending push link: it switches the tab and, for
+    /// account-stack destinations, hands the destination to AccountView through a binding.
+    private func handleDeepLink(_ destination: DeepLinkDestination) {
+        if destination.usesHomeStack {
             selectedTab = 0
             agendaPath = [destination]
-
-        case .formDetail, .ministryDetail, .lifeGroupDetail, .lifeGroupStudyDetail,
-             .formularios, .memberJourney, .account:
-            // Switch tab only — AccountView observes pendingDeepLink and pushes its own path
+        } else {
             selectedTab = 2
+            if destination.usesAccountStack { accountDestination = destination }
         }
-        if consume { pushService.consumeDeepLink() }
+        pushService.consumeDeepLink()
     }
 
     @ViewBuilder

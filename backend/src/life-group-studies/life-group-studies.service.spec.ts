@@ -167,6 +167,8 @@ describe('LifeGroupStudiesService', () => {
     });
   });
 
+  const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+
   describe('create', () => {
     it('resolves with the saved study even when audience notification dispatch fails', async () => {
       const author = makeUser({ id: 1, role: adminRole });
@@ -196,6 +198,8 @@ describe('LifeGroupStudiesService', () => {
         author,
       );
 
+      await flushPromises();
+
       expect(result).toMatchObject({ title: 'New study', publishedById: 1 });
       expect(entityManager.save).toHaveBeenCalled();
       expect(dispatchMock).toHaveBeenCalled();
@@ -222,6 +226,7 @@ describe('LifeGroupStudiesService', () => {
         );
 
       await service.create(dto, publisher);
+      await flushPromises();
 
       // eslint-disable-next-line @typescript-eslint/unbound-method
       expect(accessService.resolveNotificationRecipients).toHaveBeenCalledWith(
@@ -241,6 +246,42 @@ describe('LifeGroupStudiesService', () => {
       const dispatchCalls = (dispatchService.dispatch as jest.Mock).mock
         .calls as unknown[][];
       expect(dispatchCalls[0][1]).toBe(recipients);
+    });
+
+    it('does not block the create response on a slow dispatch', async () => {
+      const publisher = makeUser({ id: 1, role: adminRole });
+      const { service, dispatchService } = createService(
+        {},
+        {
+          resolveNotificationRecipients: jest
+            .fn()
+            .mockResolvedValue([makeUser({ id: 2 })]),
+        },
+      );
+      (dispatchService.dispatch as jest.Mock).mockReturnValue(
+        new Promise(() => undefined),
+      );
+
+      const result = await service.create(dto, publisher);
+
+      expect(result).toMatchObject({ publishedById: 1 });
+    });
+
+    it('does not persist or dispatch a notification when there are no recipients', async () => {
+      const publisher = makeUser({ id: 1, role: adminRole });
+      const { service, entityManager, dispatchService } = createService(
+        {},
+        { resolveNotificationRecipients: jest.fn().mockResolvedValue([]) },
+      );
+
+      await service.create(dto, publisher);
+      await flushPromises();
+
+      const createCalls = (entityManager.create as jest.Mock).mock
+        .calls as unknown[][];
+      expect(createCalls.some((c) => c[0] === Notification)).toBe(false);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(dispatchService.dispatch).not.toHaveBeenCalled();
     });
 
     it('does not notify again on update (push happens once, at publish)', async () => {

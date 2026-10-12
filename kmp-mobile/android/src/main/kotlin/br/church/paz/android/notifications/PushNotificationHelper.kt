@@ -75,6 +75,12 @@ object PushNotificationHelper {
         return deepLink?.takeIf { it.isNotBlank() }?.let { parseDeepLink(it) }
     }
 
+    // MainActivity is exported, so any app can send an Intent with a `deep_link` extra: ids are
+    // interpolated into route strings (and later API paths) and must be a single safe segment
+    // (numeric, uuid or slug); the attendance date must be yyyy-MM-dd.
+    private val ID_PATTERN = Regex("^[A-Za-z0-9_-]+$")
+    private val DATE_PATTERN = Regex("^\\d{4}-\\d{2}-\\d{2}$")
+
     // Parse a deep link string from a notification tap into a navigation route.
     fun parseDeepLink(rawDeepLink: String): String? {
         val deepLink = rawDeepLink.trim()
@@ -89,7 +95,9 @@ object PushNotificationHelper {
                 val parts = deepLink.removePrefix("paz://presenca/").trimEnd('/').split("/", limit = 2)
                 val lifeGroupId = parts.getOrNull(0)
                 val meetingDate = parts.getOrNull(1)
-                if (lifeGroupId.isNullOrBlank() || meetingDate.isNullOrBlank()) {
+                if (lifeGroupId == null || meetingDate == null ||
+                    !ID_PATTERN.matches(lifeGroupId) || !DATE_PATTERN.matches(meetingDate)
+                ) {
                     null
                 } else {
                     "life_group_attendance_editor/$lifeGroupId/$meetingDate"
@@ -97,7 +105,7 @@ object PushNotificationHelper {
             }
             deepLink.startsWith("paz://tarefa/") -> {
                 val assignmentId = deepLink.removePrefix("paz://tarefa/").trim('/')
-                if (assignmentId.isBlank() || assignmentId.contains('/')) null else "life_group_task/$assignmentId"
+                if (!ID_PATTERN.matches(assignmentId)) null else "life_group_task/$assignmentId"
             }
             deepLink.startsWith("paz://formularios") -> "formularios"
             deepLink.startsWith("paz://journey") -> "member_journey"
@@ -108,7 +116,8 @@ object PushNotificationHelper {
 
     /**
      * `prefix{id}` -> `route/{id}`. A blank id or extra path segments yield null: navigating to
-     * an unmatched route (e.g. `agenda_detail/`) throws IllegalArgumentException in Navigation.
+     * an unmatched route (e.g. `agenda_detail/`) throws IllegalArgumentException in Navigation; ids
+     * that are not a single `[A-Za-z0-9_-]` segment are rejected.
      */
     private fun singleIdRoute(
         deepLink: String,
@@ -116,6 +125,6 @@ object PushNotificationHelper {
         route: String,
     ): String? {
         val id = deepLink.removePrefix(prefix).trim('/')
-        return if (id.isBlank() || id.contains('/')) null else "$route/$id"
+        return if (!ID_PATTERN.matches(id)) null else "$route/$id"
     }
 }

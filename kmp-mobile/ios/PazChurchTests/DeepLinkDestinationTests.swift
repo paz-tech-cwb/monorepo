@@ -89,4 +89,52 @@ final class DeepLinkDestinationTests: XCTestCase {
         service.consumeDeepLink()
         XCTAssertNil(service.pendingDeepLink)
     }
+
+    // MARK: - Input validation (allowlist)
+
+    func testUnsafeIdsAreRejected() {
+        let bad = [
+            "paz://agenda/a?x=1", "paz://agenda/a#f", "paz://agenda/a%2Fb", "paz://agenda/a b",
+            "paz://form/..", "paz://ministry/a.b", "paz://lifegroup/a/b", "paz://estudo-do-life/a/b",
+            "paz://tarefa/a?x", "paz://tarefa/a/b",
+        ]
+        for link in bad {
+            XCTAssertNil(DeepLinkDestination.parsedRoute(fromDeepLink: link), link)
+        }
+        XCTAssertNil(DeepLinkDestination.from(parsedRoute: "agenda/a?x=1"))
+        XCTAssertNil(DeepLinkDestination.from(parsedRoute: "form/a b"))
+    }
+
+    func testNumericUuidAndSlugIdsAreAccepted() {
+        XCTAssertEqual(DeepLinkDestination.parsedRoute(fromDeepLink: "paz://agenda/42"), "agenda/42")
+        XCTAssertEqual(
+            DeepLinkDestination.parsedRoute(fromDeepLink: "paz://tarefa/3f2b8c1e-9a4d-4e6f-8b1a-0c9d7e5f4a3b"),
+            "tarefa/3f2b8c1e-9a4d-4e6f-8b1a-0c9d7e5f4a3b"
+        )
+        XCTAssertEqual(
+            DeepLinkDestination.parsedRoute(fromDeepLink: "paz://form/relatorio_semanal-2"),
+            "form/relatorio_semanal-2"
+        )
+    }
+
+    func testPresencaValidatesIdAndDate() {
+        XCTAssertEqual(
+            DeepLinkDestination.parsedRoute(fromDeepLink: "paz://presenca/42/2026-10-05"),
+            "presenca/42/2026-10-05"
+        )
+        for link in [
+            "paz://presenca/42/2026-10-5", "paz://presenca/42/2026-10-05/extra",
+            "paz://presenca/42/2026-10-05?x=1", "paz://presenca/4?2/2026-10-05", "paz://presenca/42",
+        ] {
+            XCTAssertNil(DeepLinkDestination.parsedRoute(fromDeepLink: link), link)
+        }
+        XCTAssertNil(DeepLinkDestination.from(parsedRoute: "presenca/42/not-a-date"))
+    }
+
+    func testAccountStackClassification() {
+        XCTAssertTrue(DeepLinkDestination.formularios.usesAccountStack)
+        XCTAssertTrue(DeepLinkDestination.lifeGroupStudyDetail(studyId: "s").usesAccountStack)
+        XCTAssertFalse(DeepLinkDestination.account.usesAccountStack)
+        XCTAssertFalse(DeepLinkDestination.agendaDetail(eventId: "1").usesAccountStack)
+    }
 }

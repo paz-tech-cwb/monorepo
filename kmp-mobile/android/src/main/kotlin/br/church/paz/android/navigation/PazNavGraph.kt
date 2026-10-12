@@ -67,7 +67,13 @@ fun PazNavGraph(
         val route = pendingDeepLinkRoute ?: return@LaunchedEffect
         if (currentRoute == null || currentRoute == Screen.Splash.route) return@LaunchedEffect
         // An unknown route would throw IllegalArgumentException; never crash on a push tap.
-        runCatching { navController.navigate(route) { launchSingleTop = true } }
+        if (route == Screen.Account.route) {
+            // "account" only exists in the Shell's nested tab NavHost, not in this root graph:
+            // navigating to it here would throw. Landing on the Shell is the safe equivalent.
+            navController.popBackStack(Screen.Shell.route, inclusive = false)
+        } else {
+            runCatching { navController.navigate(route) { launchSingleTop = true } }
+        }
         onDeepLinkConsumed()
     }
 

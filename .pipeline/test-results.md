@@ -281,3 +281,10 @@ Test log noise (`localhost:3001` connection refused) comes from the hosted app l
 - `nest build` OK; eslint clean on touched files; prettier --check clean.
 - Migration chain on throwaway embedded Postgres 17.5 (new scratchpad dir, port 54891, loopback only, stopped with pg_ctl): full chain incl. `1795900000005` PASS; enum values `...,life_group_attendance,life_group_task,life_group_study`; second `run` = "No migrations are pending". Defect reproduced on a second DB built without the new migration: `select 'life_group_study'::notification_category_enum` -> `invalid input value for enum`; after running the new migration it succeeds (upgrade path).
 - Mobile: `swiftc -parse` OK on `MinistryDetailView.swift`; xcodebuild and Android (no SDK) not run for the icon-only change; Android cross-read (`Icons.Outlined.People` is in material-icons-extended, same artifact as the already-imported `Groups`/`BarChart`).
+
+## Review fixes (pilot-readiness)
+
+- Backend `npx jest src/life-group-studies`: 3 suites, 36 tests PASS (new: no persist/dispatch with empty recipients; create resolves with a never-resolving dispatch; existing failure-logging and once-only tests adapted to flush the detached dispatch).
+- Full jest: 6 failed suites (same baseline), 73 passed; 547 tests pass, 5 fail (baseline). `nest build` exit 0; eslint on `src/life-group-studies` exit 0; prettier --check clean.
+- iOS `xcodebuild test -only-testing:PazChurchTests` on TestPhone (temporary fake GoogleService-Info.plist, deleted afterwards): rc=0, DeepLinkDestinationTests 15 tests, 0 failures (new: unsafe ids, uuid/slug/numeric accepted, presenca id/date, account-stack classification).
+- Android: cross-read only (new PushNotificationHelperTest cases: unsafe ids, accepted id shapes, presenca validation); CI validates.

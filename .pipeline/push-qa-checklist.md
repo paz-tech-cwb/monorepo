@@ -87,6 +87,11 @@ Extra scenarios (do for attendance at least):
 
 ## Known limits
 
+- `paz://account` on Android only returns to the Shell (the account route lives in the tab NavHost, not the root graph); it does not switch tab. iOS switches to the Conta tab.
+- Deep-link ids must be a single `[A-Za-z0-9_-]` segment and attendance dates `yyyy-MM-dd`; anything else is ignored (no navigation) on both apps.
+- Cold start check (iOS): tap an account-stack push (form, ministry, life group, study, formularios, journey) with the app killed; it must land on Conta with the screen pushed.
+- Not covered (follow-ups): Android `singleTop` with another app activity on top creates a second MainActivity; a pending route is lost if the activity is recreated before Splash finishes; the study audience has no inactive-user filter.
+
 - iOS only receives the tap if the app can register for remote notifications (real device, valid
   APNs key in the Firebase project). Simulators cannot validate this end to end.
 - Android channels only apply once created on the device (`PazApplication.onCreate` creates them).

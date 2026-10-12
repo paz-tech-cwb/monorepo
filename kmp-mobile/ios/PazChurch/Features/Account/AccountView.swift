@@ -9,8 +9,17 @@ struct AccountView: View {
     @Environment(PushNotificationService.self) private var pushService
     @State private var path: [DeepLinkDestination] = []
     @Environment(\.colorScheme) private var colorScheme
+    /// Account-stack destination handed over by MainTabView, which consumes the push link
+    /// itself. A binding (not the shared pendingDeepLink) so the result does not depend on
+    /// whether MainTabView's or this view's handler runs first on a cold start.
+    @Binding private var pendingDestination: DeepLinkDestination?
 
-    init(userRepository: UserRepository, authRepository: AuthRepository) {
+    init(
+        userRepository: UserRepository,
+        authRepository: AuthRepository,
+        pendingDestination: Binding<DeepLinkDestination?> = .constant(nil)
+    ) {
+        _pendingDestination = pendingDestination
         _viewModel = State(initialValue: AccountViewModel(
             userRepository: userRepository,
             authRepository: authRepository
@@ -73,22 +82,13 @@ struct AccountView: View {
         .onChange(of: authCoordinator.isAuthenticated) { _, isAuth in
             if isAuth { Task { await viewModel.reload() } }
         }
-        // `initial: true`: this tab is built lazily when MainTabView switches to it, after
-        // pendingDeepLink was already set, so a plain onChange would miss it.
-        .onChange(of: pushService.pendingDeepLink, initial: true) { _, newValue in
-            guard newValue != nil,
-                  let destination = pushService.deepLinkDestination
-            else { return }
-            switch destination {
-            case .formularios, .memberJourney, .formDetail, .ministryDetail, .lifeGroupDetail, .lifeGroupStudyDetail:
-                Task { @MainActor in
-                    path = [destination]
-                }
-                pushService.consumeDeepLink()
-
-            default:
-                break
+        // `initial: true`: this tab can be built after MainTabView already set the hand-off.
+        .onChange(of: pendingDestination, initial: true) { _, destination in
+            guard let destination, destination.usesAccountStack else { return }
+            Task { @MainActor in
+                path = [destination]
             }
+            pendingDestination = nil
         }
     }
 
