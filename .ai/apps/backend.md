@@ -45,3 +45,11 @@ npx jest src/<feature>/<file>.spec.ts
 npm run test
 npm run lint
 ```
+
+## Scope and life group visibility
+
+`ScopeResolverService.resolve` unions every Area/Sector/LifeGroup the user leads
+or co-leads (row-based, not role-slug-based); admin/pastor stay unrestricted.
+`LifeGroupsService.findMine` (`GET /life-groups/me`) includes supervised groups
+and adds `relationship` + `is_supervised`. See `features/life-groups.md`
+(Visibility).

@@ -7,7 +7,7 @@ Manage church people records, member profiles, leadership roles, and discipleshi
 ## Core concepts
 
 - A member belongs to the church community and may have role-based access.
-- Leaders have scoped visibility through area, sector, and life group relationships.
+- Leaders have scoped visibility through area, sector, and life group relationships (derived from the leader/co-leader rows they hold, all of them; see `features/life-groups.md` Visibility).
 - The member journey tracks discipleship progression through ordered steps.
 
 ## Member journey steps
