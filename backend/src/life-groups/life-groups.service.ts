@@ -13,6 +13,16 @@ import { User } from '../users/entities/user.entity';
 import { Sector } from '../sectors/entities/sector.entity';
 import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 
+/**
+ * How the viewer relates to a life group in `GET /life-groups/me`. Precedence
+ * when several apply: leader > co_leader > supervisor > member.
+ */
+export type LifeGroupRelationship =
+  | 'leader'
+  | 'co_leader'
+  | 'supervisor'
+  | 'member';
+
 @Injectable()
 export class LifeGroupsService {
   private readonly logger = new Logger(LifeGroupsService.name);
@@ -92,8 +102,13 @@ export class LifeGroupsService {
    * browsing OTHER groups could see everyone else's name, which is a
    * privacy leak this endpoint has no business exposing to non-members.
    */
-  private canSeeMembers(lifeGroup: LifeGroup, viewer?: User): boolean {
+  private canSeeMembers(
+    lifeGroup: LifeGroup,
+    viewer?: User,
+    supervised = false,
+  ): boolean {
     if (!viewer) return false;
+    if (supervised) return true;
     if (
       (LEADERSHIP_ROLES as readonly string[]).includes(viewer.role?.slug ?? '')
     )
@@ -103,8 +118,44 @@ export class LifeGroupsService {
     return lifeGroup.users?.some((u) => u.id === viewer.id) ?? false;
   }
 
-  private toResponse(lifeGroup: LifeGroup, viewer?: User) {
-    const includeMembers = this.canSeeMembers(lifeGroup, viewer);
+  /**
+   * Ids of the life groups the user supervises: every group in a sector the
+   * user leads/co-leads, or in any sector of an area the user leads/co-leads.
+   * One query; based on the leader rows, not on the role slug. Pass
+   * `onlyGroupId` to test a single group (findOne) instead of listing all.
+   */
+  private async findSupervisedGroupIds(
+    userId: number,
+    onlyGroupId?: number,
+  ): Promise<Set<number>> {
+    const qb = this.entityManager
+      .createQueryBuilder(LifeGroup, 'lg')
+      .select('lg.id', 'id')
+      .innerJoin('lg.sector', 'sector')
+      .leftJoin('sector.area', 'area')
+      .where(
+        '(sector.leader_id = :userId OR sector.co_leader_id = :userId OR area.leader_id = :userId OR area.co_leader_id = :userId)',
+        { userId },
+      );
+    if (onlyGroupId !== undefined) {
+      qb.andWhere('lg.id = :onlyGroupId', { onlyGroupId });
+    }
+    const rows = await qb.getRawMany<{ id: number | string }>();
+    return new Set(rows.map((r) => Number(r.id)));
+  }
+
+  private toResponse(
+    lifeGroup: LifeGroup,
+    viewer?: User,
+    extras?: {
+      supervised?: boolean;
+      relationship?: LifeGroupRelationship;
+      omitMembers?: boolean;
+    },
+  ) {
+    const includeMembers =
+      !extras?.omitMembers &&
+      this.canSeeMembers(lifeGroup, viewer, extras?.supervised);
     return {
       id: lifeGroup.id,
       name: lifeGroup.name,
@@ -138,6 +189,13 @@ export class LifeGroupsService {
         : null,
       created_at: lifeGroup.createdAt,
       updated_at: lifeGroup.updatedAt,
+      // Only `GET /life-groups/me` supplies these (viewer-relative).
+      ...(extras?.relationship
+        ? {
+            relationship: extras.relationship,
+            is_supervised: extras.supervised === true,
+          }
+        : {}),
     };
   }
 
@@ -176,9 +234,18 @@ export class LifeGroupsService {
   }
 
   /**
-   * Life groups where the viewer is the leader, the co-leader, or a roster
-   * member — used to default the mobile app's Grupos de Vida tab to "your
-   * group(s)" instead of the entire church's list.
+   * Life groups related to the viewer, used by the mobile app's Grupos de
+   * Vida tab and home card:
+   * - `leader` / `co_leader`: the viewer leads or co-leads the group;
+   * - `supervisor`: the group sits in a sector the viewer leads/co-leads, or
+   *   in any sector of an area the viewer leads/co-leads (so area and sector
+   *   leaders see every group under them, not only groups they roster in);
+   * - `member`: the viewer is on the group's roster.
+   * When several apply the precedence is leader > co_leader > supervisor >
+   * member. `is_supervised` is true whenever the viewer supervises the group
+   * via area/sector, even if a stronger relationship wins. Plain members are
+   * never widened: only leader rows can add groups. Single query (no N+1);
+   * the roster subquery keeps `users` unfiltered for `member_count`.
    */
   async findMine(viewer: User) {
     try {
@@ -188,15 +255,56 @@ export class LifeGroupsService {
         .leftJoinAndSelect('lg.coLeader', 'coLeader')
         .leftJoinAndSelect('lg.sector', 'sector')
         .leftJoinAndSelect('lg.users', 'users')
+        .leftJoin('sector.leader', 'sectorLeader')
+        .leftJoin('sector.coLeader', 'sectorCoLeader')
+        .leftJoin('sector.area', 'area')
+        .leftJoin('area.leader', 'areaLeader')
+        .leftJoin('area.coLeader', 'areaCoLeader')
+        .addSelect([
+          'sectorLeader.id',
+          'sectorCoLeader.id',
+          'area.id',
+          'areaLeader.id',
+          'areaCoLeader.id',
+        ])
         .where('leader.id = :viewerId', { viewerId: viewer.id })
         .orWhere('coLeader.id = :viewerId', { viewerId: viewer.id })
+        .orWhere('sectorLeader.id = :viewerId', { viewerId: viewer.id })
+        .orWhere('sectorCoLeader.id = :viewerId', { viewerId: viewer.id })
+        .orWhere('areaLeader.id = :viewerId', { viewerId: viewer.id })
+        .orWhere('areaCoLeader.id = :viewerId', { viewerId: viewer.id })
         .orWhere(
           'lg.id IN (SELECT ulg.life_group_id FROM user_life_groups ulg WHERE ulg.user_id = :viewerId)',
           { viewerId: viewer.id },
         )
         .orderBy('lg.name', 'ASC')
         .getMany();
-      return lifeGroups.map((lg) => this.toResponse(lg, viewer));
+      return lifeGroups.map((lg) => {
+        const sector = lg.sector as
+          | (Sector & { area?: { leader?: User; coLeader?: User } | null })
+          | null;
+        const supervised =
+          sector?.leader?.id === viewer.id ||
+          sector?.coLeader?.id === viewer.id ||
+          sector?.area?.leader?.id === viewer.id ||
+          sector?.area?.coLeader?.id === viewer.id;
+        let relationship: LifeGroupRelationship = 'member';
+        if (lg.leader?.id === viewer.id) relationship = 'leader';
+        else if (lg.coLeader?.id === viewer.id) relationship = 'co_leader';
+        else if (supervised) relationship = 'supervisor';
+        // Supervisor-only rows (viewer is not leader/co-leader and is not
+        // rostered) skip the roster: the home card only needs member_count,
+        // and a supervisor of an area would otherwise receive hundreds of
+        // rosters with emails. `GET /life-groups/:id` still returns it.
+        const omitMembers =
+          relationship === 'supervisor' &&
+          !(lg.users ?? []).some((u) => u.id === viewer.id);
+        return this.toResponse(lg, viewer, {
+          supervised,
+          relationship,
+          omitMembers,
+        });
+      });
     } catch {
       throw new BadRequestException(
         'An error occurred while retrieving your life groups.',
@@ -261,7 +369,12 @@ export class LifeGroupsService {
     if (!lifeGroup) {
       throw new NotFoundException(`Life group with ID ${id} not found`);
     }
-    return this.toResponse(lifeGroup, viewer);
+    const supervised = viewer
+      ? (await this.findSupervisedGroupIds(viewer.id, lifeGroup.id)).has(
+          lifeGroup.id,
+        )
+      : false;
+    return this.toResponse(lifeGroup, viewer, { supervised });
   }
 
   async findOneEntity(id: number): Promise<LifeGroup> {

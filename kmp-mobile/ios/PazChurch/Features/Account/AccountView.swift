@@ -9,11 +9,22 @@ struct AccountView: View {
     @Environment(PushNotificationService.self) private var pushService
     @State private var path: [DeepLinkDestination] = []
     @Environment(\.colorScheme) private var colorScheme
+    /// Account-stack destination handed over by MainTabView, which consumes the push link
+    /// itself. A binding (not the shared pendingDeepLink) so the result does not depend on
+    /// whether MainTabView's or this view's handler runs first on a cold start.
+    @Binding private var pendingDestination: DeepLinkDestination?
 
-    init(userRepository: UserRepository, authRepository: AuthRepository) {
+    init(
+        userRepository: UserRepository,
+        authRepository: AuthRepository,
+        churchRepository: ChurchRepository,
+        pendingDestination: Binding<DeepLinkDestination?> = .constant(nil)
+    ) {
+        _pendingDestination = pendingDestination
         _viewModel = State(initialValue: AccountViewModel(
             userRepository: userRepository,
-            authRepository: authRepository
+            authRepository: authRepository,
+            churchRepository: churchRepository
         ))
     }
 
@@ -38,7 +49,10 @@ struct AccountView: View {
                     FormulariosView(formsRepository: IosAppContainer.shared.formsRepository)
 
                 case .memberJourney:
-                    MemberJourneyView(memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository)
+                    MemberJourneyView(
+                        memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository,
+                        detectJourneyLevelUpUseCase: IosAppContainer.shared.detectJourneyLevelUpUseCase
+                    )
 
                 case let .formDetail(formId):
                     FormDetailDeepLinkView(
@@ -73,20 +87,13 @@ struct AccountView: View {
         .onChange(of: authCoordinator.isAuthenticated) { _, isAuth in
             if isAuth { Task { await viewModel.reload() } }
         }
-        .onChange(of: pushService.pendingDeepLink) { _, newValue in
-            guard newValue != nil,
-                  let destination = pushService.deepLinkDestination
-            else { return }
-            switch destination {
-            case .formularios, .memberJourney, .formDetail, .ministryDetail, .lifeGroupDetail, .lifeGroupStudyDetail:
-                Task { @MainActor in
-                    path = [destination]
-                }
-                pushService.consumeDeepLink()
-
-            default:
-                break
+        // `initial: true`: this tab can be built after MainTabView already set the hand-off.
+        .onChange(of: pendingDestination, initial: true) { _, destination in
+            guard let destination, destination.usesAccountStack else { return }
+            Task { @MainActor in
+                path = [destination]
             }
+            pendingDestination = nil
         }
     }
 
@@ -106,7 +113,7 @@ struct AccountView: View {
                 // rendering completely blank instead of showing content.
                 if let user = viewModel.user ?? authCoordinator.currentUser {
                     NavigationLink(destination: EditProfileView()) {
-                        userCard(user: user)
+                        userCard(user: user, churchName: viewModel.churchName)
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 20)
@@ -114,13 +121,15 @@ struct AccountView: View {
 
                     sectionLabel("MINHA IGREJA")
                     menuCard {
-                        NavigationLink(destination: MemberJourneyView(memberJourneyRepository: IosAppContainer.shared
-                                .memberJourneyRepository)) {
+                        NavigationLink(destination: MemberJourneyView(
+                            memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository,
+                            detectJourneyLevelUpUseCase: IosAppContainer.shared.detectJourneyLevelUpUseCase
+                        )) {
                             AccountRow(title: "Jornada do Membro", icon: "figure.walk", tint: PazColors.accent)
                         }
                         .buttonStyle(.plain)
+                        rowDivider
                         if user.role.isLeader {
-                            rowDivider
                             NavigationLink(destination: FormulariosView(formsRepository: IosAppContainer.shared
                                     .formsRepository)) {
                                 AccountRow(
@@ -130,13 +139,24 @@ struct AccountView: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                        } else {
+                            NavigationLink(destination: FormStepView(form: .convidadoShortcut)) {
+                                AccountRow(
+                                    title: "Convidado",
+                                    icon: "person.badge.plus",
+                                    tint: PazColors.menuFormularios
+                                )
+                            }
+                            .buttonStyle(.plain)
                         }
-                        rowDivider
-                        NavigationLink(destination: MinistriesView(churchRepository: IosAppContainer.shared
-                                .churchRepository)) {
-                            AccountRow(title: "Ministérios", icon: "music.note", tint: Color(hex: "E65100"))
+                        if user.role.isLeader {
+                            rowDivider
+                            NavigationLink(destination: MinistriesView(churchRepository: IosAppContainer.shared
+                                    .churchRepository)) {
+                                AccountRow(title: "Ministérios", icon: "music.note", tint: Color(hex: "E65100"))
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                         rowDivider
                         NavigationLink(destination: LifeGroupsView(churchRepository: IosAppContainer.shared
                                 .churchRepository)) {
@@ -214,7 +234,7 @@ struct AccountView: View {
 
     // MARK: - Helpers
 
-    private func userCard(user: Shared.User) -> some View {
+    private func userCard(user: Shared.User, churchName: String?) -> some View {
         ZStack(alignment: .topTrailing) {
             HStack(spacing: 12) {
                 ZStack {
@@ -232,6 +252,13 @@ struct AccountView: View {
                         .padding(.horizontal, 8).padding(.vertical, 2)
                         .background(PazColors.accent.opacity(0.12))
                         .clipShape(Capsule())
+                    if let churchName, !churchName.isEmpty {
+                        Spacer().frame(height: 2)
+                        Text(churchName)
+                            .font(PazTypography.labelSmall)
+                            .foregroundStyle(PazColors.slateLight)
+                            .lineLimit(1)
+                    }
                 }
                 Spacer()
             }
@@ -302,7 +329,8 @@ private struct AccountRow: View {
 #Preview("Light") {
     AccountView(
         userRepository: IosAppContainer.shared.userRepository,
-        authRepository: IosAppContainer.shared.authRepository
+        authRepository: IosAppContainer.shared.authRepository,
+        churchRepository: IosAppContainer.shared.churchRepository
     )
     .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
     .environment(AppThemeManager())
@@ -311,7 +339,8 @@ private struct AccountRow: View {
 #Preview("Dark") {
     AccountView(
         userRepository: IosAppContainer.shared.userRepository,
-        authRepository: IosAppContainer.shared.authRepository
+        authRepository: IosAppContainer.shared.authRepository,
+        churchRepository: IosAppContainer.shared.churchRepository
     )
     .environment(AuthenticationCoordinator(authRepository: IosAppContainer.shared.authRepository))
     .environment(AppThemeManager())

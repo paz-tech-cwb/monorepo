@@ -1,5 +1,6 @@
 package br.church.paz.android.ui.features.academy
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.shared.domain.repository.CourseRepository
@@ -12,11 +13,23 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+private const val KEY_STEP_INDEX = "questionnaire_step_index"
+private const val KEY_SELECTED_OPTION_IDS = "questionnaire_selected_option_ids"
+private const val KEY_FREE_TEXT_ANSWERS = "questionnaire_free_text_answers"
+
 class QuestionnaireViewModel(
     private val courseId: String,
     private val courseRepository: CourseRepository,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(QuestionnaireUiState())
+    private val _uiState =
+        MutableStateFlow(
+            QuestionnaireUiState(
+                stepIndex = savedStateHandle[KEY_STEP_INDEX] ?: 0,
+                selectedOptionIds = savedStateHandle[KEY_SELECTED_OPTION_IDS] ?: emptyMap(),
+                freeTextAnswers = savedStateHandle[KEY_FREE_TEXT_ANSWERS] ?: emptyMap(),
+            ),
+        )
     val uiState: StateFlow<QuestionnaireUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<QuestionnaireEffect>(Channel.BUFFERED)
@@ -24,6 +37,13 @@ class QuestionnaireViewModel(
 
     init {
         load()
+    }
+
+    /** Persists the fields needed to survive system-initiated process death while backgrounded. */
+    private fun persistState(state: QuestionnaireUiState) {
+        savedStateHandle[KEY_STEP_INDEX] = state.stepIndex
+        savedStateHandle[KEY_SELECTED_OPTION_IDS] = state.selectedOptionIds
+        savedStateHandle[KEY_FREE_TEXT_ANSWERS] = state.freeTextAnswers
     }
 
     fun load() {
@@ -45,6 +65,7 @@ class QuestionnaireViewModel(
         _uiState.update {
             it.copy(selectedOptionIds = it.selectedOptionIds + (questionId to setOf(optionId)))
         }
+        persistState(_uiState.value)
     }
 
     fun onToggleMultiOption(
@@ -56,6 +77,7 @@ class QuestionnaireViewModel(
             val updated = if (optionId in current) current - optionId else current + optionId
             state.copy(selectedOptionIds = state.selectedOptionIds + (questionId to updated))
         }
+        persistState(_uiState.value)
     }
 
     fun onFreeTextChanged(
@@ -63,6 +85,7 @@ class QuestionnaireViewModel(
         text: String,
     ) {
         _uiState.update { it.copy(freeTextAnswers = it.freeTextAnswers + (questionId to text)) }
+        persistState(_uiState.value)
     }
 
     fun onNextStep() {
@@ -71,10 +94,12 @@ class QuestionnaireViewModel(
                 ?.questions
                 .orEmpty()
         _uiState.update { it.copy(stepIndex = (it.stepIndex + 1).coerceAtMost(questions.size - 1)) }
+        persistState(_uiState.value)
     }
 
     fun onPreviousStep() {
         _uiState.update { it.copy(stepIndex = (it.stepIndex - 1).coerceAtLeast(0)) }
+        persistState(_uiState.value)
     }
 
     fun onBack() {

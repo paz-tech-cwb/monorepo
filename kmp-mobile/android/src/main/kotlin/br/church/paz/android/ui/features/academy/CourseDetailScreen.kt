@@ -107,6 +107,7 @@ fun CourseDetailScreen(
                     onPlaybackTick = viewModel::onPlaybackTick,
                     onPlaybackPaused = viewModel::onPlaybackPaused,
                     onPlayerError = viewModel::onPlayerError,
+                    onRetryPlayback = viewModel::onRetryPlayback,
                     onQuestionnaireTapped = viewModel::onQuestionnaireTapped,
                 )
         }
@@ -117,11 +118,12 @@ fun CourseDetailScreen(
 private fun CourseDetailContent(
     course: CourseDetail,
     selectedLesson: Lesson?,
-    playerError: Boolean,
+    playerError: VideoPlaybackError?,
     onSelectLesson: (String) -> Unit,
     onPlaybackTick: (Int, Int) -> Unit,
     onPlaybackPaused: (Int, Int) -> Unit,
-    onPlayerError: () -> Unit,
+    onPlayerError: (Int) -> Unit,
+    onRetryPlayback: () -> Unit,
     onQuestionnaireTapped: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -134,8 +136,10 @@ private fun CourseDetailContent(
                 .background(Color.Black),
         ) {
             if (selectedLesson != null) {
-                if (playerError) {
+                if (playerError != null) {
                     VideoErrorOverlay(
+                        error = playerError,
+                        onRetry = onRetryPlayback,
                         onOpenYouTube = {
                             val url = "https://www.youtube.com/watch?v=${selectedLesson.youtubeVideoId}"
                             runCatching {
@@ -268,23 +272,41 @@ private fun QuestionnaireCta(
 }
 
 @Composable
-private fun VideoErrorOverlay(onOpenYouTube: () -> Unit) {
+private fun VideoErrorOverlay(
+    error: VideoPlaybackError,
+    onRetry: () -> Unit,
+    onOpenYouTube: () -> Unit,
+) {
     Column(
         Modifier.fillMaxSize().padding(PazSpacing.Lg),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
+        val message =
+            when (error) {
+                VideoPlaybackError.Retryable -> "Não foi possível carregar o vídeo desta aula"
+                VideoPlaybackError.Unavailable -> "Este vídeo não está disponível para reprodução aqui"
+            }
         Text(
-            "Não foi possível carregar o vídeo desta aula",
+            message,
             style = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(PazSpacing.Md))
-        PazButton(
-            text = "Abrir no YouTube",
-            onClick = onOpenYouTube,
-            variant = PazButtonVariant.Secondary,
-        )
+        when (error) {
+            VideoPlaybackError.Retryable ->
+                PazButton(
+                    text = "Tentar novamente",
+                    onClick = onRetry,
+                    variant = PazButtonVariant.Secondary,
+                )
+            VideoPlaybackError.Unavailable ->
+                PazButton(
+                    text = "Abrir no YouTube",
+                    onClick = onOpenYouTube,
+                    variant = PazButtonVariant.Secondary,
+                )
+        }
     }
 }
 

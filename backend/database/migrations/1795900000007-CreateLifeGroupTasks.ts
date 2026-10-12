@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateLifeGroupTasks1795900000004 implements MigrationInterface {
-  name = 'CreateLifeGroupTasks1795900000004';
+export class CreateLifeGroupTasks1795900000007 implements MigrationInterface {
+  name = 'CreateLifeGroupTasks1795900000007';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
@@ -163,7 +163,7 @@ export class CreateLifeGroupTasks1795900000004 implements MigrationInterface {
     `);
 
     // Seeded enabled by default. The enum value is added in
-    // AddLifeGroupTasksEnumValues1795900000003 (must run first).
+    // AddLifeGroupTasksEnumValues1795900000006 (must run first).
     await queryRunner.query(`
       INSERT INTO "reminder_rules" ("type", "enabled", "config") VALUES
         ('life_group_tasks', true, '{"days_before_meeting":[3,1],"hour":9,"title":"Sua tarefa no Life Group","message":"Você foi sorteado(a) para uma tarefa no próximo Life Group. Toque para ver o guia."}')

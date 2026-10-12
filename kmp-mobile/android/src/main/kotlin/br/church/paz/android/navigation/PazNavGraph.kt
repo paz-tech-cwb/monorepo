@@ -1,12 +1,10 @@
 package br.church.paz.android.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import br.church.paz.android.ui.features.academy.CertificatesScreen
 import br.church.paz.android.ui.features.academy.CourseDetailScreen
@@ -28,6 +26,8 @@ import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsSc
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceEditorScreen
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryScreen
 import br.church.paz.android.ui.features.lifegroupdiscovery.LifeGroupDiscoveryScreen
+import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportDetailScreen
+import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportsScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListScreen
@@ -50,16 +50,32 @@ import br.church.paz.android.ui.features.reports.ReportsListScreen
 import br.church.paz.android.ui.features.splash.SplashScreen
 
 @Composable
-fun PazNavGraph(startDeepLinkRoute: String? = null) {
+fun PazNavGraph(
+    pendingDeepLinkRoute: String? = null,
+    onDeepLinkConsumed: () -> Unit = {},
+) {
     val navController = rememberNavController()
 
-    // When the app is opened from a notification tap, the target route must only be
-    // navigated to AFTER Shell has been pushed on top of Splash — otherwise this races
-    // Splash's own async auth-check navigation (either one can clobber the other,
-    // leaving a broken back stack or silently dropping the deep link). We hold the
-    // route in local state and consume it once Shell is in place, then null it out so
-    // it doesn't re-fire on recomposition/config change.
-    var pendingDeepLinkRoute by remember(startDeepLinkRoute) { mutableStateOf(startDeepLinkRoute) }
+    // A tapped push notification (cold start via onCreate, or app already running via
+    // MainActivity.onNewIntent) leaves its target route in `pendingDeepLinkRoute`. It must only
+    // be navigated to once Splash (async auth / onboarding check) has handed over to the Shell —
+    // otherwise it races Splash's own navigation and is dropped or clobbers the back stack. So we
+    // wait until the current destination is neither unresolved nor Splash, then navigate on top
+    // of the Shell and consume the route so it can't re-fire on recomposition.
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+    LaunchedEffect(pendingDeepLinkRoute, currentRoute) {
+        val route = pendingDeepLinkRoute ?: return@LaunchedEffect
+        if (currentRoute == null || currentRoute == Screen.Splash.route) return@LaunchedEffect
+        // An unknown route would throw IllegalArgumentException; never crash on a push tap.
+        if (route == Screen.Account.route) {
+            // "account" only exists in the Shell's nested tab NavHost, not in this root graph:
+            // navigating to it here would throw. Landing on the Shell is the safe equivalent.
+            navController.popBackStack(Screen.Shell.route, inclusive = false)
+        } else {
+            runCatching { navController.navigate(route) { launchSingleTop = true } }
+        }
+        onDeepLinkConsumed()
+    }
 
     NavHost(
         navController = navController,
@@ -70,10 +86,6 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
                 onNavigateToHome = {
                     navController.navigate(Screen.Shell.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
-                    }
-                    pendingDeepLinkRoute?.let { route ->
-                        navController.navigate(route)
-                        pendingDeepLinkRoute = null
                     }
                 },
             )
@@ -278,6 +290,23 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         ) { backStackEntry ->
             val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId")
             LifeGroupAnalyticsScreen(navController = navController, lifeGroupId = lifeGroupId)
+        }
+        composable(
+            route = Screen.LifeGroupReports.route,
+            arguments = listOf(androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            // The screen needs a numeric id; ignore a malformed route argument instead of crashing.
+            val lifeGroupId =
+                backStackEntry.arguments?.getString("lifeGroupId")?.takeIf { it.toIntOrNull() != null }
+                    ?: return@composable
+            LifeGroupReportsScreen(navController = navController, lifeGroupId = lifeGroupId)
+        }
+        composable(
+            route = Screen.LifeGroupReportDetail.route,
+            arguments = listOf(androidx.navigation.navArgument("reportId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val reportId = backStackEntry.arguments?.getString("reportId") ?: return@composable
+            LifeGroupReportDetailScreen(navController = navController, reportId = reportId)
         }
         composable(
             route = Screen.LifeGroupTaskGuide.route,

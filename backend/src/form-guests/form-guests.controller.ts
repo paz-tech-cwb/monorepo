@@ -39,7 +39,15 @@ export class FormGuestsController {
 
   @Post()
   @UseGuards(RolesGuard)
-  @Roles('admin', 'pastor', 'area_leader', 'sector_leader', 'life_group_leader')
+  @Roles(
+    'admin',
+    'pastor',
+    'area_leader',
+    'sector_leader',
+    'life_group_leader',
+    'member',
+    'discipler',
+  )
   create(@Body() dto: CreateFormGuestDto, @Req() req: any) {
     return this.svc.create(dto, req.user.id);
   }

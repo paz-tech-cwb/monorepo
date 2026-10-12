@@ -14,12 +14,15 @@ import br.church.paz.shared.data.repository.FormsRepositoryImpl
 import br.church.paz.shared.data.repository.HomeRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupAnalyticsRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupAttendanceRepositoryImpl
-import br.church.paz.shared.data.repository.LifeGroupTaskRepositoryImpl
+import br.church.paz.shared.data.repository.LifeGroupReportRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupStudyRepositoryImpl
+import br.church.paz.shared.data.repository.LifeGroupTaskRepositoryImpl
 import br.church.paz.shared.data.repository.MemberJourneyRepositoryImpl
 import br.church.paz.shared.data.repository.OnboardingRepositoryImpl
 import br.church.paz.shared.data.repository.UserRepositoryImpl
+import br.church.paz.shared.data.repository.JourneySnapshotStore
 import br.church.paz.shared.data.repository.UserStore
+import br.church.paz.shared.data.repository.createJourneySnapshotStore
 import br.church.paz.shared.data.repository.createUserStore
 import br.church.paz.shared.domain.repository.AcademyRepository
 import br.church.paz.shared.domain.repository.AgendaRepository
@@ -32,17 +35,20 @@ import br.church.paz.shared.domain.repository.FormsRepository
 import br.church.paz.shared.domain.repository.HomeRepository
 import br.church.paz.shared.domain.repository.LifeGroupAnalyticsRepository
 import br.church.paz.shared.domain.repository.LifeGroupAttendanceRepository
-import br.church.paz.shared.domain.repository.LifeGroupTaskRepository
+import br.church.paz.shared.domain.repository.LifeGroupReportRepository
 import br.church.paz.shared.domain.repository.LifeGroupStudyRepository
+import br.church.paz.shared.domain.repository.LifeGroupTaskRepository
 import br.church.paz.shared.domain.repository.MemberJourneyRepository
 import br.church.paz.shared.domain.repository.OnboardingRepository
 import br.church.paz.shared.domain.repository.UserRepository
+import br.church.paz.shared.domain.usecase.DetectJourneyLevelUpUseCase
 import io.ktor.client.engine.HttpClientEngineFactory
 import org.koin.dsl.module
 
 val sharedAuthModule = module {
-    single<TokenStorage> { createTokenStorage() }
-    single<UserStore>    { createUserStore() }
+    single<TokenStorage>       { createTokenStorage() }
+    single<UserStore>          { createUserStore() }
+    single<JourneySnapshotStore> { createJourneySnapshotStore() }
 }
 
 val sharedNetworkModule = module {
@@ -70,9 +76,14 @@ val sharedRepositoryModule = module {
     single<LifeGroupAttendanceRepository> { LifeGroupAttendanceRepositoryImpl(get()) }
     single<LifeGroupTaskRepository> { LifeGroupTaskRepositoryImpl(get()) }
     single<LifeGroupAnalyticsRepository>  { LifeGroupAnalyticsRepositoryImpl(get()) }
+    single<LifeGroupReportRepository>     { LifeGroupReportRepositoryImpl(get()) }
     single<CasaDePazAnalyticsRepository>  { CasaDePazAnalyticsRepositoryImpl(get()) }
     single<OnboardingRepository>    { OnboardingRepositoryImpl(get(), get()) }
     single<CasaDePazLessonRepository> { CasaDePazLessonRepositoryImpl(get()) }
 }
 
-val sharedModules = listOf(sharedAuthModule, sharedNetworkModule, sharedRepositoryModule)
+val sharedUseCaseModule = module {
+    single { DetectJourneyLevelUpUseCase(get(), get()) }
+}
+
+val sharedModules = listOf(sharedAuthModule, sharedNetworkModule, sharedRepositoryModule, sharedUseCaseModule)

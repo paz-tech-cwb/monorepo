@@ -84,8 +84,7 @@ class CourseRepositoryImpl(private val client: HttpClient) : CourseRepository {
         academyResponse.throwOnClientOrServerError()
         val academy: AcademyForCertificatesDto = academyResponse.body()
 
-        val certifiedCourses = academy.tracks
-            .flatMap { it.courses }
+        val certifiedCourses = academy.courses
             .filter { it.hasCertificate }
 
         return certifiedCourses.mapNotNull { course ->
@@ -276,10 +275,7 @@ private data class QuestionnaireResultDto(
 }
 
 @Serializable
-private data class AcademyForCertificatesDto(val tracks: List<AcademyTrackForCertificatesDto> = emptyList())
-
-@Serializable
-private data class AcademyTrackForCertificatesDto(val courses: List<AcademyCourseForCertificatesDto> = emptyList())
+private data class AcademyForCertificatesDto(val courses: List<AcademyCourseForCertificatesDto> = emptyList())
 
 @Serializable
 private data class AcademyCourseForCertificatesDto(

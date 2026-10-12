@@ -3,9 +3,11 @@ package br.church.paz.android.ui.features.home
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import br.church.paz.shared.domain.model.isLeader
+import br.church.paz.shared.domain.model.LifeGroup
 import br.church.paz.shared.domain.model.LifeGroupTask
-import br.church.paz.shared.domain.model.LifeGroupTaskStatus
+import br.church.paz.shared.domain.model.buildHomeLifeGroupCards
+import br.church.paz.shared.domain.model.isLeader
+import br.church.paz.shared.domain.model.selectUpcomingLifeGroupTasks
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.HomeRepository
@@ -89,29 +91,67 @@ class HomeViewModel(
                     }
                 }
 
-            // Shown only when getMyLifeGroups() succeeded AND came back empty — an
-            // error fetching the viewer's groups must never be read as "no group",
-            // since that would wrongly nudge an existing member to "discover" a
-            // group they already belong to.
-            runCatching { churchRepository.getMyLifeGroups() }
-                .onSuccess { myGroups -> _uiState.update { it.copy(showLifeGroupDiscoveryCTA = myGroups.isEmpty()) } }
-                .onFailure { _uiState.update { it.copy(showLifeGroupDiscoveryCTA = false) } }
-
-            // Best-effort "Minhas tarefas" card: a failure is isolated (card hidden) and never
-            // surfaces as a home error.
+            // Groups and tasks are independent best-effort fetches (a failure in one never blocks or
+            // hides the other, and neither ever surfaces as a home error). A failed groups fetch must
+            // never be read as "no group": the discovery CTA is shown only when it SUCCEEDED and came
+            // back empty, otherwise an existing member would be nudged to "discover" a group.
+            val groups = loadMyGroups()
             val tasks = loadMyTasks()
-            _uiState.update { it.copy(myTasks = tasks) }
+            val now = today()
+            val built =
+                groups?.let {
+                    buildHomeLifeGroupCards(
+                        currentUserId = user?.id?.toIntOrNull(),
+                        groups = it,
+                        tasks = tasks.orEmpty(),
+                        today = now,
+                        maxCards = MAX_HOME_LIFE_GROUP_CARDS,
+                        maxTasks = MAX_HOME_TASKS,
+                    )
+                }
+            _uiState.update {
+                it.copy(
+                    showLifeGroupDiscoveryCTA = groups != null && groups.isEmpty(),
+                    lifeGroupCards = built?.cards.orEmpty(),
+                    hiddenLifeGroupsCount = built?.hiddenCount ?: 0,
+                    legacyTasks =
+                        if (groups == null && tasks != null) {
+                            selectUpcomingLifeGroupTasks(tasks, now, MAX_HOME_TASKS)
+                        } else {
+                            emptyList()
+                        },
+                )
+            }
         }
     }
 
-    private suspend fun loadMyTasks(): List<LifeGroupTask> =
+    /** The viewer's groups, or null when the fetch failed (cancellation is rethrown). */
+    private suspend fun loadMyGroups(): List<LifeGroup>? =
         try {
-            selectUpcomingTasks(taskRepository.getMyTasks(), today())
+            churchRepository.getMyLifeGroups()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            emptyList()
+            null
         }
+
+    /** The viewer's tasks, or null when the fetch failed (cancellation is rethrown). */
+    private suspend fun loadMyTasks(): List<LifeGroupTask>? =
+        try {
+            taskRepository.getMyTasks()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+
+    fun onLifeGroupTapped(lifeGroupId: Int) {
+        viewModelScope.launch { _effect.send(HomeEffect.NavigateToLifeGroup(lifeGroupId)) }
+    }
+
+    fun onSeeAllLifeGroupsTapped() {
+        viewModelScope.launch { _effect.send(HomeEffect.NavigateToAllLifeGroups) }
+    }
 
     fun onTaskTapped(assignmentId: String) {
         viewModelScope.launch { _effect.send(HomeEffect.NavigateToTask(assignmentId)) }
@@ -127,17 +167,4 @@ class HomeViewModel(
 }
 
 private const val MAX_HOME_TASKS = 3
-
-/**
- * The member's next assigned tasks for the home card: status ASSIGNED, meetingDate (ISO
- * `yyyy-MM-dd`, so string order == date order) on or after [today], soonest first, at most [limit].
- */
-internal fun selectUpcomingTasks(
-    tasks: List<LifeGroupTask>,
-    today: String,
-    limit: Int = MAX_HOME_TASKS,
-): List<LifeGroupTask> =
-    tasks
-        .filter { it.status == LifeGroupTaskStatus.ASSIGNED && it.meetingDate >= today }
-        .sortedBy { it.meetingDate }
-        .take(limit)
+private const val MAX_HOME_LIFE_GROUP_CARDS = 3

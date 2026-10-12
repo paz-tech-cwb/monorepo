@@ -15,13 +15,59 @@ Area
 
 ## Visibility
 
-Life group visibility follows cascade scope:
+Life group visibility follows cascade scope, resolved by
+`ScopeResolverService` (`forms-core/services/scope-resolver.service.ts`):
 
-- Admins and pastors can see all groups.
-- Area leaders can see groups inside their areas.
-- Sector leaders can see groups inside their sectors.
-- Life group leaders can see their own group.
+- Admins and pastors can see all groups (unrestricted, unchanged).
+- Everyone else: scope is derived from the `leader_id` / `co_leader_id` rows the
+  user actually holds, NOT from the role slug (roles are assigned manually and
+  are not synced when a leader is set on an Area/Sector/LifeGroup, and
+  co-leaders have no slug of their own). A user may lead several rows; all of
+  them are unioned:
+  - area leader/co-leader: every sector of every area they lead/co-lead, and
+    every group in those sectors;
+  - sector leader/co-leader: every group in every sector they lead/co-lead;
+  - life group leader/co-leader: every group they lead/co-lead.
+  `ResolvedScope` = `{unrestricted, areaIds, sectorIds, lifeGroupIds}` (unchanged
+  shape; `sectorIds`/`lifeGroupIds` are unions). A user who leads nothing (plain
+  member, guest, any slug) gets an empty scope. Endpoint `@Roles` guards still
+  gate by slug, so widening the resolver never opens a role-gated endpoint.
 - Members see only member-facing group information unless a workflow grants more.
+
+### Row-based scope: read vs write (review decisions)
+
+- Resolution cost: one user+role lookup plus ONE ids-only SQL (CTE over areas -> sectors -> groups); admin/pastor skip the second query. `GuestsService.findGuests` and `JourneyProgressService` still resolve once more themselves (their routes do not run `ScopeGuard`; reusing `req.formScope` would need adding the guard, deferred).
+- READ widening (product/privacy decision, kept): any user holding a leader/co-leader row now gets scope-filtered READ data regardless of role slug (previously a slug-less leader/co-leader got an empty scope). Endpoints guarded only by `ScopeGuard` (no `RolesGuard` on GET) are affected: `GET member-registrations`, `GET form-guests`, `GET form-conversions`, `GET life-group-reports` (list, `:id`, `:id/audit`), `GET casa-de-paz-reports` (list, `:id`, `:id/audit`), plus life-group-analytics. This is consistent with the attendance/report co-leader fallbacks. Open product question: should slug-less leaders/co-leaders see registrations/guests/conversions PII of their groups and sectors? If not, add `RolesGuard` to those GETs.
+- WRITE authority is NOT widened: `casa-de-paz-reports` update/delete bypass the owner/24h policy only for `unrestricted` scope or when the actor's role slug is `area_leader`/`sector_leader` AND the sector is in scope. A slug-less (e.g. `member`) sector/area co-leader sees the sector's reports but edits/deletes only under the normal policy.
+- `life-group-analytics` overview: the members universe for a scoped caller is now `users.sectorId IN sectors OR lifeGroup IN scoped groups`, so users rostered in a scoped group but with a different/null `sectorId` are counted. `members_total` can therefore be larger than before for sector-scoped callers (more correct; intentional).
+
+### `GET /life-groups/me`
+
+Returns the viewer's groups: led, co-led, supervised (group is in a sector the
+viewer leads/co-leads or in any sector of an area the viewer leads/co-leads) and
+rostered. Each item has the usual life group fields plus:
+
+- `relationship`: `leader` | `co_leader` | `supervisor` | `member`, precedence in
+  that order when several apply.
+- `is_supervised`: `true` whenever the viewer supervises the group via
+  area/sector, even if `leader`/`co_leader` wins the precedence.
+
+Only `/me` carries these two fields (other endpoints are unchanged). `/me` omits the roster (`members: null`) for supervisor-only rows (viewer is not
+leader/co-leader and is not rostered) and keeps `member_count`; leader,
+co-leader and member rows keep the roster. `GET /life-groups/:id` shows the
+roster to a supervisor of that group (the supervision check is restricted to the
+requested id). Plain members are never widened. `GET /life-groups`
+(discovery/admin-ui list) is intentionally unscoped (every authenticated user
+sees every group, rosters hidden) and was not changed. Response order is name
+ascending; clients decide ranking.
+
+Clients: Kotlin `LifeGroup` has optional `relationship` / `isSupervised`
+(defaults null / false, so older backends and older apps keep working; the
+Kotlin JSON config uses `ignoreUnknownKeys`). iOS reads the shared model.
+Home card recommendation (open product question): rank
+leader > co_leader > member > supervisor, keep the cap at 3, and when a
+supervisor has more than 3 supervised groups show one summary card ("Você
+supervisiona N grupos") rather than alphabetical supervised cards.
 
 ## Attendance (Phase 1)
 
@@ -115,10 +161,10 @@ Endpoints (prefix `/api`):
 - Leader/co-leader/admin: `GET/PUT /life-groups/:id/task-overrides|task-members|task-settings`, `GET/POST /life-groups/:id/task-skips`, `DELETE /life-groups/:id/task-skips/:date`, `GET /life-groups/:id/tasks?date=`, `POST .../tasks/generate` (`meeting_date` optional, defaults to next meeting; must be at most 7 days in the past and 60 days ahead, else 400), `POST .../tasks/reroll`, `PATCH .../tasks/:assignmentId`.
 - Member: `GET /me/life-group-tasks`, `GET /me/life-group-tasks/:id`, `POST /me/life-group-tasks/:id/decline`.
 
-Tables (migration `1795900000004-CreateLifeGroupTasks`): templates, overrides,
+Tables (migration `1795900000007-CreateLifeGroupTasks`): templates, overrides,
 assignments (incl. `declined_user_ids int[]`), member_settings (incl. `grandfathered`),
 group_settings, skips, plus `user_life_groups.joined_at`.
-Migration `1795900000003-AddLifeGroupTasksEnumValues` adds the enum values
+Migration `1795900000006-AddLifeGroupTasksEnumValues` adds the enum values
 (separate because Postgres cannot use a new enum value in the same transaction).
 Assignments cascade on `users` delete (account deletion must not fail on task history).
 Running migrations and deploying are human gates; they have not been run by agents.
@@ -126,6 +172,88 @@ Running migrations and deploying are human gates; they have not been run by agen
 Clients: admin-ui "Tarefas do Life" page (templates) plus a "Tarefas" panel on
 life groups; mobile task guide screen, "Minhas tarefas" card on life group
 detail, and leader-only "Elegibilidade para tarefas" screen. Deep link: `paz://tarefa/{assignmentId}`.
+
+Late setup: the largest offset (D-3) generates. A smaller offset (D-1) also
+generates, with the normal assignee push, when the meeting has no assignment rows
+at all (e.g. the group's meeting day was set at D-2). If any rows exist (even all
+declined) it only reminds, so leader rerolls are never overridden. A group set up
+on D-1 after 09:00 or later still needs a manual generate. Generation is admin-ui
+only (`POST /life-groups/:id/tasks/generate`); the mobile apps have no generate
+action (leaders see "Elegibilidade para tarefas" and members see their tasks).
+
+Templates are NOT seeded. Admin creates them in admin-ui "Tarefas do Life". A
+ready-to-paste pt-BR starter set (name / description / guidance markdown):
+
+1. **Palavra** / "Conduzir a palavra do encontro." / "## Como preparar\n- Leia o estudo da semana com antecedência.\n- Escolha 2 ou 3 pontos principais e uma pergunta para o grupo.\n- Reserve cerca de 20 minutos."
+2. **Louvor/Ministração** / "Conduzir o momento de louvor e oração." / "## Como preparar\n- Escolha 2 ou 3 canções conhecidas pelo grupo.\n- Avise o grupo se precisar de ajuda com instrumento ou som.\n- Termine com um momento de oração."
+3. **Oferta** / "Conduzir o momento da oferta e recolher o valor." / "## Como preparar\n- Faça uma breve fala sobre generosidade.\n- Recolha a oferta e entregue ao líder ao final.\n- Registre o valor para o relatório."
+4. **Church Vision** / "Compartilhar uma mensagem sobre a visão da igreja." / "## Como preparar\n- Leia o material de visão indicado pela liderança.\n- Prepare uma fala de 5 a 10 minutos.\n- Conecte a visão com a vida do grupo."
+
+Eligibility: an explicit per-member setting always wins (including "not eligible"
+for a leader); otherwise leader/co-leader are eligible; otherwise a member needs
+the group's minimum present records since `joined_at` (default 3).
+
+
+## Estudo do Life (study)
+
+Module: `backend/src/life-group-studies/`. Studies are church-wide (no per-group
+targeting) and there is no draft state: creating a study IS publishing it.
+
+- Write access (`LifeGroupStudyAccessService.canPublish`): leadership role slug
+  (`admin`, `pastor`, `area_leader`, `sector_leader`, `life_group_leader`), OR
+  `leader_id`/`co_leader_id` of any life group (matched by assignment, so a
+  `member`-role leader counts), OR an admin grant in `life_group_study_publishers`
+  ("assigned writer", managed in admin-ui `estudo-do-life/publicadores`). The
+  controller has NO `@Roles` guard on create/update/delete (it used to block grant
+  holders and `member`-role leaders before the service ran); the service decides.
+  Edit/delete: admin, or the original publisher while still holding publish rights.
+- Read: `canView` = `canPublish` OR on the roster of any life group.
+- Push on create (once; `update` never re-notifies, there is no republish
+  transition): category `life_group_study`, channel `paz_life_group_study`, deep
+  link `paz://estudo-do-life/{id}`. Audience: every rostered member of any life
+  group, every group leader and co-leader, and users with a leadership role,
+  deduplicated, publisher excluded. The explicit ids are stored in
+  `segment.filters.user_ids`. Dispatch failure never fails the create.
+- Migration `1795900000008-AddLifeGroupStudyNotificationCategory` adds
+  `life_group_study` to `notification_category_enum` (it was missing: on a
+  migration-built DB the notification INSERT failed, so the push never went out).
+- Clients: both mobile apps have list/detail/editor screens; the "new study"
+  button shows when the signed-in role `isLeader`, so a `member`-role grant holder
+  can write through the API but has no button on mobile (give them the
+  `life_group_leader` role or publish on their behalf). admin-ui login is limited
+  to leadership roles, so a plain `member` writer cannot use it either.
+
+## Weekly life group reports (read API)
+
+Form `life-group-reports` (`src/life-group-reports`, entity `life_group_reports`).
+Read endpoints used per group by mobile (read-only list/detail):
+
+- `GET /api/forms/life-group-reports?life_group_id=<int>` (param optional) —
+  newest first (`created_at` DESC), soft-deleted excluded.
+- `GET /api/forms/life-group-reports/:id` and `/:id/audit`.
+
+Authorization (service level; `ScopeGuard` only resolves the scope): visible
+groups = form scope (admin/pastor unrestricted, area/sector leader scope,
+`life_group_leader` scope) PLUS every group where the viewer is `leader_id` or
+`co_leader_id` (so a co-leader with role `member` works, and a leader of two
+groups sees both). `life_group_id` outside that set => 403 (same as analytics).
+`GET :id` and `:id/audit` answer 404 (not 403) when the report's group is not
+visible (same rule as the list; being the submitter grants no extra read access).
+`/:id/audit` is mapped to the admin-ui `AuditLogEntry` shape
+(`id, form_slug, submission_id, action, diff, created_at, actor:{id,name}`); the
+actor `User` entity is never serialized. Create/update/delete policy is
+unchanged (`@Roles` on create still excludes co-leaders with role `member`).
+
+Response is an explicit snake_case object (`toResponse`, controller uses
+`@SerializeOptions({strategy:'exposeAll', excludeExtraneousValues:false})`):
+`id, date, area_id, sector_id, life_group_id, committed_members,
+committed_members_present, kids_0_to_11, guests, mdas, offering (string),
+committed_at_tadel, committed_at_culto, leader_attended[], disciples_count,
+disciples_discipled_this_week, pastoring_activity_type[],
+pastoring_activity_other, training_activity_type[], training_activity_other,
+submitted_by {id,name}|null, created_at, updated_at, deleted_at`. Before this
+fix the raw entity serialized to `{}` under the global serializer
+(characterized in the Phase 0 commit `852e7fa`).
 
 ## Agent notes
 

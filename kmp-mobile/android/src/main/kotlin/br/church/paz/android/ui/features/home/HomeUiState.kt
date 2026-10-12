@@ -3,6 +3,7 @@ package br.church.paz.android.ui.features.home
 import br.church.paz.shared.domain.model.AgendaEvent
 import br.church.paz.shared.domain.model.BankInfo
 import br.church.paz.shared.domain.model.Banner
+import br.church.paz.shared.domain.model.HomeLifeGroupCard
 import br.church.paz.shared.domain.model.LifeGroupTask
 
 data class HomeUiState(
@@ -21,9 +22,15 @@ data class HomeUiState(
     // see HomeViewModel.fetch() for why an error must never be read as "no
     // group".
     val showLifeGroupDiscoveryCTA: Boolean = false,
-    // Upcoming assigned life group tasks ("Minhas tarefas"); empty hides the card, including
-    // when the best-effort fetch failed.
-    val myTasks: List<LifeGroupTask> = emptyList(),
+    // One card per life group the viewer belongs to (leader/co-leader groups first), with the
+    // viewer's upcoming tasks folded in. Empty hides the cards, including when the best-effort
+    // groups fetch failed.
+    val lifeGroupCards: List<HomeLifeGroupCard> = emptyList(),
+    // Groups beyond the card cap; > 0 shows the "Ver todos (N)" row.
+    val hiddenLifeGroupsCount: Int = 0,
+    // Legacy tasks-only card: used ONLY when the groups fetch failed but the tasks fetch worked,
+    // so the existing "Minhas tarefas" feature does not regress.
+    val legacyTasks: List<LifeGroupTask> = emptyList(),
 )
 
 sealed class HomeEffect {
@@ -38,4 +45,10 @@ sealed class HomeEffect {
     data class NavigateToTask(
         val assignmentId: String,
     ) : HomeEffect()
+
+    data class NavigateToLifeGroup(
+        val lifeGroupId: Int,
+    ) : HomeEffect()
+
+    data object NavigateToAllLifeGroups : HomeEffect()
 }

@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
@@ -32,10 +33,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
@@ -77,13 +81,17 @@ import br.church.paz.android.ui.components.PazPillPrimaryButton
 import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.features.ministries.MyTasksCard
+import br.church.paz.android.ui.features.ministries.MyTasksRows
+import br.church.paz.android.ui.features.ministries.lifeGroupMeetingLabel
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapePill
+import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.AgendaEvent
 import br.church.paz.shared.domain.model.BankInfo
 import br.church.paz.shared.domain.model.Banner
+import br.church.paz.shared.domain.model.HomeLifeGroupCard
 import br.church.paz.shared.domain.model.LifeGroupTask
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
@@ -113,6 +121,9 @@ fun HomeScreen(
                     )
                 is HomeEffect.NavigateToAgenda -> navController.navigate(Screen.AgendaDetail.createRoute(effect.eventId))
                 is HomeEffect.NavigateToTask -> navController.navigate(Screen.LifeGroupTaskGuide.createRoute(effect.assignmentId))
+                is HomeEffect.NavigateToLifeGroup ->
+                    navController.navigate(Screen.LifeGroupDetail.createRoute(effect.lifeGroupId.toString()))
+                HomeEffect.NavigateToAllLifeGroups -> navController.navigate(Screen.LifeGroups.route)
             }
         }
     }
@@ -145,7 +156,11 @@ fun HomeScreen(
                             bank = uiState.bank,
                             sectionOrder = uiState.sectionOrder,
                             showLifeGroupDiscoveryCTA = uiState.showLifeGroupDiscoveryCTA,
-                            myTasks = uiState.myTasks,
+                            lifeGroupCards = uiState.lifeGroupCards,
+                            hiddenLifeGroupsCount = uiState.hiddenLifeGroupsCount,
+                            legacyTasks = uiState.legacyTasks,
+                            onLifeGroupTap = viewModel::onLifeGroupTapped,
+                            onSeeAllLifeGroups = viewModel::onSeeAllLifeGroupsTapped,
                             onTaskTap = viewModel::onTaskTapped,
                             onBannerTap = viewModel::onBannerTapped,
                             onEventTap = viewModel::onEventTapped,
@@ -179,7 +194,11 @@ private fun HomeContent(
     bank: BankInfo?,
     sectionOrder: List<String>,
     showLifeGroupDiscoveryCTA: Boolean,
-    myTasks: List<LifeGroupTask>,
+    lifeGroupCards: List<HomeLifeGroupCard>,
+    hiddenLifeGroupsCount: Int,
+    legacyTasks: List<LifeGroupTask>,
+    onLifeGroupTap: (Int) -> Unit,
+    onSeeAllLifeGroups: () -> Unit,
     onTaskTap: (String) -> Unit,
     onBannerTap: (String?) -> Unit,
     onEventTap: (String) -> Unit,
@@ -227,12 +246,40 @@ private fun HomeContent(
             }
         }
 
-        // Best-effort card; hidden when empty or when the fetch failed.
-        if (myTasks.isNotEmpty()) {
+        // Best-effort life group cards (tasks folded in); hidden when the viewer has no group or
+        // the groups fetch failed.
+        if (lifeGroupCards.isNotEmpty()) {
+            items(lifeGroupCards, key = { "life_group_${it.group.id}" }) { card ->
+                AnimatedSection(index = sectionOrder.size) {
+                    LifeGroupHomeCard(
+                        card = card,
+                        onGroupTap = { onLifeGroupTap(card.group.id) },
+                        onTaskTap = onTaskTap,
+                        modifier =
+                            Modifier
+                                .padding(horizontal = PazSpacing.Lg)
+                                .padding(top = PazSpacing.Xl),
+                    )
+                }
+            }
+            if (hiddenLifeGroupsCount > 0) {
+                item(key = "life_groups_see_all") {
+                    TextButton(
+                        onClick = onSeeAllLifeGroups,
+                        modifier = Modifier.padding(horizontal = PazSpacing.Lg),
+                    ) {
+                        Text("Ver todos (${lifeGroupCards.size + hiddenLifeGroupsCount})")
+                    }
+                }
+            }
+        }
+
+        // Legacy tasks-only card: only when the groups fetch failed but the tasks fetch worked.
+        if (lifeGroupCards.isEmpty() && legacyTasks.isNotEmpty()) {
             item(key = "my_tasks") {
                 AnimatedSection(index = sectionOrder.size) {
                     MyTasksCard(
-                        tasks = myTasks,
+                        tasks = legacyTasks,
                         onTaskTap = onTaskTap,
                         modifier =
                             Modifier
@@ -256,6 +303,83 @@ private fun HomeContent(
                                 .padding(top = PazSpacing.Xl),
                     )
                 }
+            }
+        }
+    }
+}
+
+// ── Life group card ──────────────────────────────────────────────────────────
+
+/**
+ * One card per life group: the header (name, leader, meeting, members) opens the group detail;
+ * the viewer's upcoming tasks for this group ("Minhas tarefas") are folded in below it. The
+ * header and each task row are sibling click targets, never nested.
+ */
+@Composable
+private fun LifeGroupHomeCard(
+    card: HomeLifeGroupCard,
+    onGroupTap: () -> Unit,
+    onTaskTap: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val group = card.group
+    val subdued = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+    val meetingLabel = lifeGroupMeetingLabel(group)
+    PazGlassCard(
+        modifier = modifier.fillMaxWidth().clip(PazShapes.large),
+        cornerRadius = PazSpacing.CardRadiusCompact,
+    ) {
+        Column(Modifier.padding(PazSpacing.Lg), verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
+            androidx.compose.material3.Surface(
+                onClick = onGroupTap,
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.Transparent,
+                shape = PazShapes.medium,
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(PazSpacing.Xs)) {
+                        Text(
+                            "LIFE GROUP",
+                            style = MaterialTheme.typography.labelMedium.copy(color = PazColors.accent.copy(alpha = 0.7f)),
+                        )
+                        Text(group.name, style = MaterialTheme.typography.titleMedium)
+                        group.leader?.let {
+                            Text("Líder: $it", style = MaterialTheme.typography.bodySmall.copy(color = subdued))
+                        }
+                        meetingLabel?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall.copy(color = subdued))
+                        }
+                        Text(
+                            "${group.membersCount} membros",
+                            style = MaterialTheme.typography.bodySmall.copy(color = subdued),
+                        )
+                    }
+                    Icon(
+                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    )
+                }
+            }
+            if (card.tasks.isNotEmpty()) {
+                HorizontalDivider()
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Outlined.Assignment,
+                        contentDescription = null,
+                        tint = PazColors.Primary,
+                        modifier = Modifier.size(22.dp),
+                    )
+                    Text("Minhas tarefas", style = MaterialTheme.typography.titleSmall)
+                }
+                MyTasksRows(tasks = card.tasks, onTaskTap = onTaskTap)
             }
         }
     }

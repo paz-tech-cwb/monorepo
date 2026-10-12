@@ -264,3 +264,85 @@ Left as follow-ups: m2 (preview vs mobile markdown subset), m3 (no notification 
 ## Round 3
 - Malcolm round 3: SHIP (no blockers/majors). m22 (iOS home cancellation via Task.isCancelled) and m26 (stale CI comment) fixed.
 - Accepted: m23 (partial evaluator failure keeps group claim; failed item not retried at that offset, smaller-offset reminder or manual generate still reaches it), m24 (if the scheduler misses the exact hour tick, a pre-hour manual generate at the largest offset gets no push; d-1 reminder still goes), m25 (re-running 1795900000004 on an old-revision DB grandfathers members who joined in between; unrecorded dev DBs only), m27 (tracked xcuserdata predates branch).
+
+## Backend (home-card branch)
+
+Phase 0 (commit 852e7fa): characterization spec with a real Nest app, the exact main.ts `ValidationPipe` and `ClassSerializerInterceptor` (excludeAll + excludeExtraneousValues). Confirmed on the unmodified code: `GET /forms/life-group-reports` and `/:id` serialize to `{}` (also `/:id/audit` collapsed to `[{}]`), and `/:id` and `/:id/audit` return data to a plain member with an empty scope (no object-level check).
+
+Phase 1 (`backend/src/life-group-reports/`):
+- `life-group-reports.controller.ts`: `@SerializeOptions({strategy:'exposeAll', excludeExtraneousValues:false})`; `list(req, @Query() ListLifeGroupReportsQueryDto)`; `findOne`/`audit` pass `req.formScope` + actor; all handlers typed `RequestWithScope`.
+- `dto/list-life-group-reports-query.dto.ts` (new): optional `life_group_id` (`@Expose @IsOptional @Type(Number) @IsInt @Min(1)`).
+- `life-group-reports.service.ts`: public `toResponse` (snake_case, `submitted_by {id,name}`); `list(scope, actor, lifeGroupId?)` = scope groups + groups where actor is leader/co-leader (`@InjectEntityManager`, same query as analytics), 403 when the filter is outside the allowed set, `1=0` when nothing allowed; private scope-aware `findEntity` (in scope, submitter, or leader/co-leader of the group, else 404); `findOne`/`auditLog` scoped; `update`/`create` return `toResponse` (create reloads to include author name); `update` keeps the unscoped load plus its own edit policy. Module unchanged.
+- Specs (new): `life-group-reports.service.spec.ts` (toResponse, list matrix incl. co-leader fallback / two-group leader / member / 403 / filter, findOne+audit 404 matrix, update) and `life-group-reports.controller.spec.ts` (snake_case body not `{}`, `?life_group_id=10` reaches the query as number, 403, 400 on `abc`, 404 on detail+audit for out-of-scope). The Phase 0 characterization spec was removed in the same change (superseded; it stays in git history at 852e7fa).
+- admin-ui: no change needed. `LifeGroupReport`/`FormSubmissionMeta` types and `_columns.tsx` already expect snake_case plus `submitted_by:{id,name}`, which the list now actually returns (previously `{}`). Not run: admin-ui tsc/eslint (untouched).
+- Docs: `.ai/features/life-groups.md` (new "Weekly life group reports (read API)" section), `.ai/apps/backend.md`. Postman: still no collection in the repo (`.ai/apps/postman-files.md`), nothing updated.
+- Wire contract for mobile: `GET api/forms/life-group-reports?life_group_id={int}` -> JSON array of the snake_case objects above; `GET api/forms/life-group-reports/{uuid}` -> one object; errors 403 (filter group not accessible), 404 (detail not visible), 400 (non-numeric id).
+
+## Shared + Android (home-card branch)
+
+Owen. Backend wire contract verified against commit d53f9a9 (`toResponse` snake_case, `submitted_by {id,name}`, 403 on filter outside scope, 404 detail out of scope).
+
+Shared (`kmp-mobile/shared`, commit a059f3e):
+- `domain/model/LifeGroupReport.kt`: `LifeGroupWeeklyReport` (domain; multi-value fields are `List<String>`, `offering` String).
+- `domain/repository/LifeGroupReportRepository.kt` + `data/repository/LifeGroupReportRepositoryImpl.kt`: `getReports(lifeGroupId: Int)` -> `GET api/forms/life-group-reports?life_group_id=`, `getReport(reportId: String)`; private snake_case DTO, tolerant of array/string and number/string variants.
+- DI: `SharedModule` (`single<LifeGroupReportRepository>`), `IosAppContainer.lifeGroupReportRepository`.
+- `domain/model/HomeLifeGroupCard.kt`: `HomeLifeGroupCard`, `HomeLifeGroupCards`, `selectUpcomingLifeGroupTasks`, `buildHomeLifeGroupCards`.
+- Tests: `LifeGroupReportRepositoryTest` (5), `HomeLifeGroupCardTest` (7).
+
+Android (`kmp-mobile/android`):
+- Home: `HomeUiState` (`lifeGroupCards`, `hiddenLifeGroupsCount`, `legacyTasks`; `myTasks` removed), `HomeViewModel` (independent groups/tasks fetches, cancellation rethrown, `onLifeGroupTapped`, `onSeeAllLifeGroupsTapped`; wrapper `selectUpcomingTasks` removed in favour of the shared function), `HomeScreen` (`LifeGroupHomeCard`, "Ver todos (N)", legacy `MyTasksCard` only when groups failed). Constructor of `HomeViewModel` unchanged (Koin `get()` count stays 4).
+- `ministries/MinistryDetailScreen.kt`: `MyTasksRows` extracted from `MyTasksCard` and reused by the home card; "Relatórios" gate -> `canViewGroupReports`; new "Relatórios semanais" row; meeting line via new `LifeGroupMeetingLabel.kt`. `MinistryDetailViewModel.kt`: `canViewLifeGroupReports` (pure, internal), `onReportsTap`, effect `NavigateToReports`. `LifeGroupDetailViewModel` constructor unchanged.
+- New `ui/features/lifegroupreports/`: `LifeGroupReportsViewModel` + `LifeGroupReportDetailViewModel`, UiState/Effect, `LifeGroupReportsScreen`, `LifeGroupReportDetailScreen`.
+- Analytics: `isScopedToGroup` (set when a `lifeGroupId` is supplied) hides the group dropdown.
+- Nav: `Screen.LifeGroupReports` (`life_group_reports/{lifeGroupId}`), `Screen.LifeGroupReportDetail` (`life_group_report/{reportId}`), `PazNavGraph`; Koin in `AndroidModule`: `LifeGroupReportsViewModel(lifeGroupId: Int, get())`, `LifeGroupReportDetailViewModel(reportId: String, get())`.
+- Tests: `HomeViewModelTest` rewritten for cards/fallback (8), `LifeGroupDetailViewModelTest` gate matrix (+2), new `LifeGroupReportsViewModelTest` (10), `LifeGroupAnalyticsViewModelTest` scoped (+1).
+- Deviation: `LifeGroupHomeCard` header uses `Surface(onClick=)` per kmp-mobile guidelines; no role chip on the card (spec marked it optional).
+- Docs: `.ai/features/mobile-app.md`, `.ai/apps/mobile.md` (Android+shared; the stale "no iOS unit-test target" paragraph is left for the iOS agent).
+
+## iOS (home-card branch)
+
+Owen. Mirrors the Android implementation; uses the shared `buildHomeLifeGroupCards` (Swift: `HomeLifeGroupCardKt`) and `LifeGroupReportRepository` (`IosAppContainer.shared.lifeGroupReportRepository`).
+
+- Home: `HomeViewModel` (`lifeGroupCards`, `hiddenLifeGroupsCount`, `legacyTasks`; `myTasks` removed; pure `resolveLifeGroups(currentUserId:groups:tasks:today:)`; independent groups/tasks fetches, `FetchOutcome` with cancellation keeping current state; `upcomingTasks` is now a thin wrapper over the shared `selectUpcomingLifeGroupTasks`). `HomeView`: per-group `LifeGroupHomeCard` items, "Ver todos (N)" row to `LifeGroupsView`, legacy `LifeGroupMyTasksCard` only when groups failed, discovery CTA unchanged. New `Features/Home/LifeGroupHomeCard.swift` (header `NavigationLink` to `LifeGroupDetailView`, task rows as sibling links; also holds `lifeGroupMeetingLabel(day:time:)`, now used by the detail screen). `LifeGroupTaskRows` extracted from `LifeGroupMyTasksCard`.
+- Detail: `LifeGroupDetailView.canViewGroupReports(role:isGroupLeadership:)` (static, pure); "Relatórios" gate changed to it; new "Relatórios semanais" row.
+- New `Features/LifeGroupReports/`: `LifeGroupReportsViewModel`/`LifeGroupReportDetailViewModel` (`@Observable @MainActor`, loading/refreshing/error/noAccess; 403 = no access on the list, 403/404 on the detail, status read via `kotlinException.httpStatusCodeOrNull()` like the analytics VM), `LifeGroupReportsPresentation` (pure failure mapping, sort, offering/activity formatting), `LifeGroupReportsView`, `LifeGroupReportDetailView`.
+- Analytics: `LifeGroupAnalyticsViewModel.isScopedToGroup`; the group picker is hidden when scoped.
+- Project: 4 new app sources + `LifeGroupReportsTests.swift` hand-registered in `project.pbxproj` (new `LifeGroupReports` group; `plutil -lint` OK). `project.yml` needs no edit: its sources are directory globs (`PazChurch`, `PazChurchTests`); xcodegen is not installed, so it was not regenerated.
+- Tests: `HomeViewModelTests` (+7: card ordering/folding, cap + hidden count, groups-failed legacy fallback with no CTA, both failed, tasks failed, empty groups CTA, meeting label), new `LifeGroupReportsTests` (gate matrix, failure mapping, formatting, list/detail view models with a fake repository).
+- Docs: `.ai/apps/mobile.md` (stale "no iOS unit-test target" paragraph replaced; iOS sections), `.ai/features/mobile-app.md`.
+- Deviations: none from the spec. No role chip on the card (same as Android). Swift stale-key note: Kotlin enum `UserRole.area_leader` is `.areaLeader` in Swift.
+
+## Review fixes (home-card branch)
+
+Arnold, from Malcolm's `.pipeline/review.md`.
+
+- M1 (backend): `LifeGroupReportsService.auditLog` maps rows to the admin-ui `AuditLogEntry` shape `{id, form_slug, submission_id, action, diff, created_at, actor:{id,name}}`; the actor `User` is no longer serialized (no email/phone). Service and controller specs updated, with assertions that no `email`/`phoneNumber` is present.
+- Minor 1: ASCII import order fixed in `AndroidModule.kt`, `PazNavGraph.kt`, `SharedModule.kt`, `IosAppContainer.kt` (incl. the older `LifeGroupTask`/`LifeGroupStudy` pairs). A scan of every `.kt` file touched by the branch found no other violations (`java.*`/`kotlin.*` last, per the ktlint layout).
+- Minor 2: `LifeGroupDetailView.canViewGroupReports` is now `nonisolated static` (pure), so the gate tests need no actor isolation. Verified by compiling and running the tests.
+- Minor 3: Android `LifeGroupReportsViewModel.load()`/`refresh()` are block-bodied.
+- Minor 4: a failed refresh with a populated list keeps the list. Android emits a new `LifeGroupReportsEffect.ShowError` (snackbar); iOS sets a transient `refreshError` (alert). A failure with no content, or a 403, behaves as before. Tests added or adjusted on both platforms.
+- Minor 5: `Modifier.fillMaxWidth()` on the Android home-card header `Surface`.
+- Minor 6 (backend): `findEntity` no longer grants read access to the original submitter, so detail/audit visibility equals list visibility (form scope plus led groups). The alternative (adding the submitter to the list filter) was not chosen because it needs a join-column assumption that cannot be verified cheaply. Service spec updated; docs corrected.
+- Minor 7: iOS `LifeGroupReportDetailViewModel.load` resets `isLoading` on cancellation (the next `.task` run sets it again).
+- Minor 8: no change. `canManage` (Android `LifeGroupDetailUiState` and iOS `MinistryDetailView`) is still read by `onManageTap` / the manage entry, so it is not unused.
+- Minor 9 (Postman): no life-group-reports entry exists in `.ai/apps/postman-files.md` and no collection exists in the repo, so nothing was updated. The spec's Postman deliverable remains not done.
+
+## Pilot readiness: study push, Membros icon, rotating tasks (Owen)
+
+- B backend: migration `1795900000005-AddLifeGroupStudyNotificationCategory` (enum value `life_group_study` was missing from every migration). `LifeGroupStudyAccessService.resolveNotificationRecipients(excludeUserId)` now returns roster members + leaders + co-leaders + leadership roles (deduped, publisher excluded); `canPublish` matches `leader_id` as well as `co_leader_id`. Study push stores `segment.filters.user_ids`. Controller create/update/delete lost `@Roles(...LEADERSHIP_ROLES)` (service `canPublish` decides, so grant holders / `member`-role leaders are no longer 403'd). Update/delete require the owner to still hold publish rights. No mobile change needed: both apps already parse `paz://estudo-do-life/{id}` (tests exist).
+- C: people icon on the "Membros" row: iOS `MinistryDetailView.swift` (ministry + life group), Android `MinistryDetailScreen.kt` (ministry row; the Android life group screen has no Membros row).
+- D: evaluator d1 pass generates when a meeting has no assignment rows (late setup). Docs: starter template list in `.ai/features/life-groups.md`.
+
+## Review fixes (pilot-readiness)
+
+- M1 backend: `LifeGroupStudiesService.notifyAudience` returns early when there are no recipients and persists nothing (an empty `user_ids` segment would resolve to every user in `NotificationsService.resolveSegment`). Audited the other producers: `life-group-task-notifications.service` (`send`) and the attendance reminder evaluator already skip empty recipient lists; no change. `resolveSegment` left as is (admin-ui segments rely on absent `user_ids` meaning no id filter).
+- M2 backend: study `create` dispatches fire-and-forget (`void notifyAudience().catch(log)`), so latency no longer scales with church size; still exactly once, create only.
+- Android: `paz://account` no longer navigates to the nested-only `account` route (pops to the Shell instead); ids must match `^[A-Za-z0-9_-]+$` and the attendance date `^\d{4}-\d{2}-\d{2}$` in `PushNotificationHelper`.
+- iOS: same allowlist in `DeepLinkDestination.parsedRoute/from(parsedRoute:)`; MainTabView is now the single consumer of the pending link and hands account-stack destinations to AccountView through a binding (no cold-start ordering dependency).
+- Deferred follow-ups: singleTop with another activity on top, activity recreation before Splash, inactive-user filter in study recipients, m9 automated UI coverage.
+
+## Merge with develop (#89/#93) validation
+
+- Merge 381faaf (origin/develop into fix/pilot-readiness). `git diff origin/develop...HEAD` is only our 41 files; textual overlap was AccountView.swift and MainTabView.swift (our push-routing rewrite on top of #89's `churchRepository`), no other overlap with #89/#93 backend (scope-resolver, life-groups.service, casa-de-paz, analytics) or Android DI.
+- Migrations renumbered to avoid #89's 1795900000003..5: `AddLifeGroupTasksEnumValues1795900000006`, `CreateLifeGroupTasks1795900000007`, `AddLifeGroupStudyNotificationCategory1795900000008`. Develop already carried the tasks migrations under the old names (`...0003`/`...0004`); a DB that ran those will run 6/7 again, which is safe because both are idempotent (IF NOT EXISTS, ON CONFLICT DO NOTHING).
+- Semantic conflict found and fixed: #93 added required Swift-visible `relationship`/`isSupervised` params to the shared `LifeGroup` model, which broke compilation of `HomeViewModelTests.swift` (from #92) on develop itself. Fixed in the test helper (`relationship: nil, isSupervised: false`).

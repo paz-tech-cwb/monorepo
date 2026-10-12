@@ -64,6 +64,7 @@ describe('LifeGroupTasksReminderEvaluator', () => {
     skip?: unknown;
     dedupe?: unknown;
     pendingReminders?: unknown[];
+    existingAssignments?: number;
     generated?: unknown[];
     generatedSkipped?: boolean;
     insertError?: unknown;
@@ -96,6 +97,7 @@ describe('LifeGroupTasksReminderEvaluator', () => {
             : [],
         ),
       ),
+      count: jest.fn(() => Promise.resolve(opts.existingAssignments ?? 1)),
       insert: jest.fn(() =>
         opts.insertError
           ? Promise.reject(asError(opts.insertError))
@@ -187,6 +189,33 @@ describe('LifeGroupTasksReminderEvaluator', () => {
       ruleType: 'life_group_tasks',
       dedupeKey: 'life_group_tasks:7:2026-06-10:d1',
     });
+  });
+
+  it('late setup: a smaller offset generates and pushes when the meeting has no assignments at all', async () => {
+    const { evaluator, tasks, notifications } = setup({
+      pendingReminders: [],
+      existingAssignments: 0,
+      generated: [assignment()],
+    });
+    await evaluator.run(rule, tuesdayNine);
+
+    expect(tasks.generateForMeeting).toHaveBeenCalledWith(7, '2026-06-10');
+    expect(notifications.notifyAssignee).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'a-1' }),
+      bob,
+      'Sua tarefa',
+      'Você foi sorteado para {task}',
+    );
+    expect(notifications.remindAssignee).not.toHaveBeenCalled();
+  });
+
+  it('a smaller offset never generates when assignments already exist (leader rerolls/declines are kept)', async () => {
+    const { evaluator, tasks } = setup({
+      pendingReminders: [],
+      existingAssignments: 2,
+    });
+    await evaluator.run(rule, tuesdayNine);
+    expect(tasks.generateForMeeting).not.toHaveBeenCalled();
   });
 
   it('claims the dispatch key BEFORE generating or sending', async () => {

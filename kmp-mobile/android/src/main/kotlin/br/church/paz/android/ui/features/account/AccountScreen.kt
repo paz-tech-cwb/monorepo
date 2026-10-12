@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.PersonAddAlt
 import androidx.compose.material.icons.outlined.Route
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
@@ -91,6 +92,8 @@ fun AccountScreen(
                 AccountEffect.NavigateToEditProfile -> navController.navigate(Screen.EditProfile.route)
                 AccountEffect.NavigateToMemberJourney -> navController.navigate(Screen.MemberJourney.route)
                 AccountEffect.NavigateToFormularios -> navController.navigate(Screen.FormulariosList.route)
+                AccountEffect.NavigateToGuestForm ->
+                    navController.navigate(Screen.FormSteps.createRoute("form-guests"))
                 AccountEffect.NavigateToMinistries -> navController.navigate(Screen.Ministries.route)
                 AccountEffect.NavigateToLifeGroups -> navController.navigate(Screen.LifeGroups.route)
                 AccountEffect.NavigateToReports -> navController.navigate(Screen.ReportsList.route)
@@ -169,6 +172,7 @@ fun AccountScreen(
                         item {
                             ProfileCard(
                                 user = user,
+                                churchName = uiState.churchName,
                                 onClick = viewModel::onEditProfile,
                                 modifier = Modifier.padding(horizontal = PazSpacing.Lg),
                             )
@@ -195,13 +199,22 @@ fun AccountScreen(
                                         iconTint = PazColors.MenuFormularios,
                                         onClick = viewModel::onFormularios,
                                     )
+                                } else {
+                                    PazMenuRow(
+                                        title = "Convidado",
+                                        icon = Icons.Outlined.PersonAddAlt,
+                                        iconTint = PazColors.MenuFormularios,
+                                        onClick = viewModel::onGuestForm,
+                                    )
                                 }
-                                PazMenuRow(
-                                    title = "Ministérios",
-                                    icon = Icons.Outlined.MusicNote,
-                                    iconTint = PazColors.MenuMinistries,
-                                    onClick = viewModel::onMinistries,
-                                )
+                                if (user.role.isLeader) {
+                                    PazMenuRow(
+                                        title = "Ministérios",
+                                        icon = Icons.Outlined.MusicNote,
+                                        iconTint = PazColors.MenuMinistries,
+                                        onClick = viewModel::onMinistries,
+                                    )
+                                }
                                 PazMenuRow(
                                     title = "Life Groups",
                                     icon = Icons.Outlined.Groups,
@@ -299,6 +312,7 @@ private fun ProfileCard(
     user: User,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    churchName: String? = null,
 ) {
     Box(modifier = modifier) {
         PazGlassCard(
@@ -330,6 +344,14 @@ private fun ProfileCard(
                         Text(
                             user.role.displayName,
                             style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Primary),
+                        )
+                    }
+                    if (!churchName.isNullOrBlank()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            churchName,
+                            style = MaterialTheme.typography.labelSmall.copy(color = PazColors.Slate),
+                            maxLines = 1,
                         )
                     }
                 }

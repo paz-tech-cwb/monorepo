@@ -23,7 +23,7 @@ export class LifeGroupStudyAccessService {
   /**
    * True if the user can publish/edit/delete Estudo do Life content:
    * - has one of the leadership roles, OR
-   * - is co-leader on at least one life group, OR
+   * - is leader or co-leader on at least one life group, OR
    * - has an explicit grant in life_group_study_publishers.
    */
   async canPublish(user: User): Promise<boolean> {
@@ -35,10 +35,12 @@ export class LifeGroupStudyAccessService {
       return true;
     }
 
-    const coLeaderCount = await this.entityManager.count(LifeGroup, {
-      where: { coLeader: { id: user.id } },
+    // Leaders/co-leaders are matched by group assignment, not role slug: a
+    // `member`-role user can be leader_id/co_leader_id of a group.
+    const ledGroupCount = await this.entityManager.count(LifeGroup, {
+      where: [{ leader: { id: user.id } }, { coLeader: { id: user.id } }],
     });
-    if (coLeaderCount > 0) return true;
+    if (ledGroupCount > 0) return true;
 
     const grantCount = await this.entityManager.count(LifeGroupStudyPublisher, {
       where: { userId: user.id },
@@ -65,10 +67,24 @@ export class LifeGroupStudyAccessService {
 
   /**
    * Resolves every user who should be notified when a new study is
-   * published: users with a leadership role, plus every life group
-   * co-leader, deduplicated by id.
+   * published. Studies are church-wide (no per-group targeting), so the
+   * audience is: every rostered member of any life group, every life group
+   * leader and co-leader (matched by assignment, so `member`-role leaders
+   * are included), plus users holding a leadership role. Deduplicated by id;
+   * `excludeUserId` (the publisher) is left out.
    */
-  async resolveNotificationRecipients(): Promise<User[]> {
+  async resolveNotificationRecipients(excludeUserId?: number): Promise<User[]> {
+    const rosterUsers = await this.entityManager
+      .createQueryBuilder(User, 'u')
+      .innerJoin('u.lifeGroups', 'lg')
+      .getMany();
+
+    const groups = await this.entityManager
+      .createQueryBuilder(LifeGroup, 'lg')
+      .leftJoinAndSelect('lg.leader', 'leader')
+      .leftJoinAndSelect('lg.coLeader', 'coLeader')
+      .getMany();
+
     const leadershipUsers = await this.entityManager
       .createQueryBuilder(User, 'u')
       .leftJoinAndSelect('u.role', 'role')
@@ -77,16 +93,14 @@ export class LifeGroupStudyAccessService {
       })
       .getMany();
 
-    const coLeaders = await this.entityManager
-      .createQueryBuilder(LifeGroup, 'lg')
-      .innerJoinAndSelect('lg.coLeader', 'coLeader')
-      .getMany();
-
     const byId = new Map<number, User>();
-    for (const u of leadershipUsers) byId.set(u.id, u);
-    for (const lg of coLeaders) {
+    for (const u of rosterUsers) byId.set(u.id, u);
+    for (const lg of groups) {
+      if (lg.leader) byId.set(lg.leader.id, lg.leader);
       if (lg.coLeader) byId.set(lg.coLeader.id, lg.coLeader);
     }
+    for (const u of leadershipUsers) byId.set(u.id, u);
+    if (excludeUserId !== undefined) byId.delete(excludeUserId);
 
     return [...byId.values()];
   }

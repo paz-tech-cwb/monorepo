@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.shared.domain.model.LifeGroupTask
 import br.church.paz.shared.domain.model.LifeGroupTaskStatus
+import br.church.paz.shared.domain.model.UserRole
 import br.church.paz.shared.domain.model.isLeader
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.ChurchRepository
@@ -109,6 +110,7 @@ class LifeGroupDetailViewModel(
                             error = if (group == null) "Grupo não encontrado" else null,
                             canManageAttendance = canManageAttendance,
                             canManage = currentUser?.role?.isLeader == true,
+                            canViewGroupReports = canViewLifeGroupReports(currentUser?.role, canManageAttendance),
                             myTasks = myTasks,
                         )
                     }
@@ -134,6 +136,10 @@ class LifeGroupDetailViewModel(
             emptyList()
         }
 
+    fun onReportsTap() {
+        viewModelScope.launch { _effect.send(LifeGroupDetailEffect.NavigateToReports(lifeGroupId)) }
+    }
+
     fun onManageTap() {
         viewModelScope.launch { _effect.send(LifeGroupDetailEffect.NavigateToManage(lifeGroupId)) }
     }
@@ -150,3 +156,20 @@ class LifeGroupDetailViewModel(
         viewModelScope.launch { _effect.send(LifeGroupDetailEffect.NavigateBack) }
     }
 }
+
+/**
+ * Who sees the per-group "Relatórios" / "Relatórios semanais" entries: this group's own
+ * leader/co-leader ([isGroupLeadership], by id — works for a co-leader whose role is `member`),
+ * or admin/pastor/area leader/sector leader (the client cannot know their scope; the backend
+ * answers 403/404 for out-of-scope groups). A `life_group_leader` of ANOTHER group, plain
+ * members, disciplers and guests never see them. The backend stays the source of truth.
+ */
+internal fun canViewLifeGroupReports(
+    role: UserRole?,
+    isGroupLeadership: Boolean,
+): Boolean =
+    isGroupLeadership ||
+        role == UserRole.admin ||
+        role == UserRole.pastor ||
+        role == UserRole.area_leader ||
+        role == UserRole.sector_leader

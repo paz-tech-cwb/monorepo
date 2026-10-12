@@ -23,6 +23,8 @@ import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendance
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryViewModel
 import br.church.paz.android.ui.features.lifegroupdiscovery.LifeGroupDiscoveryViewModel
 import br.church.paz.android.ui.features.lifegroupdiscovery.LocationProvider
+import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportDetailViewModel
+import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportsViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListViewModel
@@ -63,9 +65,9 @@ val androidModule =
         viewModel { AcademyViewModel(get(), get(), get()) }
         viewModel { (videoId: String) -> VideoPlayerViewModel(videoId) }
         viewModel { (courseId: String) -> CourseDetailViewModel(courseId, get()) }
-        viewModel { (courseId: String) -> QuestionnaireViewModel(courseId, get()) }
+        viewModel { (courseId: String) -> QuestionnaireViewModel(courseId, get(), get()) }
         viewModel { CertificatesViewModel(get()) }
-        viewModel { AccountViewModel(get(), get()) }
+        viewModel { AccountViewModel(get(), get(), get()) }
         viewModel { ProfileViewModel(get()) }
         viewModel { EditProfileViewModel(get(), get(), get()) } // (UserRepository, OnboardingRepository, AuthRepository)
         viewModel { (eventId: String) -> AgendaDetailViewModel(get(), eventId) }
@@ -75,7 +77,7 @@ val androidModule =
         viewModel { FormSubmissionsListViewModel(get()) }
         viewModel { CasaDePazSubmissionsListViewModel(get()) }
         viewModel { (submissionId: String) -> CasaDePazSubmissionEditorViewModel(submissionId, get()) }
-        viewModel { MemberJourneyViewModel(get()) }
+        viewModel { MemberJourneyViewModel(get(), get()) }
         viewModel { NotificationPrefsViewModel(get()) }
         viewModel { SearchViewModel(get(), get(), get(), get()) }
         viewModel { MinistriesViewModel(get(), get(), get()) }
@@ -97,6 +99,8 @@ val androidModule =
             LifeGroupAttendanceEditorViewModel(lifeGroupId, date, get())
         }
         viewModel { (lifeGroupId: Int?) -> LifeGroupAnalyticsViewModel(lifeGroupId, get()) }
+        viewModel { (lifeGroupId: Int) -> LifeGroupReportsViewModel(lifeGroupId, get()) }
+        viewModel { (reportId: String) -> LifeGroupReportDetailViewModel(reportId, get()) }
         viewModel { (assignmentId: String) -> LifeGroupTaskGuideViewModel(assignmentId, get()) }
         viewModel { (lifeGroupId: Int) -> LifeGroupTaskMembersViewModel(lifeGroupId, get()) }
         viewModel { CasaDePazAnalyticsViewModel(get()) }

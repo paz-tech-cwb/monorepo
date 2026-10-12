@@ -8,6 +8,7 @@ import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
 import { EntityManager } from 'typeorm';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { Announcement } from './entities/announcement.entity';
+import { Church } from '../church/entities/church.entity';
 
 @Injectable()
 export class AnnouncementsService {
@@ -20,7 +21,10 @@ export class AnnouncementsService {
    * This action adds a new announcement.
    * @param createAnnouncementDto
    */
-  async create(createAnnouncementDto: CreateAnnouncementDto): Promise<void> {
+  async create(
+    createAnnouncementDto: CreateAnnouncementDto,
+    churchId: number,
+  ): Promise<void> {
     const { imageUrl, title, subtitle, markdownContent, actionUrl } =
       createAnnouncementDto;
 
@@ -31,6 +35,7 @@ export class AnnouncementsService {
         subtitle,
         markdownContent,
         actionUrl,
+        church: { id: churchId } as Church,
       });
 
       await this.entityManager.save(announcement);
@@ -43,12 +48,14 @@ export class AnnouncementsService {
   }
 
   /**
-   * This action returns all announcements.
+   * This action returns all announcements, optionally scoped to a church.
    * @returns
    */
-  async findAll(): Promise<Announcement[]> {
+  async findAll(churchId?: number): Promise<Announcement[]> {
     try {
-      return await this.entityManager.find(Announcement);
+      return await this.entityManager.find(Announcement, {
+        where: churchId ? { church: { id: churchId } } : {},
+      });
     } catch (error) {
       console.log('Error: ', error);
       throw new BadRequestException(

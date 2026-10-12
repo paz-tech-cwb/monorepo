@@ -138,9 +138,40 @@ struct HomeView: View {
                 }
             }
 
-            if !viewModel.myTasks.isEmpty {
+            ForEach(viewModel.lifeGroupCards, id: \.group.id) { card in
+                LifeGroupHomeCard(
+                    card: card,
+                    taskRepository: IosAppContainer.shared.lifeGroupTaskRepository
+                )
+                .padding(.horizontal, PazSpacing.lg)
+                .padding(.top, 32)
+            }
+
+            if viewModel.hiddenLifeGroupsCount > 0 {
+                NavigationLink {
+                    LifeGroupsView(churchRepository: IosAppContainer.shared.churchRepository)
+                } label: {
+                    HStack {
+                        Text("Ver todos (\(viewModel.lifeGroupCards.count + viewModel.hiddenLifeGroupsCount))")
+                            .font(PazTypography.titleSmall)
+                            .foregroundColor(PazColors.accent)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.horizontal, PazSpacing.lg)
+                    .padding(.top, PazSpacing.md)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, PazSpacing.lg)
+            }
+
+            // Legacy tasks-only card: only when the groups fetch failed but the tasks fetch worked.
+            if viewModel.lifeGroupCards.isEmpty, !viewModel.legacyTasks.isEmpty {
                 LifeGroupMyTasksCard(
-                    tasks: viewModel.myTasks,
+                    tasks: viewModel.legacyTasks,
                     repository: IosAppContainer.shared.lifeGroupTaskRepository
                 )
                 .padding(.horizontal, PazSpacing.lg)

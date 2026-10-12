@@ -4,18 +4,35 @@ import { LifeGroupsService } from './life-groups.service';
 import { LifeGroup } from './entities/life-group.entity';
 import { User } from '../users/entities/user.entity';
 
-function makeQueryBuilder(result: LifeGroup[]) {
+function makeQueryBuilder(result: LifeGroup[], rawRows: unknown[] = []) {
   const qb: Record<string, jest.Mock> = {
     leftJoinAndSelect: jest.fn(),
+    leftJoin: jest.fn(),
+    innerJoin: jest.fn(),
+    select: jest.fn(),
+    addSelect: jest.fn(),
     where: jest.fn(),
+    orWhere: jest.fn(),
     orderBy: jest.fn(),
     take: jest.fn(),
+    andWhere: jest.fn(),
     getMany: jest.fn().mockResolvedValue(result),
+    getRawMany: jest.fn().mockResolvedValue(rawRows),
   };
-  qb.leftJoinAndSelect.mockReturnValue(qb);
-  qb.where.mockReturnValue(qb);
-  qb.orderBy.mockReturnValue(qb);
-  qb.take.mockReturnValue(qb);
+  for (const k of [
+    'leftJoinAndSelect',
+    'leftJoin',
+    'innerJoin',
+    'select',
+    'addSelect',
+    'where',
+    'orWhere',
+    'andWhere',
+    'orderBy',
+    'take',
+  ]) {
+    qb[k].mockReturnValue(qb);
+  }
   return qb;
 }
 
@@ -174,6 +191,195 @@ describe('LifeGroupsService', () => {
       mockEntityManager.createQueryBuilder.mockReturnValue(qb);
       const resultWithSearch = await service.findAll(viewer, 'Alpha');
       expect(resultWithSearch[0].members).toBeNull();
+    });
+  });
+
+  describe('findMine (supervisor visibility)', () => {
+    const me = { id: 50, role: { slug: 'area_leader' } } as unknown as User;
+    const group = (id: number, extra: Record<string, unknown> = {}) =>
+      ({
+        ...groupAlpha,
+        id,
+        name: `G${id}`,
+        leader: { id: 1, name: 'L', phoneNumber: null },
+        coLeader: null,
+        users: [{ id: 7, name: 'Roster', email: 'r@x.com' }],
+        sector: { id: 10 },
+        ...extra,
+      }) as unknown as LifeGroup;
+
+    it('queries leader, co-leader, sector/area supervision and roster in one query', async () => {
+      const qb = makeQueryBuilder([]);
+      mockEntityManager.createQueryBuilder.mockReturnValue(qb);
+      await service.findMine(me);
+      expect(mockEntityManager.createQueryBuilder).toHaveBeenCalledTimes(1);
+      const clauses = [
+        ...(qb.where.mock.calls as string[][]).map((c) => c[0]),
+        ...(qb.orWhere.mock.calls as string[][]).map((c) => c[0]),
+      ].join(' | ');
+      for (const needle of [
+        'leader.id',
+        'coLeader.id',
+        'sectorLeader.id',
+        'sectorCoLeader.id',
+        'areaLeader.id',
+        'areaCoLeader.id',
+        'user_life_groups',
+      ]) {
+        expect(clauses).toContain(needle);
+      }
+    });
+
+    it('marks a group in a sector the viewer leads as supervisor, keeps member_count but omits the roster', async () => {
+      const qb = makeQueryBuilder([
+        group(1, { sector: { id: 10, leader: { id: 50 } } }),
+      ]);
+      mockEntityManager.createQueryBuilder.mockReturnValue(qb);
+      const [r] = await service.findMine(me);
+      expect(r.relationship).toBe('supervisor');
+      expect(r.is_supervised).toBe(true);
+      expect(r.member_count).toBe(1);
+      expect(r.members).toBeNull();
+    });
+
+    it('keeps the roster for leader/co-leader rows and for a supervisor who is also rostered', async () => {
+      const supervisedSector = { id: 10, leader: { id: 50 } };
+      const qb = makeQueryBuilder([
+        group(1, { leader: { id: 50, name: 'Me' }, sector: supervisedSector }),
+        group(2, {
+          coLeader: { id: 50, name: 'Me' },
+          sector: supervisedSector,
+        }),
+        group(3, {
+          sector: supervisedSector,
+          users: [{ id: 50, name: 'Me', email: 'm@x.com' }],
+        }),
+      ]);
+      mockEntityManager.createQueryBuilder.mockReturnValue(qb);
+      const result = await service.findMine(me);
+      expect(result.map((r) => r.relationship)).toEqual([
+        'leader',
+        'co_leader',
+        'supervisor',
+      ]);
+      for (const r of result) expect(r.members).not.toBeNull();
+    });
+
+    it.each([
+      ['sector co-leader', { sector: { id: 10, coLeader: { id: 50 } } }],
+      [
+        'area leader',
+        { sector: { id: 10, area: { id: 3, leader: { id: 50 } } } },
+      ],
+      [
+        'area co-leader',
+        { sector: { id: 10, area: { id: 3, coLeader: { id: 50 } } } },
+      ],
+    ])('supervisor via %s', async (_label, extra) => {
+      const qb = makeQueryBuilder([group(1, extra)]);
+      mockEntityManager.createQueryBuilder.mockReturnValue(qb);
+      const [r] = await service.findMine(me);
+      expect(r.relationship).toBe('supervisor');
+      expect(r.is_supervised).toBe(true);
+    });
+
+    it('precedence: leader beats co_leader beats supervisor beats member', async () => {
+      const supervisedSector = { id: 10, leader: { id: 50 } };
+      const qb = makeQueryBuilder([
+        group(1, {
+          leader: { id: 50, name: 'Me' },
+          sector: supervisedSector,
+        }),
+        group(2, {
+          coLeader: { id: 50, name: 'Me' },
+          sector: supervisedSector,
+        }),
+        group(3, { sector: supervisedSector }),
+        group(4, {
+          users: [{ id: 50, name: 'Me', email: 'm@x.com' }],
+          sector: { id: 11 },
+        }),
+      ]);
+      mockEntityManager.createQueryBuilder.mockReturnValue(qb);
+      const result = await service.findMine(me);
+      expect(result.map((r) => r.relationship)).toEqual([
+        'leader',
+        'co_leader',
+        'supervisor',
+        'member',
+      ]);
+      // is_supervised stays true when a stronger relationship wins
+      expect(result.map((r) => r.is_supervised)).toEqual([
+        true,
+        true,
+        true,
+        false,
+      ]);
+    });
+
+    it('a plain member is not widened: relationship member, not supervised, roster hidden for others only', async () => {
+      const plain = { id: 60, role: { slug: 'member' } } as unknown as User;
+      const qb = makeQueryBuilder([
+        group(4, {
+          users: [{ id: 60, name: 'Me', email: 'm@x.com' }],
+          sector: { id: 11, leader: { id: 1 } },
+        }),
+      ]);
+      mockEntityManager.createQueryBuilder.mockReturnValue(qb);
+      const [r] = await service.findMine(plain);
+      expect(r.relationship).toBe('member');
+      expect(r.is_supervised).toBe(false);
+      expect(r.member_count).toBe(1);
+    });
+
+    it('keeps the existing response fields (only relationship/is_supervised are new)', async () => {
+      const qb = makeQueryBuilder([group(1)]);
+      mockEntityManager.createQueryBuilder.mockReturnValue(qb);
+      const [r] = await service.findMine(me);
+      mockEntityManager.find.mockResolvedValue([group(1)]);
+      const [legacy] = await service.findAll(me);
+      expect(Object.keys(r).filter((k) => !(k in legacy))).toEqual([
+        'relationship',
+        'is_supervised',
+      ]);
+      expect(Object.keys(legacy).every((k) => k in r)).toBe(true);
+    });
+  });
+
+  describe('findOne (supervisor roster)', () => {
+    const me = { id: 50, role: { slug: 'member' } } as unknown as User;
+    const withRoster = {
+      ...groupAlpha,
+      id: 9,
+      users: [{ id: 7, name: 'Roster', email: 'r@x.com' }],
+    } as unknown as LifeGroup;
+
+    it('shows the roster to a viewer who supervises the group (even without a leader slug)', async () => {
+      mockEntityManager.findOne.mockResolvedValue(withRoster);
+      mockEntityManager.createQueryBuilder.mockReturnValue(
+        makeQueryBuilder([], [{ id: '9' }]),
+      );
+      const r = await service.findOne(9, me);
+      expect(r.members).toEqual([{ id: 7, name: 'Roster', email: 'r@x.com' }]);
+    });
+
+    it('restricts the supervised check to the requested group id', async () => {
+      mockEntityManager.findOne.mockResolvedValue(withRoster);
+      const qb = makeQueryBuilder([], [{ id: '9' }]);
+      mockEntityManager.createQueryBuilder.mockReturnValue(qb);
+      await service.findOne(9, me);
+      expect(qb.andWhere).toHaveBeenCalledWith('lg.id = :onlyGroupId', {
+        onlyGroupId: 9,
+      });
+    });
+
+    it('still hides the roster from an unrelated viewer', async () => {
+      mockEntityManager.findOne.mockResolvedValue(withRoster);
+      mockEntityManager.createQueryBuilder.mockReturnValue(
+        makeQueryBuilder([], []),
+      );
+      const r = await service.findOne(9, me);
+      expect(r.members).toBeNull();
     });
   });
 

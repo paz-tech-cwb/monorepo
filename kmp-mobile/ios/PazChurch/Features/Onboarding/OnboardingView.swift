@@ -1,4 +1,4 @@
-import AVKit
+import AVFoundation
 import Shared
 import SwiftUI
 
@@ -35,23 +35,29 @@ struct OnboardingView: View {
                         message: loadErrorMessage,
                         onRetry: { Task { await coordinator.retryStart() } }
                     )
+                    .questionStepChrome()
                 } else if coordinator.isLoadingMissingSteps, coordinator.currentStep != .video {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .questionStepChrome()
                 } else if coordinator.currentStep == .video {
                     WelcomeVideoStepView(onFinished: coordinator.onVideoFinished)
+                        .statusBarHidden(true)
+                        .toolbar(.hidden, for: .navigationBar)
                 } else if coordinator.currentStep == .birthday {
                     BirthdayStepView(
                         isSubmitting: coordinator.isSubmitting,
                         errorMessage: coordinator.errorMessage,
                         onSubmit: { date in Task { await coordinator.onBirthdaySubmitted(date) } }
                     )
+                    .questionStepChrome()
                 } else if coordinator.currentStep == .whatsapp {
                     WhatsappStepView(
                         isSubmitting: coordinator.isSubmitting,
                         errorMessage: coordinator.errorMessage,
                         onSubmit: { phone in Task { await coordinator.onWhatsappSubmitted(phone) } }
                     )
+                    .questionStepChrome()
                 } else if coordinator.currentStep == .address {
                     AddressStepView(
                         isSubmitting: coordinator.isSubmitting,
@@ -74,17 +80,28 @@ struct OnboardingView: View {
                         },
                         onSkip: coordinator.onSkipCurrentStep
                     )
+                    .questionStepChrome()
                 } else {
                     Color.clear
                         .onAppear(perform: onFinished)
+                        .questionStepChrome()
                 }
             }
             .background(PazColors.background)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
         }
         .task { await coordinator.start() }
+    }
+}
+
+// MARK: - Shared chrome for the three question steps (not the fullscreen video)
+
+private extension View {
+    /// Native translucent nav bar used by every onboarding step except the fullscreen
+    /// welcome video, which instead hides the bar entirely (see `.video` branch above).
+    func questionStepChrome() -> some View {
+        navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
     }
 }
 
@@ -153,12 +170,15 @@ private struct WelcomeVideoStepView: View {
             if hasFailed {
                 failureView
             } else {
-                VideoPlayer(player: player)
+                PlayerLayerView(player: player)
+                    .allowsHitTesting(false)
                     .ignoresSafeArea()
             }
         }
         .task {
             startObserving()
+            try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
+            try? AVAudioSession.sharedInstance().setActive(true)
             player.play()
             try? await Task.sleep(for: Self.startTimeout)
             if !hasStartedPlaying, !hasFailed {
@@ -244,6 +264,7 @@ private struct WelcomeVideoStepView: View {
             NotificationCenter.default.removeObserver(token)
         }
         observerTokens = []
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 }
 
@@ -265,47 +286,47 @@ private struct BirthdayStepView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PazSpacing.lg) {
-            Text("Qual sua data de nascimento?")
-                .font(PazTypography.headlineSmall)
-                .foregroundStyle(PazColors.ink)
+        ScrollView {
+            VStack(alignment: .leading, spacing: PazSpacing.lg) {
+                Text("Qual sua data de nascimento?")
+                    .font(PazTypography.headlineSmall)
+                    .foregroundStyle(PazColors.ink)
 
-            Text(
-                "Usamos isso para conectar você a grupos e ministérios da sua faixa etária, e para confirmar seu cadastro caso já exista um registro seu na igreja."
-            )
-            .font(PazTypography.bodyMedium)
-            .foregroundStyle(PazColors.slate)
+                Text(
+                    "Usamos isso para conectar você a grupos e ministérios da sua faixa etária, e para confirmar seu cadastro caso já exista um registro seu na igreja."
+                )
+                .font(PazTypography.bodyMedium)
+                .foregroundStyle(PazColors.slate)
 
-            DatePicker(
-                "Data de nascimento",
-                selection: $birthDate,
-                in: ...Date(),
-                displayedComponents: .date
-            )
-            .datePickerStyle(.wheel)
-            .labelsHidden()
+                DatePicker(
+                    "Data de nascimento",
+                    selection: $birthDate,
+                    in: ...Date(),
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.wheel)
+                .labelsHidden()
 
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(PazTypography.bodySmall)
-                    .foregroundStyle(PazColors.error)
-            }
-
-            Spacer()
-
-            Button {
-                onSubmit(isoDate)
-            } label: {
-                if isSubmitting {
-                    ProgressView().tint(PazColors.surface)
-                } else {
-                    Text("Continuar")
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(PazTypography.bodySmall)
+                        .foregroundStyle(PazColors.error)
                 }
+
+                Button {
+                    onSubmit(isoDate)
+                } label: {
+                    if isSubmitting {
+                        ProgressView().tint(PazColors.surface)
+                    } else {
+                        Text("Continuar")
+                    }
+                }
+                .buttonStyle(.pazPillPrimary)
+                .disabled(isSubmitting)
             }
-            .buttonStyle(.pazPillPrimary)
-            .disabled(isSubmitting)
+            .padding(PazSpacing.xl)
         }
-        .padding(PazSpacing.xl)
         .navigationTitle("Data de nascimento")
     }
 }
@@ -320,40 +341,41 @@ private struct WhatsappStepView: View {
     @State private var phone = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: PazSpacing.lg) {
-            Text("Qual seu WhatsApp?")
-                .font(PazTypography.headlineSmall)
-                .foregroundStyle(PazColors.ink)
+        ScrollView {
+            VStack(alignment: .leading, spacing: PazSpacing.lg) {
+                Text("Qual seu WhatsApp?")
+                    .font(PazTypography.headlineSmall)
+                    .foregroundStyle(PazColors.ink)
 
-            Text("É por ele que a equipe da igreja vai entrar em contato com você sobre grupos, eventos e novidades.")
+                Text(
+                    "É por ele que a equipe da igreja vai entrar em contato com você sobre grupos, eventos e novidades."
+                )
                 .font(PazTypography.bodyMedium)
                 .foregroundStyle(PazColors.slate)
 
-            TextField("(11) 91234-5678", text: $phone)
-                .keyboardType(.phonePad)
-                .textFieldStyle(.roundedBorder)
+                PazGlassField(placeholder: "(11) 91234-5678", text: $phone, keyboardType: .phonePad)
 
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(PazTypography.bodySmall)
-                    .foregroundStyle(PazColors.error)
-            }
-
-            Spacer()
-
-            Button {
-                onSubmit(phone)
-            } label: {
-                if isSubmitting {
-                    ProgressView().tint(PazColors.surface)
-                } else {
-                    Text("Continuar")
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(PazTypography.bodySmall)
+                        .foregroundStyle(PazColors.error)
                 }
+
+                Button {
+                    onSubmit(phone)
+                } label: {
+                    if isSubmitting {
+                        ProgressView().tint(PazColors.surface)
+                    } else {
+                        Text("Continuar")
+                    }
+                }
+                .buttonStyle(.pazPillPrimary)
+                .disabled(isSubmitting || phone.trimmingCharacters(in: .whitespaces).isEmpty)
             }
-            .buttonStyle(.pazPillPrimary)
-            .disabled(isSubmitting || phone.trimmingCharacters(in: .whitespaces).isEmpty)
+            .padding(PazSpacing.xl)
         }
-        .padding(PazSpacing.xl)
+        .scrollDismissesKeyboard(.interactively)
         .navigationTitle("WhatsApp")
     }
 }
@@ -389,9 +411,7 @@ private struct AddressStepView: View {
                     .foregroundStyle(PazColors.slate)
 
                 HStack(spacing: PazSpacing.sm) {
-                    TextField("CEP", text: $cep)
-                        .keyboardType(.numberPad)
-                        .textFieldStyle(.roundedBorder)
+                    PazGlassField(placeholder: "CEP", text: $cep, keyboardType: .numberPad)
                     Button {
                         onLookupCep(cep)
                     } label: {
@@ -420,6 +440,7 @@ private struct AddressStepView: View {
             }
             .padding(PazSpacing.xl)
         }
+        .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Endereço")
     }
 
@@ -444,23 +465,23 @@ private struct AddressStepView: View {
 
             VStack(alignment: .leading, spacing: PazSpacing.sm) {
                 if lookedUpStreet.isBlank {
-                    TextField("Rua", text: $manualStreet).textFieldStyle(.roundedBorder)
+                    PazGlassField(placeholder: "Rua", text: $manualStreet)
                 } else {
                     Text(lookedUpStreet).font(PazTypography.bodyMedium)
                 }
 
                 if lookedUpNeighborhood.isBlank {
-                    TextField("Bairro", text: $manualNeighborhood).textFieldStyle(.roundedBorder)
+                    PazGlassField(placeholder: "Bairro", text: $manualNeighborhood)
                 } else {
                     Text(lookedUpNeighborhood).font(PazTypography.bodyMedium)
                 }
 
                 if lookedUpCity.isBlank {
-                    TextField("Cidade", text: $manualCity).textFieldStyle(.roundedBorder)
+                    PazGlassField(placeholder: "Cidade", text: $manualCity)
                 }
 
                 if lookedUpState.isBlank {
-                    TextField("Estado", text: $manualState).textFieldStyle(.roundedBorder)
+                    PazGlassField(placeholder: "Estado", text: $manualState)
                 }
 
                 if !lookedUpCity.isBlank, !lookedUpState.isBlank {
@@ -469,8 +490,8 @@ private struct AddressStepView: View {
                         .foregroundStyle(PazColors.slate)
                 }
 
-                TextField("Número", text: $number).textFieldStyle(.roundedBorder)
-                TextField("Complemento (opcional)", text: $complement).textFieldStyle(.roundedBorder)
+                PazGlassField(placeholder: "Número", text: $number)
+                PazGlassField(placeholder: "Complemento (opcional)", text: $complement)
 
                 submitButton(
                     requiredFields: [
@@ -498,12 +519,12 @@ private struct AddressStepView: View {
                     .font(PazTypography.bodySmall)
                     .foregroundStyle(PazColors.slate)
 
-                TextField("Rua", text: $manualStreet).textFieldStyle(.roundedBorder)
-                TextField("Número", text: $number).textFieldStyle(.roundedBorder)
-                TextField("Complemento (opcional)", text: $complement).textFieldStyle(.roundedBorder)
-                TextField("Bairro", text: $manualNeighborhood).textFieldStyle(.roundedBorder)
-                TextField("Cidade", text: $manualCity).textFieldStyle(.roundedBorder)
-                TextField("Estado", text: $manualState).textFieldStyle(.roundedBorder)
+                PazGlassField(placeholder: "Rua", text: $manualStreet)
+                PazGlassField(placeholder: "Número", text: $number)
+                PazGlassField(placeholder: "Complemento (opcional)", text: $complement)
+                PazGlassField(placeholder: "Bairro", text: $manualNeighborhood)
+                PazGlassField(placeholder: "Cidade", text: $manualCity)
+                PazGlassField(placeholder: "Estado", text: $manualState)
 
                 submitButton(
                     requiredFields: [manualStreet, number, manualNeighborhood, manualCity, manualState]

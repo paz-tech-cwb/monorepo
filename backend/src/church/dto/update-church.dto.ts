@@ -1,11 +1,21 @@
 import { Expose } from 'class-transformer';
-import { IsString, IsOptional, IsObject } from 'class-validator';
+import { IsBoolean, IsString, IsOptional, IsObject } from 'class-validator';
 
 export class UpdateChurchDto {
   @Expose()
   @IsOptional()
   @IsString()
   name?: string;
+
+  @Expose()
+  @IsOptional()
+  @IsString()
+  slug?: string | null;
+
+  @Expose({ name: 'is_active' })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 
   @Expose()
   @IsOptional()
