@@ -16,6 +16,16 @@ internal sealed class MarkdownBlock {
     data class Paragraph(
         val text: String,
     ) : MarkdownBlock()
+
+    /** Fenced (```) code block; [text] is the raw content, never parsed inline. */
+    data class CodeBlock(
+        val text: String,
+    ) : MarkdownBlock()
+
+    /** One "> " quoted line; inline formatting still applies to [text]. */
+    data class Quote(
+        val text: String,
+    ) : MarkdownBlock()
 }
 
 /** Inline nodes produced by [parseInline]. */
@@ -32,6 +42,11 @@ internal sealed class InlineSpan {
         val text: String,
     ) : InlineSpan()
 
+    /** `inline code`; the content is literal (no nested formatting). */
+    data class Code(
+        val text: String,
+    ) : InlineSpan()
+
     data class Link(
         val label: String,
         val url: String,
@@ -40,18 +55,38 @@ internal sealed class InlineSpan {
 
 private val orderedListRegex = Regex("^(\\d{1,3})[.)] (.+)$")
 
-internal fun parseMarkdownBlocks(markdown: String): List<MarkdownBlock> =
-    markdown
-        .lines()
-        .mapNotNull { rawLine ->
-            val line = rawLine.trimEnd()
-            val trimmed = line.trimStart()
-            val ordered = orderedListRegex.matchEntire(trimmed)
+internal fun parseMarkdownBlocks(markdown: String): List<MarkdownBlock> {
+    val blocks = mutableListOf<MarkdownBlock>()
+    var codeLines: MutableList<String>? = null
+
+    for (rawLine in markdown.lines()) {
+        val line = rawLine.trimEnd()
+        val trimmed = line.trimStart()
+
+        val openCode = codeLines
+        if (openCode != null) {
+            if (trimmed.startsWith("```")) {
+                blocks += MarkdownBlock.CodeBlock(openCode.joinToString("\n"))
+                codeLines = null
+            } else {
+                openCode += line
+            }
+            continue
+        }
+        if (trimmed.startsWith("```")) {
+            codeLines = mutableListOf()
+            continue
+        }
+
+        val ordered = orderedListRegex.matchEntire(trimmed)
+        val block =
             when {
                 line.isBlank() -> null
                 line.startsWith("### ") -> MarkdownBlock.Heading(3, line.removePrefix("### "))
                 line.startsWith("## ") -> MarkdownBlock.Heading(2, line.removePrefix("## "))
                 line.startsWith("# ") -> MarkdownBlock.Heading(1, line.removePrefix("# "))
+                trimmed == ">" -> null
+                trimmed.startsWith("> ") -> MarkdownBlock.Quote(trimmed.drop(2).trim())
                 trimmed.startsWith("- ") || trimmed.startsWith("* ") -> MarkdownBlock.ListItem(trimmed.drop(2))
                 ordered != null ->
                     MarkdownBlock.ListItem(
@@ -60,7 +95,12 @@ internal fun parseMarkdownBlocks(markdown: String): List<MarkdownBlock> =
                     )
                 else -> MarkdownBlock.Paragraph(line)
             }
-        }
+        if (block != null) blocks += block
+    }
+    // An unclosed fence still renders what was written.
+    codeLines?.let { blocks += MarkdownBlock.CodeBlock(it.joinToString("\n")) }
+    return blocks
+}
 
 /**
  * Only plain web links are rendered as tappable. Anything else (javascript:, intent:, file:,
@@ -88,6 +128,16 @@ internal fun parseInline(text: String): List<InlineSpan> {
     var i = 0
     while (i < text.length) {
         when {
+            text[i] == '`' -> {
+                val end = text.indexOf('`', i + 1)
+                if (end == -1 || end == i + 1) {
+                    addPlain("`")
+                    i++
+                } else {
+                    spans += InlineSpan.Code(text.substring(i + 1, end))
+                    i = end + 1
+                }
+            }
             text.startsWith("**", i) -> {
                 val end = text.indexOf("**", i + 2)
                 if (end == -1) {

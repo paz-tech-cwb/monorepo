@@ -598,14 +598,15 @@ private fun LifeGroupContent(
     }
 }
 
-/** "Minhas tarefas": the signed-in member's upcoming assigned tasks for this group. */
+/** "Minhas tarefas": the signed-in member's upcoming assigned tasks (also reused by the home screen). */
 @Composable
-private fun MyTasksCard(
+internal fun MyTasksCard(
     tasks: List<LifeGroupTask>,
     onTaskTap: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     PazGlassCard(
-        modifier = Modifier.fillMaxWidth().clip(PazShapes.large),
+        modifier = modifier.fillMaxWidth().clip(PazShapes.large),
         cornerRadius = PazSpacing.CardRadiusCompact,
     ) {
         Column(Modifier.padding(PazSpacing.Lg), verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {

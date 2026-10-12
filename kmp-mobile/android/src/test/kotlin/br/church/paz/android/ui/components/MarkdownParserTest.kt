@@ -135,4 +135,49 @@ class MarkdownParserTest {
         assertFalse(isSafeLinkUrl("mailto:a@b.com"))
         assertFalse(isSafeLinkUrl(""))
     }
+
+    @Test
+    fun `parses fenced code blocks verbatim`() {
+        val blocks = parseMarkdownBlocks("antes\n```kotlin\nval a = 1\n\n# nao titulo\n```\ndepois")
+        assertEquals(
+            listOf(
+                MarkdownBlock.Paragraph("antes"),
+                MarkdownBlock.CodeBlock("val a = 1\n\n# nao titulo"),
+                MarkdownBlock.Paragraph("depois"),
+            ),
+            blocks,
+        )
+    }
+
+    @Test
+    fun `unclosed fence still yields a code block`() {
+        assertEquals(listOf(MarkdownBlock.CodeBlock("a\nb")), parseMarkdownBlocks("```\na\nb"))
+    }
+
+    @Test
+    fun `parses blockquotes`() {
+        assertEquals(
+            listOf(MarkdownBlock.Quote("citacao **forte**"), MarkdownBlock.Quote("outra")),
+            parseMarkdownBlocks("> citacao **forte**\n>\n  > outra"),
+        )
+    }
+
+    @Test
+    fun `parses inline code without nested formatting`() {
+        assertEquals(
+            listOf(InlineSpan.Plain("use "), InlineSpan.Code("**x** _y_"), InlineSpan.Plain(" ok")),
+            parseInline("use `**x** _y_` ok"),
+        )
+    }
+
+    @Test
+    fun `unterminated or empty backticks stay literal`() {
+        assertEquals(listOf(InlineSpan.Plain("so `aberto")), parseInline("so `aberto"))
+        assertEquals(listOf(InlineSpan.Plain("a `` b")), parseInline("a `` b"))
+    }
+
+    @Test
+    fun `links inside inline code are not links`() {
+        assertEquals(listOf(InlineSpan.Code("[x](https://a.com)")), parseInline("`[x](https://a.com)`"))
+    }
 }
