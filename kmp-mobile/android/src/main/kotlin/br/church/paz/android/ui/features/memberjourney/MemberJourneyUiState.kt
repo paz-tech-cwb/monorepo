@@ -9,6 +9,10 @@ data class MemberJourneyUiState(
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val error: String? = null,
+    /** Keys of steps ("trackKey#stepIndex") that just completed — drives the fill animation. */
+    val newlyCompletedStepKeys: Set<String> = emptySet(),
+    /** The track currently shown in the full-completion celebration overlay, if any. */
+    val celebratingTrack: JourneyTrack? = null,
 )
 
 sealed class MemberJourneyEffect {

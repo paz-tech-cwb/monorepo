@@ -50,3 +50,11 @@ Keep platform implementations visually aligned unless intentionally redesigning.
 - Read kmp-mobile's local files before proposing mobile changes.
 - Keep auth refresh behavior consistent with backend contract.
 - The "Membros" row in ministry and life group detail (iOS) / ministry detail (Android) carries a people icon like its neighbor rows. Android's life group detail has no Membros list row (only the "N membros" count in the header).
+
+## Life group relationship (supervisors)
+
+`GET /life-groups/me` also returns groups the viewer supervises (area/sector
+leader or co-leader) with `relationship` (`leader` | `co_leader` | `supervisor` |
+`member`) and `is_supervised`; the shared Kotlin `LifeGroup` exposes them as
+`relationship` / `isSupervised` (optional). Ranking/cap for the home card for
+supervisors is an open product question (see `features/life-groups.md`).

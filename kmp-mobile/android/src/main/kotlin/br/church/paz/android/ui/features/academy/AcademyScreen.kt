@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -42,7 +41,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -61,7 +59,6 @@ import br.church.paz.android.ui.components.PazCardSkeleton
 import br.church.paz.android.ui.components.PazGlassCard
 import br.church.paz.android.ui.components.PazGoldBadge
 import br.church.paz.android.ui.components.PazMeshBackground
-import br.church.paz.android.ui.components.PazPillChip
 import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSkeleton
 import br.church.paz.android.ui.features.auth.LoginScreen
@@ -84,7 +81,6 @@ fun AcademyScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showLoginSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var selectedTrackIndex by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
@@ -131,14 +127,12 @@ fun AcademyScreen(
                 when {
                     uiState.isLoading -> AcademySkeleton(contentPadding)
                     uiState.error != null -> AcademyError(message = uiState.error!!, onRetry = viewModel::load)
-                    !uiState.isAuthenticated && uiState.tracks.isEmpty() ->
+                    !uiState.isAuthenticated && uiState.courses.isEmpty() ->
                         LoggedOutPromo(onLogin = { showLoginSheet = true })
-                    uiState.tracks.isEmpty() -> AcademyEmpty()
+                    uiState.courses.isEmpty() -> AcademyEmpty()
                     else ->
                         AcademyContent(
                             uiState = uiState,
-                            selectedTrackIndex = selectedTrackIndex,
-                            onSelectTrack = { selectedTrackIndex = it },
                             onCourseTap = { course ->
                                 if (uiState.isAuthenticated) {
                                     viewModel.onCourseTapped(course.id)
@@ -160,8 +154,6 @@ fun AcademyScreen(
 @Composable
 private fun AcademyContent(
     uiState: AcademyUiState,
-    selectedTrackIndex: Int,
-    onSelectTrack: (Int) -> Unit,
     onCourseTap: (Course) -> Unit,
     onStudyTap: (LifeGroupStudy) -> Unit,
     contentPadding: PaddingValues,
@@ -185,36 +177,9 @@ private fun AcademyContent(
                     modifier = Modifier.padding(horizontal = PazSpacing.Lg).padding(bottom = PazSpacing.Lg),
                 )
             }
-
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = PazSpacing.Lg),
-                horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm),
-            ) {
-                itemsIndexed(uiState.tracks) { index, track ->
-                    PazPillChip(
-                        label = track.title,
-                        selected = selectedTrackIndex == index,
-                        onClick = { onSelectTrack(index) },
-                    )
-                }
-            }
-            Spacer(Modifier.height(PazSpacing.Lg))
         }
 
-        val track = uiState.tracks.getOrNull(selectedTrackIndex) ?: uiState.tracks.first()
-
-        if (!track.description.isNullOrBlank()) {
-            item {
-                Text(
-                    track.description!!,
-                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface.copy(.55f)),
-                    modifier = Modifier.padding(horizontal = PazSpacing.Lg),
-                )
-                Spacer(Modifier.height(PazSpacing.Md))
-            }
-        }
-
-        itemsIndexed(track.courses, key = { _, c -> c.id }) { index, course ->
+        itemsIndexed(uiState.courses, key = { _, c -> c.id }) { index, course ->
             var visible by remember { mutableStateOf(false) }
             LaunchedEffect(course.id) { visible = true }
             AnimatedVisibility(

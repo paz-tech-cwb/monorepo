@@ -13,6 +13,7 @@ data class User(
     val phone: String? = null,
     @SerialName("birth_date") val birthDate: String? = null,
     @SerialName("address_details") val addressDetails: UserAddressDetails? = null,
+    @SerialName("church_id") val churchId: Int? = null,
 )
 
 /**

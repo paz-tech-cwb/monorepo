@@ -1,8 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 export type AuditAction =
   | 'LOGIN_SUCCESS'

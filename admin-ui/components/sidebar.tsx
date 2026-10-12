@@ -16,7 +16,6 @@ import {
   CalendarDays,
   Users2,
   BookOpen,
-  Route,
   LogOut,
   Megaphone,
   GitBranch,
@@ -35,6 +34,9 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { useChurches } from "@/lib/hooks/use-church"
+import { useChurchContext } from "@/contexts/church-context"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { AdminRole } from "@/lib/api/types"
 
 // Leadership roles that can authenticate into admin-ui at all (enforced
@@ -85,7 +87,6 @@ const sidebarSections = [
   {
     title: "Estudo",
     items: [
-      { name: "Trilhos de Cursos", href: "/course-tracks", icon: Route, roles: ["admin"] as AdminRole[] },
       { name: "Cursos", href: "/courses", icon: BookOpen, roles: ["admin"] as AdminRole[] },
       { name: "Estudo do Life", href: "/estudo-do-life", icon: BookMarked, roles: LEADERSHIP_ROLES },
       { name: "Tarefas do Life", href: "/tarefas-life", icon: ClipboardCheck, roles: ["admin"] as AdminRole[] },
@@ -183,6 +184,35 @@ const ROLE_LABELS: Record<AdminRole | "member" | "guest", string> = {
   guest: "Convidado",
 }
 
+function ChurchSelector() {
+  const { canSwitchChurch, selectedChurchId, setSelectedChurchId } = useChurchContext()
+  const { data: churches = [], isLoading } = useChurches()
+
+  // Non-admin roles are pinned to their own primary filial — no selector.
+  if (!canSwitchChurch) return null
+  if (isLoading || churches.length === 0) return null
+
+  return (
+    <div className="px-3 pb-3">
+      <Select
+        value={selectedChurchId ? String(selectedChurchId) : undefined}
+        onValueChange={(value) => setSelectedChurchId(Number(value))}
+      >
+        <SelectTrigger size="sm" className="w-full">
+          <SelectValue placeholder="Selecione a filial" />
+        </SelectTrigger>
+        <SelectContent>
+          {churches.map((church) => (
+            <SelectItem key={church.id} value={String(church.id)}>
+              {church.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
 function UserProfile() {
   const { user } = useAuth()
   if (!user) return null
@@ -275,6 +305,7 @@ export const SidebarContent = memo(function SidebarContent({ className }: { clas
         <h2 className="flex-1 text-lg font-bold text-sidebar-primary tracking-tight">Painel Admin</h2>
         <ThemeToggle />
       </div>
+      <ChurchSelector />
       <div className="flex-1 overflow-auto py-4">
         <nav className="space-y-6 px-2">
           {sidebarSections.map((section) => (

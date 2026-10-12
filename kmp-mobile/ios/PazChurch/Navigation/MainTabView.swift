@@ -33,6 +33,7 @@ struct MainTabView: View {
             AccountView(
                 userRepository: IosAppContainer.shared.userRepository,
                 authRepository: IosAppContainer.shared.authRepository,
+                churchRepository: IosAppContainer.shared.churchRepository,
                 pendingDestination: $accountDestination
             )
             .tabItem { Label("Conta", systemImage: "person.fill") }

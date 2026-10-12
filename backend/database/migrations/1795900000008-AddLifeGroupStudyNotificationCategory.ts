@@ -1,9 +1,9 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddLifeGroupStudyNotificationCategory1795900000005
+export class AddLifeGroupStudyNotificationCategory1795900000008
   implements MigrationInterface
 {
-  name = 'AddLifeGroupStudyNotificationCategory1795900000005';
+  name = 'AddLifeGroupStudyNotificationCategory1795900000008';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // 'life_group_study' is in NOTIFICATION_CATEGORIES (and the entity enum)

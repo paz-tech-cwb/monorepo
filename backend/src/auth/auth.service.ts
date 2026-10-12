@@ -21,6 +21,7 @@ import { AuditLogger } from './audit.logger';
 import { LEADERSHIP_ROLES } from '../common/constants/leadership-roles';
 import { Repository } from 'typeorm';
 import { GuestOriginsService } from '../guest-origins/guest-origins.service';
+import { UserChurch } from '../church/entities/user-church.entity';
 
 const ACCESS_TOKEN_EXPIRES_IN = '24h';
 const REFRESH_TOKEN_EXPIRES_IN = '90d';
@@ -51,6 +52,8 @@ export class AuthService implements OnModuleInit {
     private roleRepo: Repository<Role>,
     @InjectRepository(UserDeviceToken)
     private userDeviceTokenRepo: Repository<UserDeviceToken>,
+    @InjectRepository(UserChurch)
+    private userChurchRepo: Repository<UserChurch>,
     private configService: ConfigService,
     private auditLogger: AuditLogger,
     private guestOriginsService: GuestOriginsService,
@@ -265,6 +268,7 @@ export class AuthService implements OnModuleInit {
         email: user.email,
         picture: user.picture,
         role: user.role?.slug ?? null,
+        church_id: await this.resolvePrimaryChurchId(user.id),
       },
       access_token: tokens.accessToken,
       refresh_token: tokens.refreshToken,
@@ -323,9 +327,27 @@ export class AuthService implements OnModuleInit {
     return crypto.createHash('sha256').update(token).digest('hex');
   }
 
+  /**
+   * Resolves a user's primary ("home") filial id — the row in
+   * `user_churches` marked `is_primary`, falling back to their first
+   * associated filial if none is marked, and `null` if they have no filial
+   * association at all (e.g. legacy data not yet backfilled). Embedded in
+   * the JWT payload and the `/users/me`-equivalent response so
+   * mobile/admin-ui can read it without an extra round trip.
+   */
+  private async resolvePrimaryChurchId(userId: number): Promise<number | null> {
+    const rows = await this.userChurchRepo.find({
+      where: { user: { id: userId } },
+      relations: ['church'],
+      order: { isPrimary: 'DESC', id: 'ASC' },
+    });
+    return rows[0]?.church?.id ?? null;
+  }
+
   private async issueTokens(user: User) {
+    const churchId = await this.resolvePrimaryChurchId(user.id);
     const accessToken = jwt.sign(
-      { userId: user.id, email: user.email },
+      { userId: user.id, email: user.email, churchId },
       this.accessTokenSecret,
       { expiresIn: ACCESS_TOKEN_EXPIRES_IN, algorithm: JWT_ALGORITHM },
     );
@@ -389,6 +411,7 @@ export class AuthService implements OnModuleInit {
         email: user.email,
         picture: user.picture,
         role: user.role?.slug ?? null,
+        church_id: await this.resolvePrimaryChurchId(user.id),
       },
       access_token: tokens.accessToken,
       refresh_token: tokens.refreshToken,

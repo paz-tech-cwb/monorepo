@@ -94,6 +94,20 @@ class PazApplication : Application() {
                                                 // Bearer access token on every request; redact
                                                 // it so it never appears in the inspector UI.
                                                 .redactHeaders("Authorization")
+                                                // Chucker defaults to lazily teeing the response
+                                                // body as the app itself reads it, which only
+                                                // captures a body if/when some other part of the
+                                                // app fully drains that exact OkHttp Response. Our
+                                                // network stack is Ktor-on-OkHttp, which decodes
+                                                // through its own ContentNegotiation/JSON pipeline
+                                                // rather than reading the raw OkHttp Response body
+                                                // directly in a way Chucker can reliably observe,
+                                                // so without this flag the inspector shows the
+                                                // request line but an empty response payload.
+                                                // alwaysReadResponseBody forces Chucker to read
+                                                // the body itself up front, independent of how (or
+                                                // whether) the rest of the stack consumes it.
+                                                .alwaysReadResponseBody(true)
                                                 .createShortcut(false)
                                                 .build(),
                                         )

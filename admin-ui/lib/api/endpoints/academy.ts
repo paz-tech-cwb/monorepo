@@ -7,15 +7,8 @@ export interface Course {
   thumbnailUrl?: string
 }
 
-export interface CourseTrack {
-  id: number
-  title: string
-  description?: string
-  courses: Course[]
-}
-
 export interface AcademyResponse {
-  tracks: CourseTrack[]
+  courses: Course[]
 }
 
 export const academyApi = {

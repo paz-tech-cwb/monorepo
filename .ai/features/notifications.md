@@ -26,7 +26,7 @@ Entity-specific notifications must include IDs in the data payload.
 `features/life-groups.md`, "Estudo do Life") to roster members, leaders,
 co-leaders and leadership roles via explicit `segment.filters.user_ids`; channel
 `paz_life_group_study`. It requires the `notification_category_enum` value added by
-migration `1795900000005`. The tasks reminder's d1 pass also generates when a
+migration `1795900000008`. The tasks reminder's d1 pass also generates when a
 meeting has no assignments yet (late setup).
 
 ## Automatic reminders

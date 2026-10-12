@@ -20,7 +20,9 @@ import br.church.paz.shared.data.repository.LifeGroupTaskRepositoryImpl
 import br.church.paz.shared.data.repository.MemberJourneyRepositoryImpl
 import br.church.paz.shared.data.repository.OnboardingRepositoryImpl
 import br.church.paz.shared.data.repository.UserRepositoryImpl
+import br.church.paz.shared.data.repository.JourneySnapshotStore
 import br.church.paz.shared.data.repository.UserStore
+import br.church.paz.shared.data.repository.createJourneySnapshotStore
 import br.church.paz.shared.data.repository.createUserStore
 import br.church.paz.shared.domain.repository.AcademyRepository
 import br.church.paz.shared.domain.repository.AgendaRepository
@@ -39,12 +41,14 @@ import br.church.paz.shared.domain.repository.LifeGroupTaskRepository
 import br.church.paz.shared.domain.repository.MemberJourneyRepository
 import br.church.paz.shared.domain.repository.OnboardingRepository
 import br.church.paz.shared.domain.repository.UserRepository
+import br.church.paz.shared.domain.usecase.DetectJourneyLevelUpUseCase
 import io.ktor.client.engine.HttpClientEngineFactory
 import org.koin.dsl.module
 
 val sharedAuthModule = module {
-    single<TokenStorage> { createTokenStorage() }
-    single<UserStore>    { createUserStore() }
+    single<TokenStorage>       { createTokenStorage() }
+    single<UserStore>          { createUserStore() }
+    single<JourneySnapshotStore> { createJourneySnapshotStore() }
 }
 
 val sharedNetworkModule = module {
@@ -78,4 +82,8 @@ val sharedRepositoryModule = module {
     single<CasaDePazLessonRepository> { CasaDePazLessonRepositoryImpl(get()) }
 }
 
-val sharedModules = listOf(sharedAuthModule, sharedNetworkModule, sharedRepositoryModule)
+val sharedUseCaseModule = module {
+    single { DetectJourneyLevelUpUseCase(get(), get()) }
+}
+
+val sharedModules = listOf(sharedAuthModule, sharedNetworkModule, sharedRepositoryModule, sharedUseCaseModule)

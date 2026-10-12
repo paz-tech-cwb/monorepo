@@ -2,14 +2,21 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Church } from '../../church/entities/church.entity';
 
 @Entity('announcements')
 export class Announcement {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @ManyToOne(() => Church, { nullable: false })
+  @JoinColumn({ name: 'church_id' })
+  church: Church;
 
   @Column({ name: 'image_url' })
   imageUrl: string;

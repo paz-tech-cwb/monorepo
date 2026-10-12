@@ -75,8 +75,11 @@ fun OnboardingScreen(
     }
 
     // Matches iOS's per-step navigationTitle: no nav bar while the welcome video plays
-    // (keeps it full-bleed) or missing-steps are loading, then a native title bar for
-    // each profile-completion step.
+    // (keeps it full-bleed, with no transparent bar floating over the fullscreen
+    // VideoView — the iOS equivalent of this bug) or while missing-steps are loading,
+    // then a native title bar for each profile-completion step. `topBarTitle` is already
+    // `null` for `OnboardingStep.Video`, so the `topBarTitle != null` check below is
+    // sufficient to omit the TopAppBar entirely during the video step.
     val topBarTitle =
         if (state.loadErrorMessage == null && !state.isLoadingMissingSteps) {
             when (state.currentStep) {

@@ -3,6 +3,7 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import { QueryProvider } from '@/providers/query-provider'
 import { AuthProvider } from '@/contexts/auth-context'
+import { ChurchProvider } from '@/contexts/church-context'
 import { AnalyticsProvider } from '@/providers/analytics-provider'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
@@ -33,9 +34,11 @@ export default function RootLayout({
         >
           <QueryProvider>
             <AuthProvider>
-              <AnalyticsProvider>
-                {children}
-              </AnalyticsProvider>
+              <ChurchProvider>
+                <AnalyticsProvider>
+                  {children}
+                </AnalyticsProvider>
+              </ChurchProvider>
             </AuthProvider>
           </QueryProvider>
           <Toaster />

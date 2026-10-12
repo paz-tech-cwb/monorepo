@@ -4,6 +4,24 @@ import SwiftUI
 
 private let progressCheckpointIntervalSeconds = 10
 
+/// YouTube IFrame API error codes: `100`/`101`/`150` mean the video is genuinely unavailable
+/// (not found, private, or embedding disabled by the owner) — only those justify falling back to
+/// an external "Abrir no YouTube" link. Everything else (`2`, `5`, unknown codes) is treated as
+/// transient/retryable, since the IFrame API can surface those for non-fatal reasons.
+enum VideoPlaybackError: Equatable {
+    case retryable
+    case unavailable
+
+    init(code: Int) {
+        switch code {
+        case 100, 101, 150:
+            self = .unavailable
+        default:
+            self = .retryable
+        }
+    }
+}
+
 @MainActor
 @Observable
 class CourseDetailViewModel {
@@ -11,7 +29,7 @@ class CourseDetailViewModel {
     var course: CourseDetail?
     var error: String?
     var selectedLessonId: String?
-    var playerError = false
+    var playerError: VideoPlaybackError?
 
     private let courseId: String
     private let courseRepository: CourseRepository
@@ -47,12 +65,17 @@ class CourseDetailViewModel {
 
     func onSelectLesson(_ lessonId: String) {
         lastReportedAtSeconds = 0
-        playerError = false
+        playerError = nil
         selectedLessonId = lessonId
     }
 
-    func onPlayerError() {
-        playerError = true
+    func onPlayerError(code: Int) {
+        playerError = VideoPlaybackError(code: code)
+    }
+
+    /// Clears the error state so the player view is recreated and retries loading.
+    func onRetryPlayback() {
+        playerError = nil
     }
 
     /// Called roughly every second by `GatedYouTubePlayerView`; only actually posts every ~10s.

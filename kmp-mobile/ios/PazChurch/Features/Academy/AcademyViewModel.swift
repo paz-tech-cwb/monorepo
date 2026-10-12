@@ -5,7 +5,7 @@ import SwiftUI
 @MainActor
 @Observable
 class AcademyViewModel {
-    var tracks: [CourseTrack] = []
+    var courses: [Course] = []
     var isLoading = true
     var error: String?
     var resumeCourse: Course?
@@ -24,7 +24,7 @@ class AcademyViewModel {
         error = nil
         do {
             let content = try await academyRepository.getAcademyContent()
-            tracks = content.tracks
+            courses = content.courses
             // resumeCourse populated from last-watched logic when backend supports it
         } catch {
             self.error = error.localizedDescription

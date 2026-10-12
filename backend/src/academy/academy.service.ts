@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, In } from 'typeorm';
-import { CourseTrack } from './entities/course-track.entity';
 import { Course } from '../courses/entities/course.entity';
 import { CourseLesson } from './entities/course-lesson.entity';
 import { CourseLessonProgress } from './entities/course-lesson-progress.entity';
@@ -28,17 +27,10 @@ export class AcademyService {
 
   async getAcademy(userId: number) {
     try {
-      const tracks = await this.entityManager.find(CourseTrack, {
-        order: { sortOrder: 'ASC', createdAt: 'ASC' },
+      const courses = await this.entityManager.find(Course, {
+        order: { createdAt: 'DESC' },
       });
-
-      const allCourseIds = new Set<string>();
-      for (const track of tracks) {
-        for (const course of track.courses || []) {
-          allCourseIds.add(course.id);
-        }
-      }
-      const courseIds = [...allCourseIds];
+      const courseIds = courses.map((c) => c.id);
 
       // Batched: 1 query for lesson counts, 1 for user progress, 1 for user
       // certificates — never N+1 per course.
@@ -102,16 +94,7 @@ export class AcademyService {
       };
 
       return {
-        tracks: tracks.map((track) => ({
-          id: track.id,
-          title: track.title,
-          description: track.description ?? null,
-          sort_order: track.sortOrder,
-          completed: (track.courses || []).every((c) =>
-            certifiedCourseIds.has(c.id),
-          ),
-          courses: (track.courses || []).map((c) => courseFields(c)),
-        })),
+        courses: courses.map((c) => courseFields(c)),
       };
     } catch (error: unknown) {
       if (error instanceof NotFoundException) throw error;

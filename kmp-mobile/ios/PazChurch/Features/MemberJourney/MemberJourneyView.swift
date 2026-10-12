@@ -5,8 +5,14 @@ import SwiftUI
 struct MemberJourneyView: View {
     @State private var viewModel: MemberJourneyViewModel
 
-    init(memberJourneyRepository: MemberJourneyRepository) {
-        _viewModel = State(initialValue: MemberJourneyViewModel(repository: memberJourneyRepository))
+    init(
+        memberJourneyRepository: MemberJourneyRepository,
+        detectJourneyLevelUpUseCase: DetectJourneyLevelUpUseCase
+    ) {
+        _viewModel = State(initialValue: MemberJourneyViewModel(
+            repository: memberJourneyRepository,
+            detectJourneyLevelUpUseCase: detectJourneyLevelUpUseCase
+        ))
     }
 
     var body: some View {
@@ -26,6 +32,13 @@ struct MemberJourneyView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
         .task { await viewModel.loadJourney() }
+        .overlay {
+            if let celebratingTrack = viewModel.celebratingTrack {
+                JourneyLevelUpOverlay(track: celebratingTrack) {
+                    withAnimation { viewModel.dismissCelebration() }
+                }
+            }
+        }
     }
 
     private func errorState(message: String) -> some View {
@@ -55,6 +68,8 @@ struct MemberJourneyView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: PazSpacing.lg) {
                 Spacer().frame(height: PazSpacing.lg)
+
+                JourneyIntroCard()
 
                 ForEach(viewModel.tracks, id: \.key) { track in
                     switch trackStatus(for: track) {
@@ -109,8 +124,36 @@ struct MemberJourneyView: View {
     }
 }
 
+/// Brief explanatory framing shown once above the track list — `JourneyTrack.eligibilityText`
+/// already explains per-track "why", so this stays short on purpose.
+private struct JourneyIntroCard: View {
+    var body: some View {
+        HStack(alignment: .top, spacing: PazSpacing.md) {
+            Image(systemName: "info.circle.fill")
+                .foregroundStyle(PazColors.primary)
+            VStack(alignment: .leading, spacing: PazSpacing.xs) {
+                Text("O que é a Jornada do Membro?")
+                    .font(PazTypography.titleSmall)
+                    .foregroundStyle(PazColors.primary)
+                Text(
+                    "É o caminho que você percorre na igreja, passo a passo. Completar uma trilha " +
+                        "libera a próxima etapa da sua caminhada com a gente."
+                )
+                .font(PazTypography.bodySmall)
+                .foregroundStyle(PazColors.slate)
+            }
+        }
+        .padding(PazSpacing.lg)
+        .background(PazColors.tint, in: RoundedRectangle(cornerRadius: PazSpacing.cardRadiusCompact, style: .continuous))
+    }
+}
+
 private struct JourneyTrackSection: View {
     let track: JourneyTrack
+
+    /// Animated separately from `track.progressPercentage` so the fill transitions smoothly
+    /// from its old value to the new one instead of jumping instantly when a step completes.
+    @State private var animatedProgress: Double = 0
 
     private var trackedSteps: [JourneyTrackStep] {
         track.steps.filter { $0.type != .informational }
@@ -142,8 +185,20 @@ private struct JourneyTrackSection: View {
                     }
 
                     if !trackedSteps.isEmpty {
-                        ProgressView(value: Double(track.progressPercentage) / 100)
+                        ProgressView(value: animatedProgress)
                             .tint(PazColors.accent)
+                            .onAppear { animatedProgress = Double(track.progressPercentage) / 100 }
+                            .onChange(of: track.progressPercentage) { _, newValue in
+                                withAnimation(.easeInOut(duration: 0.6)) {
+                                    animatedProgress = Double(newValue) / 100
+                                }
+                            }
+                    }
+
+                    if let eligibilityText = track.eligibilityText, !eligibilityText.isEmpty {
+                        Text(eligibilityText)
+                            .font(PazTypography.labelSmall)
+                            .foregroundStyle(PazColors.pazGold)
                     }
                 }
                 .padding(PazSpacing.lg)
@@ -165,12 +220,19 @@ private struct CollapsedTrackRow: View {
     let isCompleted: Bool
 
     var body: some View {
-        HStack(spacing: PazSpacing.md) {
+        HStack(alignment: .top, spacing: PazSpacing.md) {
             Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
                 .foregroundStyle(isCompleted ? PazColors.accent : PazColors.slateLight)
-            Text(track.title)
-                .font(PazTypography.titleSmall)
-                .foregroundStyle(isCompleted ? PazColors.ink : PazColors.slate)
+            VStack(alignment: .leading, spacing: PazSpacing.xs) {
+                Text(track.title)
+                    .font(PazTypography.titleSmall)
+                    .foregroundStyle(isCompleted ? PazColors.ink : PazColors.slate)
+                if !isCompleted, let eligibilityText = track.eligibilityText, !eligibilityText.isEmpty {
+                    Text(eligibilityText)
+                        .font(PazTypography.labelSmall)
+                        .foregroundStyle(PazColors.slate)
+                }
+            }
             Spacer()
         }
         .padding(PazSpacing.lg)
@@ -268,6 +330,10 @@ class MemberJourneyViewModel {
     var isLoading = true
     var error: String?
 
+    /// The track currently shown in the full-completion celebration overlay, if any — set
+    /// whenever `DetectJourneyLevelUpUseCase` reports a track newly reached 100%.
+    var celebratingTrack: JourneyTrack?
+
     /// Show the "Você está em dia!" empty state when there's no track to focus on and
     /// nothing is actually in progress for this user — not just whenever `tracks` is
     /// non-empty, since the backend now returns all active tracks for everyone.
@@ -276,18 +342,24 @@ class MemberJourneyViewModel {
     }
 
     private let repository: MemberJourneyRepository
+    private let detectJourneyLevelUpUseCase: DetectJourneyLevelUpUseCase
 
-    init(repository: MemberJourneyRepository) {
+    init(repository: MemberJourneyRepository, detectJourneyLevelUpUseCase: DetectJourneyLevelUpUseCase) {
         self.repository = repository
+        self.detectJourneyLevelUpUseCase = detectJourneyLevelUpUseCase
     }
 
     func loadJourney() async {
         do {
             let journey = try await repository.getMemberJourney()
+            let levelUp = try? await detectJourneyLevelUpUseCase.invoke(journey: journey)
             self.tracks = journey.tracks
             self.currentTrackKey = journey.currentTrackKey
             self.currentTrackComplete = journey.currentTrackComplete
             self.isLoading = false
+            if let newlyCompletedTrackKey = levelUp?.newlyCompletedTrackKeys.first {
+                self.celebratingTrack = journey.tracks.first { $0.key == newlyCompletedTrackKey }
+            }
         } catch {
             self.error = "Erro ao carregar jornada"
             self.isLoading = false
@@ -299,8 +371,15 @@ class MemberJourneyViewModel {
         error = nil
         Task { await loadJourney() }
     }
+
+    func dismissCelebration() {
+        celebratingTrack = nil
+    }
 }
 
 #Preview {
-    MemberJourneyView(memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository)
+    MemberJourneyView(
+        memberJourneyRepository: IosAppContainer.shared.memberJourneyRepository,
+        detectJourneyLevelUpUseCase: IosAppContainer.shared.detectJourneyLevelUpUseCase
+    )
 }

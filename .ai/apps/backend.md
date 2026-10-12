@@ -28,7 +28,7 @@ Before editing backend, inspect:
 assignments/roster/notifications, controllers for admin templates,
 `life-groups/:id/*` and `/me/life-group-tasks`. Reminder evaluator:
 `reminders/evaluators/life-group-tasks.evaluator.ts`. Migrations
-`1795900000003`/`1795900000004` are pending: running them and deploying are
+`1795900000006`/`1795900000007`/`1795900000008` are pending: running them and deploying are
 human gates. `dispatch-claim.ts` holds the claim-first ReminderDispatchLog
 helpers shared by the evaluator and notifications service; notifications use
 conditional per-assignment claims (see `features/notifications.md`). New columns:
@@ -55,3 +55,11 @@ npx jest src/<feature>/<file>.spec.ts
 npm run test
 npm run lint
 ```
+
+## Scope and life group visibility
+
+`ScopeResolverService.resolve` unions every Area/Sector/LifeGroup the user leads
+or co-leads (row-based, not role-slug-based); admin/pastor stay unrestricted.
+`LifeGroupsService.findMine` (`GET /life-groups/me`) includes supervised groups
+and adds `relationship` + `is_supervised` (roster omitted for supervisor-only rows). `ScopeResolverService` is row-based, one ids-only SQL; casa-de-paz write bypass still needs the area/sector leader slug. See `features/life-groups.md`
+(Visibility).
