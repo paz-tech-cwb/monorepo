@@ -246,3 +246,17 @@ Tooling: JDK 17.0.20 (scratchpad), `GRADLE_USER_HOME`/`KONAN_DATA_DIR` in scratc
 |---|---|
 | `./gradlew :shared:iosSimulatorArm64Test` (kmp-mobile) | BUILD SUCCESSFUL; new `LifeGroupReportRepositoryTest` 5/5, `HomeLifeGroupCardTest` 7/7, no failures |
 | `:android:testDebugUnitTest`, `:android:assembleDebug`, `ktlintCheck` | NOT RUN (Android SDK not installed); validated by CI. Android code cross-checked by hand against real files (imports, Koin `get()` counts: HomeViewModel 4 and LifeGroupDetailViewModel 4 unchanged; new VMs take 1 `get()` each; every test constructing changed VMs reviewed) |
+
+## iOS (home-card branch)
+
+Environment as in "Mobile validation (real toolchain)" (Xcode 26.6, 'TestPhone' simulator, scratchpad JDK17/Gradle/Konan, temporary fake `GoogleService-Info.plist` created for the run and DELETED afterwards, never committed).
+
+| Step | Result |
+|---|---|
+| `./gradlew :shared:assembleSharedDebugXCFramework` | BUILD SUCCESSFUL (exports `HomeLifeGroupCardKt`, `LifeGroupReportRepository`, `LifeGroupWeeklyReport`) |
+| `xcodebuild -scheme PazChurch -destination 'platform=iOS Simulator,id=<TestPhone>' CODE_SIGNING_ALLOWED=NO build-for-testing` | TEST BUILD SUCCEEDED (first compile, no source errors) |
+| `xcodebuild ... test-without-building` | PASS: 32 tests, 0 failures (13 previous + 7 new HomeViewModelTests + new LifeGroupReportsTests incl. gate matrix, 403/404 mapping, VM states via fake repository) |
+| `plutil -lint ios/PazChurch.xcodeproj/project.pbxproj` | OK |
+| swiftformat / swiftlint | NOT RUN (not checked/installed in this session) |
+
+Test log noise (`localhost:3001` connection refused) comes from the hosted app launching with no backend; unrelated to results. UI layout (cards, detail rows) is verified by build only; use the manual QA checklist in the spec.

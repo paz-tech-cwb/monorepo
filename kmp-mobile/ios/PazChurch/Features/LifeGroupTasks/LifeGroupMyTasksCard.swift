@@ -17,6 +17,23 @@ struct LifeGroupMyTasksCard: View {
                     .font(PazTypography.titleSmall)
                     .foregroundColor(PazColors.ink)
             }
+            LifeGroupTaskRows(tasks: tasks, repository: repository)
+        }
+        .padding(PazSpacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
+    }
+}
+
+/// The tappable task rows (each a NavigationLink to the guide), shared by the standalone
+/// "Minhas tarefas" card and the per-group home card. Each row is its own link, so it can sit
+/// next to a sibling link (the group header) without nesting.
+struct LifeGroupTaskRows: View {
+    let tasks: [LifeGroupTask]
+    let repository: LifeGroupTaskRepository
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: PazSpacing.sm) {
             ForEach(tasks, id: \.id) { task in
                 NavigationLink {
                     LifeGroupTaskGuideView(assignmentId: task.id, repository: repository)
@@ -41,8 +58,5 @@ struct LifeGroupMyTasksCard: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(PazSpacing.lg)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }

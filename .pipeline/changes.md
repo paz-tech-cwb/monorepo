@@ -298,3 +298,16 @@ Android (`kmp-mobile/android`):
 - Tests: `HomeViewModelTest` rewritten for cards/fallback (8), `LifeGroupDetailViewModelTest` gate matrix (+2), new `LifeGroupReportsViewModelTest` (10), `LifeGroupAnalyticsViewModelTest` scoped (+1).
 - Deviation: `LifeGroupHomeCard` header uses `Surface(onClick=)` per kmp-mobile guidelines; no role chip on the card (spec marked it optional).
 - Docs: `.ai/features/mobile-app.md`, `.ai/apps/mobile.md` (Android+shared; the stale "no iOS unit-test target" paragraph is left for the iOS agent).
+
+## iOS (home-card branch)
+
+Owen. Mirrors the Android implementation; uses the shared `buildHomeLifeGroupCards` (Swift: `HomeLifeGroupCardKt`) and `LifeGroupReportRepository` (`IosAppContainer.shared.lifeGroupReportRepository`).
+
+- Home: `HomeViewModel` (`lifeGroupCards`, `hiddenLifeGroupsCount`, `legacyTasks`; `myTasks` removed; pure `resolveLifeGroups(currentUserId:groups:tasks:today:)`; independent groups/tasks fetches, `FetchOutcome` with cancellation keeping current state; `upcomingTasks` is now a thin wrapper over the shared `selectUpcomingLifeGroupTasks`). `HomeView`: per-group `LifeGroupHomeCard` items, "Ver todos (N)" row to `LifeGroupsView`, legacy `LifeGroupMyTasksCard` only when groups failed, discovery CTA unchanged. New `Features/Home/LifeGroupHomeCard.swift` (header `NavigationLink` to `LifeGroupDetailView`, task rows as sibling links; also holds `lifeGroupMeetingLabel(day:time:)`, now used by the detail screen). `LifeGroupTaskRows` extracted from `LifeGroupMyTasksCard`.
+- Detail: `LifeGroupDetailView.canViewGroupReports(role:isGroupLeadership:)` (static, pure); "Relatórios" gate changed to it; new "Relatórios semanais" row.
+- New `Features/LifeGroupReports/`: `LifeGroupReportsViewModel`/`LifeGroupReportDetailViewModel` (`@Observable @MainActor`, loading/refreshing/error/noAccess; 403 = no access on the list, 403/404 on the detail, status read via `kotlinException.httpStatusCodeOrNull()` like the analytics VM), `LifeGroupReportsPresentation` (pure failure mapping, sort, offering/activity formatting), `LifeGroupReportsView`, `LifeGroupReportDetailView`.
+- Analytics: `LifeGroupAnalyticsViewModel.isScopedToGroup`; the group picker is hidden when scoped.
+- Project: 4 new app sources + `LifeGroupReportsTests.swift` hand-registered in `project.pbxproj` (new `LifeGroupReports` group; `plutil -lint` OK). `project.yml` needs no edit: its sources are directory globs (`PazChurch`, `PazChurchTests`); xcodegen is not installed, so it was not regenerated.
+- Tests: `HomeViewModelTests` (+7: card ordering/folding, cap + hidden count, groups-failed legacy fallback with no CTA, both failed, tasks failed, empty groups CTA, meeting label), new `LifeGroupReportsTests` (gate matrix, failure mapping, formatting, list/detail view models with a fake repository).
+- Docs: `.ai/apps/mobile.md` (stale "no iOS unit-test target" paragraph replaced; iOS sections), `.ai/features/mobile-app.md`.
+- Deviations: none from the spec. No role chip on the card (same as Android). Swift stale-key note: Kotlin enum `UserRole.area_leader` is `.areaLeader` in Swift.
