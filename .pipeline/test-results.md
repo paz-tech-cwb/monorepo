@@ -203,3 +203,22 @@ Results (the FULL chain of 82 migrations ran from an empty DB with no unrelated 
 7. Claim logic: `UPDATE ... WHERE id=? AND notified_at IS NULL`: first claim affected 1, second 0, after release (`SET notified_at=NULL`) reclaim 1; `reminded_at` claim independent (1 then 0). `reminder_dispatch_log` unique `(rule_type, dedupe_key)`: second insert of the same key raises 23505, after delete the claim succeeds again. PASS.
 
 Also: prettier + eslint on the fixed migration file are clean; `nest build` OK. Cleanup: server stopped (`pg_ctl stop`), the scratch data dir and the whole `pg-test` dir removed; `backend/dist` (gitignored) was rebuilt by `nest build`.
+
+## Mobile validation (real toolchain)
+
+Environment: macOS arm64, Xcode 26.6 (17F113), iOS 26.5 simulator, Temurin JDK 17.0.20.1+1 (aarch64 tarball, SHA256 196d13ba...f0e8 verified against the published .sha256.txt), Gradle 8.11.1 via wrapper (official services.gradle.org URL), Kotlin 2.1.0, AGP 8.7.3. `JAVA_HOME`, `GRADLE_USER_HOME` and `KONAN_DATA_DIR` all pointed into the session scratchpad; no system changes.
+
+| Step | Command (from kmp-mobile) | Result |
+|---|---|---|
+| Shared tests (native) | `./gradlew :shared:iosSimulatorArm64Test` | PASS: 78 tests, 0 failures, 0 skipped (13 classes, incl. LifeGroupTaskRepositoryTest). Needs no Android SDK. |
+| XCFramework | `./gradlew :shared:assembleSharedDebugXCFramework` | PASS. Note: CLAUDE.md's `:shared:assembleXCFramework` is ambiguous in Gradle; the real task is `assembleSharedXCFramework` (what project.yml uses). |
+| iOS app build | `xcodebuild -project ios/PazChurch.xcodeproj -scheme PazChurch -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build` | First run FAILED in feature code: `LifeGroupTaskMembersViewModel.swift:35 reference to member 'auto'`. Kotlin enum entry `AUTO` is exported to Swift as `auto_`. Fixed (commit e57a68c); rebuild: BUILD SUCCEEDED. |
+| iOS tests | `xcodebuild ... -scheme PazChurch -destination 'id=<iOS 26.5 sim>' test CODE_SIGNING_ALLOWED=NO` | PASS: 13 tests, 0 failures (new `PazChurchTests` target). |
+| `:shared:allTests`, `:shared:testDebugUnitTest`, `:android:testDebugUnitTest`, `:android:assembleDebug` | n/a | NOT RUN: AGP fails at configuration with "SDK location not found" (`:shared` also applies com.android.library). |
+| ktlint | n/a | NOT RUN: no ktlint/spotless plugin is configured in any build file, so `ktlintCheck`/`ktlintFormat` (mentioned in CLAUDE.md) do not exist. |
+
+New iOS tests (`kmp-mobile/ios/PazChurchTests/`, hosted unit-test target, added to project.yml and project.pbxproj; `plutil -lint` OK, scheme XML valid): deep link `tarefa/{id}` / blank id / extra segments / `usesHomeStack` / existing routes (5), `LifeGroupTaskMarkdown` block parsing, fenced code, quotes, link sanitizing (6), `HomeViewModel.upcomingTasks` filter/sort/limit (2).
+
+Local-only caveat: the app host calls `FirebaseApp.configure()` at launch, and `ios/PazChurch/GoogleService-Info.plist` is gitignored (missing in a fresh checkout; the build fails without it, and the `.example` placeholder crashes the test host). For validation I used a temporary syntactically valid fake plist and deleted it afterwards. Running the iOS tests on a fresh machine/CI needs a real (or fake-but-valid) GoogleService-Info.plist.
+
+What the user must do to run the Android part (not done, per the no-silent-SDK rule): install the Android SDK (e.g. Android Studio, or cmdline-tools) with `platforms;android-35`, `build-tools;35.0.0` (or the AGP 8.7.3 default) and `platform-tools`; accept licenses yourself with `yes | sdkmanager --licenses` (or `sdkmanager --licenses`); then create `kmp-mobile/local.properties` with `sdk.dir=/Users/<you>/Library/Android/sdk` (or export `ANDROID_HOME`) and run `./gradlew :shared:allTests :android:testDebugUnitTest :android:assembleDebug` with JDK 17.
