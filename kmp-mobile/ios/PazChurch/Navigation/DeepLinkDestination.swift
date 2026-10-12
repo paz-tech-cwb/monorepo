@@ -7,6 +7,7 @@ enum DeepLinkDestination: Hashable {
     case lifeGroupDetail(lifeGroupId: String)
     case lifeGroupStudyDetail(studyId: String)
     case lifeGroupAttendanceEditor(lifeGroupId: String, meetingDate: String)
+    case lifeGroupTaskGuide(assignmentId: String)
     case formularios
     case memberJourney
     case account
@@ -17,7 +18,7 @@ extension DeepLinkDestination {
     /// destinations routed through AccountView's own navigation path).
     var usesHomeStack: Bool {
         switch self {
-        case .agendaDetail, .lifeGroupAttendanceEditor: return true
+        case .agendaDetail, .lifeGroupAttendanceEditor, .lifeGroupTaskGuide: return true
         default: return false
         }
     }
@@ -47,6 +48,11 @@ extension DeepLinkDestination {
             let parts = parsedRoute.dropFirst("presenca/".count).split(separator: "/", maxSplits: 1)
             guard parts.count == 2 else { return nil }
             return .lifeGroupAttendanceEditor(lifeGroupId: String(parts[0]), meetingDate: String(parts[1]))
+        }
+        if parsedRoute.hasPrefix("tarefa/") {
+            let id = String(parsedRoute.dropFirst("tarefa/".count))
+            // A single path segment only: reject blank ids and extra segments.
+            return id.isEmpty || id.contains("/") ? nil : .lifeGroupTaskGuide(assignmentId: id)
         }
         switch parsedRoute {
         case "formularios": return .formularios

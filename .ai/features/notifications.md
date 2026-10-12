@@ -17,6 +17,7 @@ Send push notifications and route users to the correct screen when notifications
 | `admin_alerts` | Account/admin alert area | `paz://account` |
 | `contributions` | Account/contributions area | `paz://account` |
 | `life_group_attendance` | Life group attendance editor | `paz://presenca/{lifeGroupId}/{date}` |
+| `life_group_task` | Life group task guide | `paz://tarefa/{assignmentId}` |
 
 Entity-specific notifications must include IDs in the data payload.
 
@@ -28,6 +29,7 @@ Entity-specific notifications must include IDs in the data payload.
 | `event` | `events` |
 | `member_journey` | `member_journey` |
 | `life_group_attendance` | `life_group_attendance` |
+| `life_group_tasks` | `life_group_task` |
 
 `forms` and `life_group_attendance` are deliberately absent from `CATEGORY_PREF_MAP`
 (`notification-dispatch.service.ts`), so leaders cannot opt out of them via
@@ -37,6 +39,34 @@ and `co_leader_id` (when set); it fires once, `hours_after_meeting_start`
 hours after the group's `meeting_day`/`meeting_time`, and is skipped entirely
 for groups without a fixed meeting day/time ("Sem dia fixo" or no
 `meeting_time`).
+
+`life_group_task` is also absent from `CATEGORY_PREF_MAP` (not opt-outable) and
+maps to Android channel `paz_life_group`. The `life_group_tasks` rule is
+seeded enabled with `days_before_meeting: [3,1]` and `hour: 9` (validated in
+`RemindersService.update`). Per group, the evaluator runs hourly and acts on a
+meeting `offset` days ahead: the largest offset generates assignments
+(idempotent) and pushes assignees not yet notified (`notified_at`); smaller
+offsets only remind `assigned` members with `reminded_at IS NULL`. Dedupe key
+`life_group_tasks:{groupId}:{date}:d{offset}`; skipped dates and groups without
+a fixed day are ignored. Reroll/decline/manual reassign push the new assignee
+immediately; decline/reroll/no-eligible also push leader and co-leader. Message
+templates support the `{task}` placeholder.
+
+Multi-instance safety (claim first): the evaluator inserts the
+`ReminderDispatchLog` row BEFORE generating/sending; a unique violation (23505)
+means another instance owns it and it skips. If a send fails (or a d-1 run has
+nobody to remind) the claim row is deleted so the next tick retries. Each
+assignment push also claims its own marker with a conditional
+`UPDATE ... WHERE id = ? AND notified_at|reminded_at IS NULL` before pushing and
+puts it back to NULL on failure (same for the reroll/decline push and the
+"no eligible member" leader push, which claims its
+`...:unassignable:{digest}` key first). A hard process kill between claim and
+release leaves the key claimed (that offset is not retried). A manual generate
+by a leader/admin pushes new assignees through the same per-assignment claim
+(only when the meeting falls within the largest configured offset; and not on
+the largest-offset day itself while the Sao Paulo hour is still before the
+rule's `hour`, since the evaluator will send it later that day with
+`notified_at` left NULL).
 
 ## Change checklist
 

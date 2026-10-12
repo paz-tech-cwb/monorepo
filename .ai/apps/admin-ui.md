@@ -16,6 +16,13 @@ Next.js 15, React 19, TypeScript, shadcn/ui-style component patterns.
 - Preserve existing API type conventions unless intentionally changing the contract.
 - Environment variable for API base URL should point at backend `/api`.
 
+## Life group tasks
+
+- `app/(dashboard)/tarefas-life/`: template management (admin only; markdown guidance editor with Escrever/Visualizar preview, up/down reorder, delete with 409 handling).
+- `components/life-group-tasks/`: panel opened from the life groups "Tarefas" action (meeting generate/re-roll/reassign/skip, per-group overrides, member eligibility and `min_present_meetings`).
+- Reminder settings UI has controls for the `life_group_tasks` rule; category `life_group_task` added to notification system lists.
+- API: `lib/api/endpoints/life-group-tasks.ts`, hooks in `lib/hooks/use-life-group-tasks.ts`.
+
 ## Agent entry points
 
 Before editing admin-ui, inspect:

@@ -60,6 +60,7 @@ import {
   Trash2,
   Filter,
   Activity,
+  ClipboardList,
 } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -75,6 +76,7 @@ import { useSectors } from "@/lib/hooks/use-sectors"
 import type { LifeGroup, CreateLifeGroupRequest } from "@/lib/api/types"
 import type { AdminUser } from "@/lib/api/types"
 import { LeaderPairPicker } from "@/components/ministries/leader-pair-picker"
+import { LifeGroupTasksPanel } from "@/components/life-group-tasks/life-group-tasks-panel"
 import { LifeGroupAttendanceChart } from "@/components/life-group-analytics/life-group-attendance-chart"
 
 // ---------------------------------------------------------------------------
@@ -223,6 +225,9 @@ export function LifeGroupsManagement() {
 
   // Frequency (attendance) dialog state
   const [frequencyGroup, setFrequencyGroup] = useState<LifeGroup | null>(null)
+
+  // Rotating tasks dialog state
+  const [tasksGroup, setTasksGroup] = useState<LifeGroup | null>(null)
 
   // ----- derived stats -------------------------------------------------------
 
@@ -562,6 +567,10 @@ export function LifeGroupsManagement() {
                             <Activity className="mr-2 h-4 w-4" />
                             Frequência
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setTimeout(() => setTasksGroup(group), 0)}>
+                            <ClipboardList className="mr-2 h-4 w-4" />
+                            Tarefas
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setTimeout(() => openEdit(group), 0)}>
                             <Pencil className="mr-2 h-4 w-4" />
                             Editar
@@ -790,6 +799,19 @@ export function LifeGroupsManagement() {
           {frequencyGroup && (
             <LifeGroupAttendanceChart lifeGroupId={frequencyGroup.id} metric="counts" />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Rotating tasks Dialog */}
+      <Dialog open={!!tasksGroup} onOpenChange={(open) => { if (!open) setTasksGroup(null) }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Tarefas — {tasksGroup?.name}</DialogTitle>
+            <DialogDescription>
+              Sorteio das tarefas de cada encontro, tarefas do grupo e quem participa do rodízio.
+            </DialogDescription>
+          </DialogHeader>
+          {tasksGroup && <LifeGroupTasksPanel lifeGroup={tasksGroup} />}
         </DialogContent>
       </Dialog>
 

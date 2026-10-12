@@ -36,6 +36,7 @@ import type {
   EventReminderConfig,
   FormReminderEntry,
   FormReportReminderConfig,
+  LifeGroupTasksReminderConfig,
   MemberJourneyReminderConfig,
   MemberJourneyStep,
   ReminderRule,
@@ -59,12 +60,14 @@ const RULE_TITLES: Record<ReminderRule['type'], string> = {
   form_report: 'Lembretes de Formulário',
   event: 'Lembretes de Evento',
   member_journey: 'Jornada do Membro',
+  life_group_tasks: 'Tarefas do Life Group',
 }
 
 const RULE_DESCRIPTIONS: Record<ReminderRule['type'], string> = {
   form_report: 'Notifica líderes sobre formulários pendentes',
   event: 'Notifica membros antes de eventos',
   member_journey: 'Notifica membros parados em etapas',
+  life_group_tasks: 'Sorteia e lembra os membros das tarefas do encontro',
 }
 
 const AVAILABLE_ROLES = [
@@ -209,6 +212,13 @@ function ReminderSheetContent({
   useEffect(() => setConfig(rule.config), [rule.config])
 
   const onSave = () => {
+    if (rule.type === 'life_group_tasks') {
+      const days = (config as LifeGroupTasksReminderConfig).days_before_meeting ?? []
+      if (days.length === 0 || !days.every((d) => Number.isInteger(d) && d >= 0 && d <= 30)) {
+        toast.error('Informe ao menos uma antecedência (0 a 30 dias)')
+        return
+      }
+    }
     update.mutate(
       { id: rule.id, data: { config } },
       {
@@ -242,6 +252,13 @@ function ReminderSheetContent({
         {rule.type === 'member_journey' && (
           <MemberJourneyControls
             config={config as MemberJourneyReminderConfig}
+            onChange={setConfig}
+            disabled={!enabled}
+          />
+        )}
+        {rule.type === 'life_group_tasks' && (
+          <LifeGroupTasksControls
+            config={config as LifeGroupTasksReminderConfig}
             onChange={setConfig}
             disabled={!enabled}
           />
@@ -677,6 +694,126 @@ function MemberJourneyControls({
             </div>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+// ── Life group tasks controls ─────────────────────────────────────────────────
+
+function LifeGroupTasksControls({
+  config,
+  onChange,
+  disabled,
+}: {
+  config: LifeGroupTasksReminderConfig
+  onChange: (c: LifeGroupTasksReminderConfig) => void
+  disabled: boolean
+}) {
+  const days = config.days_before_meeting ?? []
+
+  const addDay = () => onChange({ ...config, days_before_meeting: [...days, 1] })
+
+  const removeDay = (index: number) =>
+    onChange({ ...config, days_before_meeting: days.filter((_, i) => i !== index) })
+
+  const updateDay = (index: number, value: number) =>
+    onChange({
+      ...config,
+      days_before_meeting: days.map((d, i) => (i === index ? value : d)),
+    })
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+        A maior antecedência sorteia as tarefas e avisa quem foi escolhido. As demais apenas
+        lembram quem já está com uma tarefa. Use <code>{'{task}'}</code> nas mensagens para
+        inserir o nome da tarefa.
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label>Dias antes do encontro</Label>
+          <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={addDay}>
+            <Plus className="h-3 w-3 mr-1" />
+            Adicionar
+          </Button>
+        </div>
+        {days.length === 0 && (
+          <p className="text-sm text-muted-foreground">Nenhuma antecedência configurada.</p>
+        )}
+        {days.map((day, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <Input
+              type="number"
+              min={0}
+              max={30}
+              className="w-24"
+              value={day}
+              disabled={disabled}
+              onChange={(e) => updateDay(i, Number(e.target.value))}
+            />
+            <span className="flex-1 text-sm text-muted-foreground">
+              dias antes
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              disabled={disabled}
+              onClick={() => removeDay(i)}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-2">
+        <Label>Hora do envio</Label>
+        <HourPicker
+          value={config.hour ?? 9}
+          onChange={(h) => onChange({ ...config, hour: h })}
+          disabled={disabled}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Título (aviso de sorteio)</Label>
+        <Input
+          value={config.title ?? ''}
+          disabled={disabled}
+          onChange={(e) => onChange({ ...config, title: e.target.value })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Mensagem (aviso de sorteio)</Label>
+        <Textarea
+          value={config.message ?? ''}
+          disabled={disabled}
+          rows={3}
+          onChange={(e) => onChange({ ...config, message: e.target.value })}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Título (lembrete)</Label>
+        <Input
+          value={config.reminder_title ?? ''}
+          disabled={disabled}
+          placeholder="Usa o texto padrão se ficar em branco"
+          onChange={(e) => onChange({ ...config, reminder_title: e.target.value })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Mensagem (lembrete)</Label>
+        <Textarea
+          value={config.reminder_message ?? ''}
+          disabled={disabled}
+          rows={3}
+          placeholder="Usa o texto padrão se ficar em branco"
+          onChange={(e) => onChange({ ...config, reminder_message: e.target.value })}
+        />
       </div>
     </div>
   )

@@ -48,6 +48,18 @@ export type AnalyticsEventName =
   | "life_group_study_deleted"
   | "life_group_study_publisher_added"
   | "life_group_study_publisher_removed"
+  | "life_group_task_template_created"
+  | "life_group_task_template_updated"
+  | "life_group_task_template_deleted"
+  | "life_group_task_templates_reordered"
+  | "life_group_task_overrides_saved"
+  | "life_group_task_members_saved"
+  | "life_group_task_settings_saved"
+  | "life_group_task_date_skipped"
+  | "life_group_task_date_unskipped"
+  | "life_group_tasks_generated"
+  | "life_group_task_rerolled"
+  | "life_group_task_reassigned"
   | "api_error"
 
 export interface AnalyticsEventParams {
@@ -97,6 +109,18 @@ export interface AnalyticsEventParams {
   life_group_study_deleted: { study_id: string }
   life_group_study_publisher_added: { user_id: string }
   life_group_study_publisher_removed: { user_id: string }
+  life_group_task_template_created: { template_id: number }
+  life_group_task_template_updated: { template_id: number }
+  life_group_task_template_deleted: { template_id: number }
+  life_group_task_templates_reordered: Record<string, never>
+  life_group_task_overrides_saved: { life_group_id: number }
+  life_group_task_members_saved: { life_group_id: number }
+  life_group_task_settings_saved: { life_group_id: number }
+  life_group_task_date_skipped: { life_group_id: number }
+  life_group_task_date_unskipped: { life_group_id: number }
+  life_group_tasks_generated: { life_group_id: number }
+  life_group_task_rerolled: { life_group_id: number }
+  life_group_task_reassigned: { life_group_id: number }
   api_error: { endpoint: string; status: number; message?: string }
 }
 

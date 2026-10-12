@@ -96,5 +96,21 @@ targets:
     # Note: this also means xcodegen now owns the scheme's LastUpgradeVersion
     # attribute — a future `xcodegen generate` run may reset it again.
     scheme:
-      testTargets: []
+      testTargets:
+        - PazChurchTests
       gatherCoverageData: false
+
+  PazChurchTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: PazChurchTests
+    dependencies:
+      - target: PazChurch
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cwb.pazchurch.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/PazChurch.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PazChurch"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        FRAMEWORK_SEARCH_PATHS: ["$(inherited)", "../shared/build/XCFrameworks/debug"]

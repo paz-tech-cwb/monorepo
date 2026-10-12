@@ -11,6 +11,7 @@ export type NotificationCategory =
   | 'forms'
   | 'member_journey'
   | 'contributions'
+  | 'life_group_task'
 
 export type NotificationStatus =
   | 'pending'

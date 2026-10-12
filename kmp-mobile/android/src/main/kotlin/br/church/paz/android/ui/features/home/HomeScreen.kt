@@ -76,6 +76,7 @@ import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazPillPrimaryButton
 import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.components.PazSkeleton
+import br.church.paz.android.ui.features.ministries.MyTasksCard
 import br.church.paz.android.ui.theme.PazColors
 import br.church.paz.android.ui.theme.PazGradients
 import br.church.paz.android.ui.theme.PazShapePill
@@ -83,6 +84,7 @@ import br.church.paz.android.ui.theme.PazSpacing
 import br.church.paz.shared.domain.model.AgendaEvent
 import br.church.paz.shared.domain.model.BankInfo
 import br.church.paz.shared.domain.model.Banner
+import br.church.paz.shared.domain.model.LifeGroupTask
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -110,6 +112,7 @@ fun HomeScreen(
                         Intent(Intent.ACTION_VIEW, Uri.parse(effect.url)),
                     )
                 is HomeEffect.NavigateToAgenda -> navController.navigate(Screen.AgendaDetail.createRoute(effect.eventId))
+                is HomeEffect.NavigateToTask -> navController.navigate(Screen.LifeGroupTaskGuide.createRoute(effect.assignmentId))
             }
         }
     }
@@ -142,6 +145,8 @@ fun HomeScreen(
                             bank = uiState.bank,
                             sectionOrder = uiState.sectionOrder,
                             showLifeGroupDiscoveryCTA = uiState.showLifeGroupDiscoveryCTA,
+                            myTasks = uiState.myTasks,
+                            onTaskTap = viewModel::onTaskTapped,
                             onBannerTap = viewModel::onBannerTapped,
                             onEventTap = viewModel::onEventTapped,
                             onSeeAllEvents = { navController.navigate(Screen.AgendaList.route) },
@@ -174,6 +179,8 @@ private fun HomeContent(
     bank: BankInfo?,
     sectionOrder: List<String>,
     showLifeGroupDiscoveryCTA: Boolean,
+    myTasks: List<LifeGroupTask>,
+    onTaskTap: (String) -> Unit,
     onBannerTap: (String?) -> Unit,
     onEventTap: (String) -> Unit,
     onSeeAllEvents: () -> Unit,
@@ -217,6 +224,22 @@ private fun HomeContent(
                             )
                         }
                     }
+            }
+        }
+
+        // Best-effort card; hidden when empty or when the fetch failed.
+        if (myTasks.isNotEmpty()) {
+            item(key = "my_tasks") {
+                AnimatedSection(index = sectionOrder.size) {
+                    MyTasksCard(
+                        tasks = myTasks,
+                        onTaskTap = onTaskTap,
+                        modifier =
+                            Modifier
+                                .padding(horizontal = PazSpacing.Lg)
+                                .padding(top = PazSpacing.Xl),
+                    )
+                }
             }
         }
 

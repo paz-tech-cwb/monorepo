@@ -45,6 +45,7 @@ import { JourneyTracksModule } from './journey-tracks/journey-tracks.module';
 import { CasaDePazCyclesModule } from './casa-de-paz-cycles/casa-de-paz-cycles.module';
 import { CasaDePazLessonsModule } from './casa-de-paz-lessons/casa-de-paz-lessons.module';
 import { GuestOriginsModule } from './guest-origins/guest-origins.module';
+import { LifeGroupTasksModule } from './life-group-tasks/life-group-tasks.module';
 
 import ormconfig from './configs/orm.config';
 
@@ -112,6 +113,7 @@ import ormconfig from './configs/orm.config';
     CasaDePazCyclesModule,
     CasaDePazLessonsModule,
     GuestOriginsModule,
+    LifeGroupTasksModule,
   ],
   providers: [
     {

@@ -13,6 +13,9 @@ export const NOTIFICATION_CATEGORIES = [
   // attendance reminders are core to the leader's job and must not be
   // opt-outable, same as `forms` reminders.
   'life_group_attendance',
+  // Deliberately excluded from CATEGORY_PREF_MAP as well: rotating task
+  // assignments are a church-ministry duty and must not be opt-outable.
+  'life_group_task',
 ] as const;
 
 export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];

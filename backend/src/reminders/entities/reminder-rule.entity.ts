@@ -17,7 +17,13 @@ export class ReminderRule {
 
   @Column({
     type: 'enum',
-    enum: ['form_report', 'event', 'member_journey', 'life_group_attendance'],
+    enum: [
+      'form_report',
+      'event',
+      'member_journey',
+      'life_group_attendance',
+      'life_group_tasks',
+    ],
     enumName: 'reminder_rule_type_enum',
     unique: true,
   })

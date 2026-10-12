@@ -41,6 +41,12 @@ import { LifeGroupStudy } from '../life-group-studies/entities/life-group-study.
 import { LifeGroupStudyPublisher } from '../life-group-studies/entities/life-group-study-publisher.entity';
 import { LifeGroupAttendance } from '../life-group-attendance/entities/life-group-attendance.entity';
 import { LifeGroupAttendanceEntry } from '../life-group-attendance/entities/life-group-attendance-entry.entity';
+import { LifeGroupTaskTemplate } from '../life-group-tasks/entities/life-group-task-template.entity';
+import { LifeGroupTaskOverride } from '../life-group-tasks/entities/life-group-task-override.entity';
+import { LifeGroupTaskAssignment } from '../life-group-tasks/entities/life-group-task-assignment.entity';
+import { LifeGroupTaskMemberSetting } from '../life-group-tasks/entities/life-group-task-member-setting.entity';
+import { LifeGroupTaskGroupSetting } from '../life-group-tasks/entities/life-group-task-group-setting.entity';
+import { LifeGroupTaskSkip } from '../life-group-tasks/entities/life-group-task-skip.entity';
 import { FormGuest } from '../form-guests/entities/form-guest.entity';
 import { Ministry } from '../ministries/entities/ministry.entity';
 import { MinistryTeam } from '../ministries/entities/ministry-team.entity';
@@ -104,6 +110,12 @@ const config: DataSourceOptions = {
     LifeGroupStudyPublisher,
     LifeGroupAttendance,
     LifeGroupAttendanceEntry,
+    LifeGroupTaskTemplate,
+    LifeGroupTaskOverride,
+    LifeGroupTaskAssignment,
+    LifeGroupTaskMemberSetting,
+    LifeGroupTaskGroupSetting,
+    LifeGroupTaskSkip,
     CasaDePazReport,
     CourseTrackCourse,
     CourseLesson,

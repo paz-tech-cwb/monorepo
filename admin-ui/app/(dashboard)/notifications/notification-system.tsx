@@ -56,6 +56,7 @@ const CATEGORIES: { value: NotificationCategory; label: string }[] = [
   { value: 'forms', label: 'Formulários' },
   { value: 'member_journey', label: 'Jornada do Membro' },
   { value: 'contributions', label: 'Contribuições' },
+  { value: 'life_group_task', label: 'Tarefas do Life' },
 ]
 
 const LEADER_ONLY_CATEGORIES: NotificationCategory[] = ['forms']

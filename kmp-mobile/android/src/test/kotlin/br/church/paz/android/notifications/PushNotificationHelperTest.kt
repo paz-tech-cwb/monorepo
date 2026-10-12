@@ -93,6 +93,25 @@ class PushNotificationHelperTest {
     }
 
     @Test
+    fun `parses tarefa deep link to the life group task guide route`() {
+        assertEquals(
+            "life_group_task/9f1c2d3e-aaaa-bbbb-cccc-1234567890ab",
+            PushNotificationHelper.parseDeepLink("paz://tarefa/9f1c2d3e-aaaa-bbbb-cccc-1234567890ab"),
+        )
+    }
+
+    @Test
+    fun `returns null for tarefa missing assignment id`() {
+        assertNull(PushNotificationHelper.parseDeepLink("paz://tarefa/"))
+        assertNull(PushNotificationHelper.parseDeepLink("paz://tarefa//"))
+    }
+
+    @Test
+    fun `returns null for tarefa with extra path segments`() {
+        assertNull(PushNotificationHelper.parseDeepLink("paz://tarefa/42/extra"))
+    }
+
+    @Test
     fun `returns null for unknown prefix`() {
         assertNull(PushNotificationHelper.parseDeepLink("paz://unknown/123"))
     }
