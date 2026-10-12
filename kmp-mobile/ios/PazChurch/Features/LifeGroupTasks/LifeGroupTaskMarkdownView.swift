@@ -6,6 +6,8 @@ enum LifeGroupTaskMarkdownBlock: Equatable {
     case bullet(indent: Int, text: String)
     case numbered(indent: Int, number: String, text: String)
     case paragraph(text: String)
+    case code(text: String)
+    case quote(text: String)
 }
 
 /// Pure parsing/sanitizing helpers, kept free of SwiftUI so they are easy to test.
@@ -13,6 +15,7 @@ enum LifeGroupTaskMarkdown {
     static func parseBlocks(_ markdown: String) -> [LifeGroupTaskMarkdownBlock] {
         var blocks: [LifeGroupTaskMarkdownBlock] = []
         var paragraph: [String] = []
+        var codeLines: [String]?
 
         func flushParagraph() {
             guard !paragraph.isEmpty else { return }
@@ -22,6 +25,23 @@ enum LifeGroupTaskMarkdown {
 
         for rawLine in markdown.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n") {
             let trimmed = rawLine.trimmingCharacters(in: .whitespaces)
+
+            // Fenced code: everything up to the closing fence is verbatim.
+            if codeLines != nil {
+                if trimmed.hasPrefix("```") {
+                    blocks.append(.code(text: codeLines!.joined(separator: "\n")))
+                    codeLines = nil
+                } else {
+                    codeLines!.append(rawLine)
+                }
+                continue
+            }
+            if trimmed.hasPrefix("```") {
+                flushParagraph()
+                codeLines = []
+                continue
+            }
+
             if trimmed.isEmpty {
                 flushParagraph()
                 continue
@@ -32,6 +52,11 @@ enum LifeGroupTaskMarkdown {
             if let heading = headingBlock(trimmed) {
                 flushParagraph()
                 blocks.append(heading)
+            } else if trimmed == ">" {
+                flushParagraph()
+            } else if trimmed.hasPrefix("> ") {
+                flushParagraph()
+                blocks.append(.quote(text: String(trimmed.dropFirst(2)).trimmingCharacters(in: .whitespaces)))
             } else if trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") || trimmed.hasPrefix("+ ") {
                 flushParagraph()
                 blocks.append(.bullet(indent: indent, text: String(trimmed.dropFirst(2))))
@@ -43,6 +68,8 @@ enum LifeGroupTaskMarkdown {
             }
         }
         flushParagraph()
+        // An unclosed fence still renders what was written.
+        if let codeLines { blocks.append(.code(text: codeLines.joined(separator: "\n"))) }
         return blocks
     }
 
@@ -85,8 +112,8 @@ enum LifeGroupTaskMarkdown {
     }
 }
 
-/// Renders markdown guidance with headings, bullet/numbered lists, paragraphs, inline
-/// bold/italic and safe (http/https) links.
+/// Renders markdown guidance with headings, bullet/numbered lists, paragraphs, fenced code,
+/// blockquotes, inline bold/italic/`code` and safe (http/https) links.
 struct LifeGroupTaskMarkdownView: View {
     let markdown: String
 
@@ -124,6 +151,28 @@ struct LifeGroupTaskMarkdownView: View {
 
         case let .paragraph(text):
             Text(LifeGroupTaskMarkdown.attributed(text)).font(PazTypography.bodyMedium)
+
+        case let .code(text):
+            ScrollView(.horizontal, showsIndicators: false) {
+                Text(text)
+                    .font(.system(.footnote, design: .monospaced))
+                    .textSelection(.enabled)
+                    .padding(PazSpacing.md)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+
+        case let .quote(text):
+            HStack(alignment: .top, spacing: PazSpacing.md) {
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(Color.secondary.opacity(0.5))
+                    .frame(width: 3)
+                Text(LifeGroupTaskMarkdown.attributed(text))
+                    .font(PazTypography.bodyMedium)
+                    .italic()
+                    .foregroundStyle(.secondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
