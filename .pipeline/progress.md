@@ -2,39 +2,29 @@
 
 ## Request
 
-Life group rotating tasks: admin-defined task templates, fair random weekly assignment per life group meeting, push to assignee, guide screen in mobile app.
+Home screen life group card (Android + iOS) folding the "Minhas tarefas" card into it, plus per-group report access for leader/co-leader inside the life group detail (backend authorization verified; changes only if needed).
 
 ## Status
 
 - [x] Context reviewed
 - [x] Spec created (.pipeline/spec.md)
-- [x] User approval of spec / open questions (decisions 1-8 recorded in spec)
-- [ ] First branch commit created
+- [ ] User answers to open questions (Q1-Q6; none block Phases 0-3)
+- [ ] First branch commit created (spec commit only)
 - [ ] PR opened
-- [x] Implementation complete (not compiled: no node/java on machine)
-- [ ] Tests complete (written, not executed)
-- [x] Review complete (REQUEST CHANGES; M1/M2 fixed, see changes.md Review/Fix)
+- [ ] Phase 0 backend characterization
+- [ ] Phase 1 backend (serializer/mapper, scoped list + co-leader fallback, scope-aware findOne/audit)
+- [ ] Phase 2 shared (LifeGroupReportRepository, buildHomeLifeGroupCards)
+- [ ] Phase 3 home card Android + iOS
+- [ ] Phase 4 detail report entries + weekly reports list/detail + analytics scoped mode
+- [ ] Phase 5 docs
+- [ ] Tests complete
+- [ ] Review complete
 
 ## Timeline
 
-- 2026-10-12 — Hammond: ticket-implementation mode; Grant spec stage run; verified prior plan against code (see spec "Verified against code"). Added per-member eligibility requirement (member_settings table, task-members endpoints, engine filter, UI, OQ13-16). Stopped at spec gate awaiting answers to open questions.
-
-- 2026-10-12 — spec approved with decisions; pipeline starting.
+- 2026-10-12 — Grant: investigated code; key findings: (1) per-group "Relatorios" (analytics) row already exists on both platforms; (2) life-group-reports GET has no co-leader fallback, no life_group_id filter, no scope check on :id/audit, and likely serializes entities to `{}`; (3) mobile weekly-report submission payload does not match the backend DTO (pre-existing bug, "Novo relatorio" deferred). Spec written, awaiting gate.
 
 ## Current branch / PR
 
-- Branch: feat/life-group-rotating-tasks (off origin/develop)
+- Branch: feat/life-group-home-card
 - PR: pending
-
-## Phase status
-- B1 done-unvalidated (not compiled/run)
-- B2 done-unvalidated (not compiled/run)
-- B3 done-unvalidated (not compiled/run)
-- A1 done-unvalidated (not compiled/run)
-- M1 done-unvalidated (not compiled/run)
-- M2 done-unvalidated (not compiled/run)
-- M3 done-unvalidated (not compiled/run)
-- M4 done-unvalidated (not compiled/run)
-- Docs done-unvalidated (not compiled/run)
-
-- 2026-10-12 — Review: 0 blockers, 2 majors. Arnold fixed M1 (assignments user FK cascade) and M2 (grandfathered flag), plus m1, m4, m6, m8. Still unvalidated: needs jest/build/gradle/xcode run.

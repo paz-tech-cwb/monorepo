@@ -13,8 +13,9 @@ import br.church.paz.shared.data.repository.FormsRepositoryImpl
 import br.church.paz.shared.data.repository.HomeRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupAnalyticsRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupAttendanceRepositoryImpl
-import br.church.paz.shared.data.repository.LifeGroupTaskRepositoryImpl
+import br.church.paz.shared.data.repository.LifeGroupReportRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupStudyRepositoryImpl
+import br.church.paz.shared.data.repository.LifeGroupTaskRepositoryImpl
 import br.church.paz.shared.data.repository.MemberJourneyRepositoryImpl
 import br.church.paz.shared.data.repository.OnboardingRepositoryImpl
 import br.church.paz.shared.data.repository.UserRepositoryImpl
@@ -32,8 +33,9 @@ import br.church.paz.shared.domain.repository.FormsRepository
 import br.church.paz.shared.domain.repository.HomeRepository
 import br.church.paz.shared.domain.repository.LifeGroupAnalyticsRepository
 import br.church.paz.shared.domain.repository.LifeGroupAttendanceRepository
-import br.church.paz.shared.domain.repository.LifeGroupTaskRepository
+import br.church.paz.shared.domain.repository.LifeGroupReportRepository
 import br.church.paz.shared.domain.repository.LifeGroupStudyRepository
+import br.church.paz.shared.domain.repository.LifeGroupTaskRepository
 import br.church.paz.shared.domain.repository.MemberJourneyRepository
 import br.church.paz.shared.domain.repository.OnboardingRepository
 import br.church.paz.shared.domain.repository.UserRepository
@@ -80,6 +82,9 @@ object IosAppContainer {
     }
     val lifeGroupAnalyticsRepository: LifeGroupAnalyticsRepository by lazy {
         LifeGroupAnalyticsRepositoryImpl(httpClient)
+    }
+    val lifeGroupReportRepository: LifeGroupReportRepository by lazy {
+        LifeGroupReportRepositoryImpl(httpClient)
     }
     val casaDePazAnalyticsRepository: CasaDePazAnalyticsRepository by lazy {
         CasaDePazAnalyticsRepositoryImpl(httpClient)

@@ -35,6 +35,9 @@ class LifeGroupAnalyticsViewModel {
     var year: Int
     var month: Int32?
     var lifeGroupId: Int32?
+    /// True when opened for one specific group (e.g. from the group's detail): the screen is
+    /// locked to that group and the group picker is hidden, so a leader cannot widen it.
+    let isScopedToGroup: Bool
     /// Populated from the scoped `overview.lifeGroups`, not the unscoped
     /// `ChurchRepository.getAllLifeGroups()`, so this dropdown can never
     /// offer a group that 403s on attendance/distribution.
@@ -94,6 +97,7 @@ class LifeGroupAnalyticsViewModel {
         analyticsRepository: LifeGroupAnalyticsRepository
     ) {
         self.lifeGroupId = lifeGroupId
+        self.isScopedToGroup = lifeGroupId != nil
         self.analyticsRepository = analyticsRepository
         self.year = Int(Calendar.current.component(.year, from: Date()))
     }

@@ -17,9 +17,20 @@ class HomeViewModel {
     /// group", since that would wrongly nudge an existing member to
     /// "discover" a group they already belong to.
     var showLifeGroupDiscoveryCTA = false
-    /// Upcoming assigned life group tasks ("Minhas tarefas"). Empty hides the card,
-    /// including when the best-effort fetch failed.
-    var myTasks: [LifeGroupTask] = []
+    /// One card per life group (tasks folded in), at most `maxLifeGroupCards`. Empty when the
+    /// viewer has no group or the groups fetch failed (quiet degradation, never a home error).
+    var lifeGroupCards: [HomeLifeGroupCard] = []
+    /// Groups beyond the card cap; "Ver todos (N)" shows `lifeGroupCards.count + hiddenLifeGroupsCount`.
+    var hiddenLifeGroupsCount = 0
+    /// Tasks-only fallback ("Minhas tarefas"), used ONLY when the groups fetch failed but the
+    /// tasks fetch worked, so the pre-existing feature does not regress.
+    var legacyTasks: [LifeGroupTask] = []
+
+    static let maxLifeGroupCards = 3
+    static let maxTasksPerCard = 3
+
+    /// Numeric id of the signed-in user (leader-first card ordering); nil when unknown.
+    private var currentUserId: Int32?
 
     private let homeRepository: HomeRepository
     private let authRepository: AuthRepository
@@ -52,6 +63,7 @@ class HomeViewModel {
             let user = try await authRepository.currentUser()
             userName = user?.name.split(separator: " ").first.map(String.init) ?? ""
             canManage = user?.role.isLeader == true
+            currentUserId = user.flatMap { Int32($0.id) }
             isLoading = false
         } catch {
             print("[HomeVM] load() FAILED — \(type(of: error)): \(error)")
@@ -59,39 +71,97 @@ class HomeViewModel {
             self.error = error.localizedDescription
         }
 
-        do {
-            let myGroups = try await churchRepository.getMyLifeGroups()
-            showLifeGroupDiscoveryCTA = myGroups.isEmpty
-        } catch {
-            // Best-effort: on failure, leave the CTA hidden rather than risk
-            // showing it to a member who actually has a group.
-            showLifeGroupDiscoveryCTA = false
-        }
+        // Groups and tasks are independent best-effort fetches: a failure in one never blocks or
+        // hides the other, and neither ever surfaces as a home error. A cancelled load (view
+        // task cancelled / Kotlin CancellationException bridged as NSError) keeps current state.
+        let groupsOutcome = await fetchMyGroups()
+        let tasksOutcome = await fetchMyTasks()
+        if case .cancelled = groupsOutcome { return }
+        if case .cancelled = tasksOutcome { return }
+        let resolved = Self.resolveLifeGroups(
+            currentUserId: currentUserId,
+            groups: groupsOutcome.value,
+            tasks: tasksOutcome.value,
+            today: Self.todayISODate()
+        )
+        showLifeGroupDiscoveryCTA = resolved.showDiscoveryCTA
+        lifeGroupCards = resolved.cards
+        hiddenLifeGroupsCount = resolved.hiddenCount
+        legacyTasks = resolved.legacyTasks
+    }
 
-        // Best-effort: a failure hides the card and never surfaces as a home error.
+    private func fetchMyGroups() async -> FetchOutcome<[LifeGroup]> {
         do {
-            let tasks = try await taskRepository.getMyTasks()
-            myTasks = Self.upcomingTasks(tasks, today: Self.todayISODate())
+            return try await .success(churchRepository.getMyLifeGroups())
         } catch is CancellationError {
-            // View task cancelled: keep the current card instead of clearing it.
-            return
+            return .cancelled
         } catch {
-            // A Kotlin CancellationException surfaces as an NSError, not
-            // CancellationError: keep the current card in that case too.
-            if Task.isCancelled { return }
-            myTasks = []
+            return Task.isCancelled ? .cancelled : .failed
         }
+    }
+
+    private func fetchMyTasks() async -> FetchOutcome<[LifeGroupTask]> {
+        do {
+            return try await .success(taskRepository.getMyTasks())
+        } catch is CancellationError {
+            return .cancelled
+        } catch {
+            return Task.isCancelled ? .cancelled : .failed
+        }
+    }
+
+    enum FetchOutcome<Value> {
+        case success(Value)
+        case failed
+        case cancelled
+
+        /// The fetched value, or nil when the fetch failed (or was cancelled).
+        var value: Value? {
+            if case .success(let value) = self { return value }
+            return nil
+        }
+    }
+
+    struct ResolvedLifeGroups {
+        var cards: [HomeLifeGroupCard] = []
+        var hiddenCount = 0
+        var legacyTasks: [LifeGroupTask] = []
+        var showDiscoveryCTA = false
+    }
+
+    /// Pure mapping of the two fetch results (nil == fetch failed) to what the home screen shows:
+    /// cards (shared builder, so Android and iOS cannot drift) when groups loaded; discovery CTA
+    /// only when groups loaded AND are empty; legacy tasks-only card only when groups failed but
+    /// tasks loaded; tasks failing just leaves cards without a tasks section.
+    static func resolveLifeGroups(
+        currentUserId: Int32?,
+        groups: [LifeGroup]?,
+        tasks: [LifeGroupTask]?,
+        today: String
+    ) -> ResolvedLifeGroups {
+        guard let groups else {
+            guard let tasks else { return ResolvedLifeGroups() }
+            return ResolvedLifeGroups(legacyTasks: upcomingTasks(tasks, today: today))
+        }
+        let built = HomeLifeGroupCardKt.buildHomeLifeGroupCards(
+            currentUserId: currentUserId.map { KotlinInt(value: $0) },
+            groups: groups,
+            tasks: tasks ?? [],
+            today: today,
+            maxCards: Int32(maxLifeGroupCards),
+            maxTasks: Int32(maxTasksPerCard)
+        )
+        return ResolvedLifeGroups(
+            cards: built.cards,
+            hiddenCount: Int(built.hiddenCount),
+            showDiscoveryCTA: groups.isEmpty
+        )
     }
 
     /// Status assigned, meetingDate (ISO `yyyy-MM-dd`, so string order == date order) on or after
     /// `today`, soonest first, at most `limit`.
     static func upcomingTasks(_ tasks: [LifeGroupTask], today: String, limit: Int = 3) -> [LifeGroupTask] {
-        Array(
-            tasks
-                .filter { $0.status == .assigned && $0.meetingDate >= today }
-                .sorted { $0.meetingDate < $1.meetingDate }
-                .prefix(limit)
-        )
+        HomeLifeGroupCardKt.selectUpcomingLifeGroupTasks(tasks: tasks, today: today, limit: Int32(limit))
     }
 
     private static func todayISODate() -> String {

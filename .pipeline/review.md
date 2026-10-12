@@ -1,116 +1,131 @@
-## Review: Life group rotating tasks (feat/life-group-rotating-tasks)
+# Review: life group home card + per-group leader reports
 
-Scope: `git diff origin/develop...HEAD` (112 files: backend, admin-ui, kmp-mobile shared/android/ios, .ai docs). Nothing was compiled or run (no node/java), so the review was done by reading every changed source file against the spec and APPROVED DECISIONS. Compile-risk checks done by cross-reading: entity vs migration columns and FK types, Nest module wiring, DTO vs wire contract (backend vs admin-ui vs Kotlin DTOs), Swift-visible Kotlin names, pbxproj ids.
+Reviewer: Malcolm. Branch `feat/life-group-home-card` vs `origin/develop` against `.pipeline/spec.md`. Read-only review, nothing committed.
 
-### Blockers (must fix before merge)
-None found.
+Checks run: backend `jest src/life-group-reports` (27 passed), `eslint` (0 errors, 8 `no-unsafe-argument` warnings in the controller spec), `prettier --check` (clean). Android and iOS were not compiled; reviewed by reading only.
 
-### Major Issues (should fix before merge)
+## Verdict: SHIP WITH FIXES
 
-- [M1] [data integrity / migration] `backend/database/migrations/1795900000004-CreateLifeGroupTasks.ts` (assignments table, `"user_id" int NOT NULL REFERENCES "users"("id")`) and `backend/src/life-group-tasks/entities/life-group-task-assignment.entity.ts` (`user` relation, no `onDelete`).
-  The FK has no `ON DELETE`. `UsersService.deleteSelf` (`users.service.ts` ~L452-545, untouched by this branch) hard-deletes the user and relies on cascading FKs, so any user who ever received a task will fail account deletion with an FK violation (500). Every group member will get assignments, so this makes the store-mandated in-app account deletion fail for almost everyone in a life group. The same flaw already exists for `life_group_attendance_entries.user_id` (pre-existing), but this branch widens it and it is trivially avoidable here.
-  Fix: edit the not-yet-run migration to `"user_id" int NOT NULL REFERENCES "users"("id") ON DELETE CASCADE` (history of a deleted account is not needed; snapshots are in the row anyway), and set `@ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' })` in the entity. Add a one-line assertion in the deleteSelf spec if one exists for cascades. Optionally open a follow-up for the attendance entries FK.
+There are no blockers. One major issue (PII exposure in the audit endpoint) should be fixed before merge. The remaining findings are minor.
 
-- [M2] [eligibility semantics / UX trap] `backend/database/migrations/1795900000004-CreateLifeGroupTasks.ts` (grandfather INSERT) + `backend/src/life-group-tasks/life-group-task-config.service.ts` (putMembers `resetToAutomatic`, `buildMembers` returns `reason`) + admin-ui `life-group-task-members-tab.tsx` / Android+iOS members screens ("Voltar ao automático").
-  Decision 7 grandfathers existing members via explicit `eligible=true` rows, so every pre-existing member is shown as source `manual` ("Definido pelo líder"/"Manual"), the leader note field is pre-filled with the system text `grandfathered at migration`, and the "Voltar ao automático" button is offered on all of them. Clicking it deletes the row; a non-leader member with < 3 present records then resolves to `pending` = ineligible, i.e. an established member is silently dropped from the rotation by what reads as a harmless "reset". Also "Salvar detalhes" on a `pending` member pins `eligible=false` permanently (documented in a hint, but easy to miss).
-  Fix (pick one, smallest first): (a) in `buildMembers`, return `reason: null` when `reason === 'grandfathered at migration'`, and expose a `grandfathered: boolean` so clients hide/relabel the reset button (or label it "Remover da rotina automática"); (b) in `putMembers` for `resetToAutomatic` on a grandfathered row, keep the row but only clear note/exclusions. Either way the engine/eligibility rules already match decision 7 and need no change.
+## Blocker
 
-### Minor Issues (nice to have)
-
-- [m1] [mobile markdown] `kmp-mobile/android/.../ui/components/MarkdownParser.kt` `parseInline` (L~95-125): `_` is treated as an italic marker anywhere, so `snake_case_word` or a bare URL like `https://x.com/a_b_c` loses its underscores, and an unmatched `*`/`_` dumps the rest of the line as plain (later `**bold**`/links on that line are not parsed). Fix: only open `_` italics at a word boundary (previous char non-alphanumeric, closing followed by non-alphanumeric); on no match `addPlain(marker); i++` instead of swallowing the remainder. The iOS side uses Apple's inline parser and is fine.
-- [m2] [preview fidelity] Admin preview (`components/markdown-editor.tsx`, react-markdown + GFM) renders code fences, blockquotes, `####`, tables; Android `parseMarkdownBlocks` and iOS `LifeGroupTaskMarkdown.parseBlocks` render those as raw text (backticks, `>`). Not a security issue (links are correctly allowlisted to http/https on both mobile clients; react-markdown sanitizes `javascript:` by default; no `dangerouslySetInnerHTML`/rehype-raw added). Fix: note the supported subset in the editor hint text, or add fenced-code/blockquote handling later.
-- [m3] [notifications gap] `life-group-task-assignments.service.ts` `generate()` (leader/admin endpoint) never notifies. If a leader draws tasks inside the largest-offset window (e.g. group created late, meeting in < 3 days) the evaluator's offset-3 run has already passed, so assignees only get the d-1 reminder, or nothing if generated after d-1. Fix: after a manual generate, if `meetingDate - today <= max(days_before_meeting)` notify the unnotified assignees via `LifeGroupTaskNotificationsService.notifyAssignee` (needs the rule config), or document it in the admin panel text.
-- [m4] [validation] `generate()` accepts any date matching the group's weekday, including past dates and dates years ahead, which pollute fairness history (history counts all non-skipped dates). Fix: reject `meetingDate < today` and `> today + 60 days`.
-- [m5] [fairness] `decline()`/`reroll()` exclude only the current assignee, so A declines -> B, B declines -> A can come back. Spec says "excluding decliner", so acceptable; consider excluding previous declined users via the `status='declined'` history if it bothers leaders.
-- [m6] [timezone] `admin-ui/components/life-group-tasks/next-meeting-date.ts` uses the browser's local `getDay()`; backend uses America/Sao_Paulo. A viewer in another timezone near midnight can get the wrong default date (the backend then rejects it with the weekday check, so it is safe). Fix: compute with `Intl.DateTimeFormat(..., { timeZone: 'America/Sao_Paulo' })`.
-- [m7] [schema drift] Migration unique constraint names (`uq_life_group_task_*`) and index names (`idx_*`) differ from the names TypeORM derives for the entities' `@Index`. Harmless with hand-written migrations (same convention as attendance), but a future `migration:generate` would try to rename them.
-- [m8] [robustness] `LifeGroupTaskMembersScreen` does `lifeGroupId.toInt()` inside `koinViewModel(parameters)`; a malformed route arg would crash. The route is only built internally, so low risk; use `toIntOrNull() ?: return`.
-- [m9] [concurrency] Evaluator `notifyAssignee` sends the push, then updates `notified_at`; two overlapping evaluator runs (multi-instance) could double-push before the column is set. Same pattern as the attendance evaluator; the `ReminderDispatchLog` unique key bounds it to one extra send. Fix if multi-instance: claim the row first with `UPDATE ... SET notified_at = now() WHERE id = $1 AND notified_at IS NULL RETURNING`, then send.
-- [m10] [tests] Nothing has been executed. Before merge run: `npx jest src/life-group-tasks src/reminders src/life-group-attendance src/notifications`, `npm run build`, scoped eslint, admin-ui `npm run build`, `./gradlew :shared:allTests :android:testDebugUnitTest :android:assembleDebug`, and an Xcode build of PazChurch (Swift code uses Kotlin-exported names `description_`, `KotlinBoolean`, `KotlinInt`, `.int32Value`, which look correct but are unverified).
-
-### Verified OK (checked against code, no finding)
-
-- Migrations: enum values added in their own migration (`1795900000003`, `migrationsTransactionMode: 'each'` so the seed in `...04` can use `'life_group_tasks'`); `IF NOT EXISTS` idempotency; `down()` reverses everything it creates (enum values legitimately left, as in the attendance precedent); FK types match (`users.id`/`life_groups.id`/templates are int, new tables uuid); snake_case names match entity `name:` mappings; `reminder_dispatch_log.rule_type varchar(32)` fits `life_group_tasks`; `reminder_rules` seed matches the attendance seed shape; `joined_at timestamptz NOT NULL DEFAULT now()` gives existing rows the migration date and new many-to-many inserts now().
-- Authorization: `LifeGroupTasksController` uses `AuthGuard('jwt') + ScopeGuard` with the same scope + leader/co-leader fallback as attendance (`assertCanAccessLifeGroup`) on every handler, including task-members/settings/skips/overrides; templates controller is `@Roles('admin')` only (decision 2); member endpoints are strictly `userId = req.user.id` with an explicit field whitelist (`toMemberItem`) so the leader `reason` note never reaches `/me/*`; decline checks status and meeting date. `ScopeGuard`/`ScopeResolverService` come from the exported `FormsCoreModule`; no module cycle (`RemindersModule -> LifeGroupTasksModule -> {FormsCore, Notifications}`); all providers/controllers registered; `LifeGroupTaskNotifier` abstract token bound with `useExisting`.
-- Eligibility/engine vs decisions: explicit setting always wins; leader/co-leader eligible by default and in the pool (union with `user_life_groups`, deduped, inactive users dropped); `>= min_present_meetings` (default 3) present entries in the same group; grandfather rows inserted; no-candidate tasks stay unassigned and notify leaders once (dedupe key per task set); per-template exclusions applied per task; generation is idempotent (`orIgnore` = ON CONFLICT DO NOTHING, existing rows never recomputed); fairness order meeting-count -> total-count -> template-count with injectable RNG; skipped dates excluded from history; declined rows excluded from history.
-- Evaluator: largest offset generates and notifies unnotified assignees; smaller offsets only remind non-declined, un-reminded assignments and never generate; dedupe keys `life_group_tasks:{group}:{date}:d{offset}` plus `notified_at`/`reminded_at`; reroll/decline nulls both timestamps and notifies the new assignee immediately (so they still get d-1); zoned-date math reuses the exact helpers moved verbatim into `meeting-day.util.ts` (attendance evaluator now imports them; `CHURCH_TIME_ZONE` no longer referenced there); skipped dates short-circuit; 23505 tolerated.
-- Wire contracts: backend snake_case responses match admin-ui types and the Kotlin DTOs (`task_*`, `eligibility_source`, `present_count`, `excluded_template_ids`, `reason` -> `note`, `reassigned`, `template_id/is_enabled` from task-overrides); PUT task-members body keys (`user_id`, `eligible`, `reason`, `excluded_template_ids`, `reset_to_automatic`) match `TaskMemberEntryDto`; omitted-vs-null handled by the hand-built JSON body; global pipe `whitelist + forbidNonWhitelisted + excludeExtraneousValues` is satisfied by `@Expose` on every DTO field.
-- Mobile: DI registered in `SharedModule`, `IosAppContainer`, `AndroidModule` (ViewModel constructor change reflected in koin + test); deep link `paz://tarefa/{id}` handled in `PushNotificationHelper` (single-segment guard) and iOS `PushNotificationService` + `DeepLinkDestination` + `MainTabView`; Compose BOM 2025.04 supports `LinkAnnotation.Url`; design-system components referenced all exist with matching signatures; pbxproj: 12 new ids each appear the expected number of times, group wired under the Features group, sources build phase updated.
-- Security: link scheme allowlist (http/https only) on Android (`isSafeLinkUrl`) and iOS (`isSafeLinkURL`); admin preview uses react-markdown (safe); no secrets; validation DTOs bound lengths (20k guidance, 1k note).
-
-### Strengths
-- Pure, injectable-RNG `assignment-engine.ts` with the service doing all DB resolution, which keeps eligibility rules unit-testable (`eligibility.ts`, `assignment-engine.spec.ts`, `eligibility.spec.ts`).
-- Defensive member serialization in `life-group-task-assignments.service.ts` (`toMemberItem` explicit field list) and the comment/guard structure copied faithfully from the attendance controller.
-- `applyReassignment` is guarded on the previous assignee (`UPDATE ... WHERE id AND user_id`) and returns 409 on a lost race.
-- Migration split (enum values vs seed) and idempotent `IF NOT EXISTS` style match house conventions; `validateReminderConfig` adds server-side validation to a previously unvalidated JSON config.
-- Mobile markdown parsers are pure and unit-tested (`MarkdownParserTest`), and the Swift parser is likewise free of SwiftUI.
-
-### Verdict: REQUEST CHANGES (not SHIP yet)
-Zero blockers, but two majors (M1 account-deletion FK, M2 grandfathered-member reset trap). Both are small, localized fixes (one migration/entity line; one serializer + UI label tweak). After M1 and M2 and a real compile/test run (m10), this is SHIP.
-
-
----
-
-## Round 2 review (Malcolm): commits 25394ea..HEAD (91d718a)
-
-Scope: Arnold's first fixes (25394ea, never re-reviewed) plus the gap-fix commits (backend claim-first/decliner history/manual-generate push/grandfathered column/joined_at, admin-ui split preview + drag-drop, Android/iOS markdown + home card). Read-only review, nothing compiled or run (Sattler runs tooling). First-round findings M1/M2/m1/m2/m3/m4/m5/m6/m9 are all addressed in code; details below.
-
-### Blockers
 None.
 
-### Major
-- [M3] [migration / deploy] `backend/database/migrations/1795900000004-CreateLifeGroupTasks.ts` (L~47 `declined_user_ids`, L~72 `grandfathered`, assignments `user_id ... ON DELETE CASCADE`).
-  The migration was edited in place twice after the branch was pushed (`origin/feat/life-group-rotating-tasks` exists). Every statement is `CREATE TABLE IF NOT EXISTS`, so any database that already ran the earlier revision (dev, a `team/*` QA env, a colleague's local) will NOT get `declined_user_ids`, `grandfathered`, or the CASCADE FK. Result there: runtime 500 on every roster/assignment query (`column ... does not exist`), and account deletion still blocked. Fine on prod/fresh DBs.
-  Fix (cheap, keeps edit-in-place): after the CREATE TABLEs add `ALTER TABLE "life_group_task_assignments" ADD COLUMN IF NOT EXISTS "declined_user_ids" int[] NOT NULL DEFAULT '{}'`, `ALTER TABLE "life_group_task_member_settings" ADD COLUMN IF NOT EXISTS "grandfathered" boolean NOT NULL DEFAULT false`, and (if any env ran it) drop/re-add the `user_id` FK with ON DELETE CASCADE inside a `DO $$ ... $$` guard. Alternative: confirm in writing that no environment ran an earlier revision. Note the grandfather INSERT must then also set `grandfathered=true` for pre-existing rows only if they came from the old note (`reason = 'grandfathered at migration'`): add `UPDATE ... SET grandfathered = true, reason = NULL WHERE reason = 'grandfathered at migration'` in that same defensive block.
+## Major
 
-### Minor
-- [m11] [claim-first, stuck claim] `life-group-task-notifications.service.ts` `claimAssignment`/`sendClaimed` and `life-group-tasks.evaluator.ts` `runForMeeting` + `dispatch-claim.ts`. Release-on-failure is correct for thrown errors (both the dispatch-log key and the per-assignment marker are released, retried on the next tick within the configured hour). A process crash/deploy restart between the claim and the push, however, leaves `notified_at`/`reminded_at`/the `d{offset}` dispatch key set with nothing sent, and nothing ever retries (at-most-once). Window is small. Because the per-assignment claim already dedupes sends, the group-level dispatch key is redundant on the generate path; dropping it (or giving it a stale-claim TTL) removes the stuck-key case. Accept-and-document is also reasonable.
-- [m12] [evaluator loop] `evaluator.ts` generate/remind loops `await notify...` without per-item try/catch: one throwing assignment (only DB errors; `dispatch` returns ok/false per channel and does not throw on push failure) aborts the rest of that group's notifications until the next tick, and releases the group claim. Wrap each item, continue, and release the key only if any item failed.
-- [m13] [reassign push errors] `life-group-task-assignments.service.ts` `applyReassignment` calls `notifier.notifyReassigned` unguarded after the UPDATE commits. A DB error there turns an already-applied reroll/decline into a 500 (the member then gets 404 on retry because they no longer own it) and the leader summary push is skipped. Wrap in try/catch + log (same pattern as `notifyCreated`).
-- [m14] [manual-generate push timing] `notifyGenerated` pushes whenever `today <= meetingDate <= today + max(offset)`. A leader generating at 02:00 on the largest-offset day pushes at 02:00 instead of the configured `hour`. Optionally skip when `meetingDate == today + maxOffset` and `now.hour < cfg.hour` (the evaluator then sends at the configured hour). Logic otherwise lines up with the evaluator: outside the window the evaluator d-max run generates idempotently and notifies unnotified rows; inside it the shared `notified_at` claim prevents a double push; d-1 reminders remain independent (`reminded_at`). Rule disabled -> no push; past meetings -> no push. Verified.
-- [m15] [wire contract] Backend `members[].joined_at` (ISO or null) is not declared in admin-ui `LifeGroupTaskMember`, Kotlin `LifeGroupTaskMember`/DTO, or Swift. Harmless (both Kotlin Json instances use `ignoreUnknownKeys = true`, TS ignores extras) but the field is dead on the wire; add it to the admin type (and show "Entrou em") or drop it from `buildMembers`. `grandfathered`, `reason`, `present_count` etc. are consistent across backend, admin-ui, Kotlin (default false), Swift (`member.grandfathered`).
-- [m16] [roster SQL] `life-group-task-roster.service.ts` hardcodes `'America/Sao_Paulo'` inside SQL while the rest of the feature uses `CHURCH_TIME_ZONE`; pass it as a bind parameter (`AT TIME ZONE $2`) to avoid drift. The conversion itself is correct (`timestamptz AT TIME ZONE tz` -> local timestamp -> `::date`, compared with the `date` meeting_date; LEFT JOIN leaves leaders not in the join table unfiltered; same-day joins count). Note existing rows get `joined_at = migration time`: harmless because they are grandfathered, but any non-grandfathered pre-existing member (none by construction) would lose history.
-- [m17] [admin-ui] `components/markdown-editor.tsx` `useIsWide`: the `subscribe` function is an inline arrow, so `useSyncExternalStore` unsubscribes/resubscribes the media listener on every render (every keystroke). Hoist `subscribe`/`getSnapshot` to module scope. SSR is correct (server snapshot false, hydrates then switches). Switching narrow<->wide remounts the textarea (loses caret/Tabs state); acceptable. The hook runs for every MarkdownEditor use even without `splitPreview`; fine.
-- [m18] [admin-ui drag-drop] `life-group-tasks-management.tsx` + `use-life-group-tasks.ts`: reorder math is correct (splice-out/splice-in lands at the target index), draggable is disabled while pending, up/down buttons remain the keyboard/touch fallback, optimistic update + rollback + `onSuccess` set/invalidate are right. Only nit: no `onSettled` invalidate, so after a failed mutation the cache is the pre-drag snapshot rather than a refetch; fine in practice. `draggable` is on the whole `<tr>`, which makes text in the row hard to select; consider restricting to the grip handle.
-- [m19] [markdown parity] Android renders one Paragraph per source line; iOS joins consecutive lines into one paragraph; iOS accepts `+ ` bullets, Android does not; nested `> >` shows raw `>` on both. Loops verified terminating: Android `parseMarkdownBlocks` is a single for-loop, `parseInline` always advances `i` (backtick, `**`, `*`/`_`, `[` all advance on no-match), `findItalicEnd` bounded; unclosed fence emitted as code on both platforms; empty ``` and unmatched backtick stay literal. Link allowlist unchanged (http/https only, inline code never becomes a link: tested). The earlier underscore issue (m1) is fixed via `findItalicEnd` word-boundary rules.
-- [m20] [mobile home] iOS `HomeViewModel` uses `try?` around a Kotlin suspend call, so a task cancellation (view `.task` cancelled) silently yields `myTasks = []`; Android correctly rethrows `CancellationException`. Low impact. Both use device-local "today" while the backend uses church timezone; a traveler near midnight may see a one-day-off cut, negligible.
-- [m21] [fairness semantics] `declined_user_ids` behaves as intended: decline appends the decliner (deduped), reroll/decline exclude current assignee plus all prior decliners, manual reassign is deliberately unrestricted and does not touch the list, a reroll (not decline) does not blacklist the previous assignee, declined rows are excluded from history so a decliner is not penalized, and the no-candidate decline path leaves `status='declined'` + records the decliner so a later leader reroll still excludes them. Edge: if everyone has declined, reroll returns 409 and the leader must reassign manually, which is the intended escape hatch.
+### M1. `GET /forms/life-group-reports/:id/audit` now leaks full `User` entities (new PII exposure)
+- Where: `backend/src/life-group-reports/life-group-reports.controller.ts:27` (`exposeAll` on the whole controller) and `life-group-reports.service.ts` `auditLog()`, which returns `audit.listForSubmission()` unmapped.
+- That query loads `relations: ['actor']`. Before this change the global `excludeAll` serializer reduced the response to `[{}]`, so nothing leaked. With `exposeAll` the actor is serialized in full.
+- `User` has no `@Exclude`, so `email`, `phoneNumber`, `birthDate`, `picture`, `status`, the eager `role` and more reach the client.
+- The audience is now every in-scope reader, including co-leaders and leaders. Under the old behaviour the data was never reachable.
+- Casa de Paz has the same pattern, but that is not a reason to widen it here.
+- Fix: map the audit rows in `auditLog()` to the admin-ui `AuditLogEntry` shape. That type is declared in `admin-ui/lib/api/types/formularios.ts:28`; `audit-log.tsx` reads `actor.name` and `createdAt ?? created_at`.
+  ```ts
+  rows.map(r => ({
+    id: r.id,
+    form_slug: r.formSlug,
+    submission_id: r.submissionId,
+    action: r.action,
+    diff: r.diff,
+    created_at: r.createdAt,
+    actor: { id: r.actor.id, name: r.actor.name },
+  }))
+  ```
+- Update the controller spec, which currently asserts `[{ id: 'a1' }]`, to cover the mapped shape and assert that no `email` or `phoneNumber` is present.
+- Also review `diff`: on update it is the raw DTO, so it can include `offering` and attendance counts. That is the same data the reader can already see, so it is acceptable.
 
-### Verified OK (second pass)
-- 25394ea fixes: FK `ON DELETE CASCADE` in migration and entity (account deletion unblocked); grandfather reset now returns 400 with a clear message and the PUT is atomic for that path (throws before any save/remove); clients hide "Voltar ao automático" and show the dedicated badge via the `grandfathered` boolean (admin-ui, Android, iOS); the old magic-string note approach was replaced by the `grandfathered` column which survives every leader edit and never leaks via `reason`.
-- Migration `up()`/`down()`: `grandfathered` boolean NOT NULL DEFAULT false, `declined_user_ids int[] NOT NULL DEFAULT '{}'` (entity `default: () => "'{}'"` matches), `ON CONFLICT (life_group_id, user_id)` targets the real unique constraint, re-run is a no-op (IF NOT EXISTS, ON CONFLICT DO NOTHING), `down()` drops the new columns by dropping the tables and `joined_at` explicitly. `joined_at` ADD COLUMN with `DEFAULT now()` is metadata-only on modern Postgres. Caveat is M3 only.
-- Claim-first: `claimDispatchKey` rethrows non-23505 errors, `releaseDispatchKey` is best-effort; evaluator releases the key when nothing was sent, on `skipped`, and on any exception (try/finally with `keepClaim`), keeps it only after success; d-1 with no pending assignments releases so a later manual assignment can still be reminded; d-3 vs d-1 never both act on the same meeting on the same day (weekday filter), and a reroll nulls both markers so the new assignee gets an immediate push and still gets d-1 when it has not yet run.
-- Manual generate window: 7 days back / 60 ahead via church-timezone string compare; `notifyCreated` is failure-isolated; `notifyGenerated` per-item catch.
-- Android: `HomeViewModel(…4 get())` in `AndroidModule`, test `HomeViewModelTest` uses 4 repos + trailing `today` lambda (default param is not resolved by Koin; module passes 4, constructor has 5 incl. default: OK); `LifeGroupDetailViewModel(lifeGroupId, get(), get(), get())` matches the 4-arg constructor and `LifeGroupDetailViewModelTest`; no other `HomeViewModel(` call sites. Home task fetch is isolated (separate try/catch, cancellation rethrown, home error untouched) and tested (past/declined filtered, cap 3, failure hidden). `HomeEffect.NavigateToTask` handled in `HomeScreen`. `MyTasksCard` made `internal` with a modifier param, reused from Ministry detail.
-- iOS: `HomeViewModel` init gains `taskRepository`; the only call site (`HomeView.swift`) updated; `IosAppContainer.lifeGroupTaskRepository` exists; `LifeGroupMyTasksCard(tasks:repository:)` matches usage in MinistryDetailView; no new Swift files in the gap commits so pbxproj needs no change (the round-1 entries for `LifeGroupMyTasksCard.swift` are present in refs, group and Sources). New `.code`/`.quote` enum cases have a single exhaustive switch (`blockView`), updated.
-- Security: admin preview unchanged react-markdown (no raw HTML); mobile link allowlists intact; no secrets; no new unauthenticated endpoints.
+## Minor
 
-### Verdict (round 2): REQUEST CHANGES, one small item
-No blockers. One major (M3) that only bites already-migrated non-prod databases and is a few lines to harden (or a one-line confirmation that nothing ran the old revision). Everything else is minor/optional. After M3 is addressed (or waived by confirmation) and Sattler's node/gradle/Xcode runs are green, this is SHIP.
+1. **Import ordering (ktlint, ASCII).** `lifegroupreports` is placed before `lifegroupattendance`, and it should come after `lifegroupdiscovery`.
+   - `kmp-mobile/android/.../di/AndroidModule.kt:22-23`
+   - `kmp-mobile/android/.../navigation/PazNavGraph.kt:28-29`
+   - Also `LifeGroupReportRepository(Impl)` before `LifeGroupAttendance...` in `shared/.../di/SharedModule.kt` and `iosMain/.../IosAppContainer.kt`. The `LifeGroupTask` imports in those files were already out of order, so `:shared` is evidently not ktlint-checked.
+   - `ktlintCheck` is not part of CI (`ci-kmp-mobile.yml` only runs assemble and tests), so this will not fail CI. Run `ktlintFormat` anyway.
 
-## Round 3 (Malcolm) - 55a4b99 and everything after (6467fc4, 219b262, e57a68c, 5b8f82c)
+2. **iOS test isolation risk.** `kmp-mobile/ios/PazChurchTests/LifeGroupReportsTests.swift:6-27` has three gate tests that call `LifeGroupDetailView.canViewGroupReports(...)` from non-`@MainActor` test methods.
+   - A `View` struct is main-actor isolated, so a synchronous call from a nonisolated context can fail to compile, depending on the Xcode 26 SDK and `@preconcurrency`.
+   - The other tests in the file, and `HomeViewModelTests`, already use `@MainActor`.
+   - Fix: add `@MainActor` to those three tests, or declare the helper `nonisolated static`. `lifeGroupMeetingLabel` is a free function and is fine.
 
-Ran read-only: `jest src/life-group-tasks src/reminders` = 16 suites / 147 tests pass; `prettier --check` clean; `eslint src/life-group-tasks src/reminders/evaluators` clean for every file touched by this branch (only 2 errors-files: `event-reminder.evaluator.spec.ts`, `form-report-reminder.evaluator.spec.ts`, both byte-identical to main, pre-existing, not ours).
+3. **Android `LifeGroupReportsViewModel`:** `fun load() = load(showSkeleton = true)` is an expression-bodied overload of the private `load(Boolean)`.
+   - It is probably fine, but it is the one spot that risks a "recursive type inference" compile error that CI would only catch.
+   - Safer: `fun load() { load(showSkeleton = true) }`, or rename the private function.
 
-### Blockers
-None.
+4. **Refresh failure replaces the list on both platforms.**
+   - Android `LifeGroupReportsViewModel.load` sets `error` and the `when` shows the error over a populated list.
+   - iOS `LifeGroupReportsViewModel.load` does the same; its test `testRefreshKeepsContentOnFailure` asserts `vm.error != nil` while the list is kept, and the view branch shows the error.
+   - Consider keeping the content visible when `reports` is non-empty and showing a transient error instead.
 
-### Major
-None.
+5. **Android `LifeGroupHomeCard` header `Surface(onClick)`** has no `fillMaxWidth`. The inner `Row` is `fillMaxWidth`, so it works, but adding `modifier = Modifier.fillMaxWidth()` to the `Surface` makes the touch target explicit and matches `LifeGroupDiscoveryCTA`.
 
-### Minor
-- [m22] [iOS cancellation] `HomeViewModel.swift` ~L72-80: `catch is CancellationError` only catches Swift-side cancellation. A cancelled `.task` while awaiting the Kotlin suspend `getMyTasks()` usually surfaces as an NSError wrapping a Kotlin `CancellationException`, not `CancellationError`, so the card can still be cleared. Fix: in the generic catch use `if Task.isCancelled { return }` before `myTasks = []`. Low impact (view is going away).
-- [m23] [evaluator partial failure] Group claim is kept when at least one item was sent, so an assignment whose push threw (its per-assignment claim is released, `notified_at` NULL) is not retried by the evaluator at that offset. It is still picked up by a later manual generate, and a d-smaller run sends `remindAssignee` (reminded_at path). Acceptable and consistent with the stated semantic (all-failed -> release/retry; partial -> keep). Document in changes.md; no code change required. Same for the remind branch.
-- [m24] [notifyGenerated] Logic verified: `today.hour < cfg.hour` uses `zonedParts(new Date())` (church TZ, same source as evaluator `nowZoned.hour !== cfg.hour`). Only `meetingDate === latest` is deferred; smaller-offset days still push now (correct, evaluator does not generate for them). At/after hour it pushes, deduped by the shared `notified_at` claim, so an evaluator that already ran never double-sends. Residual edge: if the scheduler misses the exact configured hour (downtime), a manual generate done before that hour is never pushed at the largest offset (evaluator only matches `hour ===`); later d-1 reminder still goes. Accept.
-- [m25] [migration] Order is now correct (ALTER ADD COLUMN `grandfathered`/`declined_user_ids` and the reason-cleanup UPDATE before the grandfather INSERT; FK re-create guard is idempotent via `confdeltype <> 'c'`; INSERT `ON CONFLICT DO NOTHING`; `down()` drops `joined_at`, `reminder_rules` row and all tables, `joined_at` exists only in this migration). Two notes only: (a) the cleanup UPDATE sets `grandfathered=true` for the marker row regardless of `eligible`; harmless (grandfathered only blocks reset-to-auto). (b) if an env that ran an older revision is re-run through this one, the INSERT would also grandfather members who joined in between; only matters for unrecorded dev DBs.
-- [m26] [CI] `.github/workflows/ci-kmp-mobile.yml` ~L91-100 still says no test target exists and keeps the `xcodebuild test` step commented out; now stale. Optionally enable it (needs simulator + XCFramework already built in that job). Build step (`-scheme PazChurch build`) is unaffected: BuildAction unchanged, test target is only a Testable, no signing/team settings added (`CODE_SIGN_STYLE=Automatic`, no DEVELOPMENT_TEAM on the test target, CI passes CODE_SIGNING_REQUIRED=NO).
-- [m27] [repo hygiene, pre-existing] `kmp-mobile/ios/PazChurch.xcodeproj/**/xcuserdata/jonathalima.xcuserdatad/*` is tracked (not added by this branch). Consider `git rm --cached` and ignoring; out of scope.
+6. **Backend list vs detail inconsistency.**
+   - `findEntity` lets the submitter read their own report, even in a group they no longer lead.
+   - `list` does not include reports a user submitted outside their allowed groups.
+   - Harmless but surprising. Either drop the submitter rule or add `submitted_by` to the list filter. This is documented as intended in the spec, so low priority.
 
-### Verified OK
-- Evaluator: all-failed releases claim (`return` inside try -> finally releases), partial keeps it, empty `pending` in generate path keeps claim (already notified) and in remind path releases; `processed = sent` log is accurate. Reassign push wrapped (m13), Kotlin DTO/domain `joinedAt` nullable with default and `@SerialName("joined_at")` matching backend; admin-ui type updated; roster SQL now binds `CHURCH_TIME_ZONE` as `$2`.
-- Specs: the only casts are `as unknown` on `expect.*` asymmetric matchers, `as { id: string }` on mock call args and `as number` on `where.id`; none hide a type bug (all in test mocks, runtime asserted). No `eslint-disable`, no `any`.
-- pbxproj/project.yml/scheme: 24-hex ids unique (A11CE571... namespace, no collision with existing), 3 file refs/3 build files/Sources/Frameworks/Resources phases/group/Products entry/TestTargetID/target dependency+proxy/config list all cross-referenced correctly; scheme Testable BlueprintIdentifier matches the target; host settings (TEST_HOST, BUNDLE_LOADER, deployment 26.0, Swift 5.9, same debug XCFramework search path as the app) match project.yml. No Info.plist, team id, secrets or provisioning added. `GoogleService-Info.plist` is gitignored and not tracked; only `.example` exists.
-- iOS `.auto_` rename matches Kotlin/Native export of `auto`.
+7. **iOS detail view model:** `LifeGroupReportDetailViewModel.load` returns on cancellation without resetting `isLoading` (`LifeGroupReportsViewModel.swift`, `catch is CancellationError { return }`).
+   - If the view task is cancelled while `report == nil`, the skeleton stays until the next `.task` run, which does happen on re-appear.
+   - Low impact.
 
-### Verdict (round 3): SHIP
-No blockers or majors. m22 is a one-line optional hardening; the rest are accept/document.
+8. **`LifeGroupDetailUiState.canManage` (Android) and the iOS `canManage` property** are now unused in the reports gate.
+   - Not a compile error. Check whether other code still reads them, and remove them if not.
+
+## Verified OK
+
+### Backend authorization and contract
+- **Visible groups:** `list()` allows the form scope plus every group where the actor is `leader_id` or `co_leader_id`. Unrestricted actors (admin and pastor) are not filtered.
+  - A co-leader with role `member` works.
+  - A leader of two groups sees both.
+  - A plain member gets `1=0`.
+- **Filter:** a `life_group_id` filter outside the allowed set returns 403, the same as analytics. An in-set filter narrows the result.
+- **`GET :id` and `:id/audit`:** `findEntity(id, scope, actor)` returns 404, not 403, when out of scope. Admin and pastor are unrestricted. Leader/co-leader and submitter are allowed.
+- **Internal `update`:** it calls `findEntity(id)` unscoped on purpose and then applies `policy.assertCanEdit`.
+- **`create`:** the creation logic is unchanged. The unscoped `findEntity` reload there is intentional. Its response is now `toResponse` (snake_case).
+  - admin-ui `useCreateFormSubmission<unknown, ...>` ignores the body.
+- **`toResponse` leakage:** `submitted_by` is only `{id, name}`. No other relation is exposed. `@SerializeOptions(exposeAll)` is therefore safe for list and detail. It is only a problem for audit (see M1).
+- **DTO:** `ListLifeGroupReportsQueryDto` has `@Expose`. I verified with a scratch `ValidationPipe` using the project's global options that unknown query params are stripped, not rejected with 400.
+  - The admin-ui generic list sends `start_date` and `end_date` by default (`submission-filters.tsx`). It is not broken by the new DTO, and those params remain ignored by the backend, as before.
+- **admin-ui consumers:**
+  - `_columns.tsx` keys `date`, `committed_members_present`, `guests`, `offering` and `submitted_by` match the new snake_case shape. `fmt.by` reads `submitted_by.name`.
+  - Type `LifeGroupReport.pastoring_activity_type: string` is stale (it is now `string[]`), but it is only a TypeScript type and the column renderer does not use it.
+  - Previously the raw entity serialized to `{}`, so this is a net improvement.
+- **Specs:** the service spec and the controller spec exercise the real pipe and serializer. They cover the DTO and `{}` regressions, the 403 and 404 matrix, and the leader/co-leader fallback.
+
+### Shared and contract
+- **DTO tolerance:** `LifeGroupReportRepositoryImpl` reads a number or string `offering` and an array or string multi-value field, defaults missing fields, and relies on `ignoreUnknownKeys`. The URL and query match the backend. 403 and 404 surface as `ClientRequestException`, so `httpStatusCodeOrNull()` works on both platforms.
+- **`buildHomeLifeGroupCards`:** correct on ordering (leader/co-leader first, then name), the cap of 3, `hiddenCount`, task folding by `lifeGroupId`, orphan tasks dropped, and per-card filter, sort and cap. The Kotlin and Swift sides share it, so they cannot drift.
+
+### Home
+- **Legacy fallback:** the legacy tasks-only card shows only when groups failed and tasks loaded. Groups and tasks are fetched independently. Neither failure sets `error`. The discovery CTA shows only when groups succeeded and are empty.
+- **Cancellation:** `CancellationException` is rethrown on Android. On iOS cancelled fetches keep the current state.
+- **Navigation:** on iOS the header link and the task rows are sibling `NavigationLink`s (`LifeGroupTaskRows`), with no nesting. On Android the header and rows are sibling click targets. "Ver todos (N)" is `cards + hidden` on both platforms.
+
+### Gate (`canViewGroupReports`)
+- **Android and iOS:** `isGroupLeadership || admin || pastor || area_leader || sector_leader`, where leadership is matched by id against `leaderId` / `coLeaderId`. This covers a co-leader with role `member`.
+- **Excluded:** members, disciplers, guests and another group's `life_group_leader` never see the entries. Unit tests cover the matrix on both platforms.
+- **Rows:** the existing "Relatórios" row now uses the same gate as the new "Relatórios semanais" row.
+
+### Analytics scoped mode
+- **Platforms:** the group dropdown or picker is hidden when opened with a `lifeGroupId` (`isScopedToGroup`) on both Android and iOS. The fallback label is "Este grupo". Backend enforcement is unchanged.
+
+### Android compile review
+- **Imports and symbols:** I checked every import in the changed files and every symbol they use. `PazShapes` is top-level in `PazTheme.kt`, `PazColors.accent` is a `@Composable` getter used inside composables, and the icons (`automirrored.outlined.Assignment`, `KeyboardArrowRight`) already exist elsewhere. `items` is imported, `Surface(onClick=...)` already has precedent in the same file, and `httpStatusCodeOrNull` and `PazPullToRefresh(content: BoxScope.() -> Unit)` match.
+- **Koin:** `viewModel { (id: Int) -> LifeGroupReportsViewModel(id, get()) }` has one `get()` per dependency. `LifeGroupReportRepository` is bound in `SharedModule`.
+- **Navigation:** nav args are validated (`toIntOrNull`) before the screen is created. The `Screen` routes exist.
+- **Tests:** the test constructors match the signatures: `HomeViewModel(..., today)`, `LifeGroupAnalyticsViewModel(7, repo)`, and `LifeGroupDetailViewModel("10", church, auth, task)`. `clientException` is called outside `coEvery` and inside the suspend `runTest` lambda, so it is fine. `LifeGroup(...)` has defaults for every field the tests omit.
+- **Line length:** no added line exceeds 140 characters.
+- **String templates:** `"Ver todos (${lifeGroupCards.size + hiddenLifeGroupsCount})"` and `"Líder: $it"` are fine.
+
+### iOS
+- **`pbxproj`:** `plutil -lint` is OK and every new id appears the expected number of times (2 or 3). New files are in the Sources phases of the correct targets, and the new group is registered. `project.yml` globbing covers the new files.
+- **Swift:** `HomeLifeGroupCardKt` and `KotlinInt` bridging look correct, as do the `LifeGroup` memberwise argument order in the tests and the `.areaLeader` / `.sectorLeader` enum names.
+- **Secrets:** no secret or fake `GoogleService-Info.plist` was committed. Only the existing `GoogleService-Info.plist.example` is tracked. The diff contains no plist, json or env files.
+
+### Docs
+- `.ai/apps/{backend,mobile}.md` and `.ai/features/{life-groups,mobile-app}.md` match the code (snake_case fields, 404 vs 403, the gate, the fallback). The stale "no iOS unit-test target" paragraph was corrected.
+- The Postman collection update promised in the spec is not in the diff. I did not find an `admin-ui/postman` change. This is cosmetic, but it is a spec deliverable.
+
+## Not validated here
+- Android compile, `ktlintCheck`, `testDebugUnitTest`, iOS build and tests, and `:shared:allTests` were not run. The compile risks are minor items 2 and 3 above.
+- Manual QA checklist in spec section 7.

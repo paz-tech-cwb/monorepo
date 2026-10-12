@@ -222,3 +222,54 @@ New iOS tests (`kmp-mobile/ios/PazChurchTests/`, hosted unit-test target, added 
 Local-only caveat: the app host calls `FirebaseApp.configure()` at launch, and `ios/PazChurch/GoogleService-Info.plist` is gitignored (missing in a fresh checkout; the build fails without it, and the `.example` placeholder crashes the test host). For validation I used a temporary syntactically valid fake plist and deleted it afterwards. Running the iOS tests on a fresh machine/CI needs a real (or fake-but-valid) GoogleService-Info.plist.
 
 What the user must do to run the Android part (not done, per the no-silent-SDK rule): install the Android SDK (e.g. Android Studio, or cmdline-tools) with `platforms;android-35`, `build-tools;35.0.0` (or the AGP 8.7.3 default) and `platform-tools`; accept licenses yourself with `yes | sdkmanager --licenses` (or `sdkmanager --licenses`); then create `kmp-mobile/local.properties` with `sdk.dir=/Users/<you>/Library/Android/sdk` (or export `ANDROID_HOME`) and run `./gradlew :shared:allTests :android:testDebugUnitTest :android:assembleDebug` with JDK 17.
+
+## Backend (home-card branch)
+
+Tooling: Node v22.23.3 (scratchpad download), existing `backend/node_modules`.
+
+| Check | Result |
+|---|---|
+| Phase 0 `jest src/life-group-reports` (characterization, pre-fix code) | PASS (3): list/detail serialize to `{}`, audit to `[{}]`, no scope check for a plain member |
+| `npx jest src/life-group-reports src/life-group-analytics src/life-group-attendance src/casa-de-paz-reports src/forms-core` | PASS except `notification-sender.spec` (baseline failure) |
+| `npx jest src/life-group-reports` after fix | PASS: 2 suites, 27 tests |
+| `npm run build` | PASS |
+| `npx eslint src/life-group-reports` | 0 errors, 8 warnings (`no-unsafe-argument` on supertest `getHttpServer()`, same as the existing analytics controller spec) |
+| `npx prettier --check src/life-group-reports` | PASS |
+| Full `npx jest` | 72 suites pass, 6 fail = baseline set (auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens); 5 failed tests, none new |
+| admin-ui tsc/eslint | NOT RUN (admin-ui untouched) |
+
+## Shared + Android (home-card branch)
+
+Tooling: JDK 17.0.20 (scratchpad), `GRADLE_USER_HOME`/`KONAN_DATA_DIR` in scratchpad.
+
+| Check | Result |
+|---|---|
+| `./gradlew :shared:iosSimulatorArm64Test` (kmp-mobile) | BUILD SUCCESSFUL; new `LifeGroupReportRepositoryTest` 5/5, `HomeLifeGroupCardTest` 7/7, no failures |
+| `:android:testDebugUnitTest`, `:android:assembleDebug`, `ktlintCheck` | NOT RUN (Android SDK not installed); validated by CI. Android code cross-checked by hand against real files (imports, Koin `get()` counts: HomeViewModel 4 and LifeGroupDetailViewModel 4 unchanged; new VMs take 1 `get()` each; every test constructing changed VMs reviewed) |
+
+## iOS (home-card branch)
+
+Environment as in "Mobile validation (real toolchain)" (Xcode 26.6, 'TestPhone' simulator, scratchpad JDK17/Gradle/Konan, temporary fake `GoogleService-Info.plist` created for the run and DELETED afterwards, never committed).
+
+| Step | Result |
+|---|---|
+| `./gradlew :shared:assembleSharedDebugXCFramework` | BUILD SUCCESSFUL (exports `HomeLifeGroupCardKt`, `LifeGroupReportRepository`, `LifeGroupWeeklyReport`) |
+| `xcodebuild -scheme PazChurch -destination 'platform=iOS Simulator,id=<TestPhone>' CODE_SIGNING_ALLOWED=NO build-for-testing` | TEST BUILD SUCCEEDED (first compile, no source errors) |
+| `xcodebuild ... test-without-building` | PASS: 32 tests, 0 failures (13 previous + 7 new HomeViewModelTests + new LifeGroupReportsTests incl. gate matrix, 403/404 mapping, VM states via fake repository) |
+| `plutil -lint ios/PazChurch.xcodeproj/project.pbxproj` | OK |
+| swiftformat / swiftlint | NOT RUN (not checked/installed in this session) |
+
+Test log noise (`localhost:3001` connection refused) comes from the hosted app launching with no backend; unrelated to results. UI layout (cards, detail rows) is verified by build only; use the manual QA checklist in the spec.
+
+## Review fixes (home-card branch)
+
+| Check | Result |
+|---|---|
+| `npx jest src/life-group-reports` | PASS: 2 suites, 27 tests (audit mapping/no-PII asserted; submitter-404 case replaces the old submitter-allowed case) |
+| backend `eslint src/life-group-reports` | 0 errors, 8 pre-existing `no-unsafe-argument` warnings (controller spec) |
+| backend `prettier --check src/life-group-reports` | clean |
+| `npm run build` (nest build) | OK |
+| Full `npx jest` | 72 suites pass, 6 fail = baseline set; 5 failed / 528 passed tests, none new |
+| `./gradlew :shared:iosSimulatorArm64Test :shared:assembleSharedDebugXCFramework` | BUILD SUCCESSFUL (import reorder only in shared) |
+| `xcodebuild -scheme PazChurch -destination TestPhone CODE_SIGNING_ALLOWED=NO test` (JAVA_HOME set for the Gradle build phase) | TEST SUCCEEDED: 32 tests, 0 failures, with `nonisolated static canViewGroupReports` called from non-isolated tests. Temporary fake `GoogleService-Info.plist` (39-char API key) deleted afterwards, gitignored, never committed. |
+| Android (`testDebugUnitTest`, assemble, ktlint) | NOT RUN (no SDK); cross-read. New test `failed refresh keeps the loaded list and emits a transient error`; exhaustive `when` over `LifeGroupReportsEffect` only exists in `LifeGroupReportsScreen` (ShowError branch added). |
