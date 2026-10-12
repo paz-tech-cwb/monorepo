@@ -24,3 +24,12 @@
 ## Behavior notes
 - Slug-less leaders/co-leaders (e.g. a co-leader with role `member`) now get the scope of the rows they lead in scope-based lists (previously empty scope, only per-endpoint fallbacks). They can already submit/read these via `@Roles`-independent fallbacks in attendance/tasks; list endpoints guarded only by `ScopeGuard` (reports lists) now show their groups' rows. Intended ("co-leaders get the same scope as leaders", resolver comment).
 - Not fixed (flagged): `area/sector-supervisor-reports`, `multiplications` `list` return `1=0` for every non-unrestricted caller; life-group-studies `canPublish` still slug/co-leader based.
+
+## Review fixes (Arnold)
+- M1: `casa-de-paz-reports.service.ts` new private `managesSector`: the owner-policy bypass on update/softDelete needs `scope.unrestricted` OR (role slug `area_leader`/`sector_leader` AND sector in scope). Same write authorization as before the row-based scope change. Grep found no other place where scope membership bypasses `assertCanEdit/assertCanDelete` (other services always call the policy).
+- M2: kept (product decision). Documented in `.pipeline/spec.md` and `.ai/features/life-groups.md`, listing the affected GETs; flagged as a product question for the PR.
+- M3: `scope-resolver.service.ts` rewritten: user+role lookup (id/slug only) and one raw ids-only CTE query (areas -> sectors -> groups) instead of 3-5 hydrating `find`s; admin/pastor 1 query, others 2. Constructor now only needs the User repository. `guests.service` / `journey-progress.service` double resolution kept (their routes have no ScopeGuard, so reusing `req.formScope` is not trivial). Real SQL caught a column-name slip (`life_groups."sectorId"`).
+- m1: documented (`members_total` may grow for sector-scoped callers).
+- m2: `GET /life-groups/me` omits the roster (`members: null`, `member_count` kept) for supervisor-only rows (not leader/co-leader, not rostered). `/:id` unchanged for supervisors.
+- m3: `findSupervisedGroupIds(userId, onlyGroupId?)`; `findOne` passes the requested id.
+- Tests: resolver spec reworked (in-memory interpreter of the single query + query economy test), life-groups (roster omission, kept for leader/co-leader/rostered, id restriction), casa-de-paz M1 (slug required; member/life_group_leader with sector row go through policy; admin/pastor unrestricted bypass).

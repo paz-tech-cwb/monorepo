@@ -34,6 +34,13 @@ Life group visibility follows cascade scope, resolved by
   gate by slug, so widening the resolver never opens a role-gated endpoint.
 - Members see only member-facing group information unless a workflow grants more.
 
+### Row-based scope: read vs write (review decisions)
+
+- Resolution cost: one user+role lookup plus ONE ids-only SQL (CTE over areas -> sectors -> groups); admin/pastor skip the second query. `GuestsService.findGuests` and `JourneyProgressService` still resolve once more themselves (their routes do not run `ScopeGuard`; reusing `req.formScope` would need adding the guard, deferred).
+- READ widening (product/privacy decision, kept): any user holding a leader/co-leader row now gets scope-filtered READ data regardless of role slug (previously a slug-less leader/co-leader got an empty scope). Endpoints guarded only by `ScopeGuard` (no `RolesGuard` on GET) are affected: `GET member-registrations`, `GET form-guests`, `GET form-conversions`, `GET life-group-reports` (list, `:id`, `:id/audit`), `GET casa-de-paz-reports` (list, `:id`, `:id/audit`), plus life-group-analytics. This is consistent with the attendance/report co-leader fallbacks. Open product question: should slug-less leaders/co-leaders see registrations/guests/conversions PII of their groups and sectors? If not, add `RolesGuard` to those GETs.
+- WRITE authority is NOT widened: `casa-de-paz-reports` update/delete bypass the owner/24h policy only for `unrestricted` scope or when the actor's role slug is `area_leader`/`sector_leader` AND the sector is in scope. A slug-less (e.g. `member`) sector/area co-leader sees the sector's reports but edits/deletes only under the normal policy.
+- `life-group-analytics` overview: the members universe for a scoped caller is now `users.sectorId IN sectors OR lifeGroup IN scoped groups`, so users rostered in a scoped group but with a different/null `sectorId` are counted. `members_total` can therefore be larger than before for sector-scoped callers (more correct; intentional).
+
 ### `GET /life-groups/me`
 
 Returns the viewer's groups: led, co-led, supervised (group is in a sector the
@@ -45,9 +52,11 @@ rostered. Each item has the usual life group fields plus:
 - `is_supervised`: `true` whenever the viewer supervises the group via
   area/sector, even if `leader`/`co_leader` wins the precedence.
 
-Only `/me` carries these two fields (other endpoints are unchanged). A supervisor
-also receives the roster (`members`) of supervised groups from `/me` and
-`GET /life-groups/:id`. Plain members are never widened. `GET /life-groups`
+Only `/me` carries these two fields (other endpoints are unchanged). `/me` omits the roster (`members: null`) for supervisor-only rows (viewer is not
+leader/co-leader and is not rostered) and keeps `member_count`; leader,
+co-leader and member rows keep the roster. `GET /life-groups/:id` shows the
+roster to a supervisor of that group (the supervision check is restricted to the
+requested id). Plain members are never widened. `GET /life-groups`
 (discovery/admin-ui list) is intentionally unscoped (every authenticated user
 sees every group, rosters hidden) and was not changed. Response order is name
 ascending; clients decide ranking.

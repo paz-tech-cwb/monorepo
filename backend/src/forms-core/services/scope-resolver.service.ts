@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { LifeGroup } from '../../life-groups/entities/life-group.entity';
-import { Area } from '../../areas/entities/area.entity';
-import { Sector } from '../../sectors/entities/sector.entity';
 
 export interface ResolvedScope {
   unrestricted: boolean;
@@ -17,18 +14,13 @@ export interface ResolvedScope {
 export class ScopeResolverService {
   constructor(
     @InjectRepository(User) private readonly users: Repository<User>,
-    @InjectRepository(LifeGroup)
-    private readonly lifeGroups: Repository<LifeGroup>,
-    @InjectRepository(Area)
-    private readonly areas: Repository<Area>,
-    @InjectRepository(Sector)
-    private readonly sectors: Repository<Sector>,
   ) {}
 
   async resolve(userId: number): Promise<ResolvedScope> {
     const user = await this.users.findOne({
       where: { id: userId },
       relations: ['role'],
+      select: { id: true, role: { id: true, slug: true } },
     });
     if (!user) throw new Error(`User ${userId} not found`);
 
@@ -52,35 +44,41 @@ export class ScopeResolverService {
     // different levels). Everything found is unioned. Endpoint-level `@Roles`
     // guards still gate by slug, and a user who leads nothing gets an empty
     // scope, so this never grants access to a plain member.
-    const leaderOf = [{ leader: { id: userId } }, { coLeader: { id: userId } }];
+    // One round trip, ids only (no entity hydration). Areas the user leads
+    // -> their sectors; plus directly led sectors; groups = every group of
+    // those sectors plus directly led groups.
+    const rows: Array<{ kind: string; id: number }> = await this.users.query(
+      `
+      WITH led_areas AS (
+        SELECT a.id FROM areas a
+        WHERE a.leader_id = $1 OR a.co_leader_id = $1
+      ),
+      led_sectors AS (
+        SELECT s.id FROM sectors s
+        WHERE s.leader_id = $1 OR s.co_leader_id = $1
+           OR s.area_id IN (SELECT id FROM led_areas)
+      ),
+      led_groups AS (
+        SELECT lg.id FROM life_groups lg
+        WHERE lg.leader_id = $1 OR lg.co_leader_id = $1
+           OR lg."sectorId" IN (SELECT id FROM led_sectors)
+      )
+      SELECT 'area' AS kind, id FROM led_areas
+      UNION SELECT 'sector', id FROM led_sectors
+      UNION SELECT 'group', id FROM led_groups
+      `,
+      [userId],
+    );
 
-    const [ledAreas, ledSectors, ledGroups] = await Promise.all([
-      this.areas.find({ where: leaderOf }),
-      this.sectors.find({ where: leaderOf }),
-      this.lifeGroups.find({ where: leaderOf }),
-    ]);
+    const idsOf = (kind: string) =>
+      unique(rows.filter((r) => r.kind === kind).map((r) => Number(r.id)));
 
-    const areaIds = ledAreas.map((a) => a.id);
-
-    const sectorsInAreas = areaIds.length
-      ? await this.sectors.find({ where: { area: { id: In(areaIds) } } })
-      : [];
-    const sectorIds = unique([
-      ...sectorsInAreas.map((s) => s.id),
-      ...ledSectors.map((s) => s.id),
-    ]);
-
-    const groupsInSectors = sectorIds.length
-      ? await this.lifeGroups.find({
-          where: { sector: { id: In(sectorIds) } },
-        })
-      : [];
-    const lifeGroupIds = unique([
-      ...groupsInSectors.map((l) => l.id),
-      ...ledGroups.map((l) => l.id),
-    ]);
-
-    return { unrestricted: false, areaIds, sectorIds, lifeGroupIds };
+    return {
+      unrestricted: false,
+      areaIds: idsOf('area'),
+      sectorIds: idsOf('sector'),
+      lifeGroupIds: idsOf('group'),
+    };
   }
 }
 

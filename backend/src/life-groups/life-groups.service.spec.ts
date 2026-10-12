@@ -15,6 +15,7 @@ function makeQueryBuilder(result: LifeGroup[], rawRows: unknown[] = []) {
     orWhere: jest.fn(),
     orderBy: jest.fn(),
     take: jest.fn(),
+    andWhere: jest.fn(),
     getMany: jest.fn().mockResolvedValue(result),
     getRawMany: jest.fn().mockResolvedValue(rawRows),
   };
@@ -26,6 +27,7 @@ function makeQueryBuilder(result: LifeGroup[], rawRows: unknown[] = []) {
     'addSelect',
     'where',
     'orWhere',
+    'andWhere',
     'orderBy',
     'take',
   ]) {
@@ -228,7 +230,7 @@ describe('LifeGroupsService', () => {
       }
     });
 
-    it('marks a group in a sector the viewer leads as supervisor, with the roster visible', async () => {
+    it('marks a group in a sector the viewer leads as supervisor, keeps member_count but omits the roster', async () => {
       const qb = makeQueryBuilder([
         group(1, { sector: { id: 10, leader: { id: 50 } } }),
       ]);
@@ -236,7 +238,31 @@ describe('LifeGroupsService', () => {
       const [r] = await service.findMine(me);
       expect(r.relationship).toBe('supervisor');
       expect(r.is_supervised).toBe(true);
-      expect(r.members).toEqual([{ id: 7, name: 'Roster', email: 'r@x.com' }]);
+      expect(r.member_count).toBe(1);
+      expect(r.members).toBeNull();
+    });
+
+    it('keeps the roster for leader/co-leader rows and for a supervisor who is also rostered', async () => {
+      const supervisedSector = { id: 10, leader: { id: 50 } };
+      const qb = makeQueryBuilder([
+        group(1, { leader: { id: 50, name: 'Me' }, sector: supervisedSector }),
+        group(2, {
+          coLeader: { id: 50, name: 'Me' },
+          sector: supervisedSector,
+        }),
+        group(3, {
+          sector: supervisedSector,
+          users: [{ id: 50, name: 'Me', email: 'm@x.com' }],
+        }),
+      ]);
+      mockEntityManager.createQueryBuilder.mockReturnValue(qb);
+      const result = await service.findMine(me);
+      expect(result.map((r) => r.relationship)).toEqual([
+        'leader',
+        'co_leader',
+        'supervisor',
+      ]);
+      for (const r of result) expect(r.members).not.toBeNull();
     });
 
     it.each([
@@ -335,6 +361,16 @@ describe('LifeGroupsService', () => {
       );
       const r = await service.findOne(9, me);
       expect(r.members).toEqual([{ id: 7, name: 'Roster', email: 'r@x.com' }]);
+    });
+
+    it('restricts the supervised check to the requested group id', async () => {
+      mockEntityManager.findOne.mockResolvedValue(withRoster);
+      const qb = makeQueryBuilder([], [{ id: '9' }]);
+      mockEntityManager.createQueryBuilder.mockReturnValue(qb);
+      await service.findOne(9, me);
+      expect(qb.andWhere).toHaveBeenCalledWith('lg.id = :onlyGroupId', {
+        onlyGroupId: 9,
+      });
     });
 
     it('still hides the roster from an unrelated viewer', async () => {

@@ -121,10 +121,14 @@ export class LifeGroupsService {
   /**
    * Ids of the life groups the user supervises: every group in a sector the
    * user leads/co-leads, or in any sector of an area the user leads/co-leads.
-   * One query; based on the leader rows, not on the role slug.
+   * One query; based on the leader rows, not on the role slug. Pass
+   * `onlyGroupId` to test a single group (findOne) instead of listing all.
    */
-  private async findSupervisedGroupIds(userId: number): Promise<Set<number>> {
-    const rows = await this.entityManager
+  private async findSupervisedGroupIds(
+    userId: number,
+    onlyGroupId?: number,
+  ): Promise<Set<number>> {
+    const qb = this.entityManager
       .createQueryBuilder(LifeGroup, 'lg')
       .select('lg.id', 'id')
       .innerJoin('lg.sector', 'sector')
@@ -132,21 +136,26 @@ export class LifeGroupsService {
       .where(
         '(sector.leader_id = :userId OR sector.co_leader_id = :userId OR area.leader_id = :userId OR area.co_leader_id = :userId)',
         { userId },
-      )
-      .getRawMany<{ id: number | string }>();
+      );
+    if (onlyGroupId !== undefined) {
+      qb.andWhere('lg.id = :onlyGroupId', { onlyGroupId });
+    }
+    const rows = await qb.getRawMany<{ id: number | string }>();
     return new Set(rows.map((r) => Number(r.id)));
   }
 
   private toResponse(
     lifeGroup: LifeGroup,
     viewer?: User,
-    extras?: { supervised?: boolean; relationship?: LifeGroupRelationship },
+    extras?: {
+      supervised?: boolean;
+      relationship?: LifeGroupRelationship;
+      omitMembers?: boolean;
+    },
   ) {
-    const includeMembers = this.canSeeMembers(
-      lifeGroup,
-      viewer,
-      extras?.supervised,
-    );
+    const includeMembers =
+      !extras?.omitMembers &&
+      this.canSeeMembers(lifeGroup, viewer, extras?.supervised);
     return {
       id: lifeGroup.id,
       name: lifeGroup.name,
@@ -283,7 +292,18 @@ export class LifeGroupsService {
         if (lg.leader?.id === viewer.id) relationship = 'leader';
         else if (lg.coLeader?.id === viewer.id) relationship = 'co_leader';
         else if (supervised) relationship = 'supervisor';
-        return this.toResponse(lg, viewer, { supervised, relationship });
+        // Supervisor-only rows (viewer is not leader/co-leader and is not
+        // rostered) skip the roster: the home card only needs member_count,
+        // and a supervisor of an area would otherwise receive hundreds of
+        // rosters with emails. `GET /life-groups/:id` still returns it.
+        const omitMembers =
+          relationship === 'supervisor' &&
+          !(lg.users ?? []).some((u) => u.id === viewer.id);
+        return this.toResponse(lg, viewer, {
+          supervised,
+          relationship,
+          omitMembers,
+        });
       });
     } catch {
       throw new BadRequestException(
@@ -350,7 +370,9 @@ export class LifeGroupsService {
       throw new NotFoundException(`Life group with ID ${id} not found`);
     }
     const supervised = viewer
-      ? (await this.findSupervisedGroupIds(viewer.id)).has(lifeGroup.id)
+      ? (await this.findSupervisedGroupIds(viewer.id, lifeGroup.id)).has(
+          lifeGroup.id,
+        )
       : false;
     return this.toResponse(lifeGroup, viewer, { supervised });
   }

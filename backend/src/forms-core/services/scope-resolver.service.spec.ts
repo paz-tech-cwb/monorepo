@@ -1,9 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../../users/entities/user.entity';
-import { LifeGroup } from '../../life-groups/entities/life-group.entity';
-import { Area } from '../../areas/entities/area.entity';
-import { Sector } from '../../sectors/entities/sector.entity';
 import { ScopeResolverService } from './scope-resolver.service';
 
 interface AreaRow {
@@ -18,50 +15,41 @@ interface GroupRow extends AreaRow {
   sectorId?: number;
 }
 
-type IdCond = { id: number | { value: number[] } };
-interface Where {
-  leader?: { id: number };
-  coLeader?: { id: number };
-  area?: IdCond;
-  sector?: IdCond;
-}
-type Row = AreaRow & { areaId?: number; sectorId?: number };
-
 /**
- * Tiny in-memory stand-ins for the three repositories: `find` understands
- * exactly the `where` shapes the resolver uses (array of leader/coLeader
- * alternatives, `area.id` / `sector.id` with TypeORM's `In(...)` operator).
+ * In-memory interpreter of the single resolver query (areas led -> their
+ * sectors, plus led sectors -> their groups, plus led groups). The real SQL
+ * is validated against Postgres separately (see .pipeline/test-results.md).
  */
-function matches(row: Row, where: Where | Where[]): boolean {
-  const alts = Array.isArray(where) ? where : [where];
-  return alts.some((w) => {
-    if (w.leader) return row.leaderId === w.leader.id;
-    if (w.coLeader) return row.coLeaderId === w.coLeader.id;
-    if (w.area) return inList(w.area.id, row.areaId);
-    if (w.sector) return inList(w.sector.id, row.sectorId);
-    return false;
-  });
-}
-
-function inList(cond: IdCond['id'], value?: number): boolean {
-  if (value === undefined) return false;
-  // TypeORM's In(...) FindOperator exposes the list as `.value`.
-  const list = typeof cond === 'number' ? [cond] : cond.value;
-  return list.includes(value);
-}
-
 describe('ScopeResolverService', () => {
   let service: ScopeResolverService;
   let areas: AreaRow[];
   let sectors: SectorRow[];
   let groups: GroupRow[];
-  const userRepo = { findOne: jest.fn() };
+  const userRepo = { findOne: jest.fn(), query: jest.fn() };
 
-  const repo = (rows: () => Row[]) => ({
-    find: jest.fn(({ where }: { where: Where | Where[] }) =>
-      Promise.resolve(rows().filter((r) => matches(r, where))),
-    ),
-  });
+  const led = (r: AreaRow, uid: number) =>
+    r.leaderId === uid || r.coLeaderId === uid;
+
+  const runQuery = (_sql: string, params: unknown[]) => {
+    const uid = params[0] as number;
+    const ledAreas = areas.filter((a) => led(a, uid)).map((a) => a.id);
+    const ledSectors = sectors.filter(
+      (s) =>
+        led(s, uid) || (s.areaId !== undefined && ledAreas.includes(s.areaId)),
+    );
+    const sectorIds = ledSectors.map((s) => s.id);
+    const ledGroups = groups.filter(
+      (g) =>
+        led(g, uid) ||
+        (g.sectorId !== undefined && sectorIds.includes(g.sectorId)),
+    );
+    // UNION semantics: distinct rows.
+    return Promise.resolve([
+      ...ledAreas.map((id) => ({ kind: 'area', id })),
+      ...sectorIds.map((id) => ({ kind: 'sector', id })),
+      ...ledGroups.map((g) => ({ kind: 'group', id: g.id })),
+    ]);
+  };
 
   const asUser = (id: number, slug: string) =>
     userRepo.findOne.mockResolvedValue({ id, role: { slug } });
@@ -71,16 +59,12 @@ describe('ScopeResolverService', () => {
     sectors = [];
     groups = [];
     userRepo.findOne.mockReset();
+    userRepo.query.mockReset();
+    userRepo.query.mockImplementation(runQuery);
     const m = await Test.createTestingModule({
       providers: [
         ScopeResolverService,
         { provide: getRepositoryToken(User), useValue: userRepo },
-        {
-          provide: getRepositoryToken(LifeGroup),
-          useValue: repo(() => groups),
-        },
-        { provide: getRepositoryToken(Area), useValue: repo(() => areas) },
-        { provide: getRepositoryToken(Sector), useValue: repo(() => sectors) },
       ],
     }).compile();
     service = m.get(ScopeResolverService);
@@ -245,5 +229,37 @@ describe('ScopeResolverService', () => {
       sectorIds: [],
       lifeGroupIds: [],
     });
+  });
+});
+
+describe('ScopeResolverService query economy', () => {
+  it('runs one user lookup plus a single ids-only query for non-admins, and no led-rows query for admin', async () => {
+    const userRepo = {
+      findOne: jest.fn().mockResolvedValue({ id: 3, role: { slug: 'member' } }),
+      query: jest.fn().mockResolvedValue([{ kind: 'group', id: '5' }]),
+    };
+    const m = await Test.createTestingModule({
+      providers: [
+        ScopeResolverService,
+        { provide: getRepositoryToken(User), useValue: userRepo },
+      ],
+    }).compile();
+    const svc = m.get(ScopeResolverService);
+
+    // pg returns bigint/int ids as numbers or strings depending on type: normalized.
+    expect(await svc.resolve(3)).toEqual({
+      unrestricted: false,
+      areaIds: [],
+      sectorIds: [],
+      lifeGroupIds: [5],
+    });
+    expect(userRepo.findOne).toHaveBeenCalledTimes(1);
+    expect(userRepo.query).toHaveBeenCalledTimes(1);
+    expect(userRepo.query).toHaveBeenCalledWith(expect.any(String), [3]);
+
+    userRepo.query.mockClear();
+    userRepo.findOne.mockResolvedValue({ id: 1, role: { slug: 'admin' } });
+    await svc.resolve(1);
+    expect(userRepo.query).not.toHaveBeenCalled();
   });
 });

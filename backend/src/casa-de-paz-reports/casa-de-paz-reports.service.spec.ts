@@ -49,7 +49,15 @@ describe('CasaDePazReportsService', () => {
       guestOriginsService as unknown as GuestOriginsService,
     );
 
-    return { service, em, trxManager, repo, guestOriginsService, audit };
+    return {
+      service,
+      em,
+      trxManager,
+      repo,
+      guestOriginsService,
+      audit,
+      policy,
+    };
   }
 
   it('create() resolves new guest users and records their origin on the SAME transactional manager, never the pool', async () => {
@@ -109,5 +117,73 @@ describe('CasaDePazReportsService', () => {
     // used to create/save the User row above, not a separate connection.
     expect(managerArg).toBe(trxManager);
     expect(audit.record).toHaveBeenCalled();
+  });
+
+  describe('write authority via sector scope (M1: slug still required)', () => {
+    const report = {
+      id: 'r1',
+      sectorId: 9,
+      submittedBy: { id: 99 },
+      createdAt: new Date(),
+      deletedAt: null,
+      guests: [],
+    };
+    const scope = {
+      unrestricted: false,
+      areaIds: [],
+      sectorIds: [9],
+      lifeGroupIds: [],
+    };
+    const asSlug = (roleSlug: string) => ({ id: 5, roleSlug });
+
+    function setup() {
+      const ctx = createService();
+      (ctx.repo.findOne as jest.Mock).mockResolvedValue({ ...report });
+      (ctx.repo as unknown as { softDelete: jest.Mock }).softDelete = jest
+        .fn()
+        .mockResolvedValue(undefined);
+      return ctx;
+    }
+
+    it.each(['sector_leader', 'area_leader'])(
+      '%s with the sector in scope bypasses the owner policy on edit and delete',
+      async (slug) => {
+        const { service, policy } = setup();
+        await service.update('r1', {}, asSlug(slug), scope).catch(() => null);
+        await service.softDelete('r1', asSlug(slug), scope);
+        expect(policy.assertCanEdit).not.toHaveBeenCalled();
+        expect(policy.assertCanDelete).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(['member', 'life_group_leader'])(
+      'a %s holding a sector leader/co-leader row (sector in scope) still goes through the policy',
+      async (slug) => {
+        const { service, policy } = setup();
+        await service.update('r1', {}, asSlug(slug), scope).catch(() => null);
+        await service.softDelete('r1', asSlug(slug), scope);
+        expect(policy.assertCanEdit).toHaveBeenCalledTimes(1);
+        expect(policy.assertCanDelete).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it('a sector leader slug without that sector in scope still goes through the policy', async () => {
+      const { service, policy } = setup();
+      await service.softDelete('r1', asSlug('sector_leader'), {
+        ...scope,
+        sectorIds: [10],
+      });
+      expect(policy.assertCanDelete).toHaveBeenCalledTimes(1);
+    });
+
+    it('unrestricted scope (admin/pastor) bypasses the policy', async () => {
+      const { service, policy } = setup();
+      await service.softDelete('r1', asSlug('pastor'), {
+        ...scope,
+        unrestricted: true,
+        sectorIds: [],
+      });
+      expect(policy.assertCanDelete).not.toHaveBeenCalled();
+    });
   });
 });

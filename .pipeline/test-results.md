@@ -25,3 +25,16 @@ All as expected. Server stopped. The data dir under the scratchpad (`pg-sup`) co
 ## Not run
 - Android/Compose and iOS app builds (only the shared module native tests); no Swift changes were made.
 - Real HTTP end-to-end / mobile manual check.
+
+## Review fixes (Arnold)
+| Check | Result |
+|---|---|
+| scoped jest (casa-de-paz-reports, life-groups, forms-core, life-group-analytics) | PASS except notification-sender.spec (baseline) |
+| Full `npx jest` | 6 failed suites / 70 passed; 5 failed / 527 passed tests: exactly the baseline six (auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens) |
+| `npm run build` | PASS |
+| scoped eslint / `prettier --check` (6 changed backend files) | clean |
+| Kotlin | not touched, not run |
+
+New tests: resolver (query economy: 1 lookup + 1 query, admin skips led query; spec reworked on the single query), life-groups (supervisor-only roster omitted + member_count kept; roster kept for leader/co-leader/rostered supervisor; findOne restricted to requested id), casa-de-paz M1 (area/sector leader slug + scope bypasses; member/life_group_leader with sector row still hit policy; wrong sector hits policy; unrestricted bypasses).
+
+Real SQL on a NEW throwaway embedded Postgres (new dir `scratchpad/pg2`, port 54881, full migration chain, server stopped afterwards): the real `ScopeResolverService.resolve` (new CTE) and `LifeGroupsService` ran on the same seed as before. The first run of the new CTE would have failed on `lg.sector_id` (column is `"sectorId"`), fixed. Results identical to the pre-change resolver: area leader scope {area, 1 sector, groups 1,2,8}, area co-leader, sector leader/co-leader (member slug), multi-sector leader, leader of a single group, plain member and rostered-only user (empty scope). `/me`: supervisor rows show `members: null` with correct member_count, leader/member rows keep roster; `findSupervisedGroupIds(areaL, 1)` -> [1], `(areaL, 3)` -> []. Data dir `pg2/data` is throwaway, outside the repo.

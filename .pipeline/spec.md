@@ -28,3 +28,11 @@ Kotlin `LifeGroup` (shared) gets `relationship: String? = null` and `isSupervise
 
 ## Validation plan
 Scoped jest (scope resolver, life-groups service, consumers), full jest vs baseline 6 failing suites, `npm run build`, scoped eslint/prettier, throwaway Postgres for the `findMine` query, Kotlin model compile not possible without JDK check (see test-results).
+
+## Review decisions (Malcolm review, applied by Arnold)
+- M1 (write authz): `casa-de-paz-reports` update/delete bypass of the owner policy requires `scope.unrestricted` OR (role slug `area_leader`/`sector_leader` AND sector in scope), as before. Row-based scope only widens READ.
+- M2 (PRODUCT QUESTION, kept as is): row-based scope widens READ for slug-less leaders/co-leaders on ScopeGuard-only GETs: member-registrations, form-guests, form-conversions, life-group-reports (list/:id/audit), casa-de-paz-reports (list/:id/audit), life-group-analytics. They can now see registration/guest/conversion PII for their groups/sectors. Alternative if rejected: add RolesGuard to those GETs.
+- M3: resolver = 1 user+role lookup + 1 ids-only SQL (CTE); admin/pastor 1 query. Double resolution in guests/journey kept (no ScopeGuard on those routes).
+- m1: analytics `members_total` for sector-scoped callers can grow (users in scoped groups with different/null sectorId now counted).
+- m2: `/me` omits roster for supervisor-only rows (`members: null`, `member_count` kept); `/:id` roster visibility for supervisors kept.
+- m3: findOne's supervised check restricted to the requested group id.
