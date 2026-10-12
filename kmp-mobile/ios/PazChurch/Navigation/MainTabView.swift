@@ -47,7 +47,7 @@ struct MainTabView: View {
 
     private func handleDeepLink(_ destination: DeepLinkDestination, consume: Bool) {
         switch destination {
-        case .agendaDetail, .lifeGroupAttendanceEditor:
+        case .agendaDetail, .lifeGroupAttendanceEditor, .lifeGroupTaskGuide:
             selectedTab = 0
             agendaPath = [destination]
 
@@ -98,6 +98,12 @@ struct MainTabView: View {
                 meetingDate: meetingDate,
                 repository: IosAppContainer.shared.lifeGroupAttendanceRepository,
                 onDismiss: { if !agendaPath.isEmpty { agendaPath.removeLast() } }
+            )
+
+        case let .lifeGroupTaskGuide(assignmentId):
+            LifeGroupTaskGuideView(
+                assignmentId: assignmentId,
+                repository: IosAppContainer.shared.lifeGroupTaskRepository
             )
 
         default:

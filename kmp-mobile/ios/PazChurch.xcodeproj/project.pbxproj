@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E54344F263AF3B1273BB6BD0 /* LifeGroupMyTasksCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D731842510D379048D76FFE /* LifeGroupMyTasksCard.swift */; };
+		1D493341C3DD574588A29A6C /* LifeGroupTaskGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 801D0471CD23989C9B34C40A /* LifeGroupTaskGuideView.swift */; };
+		963C35BCC633F976A02F84E3 /* LifeGroupTaskGuideViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78DB9C22A087078238BFEF81 /* LifeGroupTaskGuideViewModel.swift */; };
+		5EFC9A072F27919D8CE2E284 /* LifeGroupTaskMarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20508B4325EFFBF5C3BCCE1 /* LifeGroupTaskMarkdownView.swift */; };
 		045500E917135CF9ED6D160E /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB3B8D8FB1ECDA45FE9ACC57 /* LoginView.swift */; };
 		095D13AF163EB2FBF81E44A4 /* PazCharts.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7AB7D082CBCFBF7C089DB6B /* PazCharts.swift */; };
 		09EDC02009417BFD3B3FA3BC /* NotificationPrefsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33772BE7A618459F8F98DA2 /* NotificationPrefsView.swift */; };
@@ -143,6 +147,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7D731842510D379048D76FFE /* LifeGroupMyTasksCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupMyTasksCard.swift; sourceTree = "<group>"; };
+		801D0471CD23989C9B34C40A /* LifeGroupTaskGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskGuideView.swift; sourceTree = "<group>"; };
+		78DB9C22A087078238BFEF81 /* LifeGroupTaskGuideViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskGuideViewModel.swift; sourceTree = "<group>"; };
+		D20508B4325EFFBF5C3BCCE1 /* LifeGroupTaskMarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskMarkdownView.swift; sourceTree = "<group>"; };
 		00E58EA57FC0F3018961378F /* LifeGroupStudyListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupStudyListView.swift; sourceTree = "<group>"; };
 		01A99B3B797EFD3EC19319C7 /* PazImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazImageCache.swift; sourceTree = "<group>"; };
 		01FFDF96B4BA2F02238FEF09 /* PazChurch.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PazChurch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -367,6 +375,7 @@
 				9583323C0C4D778E6E30C67E /* Home */,
 				4572C86A42A72B7ABC777BAE /* LifeGroupAnalytics */,
 				80CCBF76E3B5369901F0DAC9 /* LifeGroupAttendance */,
+				744A2D117CBCEF98E72B91EC /* LifeGroupTasks */,
 				7AC12741EED7CF558368863F /* LifeGroupStudy */,
 				F1CD9530F50CB5214AE5DF32 /* MemberJourney */,
 				36D27ED148027B3DCC6FD3CF /* Ministries */,
@@ -489,6 +498,17 @@
 				A0AED721D9C3F11A210BEFE7 /* LifeGroupAttendanceViewModels.swift */,
 			);
 			path = LifeGroupAttendance;
+			sourceTree = "<group>";
+		};
+		744A2D117CBCEF98E72B91EC /* LifeGroupTasks */ = {
+			isa = PBXGroup;
+			children = (
+				7D731842510D379048D76FFE /* LifeGroupMyTasksCard.swift */,
+				801D0471CD23989C9B34C40A /* LifeGroupTaskGuideView.swift */,
+				78DB9C22A087078238BFEF81 /* LifeGroupTaskGuideViewModel.swift */,
+				D20508B4325EFFBF5C3BCCE1 /* LifeGroupTaskMarkdownView.swift */,
+			);
+			path = LifeGroupTasks;
 			sourceTree = "<group>";
 		};
 		8101B69056A184DB1D1724D1 /* Navigation */ = {
@@ -814,6 +834,10 @@
 				36011969A58624733978F622 /* LifeGroupAttendanceEditorView.swift in Sources */,
 				3A439216FAD2F3A2CF7AF768 /* LifeGroupAttendanceHistoryView.swift in Sources */,
 				A6A324E081B9ECFCDDA55B20 /* LifeGroupAttendanceViewModels.swift in Sources */,
+				5EFC9A072F27919D8CE2E284 /* LifeGroupTaskMarkdownView.swift in Sources */,
+				963C35BCC633F976A02F84E3 /* LifeGroupTaskGuideViewModel.swift in Sources */,
+				1D493341C3DD574588A29A6C /* LifeGroupTaskGuideView.swift in Sources */,
+				E54344F263AF3B1273BB6BD0 /* LifeGroupMyTasksCard.swift in Sources */,
 				65BD6B55FF25446AC29997D2 /* LifeGroupManageView.swift in Sources */,
 				3D84D9AFE377A15FCE617E1F /* LifeGroupPickerSheet.swift in Sources */,
 				A1DD2AC7CAB0A0304F69AA98 /* LifeGroupStudyDetailView.swift in Sources */,

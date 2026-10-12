@@ -124,6 +124,7 @@ struct LifeGroupDetailView: View {
     @Environment(AuthenticationCoordinator.self) private var authCoordinator
     @State private var showManage = false
     @State private var showLeadershipPicker = false
+    @State private var myTasks: [LifeGroupTask] = []
 
     init(lifeGroup: LifeGroup) {
         _lifeGroup = State(initialValue: lifeGroup)
@@ -152,6 +153,18 @@ struct LifeGroupDetailView: View {
             .first(where: { $0.id == lifeGroup.id })
         else { return }
         lifeGroup = refreshed
+    }
+
+    /// Best-effort: a failure leaves the card hidden and never breaks the screen.
+    private func loadMyTasks() async {
+        let groupId = Int32(lifeGroup.id)
+        guard let tasks = try? await IosAppContainer.shared.lifeGroupTaskRepository.getMyTasks() else {
+            myTasks = []
+            return
+        }
+        myTasks = tasks
+            .filter { $0.lifeGroupId == groupId && $0.status == .assigned }
+            .sorted { $0.meetingDate < $1.meetingDate }
     }
 
     private func talkToLeadershipTapped() {
@@ -332,6 +345,13 @@ struct LifeGroupDetailView: View {
                         .buttonStyle(.plain)
                     }
 
+                    if !myTasks.isEmpty {
+                        LifeGroupMyTasksCard(
+                            tasks: myTasks,
+                            repository: IosAppContainer.shared.lifeGroupTaskRepository
+                        )
+                    }
+
                     if canManageAttendance {
                         NavigationLink {
                             LifeGroupAttendanceHistoryView(
@@ -388,7 +408,11 @@ struct LifeGroupDetailView: View {
                 .padding(.horizontal, PazSpacing.lg)
             }
         }
-        .refreshable { await refresh() }
+        .refreshable {
+            await refresh()
+            await loadMyTasks()
+        }
+        .task { await loadMyTasks() }
         .background(PazMeshBackground())
         .navigationTitle(lifeGroup.name)
         .navigationBarTitleDisplayMode(.large)
