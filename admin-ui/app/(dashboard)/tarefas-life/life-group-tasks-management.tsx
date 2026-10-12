@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type DragEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
@@ -24,12 +24,14 @@ import {
   ArrowDown,
   ArrowUp,
   Edit,
+  GripVertical,
   Loader2,
   MoreHorizontal,
   Plus,
   Trash2,
 } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 import { ApiError, getApiErrorMessage } from "@/lib/api/client"
 import { useAuth } from "@/lib/hooks/use-auth"
 import {
@@ -55,6 +57,8 @@ export function LifeGroupTasksManagement() {
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<LifeGroupTaskTemplate | null>(null)
   const [deleting, setDeleting] = useState<LifeGroupTaskTemplate | null>(null)
+  const [draggingId, setDraggingId] = useState<number | null>(null)
+  const [overId, setOverId] = useState<number | null>(null)
 
   const templates = data ?? []
 
@@ -75,15 +79,47 @@ export function LifeGroupTasksManagement() {
     )
   }
 
-  const handleMove = (index: number, direction: -1 | 1) => {
-    const target = index + direction
-    if (target < 0 || target >= templates.length) return
+  // Moves the template at `from` to position `to` and persists the new order
+  // (optimistic update + rollback live in useReorderLifeGroupTaskTemplates).
+  const moveTemplate = (from: number, to: number) => {
+    if (from === to || from < 0 || to < 0 || from >= templates.length || to >= templates.length) {
+      return
+    }
     const ids = templates.map((t) => t.id)
-    const [moved] = ids.splice(index, 1)
-    ids.splice(target, 0, moved)
+    const [moved] = ids.splice(from, 1)
+    ids.splice(to, 0, moved)
     reorderMutation.mutate(ids, {
       onError: (err) => toast.error(getApiErrorMessage(err, "Falha ao reordenar as tarefas.")),
     })
+  }
+
+  // Up/down buttons stay as the keyboard-accessible fallback to drag and drop.
+  const handleMove = (index: number, direction: -1 | 1) => moveTemplate(index, index + direction)
+
+  const handleDragStart = (event: DragEvent<HTMLElement>, id: number) => {
+    event.dataTransfer.effectAllowed = "move"
+    event.dataTransfer.setData("text/plain", String(id))
+    setDraggingId(id)
+  }
+
+  const handleDragOver = (event: DragEvent<HTMLElement>, id: number) => {
+    if (draggingId === null) return
+    event.preventDefault()
+    event.dataTransfer.dropEffect = "move"
+    if (overId !== id) setOverId(id)
+  }
+
+  const handleDrop = (event: DragEvent<HTMLElement>, targetIndex: number) => {
+    event.preventDefault()
+    const from = templates.findIndex((t) => t.id === draggingId)
+    setDraggingId(null)
+    setOverId(null)
+    moveTemplate(from, targetIndex)
+  }
+
+  const handleDragEnd = () => {
+    setDraggingId(null)
+    setOverId(null)
   }
 
   const handleDelete = async (template: LifeGroupTaskTemplate) => {
@@ -144,7 +180,7 @@ export function LifeGroupTasksManagement() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Lista de Tarefas</CardTitle>
-              <CardDescription>{templates.length} tarefa(s) cadastrada(s)</CardDescription>
+              <CardDescription>{templates.length} tarefa(s) cadastrada(s). Arraste as linhas ou use as setas para reordenar.</CardDescription>
             </div>
             <Button onClick={openCreate}>
               <Plus className="mr-2 h-4 w-4" />
@@ -156,7 +192,7 @@ export function LifeGroupTasksManagement() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[110px]">Ordem</TableHead>
+                <TableHead className="w-[140px]">Ordem</TableHead>
                 <TableHead>Tarefa</TableHead>
                 <TableHead>Descrição</TableHead>
                 <TableHead className="w-[120px]">Status</TableHead>
@@ -172,14 +208,32 @@ export function LifeGroupTasksManagement() {
                 </TableRow>
               )}
               {templates.map((template, index) => (
-                <TableRow key={template.id}>
+                <TableRow
+                  key={template.id}
+                  draggable={!reorderMutation.isPending}
+                  onDragStart={(e) => handleDragStart(e, template.id)}
+                  onDragOver={(e) => handleDragOver(e, template.id)}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onDragEnd={handleDragEnd}
+                  className={cn(
+                    draggingId === template.id && "opacity-50",
+                    draggingId !== null &&
+                      draggingId !== template.id &&
+                      overId === template.id &&
+                      "bg-muted"
+                  )}
+                >
                   <TableCell>
                     <div className="flex items-center gap-1">
+                      <GripVertical
+                        aria-hidden="true"
+                        className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground"
+                      />
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        aria-label="Mover para cima"
+                        aria-label={`Mover ${template.name} para cima`}
                         disabled={index === 0 || reorderMutation.isPending}
                         onClick={() => handleMove(index, -1)}
                       >
@@ -189,7 +243,7 @@ export function LifeGroupTasksManagement() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        aria-label="Mover para baixo"
+                        aria-label={`Mover ${template.name} para baixo`}
                         disabled={index === templates.length - 1 || reorderMutation.isPending}
                         onClick={() => handleMove(index, 1)}
                       >

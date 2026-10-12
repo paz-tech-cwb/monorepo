@@ -112,10 +112,12 @@ export interface LifeGroupTaskMember {
   eligibility_source: LifeGroupTaskEligibilitySource
   present_count: number
   min_present_meetings: number
-  // True when the member was grandfathered by the migration: do not offer
-  // "back to automatic" (it would drop an established member).
+  // True when the member was grandfathered by the migration (a dedicated
+  // backend flag, not derived from the note): do not offer "back to automatic"
+  // (it would drop an established member). Sole source for the "Membro antigo"
+  // badge and for hiding that button.
   grandfathered: boolean
-  // Leader-only note (the system grandfather note is never returned).
+  // Leader-only note: the leader's own text only, never system marker text.
   reason: string | null
   excluded_template_ids: number[]
 }

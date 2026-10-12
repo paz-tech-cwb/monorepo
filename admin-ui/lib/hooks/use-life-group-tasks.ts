@@ -9,6 +9,7 @@ import type {
   CreateLifeGroupTaskTemplateRequest,
   UpdateLifeGroupTaskTemplateRequest,
   LifeGroupTaskOverrideEntry,
+  LifeGroupTaskTemplate,
   LifeGroupTaskMemberEntry,
 } from "@/lib/api/types/life-group-tasks"
 import { trackEvent } from "@/lib/firebase/analytics"
@@ -68,6 +69,22 @@ export function useReorderLifeGroupTaskTemplates() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (templateIds: number[]) => lifeGroupTaskTemplatesApi.reorder(templateIds),
+    // Optimistic update: show the new order immediately, roll back on failure.
+    onMutate: async (templateIds: number[]) => {
+      await queryClient.cancelQueries({ queryKey: TEMPLATES_KEY })
+      const previous = queryClient.getQueryData<LifeGroupTaskTemplate[]>(TEMPLATES_KEY)
+      if (previous) {
+        const byId = new Map(previous.map((t) => [t.id, t]))
+        const reordered = templateIds
+          .map((id) => byId.get(id))
+          .filter((t): t is LifeGroupTaskTemplate => t !== undefined)
+        queryClient.setQueryData(TEMPLATES_KEY, reordered)
+      }
+      return { previous }
+    },
+    onError: (_err, _ids, context) => {
+      if (context?.previous) queryClient.setQueryData(TEMPLATES_KEY, context.previous)
+    },
     onSuccess: (templates) => {
       queryClient.setQueryData(TEMPLATES_KEY, templates)
       queryClient.invalidateQueries({ queryKey: TEMPLATES_KEY })

@@ -129,3 +129,10 @@ No iOS test target exists (`project.yml` has `testTargets: []`), so no unit test
 - The pure markdown logic (`LifeGroupTaskMarkdown.parseBlocks`, `isSafeLinkURL`, `attributed`) was extracted into a scratch macOS executable and run: headings/paragraph joining/nested bullets/`1.`/`2)` lists parsed as expected; https/http accepted; `javascript:`, `tel:`, `file:`, `paz://`, host-less https rejected; the link attribute was stripped from `[bad](javascript:...)` and kept for https.
 - `plutil -lint` passes on `project.pbxproj` after hand-editing.
 - NOT verified: compilation against `Shared`, SwiftUI runtime rendering, swiftformat/swiftlint (not run), the deep link on device. Re-run: `cd kmp-mobile && ./gradlew :shared:assembleSharedXCFramework`, then build the `PazChurch` scheme.
+
+---
+
+## Gap fixes (admin-ui)
+
+- Syntax-transpiled (VS Code bundled TS, 0 diagnostics) markdown-editor.tsx, life-group-tasks-management.tsx, life-group-task-template-form.tsx, use-life-group-tasks.ts, life-group-tasks.ts types.
+- NOT done: tsc type-check, lint, build, browser/manual test of split preview and drag-and-drop (no node available). Types cross-checked by reading (DragEvent handler variance, mutation context typing).

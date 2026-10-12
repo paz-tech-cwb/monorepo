@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useCallback, type ClipboardEvent } from "react"
+import { useRef, useCallback, useSyncExternalStore, type ClipboardEvent } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import TurndownService from "turndown"
@@ -14,6 +14,9 @@ interface MarkdownEditorProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
+  // When true, wide viewports show the editor and a live preview side by side;
+  // narrow viewports keep the Escrever/Visualizar tabs.
+  splitPreview?: boolean
 }
 
 type FormatAction =
@@ -50,7 +53,130 @@ function getTurndownService(): TurndownService {
   return turndownService
 }
 
-export function MarkdownEditor({ value, onChange, placeholder }: MarkdownEditorProps) {
+function MarkdownPreviewContent({ value }: { value: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        h1: ({ children }) => (
+          <h1 className="text-2xl font-bold mt-6 mb-4 pb-2 border-b first:mt-0">
+            {children}
+          </h1>
+        ),
+        h2: ({ children }) => (
+          <h2 className="text-xl font-bold mt-5 mb-3 pb-1 border-b first:mt-0">
+            {children}
+          </h2>
+        ),
+        h3: ({ children }) => (
+          <h3 className="text-lg font-bold mt-4 mb-2 first:mt-0">{children}</h3>
+        ),
+        h4: ({ children }) => (
+          <h4 className="text-base font-bold mt-3 mb-1 first:mt-0">
+            {children}
+          </h4>
+        ),
+        p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
+        ul: ({ children }) => (
+          <ul className="list-disc pl-6 mb-3 space-y-1">{children}</ul>
+        ),
+        ol: ({ children }) => (
+          <ol className="list-decimal pl-6 mb-3 space-y-1">{children}</ol>
+        ),
+        li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+        a: ({ href, children }) => (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline hover:text-primary/80"
+          >
+            {children}
+          </a>
+        ),
+        strong: ({ children }) => (
+          <strong className="font-bold">{children}</strong>
+        ),
+        em: ({ children }) => <em className="italic">{children}</em>,
+        code: ({ children, className }) => {
+          // If it has a className, it's a code block (with language); otherwise inline
+          if (className) {
+            return (
+              <code className="bg-muted text-sm px-1 py-0.5 rounded font-mono">
+                {children}
+              </code>
+            )
+          }
+          return (
+            <code className="bg-muted text-sm px-1.5 py-0.5 rounded font-mono">
+              {children}
+            </code>
+          )
+        },
+        pre: ({ children }) => (
+          <pre className="bg-muted rounded-md p-4 mb-3 overflow-x-auto text-sm">
+            {children}
+          </pre>
+        ),
+        blockquote: ({ children }) => (
+          <blockquote className="border-l-4 border-muted-foreground/30 pl-4 italic mb-3 text-muted-foreground">
+            {children}
+          </blockquote>
+        ),
+        hr: () => <hr className="my-4 border-border" />,
+        table: ({ children }) => (
+          <div className="overflow-x-auto mb-3">
+            <table className="w-full border-collapse border border-border text-sm">
+              {children}
+            </table>
+          </div>
+        ),
+        thead: ({ children }) => (
+          <thead className="bg-muted">{children}</thead>
+        ),
+        th: ({ children }) => (
+          <th className="border border-border px-3 py-2 text-left font-semibold">
+            {children}
+          </th>
+        ),
+        td: ({ children }) => (
+          <td className="border border-border px-3 py-2">{children}</td>
+        ),
+        input: ({ checked, ...props }) => (
+          <input
+            type="checkbox"
+            checked={checked}
+            disabled
+            className="mr-2"
+            {...props}
+          />
+        ),
+        del: ({ children }) => (
+          <del className="line-through text-muted-foreground">{children}</del>
+        ),
+      }}
+    >
+      {value}
+    </ReactMarkdown>
+  )
+}
+
+// Wide viewport detection (Tailwind `lg`, 1024px). Server snapshot is false so
+// SSR renders the narrow (tabbed) layout.
+function useIsWide() {
+  return useSyncExternalStore(
+    (notify) => {
+      const mql = window.matchMedia("(min-width: 1024px)")
+      mql.addEventListener("change", notify)
+      return () => mql.removeEventListener("change", notify)
+    },
+    () => window.matchMedia("(min-width: 1024px)").matches,
+    () => false
+  )
+}
+
+export function MarkdownEditor({ value, onChange, placeholder, splitPreview = false }: MarkdownEditorProps) {
+  const isWide = useIsWide()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Pasting rich text (e.g. from Word/Google Docs) carries an
@@ -136,6 +262,75 @@ export function MarkdownEditor({ value, onChange, placeholder }: MarkdownEditorP
     { key: "code", icon: Code, title: "Codigo" },
   ] as const
 
+  const writePane = (
+    <>
+      {/* Toolbar */}
+      <div className="flex items-center gap-0.5 flex-wrap border rounded-t-md px-2 py-1 bg-muted/50">
+        {toolbarButtons.map((item, index) => {
+          if (item === "separator") {
+            return (
+              <Separator
+                key={`sep-${index}`}
+                orientation="vertical"
+                className="mx-1 h-5"
+              />
+            )
+          }
+
+          const Icon = item.icon
+          return (
+            <Button
+              key={item.key}
+              type="button"
+              variant="ghost"
+              className="h-8 w-8 p-0"
+              title={item.title}
+              onClick={() => applyFormat(item.key)}
+            >
+              <Icon className="h-4 w-4" />
+            </Button>
+          )
+        })}
+      </div>
+
+      {/* Textarea */}
+      <Textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onPaste={handlePaste}
+        placeholder={placeholder}
+        className="flex-1 min-h-[200px] md:min-h-[300px] resize-none rounded-t-none border-t-0 font-mono text-sm"
+      />
+    </>
+  )
+
+  const previewPane = (
+    <div className="border rounded-md p-4 min-h-[200px] md:min-h-[300px] overflow-y-auto markdown-preview">
+      {value ? (
+        <MarkdownPreviewContent value={value} />
+      ) : (
+        <p className="text-muted-foreground text-sm">
+          Nada para visualizar. Escreva algo na aba &quot;Escrever&quot;.
+        </p>
+      )}
+    </div>
+  )
+
+  if (splitPreview && isWide) {
+    return (
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col [&_textarea]:h-[360px]">{writePane}</div>
+        <div className="flex flex-col [&_.markdown-preview]:h-[396px]">
+          <div className="flex h-9 items-center text-sm font-medium text-muted-foreground">
+            Visualização
+          </div>
+          {previewPane}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <Tabs defaultValue="write" className="flex flex-col flex-1">
       <TabsList className="w-fit">
@@ -144,158 +339,11 @@ export function MarkdownEditor({ value, onChange, placeholder }: MarkdownEditorP
       </TabsList>
 
       <TabsContent value="write" className="flex flex-col flex-1 mt-0">
-        {/* Toolbar */}
-        <div className="flex items-center gap-0.5 flex-wrap border rounded-t-md px-2 py-1 bg-muted/50">
-          {toolbarButtons.map((item, index) => {
-            if (item === "separator") {
-              return (
-                <Separator
-                  key={`sep-${index}`}
-                  orientation="vertical"
-                  className="mx-1 h-5"
-                />
-              )
-            }
-
-            const Icon = item.icon
-            return (
-              <Button
-                key={item.key}
-                type="button"
-                variant="ghost"
-                className="h-8 w-8 p-0"
-                title={item.title}
-                onClick={() => applyFormat(item.key)}
-              >
-                <Icon className="h-4 w-4" />
-              </Button>
-            )
-          })}
-        </div>
-
-        {/* Textarea */}
-        <Textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onPaste={handlePaste}
-          placeholder={placeholder}
-          className="flex-1 min-h-[200px] md:min-h-[300px] resize-none rounded-t-none border-t-0 font-mono text-sm"
-        />
+        {writePane}
       </TabsContent>
 
       <TabsContent value="preview" className="flex-1 mt-0">
-        <div className="border rounded-md p-4 min-h-[200px] md:min-h-[300px] overflow-y-auto markdown-preview">
-          {value ? (
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                h1: ({ children }) => (
-                  <h1 className="text-2xl font-bold mt-6 mb-4 pb-2 border-b first:mt-0">
-                    {children}
-                  </h1>
-                ),
-                h2: ({ children }) => (
-                  <h2 className="text-xl font-bold mt-5 mb-3 pb-1 border-b first:mt-0">
-                    {children}
-                  </h2>
-                ),
-                h3: ({ children }) => (
-                  <h3 className="text-lg font-bold mt-4 mb-2 first:mt-0">{children}</h3>
-                ),
-                h4: ({ children }) => (
-                  <h4 className="text-base font-bold mt-3 mb-1 first:mt-0">
-                    {children}
-                  </h4>
-                ),
-                p: ({ children }) => <p className="mb-3 leading-relaxed">{children}</p>,
-                ul: ({ children }) => (
-                  <ul className="list-disc pl-6 mb-3 space-y-1">{children}</ul>
-                ),
-                ol: ({ children }) => (
-                  <ol className="list-decimal pl-6 mb-3 space-y-1">{children}</ol>
-                ),
-                li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                a: ({ href, children }) => (
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary underline hover:text-primary/80"
-                  >
-                    {children}
-                  </a>
-                ),
-                strong: ({ children }) => (
-                  <strong className="font-bold">{children}</strong>
-                ),
-                em: ({ children }) => <em className="italic">{children}</em>,
-                code: ({ children, className }) => {
-                  // If it has a className, it's a code block (with language); otherwise inline
-                  if (className) {
-                    return (
-                      <code className="bg-muted text-sm px-1 py-0.5 rounded font-mono">
-                        {children}
-                      </code>
-                    )
-                  }
-                  return (
-                    <code className="bg-muted text-sm px-1.5 py-0.5 rounded font-mono">
-                      {children}
-                    </code>
-                  )
-                },
-                pre: ({ children }) => (
-                  <pre className="bg-muted rounded-md p-4 mb-3 overflow-x-auto text-sm">
-                    {children}
-                  </pre>
-                ),
-                blockquote: ({ children }) => (
-                  <blockquote className="border-l-4 border-muted-foreground/30 pl-4 italic mb-3 text-muted-foreground">
-                    {children}
-                  </blockquote>
-                ),
-                hr: () => <hr className="my-4 border-border" />,
-                table: ({ children }) => (
-                  <div className="overflow-x-auto mb-3">
-                    <table className="w-full border-collapse border border-border text-sm">
-                      {children}
-                    </table>
-                  </div>
-                ),
-                thead: ({ children }) => (
-                  <thead className="bg-muted">{children}</thead>
-                ),
-                th: ({ children }) => (
-                  <th className="border border-border px-3 py-2 text-left font-semibold">
-                    {children}
-                  </th>
-                ),
-                td: ({ children }) => (
-                  <td className="border border-border px-3 py-2">{children}</td>
-                ),
-                input: ({ checked, ...props }) => (
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    disabled
-                    className="mr-2"
-                    {...props}
-                  />
-                ),
-                del: ({ children }) => (
-                  <del className="line-through text-muted-foreground">{children}</del>
-                ),
-              }}
-            >
-              {value}
-            </ReactMarkdown>
-          ) : (
-            <p className="text-muted-foreground text-sm">
-              Nada para visualizar. Escreva algo na aba &quot;Escrever&quot;.
-            </p>
-          )}
-        </div>
+        {previewPane}
       </TabsContent>
     </Tabs>
   )

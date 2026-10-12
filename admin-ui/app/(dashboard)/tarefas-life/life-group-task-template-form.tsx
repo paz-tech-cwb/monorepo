@@ -84,7 +84,7 @@ export function LifeGroupTaskTemplateForm({ open, onOpenChange, template }: Temp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl lg:max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{template ? "Editar tarefa" : "Nova tarefa"}</DialogTitle>
           <DialogDescription>
@@ -125,10 +125,11 @@ export function LifeGroupTaskTemplateForm({ open, onOpenChange, template }: Temp
             <MarkdownEditor
               value={guidance}
               onChange={setGuidance}
+              splitPreview
               placeholder="Passo a passo para quem for responsável pela tarefa..."
             />
             <p className="text-xs text-muted-foreground">
-              Use a aba &quot;Visualizar&quot; para ver como o guia será exibido. Cada Life Group
+              Em telas largas a visualização aparece ao lado; em telas estreitas use a aba &quot;Visualizar&quot;. Cada Life Group
               pode substituir este guia no seu próprio painel de tarefas.
             </p>
           </div>

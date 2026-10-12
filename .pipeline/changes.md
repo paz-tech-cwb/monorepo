@@ -192,3 +192,13 @@ Fixed from `.pipeline/review.md`:
 
 Left as follow-ups: m2 (preview vs mobile markdown subset), m3 (no notification after manual generate inside the offset window), m5 (decline ping-pong: the row is reassigned in place so earlier decliners are not tracked; fixing it needs a decliner history column, not trivial), m7 (index/constraint names vs TypeORM), m9 (evaluator claim-then-send), m10 (nothing compiled or run). Known edge: a leader who writes a real note on a grandfathered member replaces the marker, after which the reset button reappears.
 
+
+---
+
+## Gap fixes (admin-ui)
+
+- `components/markdown-editor.tsx`: preview markup extracted into `MarkdownPreviewContent` (unchanged styling); new optional `splitPreview` prop. When set and viewport >= 1024px (`lg`, via `useSyncExternalStore` + matchMedia, SSR-safe false) the editor shows editor left / live preview right; narrower screens keep the Escrever/Visualizar tabs. Other callers unaffected (default false).
+- `life-group-task-template-form.tsx`: passes `splitPreview`; dialog widened (`sm:max-w-3xl lg:max-w-5xl`, the base dialog's `sm:max-w-lg` previously overrode `max-w-3xl`); helper text updated.
+- `life-group-tasks-management.tsx`: native HTML5 drag-and-drop row reorder (no dnd lib in package.json; no new dependency) with grip icon, drag/over styling; up/down buttons kept as keyboard fallback with per-task aria-labels; both go through `moveTemplate` -> existing `PUT /life-group-task-templates/reorder`.
+- `lib/hooks/use-life-group-tasks.ts`: `useReorderLifeGroupTaskTemplates` now optimistic (`onMutate` reorders cache, `onError` rolls back to snapshot; success still sets server list + invalidates).
+- Members tab: already used `grandfathered` as the sole source for hiding "Voltar ao automatico" and the "Membro antigo" badge; no marker-text dependency existed in code. Only the type comments in `lib/api/types/life-group-tasks.ts` were clarified.
