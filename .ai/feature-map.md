@@ -6,6 +6,7 @@
 | People & membership | `features/people-and-membership.md` | backend, admin-ui, mobile | Active domain |
 | Member journey | `features/people-and-membership.md` | backend, admin-ui, mobile | Active domain |
 | Life groups | `features/life-groups.md` | backend, admin-ui, mobile | Active domain |
+| Life group rotating tasks | `features/life-groups.md` | backend, admin-ui, mobile | Implemented on branch; migrations/deploy pending (human gates) |
 | Forms | `features/forms.md` | backend, admin-ui, mobile | Designed/active |
 | Notifications | `features/notifications.md` | backend, admin-ui, mobile | Active domain |
 | Ministries | `features/ministries.md` | backend, admin-ui, mobile | Active domain |

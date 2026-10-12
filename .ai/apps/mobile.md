@@ -12,6 +12,13 @@
 - Member journey, forms, notifications, ministries, academy, life group UX.
 - Push notification tap/deep-link handling.
 
+## Life group tasks
+
+Shared domain/repository in `kmp-mobile/shared` (`LifeGroupTaskRepository`),
+Android screens in `ui/features/lifegrouptasks/`, iOS in
+`ios/PazChurch/Features/LifeGroupTasks/` (pbxproj hand-edited; iOS build/bridging not verified here).
+Deep link `paz://tarefa/{assignmentId}`. See `features/mobile-app.md`.
+
 ## Agent rules
 
 - Read kmp-mobile's local docs/build files before proposing changes.
