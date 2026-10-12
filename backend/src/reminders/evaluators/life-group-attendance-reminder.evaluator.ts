@@ -16,71 +16,13 @@ import { LifeGroup } from '../../life-groups/entities/life-group.entity';
 import { User } from '../../users/entities/user.entity';
 import { ReminderDispatchLog } from '../entities/reminder-dispatch-log.entity';
 import { LifeGroupAttendance } from '../../life-group-attendance/entities/life-group-attendance.entity';
-import { WEEKDAY_INDEX } from '../../life-group-attendance/meeting-day.util';
-
-// Life group meeting_day/meeting_time are entered by leaders in the
-// church's local timezone, and LifeGroupAttendanceService persists
-// meeting_date as a local calendar date. The reminder server always runs in
-// UTC, so all weekday/hour/date-key computation below must be done in the
-// church's timezone rather than relying on Date's UTC-based getDay()/
-// getHours()/toISOString(), or every check silently drifts by the UTC
-// offset (and wraps to the wrong calendar day for evening meetings).
-const CHURCH_TIME_ZONE = 'America/Sao_Paulo';
-
-interface ZonedParts {
-  year: number;
-  month: number;
-  day: number;
-  hour: number;
-}
-
-function zonedParts(date: Date, timeZone = CHURCH_TIME_ZONE): ZonedParts {
-  const fmt = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    hour12: false,
-  });
-  const map: Record<string, string> = {};
-  for (const part of fmt.formatToParts(date)) {
-    map[part.type] = part.value;
-  }
-  // Some locales render midnight as "24" with hour12: false.
-  const hour = Number(map.hour) % 24;
-  return {
-    year: Number(map.year),
-    month: Number(map.month),
-    day: Number(map.day),
-    hour,
-  };
-}
-
-// A pure calendar-day computation (weekday of a Y/M/D triple, or a Y/M/D
-// triple shifted by N days) is timezone-agnostic, so it's safe to do via
-// UTC-anchored Date math regardless of the server's runtime timezone.
-function weekdayOf(parts: Pick<ZonedParts, 'year' | 'month' | 'day'>): number {
-  return new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay();
-}
-
-function dateKeyOf(parts: Pick<ZonedParts, 'year' | 'month' | 'day'>): string {
-  const d = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
-  return d.toISOString().slice(0, 10);
-}
-
-function shiftDays(
-  parts: Pick<ZonedParts, 'year' | 'month' | 'day'>,
-  offsetDays: number,
-): { year: number; month: number; day: number } {
-  const d = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
-  d.setUTCDate(d.getUTCDate() + offsetDays);
-  return {
-    year: d.getUTCFullYear(),
-    month: d.getUTCMonth() + 1,
-    day: d.getUTCDate(),
-  };
-}
+import {
+  WEEKDAY_INDEX,
+  dateKeyOf,
+  shiftDays,
+  weekdayOf,
+  zonedParts,
+} from '../../life-group-attendance/meeting-day.util';
 
 @Injectable()
 export class LifeGroupAttendanceReminderEvaluator implements ReminderEvaluator {

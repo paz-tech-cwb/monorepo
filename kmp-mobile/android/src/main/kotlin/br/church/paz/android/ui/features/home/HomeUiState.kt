@@ -3,6 +3,7 @@ package br.church.paz.android.ui.features.home
 import br.church.paz.shared.domain.model.AgendaEvent
 import br.church.paz.shared.domain.model.BankInfo
 import br.church.paz.shared.domain.model.Banner
+import br.church.paz.shared.domain.model.LifeGroupTask
 
 data class HomeUiState(
     val isLoading: Boolean = true,
@@ -20,6 +21,9 @@ data class HomeUiState(
     // see HomeViewModel.fetch() for why an error must never be read as "no
     // group".
     val showLifeGroupDiscoveryCTA: Boolean = false,
+    // Upcoming assigned life group tasks ("Minhas tarefas"); empty hides the card, including
+    // when the best-effort fetch failed.
+    val myTasks: List<LifeGroupTask> = emptyList(),
 )
 
 sealed class HomeEffect {
@@ -29,5 +33,9 @@ sealed class HomeEffect {
 
     data class NavigateToAgenda(
         val eventId: String,
+    ) : HomeEffect()
+
+    data class NavigateToTask(
+        val assignmentId: String,
     ) : HomeEffect()
 }

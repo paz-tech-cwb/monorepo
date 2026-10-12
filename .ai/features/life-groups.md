@@ -53,6 +53,80 @@ going forward. If a group's `meeting_day` is "Sem dia fixo" or its
 
 Deep link: `paz://presenca/{lifeGroupId}/{date}`.
 
+## Rotating tasks
+
+Each meeting, global tasks (templates) are automatically assigned to eligible
+group members in rotation. Module: `backend/src/life-group-tasks/`.
+
+- **Templates** (admin role only): name, description, markdown guidance,
+  active flag, order. Delete is refused (409) once assignments exist; deactivate instead.
+- **Per-group overrides**: leader/co-leader/admin can disable a template for
+  the group and override its guidance (markdown).
+- **Assignments**: one row per `(life_group_id, template_id, meeting_date)`
+  (unique), with snapshots of task name/guidance, `status` (`assigned`,
+  `declined`, `completed`), `source` (auto/reroll/manual), `notified_at`, `reminded_at`.
+  Generation is idempotent and fair (history excludes the current date,
+  skipped dates and declined rows). No eligible candidate: task stays
+  unassigned and leader/co-leader are pushed.
+- **Eligibility** (`eligibility.ts`, resolved per member): an explicit
+  `life_group_task_member_settings.eligible` always wins (true or false);
+  otherwise leader/co-leader are eligible; otherwise a member becomes eligible
+  with >= `min_present_meetings` (group setting, default 3) `present=true`
+  entries in `life_group_attendance_entries` for that group. Interpretation
+  (to be confirmed with product): "3 weeks of presence" = 3 present attendance
+  records, not 3 consecutive weeks and not days since joining. Only entries for
+  meetings on or after the member's `user_life_groups.joined_at` (calendar day,
+  America/Sao_Paulo) count, so attendance from a previous stint or from before
+  they joined is ignored; leader/co-leader outside the join table are not
+  filtered. This can only delay auto-eligibility, never grant it earlier.
+  Members existing at migration time were grandfathered with explicit
+  eligible=true rows flagged by the `life_group_task_member_settings.grandfathered`
+  boolean column (no note text). `GET task-members` returns `grandfathered`
+  (from the column), the real leader note in `reason`, and `joined_at` (ISO
+  string or null); clients hide "Voltar ao automático" for grandfathered rows and
+  the server answers 400 to `reset_to_automatic` on them (resetting would drop an
+  established member below the presence threshold). Edits (note, exclusions,
+  eligible=false and back to true) never change the flag: a grandfathered member
+  stays grandfathered; to take them out of the rotation set eligible=false.
+  Leader notes on a member are never returned to member endpoints; per-template
+  exclusions are supported; `reset_to_automatic` deletes the explicit row.
+- **Decline / re-roll**: members decline unlimited times; the same row gets a
+  new assignee (`source=reroll`, notification flags reset) and the new assignee
+  and leader are pushed. Each decliner is appended to
+  `life_group_task_assignments.declined_user_ids`; decline and leader re-roll
+  never pick the current assignee or anyone in that list again (no A -> B -> A
+  ping-pong). If nobody qualifies, decline leaves the row `declined` and
+  notifies the leader. Leaders can re-roll or manually reassign (any active roster
+  member, including a previous decliner: an explicit leader choice).
+- **Manual generate** (`POST .../tasks/generate`) pushes the newly created
+  assignees (`notified_at IS NULL`) when the meeting is today..today+largest
+  offset (a later meeting is left to the evaluator's offset push); same claim as
+  the evaluator, so nobody is notified twice. On the largest-offset day itself,
+  before the rule's `hour` (America/Sao_Paulo), the manual push is skipped
+  (`notified_at` stays NULL) because the evaluator still runs later that day.
+- **Skip dates**: `life_group_task_skips` marks meeting dates with no tasks; the evaluator ignores them.
+- **Pushes**: reminder rule `life_group_tasks` (enabled by default,
+  `days_before_meeting: [3,1]`, `hour: 9`). Largest offset generates and notifies
+  assignees; smaller offsets only remind already-assigned members. See `features/notifications.md`.
+
+Endpoints (prefix `/api`):
+
+- Admin: `GET/POST /life-group-task-templates`, `PATCH/DELETE /life-group-task-templates/:id`, `PUT /life-group-task-templates/reorder`.
+- Leader/co-leader/admin: `GET/PUT /life-groups/:id/task-overrides|task-members|task-settings`, `GET/POST /life-groups/:id/task-skips`, `DELETE /life-groups/:id/task-skips/:date`, `GET /life-groups/:id/tasks?date=`, `POST .../tasks/generate` (`meeting_date` optional, defaults to next meeting; must be at most 7 days in the past and 60 days ahead, else 400), `POST .../tasks/reroll`, `PATCH .../tasks/:assignmentId`.
+- Member: `GET /me/life-group-tasks`, `GET /me/life-group-tasks/:id`, `POST /me/life-group-tasks/:id/decline`.
+
+Tables (migration `1795900000004-CreateLifeGroupTasks`): templates, overrides,
+assignments (incl. `declined_user_ids int[]`), member_settings (incl. `grandfathered`),
+group_settings, skips, plus `user_life_groups.joined_at`.
+Migration `1795900000003-AddLifeGroupTasksEnumValues` adds the enum values
+(separate because Postgres cannot use a new enum value in the same transaction).
+Assignments cascade on `users` delete (account deletion must not fail on task history).
+Running migrations and deploying are human gates; they have not been run by agents.
+
+Clients: admin-ui "Tarefas do Life" page (templates) plus a "Tarefas" panel on
+life groups; mobile task guide screen, "Minhas tarefas" card on life group
+detail, and leader-only "Elegibilidade para tarefas" screen. Deep link: `paz://tarefa/{assignmentId}`.
+
 ## Agent notes
 
 - Do not duplicate hierarchy rules in clients if the backend can provide scoped results.

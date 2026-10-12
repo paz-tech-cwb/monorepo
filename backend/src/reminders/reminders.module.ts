@@ -10,7 +10,9 @@ import { FormReportReminderEvaluator } from './evaluators/form-report-reminder.e
 import { EventReminderEvaluator } from './evaluators/event-reminder.evaluator';
 import { MemberJourneyReminderEvaluator } from './evaluators/member-journey-reminder.evaluator';
 import { LifeGroupAttendanceReminderEvaluator } from './evaluators/life-group-attendance-reminder.evaluator';
+import { LifeGroupTasksReminderEvaluator } from './evaluators/life-group-tasks.evaluator';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { LifeGroupTasksModule } from '../life-group-tasks/life-group-tasks.module';
 import { LifeGroup } from '../life-groups/entities/life-group.entity';
 import { LifeGroupAttendance } from '../life-group-attendance/entities/life-group-attendance.entity';
 
@@ -23,6 +25,7 @@ import { LifeGroupAttendance } from '../life-group-attendance/entities/life-grou
       LifeGroupAttendance,
     ]),
     NotificationsModule,
+    LifeGroupTasksModule,
   ],
   controllers: [RemindersController],
   providers: [
@@ -32,6 +35,7 @@ import { LifeGroupAttendance } from '../life-group-attendance/entities/life-grou
     EventReminderEvaluator,
     MemberJourneyReminderEvaluator,
     LifeGroupAttendanceReminderEvaluator,
+    LifeGroupTasksReminderEvaluator,
     {
       provide: REMINDER_EVALUATORS,
       useFactory: (
@@ -39,12 +43,14 @@ import { LifeGroupAttendance } from '../life-group-attendance/entities/life-grou
         event: EventReminderEvaluator,
         journey: MemberJourneyReminderEvaluator,
         attendance: LifeGroupAttendanceReminderEvaluator,
-      ) => [form, event, journey, attendance],
+        tasks: LifeGroupTasksReminderEvaluator,
+      ) => [form, event, journey, attendance, tasks],
       inject: [
         FormReportReminderEvaluator,
         EventReminderEvaluator,
         MemberJourneyReminderEvaluator,
         LifeGroupAttendanceReminderEvaluator,
+        LifeGroupTasksReminderEvaluator,
       ],
     },
   ],

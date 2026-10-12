@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReminderRule } from './entities/reminder-rule.entity';
 import { UpdateReminderRuleDto } from './dto/update-reminder-rule.dto';
+import { validateReminderConfig } from './types/reminder-config';
 
 @Injectable()
 export class RemindersService {
@@ -23,7 +28,11 @@ export class RemindersService {
     const rule = await this.repo.findOne({ where: { id } });
     if (!rule) throw new NotFoundException(`Reminder rule #${id} not found`);
     if (dto.enabled !== undefined) rule.enabled = dto.enabled;
-    if (dto.config !== undefined) rule.config = dto.config;
+    if (dto.config !== undefined) {
+      const error = validateReminderConfig(rule.type, dto.config);
+      if (error) throw new BadRequestException(error);
+      rule.config = dto.config;
+    }
     return this.repo.save(rule);
   }
 }

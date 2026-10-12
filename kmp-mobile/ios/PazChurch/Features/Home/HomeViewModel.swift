@@ -17,19 +17,25 @@ class HomeViewModel {
     /// group", since that would wrongly nudge an existing member to
     /// "discover" a group they already belong to.
     var showLifeGroupDiscoveryCTA = false
+    /// Upcoming assigned life group tasks ("Minhas tarefas"). Empty hides the card,
+    /// including when the best-effort fetch failed.
+    var myTasks: [LifeGroupTask] = []
 
     private let homeRepository: HomeRepository
     private let authRepository: AuthRepository
     private let churchRepository: ChurchRepository
+    private let taskRepository: LifeGroupTaskRepository
 
     init(
         homeRepository: HomeRepository,
         authRepository: AuthRepository,
-        churchRepository: ChurchRepository
+        churchRepository: ChurchRepository,
+        taskRepository: LifeGroupTaskRepository
     ) {
         self.homeRepository = homeRepository
         self.authRepository = authRepository
         self.churchRepository = churchRepository
+        self.taskRepository = taskRepository
     }
 
     /// Called by the view's .task modifier — no Task wrapper needed.
@@ -61,6 +67,38 @@ class HomeViewModel {
             // showing it to a member who actually has a group.
             showLifeGroupDiscoveryCTA = false
         }
+
+        // Best-effort: a failure hides the card and never surfaces as a home error.
+        do {
+            let tasks = try await taskRepository.getMyTasks()
+            myTasks = Self.upcomingTasks(tasks, today: Self.todayISODate())
+        } catch is CancellationError {
+            // View task cancelled: keep the current card instead of clearing it.
+            return
+        } catch {
+            // A Kotlin CancellationException surfaces as an NSError, not
+            // CancellationError: keep the current card in that case too.
+            if Task.isCancelled { return }
+            myTasks = []
+        }
+    }
+
+    /// Status assigned, meetingDate (ISO `yyyy-MM-dd`, so string order == date order) on or after
+    /// `today`, soonest first, at most `limit`.
+    static func upcomingTasks(_ tasks: [LifeGroupTask], today: String, limit: Int = 3) -> [LifeGroupTask] {
+        Array(
+            tasks
+                .filter { $0.status == .assigned && $0.meetingDate >= today }
+                .sorted { $0.meetingDate < $1.meetingDate }
+                .prefix(limit)
+        )
+    }
+
+    private static func todayISODate() -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
     }
 
     func onRetry() {

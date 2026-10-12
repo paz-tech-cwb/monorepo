@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { RemindersService } from './reminders.service';
 import { ReminderRule } from './entities/reminder-rule.entity';
@@ -8,8 +8,10 @@ import { ReminderRule } from './entities/reminder-rule.entity';
 describe('RemindersService', () => {
   let service: RemindersService;
   let repo: jest.Mocked<Repository<ReminderRule>>;
+  let saveMock: jest.Mock;
 
   beforeEach(async () => {
+    saveMock = jest.fn((x: unknown) => Promise.resolve(x));
     const moduleRef = await Test.createTestingModule({
       providers: [
         RemindersService,
@@ -18,7 +20,7 @@ describe('RemindersService', () => {
           useValue: {
             find: jest.fn(),
             findOne: jest.fn(),
-            save: jest.fn((x) => Promise.resolve(x)),
+            save: saveMock,
           },
         },
       ],
@@ -51,6 +53,34 @@ describe('RemindersService', () => {
       config: { lead_times_hours: [12, 1] } as never,
     });
     expect(result.enabled).toBe(true);
-    expect(repo.save).toHaveBeenCalled();
+    expect(saveMock).toHaveBeenCalled();
+  });
+
+  it('update rejects an invalid life_group_tasks config', async () => {
+    repo.findOne.mockResolvedValue({
+      id: 2,
+      type: 'life_group_tasks',
+      enabled: true,
+      config: {},
+    } as ReminderRule);
+    await expect(
+      service.update(2, {
+        config: { days_before_meeting: [], hour: 9 } as never,
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(saveMock).not.toHaveBeenCalled();
+  });
+
+  it('update accepts a valid life_group_tasks config', async () => {
+    repo.findOne.mockResolvedValue({
+      id: 2,
+      type: 'life_group_tasks',
+      enabled: true,
+      config: {},
+    } as ReminderRule);
+    const result = await service.update(2, {
+      config: { days_before_meeting: [3, 1], hour: 9 } as never,
+    });
+    expect(result.config).toEqual({ days_before_meeting: [3, 1], hour: 9 });
   });
 });

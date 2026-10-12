@@ -21,7 +21,8 @@ struct HomeView: View {
         _viewModel = State(initialValue: HomeViewModel(
             homeRepository: homeRepository,
             authRepository: authRepository,
-            churchRepository: IosAppContainer.shared.churchRepository
+            churchRepository: IosAppContainer.shared.churchRepository,
+            taskRepository: IosAppContainer.shared.lifeGroupTaskRepository
         ))
         self.agendaRepository = agendaRepository
     }
@@ -135,6 +136,15 @@ struct HomeView: View {
                 default:
                     EmptyView()
                 }
+            }
+
+            if !viewModel.myTasks.isEmpty {
+                LifeGroupMyTasksCard(
+                    tasks: viewModel.myTasks,
+                    repository: IosAppContainer.shared.lifeGroupTaskRepository
+                )
+                .padding(.horizontal, PazSpacing.lg)
+                .padding(.top, 32)
             }
 
             if viewModel.showLifeGroupDiscoveryCTA {

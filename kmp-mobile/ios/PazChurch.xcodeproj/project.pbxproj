@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D5E0E520DC3A7B939E8F2110 /* LifeGroupTaskMembersViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B171DEE2C8BD7B9723EC438 /* LifeGroupTaskMembersViewModel.swift */; };
+		4124D5D23C6992CAB01A7E10 /* LifeGroupTaskMembersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1F07E7BEE9EBD1CF5A9D03E /* LifeGroupTaskMembersView.swift */; };
+		E54344F263AF3B1273BB6BD0 /* LifeGroupMyTasksCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D731842510D379048D76FFE /* LifeGroupMyTasksCard.swift */; };
+		1D493341C3DD574588A29A6C /* LifeGroupTaskGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 801D0471CD23989C9B34C40A /* LifeGroupTaskGuideView.swift */; };
+		963C35BCC633F976A02F84E3 /* LifeGroupTaskGuideViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78DB9C22A087078238BFEF81 /* LifeGroupTaskGuideViewModel.swift */; };
+		5EFC9A072F27919D8CE2E284 /* LifeGroupTaskMarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20508B4325EFFBF5C3BCCE1 /* LifeGroupTaskMarkdownView.swift */; };
 		045500E917135CF9ED6D160E /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB3B8D8FB1ECDA45FE9ACC57 /* LoginView.swift */; };
 		095D13AF163EB2FBF81E44A4 /* PazCharts.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7AB7D082CBCFBF7C089DB6B /* PazCharts.swift */; };
 		09EDC02009417BFD3B3FA3BC /* NotificationPrefsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D33772BE7A618459F8F98DA2 /* NotificationPrefsView.swift */; };
@@ -126,7 +132,20 @@
 		FB37D56C092A3708470ACE46 /* dm_sans_regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D664B1D68AD1FA25AAA7C11C /* dm_sans_regular.ttf */; };
 		FB53C426B3DC5069915B79F2 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 14D3154CD353A1E73ECC271B /* Kingfisher */; };
 		FC25AD7E5C5415AF9A38444E /* playfair_display_bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5D9FDF575DB1EE5816EA7BD6 /* playfair_display_bold.ttf */; };
+		A11CE5710000000000000065 /* DeepLinkDestinationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11CE5710000000000000001 /* DeepLinkDestinationTests.swift */; };
+		A11CE5710000000000000066 /* LifeGroupTaskMarkdownTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11CE5710000000000000002 /* LifeGroupTaskMarkdownTests.swift */; };
+		A11CE5710000000000000067 /* HomeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11CE5710000000000000003 /* HomeViewModelTests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A11CE57100000000000001FD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BF7B52D93DA3C4D2D43D125E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 32AE5640F622679E9E0DC963;
+			remoteInfo = PazChurch;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		3F9487BF285D9B82C639F63B /* Embed Frameworks */ = {
@@ -143,6 +162,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8B171DEE2C8BD7B9723EC438 /* LifeGroupTaskMembersViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskMembersViewModel.swift; sourceTree = "<group>"; };
+		B1F07E7BEE9EBD1CF5A9D03E /* LifeGroupTaskMembersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskMembersView.swift; sourceTree = "<group>"; };
+		7D731842510D379048D76FFE /* LifeGroupMyTasksCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupMyTasksCard.swift; sourceTree = "<group>"; };
+		801D0471CD23989C9B34C40A /* LifeGroupTaskGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskGuideView.swift; sourceTree = "<group>"; };
+		78DB9C22A087078238BFEF81 /* LifeGroupTaskGuideViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskGuideViewModel.swift; sourceTree = "<group>"; };
+		D20508B4325EFFBF5C3BCCE1 /* LifeGroupTaskMarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskMarkdownView.swift; sourceTree = "<group>"; };
 		00E58EA57FC0F3018961378F /* LifeGroupStudyListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupStudyListView.swift; sourceTree = "<group>"; };
 		01A99B3B797EFD3EC19319C7 /* PazImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazImageCache.swift; sourceTree = "<group>"; };
 		01FFDF96B4BA2F02238FEF09 /* PazChurch.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PazChurch.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -258,6 +283,10 @@
 		FF38BCC6E4E462431FED6BFB /* LifeGroupStudyEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupStudyEditorView.swift; sourceTree = "<group>"; };
 		FF4260B2134AEB925A29A03C /* PazListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PazListRow.swift; sourceTree = "<group>"; };
 		FFCF04B5FB518B8BB0F8B54B /* AccountViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountViewModel.swift; sourceTree = "<group>"; };
+		A11CE5710000000000000001 /* DeepLinkDestinationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkDestinationTests.swift; sourceTree = "<group>"; };
+		A11CE5710000000000000002 /* LifeGroupTaskMarkdownTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskMarkdownTests.swift; sourceTree = "<group>"; };
+		A11CE5710000000000000003 /* HomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModelTests.swift; sourceTree = "<group>"; };
+		A11CE57100000000000001F8 /* PazChurchTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PazChurchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -273,6 +302,13 @@
 				FB53C426B3DC5069915B79F2 /* Kingfisher in Frameworks */,
 				A31C398425A937C979302F26 /* Pulse in Frameworks */,
 				8C6BACE0C1147A1725F899AB /* PulseUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A11CE57100000000000001F6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -367,6 +403,7 @@
 				9583323C0C4D778E6E30C67E /* Home */,
 				4572C86A42A72B7ABC777BAE /* LifeGroupAnalytics */,
 				80CCBF76E3B5369901F0DAC9 /* LifeGroupAttendance */,
+				744A2D117CBCEF98E72B91EC /* LifeGroupTasks */,
 				7AC12741EED7CF558368863F /* LifeGroupStudy */,
 				F1CD9530F50CB5214AE5DF32 /* MemberJourney */,
 				36D27ED148027B3DCC6FD3CF /* Ministries */,
@@ -466,6 +503,7 @@
 			isa = PBXGroup;
 			children = (
 				01FFDF96B4BA2F02238FEF09 /* PazChurch.app */,
+				A11CE57100000000000001F8 /* PazChurchTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -489,6 +527,19 @@
 				A0AED721D9C3F11A210BEFE7 /* LifeGroupAttendanceViewModels.swift */,
 			);
 			path = LifeGroupAttendance;
+			sourceTree = "<group>";
+		};
+		744A2D117CBCEF98E72B91EC /* LifeGroupTasks */ = {
+			isa = PBXGroup;
+			children = (
+				8B171DEE2C8BD7B9723EC438 /* LifeGroupTaskMembersViewModel.swift */,
+				B1F07E7BEE9EBD1CF5A9D03E /* LifeGroupTaskMembersView.swift */,
+				7D731842510D379048D76FFE /* LifeGroupMyTasksCard.swift */,
+				801D0471CD23989C9B34C40A /* LifeGroupTaskGuideView.swift */,
+				78DB9C22A087078238BFEF81 /* LifeGroupTaskGuideViewModel.swift */,
+				D20508B4325EFFBF5C3BCCE1 /* LifeGroupTaskMarkdownView.swift */,
+			);
+			path = LifeGroupTasks;
 			sourceTree = "<group>";
 		};
 		8101B69056A184DB1D1724D1 /* Navigation */ = {
@@ -522,6 +573,7 @@
 			isa = PBXGroup;
 			children = (
 				A589190334D84B23AA98DE82 /* PazChurch */,
+				A11CE57100000000000001F4 /* PazChurchTests */,
 				232E2758FAD3E289DC1738AC /* Frameworks */,
 				7096A0159D24C4D44279E9D4 /* Products */,
 			);
@@ -648,6 +700,16 @@
 			path = MemberJourney;
 			sourceTree = "<group>";
 		};
+		A11CE57100000000000001F4 /* PazChurchTests */ = {
+			isa = PBXGroup;
+			children = (
+				A11CE5710000000000000001 /* DeepLinkDestinationTests.swift */,
+				A11CE5710000000000000002 /* LifeGroupTaskMarkdownTests.swift */,
+				A11CE5710000000000000003 /* HomeViewModelTests.swift */,
+			);
+			path = PazChurchTests;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -679,6 +741,26 @@
 			productReference = 01FFDF96B4BA2F02238FEF09 /* PazChurch.app */;
 			productType = "com.apple.product-type.application";
 		};
+		A11CE57100000000000001F7 /* PazChurchTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A11CE57100000000000001F9 /* Build configuration list for PBXNativeTarget "PazChurchTests" */;
+			buildPhases = (
+				A11CE57100000000000001F5 /* Sources */,
+				A11CE57100000000000001F6 /* Frameworks */,
+				A11CE57100000000000001FE /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A11CE57100000000000001FC /* PBXTargetDependency */,
+			);
+			name = PazChurchTests;
+			packageProductDependencies = (
+			);
+			productName = PazChurchTests;
+			productReference = A11CE57100000000000001F8 /* PazChurchTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -690,6 +772,9 @@
 				TargetAttributes = {
 					32AE5640F622679E9E0DC963 = {
 						DevelopmentTeam = NMCA95DPCN;
+					};
+					A11CE57100000000000001F7 = {
+						TestTargetID = 32AE5640F622679E9E0DC963;
 					};
 				};
 			};
@@ -714,6 +799,7 @@
 			projectRoot = "";
 			targets = (
 				32AE5640F622679E9E0DC963 /* PazChurch */,
+				A11CE57100000000000001F7 /* PazChurchTests */,
 			);
 		};
 /* End PBXProject section */
@@ -732,6 +818,13 @@
 				D30F409FE86E40DA408524CB /* dm_sans_semibold.ttf in Resources */,
 				FC25AD7E5C5415AF9A38444E /* playfair_display_bold.ttf in Resources */,
 				DA3D9622A5DD25011AA5D4BF /* playfair_display_extrabold.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A11CE57100000000000001FE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -814,6 +907,12 @@
 				36011969A58624733978F622 /* LifeGroupAttendanceEditorView.swift in Sources */,
 				3A439216FAD2F3A2CF7AF768 /* LifeGroupAttendanceHistoryView.swift in Sources */,
 				A6A324E081B9ECFCDDA55B20 /* LifeGroupAttendanceViewModels.swift in Sources */,
+				5EFC9A072F27919D8CE2E284 /* LifeGroupTaskMarkdownView.swift in Sources */,
+				963C35BCC633F976A02F84E3 /* LifeGroupTaskGuideViewModel.swift in Sources */,
+				1D493341C3DD574588A29A6C /* LifeGroupTaskGuideView.swift in Sources */,
+				E54344F263AF3B1273BB6BD0 /* LifeGroupMyTasksCard.swift in Sources */,
+				4124D5D23C6992CAB01A7E10 /* LifeGroupTaskMembersView.swift in Sources */,
+				D5E0E520DC3A7B939E8F2110 /* LifeGroupTaskMembersViewModel.swift in Sources */,
 				65BD6B55FF25446AC29997D2 /* LifeGroupManageView.swift in Sources */,
 				3D84D9AFE377A15FCE617E1F /* LifeGroupPickerSheet.swift in Sources */,
 				A1DD2AC7CAB0A0304F69AA98 /* LifeGroupStudyDetailView.swift in Sources */,
@@ -868,7 +967,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A11CE57100000000000001F5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A11CE5710000000000000065 /* DeepLinkDestinationTests.swift in Sources */,
+				A11CE5710000000000000066 /* LifeGroupTaskMarkdownTests.swift in Sources */,
+				A11CE5710000000000000067 /* HomeViewModelTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A11CE57100000000000001FC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 32AE5640F622679E9E0DC963 /* PazChurch */;
+			targetProxy = A11CE57100000000000001FD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		2121C49933951910A794F6EF /* Release */ = {
@@ -1049,6 +1166,56 @@
 			};
 			name = Debug;
 		};
+		A11CE57100000000000001FA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"../shared/build/XCFrameworks/debug\"",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.cwb.pazchurch.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PazChurch.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PazChurch";
+			};
+			name = Debug;
+		};
+		A11CE57100000000000001FB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"../shared/build/XCFrameworks/debug\"",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.cwb.pazchurch.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PazChurch.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PazChurch";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1066,6 +1233,15 @@
 			buildConfigurations = (
 				27CFDCB1063057C5DF1E2494 /* Debug */,
 				980A46BA3727C96D632E557F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A11CE57100000000000001F9 /* Build configuration list for PBXNativeTarget "PazChurchTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A11CE57100000000000001FA /* Debug */,
+				A11CE57100000000000001FB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

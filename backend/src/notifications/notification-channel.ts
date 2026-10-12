@@ -6,6 +6,7 @@ export const CATEGORY_CHANNEL_MAP: Record<NotificationCategory, string> = {
   life_group: 'paz_life_group',
   life_group_study: 'paz_life_group_study',
   life_group_attendance: 'paz_life_group',
+  life_group_task: 'paz_life_group',
   academy: 'paz_academy',
   member_journey: 'paz_member_journey',
   contributions: 'paz_contributions',

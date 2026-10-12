@@ -26,6 +26,8 @@ import br.church.paz.android.ui.features.lifegroupdiscovery.LocationProvider
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListViewModel
+import br.church.paz.android.ui.features.lifegrouptasks.LifeGroupTaskGuideViewModel
+import br.church.paz.android.ui.features.lifegrouptasks.LifeGroupTaskMembersViewModel
 import br.church.paz.android.ui.features.memberjourney.MemberJourneyViewModel
 import br.church.paz.android.ui.features.ministries.AllLifeGroupsViewModel
 import br.church.paz.android.ui.features.ministries.GroupMembersListViewModel
@@ -57,7 +59,7 @@ val androidModule =
         viewModel { (pendingBirthDateLogin: (suspend (String) -> Result<Unit>)?) ->
             OnboardingViewModel(get(), pendingBirthDateLogin)
         }
-        viewModel { HomeViewModel(get(), get(), get()) }
+        viewModel { HomeViewModel(get(), get(), get(), get()) }
         viewModel { AcademyViewModel(get(), get(), get()) }
         viewModel { (videoId: String) -> VideoPlayerViewModel(videoId) }
         viewModel { (courseId: String) -> CourseDetailViewModel(courseId, get()) }
@@ -78,7 +80,7 @@ val androidModule =
         viewModel { SearchViewModel(get(), get(), get(), get()) }
         viewModel { MinistriesViewModel(get(), get(), get()) }
         viewModel { (ministryId: String) -> MinistryDetailViewModel(ministryId, get(), get()) }
-        viewModel { (lifeGroupId: String) -> LifeGroupDetailViewModel(lifeGroupId, get(), get()) }
+        viewModel { (lifeGroupId: String) -> LifeGroupDetailViewModel(lifeGroupId, get(), get(), get()) }
         viewModel { LifeGroupsViewModel(get()) }
         viewModel { AllLifeGroupsViewModel(get()) }
         viewModel { LifeGroupDiscoveryViewModel(get(), get()) }
@@ -95,6 +97,8 @@ val androidModule =
             LifeGroupAttendanceEditorViewModel(lifeGroupId, date, get())
         }
         viewModel { (lifeGroupId: Int?) -> LifeGroupAnalyticsViewModel(lifeGroupId, get()) }
+        viewModel { (assignmentId: String) -> LifeGroupTaskGuideViewModel(assignmentId, get()) }
+        viewModel { (lifeGroupId: Int) -> LifeGroupTaskMembersViewModel(lifeGroupId, get()) }
         viewModel { CasaDePazAnalyticsViewModel(get()) }
         viewModel { ReportsListViewModel(get()) }
         viewModel { CasaDePazLessonsListViewModel(get()) }

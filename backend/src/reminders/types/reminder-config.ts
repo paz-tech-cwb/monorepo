@@ -2,7 +2,8 @@ export type ReminderRuleType =
   | 'form_report'
   | 'event'
   | 'member_journey'
-  | 'life_group_attendance';
+  | 'life_group_attendance'
+  | 'life_group_tasks';
 
 export interface FormReminderEntry {
   form_slug: string; // e.g. 'life-group-reports'
@@ -42,11 +43,27 @@ export interface LifeGroupAttendanceReminderConfig {
   // category is always 'life_group_attendance' — hardcoded at dispatch time
 }
 
+export interface LifeGroupTasksReminderConfig {
+  // Days before the group's meeting at which the rule fires, e.g. [3, 1].
+  // The LARGEST offset generates (idempotently) and notifies the assignees;
+  // smaller offsets only remind members already assigned (and not declined),
+  // they never generate or re-roll.
+  days_before_meeting: number[];
+  hour: number; // 0-23, church timezone
+  title: string; // first notification (assignment)
+  message: string; // "{task}" is replaced by the task name when present
+  reminder_title: string; // follow-up reminder at the smaller offsets
+  reminder_message: string; // "{task}" is replaced by the task name
+  // category is always 'life_group_task' and the deep link is
+  // paz://tarefa/{assignmentId} — hardcoded at dispatch time
+}
+
 export type ReminderConfig =
   | FormReportReminderConfig
   | EventReminderConfig
   | MemberJourneyReminderConfig
-  | LifeGroupAttendanceReminderConfig;
+  | LifeGroupAttendanceReminderConfig
+  | LifeGroupTasksReminderConfig;
 
 export const DEFAULT_CONFIGS: Record<ReminderRuleType, ReminderConfig> = {
   form_report: {
@@ -104,4 +121,69 @@ export const DEFAULT_CONFIGS: Record<ReminderRuleType, ReminderConfig> = {
     message:
       'A reunião do seu Life Group já começou. Não se esqueça de lançar a presença dos membros.',
   },
+  life_group_tasks: {
+    days_before_meeting: [3, 1],
+    hour: 9,
+    title: 'Sua tarefa no Life Group',
+    message:
+      'Você foi sorteado(a) para "{task}" no próximo Life Group. Toque para ver o guia.',
+    reminder_title: 'Lembrete: sua tarefa no Life Group',
+    reminder_message:
+      'Não esqueça: você ficou com "{task}" no Life Group. Toque para rever o guia.',
+  },
 };
+
+/**
+ * Returns an error message when `config` is not valid for `type`, else null.
+ * Only `life_group_tasks` has structural constraints worth enforcing here
+ * (the evaluator also sanitizes defensively); other types keep accepting any
+ * object, as before.
+ */
+export function validateReminderConfig(
+  type: ReminderRuleType,
+  config: unknown,
+): string | null {
+  if (type !== 'life_group_tasks') return null;
+  const cfg = config as Partial<LifeGroupTasksReminderConfig> | null;
+  if (!cfg || typeof cfg !== 'object') return 'config must be an object';
+  const offsets = cfg.days_before_meeting;
+  if (
+    !Array.isArray(offsets) ||
+    offsets.length === 0 ||
+    !offsets.every((n) => Number.isInteger(n) && n >= 0 && n <= 30)
+  ) {
+    return 'days_before_meeting must be a non-empty array of integers 0-30';
+  }
+  const hour = cfg.hour;
+  if (
+    typeof hour !== 'number' ||
+    !Number.isInteger(hour) ||
+    hour < 0 ||
+    hour > 23
+  ) {
+    return 'hour must be an integer 0-23';
+  }
+  return null;
+}
+
+/**
+ * Stored `life_group_tasks` config merged with the defaults (legacy rows may
+ * lack some keys). Shared by the evaluator and by the manual-generate push.
+ */
+export function resolveLifeGroupTasksConfig(
+  config: unknown,
+): LifeGroupTasksReminderConfig {
+  const defaults =
+    DEFAULT_CONFIGS.life_group_tasks as LifeGroupTasksReminderConfig;
+  const cfg = (config ?? {}) as Partial<LifeGroupTasksReminderConfig>;
+  return {
+    days_before_meeting: Array.isArray(cfg.days_before_meeting)
+      ? cfg.days_before_meeting
+      : defaults.days_before_meeting,
+    hour: typeof cfg.hour === 'number' ? cfg.hour : defaults.hour,
+    title: cfg.title || defaults.title,
+    message: cfg.message || defaults.message,
+    reminder_title: cfg.reminder_title || defaults.reminder_title,
+    reminder_message: cfg.reminder_message || defaults.reminder_message,
+  };
+}

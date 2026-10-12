@@ -127,6 +127,14 @@ sealed class Screen(
             if (lifeGroupId != null) "life_group_analytics?lifeGroupId=$lifeGroupId" else "life_group_analytics"
     }
 
+    data object LifeGroupTaskGuide : Screen("life_group_task/{assignmentId}") {
+        fun createRoute(assignmentId: String) = "life_group_task/$assignmentId"
+    }
+
+    data object LifeGroupTaskMembers : Screen("life_group_task_members/{lifeGroupId}") {
+        fun createRoute(lifeGroupId: String) = "life_group_task_members/$lifeGroupId"
+    }
+
     data object CasaDePazAnalytics : Screen("casa_de_paz_analytics")
 
     data object ReportsList : Screen("reports_list")
