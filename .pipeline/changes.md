@@ -326,3 +326,9 @@ Arnold, from Malcolm's `.pipeline/review.md`.
 - Minor 7: iOS `LifeGroupReportDetailViewModel.load` resets `isLoading` on cancellation (the next `.task` run sets it again).
 - Minor 8: no change. `canManage` (Android `LifeGroupDetailUiState` and iOS `MinistryDetailView`) is still read by `onManageTap` / the manage entry, so it is not unused.
 - Minor 9 (Postman): no life-group-reports entry exists in `.ai/apps/postman-files.md` and no collection exists in the repo, so nothing was updated. The spec's Postman deliverable remains not done.
+
+## Pilot readiness: study push, Membros icon, rotating tasks (Owen)
+
+- B backend: migration `1795900000005-AddLifeGroupStudyNotificationCategory` (enum value `life_group_study` was missing from every migration). `LifeGroupStudyAccessService.resolveNotificationRecipients(excludeUserId)` now returns roster members + leaders + co-leaders + leadership roles (deduped, publisher excluded); `canPublish` matches `leader_id` as well as `co_leader_id`. Study push stores `segment.filters.user_ids`. Controller create/update/delete lost `@Roles(...LEADERSHIP_ROLES)` (service `canPublish` decides, so grant holders / `member`-role leaders are no longer 403'd). Update/delete require the owner to still hold publish rights. No mobile change needed: both apps already parse `paz://estudo-do-life/{id}` (tests exist).
+- C: people icon on the "Membros" row: iOS `MinistryDetailView.swift` (ministry + life group), Android `MinistryDetailScreen.kt` (ministry row; the Android life group screen has no Membros row).
+- D: evaluator d1 pass generates when a meeting has no assignment rows (late setup). Docs: starter template list in `.ai/features/life-groups.md`.

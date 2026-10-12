@@ -273,3 +273,11 @@ Test log noise (`localhost:3001` connection refused) comes from the hosted app l
 | `./gradlew :shared:iosSimulatorArm64Test :shared:assembleSharedDebugXCFramework` | BUILD SUCCESSFUL (import reorder only in shared) |
 | `xcodebuild -scheme PazChurch -destination TestPhone CODE_SIGNING_ALLOWED=NO test` (JAVA_HOME set for the Gradle build phase) | TEST SUCCEEDED: 32 tests, 0 failures, with `nonisolated static canViewGroupReports` called from non-isolated tests. Temporary fake `GoogleService-Info.plist` (39-char API key) deleted afterwards, gitignored, never committed. |
 | Android (`testDebugUnitTest`, assemble, ktlint) | NOT RUN (no SDK); cross-read. New test `failed refresh keeps the loaded list and emits a transient error`; exhaustive `when` over `LifeGroupReportsEffect` only exists in `LifeGroupReportsScreen` (ShowError branch added). |
+
+## Pilot readiness (study push, tasks late setup) - Owen
+
+- `npx jest src/life-group-studies src/reminders`: PASS (study specs 34 incl. new audience, publish-once, assigned-writer, controller no-@Roles; evaluator specs +2 late-setup).
+- Full jest: 6 failed suites (same baseline: auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens), 73 passed; 545 tests pass, 5 fail (baseline).
+- `nest build` OK; eslint clean on touched files; prettier --check clean.
+- Migration chain on throwaway embedded Postgres 17.5 (new scratchpad dir, port 54891, loopback only, stopped with pg_ctl): full chain incl. `1795900000005` PASS; enum values `...,life_group_attendance,life_group_task,life_group_study`; second `run` = "No migrations are pending". Defect reproduced on a second DB built without the new migration: `select 'life_group_study'::notification_category_enum` -> `invalid input value for enum`; after running the new migration it succeeds (upgrade path).
+- Mobile: `swiftc -parse` OK on `MinistryDetailView.swift`; xcodebuild and Android (no SDK) not run for the icon-only change; Android cross-read (`Icons.Outlined.People` is in material-icons-extended, same artifact as the already-imported `Groups`/`BarChart`).
