@@ -196,6 +196,23 @@ struct LifeGroupDetailView: View {
         return lifeGroup.leaderId?.int32Value == userId || lifeGroup.coLeaderId?.int32Value == userId
     }
 
+    /// Who sees the "Relatórios" and "Relatórios semanais" entries: this group's own
+    /// leader/co-leader (by id, so a co-leader whose role slug is `member` still qualifies) or an
+    /// admin/pastor/area leader/sector leader (the client cannot know their scope; the backend
+    /// answers 403/404 for out-of-scope groups). A `life_group_leader` of ANOTHER group, plain
+    /// members, disciplers and guests never see them. Pure and non-private for unit tests.
+    nonisolated static func canViewGroupReports(role: UserRole?, isGroupLeadership: Bool) -> Bool {
+        isGroupLeadership
+            || role == .admin
+            || role == .pastor
+            || role == .areaLeader
+            || role == .sectorLeader
+    }
+
+    private var canViewGroupReports: Bool {
+        Self.canViewGroupReports(role: authCoordinator.currentUser?.role, isGroupLeadership: canManageAttendance)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
@@ -230,10 +247,11 @@ struct LifeGroupDetailView: View {
                                 InfoRowView(icon: "person.fill", label: "Líder", value: leader)
                             }
                             if lifeGroup.meetingDay != nil || lifeGroup.meetingTime != nil {
-                                let meetingStr = [lifeGroup.meetingDay, lifeGroup.meetingTime]
-                                    .compactMap { $0 }
-                                    .joined(separator: " às ")
-                                InfoRowView(icon: "calendar", label: "Reunião", value: meetingStr)
+                                if let meetingStr = lifeGroupMeetingLabel(
+                                    day: lifeGroup.meetingDay, time: lifeGroup.meetingTime
+                                ) {
+                                    InfoRowView(icon: "calendar", label: "Reunião", value: meetingStr)
+                                }
                             }
                             if let location = lifeGroup.location, !location.isEmpty {
                                 InfoRowView(icon: "mappin.circle.fill", label: "Endereço", value: location)
@@ -403,7 +421,32 @@ struct LifeGroupDetailView: View {
                         .buttonStyle(.plain)
                     }
 
-                    if canManage || canManageAttendance {
+                    if canViewGroupReports {
+                        NavigationLink {
+                            LifeGroupReportsView(
+                                lifeGroupId: Int32(lifeGroup.id),
+                                repository: IosAppContainer.shared.lifeGroupReportRepository
+                            )
+                        } label: {
+                            HStack(spacing: PazSpacing.md) {
+                                Image(systemName: "doc.text.fill")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(PazColors.accent)
+                                Text("Relatórios semanais")
+                                    .font(PazTypography.titleSmall)
+                                    .foregroundColor(PazColors.ink)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(PazSpacing.lg)
+                            .glassCard(radius: PazSpacing.cardRadiusCompact)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if canViewGroupReports {
                         NavigationLink {
                             LifeGroupAnalyticsView(
                                 lifeGroupId: Int32(lifeGroup.id),

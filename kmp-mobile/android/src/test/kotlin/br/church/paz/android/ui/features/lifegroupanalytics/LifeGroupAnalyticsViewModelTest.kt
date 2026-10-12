@@ -157,4 +157,20 @@ class LifeGroupAnalyticsViewModelTest {
             assertNotNull(viewModel.uiState.value.attendanceRows)
             assertNull(viewModel.uiState.value.attendanceError)
         }
+
+    @Test
+    fun `opening with a life group id scopes the screen to that group`() =
+        runTest {
+            coEvery { analyticsRepository.getAttendance(any(), any(), any(), any()) } returns emptyAttendance
+            coEvery { analyticsRepository.getDistribution(any()) } returns emptyDistribution
+            coEvery { analyticsRepository.getOverview() } returns overview
+
+            val scoped = LifeGroupAnalyticsViewModel(7, analyticsRepository)
+            val general = LifeGroupAnalyticsViewModel(null, analyticsRepository)
+            testScheduler.advanceUntilIdle()
+
+            assertTrue(scoped.uiState.value.isScopedToGroup)
+            assertEquals(7, scoped.uiState.value.lifeGroupId)
+            assertFalse(general.uiState.value.isScopedToGroup)
+        }
 }

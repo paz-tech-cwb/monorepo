@@ -173,6 +173,38 @@ Clients: admin-ui "Tarefas do Life" page (templates) plus a "Tarefas" panel on
 life groups; mobile task guide screen, "Minhas tarefas" card on life group
 detail, and leader-only "Elegibilidade para tarefas" screen. Deep link: `paz://tarefa/{assignmentId}`.
 
+## Weekly life group reports (read API)
+
+Form `life-group-reports` (`src/life-group-reports`, entity `life_group_reports`).
+Read endpoints used per group by mobile (read-only list/detail):
+
+- `GET /api/forms/life-group-reports?life_group_id=<int>` (param optional) —
+  newest first (`created_at` DESC), soft-deleted excluded.
+- `GET /api/forms/life-group-reports/:id` and `/:id/audit`.
+
+Authorization (service level; `ScopeGuard` only resolves the scope): visible
+groups = form scope (admin/pastor unrestricted, area/sector leader scope,
+`life_group_leader` scope) PLUS every group where the viewer is `leader_id` or
+`co_leader_id` (so a co-leader with role `member` works, and a leader of two
+groups sees both). `life_group_id` outside that set => 403 (same as analytics).
+`GET :id` and `:id/audit` answer 404 (not 403) when the report's group is not
+visible (same rule as the list; being the submitter grants no extra read access).
+`/:id/audit` is mapped to the admin-ui `AuditLogEntry` shape
+(`id, form_slug, submission_id, action, diff, created_at, actor:{id,name}`); the
+actor `User` entity is never serialized. Create/update/delete policy is
+unchanged (`@Roles` on create still excludes co-leaders with role `member`).
+
+Response is an explicit snake_case object (`toResponse`, controller uses
+`@SerializeOptions({strategy:'exposeAll', excludeExtraneousValues:false})`):
+`id, date, area_id, sector_id, life_group_id, committed_members,
+committed_members_present, kids_0_to_11, guests, mdas, offering (string),
+committed_at_tadel, committed_at_culto, leader_attended[], disciples_count,
+disciples_discipled_this_week, pastoring_activity_type[],
+pastoring_activity_other, training_activity_type[], training_activity_other,
+submitted_by {id,name}|null, created_at, updated_at, deleted_at`. Before this
+fix the raw entity serialized to `{}` under the global serializer
+(characterized in the Phase 0 commit `852e7fa`).
+
 ## Agent notes
 
 - Do not duplicate hierarchy rules in clients if the backend can provide scoped results.

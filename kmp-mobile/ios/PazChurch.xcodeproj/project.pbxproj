@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		42CA3B771426D7A0770A7563 /* LifeGroupReportsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CC9929E4F0DA5A78870527 /* LifeGroupReportsTests.swift */; };
+		9FE88920EB30FCB77097041E /* LifeGroupReportDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB5EC09C73F64250E2350FA6 /* LifeGroupReportDetailView.swift */; };
+		3F99685C6044E69D79B29D35 /* LifeGroupReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32C3F7EC2411EBE8BE7F414 /* LifeGroupReportsView.swift */; };
+		0A3D77FBFA2947F33B50A96E /* LifeGroupReportsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEFFE7517343A243C1E1ACDB /* LifeGroupReportsViewModel.swift */; };
+		7D84EAFFB66F36F34DCC7984 /* LifeGroupHomeCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 995A21848F9DFDCAFC64B4A9 /* LifeGroupHomeCard.swift */; };
 		D5E0E520DC3A7B939E8F2110 /* LifeGroupTaskMembersViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B171DEE2C8BD7B9723EC438 /* LifeGroupTaskMembersViewModel.swift */; };
 		4124D5D23C6992CAB01A7E10 /* LifeGroupTaskMembersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1F07E7BEE9EBD1CF5A9D03E /* LifeGroupTaskMembersView.swift */; };
 		E54344F263AF3B1273BB6BD0 /* LifeGroupMyTasksCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D731842510D379048D76FFE /* LifeGroupMyTasksCard.swift */; };
@@ -162,6 +167,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C9CC9929E4F0DA5A78870527 /* LifeGroupReportsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportsTests.swift; sourceTree = "<group>"; };
+		FB5EC09C73F64250E2350FA6 /* LifeGroupReportDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportDetailView.swift; sourceTree = "<group>"; };
+		C32C3F7EC2411EBE8BE7F414 /* LifeGroupReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportsView.swift; sourceTree = "<group>"; };
+		DEFFE7517343A243C1E1ACDB /* LifeGroupReportsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportsViewModel.swift; sourceTree = "<group>"; };
+		995A21848F9DFDCAFC64B4A9 /* LifeGroupHomeCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupHomeCard.swift; sourceTree = "<group>"; };
 		8B171DEE2C8BD7B9723EC438 /* LifeGroupTaskMembersViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskMembersViewModel.swift; sourceTree = "<group>"; };
 		B1F07E7BEE9EBD1CF5A9D03E /* LifeGroupTaskMembersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskMembersView.swift; sourceTree = "<group>"; };
 		7D731842510D379048D76FFE /* LifeGroupMyTasksCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupMyTasksCard.swift; sourceTree = "<group>"; };
@@ -404,6 +414,7 @@
 				4572C86A42A72B7ABC777BAE /* LifeGroupAnalytics */,
 				80CCBF76E3B5369901F0DAC9 /* LifeGroupAttendance */,
 				744A2D117CBCEF98E72B91EC /* LifeGroupTasks */,
+				119E252E2E5C14B209388E46 /* LifeGroupReports */,
 				7AC12741EED7CF558368863F /* LifeGroupStudy */,
 				F1CD9530F50CB5214AE5DF32 /* MemberJourney */,
 				36D27ED148027B3DCC6FD3CF /* Ministries */,
@@ -529,6 +540,16 @@
 			path = LifeGroupAttendance;
 			sourceTree = "<group>";
 		};
+		119E252E2E5C14B209388E46 /* LifeGroupReports */ = {
+			isa = PBXGroup;
+			children = (
+				FB5EC09C73F64250E2350FA6 /* LifeGroupReportDetailView.swift */,
+				C32C3F7EC2411EBE8BE7F414 /* LifeGroupReportsView.swift */,
+				DEFFE7517343A243C1E1ACDB /* LifeGroupReportsViewModel.swift */,
+			);
+			path = LifeGroupReports;
+			sourceTree = "<group>";
+		};
 		744A2D117CBCEF98E72B91EC /* LifeGroupTasks */ = {
 			isa = PBXGroup;
 			children = (
@@ -563,6 +584,7 @@
 		9583323C0C4D778E6E30C67E /* Home */ = {
 			isa = PBXGroup;
 			children = (
+				995A21848F9DFDCAFC64B4A9 /* LifeGroupHomeCard.swift */,
 				A6CF7432C3804DACAD979BE9 /* HomeView.swift */,
 				C0E0ECD6F71C3A9C1F38E441 /* HomeViewModel.swift */,
 			);
@@ -703,6 +725,7 @@
 		A11CE57100000000000001F4 /* PazChurchTests */ = {
 			isa = PBXGroup;
 			children = (
+				C9CC9929E4F0DA5A78870527 /* LifeGroupReportsTests.swift */,
 				A11CE5710000000000000001 /* DeepLinkDestinationTests.swift */,
 				A11CE5710000000000000002 /* LifeGroupTaskMarkdownTests.swift */,
 				A11CE5710000000000000003 /* HomeViewModelTests.swift */,
@@ -899,6 +922,10 @@
 				C144F3BA85753AE6A686AFD0 /* GlassBlurBackground.swift in Sources */,
 				9B35B93C7F743C40EC9D2013 /* GlassCard.swift in Sources */,
 				214CF4956D0B65E1AFA723F8 /* HomeView.swift in Sources */,
+				7D84EAFFB66F36F34DCC7984 /* LifeGroupHomeCard.swift in Sources */,
+				0A3D77FBFA2947F33B50A96E /* LifeGroupReportsViewModel.swift in Sources */,
+				3F99685C6044E69D79B29D35 /* LifeGroupReportsView.swift in Sources */,
+				9FE88920EB30FCB77097041E /* LifeGroupReportDetailView.swift in Sources */,
 				81241EF8344367972B2409AF /* HomeViewModel.swift in Sources */,
 				DF21AEDC064DBA45469FB713 /* InteractivePopGestureDisabler.swift in Sources */,
 				C81CB606C64CB0B6AA3D8743 /* KeychainService.swift in Sources */,
@@ -973,6 +1000,7 @@
 			files = (
 				A11CE5710000000000000065 /* DeepLinkDestinationTests.swift in Sources */,
 				A11CE5710000000000000066 /* LifeGroupTaskMarkdownTests.swift in Sources */,
+				42CA3B771426D7A0770A7563 /* LifeGroupReportsTests.swift in Sources */,
 				A11CE5710000000000000067 /* HomeViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

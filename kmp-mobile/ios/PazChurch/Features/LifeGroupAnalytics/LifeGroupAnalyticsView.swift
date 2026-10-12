@@ -252,6 +252,14 @@ struct LifeGroupAnalyticsView: View {
                 }
             }
 
+            if !viewModel.isScopedToGroup {
+                groupPicker
+            }
+        }
+    }
+
+    private var groupPicker: some View {
+        Group {
             Menu {
                 Button("Todos os grupos") {
                     viewModel.lifeGroupId = nil

@@ -16,6 +16,9 @@ data class LifeGroupAnalyticsUiState(
     val year: Int,
     val month: Int? = null,
     val lifeGroupId: Int? = null,
+    // True when opened from a life group's detail (a `lifeGroupId` was supplied): the report is
+    // locked to that group, so the group dropdown is hidden and cannot widen the scope.
+    val isScopedToGroup: Boolean = false,
     // Populated from the scoped `overview.lifeGroups`, not the unscoped
     // GET /api/life-groups, so this dropdown can never offer a group that
     // 403s on attendance/distribution.

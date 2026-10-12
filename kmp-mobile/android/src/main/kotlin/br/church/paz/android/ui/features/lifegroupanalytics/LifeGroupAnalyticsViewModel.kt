@@ -23,7 +23,11 @@ class LifeGroupAnalyticsViewModel(
 ) : ViewModel() {
     private val _uiState =
         MutableStateFlow(
-            LifeGroupAnalyticsUiState(year = LocalDate.now().year, lifeGroupId = initialLifeGroupId),
+            LifeGroupAnalyticsUiState(
+                year = LocalDate.now().year,
+                lifeGroupId = initialLifeGroupId,
+                isScopedToGroup = initialLifeGroupId != null,
+            ),
         )
     val uiState: StateFlow<LifeGroupAnalyticsUiState> = _uiState.asStateFlow()
 
