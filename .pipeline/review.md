@@ -87,3 +87,30 @@ None.
 
 ### Verdict (round 2): REQUEST CHANGES, one small item
 No blockers. One major (M3) that only bites already-migrated non-prod databases and is a few lines to harden (or a one-line confirmation that nothing ran the old revision). Everything else is minor/optional. After M3 is addressed (or waived by confirmation) and Sattler's node/gradle/Xcode runs are green, this is SHIP.
+
+## Round 3 (Malcolm) - 55a4b99 and everything after (6467fc4, 219b262, e57a68c, 5b8f82c)
+
+Ran read-only: `jest src/life-group-tasks src/reminders` = 16 suites / 147 tests pass; `prettier --check` clean; `eslint src/life-group-tasks src/reminders/evaluators` clean for every file touched by this branch (only 2 errors-files: `event-reminder.evaluator.spec.ts`, `form-report-reminder.evaluator.spec.ts`, both byte-identical to main, pre-existing, not ours).
+
+### Blockers
+None.
+
+### Major
+None.
+
+### Minor
+- [m22] [iOS cancellation] `HomeViewModel.swift` ~L72-80: `catch is CancellationError` only catches Swift-side cancellation. A cancelled `.task` while awaiting the Kotlin suspend `getMyTasks()` usually surfaces as an NSError wrapping a Kotlin `CancellationException`, not `CancellationError`, so the card can still be cleared. Fix: in the generic catch use `if Task.isCancelled { return }` before `myTasks = []`. Low impact (view is going away).
+- [m23] [evaluator partial failure] Group claim is kept when at least one item was sent, so an assignment whose push threw (its per-assignment claim is released, `notified_at` NULL) is not retried by the evaluator at that offset. It is still picked up by a later manual generate, and a d-smaller run sends `remindAssignee` (reminded_at path). Acceptable and consistent with the stated semantic (all-failed -> release/retry; partial -> keep). Document in changes.md; no code change required. Same for the remind branch.
+- [m24] [notifyGenerated] Logic verified: `today.hour < cfg.hour` uses `zonedParts(new Date())` (church TZ, same source as evaluator `nowZoned.hour !== cfg.hour`). Only `meetingDate === latest` is deferred; smaller-offset days still push now (correct, evaluator does not generate for them). At/after hour it pushes, deduped by the shared `notified_at` claim, so an evaluator that already ran never double-sends. Residual edge: if the scheduler misses the exact configured hour (downtime), a manual generate done before that hour is never pushed at the largest offset (evaluator only matches `hour ===`); later d-1 reminder still goes. Accept.
+- [m25] [migration] Order is now correct (ALTER ADD COLUMN `grandfathered`/`declined_user_ids` and the reason-cleanup UPDATE before the grandfather INSERT; FK re-create guard is idempotent via `confdeltype <> 'c'`; INSERT `ON CONFLICT DO NOTHING`; `down()` drops `joined_at`, `reminder_rules` row and all tables, `joined_at` exists only in this migration). Two notes only: (a) the cleanup UPDATE sets `grandfathered=true` for the marker row regardless of `eligible`; harmless (grandfathered only blocks reset-to-auto). (b) if an env that ran an older revision is re-run through this one, the INSERT would also grandfather members who joined in between; only matters for unrecorded dev DBs.
+- [m26] [CI] `.github/workflows/ci-kmp-mobile.yml` ~L91-100 still says no test target exists and keeps the `xcodebuild test` step commented out; now stale. Optionally enable it (needs simulator + XCFramework already built in that job). Build step (`-scheme PazChurch build`) is unaffected: BuildAction unchanged, test target is only a Testable, no signing/team settings added (`CODE_SIGN_STYLE=Automatic`, no DEVELOPMENT_TEAM on the test target, CI passes CODE_SIGNING_REQUIRED=NO).
+- [m27] [repo hygiene, pre-existing] `kmp-mobile/ios/PazChurch.xcodeproj/**/xcuserdata/jonathalima.xcuserdatad/*` is tracked (not added by this branch). Consider `git rm --cached` and ignoring; out of scope.
+
+### Verified OK
+- Evaluator: all-failed releases claim (`return` inside try -> finally releases), partial keeps it, empty `pending` in generate path keeps claim (already notified) and in remind path releases; `processed = sent` log is accurate. Reassign push wrapped (m13), Kotlin DTO/domain `joinedAt` nullable with default and `@SerialName("joined_at")` matching backend; admin-ui type updated; roster SQL now binds `CHURCH_TIME_ZONE` as `$2`.
+- Specs: the only casts are `as unknown` on `expect.*` asymmetric matchers, `as { id: string }` on mock call args and `as number` on `where.id`; none hide a type bug (all in test mocks, runtime asserted). No `eslint-disable`, no `any`.
+- pbxproj/project.yml/scheme: 24-hex ids unique (A11CE571... namespace, no collision with existing), 3 file refs/3 build files/Sources/Frameworks/Resources phases/group/Products entry/TestTargetID/target dependency+proxy/config list all cross-referenced correctly; scheme Testable BlueprintIdentifier matches the target; host settings (TEST_HOST, BUNDLE_LOADER, deployment 26.0, Swift 5.9, same debug XCFramework search path as the app) match project.yml. No Info.plist, team id, secrets or provisioning added. `GoogleService-Info.plist` is gitignored and not tracked; only `.example` exists.
+- iOS `.auto_` rename matches Kotlin/Native export of `auto`.
+
+### Verdict (round 3): SHIP
+No blockers or majors. m22 is a one-line optional hardening; the rest are accept/document.

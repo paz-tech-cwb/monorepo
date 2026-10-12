@@ -260,3 +260,7 @@ Left as follow-ups: m2 (preview vs mobile markdown subset), m3 (no notification 
 - Docs: `.ai/features/notifications.md`, `.ai/features/life-groups.md` updated.
 
 - [M3 re-fix] migration 1795900000004: defensive upgrade block moved before the grandfather INSERT (it referenced the `grandfathered` column before the ADD COLUMN on earlier-revision DBs); verified on a real Postgres, see `.pipeline/test-results.md` "Migration test (throwaway Postgres)". Replaces the earlier "not exercised against a live Postgres" note.
+
+## Round 3
+- Malcolm round 3: SHIP (no blockers/majors). m22 (iOS home cancellation via Task.isCancelled) and m26 (stale CI comment) fixed.
+- Accepted: m23 (partial evaluator failure keeps group claim; failed item not retried at that offset, smaller-offset reminder or manual generate still reaches it), m24 (if the scheduler misses the exact hour tick, a pre-hour manual generate at the largest offset gets no push; d-1 reminder still goes), m25 (re-running 1795900000004 on an old-revision DB grandfathers members who joined in between; unrecorded dev DBs only), m27 (tracked xcuserdata predates branch).

@@ -76,6 +76,9 @@ class HomeViewModel {
             // View task cancelled: keep the current card instead of clearing it.
             return
         } catch {
+            // A Kotlin CancellationException surfaces as an NSError, not
+            // CancellationError: keep the current card in that case too.
+            if Task.isCancelled { return }
             myTasks = []
         }
     }
