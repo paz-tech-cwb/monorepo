@@ -125,6 +125,14 @@ data class LifeGroup(
     // null = viewer isn't allowed to see the roster (not this group's
     // member/leader/admin); empty list = visible and genuinely has no members.
     val members: List<LifeGroupMember>? = null,
+    // Only sent by `GET /life-groups/me` (viewer-relative). One of "leader",
+    // "co_leader", "supervisor" (group sits under an area/sector the viewer
+    // leads or co-leads) or "member"; null on every other endpoint and from
+    // older backends. Treat unknown values like null.
+    val relationship: String? = null,
+    // True when the viewer supervises this group via area/sector, even if a
+    // stronger relationship (leader/co_leader) is reported.
+    @SerialName("is_supervised") val isSupervised: Boolean = false,
 )
 
 @Serializable
