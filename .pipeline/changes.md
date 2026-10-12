@@ -258,3 +258,5 @@ Left as follow-ups: m2 (preview vs mobile markdown subset), m3 (no notification 
 - [m14 fixed] `notifyGenerated` (`life-group-task-notifications.service.ts`) now also skips notices whose meeting is the largest-offset day when the current America/Sao_Paulo hour is before the rule's `hour` (the evaluator still runs later today; `notified_at` stays NULL). At/after the hour the push goes out as before. Specs added (fake timers: 08:00 skip, 08:00 mixed window, 09:30 push).
 - Evaluator spec: new per-assignment failure block (one notify throws -> others still sent, group claim kept; all fail -> claim released; nothing pending -> claim kept; remind loop continues after a throw).
 - Docs: `.ai/features/notifications.md`, `.ai/features/life-groups.md` updated.
+
+- [M3 re-fix] migration 1795900000004: defensive upgrade block moved before the grandfather INSERT (it referenced the `grandfathered` column before the ADD COLUMN on earlier-revision DBs); verified on a real Postgres, see `.pipeline/test-results.md` "Migration test (throwaway Postgres)". Replaces the earlier "not exercised against a live Postgres" note.

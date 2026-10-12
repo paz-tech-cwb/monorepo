@@ -99,26 +99,9 @@ export class CreateLifeGroupTasks1795900000004 implements MigrationInterface {
       )
     `);
 
-    // Join date for display/audit. Existing rows get the migration date; new
-    // joins (TypeORM many-to-many inserts only user_id/life_group_id) get now().
-    await queryRunner.query(`
-      ALTER TABLE "user_life_groups"
-        ADD COLUMN IF NOT EXISTS "joined_at" timestamptz NOT NULL DEFAULT now()
-    `);
-
-    // Grandfather every existing member: explicit eligible=true (flagged with
-    // the dedicated "grandfathered" column, leaving the leader note empty) so
-    // the "3 present meetings" rule only applies to members who join later.
-    await queryRunner.query(`
-      INSERT INTO "life_group_task_member_settings"
-        ("life_group_id", "user_id", "eligible", "grandfathered")
-      SELECT "life_group_id", "user_id", true, true
-      FROM "user_life_groups"
-      ON CONFLICT ("life_group_id", "user_id") DO NOTHING
-    `);
-
     // Defensive upgrade for databases that ran an earlier revision of this
-    // migration (CREATE TABLE IF NOT EXISTS above is a no-op for them).
+    // migration (CREATE TABLE IF NOT EXISTS above is a no-op for them). Must run
+    // BEFORE the grandfather INSERT below, which uses the "grandfathered" column.
     await queryRunner.query(`
       ALTER TABLE "life_group_task_assignments"
         ADD COLUMN IF NOT EXISTS "declined_user_ids" int[] NOT NULL DEFAULT '{}'
@@ -159,6 +142,24 @@ export class CreateLifeGroupTasks1795900000004 implements MigrationInterface {
         END IF;
       END
       $$
+    `);
+
+    // Join date for display/audit. Existing rows get the migration date; new
+    // joins (TypeORM many-to-many inserts only user_id/life_group_id) get now().
+    await queryRunner.query(`
+      ALTER TABLE "user_life_groups"
+        ADD COLUMN IF NOT EXISTS "joined_at" timestamptz NOT NULL DEFAULT now()
+    `);
+
+    // Grandfather every existing member: explicit eligible=true (flagged with
+    // the dedicated "grandfathered" column, leaving the leader note empty) so
+    // the "3 present meetings" rule only applies to members who join later.
+    await queryRunner.query(`
+      INSERT INTO "life_group_task_member_settings"
+        ("life_group_id", "user_id", "eligible", "grandfathered")
+      SELECT "life_group_id", "user_id", true, true
+      FROM "user_life_groups"
+      ON CONFLICT ("life_group_id", "user_id") DO NOTHING
     `);
 
     // Seeded enabled by default. The enum value is added in
