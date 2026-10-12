@@ -125,4 +125,67 @@ class PushNotificationHelperTest {
     fun `returns null for malformed scheme`() {
         assertNull(PushNotificationHelper.parseDeepLink("not-a-deep-link"))
     }
+
+    @Test
+    fun `routeFromExtras resolves the attendance route from FCM data extras`() {
+        // Same shape the FCM SDK puts on the launcher Intent for a background/killed tap.
+        val extras = mapOf("deep_link" to "paz://presenca/42/2026-10-05", "channel_id" to "paz_life_group")
+        assertEquals(
+            "life_group_attendance_editor/42/2026-10-05",
+            PushNotificationHelper.routeFromExtras { extras[it] },
+        )
+    }
+
+    @Test
+    fun `routeFromExtras resolves every pilot category`() {
+        val cases =
+            mapOf(
+                "paz://presenca/7/2026-01-04" to "life_group_attendance_editor/7/2026-01-04",
+                "paz://tarefa/abc-1" to "life_group_task/abc-1",
+                "paz://estudo-do-life/s-1" to "life_group_study_detail/s-1",
+                "paz://form/relatorio-semanal" to "form_detail/relatorio-semanal",
+                "paz://agenda/9" to "agenda_detail/9",
+                "paz://journey" to "member_journey",
+            )
+        cases.forEach { (deepLink, route) ->
+            val extras = mapOf("deep_link" to deepLink)
+            assertEquals(route, PushNotificationHelper.routeFromExtras { extras[it] }, deepLink)
+        }
+    }
+
+    @Test
+    fun `routeFromExtras accepts the camelCase key`() {
+        val extras = mapOf("deepLink" to "paz://tarefa/abc-1")
+        assertEquals("life_group_task/abc-1", PushNotificationHelper.routeFromExtras { extras[it] })
+    }
+
+    @Test
+    fun `routeFromExtras returns null without a deep link extra`() {
+        val extras = mapOf("channel_id" to "paz_events")
+        assertNull(PushNotificationHelper.routeFromExtras { extras[it] })
+    }
+
+    @Test
+    fun `routeFromExtras returns null for blank or unknown deep link`() {
+        assertNull(PushNotificationHelper.routeFromExtras { if (it == "deep_link") "  " else null })
+        assertNull(PushNotificationHelper.routeFromExtras { if (it == "deep_link") "paz://nope/1" else null })
+    }
+
+    @Test
+    fun `parseDeepLink trims whitespace and trailing slashes`() {
+        assertEquals(
+            "life_group_attendance_editor/42/2026-10-05",
+            PushNotificationHelper.parseDeepLink(" paz://presenca/42/2026-10-05/ "),
+        )
+        assertEquals("agenda_detail/9", PushNotificationHelper.parseDeepLink("paz://agenda/9/"))
+    }
+
+    @Test
+    fun `returns null for single id links with blank id or extra segments`() {
+        // An unmatched route would crash NavController.navigate.
+        assertNull(PushNotificationHelper.parseDeepLink("paz://agenda/"))
+        assertNull(PushNotificationHelper.parseDeepLink("paz://form/"))
+        assertNull(PushNotificationHelper.parseDeepLink("paz://estudo-do-life//"))
+        assertNull(PushNotificationHelper.parseDeepLink("paz://lifegroup/1/2"))
+    }
 }
