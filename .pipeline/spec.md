@@ -61,21 +61,17 @@ New tables + migration (DB change: migration run in any env is a human gate). Ne
 ## Phases
 B1 migration/entities/engine -> (B2 service/controllers || B3 evaluator/notifications) -> (A1 admin-ui || M1 shared) -> (M2 Android || M3 iOS) -> docs, Sattler, Malcolm, Arnold. Commits per phase on `feat/life-group-rotating-tasks`; PR to `develop` (merge = human gate).
 
-## OPEN QUESTIONS (pipeline stopped here; recommended default in bold)
-1. Timing: **generate + push 3 days before the meeting at 09:00 America/Sao_Paulo**, configurable via reminder rule (days_before_meeting, hour). Alternative: right after the previous meeting.
-2. Pool: **co-leader participates, leader does not** (`include_leader` configurable per rule).
-3. Decline: **members can decline -> auto re-roll excluding them + notify leader and new assignee.** Limit declines per member? (suggest none in v1).
-4. Opt-out: **push not opt-outable** (omitted from CATEGORY_PREF_MAP, like forms/attendance).
-5. Skipped meetings: **leader can skip a date; skipped dates do not count in fairness history** (requires skip table).
-6. New members: **eligible immediately** (fairness uses count so they would be favored next round; confirm that is desired).
-7. Completion: **no "done" confirmation in v1** (status `completed` column reserved but unused).
-13. (New requirement) Mobile leader view to manage eligibility: **admin-ui only in v1** (leaders mostly use mobile, so confirm leaders without admin-ui access are OK, or add a mobile leader screen as a follow-up/extra phase M4).
-14. Auto-exclude inactive: **off by default; N=4 recorded meetings absent; joined-days threshold 0**. There is no per-group join date in `user_life_groups`; may need a `joined_at` column (extra migration) or fall back to `users.membership_date`. Which do you prefer?
-15. Should the excluded member be told? **No**; reason note is leader-only.
-16. When no eligible member exists for a task: **leave unassigned + notify leader.** OK?
-Additional questions raised by code review:
-8. Which roles manage global templates: **admin + pastor** (the `LEADERSHIP_ROLES` set is broader — confirm).
-9. Should leaders also be able to see/edit global template text, or only per-group guidance overrides? **Overrides only.**
-10. Guidance format: **markdown**; confirm mobile may render basic markdown (bold, lists, links) vs plain text in v1.
-11. Reminder if assignee has not opened the guide (e.g. day before)? **No, v1.**
-12. Rollout: existing groups start generating on next evaluator tick after deploy; acceptable, or gate behind rule `is_active=false` until admin enables? **Ship the rule disabled by default.**
+## APPROVED DECISIONS (2026-10-12) — these SUPERSEDE any conflicting text above
+1. Migration adds `joined_at timestamptz NOT NULL DEFAULT now()` to `user_life_groups`; existing rows backfilled to the migration date; new joins get now() (set in the code path(s) that insert into user_life_groups too, verify each).
+2. Global templates managed by `admin` role only (not pastor).
+3. Leaders (leader/co-leader) and admin manage per-member eligibility in admin-ui AND a mobile leader screen. Adds phase M4 (shared repo endpoints + Android + iOS eligibility screen).
+4. Guidance is markdown. Admin editor has live preview; mobile renders markdown (Android + iOS).
+5. Two push offsets: reminder config `days_before_meeting: number[]` default `[3,1]`, `hour: 9`. Offset 3 (first/largest) generates idempotently and notifies assignees; offset 1 only sends a reminder to people ALREADY assigned (and not declined) — it never generates or re-rolls. Dedupe keys per offset: `life_group_tasks:{groupId}:{date}:d{offset}`; also `notified_at` / `reminded_at` columns on assignments (add `reminded_at`). If a reroll/decline creates a new assignee after the offset-3 push, that assignee is notified immediately and still gets the offset-1 reminder.
+6. Leader and co-leader are in the rotation like any member (no `include_leader` config). They are treated as established (not 'new') so they are eligible by default unless explicitly set ineligible.
+7. Eligibility resolution (engine input, resolved by service): explicit `life_group_task_member_settings.eligible` always wins (true or false). Otherwise: leader/co-leader => eligible; members that existed at migration time => eligible (migration inserts explicit eligible=true rows, note 'grandfathered at migration', for every existing `user_life_groups` pair); otherwise a member becomes auto-eligible once they have >= 3 `present=true` entries in `life_group_attendance_entries` for that same life group (configurable per group via `life_group_task_group_settings.min_present_meetings`, default 3). INTERPRETATION TO CONFIRM: "3 weeks of presence" = 3 present attendance records in that group (not 3 consecutive weeks, not 21 days since joining). The earlier auto-exclude-inactive rule and `min_days_since_joined` are DROPPED. `joined_at` is stored for display/audit and future use, not required by the rule.
+8. Reminder rule `life_group_tasks` ships ENABLED by default (seeded active). Production deploy and migration run in any environment remain human gates.
+9. Kept defaults: decline unlimited with auto re-roll + leader notify; push not opt-outable; skip-date table (skipped dates excluded from history); leader may override guidance per group; no 'done' confirmation in v1; no eligible candidate => task unassigned + leader notified; eligibility note is leader-only and never returned to member endpoints; per-template exclusions stay.
+10. Mobile eligibility screen (M4) is reachable from the life group detail for leader/co-leader only; uses `GET/PUT /life-groups/:id/task-members`.
+
+## OPEN QUESTIONS
+Only the interpretation in decision 7 (confirm: 3 present attendance records in the group). All earlier questions are resolved by the decisions above.
