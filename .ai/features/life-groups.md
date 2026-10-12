@@ -74,20 +74,34 @@ group members in rotation. Module: `backend/src/life-group-tasks/`.
   with >= `min_present_meetings` (group setting, default 3) `present=true`
   entries in `life_group_attendance_entries` for that group. Interpretation
   (to be confirmed with product): "3 weeks of presence" = 3 present attendance
-  records, not 3 consecutive weeks and not days since joining. Members existing
-  at migration time were grandfathered with explicit eligible=true rows carrying
-  the system note `grandfathered at migration`; `GET task-members` never returns
-  that note and instead exposes `grandfathered: true`, and clients hide "Voltar ao
-  automático" for those rows (resetting would drop an established member below
-  the presence threshold). A blank note from a client keeps the marker; a real
-  leader note replaces it.
-  `user_life_groups.joined_at` (default now()) is stored for display/audit only.
+  records, not 3 consecutive weeks and not days since joining. Only entries for
+  meetings on or after the member's `user_life_groups.joined_at` (calendar day,
+  America/Sao_Paulo) count, so attendance from a previous stint or from before
+  they joined is ignored; leader/co-leader outside the join table are not
+  filtered. This can only delay auto-eligibility, never grant it earlier.
+  Members existing at migration time were grandfathered with explicit
+  eligible=true rows flagged by the `life_group_task_member_settings.grandfathered`
+  boolean column (no note text). `GET task-members` returns `grandfathered`
+  (from the column), the real leader note in `reason`, and `joined_at` (ISO
+  string or null); clients hide "Voltar ao automático" for grandfathered rows and
+  the server answers 400 to `reset_to_automatic` on them (resetting would drop an
+  established member below the presence threshold). Edits (note, exclusions,
+  eligible=false and back to true) never change the flag: a grandfathered member
+  stays grandfathered; to take them out of the rotation set eligible=false.
   Leader notes on a member are never returned to member endpoints; per-template
   exclusions are supported; `reset_to_automatic` deletes the explicit row.
 - **Decline / re-roll**: members decline unlimited times; the same row gets a
   new assignee (`source=reroll`, notification flags reset) and the new assignee
-  and leader are pushed. If nobody qualifies, decline leaves the row `declined`
-  and notifies the leader. Leaders can re-roll or manually reassign (any active roster member).
+  and leader are pushed. Each decliner is appended to
+  `life_group_task_assignments.declined_user_ids`; decline and leader re-roll
+  never pick the current assignee or anyone in that list again (no A -> B -> A
+  ping-pong). If nobody qualifies, decline leaves the row `declined` and
+  notifies the leader. Leaders can re-roll or manually reassign (any active roster
+  member, including a previous decliner: an explicit leader choice).
+- **Manual generate** (`POST .../tasks/generate`) pushes the newly created
+  assignees (`notified_at IS NULL`) when the meeting is today..today+largest
+  offset (a later meeting is left to the evaluator's offset push); same claim as
+  the evaluator, so nobody is notified twice.
 - **Skip dates**: `life_group_task_skips` marks meeting dates with no tasks; the evaluator ignores them.
 - **Pushes**: reminder rule `life_group_tasks` (enabled by default,
   `days_before_meeting: [3,1]`, `hour: 9`). Largest offset generates and notifies
@@ -100,7 +114,8 @@ Endpoints (prefix `/api`):
 - Member: `GET /me/life-group-tasks`, `GET /me/life-group-tasks/:id`, `POST /me/life-group-tasks/:id/decline`.
 
 Tables (migration `1795900000004-CreateLifeGroupTasks`): templates, overrides,
-assignments, member_settings, group_settings, skips, plus `user_life_groups.joined_at`.
+assignments (incl. `declined_user_ids int[]`), member_settings (incl. `grandfathered`),
+group_settings, skips, plus `user_life_groups.joined_at`.
 Migration `1795900000003-AddLifeGroupTasksEnumValues` adds the enum values
 (separate because Postgres cannot use a new enum value in the same transaction).
 Assignments cascade on `users` delete (account deletion must not fail on task history).

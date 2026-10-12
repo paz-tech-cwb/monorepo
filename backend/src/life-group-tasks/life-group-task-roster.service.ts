@@ -14,7 +14,12 @@ export interface RosterMember {
   user: User;
   isLeader: boolean;
   isCoLeader: boolean;
+  // Present entries counted by the eligibility rule: only meetings on or
+  // after `joinedAt` (see decision 11).
   presentCount: number;
+  // user_life_groups.joined_at, or null for users outside the join table
+  // (e.g. a leader/co-leader who is not listed as a member).
+  joinedAt: Date | null;
   // Explicit per-member setting row, or null when none (= automatic rule).
   setting: LifeGroupTaskMemberSetting | null;
   eligible: boolean;
@@ -29,6 +34,11 @@ export interface LifeGroupRoster {
 interface PresentCountRow {
   user_id: number | string;
   present_count: number | string;
+}
+
+interface JoinedAtRow {
+  user_id: number | string;
+  joined_at: Date | string | null;
 }
 
 @Injectable()
@@ -63,14 +73,35 @@ export class LifeGroupTaskRosterService {
     const settingByUser = new Map<number, LifeGroupTaskMemberSetting>();
     for (const setting of settings) settingByUser.set(setting.userId, setting);
 
+    // Only present=true entries of this group for meetings on or after the
+    // member's join date (church timezone calendar day) count, so stale
+    // attendance from a previous stint (or from before they joined) is
+    // ignored. Users absent from user_life_groups are not filtered.
     const presentRows: PresentCountRow[] = await this.em.query(
       `SELECT e.user_id AS user_id, COUNT(*)::int AS present_count
        FROM life_group_attendance_entries e
        INNER JOIN life_group_attendance a ON a.id = e.attendance_id
-       WHERE a.life_group_id = $1 AND e.present = true
+       LEFT JOIN user_life_groups ulg
+         ON ulg.user_id = e.user_id AND ulg.life_group_id = a.life_group_id
+       WHERE a.life_group_id = $1
+         AND e.present = true
+         AND (
+           ulg.joined_at IS NULL
+           OR a.meeting_date >= (ulg.joined_at AT TIME ZONE 'America/Sao_Paulo')::date
+         )
        GROUP BY e.user_id`,
       [lifeGroup.id],
     );
+    const joinedRows: JoinedAtRow[] = await this.em.query(
+      `SELECT user_id, joined_at FROM user_life_groups WHERE life_group_id = $1`,
+      [lifeGroup.id],
+    );
+    const joinedByUser = new Map<number, Date>();
+    for (const row of joinedRows) {
+      if (row.joined_at) {
+        joinedByUser.set(Number(row.user_id), new Date(row.joined_at));
+      }
+    }
     const presentByUser = new Map<number, number>();
     for (const row of presentRows) {
       presentByUser.set(Number(row.user_id), Number(row.present_count));
@@ -94,6 +125,7 @@ export class LifeGroupTaskRosterService {
         isLeader,
         isCoLeader,
         presentCount,
+        joinedAt: joinedByUser.get(user.id) ?? null,
         setting,
         eligible,
         source,

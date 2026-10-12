@@ -52,6 +52,19 @@ a fixed day are ignored. Reroll/decline/manual reassign push the new assignee
 immediately; decline/reroll/no-eligible also push leader and co-leader. Message
 templates support the `{task}` placeholder.
 
+Multi-instance safety (claim first): the evaluator inserts the
+`ReminderDispatchLog` row BEFORE generating/sending; a unique violation (23505)
+means another instance owns it and it skips. If a send fails (or a d-1 run has
+nobody to remind) the claim row is deleted so the next tick retries. Each
+assignment push also claims its own marker with a conditional
+`UPDATE ... WHERE id = ? AND notified_at|reminded_at IS NULL` before pushing and
+puts it back to NULL on failure (same for the reroll/decline push and the
+"no eligible member" leader push, which claims its
+`...:unassignable:{digest}` key first). A hard process kill between claim and
+release leaves the key claimed (that offset is not retried). A manual generate
+by a leader/admin pushes new assignees through the same per-assignment claim
+(only when the meeting falls within the largest configured offset).
+
 ## Change checklist
 
 - Backend category enum and payload producer updated.

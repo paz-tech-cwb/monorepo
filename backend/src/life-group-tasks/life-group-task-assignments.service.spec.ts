@@ -141,7 +141,9 @@ function makeService(world: World) {
       Promise.resolve(
         sql.includes('life_group_attendance_entries')
           ? world.presentRows
-          : world.historyRows,
+          : sql.includes('FROM user_life_groups')
+            ? []
+            : world.historyRows,
       ),
     ),
     update: jest.fn(
@@ -159,6 +161,7 @@ function makeService(world: World) {
   const notifier = {
     notifyReassigned: jest.fn().mockResolvedValue(undefined),
     notifyUnassignable: jest.fn().mockResolvedValue(undefined),
+    notifyGenerated: jest.fn().mockResolvedValue(undefined),
   };
   const roster = new LifeGroupTaskRosterService(em as unknown as EntityManager);
   const service = new LifeGroupTaskAssignmentsService(
@@ -184,6 +187,7 @@ function row(overrides: Record<string, unknown> = {}) {
     source: 'auto',
     notifiedAt: null,
     remindedAt: null,
+    declinedUserIds: [],
     ...overrides,
   };
 }
@@ -319,6 +323,44 @@ describe('LifeGroupTaskAssignmentsService', () => {
       expect(ofertaRow).toMatchObject({ taskGuidance: 'guia oferta' });
       expect(result.assignments).toHaveLength(2);
       expect(result.unassigned_templates).toEqual([]);
+    });
+
+    it('notifies the newly created assignees (notified_at null) via the notifier after a manual generate', async () => {
+      const created = [
+        row({ id: 'a-1', templateId: 1, userId: 10, user: leader }),
+        row({ id: 'a-2', templateId: 2, userId: 11, user: coLeader }),
+      ];
+      const world = makeWorld({ assignmentFinds: [[], created] });
+      const { service, notifier } = makeService(world);
+      await service.generate(7, MEETING, unrestricted, { id: 1 });
+      expect(notifier.notifyGenerated).toHaveBeenCalledTimes(1);
+      const notices = notifier.notifyGenerated.mock.calls[0][0] as {
+        assignmentId: string;
+        userId: number;
+      }[];
+      expect(notices.map((n) => [n.assignmentId, n.userId])).toEqual([
+        ['a-1', 10],
+        ['a-2', 11],
+      ]);
+    });
+
+    it('does not notify when nothing was created (idempotent re-run) and survives a notifier failure', async () => {
+      const existing = [
+        row({ id: 'a-1', templateId: 1, userId: 10, user: leader }),
+        row({ id: 'a-2', templateId: 2, userId: 11, user: coLeader }),
+      ];
+      const idle = makeService(makeWorld({ assignmentFinds: [existing] }));
+      await idle.service.generate(7, MEETING, unrestricted, { id: 1 });
+      expect(idle.notifier.notifyGenerated).not.toHaveBeenCalled();
+
+      const failing = makeService(
+        makeWorld({ assignmentFinds: [[], existing] }),
+      );
+      failing.notifier.notifyGenerated.mockRejectedValueOnce(new Error('fcm'));
+      const result = await failing.service.generate(7, MEETING, unrestricted, {
+        id: 1,
+      });
+      expect(result.assignments).toHaveLength(2);
     });
 
     it('skips templates the group disabled', async () => {
@@ -500,6 +542,35 @@ describe('LifeGroupTaskAssignmentsService', () => {
       );
     });
 
+    it('keeps previous decliners out of manual re-roll picks and leaves the history unchanged', async () => {
+      const world = rerollWorld();
+      // Co-leader (11) declined this task earlier: only the leader is left.
+      (world.assignmentOne as Record<string, unknown>).declinedUserIds = [11];
+      const { service, em } = makeService(world);
+      await service.reroll(7, 'a-1', unrestricted, { id: 1 });
+      const patch = (
+        em.update.mock.calls as unknown as [
+          unknown,
+          unknown,
+          Record<string, unknown>,
+        ][]
+      )[0][2];
+      expect(patch.userId).toBe(10);
+      expect(patch).not.toHaveProperty('declinedUserIds');
+    });
+
+    it('conflicts when every remaining candidate already declined', async () => {
+      const world = rerollWorld();
+      (world.assignmentOne as Record<string, unknown>).declinedUserIds = [
+        10, 11,
+      ];
+      const { service, notifier } = makeService(world);
+      await expect(
+        service.reroll(7, 'a-1', unrestricted, { id: 1 }),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(notifier.notifyReassigned).not.toHaveBeenCalled();
+    });
+
     it('respects per-template exclusions', async () => {
       const world = rerollWorld();
       world.settings = [
@@ -585,7 +656,11 @@ describe('LifeGroupTaskAssignmentsService', () => {
       expect(em.update).toHaveBeenCalledWith(
         LifeGroupTaskAssignment,
         { id: 'a-1', userId: 1 },
-        expect.objectContaining({ userId: 11, source: 'reroll' }),
+        expect.objectContaining({
+          userId: 11,
+          source: 'reroll',
+          declinedUserIds: [1],
+        }),
       );
       expect(notifier.notifyReassigned).toHaveBeenCalledWith(
         expect.objectContaining({ userId: 11 }),
@@ -612,7 +687,7 @@ describe('LifeGroupTaskAssignmentsService', () => {
       expect(em.update).toHaveBeenCalledWith(
         LifeGroupTaskAssignment,
         { id: 'a-1', userId: 10 },
-        { status: 'declined' },
+        { status: 'declined', declinedUserIds: [10] },
       );
       expect(notifier.notifyUnassignable).toHaveBeenCalledWith({
         lifeGroupId: 7,
@@ -620,6 +695,67 @@ describe('LifeGroupTaskAssignmentsService', () => {
         taskNames: ['Palavra'],
       });
       expect(result.reassigned).toBe(false);
+    });
+
+    it('never hands the task back to someone who already declined it (A -> B -> A)', async () => {
+      // Bob (1) declined earlier and the task went to the leader (10), who
+      // now declines too. Eligible: Bob, leader, co-leader. Bob is out
+      // (history), the leader is the decliner => only the co-leader is left.
+      const current = row({
+        id: 'a-1',
+        userId: 10,
+        user: leader,
+        declinedUserIds: [1],
+      });
+      const world = makeWorld({
+        assignmentOne: current,
+        assignmentFinds: [[current]],
+      });
+      const { service, em } = makeService(world);
+      const result = await service.decline('a-1', { id: 10 });
+      expect(em.update).toHaveBeenCalledWith(
+        LifeGroupTaskAssignment,
+        { id: 'a-1', userId: 10 },
+        expect.objectContaining({ userId: 11, declinedUserIds: [1, 10] }),
+      );
+      expect(result.reassigned).toBe(true);
+    });
+
+    it('stays declined (no-eligible behaviour) when everyone left already declined', async () => {
+      const current = row({
+        id: 'a-1',
+        userId: 10,
+        user: leader,
+        declinedUserIds: [1, 11],
+      });
+      const world = makeWorld({
+        assignmentOne: current,
+        assignmentFinds: [[current]],
+      });
+      const { service, em, notifier } = makeService(world);
+      const result = await service.decline('a-1', { id: 10 });
+      expect(em.update).toHaveBeenCalledWith(
+        LifeGroupTaskAssignment,
+        { id: 'a-1', userId: 10 },
+        { status: 'declined', declinedUserIds: [1, 11, 10] },
+      );
+      expect(notifier.notifyUnassignable).toHaveBeenCalled();
+      expect(result.reassigned).toBe(false);
+    });
+
+    it('does not duplicate a decliner already in the history', async () => {
+      const current = row({ id: 'a-1', userId: 1, declinedUserIds: [1] });
+      const world = makeWorld({
+        assignmentOne: current,
+        assignmentFinds: [[current]],
+      });
+      const { service, em } = makeService(world);
+      await service.decline('a-1', { id: 1 });
+      expect(em.update).toHaveBeenCalledWith(
+        LifeGroupTaskAssignment,
+        expect.anything(),
+        expect.objectContaining({ declinedUserIds: [1] }),
+      );
     });
 
     it('404s when the assignment belongs to someone else', async () => {

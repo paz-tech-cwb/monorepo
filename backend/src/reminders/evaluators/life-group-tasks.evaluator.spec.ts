@@ -64,6 +64,7 @@ describe('LifeGroupTasksReminderEvaluator', () => {
     generated?: unknown[];
     generatedSkipped?: boolean;
     insertError?: unknown;
+    notifyError?: unknown;
   }
 
   function setup(opts: Setup = {}) {
@@ -97,6 +98,7 @@ describe('LifeGroupTasksReminderEvaluator', () => {
           ? Promise.reject(opts.insertError)
           : Promise.resolve(undefined),
       ),
+      delete: jest.fn().mockResolvedValue(undefined),
     };
     const tasks = {
       generateForMeeting: jest.fn(() =>
@@ -110,8 +112,16 @@ describe('LifeGroupTasksReminderEvaluator', () => {
       ),
     };
     const notifications = {
-      notifyAssignee: jest.fn().mockResolvedValue(undefined),
-      remindAssignee: jest.fn().mockResolvedValue(undefined),
+      notifyAssignee: jest.fn((..._a: unknown[]) =>
+        opts.notifyError
+          ? Promise.reject(opts.notifyError)
+          : Promise.resolve(undefined),
+      ),
+      remindAssignee: jest.fn((..._a: unknown[]) =>
+        opts.notifyError
+          ? Promise.reject(opts.notifyError)
+          : Promise.resolve(undefined),
+      ),
     };
     const evaluator = new LifeGroupTasksReminderEvaluator(
       em as unknown as EntityManager,
@@ -174,11 +184,48 @@ describe('LifeGroupTasksReminderEvaluator', () => {
     });
   });
 
-  it('does not record the d1 key when there is nobody to remind yet', async () => {
+  it('claims the dispatch key BEFORE generating or sending', async () => {
+    const { evaluator, em, tasks, notifications } = setup();
+    await evaluator.run(rule, sundayNine);
+    const claimOrder = em.insert.mock.invocationCallOrder[0];
+    expect(claimOrder).toBeLessThan(
+      tasks.generateForMeeting.mock.invocationCallOrder[0],
+    );
+    expect(claimOrder).toBeLessThan(
+      notifications.notifyAssignee.mock.invocationCallOrder[0],
+    );
+    expect(em.delete).not.toHaveBeenCalled();
+  });
+
+  it('releases the d1 claim when there is nobody to remind yet', async () => {
     const { evaluator, em, notifications } = setup({ pendingReminders: [] });
     await evaluator.run(rule, tuesdayNine);
     expect(notifications.remindAssignee).not.toHaveBeenCalled();
-    expect(em.insert).not.toHaveBeenCalled();
+    expect(em.delete).toHaveBeenCalledWith(ReminderDispatchLog, {
+      ruleType: 'life_group_tasks',
+      dedupeKey: 'life_group_tasks:7:2026-06-10:d1',
+    });
+  });
+
+  it('releases the claim when a send fails so the next tick retries', async () => {
+    const { evaluator, em } = setup({ notifyError: new Error('fcm down') });
+    await expect(evaluator.run(rule, sundayNine)).resolves.toBeUndefined();
+    expect(em.delete).toHaveBeenCalledWith(ReminderDispatchLog, {
+      ruleType: 'life_group_tasks',
+      dedupeKey: 'life_group_tasks:7:2026-06-10:d3',
+    });
+  });
+
+  it('releases the d1 claim when a reminder send fails', async () => {
+    const { evaluator, em } = setup({
+      pendingReminders: [assignment()],
+      notifyError: new Error('fcm down'),
+    });
+    await evaluator.run(rule, tuesdayNine);
+    expect(em.delete).toHaveBeenCalledWith(ReminderDispatchLog, {
+      ruleType: 'life_group_tasks',
+      dedupeKey: 'life_group_tasks:7:2026-06-10:d1',
+    });
   });
 
   it('does nothing outside the configured hour', async () => {
@@ -225,15 +272,18 @@ describe('LifeGroupTasksReminderEvaluator', () => {
     const { evaluator, notifications, em } = setup({ generatedSkipped: true });
     await evaluator.run(rule, sundayNine);
     expect(notifications.notifyAssignee).not.toHaveBeenCalled();
-    expect(em.insert).not.toHaveBeenCalled();
+    // The claim is released again: nothing was sent for a skipped date.
+    expect(em.delete).toHaveBeenCalledTimes(1);
   });
 
-  it('tolerates a unique-violation (23505) when recording the dedupe key', async () => {
-    const { evaluator, notifications } = setup({
+  it('skips silently when another instance already holds the claim (23505)', async () => {
+    const { evaluator, tasks, notifications, em } = setup({
       insertError: { code: '23505' },
     });
     await expect(evaluator.run(rule, sundayNine)).resolves.toBeUndefined();
-    expect(notifications.notifyAssignee).toHaveBeenCalledTimes(1);
+    expect(tasks.generateForMeeting).not.toHaveBeenCalled();
+    expect(notifications.notifyAssignee).not.toHaveBeenCalled();
+    expect(em.delete).not.toHaveBeenCalled();
   });
 
   it('falls back to default texts when the stored config lacks reminder_*', async () => {

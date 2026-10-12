@@ -71,6 +71,16 @@ export class LifeGroupTaskAssignment {
   @Column({ name: 'reminded_at', type: 'timestamptz', nullable: true })
   remindedAt: Date | null;
 
+  // Everyone who declined this (group, template, date) task, oldest first.
+  // Re-rolls and later declines never pick them again.
+  @Column({
+    name: 'declined_user_ids',
+    type: 'int',
+    array: true,
+    default: () => "'{}'",
+  })
+  declinedUserIds: number[];
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

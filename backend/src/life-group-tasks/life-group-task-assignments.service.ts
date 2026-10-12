@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
@@ -71,6 +72,8 @@ function todayKey(now: Date = new Date()): string {
 
 @Injectable()
 export class LifeGroupTaskAssignmentsService {
+  private readonly logger = new Logger(LifeGroupTaskAssignmentsService.name);
+
   constructor(
     @InjectEntityManager() private readonly em: EntityManager,
     private readonly roster: LifeGroupTaskRosterService,
@@ -336,6 +339,27 @@ export class LifeGroupTaskAssignmentsService {
     );
   }
 
+  /**
+   * Manual generate path only: push the newly created assignees (those with
+   * `notified_at` null) through the same notifier claim the evaluator uses.
+   * A failed push must not fail the generation (the claim is released and
+   * the evaluator may still send it).
+   */
+  private async notifyCreated(created: LifeGroupTaskAssignment[]) {
+    const notices = created
+      .filter((a) => a.status === 'assigned' && a.notifiedAt === null)
+      .map((a) => this.notice(a));
+    if (notices.length === 0) return;
+    try {
+      await this.notifier.notifyGenerated(notices);
+    } catch (err) {
+      this.logger.error(
+        'Could not notify manually generated assignees',
+        err instanceof Error ? err.stack : undefined,
+      );
+    }
+  }
+
   /** `meetingDate` defaults to the group's next meeting when omitted. */
   async generate(
     lifeGroupId: number,
@@ -361,6 +385,7 @@ export class LifeGroupTaskAssignmentsService {
     this.assertMatchesMeetingDay(lifeGroup, meetingDate);
     this.assertMeetingDateInWindow(meetingDate);
     const result = await this.generateForGroup(lifeGroup, meetingDate);
+    await this.notifyCreated(result.created);
     const roster = await this.roster.resolveRoster(lifeGroup);
     return {
       ...(await this.toGroupResponse(lifeGroup, meetingDate, result, roster)),
@@ -457,7 +482,8 @@ export class LifeGroupTaskAssignmentsService {
 
   /**
    * Picks a replacement for `assignment`: eligible members only, never the
-   * current assignee (reroll) / decliner (decline), honouring per-template
+   * current assignee (reroll) / decliner (decline) nor anyone who already
+   * declined this task (`declined_user_ids`), honouring per-template
    * exclusions and fairness. Returns null when nobody qualifies.
    */
   private async pickReplacement(
@@ -482,6 +508,8 @@ export class LifeGroupTaskAssignmentsService {
           excludedUserIds: [
             ...this.excludedUserIdsFor(roster, assignment.templateId),
             assignment.userId,
+            // Anyone who already declined this (group, template, date).
+            ...(assignment.declinedUserIds ?? []),
           ],
         },
       ],
@@ -495,6 +523,14 @@ export class LifeGroupTaskAssignmentsService {
     return result.assignments[0]?.userId ?? null;
   }
 
+  private withDecliner(
+    assignment: LifeGroupTaskAssignment,
+    userId: number,
+  ): number[] {
+    const current = assignment.declinedUserIds ?? [];
+    return current.includes(userId) ? current : [...current, userId];
+  }
+
   /**
    * Hands the assignment to `newUserId`. Guarded on the previous assignee so
    * two concurrent changes cannot both win.
@@ -506,6 +542,11 @@ export class LifeGroupTaskAssignmentsService {
     reason: LifeGroupTaskReassignReason,
   ): Promise<LifeGroupTaskAssignment> {
     const previousUserId = assignment.userId;
+    // A decline records the decliner so nobody gets the task back later.
+    const declinedUserIds =
+      reason === 'decline'
+        ? this.withDecliner(assignment, previousUserId)
+        : undefined;
     const result = await this.em.update(
       LifeGroupTaskAssignment,
       { id: assignment.id, userId: previousUserId },
@@ -515,6 +556,7 @@ export class LifeGroupTaskAssignmentsService {
         source,
         notifiedAt: null,
         remindedAt: null,
+        ...(declinedUserIds ? { declinedUserIds } : {}),
       },
     );
     if (result.affected === 0) {
@@ -651,7 +693,10 @@ export class LifeGroupTaskAssignmentsService {
       await this.em.update(
         LifeGroupTaskAssignment,
         { id: assignment.id, userId: actor.id },
-        { status: 'declined' },
+        {
+          status: 'declined',
+          declinedUserIds: this.withDecliner(assignment, actor.id),
+        },
       );
       await this.notifier.notifyUnassignable({
         lifeGroupId: assignment.lifeGroupId,

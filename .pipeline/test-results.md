@@ -141,3 +141,8 @@ No iOS test target exists (`project.yml` has `testTargets: []`), so no unit test
 
 - iOS: `xcrun swiftc -parse` OK on HomeViewModel/HomeView/LifeGroupTaskMarkdownView. Scratch macOS executable compiling the real `LifeGroupTaskMarkdown` + `DeepLinkDestination.swift` sources: fenced code (incl. unclosed, `#` inside kept verbatim), quotes (incl. bare `>` and indented), paragraph flush before quote, http/https-only link sanitizing (javascript:/tel: dropped, link inside inline code literal), inline code intent present, deep link `tarefa/{id}` / blank / extra segments: ALL OK.
 - NOT done: Android Gradle build/unit tests (java is a stub; new `MarkdownParserTest` cases and `HomeViewModelTest` unverified, only read-checked), iOS full app compile (needs Shared.xcframework), no iOS test target (see changes.md).
+
+## Gap fixes (backend)
+
+- No node/npm: ran the specs with the scratchpad mini-jest shim (VS Code bundled TS transpile, typeorm/nest stubbed): notifications, assignments, config, roster (new), life-group-tasks evaluator, eligibility, assignment-engine specs: 104 passed, 1 shim limitation (`not.toHaveProperty` is not implemented in the shim; the assertion itself is trivially valid). Transpile diagnostics 0 on all changed .ts files incl. the migration.
+- NOT done: real `npx jest`, `npm run build` / tsc type-check (jest.fn typings in the new specs unverified), eslint/prettier, running the migration against Postgres, and real-DB verification of the new `joined_at` present-count SQL and of `UPDATE ... IsNull()` claims (affected row count) against TypeORM/pg.

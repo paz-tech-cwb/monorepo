@@ -5,10 +5,14 @@ import { ReminderEvaluator } from './reminder-evaluator.interface';
 import { ReminderRule } from '../entities/reminder-rule.entity';
 import { ReminderDispatchLog } from '../entities/reminder-dispatch-log.entity';
 import {
-  DEFAULT_CONFIGS,
   LifeGroupTasksReminderConfig,
   ReminderRuleType,
+  resolveLifeGroupTasksConfig,
 } from '../types/reminder-config';
+import {
+  claimDispatchKey,
+  releaseDispatchKey,
+} from '../../life-group-tasks/dispatch-claim';
 import { LifeGroup } from '../../life-groups/entities/life-group.entity';
 import {
   WEEKDAY_INDEX,
@@ -43,19 +47,7 @@ export class LifeGroupTasksReminderEvaluator implements ReminderEvaluator {
   ) {}
 
   private resolveConfig(rule: ReminderRule): LifeGroupTasksReminderConfig {
-    const defaults =
-      DEFAULT_CONFIGS.life_group_tasks as LifeGroupTasksReminderConfig;
-    const cfg = (rule.config ?? {}) as Partial<LifeGroupTasksReminderConfig>;
-    return {
-      days_before_meeting: Array.isArray(cfg.days_before_meeting)
-        ? cfg.days_before_meeting
-        : defaults.days_before_meeting,
-      hour: typeof cfg.hour === 'number' ? cfg.hour : defaults.hour,
-      title: cfg.title || defaults.title,
-      message: cfg.message || defaults.message,
-      reminder_title: cfg.reminder_title || defaults.reminder_title,
-      reminder_message: cfg.reminder_message || defaults.reminder_message,
-    };
+    return resolveLifeGroupTasksConfig(rule.config);
   }
 
   async run(rule: ReminderRule, now: Date): Promise<void> {
@@ -132,65 +124,71 @@ export class LifeGroupTasksReminderEvaluator implements ReminderEvaluator {
     if (skip) return;
 
     const dedupeKey = `life_group_tasks:${lifeGroupId}:${meetingDate}:d${offset}`;
+    // Cheap pre-check (avoids a failing INSERT on every tick once sent).
     const alreadySent = await this.em.findOne(ReminderDispatchLog, {
       where: { ruleType: 'life_group_tasks', dedupeKey },
     });
     if (alreadySent) return;
 
-    let processed: number;
-    if (generates) {
-      const result = await this.tasks.generateForMeeting(
-        lifeGroupId,
-        meetingDate,
-      );
-      if (result.skipped) return;
-      const pending = result.assignments.filter(
-        (a) => a.status === 'assigned' && a.notifiedAt === null,
-      );
-      for (const assignment of pending) {
-        await this.notifications.notifyAssignee(
-          assignment,
-          assignment.user,
-          cfg.title,
-          cfg.message,
-        );
-      }
-      processed = pending.length;
-    } else {
-      const pending = await this.em.find(LifeGroupTaskAssignment, {
-        where: {
+    // Claim first (multi-instance safety): whoever inserts the dispatch row
+    // owns this (group, date, offset); a unique violation means someone else
+    // already did. The claim is released when nothing was sent or a send
+    // fails, so the next tick retries.
+    if (!(await claimDispatchKey(this.em, dedupeKey))) return;
+
+    let keepClaim = false;
+    try {
+      let processed: number;
+      if (generates) {
+        const result = await this.tasks.generateForMeeting(
           lifeGroupId,
           meetingDate,
-          status: 'assigned',
-          remindedAt: IsNull(),
-        },
-        relations: ['user'],
-      });
-      for (const assignment of pending) {
-        await this.notifications.remindAssignee(
-          assignment,
-          assignment.user,
-          cfg.reminder_title,
-          cfg.reminder_message,
         );
+        if (result.skipped) return;
+        const pending = result.assignments.filter(
+          (a) => a.status === 'assigned' && a.notifiedAt === null,
+        );
+        // notifyAssignee also claims each assignment (notified_at IS NULL),
+        // so a manual generate that already pushed them is not repeated.
+        for (const assignment of pending) {
+          await this.notifications.notifyAssignee(
+            assignment,
+            assignment.user,
+            cfg.title,
+            cfg.message,
+          );
+        }
+        processed = pending.length;
+      } else {
+        const pending = await this.em.find(LifeGroupTaskAssignment, {
+          where: {
+            lifeGroupId,
+            meetingDate,
+            status: 'assigned',
+            remindedAt: IsNull(),
+          },
+          relations: ['user'],
+        });
+        // Nothing to remind yet: release the claim so a later run (e.g. the
+        // leader assigned manually in the meantime) can still send.
+        if (pending.length === 0) return;
+        for (const assignment of pending) {
+          await this.notifications.remindAssignee(
+            assignment,
+            assignment.user,
+            cfg.reminder_title,
+            cfg.reminder_message,
+          );
+        }
+        processed = pending.length;
       }
-      // Nothing to remind yet: leave the key unset so a later run (e.g. the
-      // leader assigned manually in the meantime) can still send.
-      if (pending.length === 0) return;
-      processed = pending.length;
-    }
 
-    this.logger.log(
-      `life_group_tasks: group ${lifeGroupId} ${meetingDate} d${offset}: ${processed} notification(s)`,
-    );
-
-    try {
-      await this.em.insert(ReminderDispatchLog, {
-        ruleType: 'life_group_tasks',
-        dedupeKey,
-      });
-    } catch (err: unknown) {
-      if ((err as { code?: string }).code !== '23505') throw err;
+      keepClaim = true;
+      this.logger.log(
+        `life_group_tasks: group ${lifeGroupId} ${meetingDate} d${offset}: ${processed} notification(s)`,
+      );
+    } finally {
+      if (!keepClaim) await releaseDispatchKey(this.em, dedupeKey);
     }
   }
 }

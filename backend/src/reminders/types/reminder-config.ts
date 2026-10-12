@@ -165,3 +165,25 @@ export function validateReminderConfig(
   }
   return null;
 }
+
+/**
+ * Stored `life_group_tasks` config merged with the defaults (legacy rows may
+ * lack some keys). Shared by the evaluator and by the manual-generate push.
+ */
+export function resolveLifeGroupTasksConfig(
+  config: unknown,
+): LifeGroupTasksReminderConfig {
+  const defaults =
+    DEFAULT_CONFIGS.life_group_tasks as LifeGroupTasksReminderConfig;
+  const cfg = (config ?? {}) as Partial<LifeGroupTasksReminderConfig>;
+  return {
+    days_before_meeting: Array.isArray(cfg.days_before_meeting)
+      ? cfg.days_before_meeting
+      : defaults.days_before_meeting,
+    hour: typeof cfg.hour === 'number' ? cfg.hour : defaults.hour,
+    title: cfg.title || defaults.title,
+    message: cfg.message || defaults.message,
+    reminder_title: cfg.reminder_title || defaults.reminder_title,
+    reminder_message: cfg.reminder_message || defaults.reminder_message,
+  };
+}

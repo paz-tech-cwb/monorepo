@@ -209,3 +209,29 @@ Left as follow-ups: m2 (preview vs mobile markdown subset), m3 (no notification 
 - Home "Minhas tarefas" card (Android + iOS): `getMyTasks()` best-effort in the home view model (failure -> empty -> card hidden, no home error), filter status assigned + `meetingDate >= today`, sorted by date, max 3; rows open the guide (Android `HomeEffect.NavigateToTask` -> `life_group_task/{id}`; iOS NavigationLink to `LifeGroupTaskGuideView`). Android reuses `MyTasksCard` (now `internal`, with a `modifier`); `HomeViewModel` gets `LifeGroupTaskRepository` (`AndroidModule.kt` updated); iOS `HomeViewModel` takes `taskRepository`. New `HomeViewModelTest`.
 - Backend contract: no client depends on the grandfathered note marker (grep for "grandfathered at migration" in kmp-mobile: none); clients use only the `grandfathered` boolean. `declined_user_ids` not consumed.
 - iOS tests: NO test target added. Reasons: app target depends on Shared.xcframework via a Gradle prebuild, xcodegen is unavailable so project.yml/pbxproj/scheme cannot be regenerated or compiled to verify, and a bad hand edit would break the checked-in scheme used by CI. Logic left testable (non-private statics); details in `.ai/apps/mobile.md`.
+
+## Gap fixes (backend)
+
+### Files
+- Migration `backend/database/migrations/1795900000004-CreateLifeGroupTasks.ts` (edited in place, never ran): `life_group_task_assignments.declined_user_ids int[] NOT NULL DEFAULT '{}'`; `life_group_task_member_settings.grandfathered boolean NOT NULL DEFAULT false`; the grandfather INSERT now sets `grandfathered = true` and no `reason` text. `down()` is unchanged and still correct (drops the tables that own both columns).
+- Entities: `life-group-task-assignment.entity.ts` (`declinedUserIds`), `life-group-task-member-setting.entity.ts` (`grandfathered`; `GRANDFATHERED_REASON` removed).
+- `life-group-task-assignments.service.ts`: decline appends the decliner (also on the "nobody left" path); `pickReplacement` (decline + leader re-roll) excludes the current assignee and everyone in `declined_user_ids`; manual `reassign` is unchanged (explicit leader choice); `generate()` now notifies created assignees via `notifier.notifyGenerated` (failure is logged, never fails the request).
+- `life-group-task-notifier.ts`: new abstract `notifyGenerated(notices)`.
+- `life-group-task-notifications.service.ts`: per-assignment claim (`em.update(..., {id, notifiedAt|remindedAt: IsNull()}, {col: now})`, `affected` = claimed) before pushing, released (set NULL) on send failure, for `notifyAssignee`, `remindAssignee` and the assignee push in `notifyReassigned`; `notifyUnassignable` claims its dispatch key first and releases on failure; `notifyGenerated` implemented (reads the `life_group_tasks` rule: skipped when disabled, only meetings from today to today + largest offset, uses rule title/message).
+- `dispatch-claim.ts` (new): `claimDispatchKey` (insert, 23505 => false) / `releaseDispatchKey` (best-effort delete).
+- `reminders/evaluators/life-group-tasks.evaluator.ts`: claim-first; release on failure, skipped generation, or d-1 with nobody to remind. `reminders/types/reminder-config.ts`: shared `resolveLifeGroupTasksConfig`.
+- `life-group-task-roster.service.ts`: present-count query joins `user_life_groups` and counts only `meeting_date >= joined_at` (Sao_Paulo day); also loads `joined_at` (`RosterMember.joinedAt`).
+- `life-group-task-config.service.ts`: `grandfathered` from the column, `reason` is the real note, new `joined_at`; `putMembers` never touches the flag and answers 400 to `reset_to_automatic` on a grandfathered row (whole request rejected, nothing saved).
+- Specs: notifications, assignments, config, evaluator updated; new `life-group-task-roster.service.spec.ts`.
+- Docs: `.ai/features/life-groups.md`, `.ai/features/notifications.md`, `.ai/apps/backend.md`; `.pipeline/spec.md` decision 11.
+
+### Wire contract changes (for admin-ui / Kotlin / Swift agents)
+- `GET/PUT /life-groups/:id/task-members` items: `grandfathered` (bool, now from the column; same name as before), NEW `joined_at` (ISO-8601 string, or null for a leader/co-leader without a join row; optional for clients), `reason` is now always the real leader note (the system note no longer exists; a grandfathered row has `reason: null` until the leader writes one).
+- `PUT /life-groups/:id/task-members`: an entry with `reset_to_automatic: true` for a grandfathered member now returns 400 (`User N is grandfathered and cannot be reset to automatic; set eligible=false instead.`) and the whole request is rejected. A blank/omitted note no longer needs special handling by clients.
+- `POST /life-groups/:id/tasks/generate`: response shape unchanged; side effect: newly created assignees get a push when the meeting is within the largest offset (default 3 days).
+- Decline/re-roll responses unchanged. No other endpoint changed. `present_count` semantics: counts only meetings on/after `joined_at`.
+
+### Notes / deviations
+- Manual generate only pushes when the meeting is within today..today+largest offset (past dates and farther dates are left to the evaluator): pushing a meeting weeks ahead would use up `notified_at` and suppress the real d-3 push. Because `notified_at` gates each assignee, the evaluator does not double-send; no extra group-level ReminderDispatchLog key is written by the manual path.
+- A process killed between claim and release leaves that dispatch key claimed (that offset is not retried); accepted trade-off of claim-first.
+- Postman: no collection exists in the repo (`admin-ui/postman/globals/workspace.postman_globals.json` is an empty globals file, `admin-ui/.postman/config.json` is workspace config only), so nothing was updated.

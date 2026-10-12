@@ -1,5 +1,11 @@
 import { EntityManager } from 'typeorm';
 import {
+  dateKeyOf,
+  shiftDays,
+  zonedParts,
+} from '../life-group-attendance/meeting-day.util';
+import { ReminderRule } from '../reminders/entities/reminder-rule.entity';
+import {
   LifeGroupTaskNotificationsService,
   renderTaskMessage,
   taskDeepLink,
@@ -15,7 +21,15 @@ const coLeader = { id: 11, name: 'Caio' };
 const bob = { id: 1, name: 'Bob' };
 const ana = { id: 2, name: 'Ana' };
 
-function makeService(opts: { dedupe?: unknown; group?: unknown } = {}) {
+function makeService(
+  opts: {
+    group?: unknown;
+    claimed?: boolean;
+    insertError?: unknown;
+    rule?: unknown;
+    sendError?: unknown;
+  } = {},
+) {
   const users = new Map<number, unknown>([
     [1, bob],
     [2, ana],
@@ -31,20 +45,43 @@ function makeService(opts: { dedupe?: unknown; group?: unknown } = {}) {
             opts.group ?? { id: 7, leader, coLeader },
           );
         }
-        if (entity === ReminderDispatchLog) {
-          return Promise.resolve(opts.dedupe ?? null);
+        if (entity === ReminderRule) {
+          return Promise.resolve(opts.rule ?? null);
         }
         return Promise.resolve(null);
       },
+    ),
+    find: jest.fn((entity: unknown) =>
+      Promise.resolve(entity === User ? [bob, ana] : []),
     ),
     create: jest.fn((_entity: unknown, value: unknown) => value),
     save: jest.fn((value: unknown) =>
       Promise.resolve({ id: 99, ...(value as object) }),
     ),
-    update: jest.fn().mockResolvedValue({ affected: 1 }),
-    insert: jest.fn().mockResolvedValue(undefined),
+    // Conditional UPDATE ... WHERE col IS NULL: affected=0 => lost the claim.
+    update: jest.fn(
+      (
+        _entity: unknown,
+        criteria: Record<string, unknown>,
+        _patch?: unknown,
+      ) =>
+        Promise.resolve({
+          affected:
+            opts.claimed === false && Object.keys(criteria).length > 1 ? 0 : 1,
+        }),
+    ),
+    insert: jest.fn(() =>
+      opts.insertError
+        ? Promise.reject(opts.insertError)
+        : Promise.resolve(undefined),
+    ),
+    delete: jest.fn().mockResolvedValue(undefined),
   };
-  const dispatch = { dispatch: jest.fn().mockResolvedValue(undefined) };
+  const dispatch = {
+    dispatch: jest.fn((..._args: unknown[]) =>
+      opts.sendError ? Promise.reject(opts.sendError) : Promise.resolve(),
+    ),
+  };
   const service = new LifeGroupTaskNotificationsService(
     em as unknown as EntityManager,
     dispatch as unknown as NotificationDispatchService,
@@ -90,10 +127,43 @@ describe('LifeGroupTaskNotificationsService', () => {
       segment: { type: 'filtered', filters: { user_ids: [1] } },
     });
     expect(dispatch.dispatch).toHaveBeenCalledWith(expect.anything(), [bob]);
+    // Claim-first: conditional UPDATE (id + notified_at IS NULL) before sending.
     expect(em.update).toHaveBeenCalledWith(
       LifeGroupTaskAssignment,
+      { id: 'a-1', notifiedAt: expect.anything() },
+      { notifiedAt: expect.any(Date) },
+    );
+    expect(em.update.mock.invocationCallOrder[0]).toBeLessThan(
+      dispatch.dispatch.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('notifyAssignee sends nothing when another run already claimed the assignment', async () => {
+    const { service, dispatch, em } = makeService({ claimed: false });
+    await service.notifyAssignee(
+      { id: 'a-1', taskName: 'Palavra' } as LifeGroupTaskAssignment,
+      bob as unknown as User,
+      'T',
+      'M',
+    );
+    expect(dispatch.dispatch).not.toHaveBeenCalled();
+    expect(em.save).not.toHaveBeenCalled();
+  });
+
+  it('notifyAssignee releases the claim (notified_at back to NULL) when the send fails', async () => {
+    const { service, em } = makeService({ sendError: new Error('fcm down') });
+    await expect(
+      service.notifyAssignee(
+        { id: 'a-1', taskName: 'Palavra' } as LifeGroupTaskAssignment,
+        bob as unknown as User,
+        'T',
+        'M',
+      ),
+    ).rejects.toThrow('fcm down');
+    expect(em.update).toHaveBeenLastCalledWith(
+      LifeGroupTaskAssignment,
       { id: 'a-1' },
-      { notifiedAt: expect.anything() },
+      { notifiedAt: null },
     );
   });
 
@@ -107,8 +177,25 @@ describe('LifeGroupTaskNotificationsService', () => {
     );
     expect(em.update).toHaveBeenCalledWith(
       LifeGroupTaskAssignment,
+      { id: 'a-1', remindedAt: expect.anything() },
+      { remindedAt: expect.any(Date) },
+    );
+  });
+
+  it('remindAssignee releases reminded_at when the send fails', async () => {
+    const { service, em } = makeService({ sendError: new Error('boom') });
+    await expect(
+      service.remindAssignee(
+        { id: 'a-1', taskName: 'Palavra' } as LifeGroupTaskAssignment,
+        bob as unknown as User,
+        'T',
+        'M',
+      ),
+    ).rejects.toThrow('boom');
+    expect(em.update).toHaveBeenLastCalledWith(
+      LifeGroupTaskAssignment,
       { id: 'a-1' },
-      { remindedAt: expect.anything() },
+      { remindedAt: null },
     );
   });
 
@@ -128,8 +215,8 @@ describe('LifeGroupTaskNotificationsService', () => {
     expect(leaderNote.message).toContain('Ana');
     expect(em.update).toHaveBeenCalledWith(
       LifeGroupTaskAssignment,
-      { id: 'a-1' },
-      { notifiedAt: expect.anything() },
+      { id: 'a-1', notifiedAt: expect.anything() },
+      { notifiedAt: expect.any(Date) },
     );
   });
 
@@ -142,14 +229,16 @@ describe('LifeGroupTaskNotificationsService', () => {
     expect(dispatch.dispatch).toHaveBeenCalledTimes(1);
   });
 
-  it('notifyUnassignable tells leader and co-leader once and records the key', async () => {
+  it('notifyUnassignable claims the dispatch key BEFORE pushing the leaders', async () => {
     const { service, dispatch, em } = makeService();
     await service.notifyUnassignable({
       lifeGroupId: 7,
       meetingDate: '2026-06-10',
       taskNames: ['Palavra', 'Oferta'],
     });
-    const recipients = dispatch.dispatch.mock.calls[0][1] as { id: number }[];
+    const recipients = dispatch.dispatch.mock.calls[0][1] as unknown as {
+      id: number;
+    }[];
     expect(recipients.map((u) => u.id)).toEqual([10, 11]);
     const saved = em.save.mock.calls[0][0] as {
       deepLink: string | null;
@@ -161,15 +250,114 @@ describe('LifeGroupTaskNotificationsService', () => {
       ReminderDispatchLog,
       expect.objectContaining({ ruleType: 'life_group_tasks' }),
     );
+    expect(em.insert.mock.invocationCallOrder[0]).toBeLessThan(
+      dispatch.dispatch.mock.invocationCallOrder[0],
+    );
   });
 
-  it('notifyUnassignable does not repeat when already recorded', async () => {
-    const { service, dispatch } = makeService({ dedupe: { id: 1 } });
+  it('notifyUnassignable stays silent when the claim is lost (23505)', async () => {
+    const { service, dispatch } = makeService({
+      insertError: { code: '23505' },
+    });
     await service.notifyUnassignable({
       lifeGroupId: 7,
       meetingDate: '2026-06-10',
       taskNames: ['Palavra'],
     });
     expect(dispatch.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('notifyUnassignable releases the claim when the leader push fails', async () => {
+    const { service, em } = makeService({ sendError: new Error('fcm') });
+    await expect(
+      service.notifyUnassignable({
+        lifeGroupId: 7,
+        meetingDate: '2026-06-10',
+        taskNames: ['Palavra'],
+      }),
+    ).rejects.toThrow('fcm');
+    expect(em.delete).toHaveBeenCalledWith(
+      ReminderDispatchLog,
+      expect.objectContaining({ ruleType: 'life_group_tasks' }),
+    );
+  });
+
+  describe('notifyGenerated (manual generate)', () => {
+    const today = zonedParts(new Date());
+    const inWindow = dateKeyOf(shiftDays(today, 2)); // default offsets [3,1]
+    const tooFar = dateKeyOf(shiftDays(today, 10));
+    const past = dateKeyOf(shiftDays(today, -1));
+    const mk = (id: string, userId: number, meetingDate: string) => ({
+      assignmentId: id,
+      userId,
+      lifeGroupId: 7,
+      meetingDate,
+      taskName: 'Palavra',
+    });
+
+    it('pushes each new assignee through the notified_at claim with the rule title/message', async () => {
+      const { service, dispatch, em } = makeService({
+        rule: {
+          enabled: true,
+          config: {
+            days_before_meeting: [3, 1],
+            hour: 9,
+            title: 'Sua tarefa',
+            message: 'Você ficou com {task}',
+          },
+        },
+      });
+      await service.notifyGenerated([
+        mk('a-1', 1, inWindow),
+        mk('a-2', 2, inWindow),
+      ]);
+      expect(dispatch.dispatch).toHaveBeenCalledTimes(2);
+      expect((em.save.mock.calls[0][0] as { message: string }).message).toBe(
+        'Você ficou com Palavra',
+      );
+      expect(em.update).toHaveBeenCalledWith(
+        LifeGroupTaskAssignment,
+        { id: 'a-2', notifiedAt: expect.anything() },
+        { notifiedAt: expect.any(Date) },
+      );
+    });
+
+    it('does not double-send assignments already claimed by the evaluator', async () => {
+      const { service, dispatch } = makeService({ claimed: false });
+      await service.notifyGenerated([mk('a-1', 1, inWindow)]);
+      expect(dispatch.dispatch).not.toHaveBeenCalled();
+    });
+
+    it('leaves meetings outside the offset window to the evaluator, and skips past meetings', async () => {
+      const { service, dispatch } = makeService();
+      await service.notifyGenerated([
+        mk('a-1', 1, tooFar),
+        mk('a-2', 2, past),
+      ]);
+      expect(dispatch.dispatch).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when the reminder rule is disabled', async () => {
+      const { service, dispatch } = makeService({
+        rule: { enabled: false, config: {} },
+      });
+      await service.notifyGenerated([mk('a-1', 1, inWindow)]);
+      expect(dispatch.dispatch).not.toHaveBeenCalled();
+    });
+
+    it('keeps notifying the others when one push fails (claim released)', async () => {
+      const { service, dispatch, em } = makeService();
+      dispatch.dispatch.mockRejectedValueOnce(new Error('fcm'));
+      await service.notifyGenerated([
+        mk('a-1', 1, inWindow),
+        mk('a-2', 2, inWindow),
+      ]);
+      expect(dispatch.dispatch).toHaveBeenCalledTimes(2);
+      expect(em.update).toHaveBeenCalledWith(
+        LifeGroupTaskAssignment,
+        { id: 'a-1' },
+        { notifiedAt: null },
+      );
+    });
   });
 });

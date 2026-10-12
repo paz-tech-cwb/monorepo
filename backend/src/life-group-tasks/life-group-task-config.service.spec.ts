@@ -4,10 +4,7 @@ import { LifeGroup } from '../life-groups/entities/life-group.entity';
 import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
 import { LifeGroupTaskConfigService } from './life-group-task-config.service';
 import { LifeGroupTaskRosterService } from './life-group-task-roster.service';
-import {
-  GRANDFATHERED_REASON,
-  LifeGroupTaskMemberSetting,
-} from './entities/life-group-task-member-setting.entity';
+import { LifeGroupTaskMemberSetting } from './entities/life-group-task-member-setting.entity';
 import { LifeGroupTaskOverride } from './entities/life-group-task-override.entity';
 import { LifeGroupTaskTemplate } from './entities/life-group-task-template.entity';
 import { LifeGroupTaskGroupSetting } from './entities/life-group-task-group-setting.entity';
@@ -52,6 +49,7 @@ function makeService(
     settings?: unknown[];
     overrides?: unknown[];
     groupSetting?: unknown;
+    joinedRows?: unknown[];
   } = {},
 ) {
   const insertQb = {
@@ -79,7 +77,13 @@ function makeService(
       if (entity === LifeGroupTaskTemplate) return Promise.resolve([palavra]);
       return Promise.resolve([]);
     }),
-    query: jest.fn(() => Promise.resolve([{ user_id: 1, present_count: 1 }])),
+    query: jest.fn((sql: string) =>
+      Promise.resolve(
+        sql.includes('life_group_attendance_entries')
+          ? [{ user_id: 1, present_count: 1 }]
+          : (data.joinedRows ?? []),
+      ),
+    ),
     create: jest.fn((_entity: unknown, value: unknown) => value),
     save: jest.fn((value: unknown) => Promise.resolve(value)),
     remove: jest.fn((value: unknown) => Promise.resolve(value)),
@@ -174,13 +178,14 @@ describe('LifeGroupTaskConfigService', () => {
       });
     });
 
-    it('flags grandfathered members and hides the system note', async () => {
+    it('flags grandfathered members from the column and returns the real leader note untouched', async () => {
       const { service } = makeService({
         settings: [
           {
             userId: 1,
             eligible: true,
-            reason: GRANDFATHERED_REASON,
+            grandfathered: true,
+            reason: 'nota real do líder',
             excludedTemplateIds: null,
           },
         ],
@@ -190,11 +195,22 @@ describe('LifeGroupTaskConfigService', () => {
         eligible: true,
         eligibility_source: 'manual',
         grandfathered: true,
-        reason: null,
+        reason: 'nota real do líder',
       });
       expect(
         members.filter((m) => m.user_id !== 1).every((m) => !m.grandfathered),
       ).toBe(true);
+    });
+
+    it('exposes joined_at from user_life_groups and null for leaders outside the join table', async () => {
+      const { service } = makeService({
+        joinedRows: [{ user_id: 1, joined_at: '2026-05-01T12:00:00.000Z' }],
+      });
+      const members = await service.getMembers(7, unrestricted, { id: 1 });
+      expect(members.find((m) => m.user_id === 1)?.joined_at).toBe(
+        '2026-05-01T12:00:00.000Z',
+      );
+      expect(members.find((m) => m.user_id === 10)?.joined_at).toBeNull();
     });
 
     it('marks a new member below the threshold as pending', async () => {
@@ -255,24 +271,80 @@ describe('LifeGroupTaskConfigService', () => {
       ]);
     });
 
-    it('keeps the grandfather marker when a client sends a blank note', async () => {
+    it('preserves the grandfathered flag when the leader edits note, exclusions or eligible', async () => {
       const existing = {
         userId: 1,
         lifeGroupId: 7,
         eligible: true,
-        reason: GRANDFATHERED_REASON,
+        grandfathered: true,
+        reason: null,
         excludedTemplateIds: null,
       };
       const { service, em } = makeService({ settings: [existing] });
+      // Toggle off then back on, with a note and an exclusion: still flagged.
       await service.putMembers(
         7,
-        [{ userId: 1, eligible: true, reason: null }],
+        [
+          {
+            userId: 1,
+            eligible: false,
+            reason: 'ferias',
+            excludedTemplateIds: [1],
+          },
+        ],
+        unrestricted,
+        { id: 42 },
+      );
+      await service.putMembers(
+        7,
+        [{ userId: 1, eligible: true, reason: '' }],
+        unrestricted,
+        { id: 42 },
+      );
+      for (const call of em.save.mock.calls as [Record<string, unknown>[]][]) {
+        expect(call[0][0]).toMatchObject({ userId: 1, grandfathered: true });
+      }
+      expect(existing).toMatchObject({
+        eligible: true,
+        grandfathered: true,
+        reason: null,
+      });
+    });
+
+    it('creates new settings as not grandfathered', async () => {
+      const { service, em } = makeService();
+      await service.putMembers(
+        7,
+        [{ userId: 1, eligible: true }],
         unrestricted,
         { id: 42 },
       );
       expect(em.save).toHaveBeenCalledWith([
-        expect.objectContaining({ userId: 1, reason: GRANDFATHERED_REASON }),
+        expect.objectContaining({ userId: 1, grandfathered: false }),
       ]);
+    });
+
+    it('rejects reset_to_automatic on a grandfathered member and changes nothing', async () => {
+      const existing = {
+        userId: 1,
+        lifeGroupId: 7,
+        eligible: true,
+        grandfathered: true,
+      };
+      const { service, em } = makeService({ settings: [existing] });
+      await expect(
+        service.putMembers(
+          7,
+          [
+            { userId: 11, eligible: false },
+            { userId: 1, resetToAutomatic: true },
+          ],
+          unrestricted,
+          { id: 1 },
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(em.remove).not.toHaveBeenCalled();
+      expect(em.save).not.toHaveBeenCalled();
     });
 
     it('rejects unknown template exclusions', async () => {

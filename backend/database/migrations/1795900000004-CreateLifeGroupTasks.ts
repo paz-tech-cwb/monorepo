@@ -44,6 +44,7 @@ export class CreateLifeGroupTasks1795900000004 implements MigrationInterface {
         "source" varchar(20) NOT NULL DEFAULT 'auto',
         "notified_at" timestamptz NULL,
         "reminded_at" timestamptz NULL,
+        "declined_user_ids" int[] NOT NULL DEFAULT '{}',
         "created_at" timestamp NOT NULL DEFAULT now(),
         "updated_at" timestamp NOT NULL DEFAULT now(),
         CONSTRAINT "uq_life_group_task_assignments_group_template_date" UNIQUE ("life_group_id", "template_id", "meeting_date"),
@@ -68,6 +69,7 @@ export class CreateLifeGroupTasks1795900000004 implements MigrationInterface {
         "eligible" boolean NOT NULL DEFAULT true,
         "reason" text NULL,
         "excluded_template_ids" int[] NULL,
+        "grandfathered" boolean NOT NULL DEFAULT false,
         "updated_by" int NULL REFERENCES "users"("id") ON DELETE SET NULL,
         "created_at" timestamp NOT NULL DEFAULT now(),
         "updated_at" timestamp NOT NULL DEFAULT now(),
@@ -104,12 +106,13 @@ export class CreateLifeGroupTasks1795900000004 implements MigrationInterface {
         ADD COLUMN IF NOT EXISTS "joined_at" timestamptz NOT NULL DEFAULT now()
     `);
 
-    // Grandfather every existing member: explicit eligible=true so the
-    // "3 present meetings" rule only applies to members who join later.
+    // Grandfather every existing member: explicit eligible=true (flagged with
+    // the dedicated "grandfathered" column, leaving the leader note empty) so
+    // the "3 present meetings" rule only applies to members who join later.
     await queryRunner.query(`
       INSERT INTO "life_group_task_member_settings"
-        ("life_group_id", "user_id", "eligible", "reason")
-      SELECT "life_group_id", "user_id", true, 'grandfathered at migration'
+        ("life_group_id", "user_id", "eligible", "grandfathered")
+      SELECT "life_group_id", "user_id", true, true
       FROM "user_life_groups"
       ON CONFLICT ("life_group_id", "user_id") DO NOTHING
     `);

@@ -10,10 +10,7 @@ import {
 } from './life-group-task-access';
 import { LifeGroupTaskRosterService } from './life-group-task-roster.service';
 import { LifeGroupTaskGroupSetting } from './entities/life-group-task-group-setting.entity';
-import {
-  GRANDFATHERED_REASON,
-  LifeGroupTaskMemberSetting,
-} from './entities/life-group-task-member-setting.entity';
+import { LifeGroupTaskMemberSetting } from './entities/life-group-task-member-setting.entity';
 import { LifeGroupTaskOverride } from './entities/life-group-task-override.entity';
 import { LifeGroupTaskSkip } from './entities/life-group-task-skip.entity';
 import { LifeGroupTaskTemplate } from './entities/life-group-task-template.entity';
@@ -149,15 +146,15 @@ export class LifeGroupTaskConfigService {
       present_count: m.presentCount,
       min_present_meetings: minPresentMeetings,
       // True for members grandfathered by the migration (explicit
-      // eligible=true row with the system note). Clients must not offer
-      // "back to automatic" for them: it would drop an established member.
-      grandfathered: m.setting?.reason === GRANDFATHERED_REASON,
+      // eligible=true row flagged by the `grandfathered` column). Clients
+      // must not offer "back to automatic" for them: it would drop an
+      // established member. The flag survives every leader edit.
+      grandfathered: m.setting?.grandfathered ?? false,
+      // join date in user_life_groups (null for leader/co-leader not listed
+      // as members); present_count only counts meetings on/after it.
+      joined_at: m.joinedAt ? m.joinedAt.toISOString() : null,
       // Leader-only note: this endpoint is leader/admin-only by design.
-      // The system grandfather note is never exposed.
-      reason:
-        m.setting?.reason && m.setting.reason !== GRANDFATHERED_REASON
-          ? m.setting.reason
-          : null,
+      reason: m.setting?.reason ?? null,
       excluded_template_ids: m.setting?.excludedTemplateIds ?? [],
     }));
   }
@@ -219,6 +216,13 @@ export class LifeGroupTaskConfigService {
     for (const entry of entries) {
       const current = byUser.get(entry.userId);
       if (entry.resetToAutomatic) {
+        if (current?.grandfathered) {
+          // Deleting the row would silently drop an established member from
+          // the rotation. To take them out the leader sets eligible=false.
+          throw new BadRequestException(
+            `User ${entry.userId} is grandfathered and cannot be reset to automatic; set eligible=false instead.`,
+          );
+        }
         if (current) toRemove.push(current);
         continue;
       }
@@ -234,17 +238,11 @@ export class LifeGroupTaskConfigService {
           userId: entry.userId,
           reason: null,
           excludedTemplateIds: null,
+          grandfathered: false,
         });
       setting.eligible = entry.eligible;
       if (entry.reason !== undefined) {
-        const reason = blankToNull(entry.reason);
-        // Clients never see the system grandfather note, so a blank note from
-        // them must not erase the marker (it keeps the member flagged as
-        // grandfathered). A real leader note replaces it.
-        setting.reason =
-          reason === null && setting.reason === GRANDFATHERED_REASON
-            ? GRANDFATHERED_REASON
-            : reason;
+        setting.reason = blankToNull(entry.reason);
       }
       if (entry.excludedTemplateIds !== undefined) {
         setting.excludedTemplateIds =
