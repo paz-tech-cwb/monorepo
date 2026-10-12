@@ -222,3 +222,18 @@ New iOS tests (`kmp-mobile/ios/PazChurchTests/`, hosted unit-test target, added 
 Local-only caveat: the app host calls `FirebaseApp.configure()` at launch, and `ios/PazChurch/GoogleService-Info.plist` is gitignored (missing in a fresh checkout; the build fails without it, and the `.example` placeholder crashes the test host). For validation I used a temporary syntactically valid fake plist and deleted it afterwards. Running the iOS tests on a fresh machine/CI needs a real (or fake-but-valid) GoogleService-Info.plist.
 
 What the user must do to run the Android part (not done, per the no-silent-SDK rule): install the Android SDK (e.g. Android Studio, or cmdline-tools) with `platforms;android-35`, `build-tools;35.0.0` (or the AGP 8.7.3 default) and `platform-tools`; accept licenses yourself with `yes | sdkmanager --licenses` (or `sdkmanager --licenses`); then create `kmp-mobile/local.properties` with `sdk.dir=/Users/<you>/Library/Android/sdk` (or export `ANDROID_HOME`) and run `./gradlew :shared:allTests :android:testDebugUnitTest :android:assembleDebug` with JDK 17.
+
+## Backend (home-card branch)
+
+Tooling: Node v22.23.3 (scratchpad download), existing `backend/node_modules`.
+
+| Check | Result |
+|---|---|
+| Phase 0 `jest src/life-group-reports` (characterization, pre-fix code) | PASS (3): list/detail serialize to `{}`, audit to `[{}]`, no scope check for a plain member |
+| `npx jest src/life-group-reports src/life-group-analytics src/life-group-attendance src/casa-de-paz-reports src/forms-core` | PASS except `notification-sender.spec` (baseline failure) |
+| `npx jest src/life-group-reports` after fix | PASS: 2 suites, 27 tests |
+| `npm run build` | PASS |
+| `npx eslint src/life-group-reports` | 0 errors, 8 warnings (`no-unsafe-argument` on supertest `getHttpServer()`, same as the existing analytics controller spec) |
+| `npx prettier --check src/life-group-reports` | PASS |
+| Full `npx jest` | 72 suites pass, 6 fail = baseline set (auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens); 5 failed tests, none new |
+| admin-ui tsc/eslint | NOT RUN (admin-ui untouched) |
