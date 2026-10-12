@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D5E0E520DC3A7B939E8F2110 /* LifeGroupTaskMembersViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B171DEE2C8BD7B9723EC438 /* LifeGroupTaskMembersViewModel.swift */; };
+		4124D5D23C6992CAB01A7E10 /* LifeGroupTaskMembersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1F07E7BEE9EBD1CF5A9D03E /* LifeGroupTaskMembersView.swift */; };
 		E54344F263AF3B1273BB6BD0 /* LifeGroupMyTasksCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D731842510D379048D76FFE /* LifeGroupMyTasksCard.swift */; };
 		1D493341C3DD574588A29A6C /* LifeGroupTaskGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 801D0471CD23989C9B34C40A /* LifeGroupTaskGuideView.swift */; };
 		963C35BCC633F976A02F84E3 /* LifeGroupTaskGuideViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78DB9C22A087078238BFEF81 /* LifeGroupTaskGuideViewModel.swift */; };
@@ -147,6 +149,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8B171DEE2C8BD7B9723EC438 /* LifeGroupTaskMembersViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskMembersViewModel.swift; sourceTree = "<group>"; };
+		B1F07E7BEE9EBD1CF5A9D03E /* LifeGroupTaskMembersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskMembersView.swift; sourceTree = "<group>"; };
 		7D731842510D379048D76FFE /* LifeGroupMyTasksCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupMyTasksCard.swift; sourceTree = "<group>"; };
 		801D0471CD23989C9B34C40A /* LifeGroupTaskGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskGuideView.swift; sourceTree = "<group>"; };
 		78DB9C22A087078238BFEF81 /* LifeGroupTaskGuideViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskGuideViewModel.swift; sourceTree = "<group>"; };
@@ -503,6 +507,8 @@
 		744A2D117CBCEF98E72B91EC /* LifeGroupTasks */ = {
 			isa = PBXGroup;
 			children = (
+				8B171DEE2C8BD7B9723EC438 /* LifeGroupTaskMembersViewModel.swift */,
+				B1F07E7BEE9EBD1CF5A9D03E /* LifeGroupTaskMembersView.swift */,
 				7D731842510D379048D76FFE /* LifeGroupMyTasksCard.swift */,
 				801D0471CD23989C9B34C40A /* LifeGroupTaskGuideView.swift */,
 				78DB9C22A087078238BFEF81 /* LifeGroupTaskGuideViewModel.swift */,
@@ -838,6 +844,8 @@
 				963C35BCC633F976A02F84E3 /* LifeGroupTaskGuideViewModel.swift in Sources */,
 				1D493341C3DD574588A29A6C /* LifeGroupTaskGuideView.swift in Sources */,
 				E54344F263AF3B1273BB6BD0 /* LifeGroupMyTasksCard.swift in Sources */,
+				4124D5D23C6992CAB01A7E10 /* LifeGroupTaskMembersView.swift in Sources */,
+				D5E0E520DC3A7B939E8F2110 /* LifeGroupTaskMembersViewModel.swift in Sources */,
 				65BD6B55FF25446AC29997D2 /* LifeGroupManageView.swift in Sources */,
 				3D84D9AFE377A15FCE617E1F /* LifeGroupPickerSheet.swift in Sources */,
 				A1DD2AC7CAB0A0304F69AA98 /* LifeGroupStudyDetailView.swift in Sources */,

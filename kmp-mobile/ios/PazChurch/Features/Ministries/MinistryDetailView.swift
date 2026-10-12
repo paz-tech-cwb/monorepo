@@ -378,6 +378,31 @@ struct LifeGroupDetailView: View {
                         .buttonStyle(.plain)
                     }
 
+                    if canManageAttendance {
+                        NavigationLink {
+                            LifeGroupTaskMembersView(
+                                lifeGroupId: Int32(lifeGroup.id),
+                                repository: IosAppContainer.shared.lifeGroupTaskRepository
+                            )
+                        } label: {
+                            HStack(spacing: PazSpacing.md) {
+                                Image(systemName: "person.crop.circle.badge.checkmark")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(PazColors.accent)
+                                Text("Elegibilidade para tarefas")
+                                    .font(PazTypography.titleSmall)
+                                    .foregroundColor(PazColors.ink)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(PazSpacing.lg)
+                            .glassCard(radius: PazSpacing.cardRadiusCompact)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     if canManage || canManageAttendance {
                         NavigationLink {
                             LifeGroupAnalyticsView(
