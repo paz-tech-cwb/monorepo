@@ -32,7 +32,7 @@ struct LifeGroupTaskMemberDraft: Identifiable {
         switch member.eligibilitySource {
         case .manual: return member.grandfathered ? "Membro antigo (participa)" : "Manual"
         case .leader: return "Liderança"
-        case .auto: return "Automático · \(member.presentCount) de \(member.minPresentMeetings) presenças"
+        case .auto_: return "Automático · \(member.presentCount) de \(member.minPresentMeetings) presenças"
         case .pending: return "Pendente · \(member.presentCount) de \(member.minPresentMeetings) presenças"
         default: return "Automático"
         }
