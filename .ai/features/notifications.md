@@ -63,7 +63,10 @@ puts it back to NULL on failure (same for the reroll/decline push and the
 `...:unassignable:{digest}` key first). A hard process kill between claim and
 release leaves the key claimed (that offset is not retried). A manual generate
 by a leader/admin pushes new assignees through the same per-assignment claim
-(only when the meeting falls within the largest configured offset).
+(only when the meeting falls within the largest configured offset; and not on
+the largest-offset day itself while the Sao Paulo hour is still before the
+rule's `hour`, since the evaluator will send it later that day with
+`notified_at` left NULL).
 
 ## Change checklist
 

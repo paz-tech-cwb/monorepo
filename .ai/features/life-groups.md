@@ -101,7 +101,9 @@ group members in rotation. Module: `backend/src/life-group-tasks/`.
 - **Manual generate** (`POST .../tasks/generate`) pushes the newly created
   assignees (`notified_at IS NULL`) when the meeting is today..today+largest
   offset (a later meeting is left to the evaluator's offset push); same claim as
-  the evaluator, so nobody is notified twice.
+  the evaluator, so nobody is notified twice. On the largest-offset day itself,
+  before the rule's `hour` (America/Sao_Paulo), the manual push is skipped
+  (`notified_at` stays NULL) because the evaluator still runs later that day.
 - **Skip dates**: `life_group_task_skips` marks meeting dates with no tasks; the evaluator ignores them.
 - **Pushes**: reminder rule `life_group_tasks` (enabled by default,
   `days_before_meeting: [3,1]`, `hour: 9`). Largest offset generates and notifies
