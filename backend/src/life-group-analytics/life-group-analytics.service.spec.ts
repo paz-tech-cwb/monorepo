@@ -324,6 +324,28 @@ describe('LifeGroupAnalyticsService', () => {
       expect(result.members_in_group).toBe(1);
     });
 
+    it('includes members of in-scope groups as well as members of the caller sectors when scope has both', async () => {
+      const mixedScope: ResolvedScope = {
+        unrestricted: false,
+        areaIds: [],
+        sectorIds: [3],
+        lifeGroupIds: [7, 8],
+      };
+      const { service, em } = createService([
+        [],
+        [{ id: '7', kids_count: '2', sector_label: 'Sul', member_count: '5' }],
+        [{ id: '20', life_group_count: '1' }],
+      ]);
+      await service.overview(mixedScope, actor);
+      const usersQb = em.createQueryBuilder.mock.results[2].value as {
+        where: jest.Mock;
+      };
+      expect(usersQb.where).toHaveBeenCalledWith(
+        '(u."sectorId" IN (:...sectorIds) OR lg.id IN (:...lifeGroupIds))',
+        { sectorIds: [3], lifeGroupIds: [7, 8] },
+      );
+    });
+
     it('derives the members universe from lifeGroupIds when a restricted caller has no sector scope (e.g. life_group_leader)', async () => {
       const sectorlessScope: ResolvedScope = {
         unrestricted: false,

@@ -404,9 +404,19 @@ export class LifeGroupAnalyticsService {
         }
         usersQb.where('lg.id IN (:...lifeGroupIds)', { lifeGroupIds });
       } else {
-        usersQb.where('u."sectorId" IN (:...sectorIds)', {
-          sectorIds: scope.sectorIds,
-        });
+        // Sector scope, plus any group the caller leads outside those
+        // sectors (scope may now mix both: e.g. a sector leader who also
+        // co-leads a group in another sector).
+        if (lifeGroupIds !== null && lifeGroupIds.length > 0) {
+          usersQb.where(
+            '(u."sectorId" IN (:...sectorIds) OR lg.id IN (:...lifeGroupIds))',
+            { sectorIds: scope.sectorIds, lifeGroupIds },
+          );
+        } else {
+          usersQb.where('u."sectorId" IN (:...sectorIds)', {
+            sectorIds: scope.sectorIds,
+          });
+        }
       }
     }
     usersQb.groupBy('u.id');

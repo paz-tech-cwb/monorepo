@@ -15,13 +15,59 @@ Area
 
 ## Visibility
 
-Life group visibility follows cascade scope:
+Life group visibility follows cascade scope, resolved by
+`ScopeResolverService` (`forms-core/services/scope-resolver.service.ts`):
 
-- Admins and pastors can see all groups.
-- Area leaders can see groups inside their areas.
-- Sector leaders can see groups inside their sectors.
-- Life group leaders can see their own group.
+- Admins and pastors can see all groups (unrestricted, unchanged).
+- Everyone else: scope is derived from the `leader_id` / `co_leader_id` rows the
+  user actually holds, NOT from the role slug (roles are assigned manually and
+  are not synced when a leader is set on an Area/Sector/LifeGroup, and
+  co-leaders have no slug of their own). A user may lead several rows; all of
+  them are unioned:
+  - area leader/co-leader: every sector of every area they lead/co-lead, and
+    every group in those sectors;
+  - sector leader/co-leader: every group in every sector they lead/co-lead;
+  - life group leader/co-leader: every group they lead/co-lead.
+  `ResolvedScope` = `{unrestricted, areaIds, sectorIds, lifeGroupIds}` (unchanged
+  shape; `sectorIds`/`lifeGroupIds` are unions). A user who leads nothing (plain
+  member, guest, any slug) gets an empty scope. Endpoint `@Roles` guards still
+  gate by slug, so widening the resolver never opens a role-gated endpoint.
 - Members see only member-facing group information unless a workflow grants more.
+
+### Row-based scope: read vs write (review decisions)
+
+- Resolution cost: one user+role lookup plus ONE ids-only SQL (CTE over areas -> sectors -> groups); admin/pastor skip the second query. `GuestsService.findGuests` and `JourneyProgressService` still resolve once more themselves (their routes do not run `ScopeGuard`; reusing `req.formScope` would need adding the guard, deferred).
+- READ widening (product/privacy decision, kept): any user holding a leader/co-leader row now gets scope-filtered READ data regardless of role slug (previously a slug-less leader/co-leader got an empty scope). Endpoints guarded only by `ScopeGuard` (no `RolesGuard` on GET) are affected: `GET member-registrations`, `GET form-guests`, `GET form-conversions`, `GET life-group-reports` (list, `:id`, `:id/audit`), `GET casa-de-paz-reports` (list, `:id`, `:id/audit`), plus life-group-analytics. This is consistent with the attendance/report co-leader fallbacks. Open product question: should slug-less leaders/co-leaders see registrations/guests/conversions PII of their groups and sectors? If not, add `RolesGuard` to those GETs.
+- WRITE authority is NOT widened: `casa-de-paz-reports` update/delete bypass the owner/24h policy only for `unrestricted` scope or when the actor's role slug is `area_leader`/`sector_leader` AND the sector is in scope. A slug-less (e.g. `member`) sector/area co-leader sees the sector's reports but edits/deletes only under the normal policy.
+- `life-group-analytics` overview: the members universe for a scoped caller is now `users.sectorId IN sectors OR lifeGroup IN scoped groups`, so users rostered in a scoped group but with a different/null `sectorId` are counted. `members_total` can therefore be larger than before for sector-scoped callers (more correct; intentional).
+
+### `GET /life-groups/me`
+
+Returns the viewer's groups: led, co-led, supervised (group is in a sector the
+viewer leads/co-leads or in any sector of an area the viewer leads/co-leads) and
+rostered. Each item has the usual life group fields plus:
+
+- `relationship`: `leader` | `co_leader` | `supervisor` | `member`, precedence in
+  that order when several apply.
+- `is_supervised`: `true` whenever the viewer supervises the group via
+  area/sector, even if `leader`/`co_leader` wins the precedence.
+
+Only `/me` carries these two fields (other endpoints are unchanged). `/me` omits the roster (`members: null`) for supervisor-only rows (viewer is not
+leader/co-leader and is not rostered) and keeps `member_count`; leader,
+co-leader and member rows keep the roster. `GET /life-groups/:id` shows the
+roster to a supervisor of that group (the supervision check is restricted to the
+requested id). Plain members are never widened. `GET /life-groups`
+(discovery/admin-ui list) is intentionally unscoped (every authenticated user
+sees every group, rosters hidden) and was not changed. Response order is name
+ascending; clients decide ranking.
+
+Clients: Kotlin `LifeGroup` has optional `relationship` / `isSupervised`
+(defaults null / false, so older backends and older apps keep working; the
+Kotlin JSON config uses `ignoreUnknownKeys`). iOS reads the shared model.
+Home card recommendation (open product question): rank
+leader > co_leader > member > supervisor, keep the cap at 3, and when a
+supervisor has more than 3 supervised groups show one summary card ("Você
+supervisiona N grupos") rather than alphabetical supervised cards.
 
 ## Attendance (Phase 1)
 

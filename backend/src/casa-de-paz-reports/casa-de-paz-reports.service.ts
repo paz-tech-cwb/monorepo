@@ -13,6 +13,7 @@ import { FormSubmissionPolicyService } from '../forms-core/services/form-submiss
 import { FormSubmissionAuditService } from '../forms-core/services/form-submission-audit.service';
 import { GuestOriginsService } from '../guest-origins/guest-origins.service';
 
+const SECTOR_MANAGER_SLUGS = ['area_leader', 'sector_leader'];
 const SLUG = 'casa-de-paz-reports';
 
 export interface CasaDePazReportGuestResponse {
@@ -230,6 +231,23 @@ export class CasaDePazReportsService {
     return this.toResponse(await this.findEntity(id, scope, actor));
   }
 
+  // Write bypass of the owner/time-window policy. Scope is row-based (any
+  // leader/co-leader row, regardless of role slug), so write authority must
+  // ALSO keep requiring the manager slug as before: a slug-less sector/area
+  // co-leader sees the sector's reports but does not gain edit/delete.
+  private managesSector(
+    actor: { roleSlug: string },
+    scope: ResolvedScope | undefined,
+    sectorId: number,
+  ): boolean {
+    if (!scope) return false;
+    if (scope.unrestricted) return true;
+    return (
+      SECTOR_MANAGER_SLUGS.includes(actor.roleSlug) &&
+      scope.sectorIds.includes(sectorId)
+    );
+  }
+
   async update(
     id: string,
     dto: UpdateCasaDePazReportDto,
@@ -237,8 +255,7 @@ export class CasaDePazReportsService {
     scope?: ResolvedScope,
   ): Promise<CasaDePazReportResponse> {
     const m = await this.findEntity(id);
-    const managesSector =
-      !!scope && (scope.unrestricted || scope.sectorIds.includes(m.sectorId));
+    const managesSector = this.managesSector(actor, scope, m.sectorId);
     if (!managesSector) {
       this.policy.assertCanEdit(actor, {
         submittedById: m.submittedBy.id,
@@ -294,8 +311,7 @@ export class CasaDePazReportsService {
     scope?: ResolvedScope,
   ): Promise<void> {
     const m = await this.findEntity(id);
-    const managesSector =
-      !!scope && (scope.unrestricted || scope.sectorIds.includes(m.sectorId));
+    const managesSector = this.managesSector(actor, scope, m.sectorId);
     if (!managesSector) {
       this.policy.assertCanDelete(actor);
     }
