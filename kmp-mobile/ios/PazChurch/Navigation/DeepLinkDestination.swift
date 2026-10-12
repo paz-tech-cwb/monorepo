@@ -23,6 +23,47 @@ extension DeepLinkDestination {
         }
     }
 
+    /// Keys the backend may use for the deep link in the push payload. FCM places every
+    /// `data` entry at the top level of the APNs `userInfo`, next to `aps`.
+    static let userInfoDeepLinkKeys = ["deep_link", "deepLink"]
+
+    /// Reads the raw `paz://...` deep link out of a notification's `userInfo`.
+    static func rawDeepLink(fromUserInfo userInfo: [AnyHashable: Any]) -> String? {
+        for key in userInfoDeepLinkKeys {
+            if let value = userInfo[key] as? String, !value.trimmingCharacters(in: .whitespaces).isEmpty {
+                return value
+            }
+        }
+        return nil
+    }
+
+    /// Full resolution of a tapped notification's `userInfo` to a destination.
+    static func from(userInfo: [AnyHashable: Any]) -> DeepLinkDestination? {
+        rawDeepLink(fromUserInfo: userInfo)
+            .flatMap { parsedRoute(fromDeepLink: $0) }
+            .flatMap { from(parsedRoute: $0) }
+    }
+
+    /// Maps a raw `paz://...` deep link to the "parsed route" identifier consumed by
+    /// `from(parsedRoute:)`. Returns nil for unknown links.
+    static func parsedRoute(fromDeepLink rawDeepLink: String) -> String? {
+        var deepLink = rawDeepLink.trimmingCharacters(in: .whitespacesAndNewlines)
+        while deepLink.hasSuffix("/") { deepLink.removeLast() }
+        let withIds = [
+            "agenda", "form", "ministry", "lifegroup", "estudo-do-life", "presenca", "tarefa",
+        ]
+        for name in withIds {
+            let prefix = "paz://\(name)/"
+            if deepLink.hasPrefix(prefix) {
+                return "\(name)/\(deepLink.dropFirst(prefix.count))"
+            }
+        }
+        if deepLink == "paz://formularios" || deepLink.hasPrefix("paz://formularios/") { return "formularios" }
+        if deepLink == "paz://journey" { return "journey" }
+        if deepLink == "paz://account" { return "account" }
+        return nil
+    }
+
     static func from(parsedRoute: String) -> DeepLinkDestination? {
         if parsedRoute.hasPrefix("agenda/") {
             let id = String(parsedRoute.dropFirst("agenda/".count))

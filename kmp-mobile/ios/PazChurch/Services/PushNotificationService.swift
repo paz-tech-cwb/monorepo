@@ -42,6 +42,13 @@ class PushNotificationService: NSObject {
                 UIApplication.shared.registerForRemoteNotifications()
             }
         }
+        installNotificationCenterDelegate()
+    }
+
+    /// The delegate must be installed before the app finishes launching (see
+    /// `AppDelegate.didFinishLaunching`), otherwise the response of a notification tapped while
+    /// the app was killed (cold start) can be delivered before anyone is listening and is lost.
+    func installNotificationCenterDelegate() {
         UNUserNotificationCenter.current().delegate = self
     }
 
@@ -63,52 +70,21 @@ class PushNotificationService: NSObject {
         [.banner, .badge, .sound]
     }
 
-    /// Called when user taps a notification
+    /// Called when user taps a notification (foreground, background or cold start).
     func handleNotificationTap(_ response: UNNotificationResponse) {
-        let userInfo = response.notification.request.content.userInfo
-        if let deepLink = userInfo["deep_link"] as? String {
-            pendingDeepLink = parseDeepLink(deepLink)
-        }
+        handleNotificationTap(userInfo: response.notification.request.content.userInfo)
+    }
+
+    func handleNotificationTap(userInfo: [AnyHashable: Any]) {
+        guard let deepLink = DeepLinkDestination.rawDeepLink(fromUserInfo: userInfo) else { return }
+        pendingDeepLink = parseDeepLink(deepLink)
     }
 
     // MARK: - Deep Link Parsing
 
+    /// Returns the screen identifier that the app's navigation can act on.
     func parseDeepLink(_ deepLink: String) -> String? {
-        // Returns the screen identifier that the app's navigation can act on
-        switch true {
-        case deepLink.hasPrefix("paz://agenda/"):
-            "agenda/\(deepLink.dropFirst("paz://agenda/".count))"
-
-        case deepLink.hasPrefix("paz://form/"):
-            "form/\(deepLink.dropFirst("paz://form/".count))"
-
-        case deepLink.hasPrefix("paz://ministry/"):
-            "ministry/\(deepLink.dropFirst("paz://ministry/".count))"
-
-        case deepLink.hasPrefix("paz://lifegroup/"):
-            "lifegroup/\(deepLink.dropFirst("paz://lifegroup/".count))"
-
-        case deepLink.hasPrefix("paz://estudo-do-life/"):
-            "estudo-do-life/\(deepLink.dropFirst("paz://estudo-do-life/".count))"
-
-        case deepLink.hasPrefix("paz://presenca/"):
-            "presenca/\(deepLink.dropFirst("paz://presenca/".count))"
-
-        case deepLink.hasPrefix("paz://tarefa/"):
-            "tarefa/\(deepLink.dropFirst("paz://tarefa/".count))"
-
-        case deepLink == "paz://formularios":
-            "formularios"
-
-        case deepLink == "paz://journey":
-            "journey"
-
-        case deepLink == "paz://account":
-            "account"
-
-        default:
-            nil
-        }
+        DeepLinkDestination.parsedRoute(fromDeepLink: deepLink)
     }
 }
 

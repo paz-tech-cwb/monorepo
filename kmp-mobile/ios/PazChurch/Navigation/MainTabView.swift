@@ -37,11 +37,13 @@ struct MainTabView: View {
             .tag(2)
         }
         .tint(PazColors.accent)
-        .onChange(of: pushService.pendingDeepLink) { _, newValue in
+        // `initial: true`: on a cold start the tap is recorded while the splash is still up,
+        // i.e. before this view exists, so a plain onChange would never see the value.
+        .onChange(of: pushService.pendingDeepLink, initial: true) { _, newValue in
             guard newValue != nil,
                   let destination = pushService.deepLinkDestination
             else { return }
-            handleDeepLink(destination, consume: destination.usesHomeStack)
+            handleDeepLink(destination, consume: destination.usesHomeStack || destination == .account)
         }
     }
 

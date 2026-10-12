@@ -73,7 +73,9 @@ struct AccountView: View {
         .onChange(of: authCoordinator.isAuthenticated) { _, isAuth in
             if isAuth { Task { await viewModel.reload() } }
         }
-        .onChange(of: pushService.pendingDeepLink) { _, newValue in
+        // `initial: true`: this tab is built lazily when MainTabView switches to it, after
+        // pendingDeepLink was already set, so a plain onChange would miss it.
+        .onChange(of: pushService.pendingDeepLink, initial: true) { _, newValue in
             guard newValue != nil,
                   let destination = pushService.deepLinkDestination
             else { return }

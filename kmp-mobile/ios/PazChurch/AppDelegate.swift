@@ -10,7 +10,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         // Firebase is configured in PazChurchApp.init(); AppDelegate only needs
         // to handle APNs callbacks that arrive via UIApplicationDelegate.
-        true
+
+        // Must be set here (not lazily after sign-in/splash): a tap on a notification while the
+        // app is killed is delivered to the delegate right after launch.
+        MainActor.assumeIsolated {
+            PushNotificationService.shared.installNotificationCenterDelegate()
+        }
+        return true
     }
 
     /// Called when APNs successfully registers the device.
