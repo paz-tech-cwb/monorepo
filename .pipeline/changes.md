@@ -141,3 +141,18 @@
 - Home screen card NOT added (not trivial: HomeViewModel/state would need extra wiring); the entry points are the life group detail card and the push deep link.
 - `PazColors`/`MaterialTheme` tokens only; no new colors/dp tokens beyond the 20/22dp icon sizes already used on the same screen.
 - iOS parity: route name `life_group_task/{assignmentId}`; deep link `paz://tarefa/{assignmentId}`.
+
+## Phase M4 (Android: leader eligibility screen)
+
+### Files (under `kmp-mobile/android/src/`)
+- New `main/.../ui/features/lifegrouptasks/`: `LifeGroupTaskMembersScreen.kt`, `LifeGroupTaskMembersViewModel.kt`, `LifeGroupTaskMembersUiState.kt` (draft model, `sourceBadgeLabel()`, effect). Screen "Elegibilidade para tarefas": group setting `min_present_meetings` stepper (0..52), one card per member with eligibility `Switch`, source badge (Manual / Liderança / "Automático · N de M presenças" / "Pendente · N de M presenças"), expandable details with the leader-only note field (max 1000) and per-template exclusion checkboxes (only templates enabled for the group), "Voltar ao automático" (only for MANUAL members; undoable before saving), single "Salvar" button, pull-to-refresh, skeleton/error/empty states.
+- Save flow: `updateTaskSettings` first (if the minimum changed, since it changes which members are automatically eligible), then `updateTaskMembers` with ONLY the dirty members (or `getTaskMembers` when only the setting changed); the response replaces the drafts. Per member the update carries `eligible` (backend requires it unless resetting; this pins the member as a manual decision, noted in the UI), `note`/`excludedTemplateIds` only when changed (empty string / empty list clear them), or only `resetToAutomatic=true`.
+- `navigation/Screen.kt`: `LifeGroupTaskMembers` = `life_group_task_members/{lifeGroupId}`; `PazNavGraph.kt` composable; `di/AndroidModule.kt`: `viewModel { (lifeGroupId: Int) -> LifeGroupTaskMembersViewModel(lifeGroupId, get()) }`.
+- Entry point: "Elegibilidade para tarefas" card on the life group detail screen, shown only when `canManageAttendance` (current user id == group `leaderId` or `coLeaderId`, the existing leader/co-leader gate used for "Presença"). `LifeGroupDetailEffect.NavigateToTaskMembers` added.
+- Test: `LifeGroupTaskMembersViewModelTest` (13).
+
+### Notes / deviations
+- Gate is leader/co-leader of THIS group only (as requested); backend also allows admin, but admins manage it in admin-ui.
+- The route arg is the group id as String; the screen converts with `toInt()` like the attendance screens.
+- Same inline pt-BR strings convention as M2.
+- iOS parity: route `life_group_task_members/{lifeGroupId}`; endpoints `GET/PUT /life-groups/:id/task-members`, `GET/PUT /life-groups/:id/task-settings`, `GET /life-groups/:id/task-overrides` (templates) via `LifeGroupTaskRepository`.

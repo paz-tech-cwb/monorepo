@@ -44,6 +44,10 @@ sealed class LifeGroupDetailEffect {
         val assignmentId: String,
     ) : LifeGroupDetailEffect()
 
+    data class NavigateToTaskMembers(
+        val lifeGroupId: String,
+    ) : LifeGroupDetailEffect()
+
     data class NavigateToManage(
         val lifeGroupId: String,
     ) : LifeGroupDetailEffect()

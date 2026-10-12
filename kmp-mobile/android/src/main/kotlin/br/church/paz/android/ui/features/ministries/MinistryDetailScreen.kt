@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -250,6 +251,11 @@ fun LifeGroupDetailScreen(
                         br.church.paz.android.navigation.Screen.LifeGroupManage
                             .createRoute(effect.lifeGroupId),
                     )
+                is LifeGroupDetailEffect.NavigateToTaskMembers ->
+                    navController.navigate(
+                        br.church.paz.android.navigation.Screen.LifeGroupTaskMembers
+                            .createRoute(effect.lifeGroupId),
+                    )
                 is LifeGroupDetailEffect.NavigateToTask ->
                     navController.navigate(
                         br.church.paz.android.navigation.Screen.LifeGroupTaskGuide
@@ -296,6 +302,7 @@ fun LifeGroupDetailScreen(
                 },
                 myTasks = uiState.myTasks,
                 onTaskTap = viewModel::onTaskTap,
+                onTaskMembersTap = viewModel::onTaskMembersTap,
                 canManage = uiState.canManage,
                 onAnalyticsTap = {
                     navController.navigate(
@@ -316,6 +323,7 @@ private fun LifeGroupContent(
     onAttendanceTap: () -> Unit,
     myTasks: List<LifeGroupTask>,
     onTaskTap: (String) -> Unit,
+    onTaskMembersTap: () -> Unit,
     canManage: Boolean,
     onAnalyticsTap: () -> Unit,
 ) {
@@ -519,6 +527,35 @@ private fun LifeGroupContent(
                             modifier = Modifier.size(22.dp),
                         )
                         Text("Presença", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        Icon(
+                            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                        )
+                    }
+                }
+            }
+        }
+
+        // Only this group's leader/co-leader (same gate as "Presença") manages task eligibility.
+        if (canManageAttendance) {
+            item {
+                PazGlassCard(
+                    modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onTaskMembersTap),
+                    cornerRadius = PazSpacing.CardRadiusCompact,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(PazSpacing.Lg),
+                        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Outlined.Person,
+                            contentDescription = null,
+                            tint = PazColors.Primary,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Text("Elegibilidade para tarefas", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                         Icon(
                             Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                             contentDescription = null,

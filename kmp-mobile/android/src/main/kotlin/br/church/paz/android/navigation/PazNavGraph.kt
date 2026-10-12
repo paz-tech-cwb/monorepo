@@ -32,6 +32,7 @@ import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailScre
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListScreen
 import br.church.paz.android.ui.features.lifegrouptasks.LifeGroupTaskGuideScreen
+import br.church.paz.android.ui.features.lifegrouptasks.LifeGroupTaskMembersScreen
 import br.church.paz.android.ui.features.memberjourney.MemberJourneyScreen
 import br.church.paz.android.ui.features.ministries.AllLifeGroupsScreen
 import br.church.paz.android.ui.features.ministries.GroupMembersListScreen
@@ -284,6 +285,13 @@ fun PazNavGraph(startDeepLinkRoute: String? = null) {
         ) { backStackEntry ->
             val assignmentId = backStackEntry.arguments?.getString("assignmentId") ?: return@composable
             LifeGroupTaskGuideScreen(navController = navController, assignmentId = assignmentId)
+        }
+        composable(
+            route = Screen.LifeGroupTaskMembers.route,
+            arguments = listOf(androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType }),
+        ) { backStackEntry ->
+            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
+            LifeGroupTaskMembersScreen(navController = navController, lifeGroupId = lifeGroupId)
         }
         composable(route = Screen.CasaDePazAnalytics.route) {
             CasaDePazAnalyticsScreen(navController = navController)

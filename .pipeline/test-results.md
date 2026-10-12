@@ -114,3 +114,10 @@ Java is a stub (`java -version`: "Unable to locate a Java Runtime"), so `./gradl
 - Manual verification: every import/symbol checked against real files (`PazButton`/`PazButtonVariant`, `PazErrorState`, `PazPullToRefresh`, `PazGlassCard`, `PazSkeleton`, `PazMeshBackground`, `PazSpacing`, `PazShapes`, `PazColors.Success`, `brDateString`, shared `LifeGroupTask*` models/repository, `User`, `LifeGroup`); expected values in the parser tests traced by hand against the parser; Compose APIs (`LinkAnnotation.Url`, `TextLinkStyles`, `withLink`) exist in the compose-bom 2025.04.00 (ui-text 1.8). New lines kept <= 140 cols (editorconfig); import order kept lexicographic.
 - NOT verified: compilation, test execution, ktlint, runtime rendering.
 - Re-run: `cd kmp-mobile && ./gradlew :android:testDebugUnitTest :android:assembleDebug ktlintCheck`.
+
+## Phase M4 (Android) results
+
+Java is a stub, so `./gradlew :android:testDebugUnitTest`, `:android:assembleDebug` and `ktlintCheck` were NOT run. Nothing compiled.
+- Added `LifeGroupTaskMembersViewModelTest` (13 tests: load mapping/enabled-only templates/failures, dirty tracking, save payload shape (changed members only, eligible pinned, note/exclusion clear semantics, reset flag), settings-first ordering, clamping, failed save, note length, badge labels). Expected values traced by hand against the ViewModel.
+- Cross-checked against the shared API (`LifeGroupTaskMember`, `LifeGroupTaskMemberUpdate`, `LifeGroupTaskSettings`, `LifeGroupTaskTemplateSummary`, repository signatures) and backend DTO limits (`min_present_meetings` 0..52, `reason` <= 1000, `eligible` required unless reset). Icons used exist in the project already (`Outlined.Person`, `Filled.Add/Remove`).
+- NOT verified: compilation, test execution, ktlint, runtime UI. Re-run: `cd kmp-mobile && ./gradlew :android:testDebugUnitTest :android:assembleDebug ktlintCheck`.

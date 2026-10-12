@@ -142,6 +142,10 @@ class LifeGroupDetailViewModel(
         viewModelScope.launch { _effect.send(LifeGroupDetailEffect.NavigateToTask(assignmentId)) }
     }
 
+    fun onTaskMembersTap() {
+        viewModelScope.launch { _effect.send(LifeGroupDetailEffect.NavigateToTaskMembers(lifeGroupId)) }
+    }
+
     fun onBack() {
         viewModelScope.launch { _effect.send(LifeGroupDetailEffect.NavigateBack) }
     }

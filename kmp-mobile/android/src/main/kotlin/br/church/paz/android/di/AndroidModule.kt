@@ -27,6 +27,7 @@ import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailView
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListViewModel
 import br.church.paz.android.ui.features.lifegrouptasks.LifeGroupTaskGuideViewModel
+import br.church.paz.android.ui.features.lifegrouptasks.LifeGroupTaskMembersViewModel
 import br.church.paz.android.ui.features.memberjourney.MemberJourneyViewModel
 import br.church.paz.android.ui.features.ministries.AllLifeGroupsViewModel
 import br.church.paz.android.ui.features.ministries.GroupMembersListViewModel
@@ -97,6 +98,7 @@ val androidModule =
         }
         viewModel { (lifeGroupId: Int?) -> LifeGroupAnalyticsViewModel(lifeGroupId, get()) }
         viewModel { (assignmentId: String) -> LifeGroupTaskGuideViewModel(assignmentId, get()) }
+        viewModel { (lifeGroupId: Int) -> LifeGroupTaskMembersViewModel(lifeGroupId, get()) }
         viewModel { CasaDePazAnalyticsViewModel(get()) }
         viewModel { ReportsListViewModel(get()) }
         viewModel { CasaDePazLessonsListViewModel(get()) }
