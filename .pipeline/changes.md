@@ -369,3 +369,9 @@ Mine (see `spec.md` D1-D9): D1 only admin bypasses the window (pastor bound); D2
 - Android/iOS untouched; no client consumes the endpoint yet.
 - Postgres used for tests is 17.5 (embedded), prod is 16.
 - Behavior of legacy `PATCH /forms/life-group-reports/:id` on linked reports (no re-sync) is a known gap, phase 0/4.
+
+## Review fixes (meetings API)
+- M1: `attendance`/`report` in `UpsertLifeGroupMeetingDto` now `@IsObject()` (arrays/strings/numbers -> 400 instead of 500); controller spec cases added.
+- m1: report-only PUT share-locks the attendance row (`pessimistic_read`) so a concurrent legacy attendance PUT cannot leave a stale `committed_*` snapshot; real-PG interleave test added.
+- m2: spec D1/D6 note the legacy attendance PUT has no edit window and re-syncs linked reports after day 14 (phase 4 to close).
+- m3: entity comment reworded (synchronize would drop the DB-only index/FK). m4: migration FK existence check also matches `conrelid`. m5 stays as D9.

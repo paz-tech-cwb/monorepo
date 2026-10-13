@@ -17,6 +17,7 @@ export class AddAttendanceLinkToLifeGroupReports1796000000000
         IF NOT EXISTS (
           SELECT 1 FROM pg_constraint
           WHERE conname = 'fk_life_group_reports_attendance'
+            AND conrelid = 'life_group_reports'::regclass
         ) THEN
           ALTER TABLE life_group_reports
             ADD CONSTRAINT fk_life_group_reports_attendance

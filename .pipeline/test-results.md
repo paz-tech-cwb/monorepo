@@ -333,3 +333,19 @@ Real TypeORM CLI (`nest build`, `typeorm -d dist/db/data-source.js migration:run
 - Any mobile/admin-ui consumer (none exists yet).
 
 Cleanup outcome: the throwaway Postgres was stopped (SIGINT to the postmaster, port 54925 no longer listening). `rm -rf` of its data dir (`<scratchpad>/pg5/data`) and `kill` of the idle node wrapper (`node start.mjs`, pid 18789) were DENIED by the sandbox permission system, so the data dir (throwaway user/password, fixtures only) and the idle wrapper process remain in the scratchpad and need manual removal.
+
+# Review fixes (meetings API) - 2026-10-13
+
+Fixes: M1 (`@IsObject()` above `@ValidateNested()` on `attendance` and `report`; controller spec rejects `[]`, `[1]`, `'x'`, `5`, `true` for both with 400 and nothing written), m1 (report-only PUT reads the attendance row with `pessimistic_read`; new real-PG interleave test: a held, uncommitted attendance UPDATE blocks the report PUT, then the committed counts are snapshotted; mutation check: with the lock removed that test fails), m2 (D1/D6 in spec.md record that the legacy attendance PUT has no edit window and re-syncs linked reports after day 14), m3 (entity comment reworded: synchronize would drop the DB-only index/FK, never run with DB_SYNCHRONIZE=true), m4 (`conrelid = 'life_group_reports'::regclass` in the migration FK existence check). m5 left documented (D9).
+
+Validation (Node 22.23.3):
+- `npm run build`: PASS.
+- Scoped jest (meetings, attendance, reports, analytics, tasks, forms-core): 24 suites pass, 1 fails (`notification-sender.spec.ts`, pre-existing on develop), 1 skipped (integration); 320 tests pass.
+- Full jest: 76 suites pass / 6 fail / 1 skipped; 653 pass / 5 fail / 28 skipped. Failing set identical to develop baseline (auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens.service): no new failures.
+- eslint on the 6 changed files: clean. prettier --check: clean.
+- Throwaway PostgreSQL 17.5 (embedded-postgres, NEW scratchpad dir `pg6`, port 54926): migration chain up (FK has conrelid life_group_reports), down (FK + indexes gone), duplicates scenario (migration succeeds, 1 finding, unique index not created, original columns md5 identical before/after run and revert), resolve + re-run (index created, findings empty): PASS.
+- Integration spec against it: 28/28 pass (27 + the new interleave test).
+
+Not verified: Postgres 16; migration on a prod-shaped DB.
+
+Cleanup: Postgres stopped (port 54926 closed). `kill` of the idle node wrapper (pid 25717, `node start.mjs`) and `rm -rf <scratchpad>/pg6/data` were DENIED; they remain (plus older wrappers 18789, 69663, 86989, 119 from earlier runs).

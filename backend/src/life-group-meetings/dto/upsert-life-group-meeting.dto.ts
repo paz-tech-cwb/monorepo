@@ -4,6 +4,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Matches,
@@ -113,12 +114,15 @@ export class MeetingReportDto {
 export class UpsertLifeGroupMeetingDto {
   @Expose()
   @IsOptional()
+  // @ValidateNested alone accepts arrays; require a plain object.
+  @IsObject()
   @ValidateNested()
   @Type(() => MeetingAttendanceDto)
   attendance?: MeetingAttendanceDto | null;
 
   @Expose()
   @IsOptional()
+  @IsObject()
   @ValidateNested()
   @Type(() => MeetingReportDto)
   report?: MeetingReportDto | null;

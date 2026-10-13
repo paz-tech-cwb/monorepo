@@ -34,7 +34,7 @@ Errors: 400 bad date/body/weekday mismatch/roster, 403 no access or edit window 
 - D3 Groups without a fixed `meeting_day`: same as attendance today, any past date accepted.
 - D4 Attendance-only PUT on a date that has an UNLINKED legacy report leaves that report untouched (not linked, not re-synced); a PUT with `report` links it and overwrites its snapshot fields.
 - D5 Multiple non-deleted reports for one (group,date) in a dirty DB: the oldest is the one updated; extra rows untouched (warn log).
-- D6 Old `POST /forms/life-group-reports` duplicate (index present) now answers 409 instead of a DB 500; old `PATCH` unchanged (does not re-sync `committed_*` on linked rows; phase 0/4).
+- D6 Old `POST /forms/life-group-reports` duplicate (index present) now answers 409 instead of a DB 500; old `PATCH` unchanged (does not re-sync `committed_*` on linked rows; phase 0/4). The legacy attendance PUT re-syncs linked reports regardless of the 14-day window (see D1).
 - D7 `edit_deadline` is `YYYY-MM-DD` (last editable day, inclusive, Sao Paulo), same for everyone; `can_edit` is per viewer.
 - D8 Attendance entries capped at 500, report arrays at 20 items x 80 chars, `*_other` 180, counts 0..100000, offering `^\d{1,8}(\.\d{1,2})?$`.
 - D9 "Future date" check reuses the attendance rule (UTC date), the edit window uses Sao Paulo days.

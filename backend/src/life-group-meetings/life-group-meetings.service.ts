@@ -249,8 +249,12 @@ export class LifeGroupMeetingsService {
             trx,
           );
         } else {
+          // Share-lock the row: a legacy attendance PUT (no advisory lock)
+          // cannot change the counts between this read and the report link,
+          // so the committed_* snapshot below cannot go stale.
           attendance = await trx.findOne(LifeGroupAttendance, {
             where: { lifeGroupId, meetingDate },
+            lock: { mode: 'pessimistic_read' },
           });
         }
 

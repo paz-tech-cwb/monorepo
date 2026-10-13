@@ -295,6 +295,20 @@ describe('LifeGroupMeetingsController (global pipe + serializer)', () => {
       }
     });
 
+    it('rejects non-object attendance/report values (arrays, strings, numbers)', async () => {
+      for (const bad of [[], [1], 'x', 5, true]) {
+        await request(app.getHttpServer())
+          .put(url)
+          .send({ attendance: bad })
+          .expect(400);
+        await request(app.getHttpServer())
+          .put(url)
+          .send({ attendance: validAttendance, report: bad })
+          .expect(400);
+      }
+      expect(em.rows(LifeGroupAttendance)).toHaveLength(0);
+    });
+
     it('rejects a non-numeric group id', async () => {
       await request(app.getHttpServer())
         .get(`/life-groups/abc/meetings/${TODAY}`)

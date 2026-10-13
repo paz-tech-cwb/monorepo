@@ -367,6 +367,53 @@ maybe('life-group-meetings (real PostgreSQL)', () => {
     });
   });
 
+  describe('report-only PUT vs concurrent legacy attendance change', () => {
+    it('waits for an in-flight attendance write and snapshots its committed counts', async () => {
+      await clean();
+      await http()
+        .put(meetingUrl(9001, THIS_WEEK))
+        .set(as(9101))
+        .send({ attendance: att() })
+        .expect(200);
+      const [{ members_count: before }] = await ds.query(
+        `SELECT members_count FROM life_group_attendance WHERE life_group_id=9001`,
+      );
+      // Simulates a legacy attendance PUT mid-flight: row updated, not committed.
+      const holder = ds.createQueryRunner();
+      await holder.connect();
+      await holder.startTransaction();
+      try {
+        await holder.query(
+          `UPDATE life_group_attendance SET members_count = $1, present_count = $2 WHERE life_group_id=9001`,
+          [before + 7, 5],
+        );
+        let done = false;
+        const pending = http()
+          .put(meetingUrl(9001, THIS_WEEK))
+          .set(as(9101))
+          .send({ report })
+          .then((r) => {
+            done = true;
+            return r;
+          });
+        await new Promise((r) => setTimeout(r, 700));
+        expect(done).toBe(false); // blocked on the attendance row
+        await holder.commitTransaction();
+        const res = await pending;
+        expect(res.status).toBe(200);
+      } finally {
+        if (holder.isTransactionActive) await holder.rollbackTransaction();
+        await holder.release();
+      }
+      const [row] = await ds.query(
+        `SELECT committed_members, committed_members_present FROM life_group_reports WHERE life_group_id=9001`,
+      );
+      expect(row.committed_members).toBe(before + 7);
+      expect(row.committed_members_present).toBe(5);
+      await clean();
+    });
+  });
+
   describe('transaction rollback', () => {
     it('a DB error on the report insert (NUL byte in text[]) rolls back the attendance', async () => {
       const res = await http()
