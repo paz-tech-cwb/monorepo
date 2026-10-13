@@ -20,7 +20,10 @@ import {
   weekdayOfDateString,
 } from './meeting-day.util';
 import { LIFE_GROUP_MAX_EXTRA_MEETINGS_PER_WEEK } from '../common/constants/life-group-meeting';
-import { assertCanAccessLifeGroup } from './life-group-access.util';
+import {
+  assertCanAccessLifeGroup,
+  assertCanWriteLifeGroup,
+} from './life-group-access.util';
 import { LifeGroupReportSnapshotService } from '../life-group-reports/life-group-report-snapshot.service';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -40,6 +43,8 @@ export interface ExtraMeetingOption {
 
 interface Actor {
   id: number;
+  isAdmin?: boolean;
+  isPastor?: boolean;
 }
 
 @Injectable()
@@ -303,6 +308,8 @@ export class LifeGroupAttendanceService {
     this.assertValidMeetingDate(meetingDate);
     const lifeGroup = await this.findLifeGroup(lifeGroupId);
     this.assertCanAccess(lifeGroup, scope, actor);
+    // Behavior change (D11): scope supervisors are read-only.
+    assertCanWriteLifeGroup(lifeGroup, actor);
 
     this.assertValidEntries(dto.entries);
 

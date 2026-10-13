@@ -44,6 +44,7 @@ const scopeOf = (...ids: number[]): ResolvedScope => ({
 const leader: MeetingActor = { id: 101, isAdmin: false };
 const coLeader: MeetingActor = { id: 102, isAdmin: false };
 const admin: MeetingActor = { id: 109, isAdmin: true };
+const pastor: MeetingActor = { id: 110, isAdmin: false, isPastor: true };
 
 const report = {
   kids0To11: 2,
@@ -131,70 +132,101 @@ describe('LifeGroupMeetingsService', () => {
   afterEach(() => jest.useRealTimers());
 
   describe('authorization matrix (GET and PUT)', () => {
-    const cases: Array<[string, ResolvedScope, MeetingActor, number, boolean]> =
+    // [name, scope, actor, group, canRead, canWrite]
+    const cases: Array<
+      [string, ResolvedScope, MeetingActor, number, boolean, boolean]
+    > = [
+      ['leader (empty scope, leader_id fallback)', none, leader, 1, true, true],
+      ['co-leader with member role', none, coLeader, 1, true, true],
+      ['leader of two groups: group 1', scopeOf(1, 4), leader, 1, true, true],
+      ['leader of two groups: group 4', scopeOf(1, 4), leader, 4, true, true],
       [
-        ['leader (empty scope, leader_id fallback)', none, leader, 1, true],
-        ['co-leader with member role', none, coLeader, 1, true],
-        ['leader of two groups: group 1', scopeOf(1, 4), leader, 1, true],
-        ['leader of two groups: group 4', scopeOf(1, 4), leader, 4, true],
-        [
-          'area supervisor in scope',
-          scopeOf(1),
-          { id: 106, isAdmin: false },
-          1,
-          true,
-        ],
-        [
-          'sector supervisor in scope',
-          scopeOf(1, 5),
-          { id: 107, isAdmin: false },
-          1,
-          true,
-        ],
-        [
-          'supervisor out of scope',
-          scopeOf(5),
-          { id: 107, isAdmin: false },
-          1,
-          false,
-        ],
-        [
-          'plain member on the roster',
-          none,
-          { id: 103, isAdmin: false },
-          1,
-          false,
-        ],
-        ['outsider', none, { id: 111, isAdmin: false }, 1, false],
-        ['other group leader', none, { id: 108, isAdmin: false }, 1, false],
-        ['admin', unrestricted, admin, 1, true],
-        [
-          'pastor (unrestricted, not admin)',
-          unrestricted,
-          { id: 110, isAdmin: false },
-          1,
-          true,
-        ],
-      ];
+        'area supervisor in scope (read-only)',
+        scopeOf(1),
+        { id: 106, isAdmin: false },
+        1,
+        true,
+        false,
+      ],
+      [
+        'sector supervisor in scope (read-only)',
+        scopeOf(1, 5),
+        { id: 107, isAdmin: false },
+        1,
+        true,
+        false,
+      ],
+      [
+        'leader of ANOTHER group who supervises this one via scope (read-only)',
+        scopeOf(1, 4),
+        { id: 108, isAdmin: false },
+        1,
+        true,
+        false,
+      ],
+      [
+        'supervisor out of scope',
+        scopeOf(5),
+        { id: 107, isAdmin: false },
+        1,
+        false,
+        false,
+      ],
+      [
+        'plain member on the roster',
+        none,
+        { id: 103, isAdmin: false },
+        1,
+        false,
+        false,
+      ],
+      ['outsider', none, { id: 111, isAdmin: false }, 1, false, false],
+      [
+        'other group leader',
+        none,
+        { id: 108, isAdmin: false },
+        1,
+        false,
+        false,
+      ],
+      ['admin', unrestricted, admin, 1, true, true],
+      ['pastor', unrestricted, pastor, 1, true, true],
+    ];
 
-    it.each(cases)('%s', async (_name, scope, actor, groupId, allowed) => {
-      const { service } = build();
-      const get = service.getMeeting(groupId, TODAY, scope, actor);
-      const put = build().service.upsertMeeting(
-        groupId,
-        TODAY,
-        dto({ attendance: attendanceBody() as never }),
-        scope,
-        actor,
-      );
-      if (allowed) {
-        await expect(get).resolves.toBeDefined();
-        await expect(put).resolves.toBeDefined();
-      } else {
-        await expect(get).rejects.toThrow(ForbiddenException);
-        await expect(put).rejects.toThrow(ForbiddenException);
-      }
-    });
+    it.each(cases)(
+      '%s',
+      async (_name, scope, actor, groupId, canRead, canWrite) => {
+        const { service } = build();
+        const get = service.getMeeting(groupId, TODAY, scope, actor);
+        const put = build().service.upsertMeeting(
+          groupId,
+          TODAY,
+          dto({ attendance: attendanceBody() as never }),
+          scope,
+          actor,
+        );
+        if (canRead) {
+          const view = await get;
+          expect(view.can_write).toBe(canWrite);
+          expect(view.can_edit).toBe(canWrite);
+          expect(view.edit_deadline).toBeDefined();
+        } else {
+          await expect(get).rejects.toThrow(ForbiddenException);
+        }
+        if (canWrite) {
+          await expect(put).resolves.toBeDefined();
+        } else {
+          await expect(put).rejects.toThrow(ForbiddenException);
+          if (canRead) {
+            await expect(put).rejects.toMatchObject({
+              response: expect.objectContaining({
+                code: 'meeting_write_forbidden',
+              }),
+            });
+          }
+        }
+      },
+    );
 
     it('404 for an unknown group', async () => {
       await expect(
@@ -213,20 +245,19 @@ describe('LifeGroupMeetingsService', () => {
       },
     ) => build().service.upsertMeeting(1, date, dto(body), scope, actor);
 
-    it('allows day 14 and denies day 15 for leader, co-leader and supervisor', async () => {
-      const supervisor: MeetingActor = { id: 106, isAdmin: false };
+    it('allows day 14 and denies day 15 for leader, co-leader and pastor', async () => {
       jest.setSystemTime(new Date('2026-10-15T02:59:00Z')); // Oct 14 23:59 SP
       await expect(put(WED_14_AGO, leader)).resolves.toBeDefined();
       await expect(put(WED_14_AGO, coLeader)).resolves.toBeDefined();
       await expect(
-        put(WED_14_AGO, supervisor, scopeOf(1)),
+        put(WED_14_AGO, pastor, unrestricted),
       ).resolves.toBeDefined();
 
       jest.setSystemTime(new Date('2026-10-15T03:00:00Z')); // Oct 15 00:00 SP
       for (const [actor, scope] of [
         [leader, none],
         [coLeader, none],
-        [supervisor, scopeOf(1)],
+        [pastor, unrestricted],
       ] as Array<[MeetingActor, ResolvedScope]>) {
         await expect(put(WED_14_AGO, actor, scope)).rejects.toMatchObject({
           response: expect.objectContaining({ code: 'edit_window_closed' }),
@@ -235,9 +266,9 @@ describe('LifeGroupMeetingsService', () => {
     });
 
     it('denies past the window for pastor (only admin bypasses)', async () => {
-      await expect(
-        put(WED_21_AGO, { id: 110, isAdmin: false }, unrestricted),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(put(WED_21_AGO, pastor, unrestricted)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('lets admin create and edit forever, both pieces', async () => {

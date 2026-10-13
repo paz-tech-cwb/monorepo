@@ -34,6 +34,7 @@ describe('LifeGroupMeetingsController (global pipe + serializer)', () => {
   let em: FakeEntityManager;
   let scope: ResolvedScope;
   let role: string;
+  let userId: number;
   const TODAY = '2026-10-14'; // Wednesday
 
   const validReport = {
@@ -78,7 +79,7 @@ describe('LifeGroupMeetingsController (global pipe + serializer)', () => {
       .useValue({
         canActivate: (ctx: ExecutionContext) => {
           ctx.switchToHttp().getRequest<{ user: unknown }>().user = {
-            id: 101,
+            id: userId,
             role: { slug: role },
           };
           return true;
@@ -111,6 +112,7 @@ describe('LifeGroupMeetingsController (global pipe + serializer)', () => {
       lifeGroupIds: [],
     };
     role = 'member';
+    userId = 101;
     em.tables.clear();
     em.queries = [];
     const users = [103, 104].map((id) =>
@@ -147,6 +149,7 @@ describe('LifeGroupMeetingsController (global pipe + serializer)', () => {
       meeting_date: TODAY,
       report: null,
       derived: { committed_members: 2, committed_members_present: 2 },
+      can_write: true,
       can_edit: true,
       edit_deadline: '2026-10-28',
       report_blocked_reason: null,
@@ -415,5 +418,89 @@ describe('LifeGroupMeetingsController (global pipe + serializer)', () => {
       .put(url)
       .send({ attendance: validAttendance })
       .expect(403);
+  });
+
+  describe('write authorization (supervisors are read-only)', () => {
+    const SUPERVISOR = 900;
+    const extraUrl = '/life-groups/1/meetings/2026-10-13'; // Tuesday = extra
+
+    function asSupervisor(): void {
+      userId = SUPERVISOR;
+      role = 'sector_leader';
+      scope = { ...scope, lifeGroupIds: [1], sectorIds: [1] };
+    }
+
+    it('supervisor in scope: GET 200 read-only, PUT 403 meeting_write_forbidden (attendance, report, extra meeting)', async () => {
+      asSupervisor();
+      const got = await request(app.getHttpServer()).get(url).expect(200);
+      expect(got.body).toMatchObject({
+        can_write: false,
+        can_edit: false,
+        edit_deadline: '2026-10-28',
+      });
+      for (const body of [
+        { attendance: validAttendance },
+        { report: validReport },
+        { attendance: validAttendance, report: validReport },
+      ]) {
+        const res = await request(app.getHttpServer())
+          .put(url)
+          .send(body)
+          .expect(403);
+        expect(res.body.code).toBe('meeting_write_forbidden');
+      }
+      const extra = await request(app.getHttpServer())
+        .put(extraUrl)
+        .send({ attendance: validAttendance, extra_meeting: true })
+        .expect(403);
+      expect(extra.body.code).toBe('meeting_write_forbidden');
+      expect(em.rows(LifeGroupAttendance)).toHaveLength(0);
+      expect(em.rows(LifeGroupReport)).toHaveLength(0);
+    });
+
+    it('co-leader with the member role may write', async () => {
+      em.rows(LifeGroup)[0].coLeader = { id: 777 };
+      userId = 777;
+      role = 'member';
+      const got = await request(app.getHttpServer()).get(url).expect(200);
+      expect(got.body.can_write).toBe(true);
+      await request(app.getHttpServer())
+        .put(url)
+        .send({ attendance: validAttendance })
+        .expect(200);
+    });
+
+    it('admin and pastor outside the group may write; pastor stays bound by the edit window', async () => {
+      const old = '/life-groups/1/meetings/2026-09-23';
+      scope = { ...scope, unrestricted: true };
+      userId = SUPERVISOR;
+      role = 'pastor';
+      const got = await request(app.getHttpServer()).get(url).expect(200);
+      expect(got.body).toMatchObject({ can_write: true, can_edit: true });
+      await request(app.getHttpServer())
+        .put(url)
+        .send({ attendance: validAttendance })
+        .expect(200);
+      const closed = await request(app.getHttpServer())
+        .put(old)
+        .send({ attendance: validAttendance })
+        .expect(403);
+      expect(closed.body.code).toBe('edit_window_closed');
+      role = 'admin';
+      await request(app.getHttpServer())
+        .put(old)
+        .send({ attendance: validAttendance })
+        .expect(200);
+    });
+
+    it("another group's leader is denied (403 on GET and PUT)", async () => {
+      userId = 555;
+      role = 'life_group_leader';
+      await request(app.getHttpServer()).get(url).expect(403);
+      await request(app.getHttpServer())
+        .put(url)
+        .send({ attendance: validAttendance })
+        .expect(403);
+    });
   });
 });
