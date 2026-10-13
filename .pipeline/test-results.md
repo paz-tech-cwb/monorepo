@@ -306,3 +306,43 @@ iOS (Xcode 26.6, TestPhone, scratchpad JDK17/Gradle/Konan):
 - `./gradlew :shared:assembleSharedDebugXCFramework :shared:iosSimulatorArm64Test`: BUILD SUCCESSFUL, 92 tests, 0 failures.
 - `xcodebuild test` PazChurch on TestPhone: first run FAILED to compile `HomeViewModelTests.swift:41` (missing `relationship`/`isSupervised`, from #93, inherited on develop). After the one-line test fix: TEST SUCCEEDED (15+9+12+6 = 42 tests, 0 failures). Temporary fake GoogleService-Info.plist (39-char key) deleted afterwards, never committed.
 - Android: not buildable locally (no SDK); cross-read only: Android files changed by #89 (AccountViewModel, AndroidModule, Academy, MemberJourney) do not overlap ours (MainActivity, PazNavGraph, push helper, MinistryDetailScreen).
+
+## Phase 0 backend+admin-ui (fix/life-group-report-submit)
+
+Node 22.23.3 (scratchpad). Backend:
+- `npm run build` OK.
+- Scoped jest (life-group-reports, forms-catalog, forms-core, life-group-attendance): 10 suites; only failure is the known `forms-core/services/notification-sender.spec`.
+- Full `npx jest`: 6 failed suites / 5 failed tests / 620 passed (80 suites): exactly the 6 known baseline suites (auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens). No develop worktree was needed since the failing set matches the documented baseline.
+- eslint (no --fix) on src/life-group-reports and src/forms-catalog: 0 errors, 11 `no-unsafe-argument` warnings (supertest `app.getHttpServer()` pattern, same as the pre-existing lines of the controller spec). prettier --check clean.
+Admin-ui: `pnpm install --frozen-lockfile` (pnpm 9.15.9) OK; `tsc --noEmit` 26 errors both before and after this change (identical sorted lists, so no new ones; lead's baseline said 28); eslint on the 3 changed files clean; `next build` OK.
+Not verified: no real Postgres run of the `findOne` with `select` + nested relations (mocked EntityManager); no manual run of the admin-ui form against a live backend; mobile untouched.
+
+## Phase 0 mobile + reminder
+
+JDK 17 (scratchpad), Node 22.23.3 (scratchpad). Android SDK not installed: no Android compile/unit run.
+- Shared: `./gradlew :shared:iosSimulatorArm64Test`: 110 tests, 0 failures (new: `LifeGroupReportDraftTest`, `FormsRepositoryLifeGroupReportTest`). `:shared:assembleSharedDebugXCFramework` OK.
+- iOS: `xcodebuild test -only-testing:PazChurchTests` on simulator "TestPhone" with a TEMPORARY fake `GoogleService-Info.plist` (deleted afterwards, never committed): 53 tests, 0 failures (new `LifeGroupReportFormTests`: 12). swiftformat applied to the new files; swiftlint: only warnings (type_body_length 297>250 on `LifeGroupReportFormView`).
+- Android: NOT compiled/tested locally (Compose screen, ViewModel, nav/DI wiring and `LifeGroupReportFormViewModelTest` were cross-read only; CI is the first compile). Risk spots: `SelectableDates`/`rememberDatePickerState(selectableDates=)` (material3 1.3 BOM 2025.04), `if (x != null) { { Text(x) } } else null` for `supportingText`/`placeholder`, Koin `parametersOf(Int?)`.
+- Backend: `npm run build` OK; `npx jest src/reminders`: 8 suites / 56 tests pass (form-report spec 11; also green with TZ=UTC and TZ=Asia/Tokyo); prettier --check clean; eslint on touched files: only the 3 pre-existing `no-unsafe-*` errors of the old part of the spec (same on baseline).
+- Not verified on device: the new screens on a real Android/iOS device against a live backend (date picker, keyboard behavior, dark mode, group picker with several groups, 409/422 from a real server), the deep link `paz://form/life-group-reports`, and the reminder against a real Postgres (mocked EntityManager; `DISTINCT` + soft-delete QB behavior unverified).
+
+## Review fixes (phase 0)
+
+Node 22.23.3 (scratchpad). Backend: `npm run build` OK; scoped jest (life-group-reports, forms-catalog, reminders): 12 suites / 137 tests pass (+1 PATCH future-date test); full jest 6 failed suites / 5 failed tests / 630 passed = the 6 known baseline suites; eslint on the controller clean, prettier --check on src/life-group-reports clean.
+Admin-ui: `tsc --noEmit` 24 errors, none in touched files (identical to baseline, none new); eslint on life-group-reports clean; `next build` OK.
+Android: NOT compiled locally (no SDK); `FormulariosViewModelTest` and the VM/screen change cross-read only, CI is the first compile. iOS/Swift untouched (no xcodebuild run).
+CI follow-up: Backend CI "Lint changed files" failed (3 `no-unsafe-*` errors in `reminders/evaluators/form-report-reminder.evaluator.spec.ts`, caused by this branch touching that spec; the earlier "pre-existing pattern" note was wrong for CI because it lints changed files). Fixed with typed mocks (`dispatchFn`), eslint 0 errors, reminders jest 56 pass.
+
+## User decisions round 2 (phase 0)
+
+Node 22.23.3, JDK 17 (scratchpad). Backend: `npm run build` OK; `npx jest src/reminders`: 8 suites / 61 tests pass (form-report spec 16; also green with TZ=UTC and TZ=Asia/Tokyo); full `npx jest`: 6 failed suites / 5 failed tests / 635 passed (80 suites), exactly the 6 known baseline suites; eslint on the 2 changed files: 0 errors/warnings; prettier --check clean. Note: `tsc --noEmit` over specs reports 1 error in `life-group-reports.controller.spec.ts:415` that is identical without this change (untouched file; `nest build` excludes specs).
+Shared: `./gradlew :shared:iosSimulatorArm64Test` OK (`LifeGroupReportDraftTest` 18 tests, 0 failures); `assembleSharedDebugXCFramework` OK. iOS: `xcodebuild test -only-testing:PazChurchTests` on "TestPhone" with a TEMPORARY fake `GoogleService-Info.plist` (deleted, gitignored, never committed, needs JAVA_HOME/GRADLE_USER_HOME/KONAN_DATA_DIR exported for the KMP script phase): 55 tests, 0 failures, TEST SUCCEEDED (new admin/pastor + leader-never-loads-all tests pass).
+Android: NOT compiled/run locally (no SDK): VM/UiState/DI changes and 3 new VM tests cross-read; CI is the first compile.
+Not verified: the new TypeORM query builders (LifeGroup leader/coLeader join with raw aliases, DISTINCT `r.lifeGroupId`) run against mocks only, no real Postgres this round; one manual run of the reminder against a real DB is advised. Real devices/backends not exercised.
+
+## Clock fix (round 2 addendum)
+`npx jest src/reminders`: 8 suites / 67 tests pass under TZ=UTC, TZ=Asia/Tokyo and TZ=America/Sao_Paulo; eslint 0 problems, prettier clean, `npm run build` OK.
+
+## Round 3: supervisors read-only (D11)
+See final validation numbers appended below.
+Backend: `npm run build` OK; scoped jest (life-group-reports, forms-catalog, forms-core): all pass except the baseline notification-sender suite; full jest 6 failed suites / 5 failed tests / 644 passed = the 6 known baseline suites; eslint on src/life-group-reports + src/forms-catalog 0 errors (12 pre-existing warnings); prettier --check clean. admin-ui/mobile untouched, no checks needed.

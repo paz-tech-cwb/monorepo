@@ -15,6 +15,28 @@ import {
 import { NotificationDispatchService } from '../../notifications/notification-dispatch.service';
 import { ReminderDispatchLog } from '../entities/reminder-dispatch-log.entity';
 import { User } from '../../users/entities/user.entity';
+import { LifeGroup } from '../../life-groups/entities/life-group.entity';
+import { LifeGroupReport } from '../../life-group-reports/entities/life-group-report.entity';
+import {
+  dateKeyOf,
+  shiftDays,
+  weekdayOf,
+  zonedParts,
+} from '../../life-group-attendance/meeting-day.util';
+
+/** Catalog slug of the weekly life-group report (the only slug whose reminder is skipped per group). */
+export const LIFE_GROUP_REPORTS_SLUG = 'life-group-reports';
+
+/**
+ * `YYYY-MM-DD` of the Monday that starts the current church week (America/Sao_Paulo
+ * calendar, ISO week Monday..Sunday). A report counts as "this week's" when its meeting
+ * `date` is on or after this day (reports cannot be dated in the future).
+ */
+export function churchWeekStartKey(now: Date): string {
+  const today = zonedParts(now);
+  const daysSinceMonday = (weekdayOf(today) + 6) % 7;
+  return dateKeyOf(shiftDays(today, -daysSinceMonday));
+}
 
 @Injectable()
 export class FormReportReminderEvaluator implements ReminderEvaluator {
@@ -29,8 +51,11 @@ export class FormReportReminderEvaluator implements ReminderEvaluator {
     const cfg = rule.config as FormReportReminderConfig;
     if (!cfg.forms?.length) return;
 
+    // Weekday/hour are church-local (America/Sao_Paulo), not the server clock (UTC).
+    const today = zonedParts(now);
+    const weekday = weekdayOf(today);
     for (const entry of cfg.forms) {
-      if (now.getDay() !== entry.weekday || now.getHours() !== entry.hour) {
+      if (weekday !== entry.weekday || today.hour !== entry.hour) {
         continue;
       }
       await this.runEntry(entry, now);
@@ -38,9 +63,11 @@ export class FormReportReminderEvaluator implements ReminderEvaluator {
   }
 
   private async runEntry(entry: FormReminderEntry, now: Date): Promise<void> {
-    const periodStart = new Date(now);
-    periodStart.setHours(0, 0, 0, 0);
-    const dedupeKey = `form_report:${entry.form_slug}:${periodStart.toISOString().slice(0, 10)}`;
+    // One send per (slug, Sao Paulo calendar day). Before the clock fix the key used the UTC
+    // date; on the (UTC) server the two coincide for any hour that can fire a church-day rule
+    // (a run at 17h SP = 20h UTC and one at 20h SP = 23h UTC share the same date), so a send
+    // made by the old clock on deploy day still dedupes the new-clock run of the same SP day.
+    const dedupeKey = `form_report:${entry.form_slug}:${dateKeyOf(zonedParts(now))}`;
 
     try {
       await this.em.insert(ReminderDispatchLog, {
@@ -58,7 +85,14 @@ export class FormReportReminderEvaluator implements ReminderEvaluator {
       .where('role.slug IN (:...roles)', { roles: entry.roles })
       .getMany();
 
-    if (targets.length === 0) return;
+    // Only the weekly life-group report is a "did the group report yet" nag: leaders whose group(s)
+    // already have a report this church week are not reminded. Other slugs keep notifying every target.
+    const recipients =
+      entry.form_slug === LIFE_GROUP_REPORTS_SLUG
+        ? await this.withoutReportedLeaders(targets, now)
+        : targets;
+
+    if (recipients.length === 0) return;
 
     const notification = await this.em.save(
       this.em.create(Notification, {
@@ -72,6 +106,65 @@ export class FormReportReminderEvaluator implements ReminderEvaluator {
         origin: 'automatic',
       }),
     );
-    await this.dispatch.dispatch(notification, targets);
+    await this.dispatch.dispatch(notification, recipients);
+  }
+
+  /**
+   * Group-based skip: a recipient is dropped when EVERY life group they lead or co-lead already has
+   * a non-deleted report whose meeting date falls in the current church week (Monday 00:00
+   * America/Sao_Paulo up to `now`), no matter who submitted it. So a co-leader's report silences
+   * the leader and vice-versa; a person holding two groups keeps being reminded until both have
+   * reported (safest: never silence a still-missing report). Recipients who lead/co-lead no group
+   * are always reminded. The recipient set itself stays role-based.
+   */
+  private async withoutReportedLeaders(
+    targets: User[],
+    now: Date,
+  ): Promise<User[]> {
+    if (targets.length === 0) return targets;
+    const ids = targets.map((t) => Number(t.id));
+
+    const groupRows = await this.em
+      .createQueryBuilder(LifeGroup, 'g')
+      .leftJoin('g.leader', 'leader')
+      .leftJoin('g.coLeader', 'coLeader')
+      .select('g.id', 'id')
+      .addSelect('leader.id', 'leaderId')
+      .addSelect('coLeader.id', 'coLeaderId')
+      .where('leader.id IN (:...ids) OR coLeader.id IN (:...ids)', { ids })
+      .getRawMany<{
+        id: number | string;
+        leaderId: number | string | null;
+        coLeaderId: number | string | null;
+      }>();
+    if (groupRows.length === 0) return targets;
+
+    const reportRows = await this.em
+      .createQueryBuilder(LifeGroupReport, 'r')
+      .select('r.lifeGroupId', 'id')
+      .distinct(true)
+      .where('r.date >= :weekStart', { weekStart: churchWeekStartKey(now) })
+      .andWhere('r.lifeGroupId IN (:...groupIds)', {
+        groupIds: groupRows.map((row) => Number(row.id)),
+      })
+      .getRawMany<{ id: number | string }>();
+    const reportedGroups = new Set(reportRows.map((row) => Number(row.id)));
+
+    const groupsByUser = new Map<number, number[]>();
+    for (const row of groupRows) {
+      for (const userId of [row.leaderId, row.coLeaderId]) {
+        if (userId == null) continue;
+        const key = Number(userId);
+        groupsByUser.set(key, [
+          ...(groupsByUser.get(key) ?? []),
+          Number(row.id),
+        ]);
+      }
+    }
+
+    return targets.filter((t) => {
+      const groups = groupsByUser.get(Number(t.id));
+      return !groups?.length || !groups.every((g) => reportedGroups.has(g));
+    });
   }
 }

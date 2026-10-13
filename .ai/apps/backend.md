@@ -44,6 +44,11 @@ scope-aware (404 out of scope; `:id/audit` mapped to `AuditLogEntry`, no actor P
 `@SerializeOptions(exposeAll)`. Details in `features/life-groups.md`. Specs:
 `life-group-reports.service.spec.ts`, `life-group-reports.controller.spec.ts`
 (real global pipe + `ClassSerializerInterceptor`).
+Create is authorized by `LifeGroupReportCreatePolicy` (admin/pastor, or the group's
+leader/co-leader; supervisors are read-only, 404/403/422, area/sector derived, future date 400 in
+America/Sao_Paulo); DTO has count/offering/array/length limits; `forms-catalog`
+shows the entry to leaders/co-leaders of any group (`EntityManager` query). See
+`features/life-groups.md` "Create (Phase 0)".
 
 ## Validation
 
