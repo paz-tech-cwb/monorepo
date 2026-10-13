@@ -31,6 +31,8 @@ meeting has no assignments yet (late setup).
 
 ## Automatic reminders
 
+`form_report` for the `life-group-reports` slug skips leaders who already submitted: before dispatching, `FormReportReminderEvaluator` removes target users that appear as `submitted_by` of a non-deleted `life_group_reports` row whose meeting `date` is on/after the Monday of the current church week (America/Sao_Paulo calendar, ISO week Monday..Sunday; `churchWeekStartKey`). If everyone already reported, no notification row is created. Other slugs (sector/area supervisor reports) still notify every target. Only the submitter counts (a leader is still reminded when only the co-leader submitted). Known pre-existing limitation: weekday/hour matching in `run` uses the runtime clock (`getDay`/`getHours`), not Sao Paulo time.
+
 | Reminder type | Category |
 |---|---|
 | `form_report` | `forms` |

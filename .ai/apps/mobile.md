@@ -24,6 +24,8 @@ Deep link `paz://tarefa/{assignmentId}`. See `features/mobile-app.md`.
 Shared: `LifeGroupReportRepository`, `LifeGroupWeeklyReport`, `buildHomeLifeGroupCards` (`:shared`, commonTest covered).
 Android: `ui/features/home/` (group cards folding tasks, legacy tasks fallback), `ui/features/ministries/` (`canViewGroupReports`, "Relatórios semanais" row), `ui/features/lifegroupreports/` (list + read-only detail), analytics scoped mode. iOS: `Features/Home/` (`LifeGroupHomeCard`, `HomeViewModel.resolveLifeGroups`), `Features/Ministries/MinistryDetailView.swift` (`LifeGroupDetailView.canViewGroupReports`, "Relatórios semanais" row), `Features/LifeGroupReports/` (list + read-only detail), analytics scoped mode (`isScopedToGroup`). Android could not be compiled locally (no SDK); CI validates; iOS built and unit-tested locally. See `features/mobile-app.md`.
 
+Weekly report submit (Phase 0): `:shared` `LifeGroupReportDraft`/`LifeGroupReportRules`/`LifeGroupReportForm` (domain/model), `FormsRepository.submitLifeGroupReport`; Android `ui/features/lifegroupreports/LifeGroupReportForm*` (+ `Screen.LifeGroupReportSubmit`, `PazNavGraph` redirect for formId `life-group-reports`); iOS `Features/LifeGroupReports/LifeGroupReportForm*` (+ `FormDestinationView`, hand-edited `project.pbxproj`; xcodegen is not used to regenerate). Tests: shared `LifeGroupReportDraftTest`, `FormsRepositoryLifeGroupReportTest`; Android `LifeGroupReportFormViewModelTest`; iOS `LifeGroupReportFormTests`.
+
 ## Agent rules
 
 - Read kmp-mobile's local docs/build files before proposing changes.

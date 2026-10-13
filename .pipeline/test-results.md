@@ -316,3 +316,12 @@ Node 22.23.3 (scratchpad). Backend:
 - eslint (no --fix) on src/life-group-reports and src/forms-catalog: 0 errors, 11 `no-unsafe-argument` warnings (supertest `app.getHttpServer()` pattern, same as the pre-existing lines of the controller spec). prettier --check clean.
 Admin-ui: `pnpm install --frozen-lockfile` (pnpm 9.15.9) OK; `tsc --noEmit` 26 errors both before and after this change (identical sorted lists, so no new ones; lead's baseline said 28); eslint on the 3 changed files clean; `next build` OK.
 Not verified: no real Postgres run of the `findOne` with `select` + nested relations (mocked EntityManager); no manual run of the admin-ui form against a live backend; mobile untouched.
+
+## Phase 0 mobile + reminder
+
+JDK 17 (scratchpad), Node 22.23.3 (scratchpad). Android SDK not installed: no Android compile/unit run.
+- Shared: `./gradlew :shared:iosSimulatorArm64Test`: 110 tests, 0 failures (new: `LifeGroupReportDraftTest`, `FormsRepositoryLifeGroupReportTest`). `:shared:assembleSharedDebugXCFramework` OK.
+- iOS: `xcodebuild test -only-testing:PazChurchTests` on simulator "TestPhone" with a TEMPORARY fake `GoogleService-Info.plist` (deleted afterwards, never committed): 53 tests, 0 failures (new `LifeGroupReportFormTests`: 12). swiftformat applied to the new files; swiftlint: only warnings (type_body_length 297>250 on `LifeGroupReportFormView`).
+- Android: NOT compiled/tested locally (Compose screen, ViewModel, nav/DI wiring and `LifeGroupReportFormViewModelTest` were cross-read only; CI is the first compile). Risk spots: `SelectableDates`/`rememberDatePickerState(selectableDates=)` (material3 1.3 BOM 2025.04), `if (x != null) { { Text(x) } } else null` for `supportingText`/`placeholder`, Koin `parametersOf(Int?)`.
+- Backend: `npm run build` OK; `npx jest src/reminders`: 8 suites / 56 tests pass (form-report spec 11; also green with TZ=UTC and TZ=Asia/Tokyo); prettier --check clean; eslint on touched files: only the 3 pre-existing `no-unsafe-*` errors of the old part of the spec (same on baseline).
+- Not verified on device: the new screens on a real Android/iOS device against a live backend (date picker, keyboard behavior, dark mode, group picker with several groups, 409/422 from a real server), the deep link `paz://form/life-group-reports`, and the reminder against a real Postgres (mocked EntityManager; `DISTINCT` + soft-delete QB behavior unverified).

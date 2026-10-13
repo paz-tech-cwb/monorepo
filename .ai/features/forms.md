@@ -21,7 +21,7 @@ Operational church forms for reports, member registration, ministry/service work
 
 ## Client behavior
 
-- Mobile: forms are accessed from Conta → Formulários.
+- Mobile: forms are accessed from Conta → Formulários. The weekly life-group report uses a dedicated submit screen (group picker limited to groups the user leads/co-leads, typed fields, real DTO payload; see `features/mobile-app.md`), not the generic step form.
 - Admin: forms are visible according to role, with broader reporting/configuration access for admins/pastors.
 
 ## Integrations
