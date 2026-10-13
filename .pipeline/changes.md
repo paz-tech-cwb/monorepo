@@ -22,3 +22,6 @@ Old clients keep working (param optional, response only gained `life_group_id`).
 - `overview` now validates its query with the global pipe (`forbidNonWhitelisted`): an unknown query param on `/overview` is a 400 (previously ignored). No client sends one.
 - Draft roster for a date without a record is the CURRENT roster (not historical membership).
 - `assertValidMeetingDate` compares with the UTC date (pre-existing): between 21:00 and 24:00 Sao Paulo "tomorrow" is still accepted by GET. Not changed.
+
+## Follow-up: history rows open for any date with a record
+`GET /meetings/:date` already returned 200 for such dates; now locked by specs (controller + real Postgres): legacy report on a non-regular weekday -> 200 `attendance: null` + populated `report` (`derived` nulls); saved extra attendance opens without the flag; no-record non-regular date stays 400 `extra_meeting_required`; past regular date without record = 200 read-only draft. No production code change.

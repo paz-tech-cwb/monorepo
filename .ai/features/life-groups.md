@@ -264,8 +264,14 @@ for a leader of the group: 200 draft with `can_write=true`, `can_edit=false`,
 `attendance.is_draft=true`, `edit_deadline` in the past (never 404/400). The draft
 roster of any date without a record is the group's CURRENT roster (not a
 reconstruction of who was in the group then). The weekday rule still applies to
-dates without a record: a non-regular weekday of a fixed-day group is
-`400 extra_meeting_required` even in the past.
+dates with NO record at all: a non-regular weekday of a fixed-day group is
+`400 extra_meeting_required` even in the past. Any date that already has a record
+opens 200 regardless of weekday and without `?extra_meeting=true`: a saved attendance
+(including `is_extra=true`) is returned as saved; a non-deleted report for that
+(group, date) without attendance on a non-regular weekday returns
+`attendance: null`, `report: {...}`, `derived: {committed_members: null,
+committed_members_present: null}`, `can_write`/`can_edit` by the usual rules (report-only
+legacy records on a regular weekday return the draft attendance, `is_draft: true`).
 
 Incident (2026-10-13, TestFlight 404 on `GET /life-groups/2/meetings/2026-09-08`):
 the Deploy Backend run for release commit 84f1dd9e failed (SSH waited on

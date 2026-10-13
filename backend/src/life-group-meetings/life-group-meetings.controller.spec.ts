@@ -392,6 +392,45 @@ describe('LifeGroupMeetingsController (global pipe + serializer)', () => {
       expect(res.body.code).toBe('invalid_extra_meeting_param');
     });
 
+    it('a legacy report on a NON-regular weekday opens 200 without the flag (attendance null, report populated)', async () => {
+      em.seed(
+        LifeGroupReport,
+        Object.assign(new LifeGroupReport(), {
+          id: 'legacy',
+          date: OLD_TUE,
+          lifeGroupId: 1,
+          deletedAt: null,
+          createdAt: new Date(1),
+          submittedBy: { id: 1, name: 'x' },
+        }),
+      );
+      const res = await request(app.getHttpServer())
+        .get(`/life-groups/1/meetings/${OLD_TUE}`)
+        .expect(200);
+      expect(res.body.attendance).toBeNull();
+      expect(res.body.report).toMatchObject({ id: 'legacy', date: OLD_TUE });
+      expect(res.body.derived).toEqual({
+        committed_members: null,
+        committed_members_present: null,
+      });
+      expect(res.body.can_edit).toBe(false);
+    });
+
+    it('a saved EXTRA attendance opens 200 without the flag', async () => {
+      const tue = '2026-10-13';
+      await request(app.getHttpServer())
+        .put(`/life-groups/1/meetings/${tue}`)
+        .send({ attendance: validAttendance, extra_meeting: true })
+        .expect(200);
+      const res = await request(app.getHttpServer())
+        .get(`/life-groups/1/meetings/${tue}`)
+        .expect(200);
+      expect(res.body.attendance).toMatchObject({
+        is_extra: true,
+        is_draft: false,
+      });
+    });
+
     it('a route the build does not have answers a generic 404 with NO code', async () => {
       const res = await request(app.getHttpServer())
         .get('/life-groups/1/not-deployed/2026-09-08')
