@@ -83,4 +83,37 @@ describe('RemindersService', () => {
     });
     expect(result.config).toEqual({ days_before_meeting: [3, 1], hour: 9 });
   });
+
+  it('update rejects an invalid life_group_attendance followup config', async () => {
+    repo.findOne.mockResolvedValue({
+      id: 4,
+      type: 'life_group_attendance',
+      enabled: true,
+      config: {},
+    } as ReminderRule);
+    await expect(
+      service.update(4, {
+        config: { hours_after_meeting_start: 2, followup_hour: 30 } as never,
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(saveMock).not.toHaveBeenCalled();
+  });
+
+  it('update accepts a valid life_group_attendance config with the V2 fields', async () => {
+    repo.findOne.mockResolvedValue({
+      id: 4,
+      type: 'life_group_attendance',
+      enabled: true,
+      config: {},
+    } as ReminderRule);
+    const config = {
+      hours_after_meeting_start: 2,
+      followup_hour: 9,
+      followup_interval_days: 1,
+      followup_max_days: 5,
+      escalation_after_days: 5,
+    };
+    const result = await service.update(4, { config: config as never });
+    expect(result.config).toEqual(config);
+  });
 });

@@ -41,6 +41,23 @@ export interface LifeGroupAttendanceReminderConfig {
   title: string;
   message: string;
   // category is always 'life_group_attendance' — hardcoded at dispatch time
+
+  // ---- V2 (behind the server flag LIFE_GROUP_MEETING_V2, default off) ----
+  // All optional: rows saved before V2 lack them and get DEFAULT_CONFIGS
+  // values via resolveLifeGroupAttendanceConfig(). The legacy `title` and
+  // `message` above keep driving the primary push while the flag is off.
+  meeting_title?: string; // primary push copy for the combined attendance + report flow
+  meeting_message?: string;
+  followup_hour?: number; // 0-23, church timezone; hour of the daily follow-up / escalation
+  followup_interval_days?: number; // 1 = daily, 2 = every other day...
+  followup_max_days?: number; // cap: last day after the meeting that may get a follow-up (0 = off)
+  followup_title?: string;
+  followup_message?: string;
+  escalation_after_days?: number; // day after the meeting the sector leader is told (0 = off)
+  // "{group}" and "{date}" (DD/MM) are replaced
+  escalation_title?: string;
+  escalation_message?: string;
+  // escalation deep link is paz://lifegroup/{id}, category life_group_attendance
 }
 
 export interface LifeGroupTasksReminderConfig {
@@ -120,6 +137,19 @@ export const DEFAULT_CONFIGS: Record<ReminderRuleType, ReminderConfig> = {
     title: 'Lançar presença do Life Group',
     message:
       'A reunião do seu Life Group já começou. Não se esqueça de lançar a presença dos membros.',
+    meeting_title: 'Registre a reunião do Life Group',
+    meeting_message:
+      'Registre a presença e o relatório do seu Life Group. Toque para abrir.',
+    followup_hour: 9,
+    followup_interval_days: 1,
+    followup_max_days: 5,
+    followup_title: 'Relatório do Life Group pendente',
+    followup_message:
+      'A presença foi lançada, mas o relatório da reunião ainda não foi enviado. Toque para concluir.',
+    escalation_after_days: 5,
+    escalation_title: 'Relatório de Life Group pendente',
+    escalation_message:
+      'O Life Group {group} ainda não enviou o relatório da reunião de {date}.',
   },
   life_group_tasks: {
     days_before_meeting: [3, 1],
@@ -133,16 +163,66 @@ export const DEFAULT_CONFIGS: Record<ReminderRuleType, ReminderConfig> = {
   },
 };
 
+function isIntInRange(value: unknown, min: number, max: number): boolean {
+  return (
+    typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value >= min &&
+    value <= max
+  );
+}
+
+const ATTENDANCE_INT_FIELDS: Array<[string, number, number]> = [
+  ['hours_after_meeting_start', 0, 23],
+  ['followup_hour', 0, 23],
+  ['followup_interval_days', 1, 7],
+  ['followup_max_days', 0, 14],
+  ['escalation_after_days', 0, 14],
+];
+
+const ATTENDANCE_TEXT_FIELDS = [
+  'title',
+  'message',
+  'meeting_title',
+  'meeting_message',
+  'followup_title',
+  'followup_message',
+  'escalation_title',
+  'escalation_message',
+];
+
+function validateAttendanceConfig(config: unknown): string | null {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    return 'config must be an object';
+  }
+  const cfg = config as Record<string, unknown>;
+  for (const [key, min, max] of ATTENDANCE_INT_FIELDS) {
+    if (cfg[key] !== undefined && !isIntInRange(cfg[key], min, max)) {
+      return `${key} must be an integer ${min}-${max}`;
+    }
+  }
+  for (const key of ATTENDANCE_TEXT_FIELDS) {
+    const value = cfg[key];
+    if (value === undefined) continue;
+    if (typeof value !== 'string' || value.trim().length === 0) {
+      return `${key} must be a non-empty string`;
+    }
+    if (value.length > 500) return `${key} must be at most 500 characters`;
+  }
+  return null;
+}
+
 /**
  * Returns an error message when `config` is not valid for `type`, else null.
- * Only `life_group_tasks` has structural constraints worth enforcing here
- * (the evaluator also sanitizes defensively); other types keep accepting any
- * object, as before.
+ * `life_group_tasks` is strict; `life_group_attendance` validates only the
+ * fields that are present (legacy rows lack the V2 ones); other types keep
+ * accepting any object, as before.
  */
 export function validateReminderConfig(
   type: ReminderRuleType,
   config: unknown,
 ): string | null {
+  if (type === 'life_group_attendance') return validateAttendanceConfig(config);
   if (type !== 'life_group_tasks') return null;
   const cfg = config as Partial<LifeGroupTasksReminderConfig> | null;
   if (!cfg || typeof cfg !== 'object') return 'config must be an object';
@@ -164,6 +244,60 @@ export function validateReminderConfig(
     return 'hour must be an integer 0-23';
   }
   return null;
+}
+
+/** `life_group_attendance` config with every V2 field resolved (stored value, else default). */
+export type ResolvedLifeGroupAttendanceConfig =
+  Required<LifeGroupAttendanceReminderConfig>;
+
+export function resolveLifeGroupAttendanceConfig(
+  config: unknown,
+): ResolvedLifeGroupAttendanceConfig {
+  const defaults =
+    DEFAULT_CONFIGS.life_group_attendance as ResolvedLifeGroupAttendanceConfig;
+  const cfg = (config ?? {}) as Partial<LifeGroupAttendanceReminderConfig>;
+  const int = (value: unknown, fallback: number, min: number, max: number) =>
+    isIntInRange(value, min, max) ? (value as number) : fallback;
+  const text = (value: unknown, fallback: string) =>
+    typeof value === 'string' && value.trim().length > 0 ? value : fallback;
+  return {
+    hours_after_meeting_start: int(
+      cfg.hours_after_meeting_start,
+      defaults.hours_after_meeting_start,
+      0,
+      23,
+    ),
+    title: text(cfg.title, defaults.title),
+    message: text(cfg.message, defaults.message),
+    meeting_title: text(cfg.meeting_title, defaults.meeting_title),
+    meeting_message: text(cfg.meeting_message, defaults.meeting_message),
+    followup_hour: int(cfg.followup_hour, defaults.followup_hour, 0, 23),
+    followup_interval_days: int(
+      cfg.followup_interval_days,
+      defaults.followup_interval_days,
+      1,
+      7,
+    ),
+    followup_max_days: int(
+      cfg.followup_max_days,
+      defaults.followup_max_days,
+      0,
+      14,
+    ),
+    followup_title: text(cfg.followup_title, defaults.followup_title),
+    followup_message: text(cfg.followup_message, defaults.followup_message),
+    escalation_after_days: int(
+      cfg.escalation_after_days,
+      defaults.escalation_after_days,
+      0,
+      14,
+    ),
+    escalation_title: text(cfg.escalation_title, defaults.escalation_title),
+    escalation_message: text(
+      cfg.escalation_message,
+      defaults.escalation_message,
+    ),
+  };
 }
 
 /**
