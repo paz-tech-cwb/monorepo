@@ -6,6 +6,7 @@ import {
   shiftDays,
   weekdayOf,
   weekdayOfDateString,
+  zonedDateTimeToDate,
   zonedParts,
 } from './meeting-day.util';
 
@@ -83,6 +84,42 @@ describe('meeting-day.util', () => {
     it('is null without a fixed weekday', () => {
       expect(nextMeetingDate(new Date(), 'Sem dia fixo')).toBeNull();
       expect(nextMeetingDate(new Date(), null)).toBeNull();
+    });
+  });
+
+  it('cached formatters stay per timeZone and give repeatable results', () => {
+    const d = new Date('2026-06-11T01:30:00Z');
+    for (let i = 0; i < 2; i++) {
+      expect(zonedParts(d).day).toBe(10);
+      expect(zonedParts(d, 'UTC').day).toBe(11);
+      expect(zonedDateTimeToDate('2026-06-10', 19, 0).toISOString()).toBe(
+        '2026-06-10T22:00:00.000Z',
+      );
+      expect(
+        zonedDateTimeToDate('2026-06-10', 19, 0, 'UTC').toISOString(),
+      ).toBe('2026-06-10T19:00:00.000Z');
+    }
+  });
+
+  describe('zonedDateTimeToDate', () => {
+    it('converts a Sao Paulo wall-clock time (UTC-3) to the UTC instant, minutes included', () => {
+      expect(zonedDateTimeToDate('2026-06-10', 19, 0).toISOString()).toBe(
+        '2026-06-10T22:00:00.000Z',
+      );
+      expect(zonedDateTimeToDate('2026-06-10', 21, 30).toISOString()).toBe(
+        '2026-06-11T00:30:00.000Z',
+      );
+      expect(zonedDateTimeToDate('2026-06-10', 0, 0).toISOString()).toBe(
+        '2026-06-10T03:00:00.000Z',
+      );
+    });
+
+    it('honors another zone and round-trips through zonedParts', () => {
+      const d = zonedDateTimeToDate('2026-01-15', 8, 15, 'America/New_York');
+      expect(d.toISOString()).toBe('2026-01-15T13:15:00.000Z');
+      expect(zonedParts(zonedDateTimeToDate('2026-06-10', 23, 30)).hour).toBe(
+        23,
+      );
     });
   });
 });
