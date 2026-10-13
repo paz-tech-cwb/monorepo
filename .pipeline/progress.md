@@ -1,18 +1,16 @@
 # Progress
 
 ## Request
-Phase 0 of the attendance/report merge design: stabilize the existing weekly life-group report (backend create authorization/validation/catalog + admin-ui payload). Mobile and the reminder are a later agent.
+Meetings API phase 1 (backend): migration, `life-group-meetings` module, shared upsert extraction, report snapshot sync, tests, docs.
 
 ## Status
 - [x] Context reviewed
 - [x] Spec created
-- [x] Implementation (backend)
-- [x] Implementation (admin-ui)
+- [x] Implementation
 - [x] Tests
 - [x] Docs
 - [x] Validation (see test-results.md)
 
 ## Timeline
-- 2026-10-13 Grant: spec written; overlap with PR #96 checked (zero edits to #96-touched files).
-- 2026-10-13 Owen/Sattler: backend + admin-ui implemented and validated (see test-results.md). Mobile + reminder pending (later agent).
-- 2026-10-13 Owen/Sattler: backend + admin-ui implemented and validated (see test-results.md). Mobile + reminder pending (later agent).
+- 2026-10-13 Grant/Owen/Sattler: previous pipeline files archived as `*-before-meetings-api-2026-10-13.md`; spec written from the approved design; decisions Q1/Q2/Q3/Q5 recorded.
+- 2026-10-13 Owen: migration, module, extraction, specs, docs. Sattler: build, scoped + full jest vs develop baseline, eslint/prettier, throwaway Postgres (migration + integration).

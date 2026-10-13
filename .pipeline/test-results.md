@@ -307,42 +307,73 @@ iOS (Xcode 26.6, TestPhone, scratchpad JDK17/Gradle/Konan):
 - `xcodebuild test` PazChurch on TestPhone: first run FAILED to compile `HomeViewModelTests.swift:41` (missing `relationship`/`isSupervised`, from #93, inherited on develop). After the one-line test fix: TEST SUCCEEDED (15+9+12+6 = 42 tests, 0 failures). Temporary fake GoogleService-Info.plist (39-char key) deleted afterwards, never committed.
 - Android: not buildable locally (no SDK); cross-read only: Android files changed by #89 (AccountViewModel, AndroidModule, Academy, MemberJourney) do not overlap ours (MainActivity, PazNavGraph, push helper, MinistryDetailScreen).
 
-## Phase 0 backend+admin-ui (fix/life-group-report-submit)
+---
 
-Node 22.23.3 (scratchpad). Backend:
-- `npm run build` OK.
-- Scoped jest (life-group-reports, forms-catalog, forms-core, life-group-attendance): 10 suites; only failure is the known `forms-core/services/notification-sender.spec`.
-- Full `npx jest`: 6 failed suites / 5 failed tests / 620 passed (80 suites): exactly the 6 known baseline suites (auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens). No develop worktree was needed since the failing set matches the documented baseline.
-- eslint (no --fix) on src/life-group-reports and src/forms-catalog: 0 errors, 11 `no-unsafe-argument` warnings (supertest `app.getHttpServer()` pattern, same as the pre-existing lines of the controller spec). prettier --check clean.
-Admin-ui: `pnpm install --frozen-lockfile` (pnpm 9.15.9) OK; `tsc --noEmit` 26 errors both before and after this change (identical sorted lists, so no new ones; lead's baseline said 28); eslint on the 3 changed files clean; `next build` OK.
-Not verified: no real Postgres run of the `findOne` with `select` + nested relations (mocked EntityManager); no manual run of the admin-ui form against a live backend; mobile untouched.
+# Meetings API (phase 1) - 2026-10-13
 
-## Phase 0 mobile + reminder
+Node 22.23.3 (scratchpad). Branch `feat/life-group-meetings-api`.
 
-JDK 17 (scratchpad), Node 22.23.3 (scratchpad). Android SDK not installed: no Android compile/unit run.
-- Shared: `./gradlew :shared:iosSimulatorArm64Test`: 110 tests, 0 failures (new: `LifeGroupReportDraftTest`, `FormsRepositoryLifeGroupReportTest`). `:shared:assembleSharedDebugXCFramework` OK.
-- iOS: `xcodebuild test -only-testing:PazChurchTests` on simulator "TestPhone" with a TEMPORARY fake `GoogleService-Info.plist` (deleted afterwards, never committed): 53 tests, 0 failures (new `LifeGroupReportFormTests`: 12). swiftformat applied to the new files; swiftlint: only warnings (type_body_length 297>250 on `LifeGroupReportFormView`).
-- Android: NOT compiled/tested locally (Compose screen, ViewModel, nav/DI wiring and `LifeGroupReportFormViewModelTest` were cross-read only; CI is the first compile). Risk spots: `SelectableDates`/`rememberDatePickerState(selectableDates=)` (material3 1.3 BOM 2025.04), `if (x != null) { { Text(x) } } else null` for `supportingText`/`placeholder`, Koin `parametersOf(Int?)`.
-- Backend: `npm run build` OK; `npx jest src/reminders`: 8 suites / 56 tests pass (form-report spec 11; also green with TZ=UTC and TZ=Asia/Tokyo); prettier --check clean; eslint on touched files: only the 3 pre-existing `no-unsafe-*` errors of the old part of the spec (same on baseline).
-- Not verified on device: the new screens on a real Android/iOS device against a live backend (date picker, keyboard behavior, dark mode, group picker with several groups, 409/422 from a real server), the deep link `paz://form/life-group-reports`, and the reminder against a real Postgres (mocked EntityManager; `DISTINCT` + soft-delete QB behavior unverified).
+- `npm run build`: PASS.
+- New specs: `meeting-edit-policy.spec.ts` (12), `life-group-meetings.service.spec.ts` (service, in-memory EntityManager with transactional rollback), `life-group-meetings.controller.spec.ts` (real Nest app, global ValidationPipe + ClassSerializerInterceptor), opt-in `life-group-meetings.integration.spec.ts` (real PostgreSQL, 27 tests, skipped without `MEETINGS_PG_PORT`). Covered: authorization matrix (leader, co-leader with member role, leader of two groups, area/sector supervisor in scope, supervisor out of scope, plain member, outsider, other group's leader, admin, pastor; GET and PUT; real scope resolver in the integration run), edit window with fake timers (day 14 allowed to 23:59 Sao Paulo, day 15 denied for leader/co-leader/supervisor/pastor, admin always, env override, reads always allowed, report half too), 409 `attendance_required`, 422 no sector/area (nothing written), derived fields, client-sent derived fields ignored, validation (counts, offering, arrays, `*_other`, attendance caps), idempotency, advisory-lock query order, rollback (fake and real DB), 23505 replay then 409, snapshot re-sync via the meetings PUT and via the OLD attendance PUT, legacy unlinked/soft-deleted reports untouched, old attendance GET/PUT shape unchanged (no `default_present`).
+- Scoped jest (meetings, attendance, reports, analytics, tasks, forms-core): 20 suites pass, 1 fails (`notification-sender.spec.ts`, pre-existing on develop), 1 skipped (integration), 272 tests pass.
+- Full jest: mine 76 passed / 6 failed / 1 skipped suites, 652 passed / 5 failed / 27 skipped tests. Baseline origin/develop (git worktree under the scratchpad, removed afterwards): 73 passed / 6 failed suites, 573 passed / 5 failed tests. The failing set is IDENTICAL (auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens.service): no new failures; +3 passing suites, +79 passing tests.
+- eslint on changed/new files: clean except 2 pre-existing `no-unsafe-assignment` errors in `form-submission-audit.service.ts` (present on develop; reproduced by stashing). prettier --check: clean.
 
-## Review fixes (phase 0)
+## Throwaway PostgreSQL (embedded-postgres 17.5.0-beta.15, new scratchpad dir `pg5`, port 54925, loopback only, throwaway user, DB `mig`)
+Real TypeORM CLI (`nest build`, `typeorm -d dist/db/data-source.js migration:run|revert`, DB_* env only on that process).
+1. Full chain on an empty DB (88 migrations incl. 1796000000000): PASS; column `attendance_id uuid`, FK `fk_life_group_reports_attendance` ON DELETE SET NULL, `idx_lgr_attendance`, partial unique index `uq_life_group_reports_group_date_active ... WHERE deleted_at IS NULL`, findings table empty.
+2. Duplicate fixtures (two active reports for group 1 / 2026-10-07, one soft-deleted extra on another date): migration SUCCEEDS, index NOT created, 1 finding row recorded (ids + count), CLI warning printed, `md5` of all original `life_group_reports` columns identical before/after (rows untouched).
+3. Resolved the duplicate (soft-delete), deleted the migrations row and re-ran: index created, findings table empty. Re-run again with the migration row removed (everything already present): PASS, idempotent. A duplicate INSERT then fails with 23505.
+4. `down()`: column, FK, both indexes and the findings table removed; data rows intact. `up` again: PASS.
+5. Integration spec against this DB (migrations applied): 27/27 pass, including 8 parallel combined PUTs -> one attendance + one report row, the same with the unique index dropped, 10 parallel report-only PUTs with the index dropped (mutation check: replacing the advisory lock with a no-op makes exactly this test fail, so it proves the lock), legacy attendance PUTs racing meetings PUTs, DB-level failure on the report insert (NUL byte in `text[]`) rolling back the attendance and audit rows, failing report audit rolling everything back, old attendance PUT re-syncing the linked report (audit row `update` by the editor), ON DELETE SET NULL, soft-deleted report not blocking a new one, legacy POST duplicate -> 409, dirty DB (index absent, duplicates present) -> oldest updated, rest untouched.
 
-Node 22.23.3 (scratchpad). Backend: `npm run build` OK; scoped jest (life-group-reports, forms-catalog, reminders): 12 suites / 137 tests pass (+1 PATCH future-date test); full jest 6 failed suites / 5 failed tests / 630 passed = the 6 known baseline suites; eslint on the controller clean, prettier --check on src/life-group-reports clean.
-Admin-ui: `tsc --noEmit` 24 errors, none in touched files (identical to baseline, none new); eslint on life-group-reports clean; `next build` OK.
-Android: NOT compiled locally (no SDK); `FormulariosViewModelTest` and the VM/screen change cross-read only, CI is the first compile. iOS/Swift untouched (no xcodebuild run).
-CI follow-up: Backend CI "Lint changed files" failed (3 `no-unsafe-*` errors in `reminders/evaluators/form-report-reminder.evaluator.spec.ts`, caused by this branch touching that spec; the earlier "pre-existing pattern" note was wrong for CI because it lints changed files). Fixed with typed mocks (`dispatchFn`), eslint 0 errors, reminders jest 56 pass.
+## Not verified
+- Migration on a real/prod-shaped database; prod duplicate count.
+- Postgres 16 specifically (tests ran on 17.5).
+- Any mobile/admin-ui consumer (none exists yet).
 
-## User decisions round 2 (phase 0)
+Cleanup outcome: the throwaway Postgres was stopped (SIGINT to the postmaster, port 54925 no longer listening). `rm -rf` of its data dir (`<scratchpad>/pg5/data`) and `kill` of the idle node wrapper (`node start.mjs`, pid 18789) were DENIED by the sandbox permission system, so the data dir (throwaway user/password, fixtures only) and the idle wrapper process remain in the scratchpad and need manual removal.
 
-Node 22.23.3, JDK 17 (scratchpad). Backend: `npm run build` OK; `npx jest src/reminders`: 8 suites / 61 tests pass (form-report spec 16; also green with TZ=UTC and TZ=Asia/Tokyo); full `npx jest`: 6 failed suites / 5 failed tests / 635 passed (80 suites), exactly the 6 known baseline suites; eslint on the 2 changed files: 0 errors/warnings; prettier --check clean. Note: `tsc --noEmit` over specs reports 1 error in `life-group-reports.controller.spec.ts:415` that is identical without this change (untouched file; `nest build` excludes specs).
-Shared: `./gradlew :shared:iosSimulatorArm64Test` OK (`LifeGroupReportDraftTest` 18 tests, 0 failures); `assembleSharedDebugXCFramework` OK. iOS: `xcodebuild test -only-testing:PazChurchTests` on "TestPhone" with a TEMPORARY fake `GoogleService-Info.plist` (deleted, gitignored, never committed, needs JAVA_HOME/GRADLE_USER_HOME/KONAN_DATA_DIR exported for the KMP script phase): 55 tests, 0 failures, TEST SUCCEEDED (new admin/pastor + leader-never-loads-all tests pass).
-Android: NOT compiled/run locally (no SDK): VM/UiState/DI changes and 3 new VM tests cross-read; CI is the first compile.
-Not verified: the new TypeORM query builders (LifeGroup leader/coLeader join with raw aliases, DISTINCT `r.lifeGroupId`) run against mocks only, no real Postgres this round; one manual run of the reminder against a real DB is advised. Real devices/backends not exercised.
+# Review fixes (meetings API) - 2026-10-13
 
-## Clock fix (round 2 addendum)
-`npx jest src/reminders`: 8 suites / 67 tests pass under TZ=UTC, TZ=Asia/Tokyo and TZ=America/Sao_Paulo; eslint 0 problems, prettier clean, `npm run build` OK.
+Fixes: M1 (`@IsObject()` above `@ValidateNested()` on `attendance` and `report`; controller spec rejects `[]`, `[1]`, `'x'`, `5`, `true` for both with 400 and nothing written), m1 (report-only PUT reads the attendance row with `pessimistic_read`; new real-PG interleave test: a held, uncommitted attendance UPDATE blocks the report PUT, then the committed counts are snapshotted; mutation check: with the lock removed that test fails), m2 (D1/D6 in spec.md record that the legacy attendance PUT has no edit window and re-syncs linked reports after day 14), m3 (entity comment reworded: synchronize would drop the DB-only index/FK, never run with DB_SYNCHRONIZE=true), m4 (`conrelid = 'life_group_reports'::regclass` in the migration FK existence check). m5 left documented (D9).
 
-## Round 3: supervisors read-only (D11)
-See final validation numbers appended below.
-Backend: `npm run build` OK; scoped jest (life-group-reports, forms-catalog, forms-core): all pass except the baseline notification-sender suite; full jest 6 failed suites / 5 failed tests / 644 passed = the 6 known baseline suites; eslint on src/life-group-reports + src/forms-catalog 0 errors (12 pre-existing warnings); prettier --check clean. admin-ui/mobile untouched, no checks needed.
+Validation (Node 22.23.3):
+- `npm run build`: PASS.
+- Scoped jest (meetings, attendance, reports, analytics, tasks, forms-core): 24 suites pass, 1 fails (`notification-sender.spec.ts`, pre-existing on develop), 1 skipped (integration); 320 tests pass.
+- Full jest: 76 suites pass / 6 fail / 1 skipped; 653 pass / 5 fail / 28 skipped. Failing set identical to develop baseline (auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens.service): no new failures.
+- eslint on the 6 changed files: clean. prettier --check: clean.
+- Throwaway PostgreSQL 17.5 (embedded-postgres, NEW scratchpad dir `pg6`, port 54926): migration chain up (FK has conrelid life_group_reports), down (FK + indexes gone), duplicates scenario (migration succeeds, 1 finding, unique index not created, original columns md5 identical before/after run and revert), resolve + re-run (index created, findings empty): PASS.
+- Integration spec against it: 28/28 pass (27 + the new interleave test).
+
+Not verified: Postgres 16; migration on a prod-shaped DB.
+
+Cleanup: Postgres stopped (port 54926 closed). `kill` of the idle node wrapper (pid 25717, `node start.mjs`) and `rm -rf <scratchpad>/pg6/data` were DENIED; they remain (plus older wrappers 18789, 69663, 86989, 119 from earlier runs).
+
+CI follow-up: Backend CI "Lint changed files" failed on run 38382034060 (earlier head) and 38382728357 (review-fix head) with 2 `no-unsafe-assignment` errors in `form-submission-audit.service.ts` (`as any`). Not inherited in effect: CI lints files changed by the branch and this branch touches that file (the errors pre-existed in the lines, which the earlier notes called pre-existing). Fixed by typing the two casts; eslint over all branch-changed ts files clean.
+
+# Extra meeting flag - 2026-10-13
+
+Node 22.23.3 (scratchpad). Branch `feat/life-group-meetings-api`.
+- `npm run build`: PASS.
+- New/updated unit specs: meetings service (13 extra-meeting tests: flag accepted/rejected combos, immutability, cap 3/week incl. admin, other week/group unaffected, advisory-lock order 4207 then 4208, edit window and future date, access, rollback, GET draft), controller (flag via the real global pipe: stored/exposed, non-boolean values 400, `?extra_meeting=true`), attendance service (legacy PUT still rejects a non-fixed weekday with the unchanged message and writes nothing), `isoWeekRange`, analytics (`extra_meetings_count`).
+- Scoped jest (life-group*, reminders, forms-core): 32 suites pass, 1 fails (`notification-sender.spec.ts`, pre-existing), 1 skipped; 408 tests pass.
+- Full jest: 76 suites pass / 6 fail / 1 skipped; 681 tests pass / 5 fail / 34 skipped. Failing set identical to the known baseline (auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens.service).
+- eslint on all 17 changed files (16 .ts + the migration): 0 errors, 0 warnings. prettier --check: clean.
+
+## Throwaway PostgreSQL (embedded-postgres 17.5, NEW scratchpad dir `pg8`, port 54928, loopback, DB `mig`)
+- Real TypeORM CLI: full chain on an empty DB (89 migrations incl. 1796000000001) PASS; `revert` removes `is_extra` (the previous migration stays); run again PASS; migrations row deleted and re-run with the column already present PASS (idempotent); re-run reports nothing pending.
+- Integration spec: 34/34 pass (28 existing + 6 new: flag required/accepted/persisted + report in the same PUT + roster snapshot kept; immutability and misuse incl. no-fixed-day group; OLD attendance endpoint unchanged message + legacy shape without `is_extra`, editing a saved extra keeps it; GET draft with/without `?extra_meeting=true`; cap with 4 parallel PUTs on different dates of one week -> exactly 3 saved, 1x 409; task roster eligibility count with 1 regular + 2 extras in one week + 1 extra in another = 3 present). Mutation check: removing the (group, week) advisory lock makes the parallel cap test fail, so it proves the lock.
+
+Not verified: Postgres 16; migration on a prod-shaped DB; no client sends the flag yet.
+
+# Round 2 fixes (extra meeting flag) - 2026-10-13
+- m1: GET `extra_meeting` accepts only exact `true`/`false`, else 400 (controller spec: TRUE/False/1/yes/abc/empty/repeated param). m2/m3 documented (docs + spec comments). m4: year-boundary tests (service cap + lock key for 2026-12-28..2027-01-03, roster SQL/isoWeekRange equivalence, real-Postgres test on 2025-12-29..2026-01-04).
+- M1: integration spec re-run on a throwaway Postgres 17.5 (NEW dir `pg10`, port 54930, full 90-migration chain): 35/35 pass (34 + year boundary: 1 regular + 3 extras in one ISO week across the year change -> 4th extra 409, only the earliest extra counts, next week separate -> presentCount 3). A literal "4 extras in one week" cannot exist (cap 3), so that is covered by the 3-extras case plus the earlier 2-extras test. Postgres stopped; port closed.
+- build PASS; scoped jest (meetings, tasks, attendance) 13 suites pass, 251 tests; full jest 76 pass / 6 fail (baseline set identical) / 1 skipped, 695 pass / 5 fail / 35 skipped; eslint 0 errors on 5 changed ts files; prettier clean (life-groups.md was already not prettier-clean before).
+
+## Supervisors read-only (D11) - 2026-10-13
+- Scoped jest (life-group-meetings, life-group-attendance): 5 suites pass, 1 skipped (integration); 148+ tests pass. Full jest: 76 suites pass / 6 fail / 1 skipped; 705 pass / 5 fail / 35 skipped; failing set = known baseline (auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens).
+- New coverage: supervisor in scope GET 200 (can_write/can_edit false, edit_deadline kept) and PUT 403 `meeting_write_forbidden` for attendance, report, both, and extra meeting (nothing written); co-leader with member role, admin, pastor allowed (pastor still bound by window); other group's leader 403 on GET and PUT; OLD attendance PUT rejects supervisor, allows co-leader/admin/pastor, supervisor GET still works.
+- Throwaway PostgreSQL 17.5 (embedded-postgres, NEW scratchpad dir `pg11`, port 54931, full 90-migration chain): integration spec 35/35 pass (matrix now has read/write columns with the real scope resolver). Postgres stopped.
+- `nest build` OK; eslint on all 9 changed .ts files: 0 errors/warnings; prettier --check clean.

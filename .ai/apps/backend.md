@@ -50,6 +50,24 @@ America/Sao_Paulo); DTO has count/offering/array/length limits; `forms-catalog`
 shows the entry to leaders/co-leaders of any group (`EntityManager` query). See
 `features/life-groups.md` "Create (Phase 0)".
 
+## Life group meetings
+
+`src/life-group-meetings/` (registered in `app.module.ts`): `GET|PUT
+/life-groups/:lifeGroupId/meetings/:date` combining attendance and the weekly
+report in one transaction. Shared pieces: `LifeGroupAttendanceService.upsertInTransaction`
+(attendance core, also used by the legacy PUT), `assertCanAccessLifeGroup`,
+`LifeGroupReportSnapshotService` (re-syncs `committed_*` of linked reports),
+`life-group-report.mapper.ts` (report response/input columns),
+`FormSubmissionAuditService.record(params, manager?)`. Edit window constant:
+`common/constants/life-group-meeting.ts`. Migrations `1796000000000` and `1796000000001` (`is_extra`, extra-meeting flag) are pending
+(human gate). Specs: `meeting-edit-policy.spec.ts`,
+`life-group-meetings.service.spec.ts` (in-memory `fake-entity-manager.testing.ts`),
+`life-group-meetings.controller.spec.ts` (real global pipe + serializer) and the
+opt-in `life-group-meetings.integration.spec.ts` (real PostgreSQL, env
+`MEETINGS_PG_*`, skipped by default). Extra meetings: `extra_meeting` flag on the meetings PUT/GET only (rules, cap
+and consumers in `features/life-groups.md`).
+Details in `features/life-groups.md`.
+
 ## Validation
 
 Prefer focused tests first:
@@ -67,4 +85,6 @@ npm run lint
 or co-leads (row-based, not role-slug-based); admin/pastor stay unrestricted.
 `LifeGroupsService.findMine` (`GET /life-groups/me`) includes supervised groups
 and adds `relationship` + `is_supervised` (roster omitted for supervisor-only rows). `ScopeResolverService` is row-based, one ids-only SQL; casa-de-paz write bypass still needs the area/sector leader slug. See `features/life-groups.md`
-(Visibility).
+(Visibility). Scope grants READ of attendance/meetings to supervisors; WRITE of
+attendance/meetings (and, with PR #97, reports) is admin, pastor or the group's own
+leader/co-leader (`assertCanWriteLifeGroup`, 403 `meeting_write_forbidden`).
