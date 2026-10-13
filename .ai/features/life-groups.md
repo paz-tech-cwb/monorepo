@@ -216,8 +216,11 @@ Module `backend/src/life-group-meetings/`.
   catalog are NOT changed in this phase (see `features/notifications.md`).
 - Phase 2 (reminders v2, stacked on this API) changes the `life_group_attendance`
   reminder rule only behind the server flag `LIFE_GROUP_MEETING_V2` (default off):
-  new combined copy, daily follow-up at 09:00 (Sao Paulo) while attendance exists
-  and the report does not, and a day-5 push to the sector leader + co-leader.
+  new combined copy, follow-ups to leader + co-leader 24h/48h/72h/96h after the
+  meeting datetime (date + meeting_time, Sao Paulo; hourly tick tolerance 2h) while
+  attendance exists and no report does, and a push to the sector leader + co-leader
+  120h (day 5) after it. A report by either leader completes the reminder; extra
+  meetings with attendance are followed up like regular ones.
   Details and switch-on steps in `features/notifications.md`.
 - Weekday rule (verified for phase 2): `assertMatchesMeetingDay` returns early for a
   group without a fixed `meeting_day`, so ANY past date is accepted for those groups

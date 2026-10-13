@@ -49,15 +49,22 @@ export interface LifeGroupAttendanceReminderConfig {
   // Primary push copy (attendance + report).
   meeting_title?: string
   meeting_message?: string
-  // Church-timezone hour (0-23) of the daily follow-up and of the escalation.
-  followup_hour?: number
-  // 1 = every day, 2 = every other day...
-  followup_interval_days?: number
+  // Follow-ups are relative to the meeting datetime (date + start time, church timezone):
+  // first one this many hours after the meeting (default 24)...
+  followup_first_after_hours?: number
+  // ...then every this many hours (default 24).
+  followup_interval_hours?: number
   // Cap: last day after the meeting that may get a follow-up (0 = no follow-up).
   followup_max_days?: number
+  // Catch-up window after each due time, in hours (hourly scheduler ticks; default 2).
+  followup_window_hours?: number
+  /** @deprecated old 09:00 model; never sent any more, dropped on save. */
+  followup_hour?: number
+  /** @deprecated old model; the backend reads it only as a fallback (days * 24 hours). */
+  followup_interval_days?: number
   followup_title?: string
   followup_message?: string
-  // Day after the meeting when the sector leader is told (0 = off).
+  // Days after the meeting datetime when the sector leader is told (0 = off; default 5).
   escalation_after_days?: number
   // `{group}` and `{date}` (DD/MM) are replaced.
   escalation_title?: string

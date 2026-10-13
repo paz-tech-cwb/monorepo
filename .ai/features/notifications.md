@@ -69,45 +69,72 @@ With the flag on (everything in church time, America/Sao_Paulo):
    Claim-first: the `ReminderDispatchLog` row is inserted before sending and
    deleted if the send throws; the key is the same as the legacy one
    (`life_group_attendance:{gid}:{date}`) so flipping the flag never re-sends.
-2. **Follow-up** from `followup_hour` (default 9) on day k after the meeting
-   (k = 1..`followup_max_days`, default 5, only when `(k-1) % followup_interval_days
-   == 0`, default 1 = DAILY, and only before the escalation day) to leader +
-   co-leader, when attendance exists for that meeting but no report. Copy
-   `followup_title`/`followup_message`, same deep link. Dedupe key
-   `life_group_meeting_followup:{gid}:{date}:{k}`, claim-first. Catch-up window:
-   the hourly tick is accepted for `followup_hour` .. `followup_hour + 2` (same
-   Sao Paulo day, no wrap past midnight), so a lost or failed 09:00 tick is
-   retried at 10:00/11:00; the per-day claim key keeps it to one push per k.
-   (The primary push has no window: it stays exact-hour, as in legacy.)
-3. **Escalation** on day `escalation_after_days` (default 5; 0 = off), or on
-   the 2 days after it if that tick was missed (days N..N+2), within the
-   follow-up hour window: one push to the group's SECTOR leader and sector co-leader
+2. **Follow-up**, RELATIVE TO THE MEETING DATETIME (user decision, 2026-10-13):
+   the meeting instant is the meeting date + the group's `meeting_time`
+   (hour AND minutes, America/Sao_Paulo). Leader + co-leader are reminded
+   `followup_first_after_hours` (default 24) after it, then every
+   `followup_interval_hours` (default 24): defaults +24h, +48h, +72h, +96h, never
+   beyond `followup_max_days` (default 5; 0 = follow-ups off) and never at/after
+   the escalation instant, so nothing is sent after +96h. Only when attendance
+   exists for that meeting but no report. Copy `followup_title`/`followup_message`,
+   deep link `paz://presenca/{lifeGroupId}/{date}`. Dedupe key
+   `life_group_meeting_followup:{gid}:{date}:{offsetHours}h`, claim-first.
+   Tolerance: the scheduler ticks hourly, so a due time is honored by any tick in
+   `[due, due + followup_window_hours]` (default 2h, inclusive). A follow-up due at
+   21:30 is therefore sent by the 22:00 tick (and the 23:00 tick would still be
+   accepted but is deduped by the claim key); a lost or failed tick is retried by
+   the following ones. This REPLACES the earlier "09:00 next morning, daily" rule
+   (old `followup_hour` is ignored). The primary push has no window: it stays
+   exact-hour, as in legacy.
+3. **Escalation** at `escalation_after_days` x 24h after the meeting instant
+   (default 5 days = +120h; 0 = off), with the same catch-up window (+121h and +122h
+   still escalate, +123h does not): one push to the group's SECTOR leader and sector
+   co-leader
    (deduped; none if the group has no sector or the sector has no leader) with
    `{group}`/`{date}` (DD/MM) placeholders. Category `life_group_attendance`
    (reused: absent from `CATEGORY_PREF_MAP`, so the per-category toggle does not
    apply; the user-level global opt-outs `allNotificationsEnabled=false` /
    `pushEnabled=false` in `NotificationDispatchService` STILL suppress it; channel `paz_life_group`, no enum migration, no
    client change), deep link `paz://lifegroup/{lifeGroupId}` (already parsed by
-   Android `life_group_detail/{id}` and iOS; no new scheme). Dedupe key
+   Android `life_group_detail/{id}` and iOS; no new scheme; confirmed by the
+   product owner). Dedupe key
    `life_group_meeting_escalation:{gid}:{date}` (one per group and meeting date),
    claim-first. The key ignores `escalation_after_days`: changing that setting
    mid-flight can re-escalate an older still-unreported meeting whose new window
-   lands today (bounded, low risk). The daily follow-ups stop the day before, so
-   day 5 is the only push of that day. The sector leader opens
+   lands today (bounded, low risk). The follow-ups stop before the escalation
+   instant. The sector leader opens
    `paz://lifegroup/{id}` through `GET /life-groups/:id`; see the access note below.
-4. "Has a report": a non-deleted `life_group_reports` row linked via `attendance_id`
-   OR dated within [meeting date, meeting date + 6]. A meeting without attendance
-   is never followed up or escalated (the primary push owns that gap).
-5. Groups without a fixed day (or null `meeting_time`) are skipped everywhere.
-   Extra meetings / manual dates are created by leaders in the Phase 3 app; reminders
-   never target them.
+4. "Has a report": a non-deleted `life_group_reports` row for the GROUP (any author:
+   leader or co-leader) linked via `attendance_id` OR dated within
+   [meeting date, meeting date + 6]. So a report by the co-leader silences the
+   follow-ups and the escalation for the leader and vice versa (the query has no
+   author filter; covered by tests). A meeting without attendance is never
+   followed up or escalated (the primary push owns that gap; flagged to product,
+   decision: keep, the primary push covers it).
+5. Groups without a fixed day or null `meeting_time` are skipped everywhere (no
+   meeting instant can be computed), even if they have extra attendance rows.
+6. Extra meetings (`life_group_attendance.is_extra = true`): reminders are driven
+   by attendance rows, so an extra is followed up and escalated exactly like a
+   regular meeting once its attendance exists (its own date + the group's
+   `meeting_time`; the push deep link carries the extra's date). Reminders are
+   never CREATED for an extra (no attendance row = nothing), and the primary-push
+   check ignores extras (`is_extra = false` filter), so an extra on a regular date
+   does not mark the regular meeting as recorded. Note: a report dated within
+   6 days after a regular meeting also counts for an extra in that window
+   (legacy date-window rule).
 
 Config (`reminder_rules.config`, validated in `validateReminderConfig`; rows
 saved before v2 get defaults through `resolveLifeGroupAttendanceConfig`):
 `hours_after_meeting_start`, legacy `title`/`message`, `meeting_title`/
-`meeting_message`, `followup_hour` (0-23), `followup_interval_days` (1-7),
-`followup_max_days` (0-14, 0 = off), `followup_title`/`followup_message`,
-`escalation_after_days` (0-14, 0 = off), `escalation_title`/`escalation_message`.
+`meeting_message`, `followup_first_after_hours` (1-168, default 24),
+`followup_interval_hours` (1-168, default 24), `followup_max_days` (0-14, default 5,
+0 = off), `followup_window_hours` (0-12, default 2), `followup_title`/
+`followup_message`, `escalation_after_days` (0-14, default 5, 0 = off),
+`escalation_title`/`escalation_message`. Old -> new mapping (rows saved with the
+earlier model keep working): `followup_hour` is ignored (the 09:00 model is gone);
+`followup_interval_days` (1-7) is still ACCEPTED on save and used as a fallback
+`followup_interval_hours = days x 24` only when `followup_interval_hours` is absent;
+the admin UI no longer sends either old key. No data migration (defaults at read time).
 Legacy `title`/`message` may be blank (flag-off saves unchanged); the V2 copy
 keys reject blank, so the admin UI omits blank/cleared fields and the defaults
 apply. A send failure marks the just-created Notification `failed` and releases

@@ -88,8 +88,9 @@ const ATTENDANCE_TEXT_KEYS = [
 function validateAttendanceConfig(c: LifeGroupAttendanceReminderConfig): string | null {
   const ints: [string, number | undefined, number, number][] = [
     ['Horas após o início', c.hours_after_meeting_start, 0, 23],
-    ['Hora do follow-up', c.followup_hour, 0, 23],
-    ['Intervalo do follow-up', c.followup_interval_days, 1, 7],
+    ['Primeiro follow-up (horas)', c.followup_first_after_hours, 1, 168],
+    ['Intervalo do follow-up (horas)', c.followup_interval_hours, 1, 168],
+    ['Tolerância (horas)', c.followup_window_hours, 0, 12],
     ['Máximo de dias de follow-up', c.followup_max_days, 0, 14],
     ['Dias até escalar ao líder de setor', c.escalation_after_days, 0, 14],
   ]
@@ -107,6 +108,10 @@ function cleanAttendanceConfig(c: LifeGroupAttendanceReminderConfig): LifeGroupA
   for (const key of ATTENDANCE_TEXT_KEYS) {
     if (typeof next[key] === 'string' && next[key]!.trim() === '') delete next[key]
   }
+  // Pre-2026-10-13 timing keys (09:00 next morning, interval in days): the new
+  // meeting-relative fields replace them, so they are never written back.
+  delete next.followup_hour
+  delete next.followup_interval_days
   return next
 }
 
@@ -913,27 +918,39 @@ function LifeGroupAttendanceControls({
 
       <div className="space-y-3 border-t pt-4">
         <p className="text-sm font-medium">Follow-up: presença lançada, relatório pendente (flag ligada)</p>
-        <div className="space-y-2">
-          <Label>Hora do follow-up e do aviso ao líder de setor</Label>
-          <HourPicker
-            value={config.followup_hour ?? 9}
-            onChange={(h) => onChange({ ...config, followup_hour: h })}
-            disabled={disabled}
-          />
-        </div>
         <NumberField
-          label="Repetir a cada (dias)"
-          hint="1 = todos os dias."
-          value={config.followup_interval_days}
-          placeholder="1"
+          label="Primeiro follow-up (horas após a reunião)"
+          hint="Contado a partir do dia e horário da reunião (horário de Brasília). Padrão 24 = no dia seguinte, no mesmo horário da reunião."
+          value={config.followup_first_after_hours}
+          placeholder="24"
           min={1}
-          max={7}
+          max={168}
           disabled={disabled}
-          onChange={(n) => onChange({ ...config, followup_interval_days: n })}
+          onChange={(n) => onChange({ ...config, followup_first_after_hours: n })}
+        />
+        <NumberField
+          label="Repetir a cada (horas)"
+          hint="Padrão 24 = todos os dias no horário da reunião (+24h, +48h, +72h, +96h)."
+          value={config.followup_interval_hours}
+          placeholder="24"
+          min={1}
+          max={168}
+          disabled={disabled}
+          onChange={(n) => onChange({ ...config, followup_interval_hours: n })}
+        />
+        <NumberField
+          label="Tolerância de envio (horas)"
+          hint="O envio roda de hora em hora; um follow-up devido às 21:30 sai às 22:00. Se uma rodada falhar, ainda é enviado até X horas depois do horário devido (padrão 2)."
+          value={config.followup_window_hours}
+          placeholder="2"
+          min={0}
+          max={12}
+          disabled={disabled}
+          onChange={(n) => onChange({ ...config, followup_window_hours: n })}
         />
         <NumberField
           label="Máximo de dias de follow-up"
-          hint="Limite de dias após a reunião (0 desliga o follow-up). Se o aviso ao líder de setor estiver ligado, os follow-ups terminam no dia anterior a ele."
+          hint="Limite de dias após a reunião (0 desliga o follow-up; padrão 5). Se o aviso ao líder de setor estiver ligado, os follow-ups terminam no dia anterior a ele."
           value={config.followup_max_days}
           placeholder="5"
           min={0}
@@ -955,8 +972,8 @@ function LifeGroupAttendanceControls({
       <div className="space-y-3 border-t pt-4">
         <p className="text-sm font-medium">Aviso ao líder e co-líder de setor (flag ligada)</p>
         <NumberField
-          label="Avisar o setor após (dias)"
-          hint="Se ainda não houver relatório X dias após a reunião (0 desliga). Ignora o interruptor da categoria de notificações, mas respeita o desligamento geral de notificações/push do usuário."
+          label="Avisar o setor após (dias da reunião)"
+          hint="Se ainda não houver relatório X dias (X × 24 horas) após o horário da reunião; padrão 5 = 120 horas (0 desliga). Ignora o interruptor da categoria de notificações, mas respeita o desligamento geral de notificações/push do usuário."
           value={config.escalation_after_days}
           placeholder="5"
           min={0}

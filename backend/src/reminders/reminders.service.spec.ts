@@ -93,7 +93,10 @@ describe('RemindersService', () => {
     } as ReminderRule);
     await expect(
       service.update(4, {
-        config: { hours_after_meeting_start: 2, followup_hour: 30 } as never,
+        config: {
+          hours_after_meeting_start: 2,
+          followup_first_after_hours: 0,
+        } as never,
       }),
     ).rejects.toThrow(BadRequestException);
     expect(saveMock).not.toHaveBeenCalled();
@@ -108,8 +111,8 @@ describe('RemindersService', () => {
     } as ReminderRule);
     const config = {
       hours_after_meeting_start: 2,
-      followup_hour: 9,
-      followup_interval_days: 1,
+      followup_first_after_hours: 24,
+      followup_interval_hours: 24,
       followup_max_days: 5,
       escalation_after_days: 5,
     };

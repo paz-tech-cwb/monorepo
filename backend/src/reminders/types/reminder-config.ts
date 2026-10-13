@@ -48,12 +48,21 @@ export interface LifeGroupAttendanceReminderConfig {
   // `message` above keep driving the primary push while the flag is off.
   meeting_title?: string; // primary push copy for the combined attendance + report flow
   meeting_message?: string;
-  followup_hour?: number; // 0-23, church timezone; hour of the daily follow-up / escalation
-  followup_interval_days?: number; // 1 = daily, 2 = every other day...
-  followup_max_days?: number; // cap: last day after the meeting that may get a follow-up (0 = off)
+  // Follow-ups are relative to the meeting datetime (meeting date + meeting_time,
+  // church timezone): first at +followup_first_after_hours, then every
+  // followup_interval_hours, never later than followup_max_days days after the
+  // meeting and never at/after the escalation instant.
+  followup_first_after_hours?: number; // 1-168; default 24
+  followup_interval_hours?: number; // 1-168; default 24
+  followup_max_days?: number; // cap: last day after the meeting that may get a follow-up (0 = follow-ups off)
+  followup_window_hours?: number; // 0-12; catch-up window after each due time (hourly ticks); default 2
+  /** @deprecated pre-2026-10-13 saved configs: 09:00-next-morning model. Ignored. */
+  followup_hour?: number;
+  /** @deprecated read only as a fallback: followup_interval_hours = days * 24. */
+  followup_interval_days?: number;
   followup_title?: string;
   followup_message?: string;
-  escalation_after_days?: number; // day after the meeting the sector leader is told (0 = off)
+  escalation_after_days?: number; // days after the meeting datetime the sector leader is told (0 = off); default 5
   // "{group}" and "{date}" (DD/MM) are replaced
   escalation_title?: string;
   escalation_message?: string;
@@ -140,9 +149,10 @@ export const DEFAULT_CONFIGS: Record<ReminderRuleType, ReminderConfig> = {
     meeting_title: 'Registre a reunião do Life Group',
     meeting_message:
       'Registre a presença e o relatório do seu Life Group. Toque para abrir.',
-    followup_hour: 9,
-    followup_interval_days: 1,
+    followup_first_after_hours: 24,
+    followup_interval_hours: 24,
     followup_max_days: 5,
+    followup_window_hours: 2,
     followup_title: 'Relatório do Life Group pendente',
     followup_message:
       'A presença foi lançada, mas o relatório da reunião ainda não foi enviado. Toque para concluir.',
@@ -174,9 +184,14 @@ function isIntInRange(value: unknown, min: number, max: number): boolean {
 
 const ATTENDANCE_INT_FIELDS: Array<[string, number, number]> = [
   ['hours_after_meeting_start', 0, 23],
+  ['followup_first_after_hours', 1, 168],
+  ['followup_interval_hours', 1, 168],
+  ['followup_max_days', 0, 14],
+  ['followup_window_hours', 0, 12],
+  // deprecated keys: still accepted so configs saved before the
+  // meeting-relative timing keep saving
   ['followup_hour', 0, 23],
   ['followup_interval_days', 1, 7],
-  ['followup_max_days', 0, 14],
   ['escalation_after_days', 0, 14],
 ];
 
@@ -254,8 +269,12 @@ export function validateReminderConfig(
 }
 
 /** `life_group_attendance` config with every V2 field resolved (stored value, else default). */
-export type ResolvedLifeGroupAttendanceConfig =
-  Required<LifeGroupAttendanceReminderConfig>;
+export type ResolvedLifeGroupAttendanceConfig = Required<
+  Omit<
+    LifeGroupAttendanceReminderConfig,
+    'followup_hour' | 'followup_interval_days'
+  >
+>;
 
 export function resolveLifeGroupAttendanceConfig(
   config: unknown,
@@ -278,12 +297,27 @@ export function resolveLifeGroupAttendanceConfig(
     message: text(cfg.message, defaults.message),
     meeting_title: text(cfg.meeting_title, defaults.meeting_title),
     meeting_message: text(cfg.meeting_message, defaults.meeting_message),
-    followup_hour: int(cfg.followup_hour, defaults.followup_hour, 0, 23),
-    followup_interval_days: int(
-      cfg.followup_interval_days,
-      defaults.followup_interval_days,
+    followup_first_after_hours: int(
+      cfg.followup_first_after_hours,
+      defaults.followup_first_after_hours,
       1,
-      7,
+      168,
+    ),
+    // Old rows saved followup_interval_days (daily/every N days): honor it as
+    // N * 24 hours when the new key is absent. `followup_hour` is ignored.
+    followup_interval_hours: int(
+      cfg.followup_interval_hours,
+      isIntInRange(cfg.followup_interval_days, 1, 7)
+        ? (cfg.followup_interval_days as number) * 24
+        : defaults.followup_interval_hours,
+      1,
+      168,
+    ),
+    followup_window_hours: int(
+      cfg.followup_window_hours,
+      defaults.followup_window_hours,
+      0,
+      12,
     ),
     followup_max_days: int(
       cfg.followup_max_days,

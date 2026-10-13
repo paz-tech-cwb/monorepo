@@ -154,18 +154,18 @@ maybe('life_group_attendance v2 reminders (real PostgreSQL)', () => {
     ).toBe(1);
   });
 
-  it('follow-up (attendance, no report) once at 09:00 SP, then the day-5 escalation to sector leader + co-leader', async () => {
+  it('follow-up (attendance, no report) once at +24h (19:00 SP), then the +120h escalation to sector leader + co-leader', async () => {
     await seedAttendance();
-    await evaluator().run(rule, sp('2026-06-11T08:00:00'));
+    await evaluator().run(rule, sp('2026-06-11T18:00:00'));
     expect(sent).toHaveLength(0);
     await Promise.all([
-      evaluator().run(rule, sp('2026-06-11T09:00:00')),
-      evaluator().run(rule, sp('2026-06-11T09:00:00')),
+      evaluator().run(rule, sp('2026-06-11T19:00:00')),
+      evaluator().run(rule, sp('2026-06-11T19:00:00')),
     ]);
     expect(sent).toHaveLength(1);
     expect(sent[0].recipients).toEqual([9201, 9202]);
 
-    await evaluator().run(rule, sp('2026-06-15T09:00:00'));
+    await evaluator().run(rule, sp('2026-06-15T19:00:00'));
     expect(sent).toHaveLength(2);
     expect(sent[1]).toMatchObject({
       deepLink: 'paz://lifegroup/9201',
@@ -183,8 +183,8 @@ maybe('life_group_attendance v2 reminders (real PostgreSQL)', () => {
     async (_n, report) => {
       await seedAttendance();
       await seedReport(report);
-      await evaluator().run(rule, sp('2026-06-11T09:00:00'));
-      await evaluator().run(rule, sp('2026-06-15T09:00:00'));
+      await evaluator().run(rule, sp('2026-06-11T19:00:00'));
+      await evaluator().run(rule, sp('2026-06-15T19:00:00'));
       expect(sent).toHaveLength(0);
     },
   );
@@ -193,15 +193,32 @@ maybe('life_group_attendance v2 reminders (real PostgreSQL)', () => {
     await seedAttendance();
     await seedReport({ linked: false, date: '2026-06-10', deleted: true });
     await seedReport({ linked: false, date: '2026-06-17' });
-    await evaluator().run(rule, sp('2026-06-11T09:00:00'));
+    await evaluator().run(rule, sp('2026-06-11T19:00:00'));
     expect(sent).toHaveLength(1);
+  });
+
+  it('an extra meeting (is_extra) with attendance and no report is followed up on its own date; the primary check ignores extras', async () => {
+    await ds.query(
+      `INSERT INTO life_group_attendance (life_group_id, meeting_date, recorded_by, is_extra) VALUES (9201, '2026-06-13', 9201, true)`,
+    );
+    await evaluator().run(rule, sp('2026-06-14T19:00:00'));
+    expect(sent).toHaveLength(1);
+    expect(sent[0].deepLink).toBe('paz://presenca/9201/2026-06-13');
+    // an extra on the regular date does not count as the regular meeting recorded
+    await ds.query(
+      `INSERT INTO life_group_attendance (life_group_id, meeting_date, recorded_by, is_extra) VALUES (9201, '2026-06-17', 9201, true)`,
+    );
+    await evaluator().run(rule, sp('2026-06-17T21:00:00'));
+    expect(
+      sent.some((s) => s.deepLink === 'paz://presenca/9201/2026-06-17'),
+    ).toBe(true);
   });
 
   it('skips the group without a fixed day', async () => {
     await ds.query(
       `INSERT INTO life_group_attendance (life_group_id, meeting_date, recorded_by) VALUES (9202, '2026-06-10', 9201)`,
     );
-    await evaluator().run(rule, sp('2026-06-11T09:00:00'));
+    await evaluator().run(rule, sp('2026-06-11T19:00:00'));
     await evaluator().run(rule, sp('2026-06-10T21:00:00'));
     expect(sent.every((s) => !s.deepLink.includes('9202'))).toBe(true);
   });

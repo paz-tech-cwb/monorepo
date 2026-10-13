@@ -40,13 +40,35 @@ class FakeEm {
       this.attendance.find(
         (a) =>
           a.lifeGroupId === opts.where.lifeGroupId &&
-          a.meetingDate === opts.where.meetingDate,
+          a.meetingDate === opts.where.meetingDate &&
+          (opts.where.isExtra === undefined ||
+            !!a.isExtra === opts.where.isExtra),
       ) ?? null,
     );
   }
 
+  /** One batched query per run: group ids (In) within a date range (Between). */
+  find(entity: unknown, opts: { where: Row }): Promise<Row[]> {
+    if (entity !== LifeGroupAttendance) throw new Error('unexpected find');
+    this.findCalls++;
+    const ids = opts.where.lifeGroupId.value as number[];
+    const [from, to] = opts.where.meetingDate.value as [string, string];
+    return Promise.resolve(
+      this.attendance.filter(
+        (a) =>
+          ids.includes(a.lifeGroupId) &&
+          a.meetingDate >= from &&
+          a.meetingDate <= to,
+      ),
+    );
+  }
+
+  findCalls = 0;
+  existsWheres: Row[][] = [];
+
   exists(entity: unknown, opts: { where: Row[] }): Promise<boolean> {
     if (entity !== LifeGroupReport) throw new Error('unexpected exists');
+    this.existsWheres.push(opts.where);
     return Promise.resolve(
       this.reports.some(
         (r) =>
@@ -162,11 +184,12 @@ describe('LifeGroupMeetingV2Reminders (LIFE_GROUP_MEETING_V2 on)', () => {
     }
   }
 
-  const attend = (date = MEETING, gid = 7) =>
+  const attend = (date = MEETING, gid = 7, isExtra = false) =>
     em.attendance.push({
       id: `att-${gid}-${date}`,
       lifeGroupId: gid,
       meetingDate: date,
+      isExtra,
     });
 
   beforeEach(() => {
@@ -283,7 +306,7 @@ describe('LifeGroupMeetingV2Reminders (LIFE_GROUP_MEETING_V2 on)', () => {
     });
   });
 
-  describe('timezone and midnight rollover', () => {
+  describe('timezone and midnight rollover (primary push)', () => {
     it('uses Sao Paulo, not UTC: 00:00 UTC on the 11th is still the 10th 21:00 SP', async () => {
       await tickAt(new Date('2026-06-11T00:00:00Z'));
       expect(sent).toHaveLength(1);
@@ -302,31 +325,33 @@ describe('LifeGroupMeetingV2Reminders (LIFE_GROUP_MEETING_V2 on)', () => {
       expect(sent[0].deepLink).toBe(`paz://presenca/7/${MEETING}`);
     });
 
-    it('follow-up counts days from the meeting date across midnight: day 1 is the 11th at 09:00 SP', async () => {
-      em.groups = [{ ...baseGroup(), meetingTime: '22:00:00' }];
-      attend();
-      await tickAt(new Date('2026-06-11T12:00:00Z'));
+    it('an extra attendance on the regular date does not count as the regular meeting recorded', async () => {
+      attend(MEETING, 7, true);
+      await tickAt(sp(`${MEETING}T21:00:00`));
       expect(sent).toHaveLength(1);
-      expect(sent[0].deepLink).toBe(`paz://presenca/7/${MEETING}`);
-    });
-
-    it('follow-up hour is Sao Paulo: 09:00 UTC (06:00 SP) does not fire, 12:00 UTC does', async () => {
-      attend();
-      await tickAt(new Date('2026-06-11T09:00:00Z'));
-      expect(sent).toHaveLength(0);
-      await tickAt(new Date('2026-06-11T12:00:00Z'));
-      expect(sent).toHaveLength(1);
+      expect(sent[0].title).toBe(
+        DEFAULT_CONFIGS.life_group_attendance['meeting_title' as never],
+      );
     });
   });
 
-  describe('follow-up (attendance saved, report missing)', () => {
+  // Meeting: Wednesday 2026-06-10 19:00 SP. +24h Thu 11th 19:00, +48h Fri 12th,
+  // +72h Sat 13th, +96h Sun 14th, escalation +120h Mon 15th 19:00 (all SP).
+  const FOLLOWUPS = [
+    '2026-06-11T19:00:00',
+    '2026-06-12T19:00:00',
+    '2026-06-13T19:00:00',
+    '2026-06-14T19:00:00',
+  ];
+  const ESCALATION = '2026-06-15T19:00:00';
+
+  describe('follow-up (attendance saved, report missing): relative to the meeting datetime', () => {
     beforeEach(() => attend());
 
-    it('fires at 09:00 SP the next morning, not before, and not twice', async () => {
-      await tickHourly(sp(`${MEETING}T21:00:00`), sp('2026-06-11T08:00:00'));
+    it('first follow-up at exactly +24h: not at +23h, sent at +24h, not twice', async () => {
+      await tickAt(sp('2026-06-11T18:00:00')); // +23h
       expect(sent).toHaveLength(0);
-
-      await tickAt(sp('2026-06-11T09:00:00'));
+      await tickAt(sp(FOLLOWUPS[0]));
       expect(sent).toHaveLength(1);
       expect(sent[0]).toMatchObject({
         title: 'Relatório do Life Group pendente',
@@ -334,73 +359,138 @@ describe('LifeGroupMeetingV2Reminders (LIFE_GROUP_MEETING_V2 on)', () => {
         category: 'life_group_attendance',
         recipients: [10, 11],
       });
-
-      await tickAt(sp('2026-06-11T09:00:00')); // same hour again (restart / second tick)
-      await tickAt(sp('2026-06-11T09:59:00'));
-      await tickHourly(sp('2026-06-11T10:00:00'), sp('2026-06-11T23:00:00'));
+      await tickAt(sp(FOLLOWUPS[0])); // same tick twice
       expect(sent).toHaveLength(1);
     });
 
-    it('repeats daily at 09:00 for days 1-4 and escalates on day 5 (no leader follow-up that day)', async () => {
-      await tickHourly(sp(`${MEETING}T21:00:00`), sp('2026-06-17T20:00:00'));
-
-      const followups = sent.filter((s) =>
-        s.deepLink.startsWith('paz://presenca'),
-      );
-      const escalations = sent.filter((s) =>
-        s.deepLink.startsWith('paz://lifegroup'),
-      );
-      expect(followups).toHaveLength(4);
-      expect(followups.every((s) => s.recipients.join() === '10,11')).toBe(
-        true,
-      );
-      expect(escalations).toHaveLength(1);
-      expect(escalations[0].recipients).toEqual([20, 21]);
-      expect(sent).toHaveLength(5);
-      // order: days 1..4 then the escalation on day 5 (06-15), then silence
-      expect(em.events.filter((e) => e.startsWith('claim:'))).toEqual([
-        `claim:life_group_meeting_followup:7:${MEETING}:1`,
-        `claim:life_group_meeting_followup:7:${MEETING}:2`,
-        `claim:life_group_meeting_followup:7:${MEETING}:3`,
-        `claim:life_group_meeting_followup:7:${MEETING}:4`,
-        `claim:life_group_meeting_escalation:7:${MEETING}`,
-      ]);
+    it('sends at +24h, +48h, +72h and +96h, then nothing more before the escalation', async () => {
+      for (const iso of FOLLOWUPS) await tickAt(sp(iso));
+      expect(sent).toHaveLength(4);
+      expect(sent.every((n) => n.recipients.join() === '10,11')).toBe(true);
+      // no push from +99h (past the last window) until +119h
+      await tickHourly(sp('2026-06-14T22:00:00'), sp('2026-06-15T18:00:00'));
+      expect(sent).toHaveLength(4);
     });
 
-    it('honors followup_interval_days (every 2 days: days 1 and 3, escalation day 5)', async () => {
-      const config = { ...rule.config, followup_interval_days: 2 };
+    it('a full hourly sweep from the meeting to day 9 sends exactly 4 follow-ups + 1 escalation', async () => {
+      await tickHourly(sp(`${MEETING}T19:00:00`), sp('2026-06-17T20:00:00'));
+      expect(sent).toHaveLength(5);
+      expect(sent.slice(0, 4).map((n) => n.title)).toEqual(
+        Array(4).fill('Relatório do Life Group pendente'),
+      );
+      expect(sent[4].deepLink).toBe('paz://lifegroup/7');
+      expect(sent[4].recipients).toEqual([20, 21]);
+    });
+
+    it('a 22:00 meeting: +24h is the next day 22:00 SP', async () => {
+      em.groups = [{ ...baseGroup(), meetingTime: '22:00:00' }];
+      await tickAt(sp('2026-06-11T21:00:00')); // +23h
+      expect(sent).toHaveLength(0);
+      await tickAt(sp('2026-06-11T22:00:00'));
+      expect(sent).toHaveLength(1);
+      await tickAt(sp('2026-06-12T22:00:00'));
+      expect(sent).toHaveLength(2);
+    });
+
+    it('rolls over midnight: a 23:30 meeting is due at 23:30 next day, sent by the 00:00 tick', async () => {
+      em.groups = [{ ...baseGroup(), meetingTime: '23:30:00' }];
+      await tickAt(sp('2026-06-11T23:00:00'));
+      expect(sent).toHaveLength(0);
+      await tickAt(sp('2026-06-12T00:00:00')); // 30 min after due, across midnight
+      expect(sent).toHaveLength(1);
+    });
+
+    it('uses the minutes of meeting_time: due 21:30 is sent by the 22:00 tick, not the 21:00 one', async () => {
+      em.groups = [{ ...baseGroup(), meetingTime: '21:30:00' }];
+      await tickAt(sp('2026-06-11T21:00:00'));
+      expect(sent).toHaveLength(0);
+      await tickAt(sp('2026-06-11T22:00:00'));
+      expect(sent).toHaveLength(1);
+      await tickAt(sp('2026-06-11T23:00:00')); // still in the window: claim dedupes
+      expect(sent).toHaveLength(1);
+    });
+
+    it('is Sao Paulo time: 22:00 UTC on the 11th (19:00 SP) fires, 19:00 UTC (16:00 SP) does not', async () => {
+      await tickAt(new Date('2026-06-11T19:00:00Z'));
+      expect(sent).toHaveLength(0);
+      await tickAt(new Date('2026-06-11T22:00:00Z'));
+      expect(sent).toHaveLength(1);
+    });
+
+    it('catch-up: a failed +24h send is retried by the next tick and sent once', async () => {
+      dispatchMock.mockRejectedValueOnce(new Error('fcm down'));
+      await tickAt(sp(FOLLOWUPS[0]));
+      expect(sent).toHaveLength(0);
+      expect(em.log.size).toBe(0);
+      await tickAt(sp('2026-06-11T20:00:00'));
+      expect(sent).toHaveLength(1);
+      await tickAt(sp('2026-06-11T21:00:00'));
+      expect(sent).toHaveLength(1);
+    });
+
+    it('catch-up window is [due, due + 2h] inclusive: +26h sends, +27h does not', async () => {
+      await tickAt(sp('2026-06-11T21:00:00')); // +26h
+      expect(sent).toHaveLength(1);
+      sent.length = 0;
+      em.log.clear();
+      await tickAt(sp('2026-06-11T22:00:00')); // +27h
+      expect(sent).toHaveLength(0);
+    });
+
+    it('followup_window_hours is configurable (0 = only the exact instant)', async () => {
+      const config = { ...rule.config, followup_window_hours: 0 };
+      await tickAt(sp('2026-06-11T20:00:00'), evaluator, config);
+      expect(sent).toHaveLength(0);
+      await tickAt(sp(FOLLOWUPS[0]), evaluator, config);
+      expect(sent).toHaveLength(1);
+    });
+
+    it('honors followup_first_after_hours / followup_interval_hours (first +12h, every 36h)', async () => {
+      const config = {
+        ...rule.config,
+        followup_first_after_hours: 12,
+        followup_interval_hours: 36,
+      };
+      // +12h = Thu 07:00, +48h = Fri 19:00, +84h = Sun 07:00, +120h = escalation
       await tickHourly(
-        sp('2026-06-10T21:00:00'),
-        sp('2026-06-17T20:00:00'),
+        sp(`${MEETING}T19:00:00`),
+        sp('2026-06-14T23:00:00'),
         config,
       );
-      expect(em.events.filter((e) => e.startsWith('claim:'))).toEqual([
-        `claim:life_group_meeting_followup:7:${MEETING}:1`,
-        `claim:life_group_meeting_followup:7:${MEETING}:3`,
-        `claim:life_group_meeting_escalation:7:${MEETING}`,
-      ]);
+      expect(sent).toHaveLength(3);
     });
 
-    it('honors followup_max_days as a cap below the escalation day', async () => {
+    it('old saved config: followup_interval_days 2 maps to 48h, followup_hour is ignored', async () => {
+      const config = {
+        ...rule.config,
+        followup_interval_days: 2,
+        followup_hour: 9,
+      };
+      await tickHourly(
+        sp(`${MEETING}T19:00:00`),
+        sp('2026-06-14T23:00:00'),
+        config,
+      );
+      // +24h and +72h only (+120h is the escalation)
+      expect(sent).toHaveLength(2);
+      expect(sent.every((n) => n.recipients.join() === '10,11')).toBe(true);
+    });
+
+    it('followup_max_days caps the follow-ups (max 2: +24h and +48h)', async () => {
       const config = { ...rule.config, followup_max_days: 2 };
       await tickHourly(
-        sp('2026-06-10T21:00:00'),
-        sp('2026-06-17T20:00:00'),
+        sp(`${MEETING}T19:00:00`),
+        sp('2026-06-14T23:00:00'),
         config,
       );
-      expect(
-        sent.filter((s) => s.deepLink.startsWith('paz://presenca')),
-      ).toHaveLength(2);
-      expect(
-        sent.filter((s) => s.deepLink.startsWith('paz://lifegroup')),
-      ).toHaveLength(1);
+      expect(sent).toHaveLength(2);
     });
 
     it('followup_max_days 0 disables the follow-up but not the escalation', async () => {
       const config = { ...rule.config, followup_max_days: 0 };
       await tickHourly(
-        sp('2026-06-10T21:00:00'),
-        sp('2026-06-17T20:00:00'),
+        sp(`${MEETING}T19:00:00`),
+        sp('2026-06-15T23:00:00'),
         config,
       );
       expect(sent).toHaveLength(1);
@@ -410,162 +500,165 @@ describe('LifeGroupMeetingV2Reminders (LIFE_GROUP_MEETING_V2 on)', () => {
     it('escalation_after_days 0 disables the escalation and lets follow-ups run to the cap', async () => {
       const config = { ...rule.config, escalation_after_days: 0 };
       await tickHourly(
-        sp('2026-06-10T21:00:00'),
+        sp(`${MEETING}T19:00:00`),
         sp('2026-06-17T20:00:00'),
         config,
       );
-      expect(sent).toHaveLength(5);
-      expect(sent.every((s) => s.deepLink.startsWith('paz://presenca'))).toBe(
-        true,
-      );
+      expect(sent).toHaveLength(5); // +24h..+120h (max_days 5)
+      expect(
+        sent.every((n) => n.deepLink === `paz://presenca/7/${MEETING}`),
+      ).toBe(true);
     });
 
-    it('honors followup_hour', async () => {
-      const config = { ...rule.config, followup_hour: 18 };
-      await tickAt(sp('2026-06-11T09:00:00'), evaluator, config);
-      expect(sent).toHaveLength(0);
-      await tickAt(sp('2026-06-11T18:00:00'), evaluator, config);
-      expect(sent).toHaveLength(1);
+    it('follow-up goes to the co-leader alone when the group has no leader', async () => {
+      em.groups = [{ ...baseGroup(), leader: null }];
+      await tickAt(sp(FOLLOWUPS[0]));
+      expect(sent[0].recipients).toEqual([11]);
     });
 
-    it('stops as soon as the report exists (linked by attendance_id)', async () => {
-      await tickAt(sp('2026-06-11T09:00:00'));
-      em.reports.push({
-        lifeGroupId: 7,
-        attendanceId: `att-7-${MEETING}`,
-        date: '2026-06-14',
-      });
-      await tickHourly(sp('2026-06-12T00:00:00'), sp('2026-06-17T20:00:00'));
-      expect(sent).toHaveLength(1);
-    });
-
-    it('treats an unlinked legacy report dated within the following 6 days as filed', async () => {
-      em.reports.push({
-        lifeGroupId: 7,
-        attendanceId: null,
-        date: '2026-06-14',
-      });
-      await tickHourly(sp('2026-06-11T00:00:00'), sp('2026-06-17T20:00:00'));
-      expect(sent).toHaveLength(0);
-    });
-
-    it('ignores a soft-deleted report and one dated outside the window', async () => {
-      em.reports.push({
-        lifeGroupId: 7,
-        attendanceId: null,
-        date: MEETING,
-        deletedAt: new Date(),
-      });
-      em.reports.push({
-        lifeGroupId: 7,
-        attendanceId: null,
-        date: '2026-06-17',
-      });
-      await tickAt(sp('2026-06-11T09:00:00'));
-      expect(sent).toHaveLength(1);
+    it('sends once to a leader who is also co-leader', async () => {
+      em.groups = [{ ...baseGroup(), coLeader: leader }];
+      await tickAt(sp(FOLLOWUPS[0]));
+      expect(sent[0].recipients).toEqual([10]);
     });
 
     it('does nothing when attendance is missing (only the primary push logic applies)', async () => {
       em.attendance = [];
-      await tickHourly(sp('2026-06-11T00:00:00'), sp('2026-06-17T20:00:00'));
+      await tickHourly(sp('2026-06-11T00:00:00'), sp('2026-06-16T23:00:00'));
       expect(sent).toHaveLength(0);
     });
 
     it('lets two concurrent instances produce exactly one follow-up', async () => {
       const a = makeEvaluator();
       const b = makeEvaluator();
-      jest.setSystemTime(sp('2026-06-11T09:00:00'));
+      jest.setSystemTime(sp(FOLLOWUPS[0]));
       const now = new Date();
       await Promise.all([a.run(rule, now), b.run(rule, now)]);
       expect(sent).toHaveLength(1);
     });
 
-    it('a failed 09:00 follow-up is retried by the 10:00 tick (catch-up) and sent once', async () => {
-      dispatchMock.mockRejectedValueOnce(new Error('fcm down'));
-      await tickAt(sp('2026-06-11T09:00:00'));
+    it('a meeting more than the look-back ago is not touched', async () => {
+      await tickAt(sp('2026-06-25T19:00:00'));
       expect(sent).toHaveLength(0);
-      expect(em.updates).toEqual([
-        { where: { id: 1 }, values: { status: 'failed' } },
-      ]);
-      await tickAt(sp('2026-06-11T10:00:00'));
-      expect(sent).toHaveLength(1);
-      await tickAt(sp('2026-06-11T11:00:00'));
-      await tickAt(sp('2026-06-11T12:00:00'));
-      expect(sent).toHaveLength(1);
-    });
-
-    it('catch-up window is [followup_hour, +2]: 11:00 still sends, 12:00 does not', async () => {
-      await tickAt(sp('2026-06-11T11:00:00'));
-      expect(sent).toHaveLength(1);
-
-      em.log.clear();
-      sent.length = 0;
-      await tickAt(sp('2026-06-11T12:00:00'));
-      expect(sent).toHaveLength(0);
-    });
-
-    it('the window never wraps past midnight (followup_hour 23 only ticks at 23:00)', async () => {
-      const config = { ...rule.config, followup_hour: 23 };
-      await tickAt(sp('2026-06-11T22:00:00'), evaluator, config);
-      expect(sent).toHaveLength(0);
-      await tickAt(sp('2026-06-11T23:00:00'), evaluator, config);
-      expect(sent).toHaveLength(1);
-      await tickAt(sp('2026-06-12T00:00:00'), evaluator, config);
-      expect(sent).toHaveLength(1);
-    });
-
-    it('follow-up goes to the co-leader alone when the group has no leader', async () => {
-      em.groups = [{ ...baseGroup(), leader: null }];
-      await tickAt(sp('2026-06-11T09:00:00'));
-      expect(sent[0].recipients).toEqual([11]);
     });
   });
 
-  describe('escalation to the sector leader', () => {
-    const ESCALATION_AT = () => sp('2026-06-15T09:00:00'); // day 5 after 2026-06-10
+  describe('a report completes the reminder for the whole group (leader and co-leader)', () => {
+    beforeEach(() => attend());
 
+    it('a report linked via attendance_id silences follow-ups and escalation', async () => {
+      em.reports.push({
+        lifeGroupId: 7,
+        attendanceId: `att-7-${MEETING}`,
+        date: '2026-07-30',
+      });
+      await tickHourly(sp(`${MEETING}T19:00:00`), sp('2026-06-17T20:00:00'));
+      expect(sent).toHaveLength(0);
+    });
+
+    it('an unlinked legacy report dated within [meeting, +6 days] silences everything', async () => {
+      em.reports.push({
+        lifeGroupId: 7,
+        attendanceId: null,
+        date: '2026-06-14',
+      });
+      await tickHourly(sp(`${MEETING}T19:00:00`), sp('2026-06-17T20:00:00'));
+      expect(sent).toHaveLength(0);
+    });
+
+    it('the report check is group-based, not author-based: no recorded_by/user filter in the query', async () => {
+      // A co-leader's report is just a group report: whoever wrote it, the
+      // leader's follow-ups stop (and vice versa).
+      em.reports.push({
+        lifeGroupId: 7,
+        attendanceId: `att-7-${MEETING}`,
+        date: MEETING,
+        recordedBy: 11,
+      });
+      await tickAt(sp(FOLLOWUPS[0]));
+      await tickAt(sp(ESCALATION));
+      expect(sent).toHaveLength(0);
+      expect(em.existsWheres.length).toBeGreaterThan(0);
+      for (const where of em.existsWheres.flat()) {
+        expect(Object.keys(where).sort()).toEqual(
+          'attendanceId' in where
+            ? ['attendanceId', 'lifeGroupId']
+            : ['date', 'lifeGroupId'],
+        );
+      }
+    });
+
+    it('a report filed after the first follow-up stops the remaining follow-ups and the escalation', async () => {
+      await tickAt(sp(FOLLOWUPS[0]));
+      expect(sent).toHaveLength(1);
+      em.reports.push({
+        lifeGroupId: 7,
+        attendanceId: `att-7-${MEETING}`,
+        date: MEETING,
+      });
+      await tickHourly(sp('2026-06-12T00:00:00'), sp('2026-06-16T23:00:00'));
+      expect(sent).toHaveLength(1);
+    });
+
+    it('ignores a soft-deleted report and one dated outside the window', async () => {
+      em.reports.push(
+        {
+          lifeGroupId: 7,
+          attendanceId: `att-7-${MEETING}`,
+          date: MEETING,
+          deletedAt: new Date(),
+        },
+        { lifeGroupId: 7, attendanceId: null, date: '2026-06-17' },
+        { lifeGroupId: 7, attendanceId: null, date: '2026-06-09' },
+        { lifeGroupId: 8, attendanceId: null, date: MEETING },
+      );
+      await tickAt(sp(FOLLOWUPS[0]));
+      expect(sent).toHaveLength(1);
+    });
+  });
+
+  describe('escalation to the sector leader at +5 days (+120h)', () => {
     beforeEach(() => attend());
 
     it('notifies sector leader + sector co-leader with group name, date and the lifegroup deep link', async () => {
-      await tickAt(ESCALATION_AT());
+      await tickAt(sp(ESCALATION));
       expect(sent).toHaveLength(1);
       expect(sent[0]).toMatchObject({
-        title: 'Relatório de Life Group pendente',
-        message:
-          'O Life Group Life Alfa ainda não enviou o relatório da reunião de 10/06.',
         deepLink: 'paz://lifegroup/7',
         category: 'life_group_attendance',
         recipients: [20, 21],
       });
+      expect(sent[0].message).toContain('Life Alfa');
+      expect(sent[0].message).toContain('10/06');
     });
 
-    it('does not fire on day 4', async () => {
-      await tickAt(sp('2026-06-14T09:00:00'));
-      expect(sent.some((s) => s.deepLink === 'paz://lifegroup/7')).toBe(false);
+    it('does not fire at +119h; fires at +120h', async () => {
+      await tickAt(sp('2026-06-15T18:00:00'));
+      expect(sent).toHaveLength(0);
+      await tickAt(sp(ESCALATION));
+      expect(sent).toHaveLength(1);
     });
 
-    it.each(['2026-06-16', '2026-06-17'])(
-      'catches up on %s (day 6/7) when day 5 was missed',
-      async (date) => {
-        await tickAt(sp(`${date}T09:00:00`));
-        const esc = sent.filter((s) => s.deepLink === 'paz://lifegroup/7');
-        expect(esc).toHaveLength(1);
-        expect(esc[0].recipients).toEqual([20, 21]);
-      },
-    );
+    it('catch-up: +121h and +122h still escalate, +123h does not; once only', async () => {
+      await tickAt(sp('2026-06-15T21:00:00')); // +122h
+      expect(sent).toHaveLength(1);
+      await tickAt(sp('2026-06-15T20:00:00')); // +121h, already claimed
+      expect(sent).toHaveLength(1);
 
-    it('does not escalate on day 8 (outside the catch-up window)', async () => {
-      await tickAt(sp('2026-06-18T09:00:00'));
-      expect(sent.some((s) => s.deepLink === 'paz://lifegroup/7')).toBe(false);
+      sent.length = 0;
+      em.log.clear();
+      await tickAt(sp('2026-06-15T22:00:00')); // +123h
+      expect(sent).toHaveLength(0);
     });
 
-    it('escalates only once across days 5, 6 and 7', async () => {
-      await tickAt(sp('2026-06-15T09:00:00'));
-      await tickAt(sp('2026-06-16T09:00:00'));
-      await tickAt(sp('2026-06-17T09:00:00'));
-      expect(
-        sent.filter((s) => s.deepLink === 'paz://lifegroup/7'),
-      ).toHaveLength(1);
+    it('escalates only once across +120h, +121h and +122h', async () => {
+      await tickHourly(sp(ESCALATION), sp('2026-06-15T21:00:00'));
+      expect(sent).toHaveLength(1);
+    });
+
+    it('a late first tick (+121h) after a lost +120h tick still escalates', async () => {
+      await tickAt(sp('2026-06-15T20:00:00'));
+      expect(sent).toHaveLength(1);
     });
 
     it('goes to a lone sector co-leader when the sector has no leader', async () => {
@@ -575,23 +668,19 @@ describe('LifeGroupMeetingV2Reminders (LIFE_GROUP_MEETING_V2 on)', () => {
           sector: { id: 3, leader: null, coLeader: sectorCoLeader },
         },
       ];
-      await tickAt(ESCALATION_AT());
+      await tickAt(sp(ESCALATION));
       expect(sent[0].recipients).toEqual([21]);
     });
 
-    it('is not sent when the sector has neither leader nor co-leader', async () => {
+    it('is not sent when the sector has neither leader nor co-leader, or the group has no sector', async () => {
       em.groups = [
         { ...baseGroup(), sector: { id: 3, leader: null, coLeader: null } },
       ];
-      await tickAt(ESCALATION_AT());
+      await tickAt(sp(ESCALATION));
+      em.groups = [{ ...baseGroup(), sector: null }];
+      await tickAt(sp(ESCALATION));
       expect(sent).toHaveLength(0);
       expect(em.log.size).toBe(0);
-    });
-
-    it('is not sent when the group has no sector', async () => {
-      em.groups = [{ ...baseGroup(), sector: null }];
-      await tickAt(ESCALATION_AT());
-      expect(sent).toHaveLength(0);
     });
 
     it('dedupes a sector leader who is also the sector co-leader', async () => {
@@ -601,57 +690,88 @@ describe('LifeGroupMeetingV2Reminders (LIFE_GROUP_MEETING_V2 on)', () => {
           sector: { id: 3, leader: sectorLeader, coLeader: sectorLeader },
         },
       ];
-      await tickAt(ESCALATION_AT());
+      await tickAt(sp(ESCALATION));
       expect(sent[0].recipients).toEqual([20]);
     });
 
-    it('dedupe key is per (group, meeting date): same hour twice -> one push, next week -> a new push', async () => {
-      await tickAt(ESCALATION_AT());
-      await tickAt(ESCALATION_AT());
-      expect(sent).toHaveLength(1);
-
+    it('dedupe key is per (group, meeting date): next week is a new escalation', async () => {
       attend('2026-06-17');
-      await tickAt(sp('2026-06-22T09:00:00'));
+      await tickAt(sp(ESCALATION));
+      await tickAt(sp('2026-06-22T19:00:00'));
       expect(sent).toHaveLength(2);
-      expect(
-        em.log.has(
-          'life_group_attendance|life_group_meeting_escalation:7:2026-06-17',
-        ),
-      ).toBe(true);
-      expect(
-        em.log.has(
-          `life_group_attendance|life_group_meeting_escalation:7:${MEETING}`,
-        ),
-      ).toBe(true);
     });
 
-    it('is not sent when the report exists, nor when attendance is missing', async () => {
-      em.reports.push({
-        lifeGroupId: 7,
-        attendanceId: null,
-        date: '2026-06-12',
-      });
-      await tickAt(ESCALATION_AT());
-      expect(sent).toHaveLength(0);
-
-      em.reports = [];
+    it('is not sent when attendance is missing (primary push owns that gap)', async () => {
       em.attendance = [];
-      await tickAt(ESCALATION_AT());
+      await tickAt(sp(ESCALATION));
       expect(sent).toHaveLength(0);
     });
 
     it('lets two concurrent instances produce exactly one escalation', async () => {
       const a = makeEvaluator();
       const b = makeEvaluator();
-      jest.setSystemTime(ESCALATION_AT());
+      jest.setSystemTime(sp(ESCALATION));
       const now = new Date();
       await Promise.all([a.run(rule, now), b.run(rule, now)]);
       expect(sent).toHaveLength(1);
     });
 
-    it('is computed in Sao Paulo time (12:00 UTC on the 15th)', async () => {
-      await tickAt(new Date('2026-06-15T12:00:00Z'));
+    it('escalation_after_days is honored (3 days = +72h, and follow-ups stop before it)', async () => {
+      const config = { ...rule.config, escalation_after_days: 3 };
+      await tickHourly(
+        sp(`${MEETING}T19:00:00`),
+        sp('2026-06-16T23:00:00'),
+        config,
+      );
+      // follow-ups at +24h, +48h; escalation at +72h
+      expect(sent).toHaveLength(3);
+      expect(sent[2].deepLink).toBe('paz://lifegroup/7');
+    });
+  });
+
+  describe('extra meetings', () => {
+    it('an extra with attendance and no report gets follow-ups and escalation using its own date and the group meeting_time', async () => {
+      // Saturday 2026-06-13 extra at the group meeting_time (19:00 SP)
+      attend('2026-06-13', 7, true);
+      await tickAt(sp('2026-06-14T18:00:00')); // +23h
+      expect(sent).toHaveLength(0);
+      await tickAt(sp('2026-06-14T19:00:00'));
       expect(sent).toHaveLength(1);
+      expect(sent[0].deepLink).toBe('paz://presenca/7/2026-06-13');
+      await tickAt(sp('2026-06-18T19:00:00')); // +120h
+      expect(sent).toHaveLength(2);
+      expect(sent[1].deepLink).toBe('paz://lifegroup/7');
+      expect(sent[1].message).toContain('13/06');
+    });
+
+    it('an extra with a report is silent', async () => {
+      attend('2026-06-13', 7, true);
+      em.reports.push({
+        lifeGroupId: 7,
+        attendanceId: 'att-7-2026-06-13',
+        date: '2026-06-13',
+      });
+      await tickHourly(sp('2026-06-13T19:00:00'), sp('2026-06-17T20:00:00'));
+      expect(sent).toHaveLength(0);
+    });
+
+    it('never creates a primary push for an extra: no attendance means no reminder on a non-regular day', async () => {
+      await tickHourly(sp('2026-06-13T00:00:00'), sp('2026-06-13T23:00:00')); // Saturday
+      expect(sent).toHaveLength(0);
+    });
+
+    it('a regular and an extra meeting in the same week are followed up independently', async () => {
+      attend();
+      attend('2026-06-13', 7, true);
+      await tickHourly(sp(`${MEETING}T19:00:00`), sp('2026-06-12T23:00:00'));
+      expect(sent).toHaveLength(2); // regular +24h and +48h
+      sent.length = 0;
+      await tickAt(sp('2026-06-14T19:00:00')); // regular +96h and extra +24h
+      expect(sent).toHaveLength(2);
+      expect(sent.map((n) => n.deepLink).sort()).toEqual([
+        `paz://presenca/7/${MEETING}`,
+        'paz://presenca/7/2026-06-13',
+      ]);
     });
   });
 
@@ -661,11 +781,12 @@ describe('LifeGroupMeetingV2Reminders (LIFE_GROUP_MEETING_V2 on)', () => {
       ['null meeting day', { meetingDay: null }],
       ['null meeting time', { meetingTime: null }],
     ])(
-      '%s: no primary push, follow-up or escalation',
+      '%s: no primary push, follow-up or escalation (even with an extra attendance)',
       async (_label, patch) => {
         em.groups = [{ ...baseGroup(), ...patch }];
         attend();
-        await tickHourly(sp(`${MEETING}T00:00:00`), sp('2026-06-17T20:00:00'));
+        attend('2026-06-13', 7, true);
+        await tickHourly(sp(`${MEETING}T00:00:00`), sp('2026-06-20T20:00:00'));
         expect(sent).toHaveLength(0);
       },
     );
@@ -675,23 +796,31 @@ describe('LifeGroupMeetingV2Reminders (LIFE_GROUP_MEETING_V2 on)', () => {
         { ...baseGroup(), id: 8, meetingDay: 'Sem dia fixo' },
         baseGroup(),
       ];
-      await tickAt(sp(`${MEETING}T21:00:00`));
+      attend(MEETING, 8);
+      attend();
+      await tickAt(sp(FOLLOWUPS[0]));
       expect(sent).toHaveLength(1);
       expect(sent[0].deepLink).toBe(`paz://presenca/7/${MEETING}`);
+    });
+
+    it('queries attendance once per run, not once per group', async () => {
+      em.groups = [baseGroup(), { ...baseGroup(), id: 9 }];
+      await tickAt(sp(FOLLOWUPS[0]));
+      expect(em.findCalls).toBe(1);
     });
   });
 
   describe('config resolution for rows saved before V2', () => {
     it('falls back to the default copy and cadence when the new fields are absent', async () => {
       attend();
-      await tickAt(sp('2026-06-11T09:00:00')); // legacy row config has no followup_* keys
+      await tickAt(sp(FOLLOWUPS[0])); // legacy row config has no followup_* keys
       expect(sent).toHaveLength(1);
       expect(sent[0].title).toBe('Relatório do Life Group pendente');
     });
 
     it('uses configured copy when present', async () => {
       attend();
-      await tickAt(sp('2026-06-11T09:00:00'), evaluator, {
+      await tickAt(sp(FOLLOWUPS[0]), evaluator, {
         ...rule.config,
         followup_title: 'Custom',
         followup_message: 'Custom msg',

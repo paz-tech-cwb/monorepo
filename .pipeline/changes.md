@@ -1,5 +1,13 @@
 # Changes
 
+## User decisions round 2 (reminders v2)
+- Merged PR #96 head (`123e5f0`, extra meeting flag, migration 1796000000001); `.pipeline` conflicts resolved keeping this branch's files, the other side archived as `.pipeline/archive/*-meetings-api-after-extra-flag-2026-10-13.md`.
+- `life-group-meeting-v2.reminders.ts`: follow-up/escalation now relative to the meeting datetime (`zonedDateTimeToDate`, new in `meeting-day.util.ts`, hour + minutes): follow-ups at +24h/+48h/+72h/+96h, escalation at +120h, tolerance window [due, due+2h] inclusive, claim keys `...:{date}:{offset}h`. Driven by attendance rows (one batched `find` per run, `In` + `Between`), so extras are followed up like regular meetings; primary-push check now filters `isExtra: false`. Guard added: null `meeting_time` is skipped (previously only excluded by the SQL filter).
+- `reminder-config.ts`: new `followup_first_after_hours`, `followup_interval_hours`, `followup_window_hours`; `followup_hour` ignored, `followup_interval_days` kept as read-time fallback (x24h) and accepted on save; defaults at read time for old rows.
+- admin-ui: card fields (first follow-up hours, interval hours, tolerance hours, escalation days x24h) with explanatory hints; old keys dropped on save.
+- Docs: `.ai/features/notifications.md`, `life-groups.md`, `apps/backend.md`, `apps/admin-ui.md`.
+
+
 ## Reminders v2 (phase 2)
 
 Branch `feat/life-group-reminders-v2`, stacked on PR #96 (`feat/life-group-meetings-api`).

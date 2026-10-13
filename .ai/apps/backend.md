@@ -72,6 +72,8 @@ path verbatim and delegates to `life-group-meeting-v2.reminders.ts` only when
 is the rule-type-parameterized claim-first helper (same contract as
 `life-group-tasks/dispatch-claim.ts`). Config types, defaults, validation and
 `resolveLifeGroupAttendanceConfig` live in `reminders/types/reminder-config.ts`.
+Follow-up/escalation timing is relative to the meeting datetime (`zonedDateTimeToDate` in
+`life-group-attendance/meeting-day.util.ts`), driven by attendance rows (batched query, one per run).
 Behavior, deep links and switch-on steps: `features/notifications.md`. Opt-in real-DB
 spec env: `REMINDERS_PG_HOST|PORT|USER|PASSWORD|DB`.
 

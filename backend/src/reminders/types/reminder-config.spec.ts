@@ -82,11 +82,14 @@ describe('life_group_attendance config', () => {
     ).toBeNull();
     expect(defaults).toMatchObject({
       hours_after_meeting_start: 2,
-      followup_hour: 9,
-      followup_interval_days: 1,
+      followup_first_after_hours: 24,
+      followup_interval_hours: 24,
       followup_max_days: 5,
+      followup_window_hours: 2,
       escalation_after_days: 5,
     });
+    expect(defaults).not.toHaveProperty('followup_hour');
+    expect(defaults).not.toHaveProperty('followup_interval_days');
   });
 
   it('accepts a legacy row that lacks every V2 field', () => {
@@ -100,6 +103,13 @@ describe('life_group_attendance config', () => {
   });
 
   it.each([
+    ['followup_first_after_hours', 0],
+    ['followup_first_after_hours', 169],
+    ['followup_first_after_hours', 1.5],
+    ['followup_interval_hours', 0],
+    ['followup_interval_hours', 169],
+    ['followup_window_hours', -1],
+    ['followup_window_hours', 13],
     ['followup_hour', 24],
     ['followup_hour', -1],
     ['followup_hour', 9.5],
@@ -160,10 +170,40 @@ describe('life_group_attendance config', () => {
       followup_max_days: 3,
     });
     expect(resolved.title).toBe('legacy');
-    expect(resolved.followup_hour).toBe(9);
+    expect(resolved).not.toHaveProperty('followup_hour');
+    expect(resolved.followup_first_after_hours).toBe(24);
+    expect(resolved.followup_interval_hours).toBe(24);
+    expect(resolved.followup_window_hours).toBe(2);
     expect(resolved.followup_max_days).toBe(3);
     expect(resolved.escalation_after_days).toBe(5);
     expect(resolved.followup_title).toBe(defaults.followup_title);
     expect(resolveLifeGroupAttendanceConfig(null)).toEqual(defaults);
+  });
+
+  it('maps a pre-existing followup_interval_days to hours only when the new key is absent', () => {
+    expect(
+      resolveLifeGroupAttendanceConfig({ followup_interval_days: 2 })
+        .followup_interval_hours,
+    ).toBe(48);
+    expect(
+      resolveLifeGroupAttendanceConfig({
+        followup_interval_days: 2,
+        followup_interval_hours: 12,
+      }).followup_interval_hours,
+    ).toBe(12);
+    expect(
+      resolveLifeGroupAttendanceConfig({ followup_interval_days: 99 })
+        .followup_interval_hours,
+    ).toBe(24);
+  });
+
+  it('keeps accepting the deprecated keys saved before the meeting-relative timing', () => {
+    expect(
+      validateReminderConfig('life_group_attendance', {
+        ...defaults,
+        followup_hour: 9,
+        followup_interval_days: 1,
+      }),
+    ).toBeNull();
   });
 });

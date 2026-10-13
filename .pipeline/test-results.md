@@ -33,3 +33,12 @@ Throwaway Postgres stopped (port 54937 closed). `rm -rf scratchpad/pg7/data` was
 - eslint src/reminders: only pre-existing errors in event/form-report evaluator specs (untouched); prettier clean.
 - admin-ui: dependencies are not installed in this environment, so tsc/eslint/next build could not be run meaningfully.
 - New tests: 10:00 retry after failed 09:00 sends once (+ Notification marked failed); 11:00 ok, 12:00 no; no wrap past midnight; escalation on day 6 and 7, not day 8, once across 5/6/7; blank legacy title/message accepted.
+
+## User decisions round 2 (reminders v2)
+- backend `nest build`: ok. Scoped jest (reminders, life-group-meetings, life-group-attendance, notifications): 320 passed, 42 skipped; only failing suite reach.dto (baseline).
+- Full jest: 78 suites passed, 6 failed (baseline: auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens), 2 skipped; 795 tests passed, 5 failed (baseline), 42 skipped.
+- eslint on all 9 changed backend files: 0 errors (1 `no-unsafe-argument` warning in the v2 spec FakeEm); prettier --check clean.
+- New/rewritten fake-timer tests in `life-group-meeting-v2.reminders.spec.ts`: first follow-up at +24h (not +23h), +48/+72/+96h, nothing after +96h, full hourly sweep = 4 follow-ups + 1 escalation, 22:00 meeting (+24h next day 22:00), 23:30 midnight rollover, 21:30 due sent by the 22:00 tick, UTC vs SP, catch-up window inclusive (+26h yes, +27h no), failed send retried, escalation at +120h with +121h/+122h catch-up and not +123h, once only, configurable window/first/interval/max/escalation, old `followup_interval_days` mapping, leader + co-leader recipients, report by either leader silences all (group-based query without author filter asserted), extras (own date, report silences, no primary for extras, regular + extra independent, extra on regular date not counted as recorded), skipped groups (incl. extras), batched query count, dedupe under two parallel runs, flag off identical. Config validation/resolver tests and `zonedDateTimeToDate` tests added.
+- Real SQL: throwaway PostgreSQL (embedded-postgres, NEW data dir `scratchpad/pg9`, port 54939), all migrations incl. 1796000000001 applied, `life-group-meeting-v2.integration.spec.ts` 8/8 PASS (updated timing + extras case). Postgres stopped afterwards.
+- admin-ui: `tsc --noEmit` 24 errors (same baseline, none in reminder files), eslint clean on both changed files, `next build` ok.
+- CI does not run for this stacked PR (base is `feat/life-group-meetings-api`, not develop).
