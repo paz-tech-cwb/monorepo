@@ -212,6 +212,14 @@ struct LifeGroupDetailView: View {
             || role == .sectorLeader
     }
 
+    /// Write rights on this group's meetings (shared rule): admin, pastor or this group's leader/co-leader.
+    /// Area/sector leaders only supervise: they get the read-only "Reuniões" history.
+    private var canWriteMeetings: Bool {
+        LifeGroupMeetingRules.shared.canWrite(
+            role: authCoordinator.currentUser?.role, isGroupLeadership: canManageAttendance
+        )
+    }
+
     private var canViewGroupReports: Bool {
         Self.canViewGroupReports(role: authCoordinator.currentUser?.role, isGroupLeadership: canManageAttendance)
     }
@@ -376,19 +384,43 @@ struct LifeGroupDetailView: View {
                         )
                     }
 
-                    if canManageAttendance {
+                    if canViewGroupReports {
                         NavigationLink {
-                            LifeGroupAttendanceHistoryView(
+                            LifeGroupMeetingHistoryView(
                                 lifeGroupId: Int32(lifeGroup.id),
                                 meetingDay: lifeGroup.meetingDay,
-                                repository: IosAppContainer.shared.lifeGroupAttendanceRepository
+                                canWrite: canWriteMeetings
                             )
                         } label: {
                             HStack(spacing: PazSpacing.md) {
-                                Image(systemName: "checklist")
+                                Image(systemName: "person.3")
                                     .font(.system(size: 18))
                                     .foregroundColor(PazColors.accent)
-                                Text("Presença")
+                                Text("Reuniões")
+                                    .font(PazTypography.titleSmall)
+                                    .foregroundColor(PazColors.ink)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(PazSpacing.lg)
+                            .glassCard(radius: PazSpacing.cardRadiusCompact)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    // Weekly report submit: same gate as "Presença" (this group's own leader/co-leader), which is
+                    // exactly who the backend lets create the report; opens the form with this group preselected.
+                    if canManageAttendance {
+                        NavigationLink {
+                            LifeGroupReportFormView(preselectedLifeGroupId: Int32(lifeGroup.id))
+                        } label: {
+                            HStack(spacing: PazSpacing.md) {
+                                Image(systemName: "square.and.pencil")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(PazColors.accent)
+                                Text("Enviar relatório")
                                     .font(PazTypography.titleSmall)
                                     .foregroundColor(PazColors.ink)
                                 Spacer()

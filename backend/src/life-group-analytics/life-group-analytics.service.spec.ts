@@ -138,6 +138,7 @@ describe('LifeGroupAnalyticsService', () => {
           {
             period: '2026-03',
             meetings_count: '2',
+            extra_meetings_count: '1',
             present_count: '15',
             members_count: '20',
           },
@@ -151,11 +152,13 @@ describe('LifeGroupAnalyticsService', () => {
       expect(result.rows).toHaveLength(12);
       const march = result.rows.find((r) => r.period === '2026-03')!;
       expect(march.meetings_count).toBe(2);
+      expect(march.extra_meetings_count).toBe(1);
       expect(march.attendance_rate).toBeCloseTo(0.75);
       const jan = result.rows.find((r) => r.period === '2026-01')!;
       expect(jan).toEqual({
         period: '2026-01',
         meetings_count: 0,
+        extra_meetings_count: 0,
         present_count: 0,
         members_count: 0,
         attendance_rate: 0,
@@ -183,6 +186,7 @@ describe('LifeGroupAnalyticsService', () => {
         [
           {
             meeting_date: '2026-03-05',
+            extra_meetings_count: '1',
             present_count: '5',
             members_count: '6',
           },
@@ -197,6 +201,7 @@ describe('LifeGroupAnalyticsService', () => {
         {
           period: '2026-03-05',
           meetings_count: 1,
+          extra_meetings_count: 1,
           present_count: 5,
           members_count: 6,
           attendance_rate: 5 / 6,

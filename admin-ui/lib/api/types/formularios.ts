@@ -74,7 +74,25 @@ export interface LifeGroupReport extends FormSubmissionMeta {
   committed_at_tadel: number; committed_at_culto: number
   leader_attended: string[]; disciples_count: number
   disciples_discipled_this_week: number
-  pastoring_activity_type: string; training_activity_type: string
+  // Multi-select columns: the backend stores/returns arrays (free strings).
+  pastoring_activity_type: string[]; pastoring_activity_other: string | null
+  training_activity_type: string[]; training_activity_other: string | null
+}
+
+// Body of POST /forms/life-group-reports (CreateLifeGroupReportDto).
+// area_id/sector_id are optional and ignored by the backend (derived from the
+// life group); they are only kept for compatibility with older backends.
+export interface LifeGroupReportPayload {
+  date: string; life_group_id: number
+  area_id?: number; sector_id?: number
+  committed_members: number; committed_members_present: number
+  kids_0_to_11: number; guests: number; mdas: number
+  offering: string // decimal string, e.g. "12.50"
+  committed_at_tadel: number; committed_at_culto: number
+  leader_attended: string[]; disciples_count: number
+  disciples_discipled_this_week: number
+  pastoring_activity_type: string[]; pastoring_activity_other?: string
+  training_activity_type: string[]; training_activity_other?: string
 }
 
 export interface SectorSupervisorReport extends FormSubmissionMeta {

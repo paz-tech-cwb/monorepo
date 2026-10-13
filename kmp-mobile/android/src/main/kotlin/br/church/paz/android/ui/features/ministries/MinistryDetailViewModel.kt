@@ -2,6 +2,7 @@ package br.church.paz.android.ui.features.ministries
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import br.church.paz.shared.domain.model.LifeGroupMeetingRules
 import br.church.paz.shared.domain.model.LifeGroupTask
 import br.church.paz.shared.domain.model.LifeGroupTaskStatus
 import br.church.paz.shared.domain.model.UserRole
@@ -111,6 +112,7 @@ class LifeGroupDetailViewModel(
                             canManageAttendance = canManageAttendance,
                             canManage = currentUser?.role?.isLeader == true,
                             canViewGroupReports = canViewLifeGroupReports(currentUser?.role, canManageAttendance),
+                            canWriteMeetings = LifeGroupMeetingRules.canWrite(currentUser?.role, canManageAttendance),
                             myTasks = myTasks,
                         )
                     }

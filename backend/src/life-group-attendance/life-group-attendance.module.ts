@@ -5,6 +5,7 @@ import { LifeGroupAttendanceEntry } from './entities/life-group-attendance-entry
 import { LifeGroupAttendanceService } from './life-group-attendance.service';
 import { LifeGroupAttendanceController } from './life-group-attendance.controller';
 import { FormsCoreModule } from '../forms-core/forms-core.module';
+import { LifeGroupReportSnapshotService } from '../life-group-reports/life-group-report-snapshot.service';
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { FormsCoreModule } from '../forms-core/forms-core.module';
     FormsCoreModule,
   ],
   controllers: [LifeGroupAttendanceController],
-  providers: [LifeGroupAttendanceService],
-  exports: [LifeGroupAttendanceService],
+  providers: [LifeGroupAttendanceService, LifeGroupReportSnapshotService],
+  exports: [LifeGroupAttendanceService, LifeGroupReportSnapshotService],
 })
 export class LifeGroupAttendanceModule {}

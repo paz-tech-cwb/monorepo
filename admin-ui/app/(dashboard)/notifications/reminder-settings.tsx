@@ -36,6 +36,7 @@ import type {
   EventReminderConfig,
   FormReminderEntry,
   FormReportReminderConfig,
+  LifeGroupAttendanceReminderConfig,
   LifeGroupTasksReminderConfig,
   MemberJourneyReminderConfig,
   MemberJourneyStep,
@@ -60,6 +61,7 @@ const RULE_TITLES: Record<ReminderRule['type'], string> = {
   form_report: 'Lembretes de Formulário',
   event: 'Lembretes de Evento',
   member_journey: 'Jornada do Membro',
+  life_group_attendance: 'Reunião do Life Group',
   life_group_tasks: 'Tarefas do Life Group',
 }
 
@@ -67,7 +69,57 @@ const RULE_DESCRIPTIONS: Record<ReminderRule['type'], string> = {
   form_report: 'Notifica líderes sobre formulários pendentes',
   event: 'Notifica membros antes de eventos',
   member_journey: 'Notifica membros parados em etapas',
+  life_group_attendance: 'Lembra líderes de lançar a presença e o relatório da reunião',
   life_group_tasks: 'Sorteia e lembra os membros das tarefas do encontro',
+}
+
+// Text fields of the life_group_attendance rule. The backend rejects blank
+// strings and falls back to its defaults when a key is absent, so blank
+// inputs are dropped before saving.
+const ATTENDANCE_TEXT_KEYS = [
+  'meeting_title',
+  'meeting_message',
+  'followup_title',
+  'followup_message',
+  'escalation_title',
+  'escalation_message',
+] as const
+
+function validateAttendanceConfig(c: LifeGroupAttendanceReminderConfig): string | null {
+  const ints: [string, number | undefined, number, number][] = [
+    ['Horas após o início', c.hours_after_meeting_start, 0, 23],
+    ['Primeiro follow-up (horas)', c.followup_first_after_hours, 1, 168],
+    ['Intervalo do follow-up (horas)', c.followup_interval_hours, 1, 168],
+    ['Tolerância (horas)', c.followup_window_hours, 2, 12],
+    ['Máximo de dias de follow-up', c.followup_max_days, 0, 14],
+    ['Dias até escalar ao líder de setor', c.escalation_after_days, 0, 14],
+  ]
+  for (const [label, value, min, max] of ints) {
+    if (value === undefined) continue
+    if (!Number.isInteger(value) || value < min || value > max) {
+      return `${label}: informe um número inteiro de ${min} a ${max}`
+    }
+  }
+  // Same rule as the backend: follow-ups must start before the escalation.
+  const firstAfter = c.followup_first_after_hours ?? 24
+  const escalationDays = c.escalation_after_days ?? 5
+  const maxDays = c.followup_max_days ?? 5
+  if (maxDays > 0 && escalationDays > 0 && firstAfter >= escalationDays * 24) {
+    return `Primeiro follow-up (${firstAfter}h) deve ser menor que os dias até escalar × 24 (${escalationDays * 24}h); senão nenhum follow-up seria enviado`
+  }
+  return null
+}
+
+function cleanAttendanceConfig(c: LifeGroupAttendanceReminderConfig): LifeGroupAttendanceReminderConfig {
+  const next = { ...c }
+  for (const key of ATTENDANCE_TEXT_KEYS) {
+    if (typeof next[key] === 'string' && next[key]!.trim() === '') delete next[key]
+  }
+  // Pre-2026-10-13 timing keys (09:00 next morning, interval in days): the new
+  // meeting-relative fields replace them, so they are never written back.
+  delete next.followup_hour
+  delete next.followup_interval_days
+  return next
 }
 
 const AVAILABLE_ROLES = [
@@ -219,8 +271,17 @@ function ReminderSheetContent({
         return
       }
     }
+    let payload = config
+    if (rule.type === 'life_group_attendance') {
+      const error = validateAttendanceConfig(config as LifeGroupAttendanceReminderConfig)
+      if (error) {
+        toast.error(error)
+        return
+      }
+      payload = cleanAttendanceConfig(config as LifeGroupAttendanceReminderConfig)
+    }
     update.mutate(
-      { id: rule.id, data: { config } },
+      { id: rule.id, data: { config: payload } },
       {
         onSuccess: () => { toast.success('Lembrete atualizado'); onClose() },
         onError: () => toast.error('Falha ao atualizar lembrete'),
@@ -252,6 +313,13 @@ function ReminderSheetContent({
         {rule.type === 'member_journey' && (
           <MemberJourneyControls
             config={config as MemberJourneyReminderConfig}
+            onChange={setConfig}
+            disabled={!enabled}
+          />
+        )}
+        {rule.type === 'life_group_attendance' && (
+          <LifeGroupAttendanceControls
+            config={config as LifeGroupAttendanceReminderConfig}
             onChange={setConfig}
             disabled={!enabled}
           />
@@ -694,6 +762,241 @@ function MemberJourneyControls({
             </div>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+// ── Life group attendance / meeting controls ─────────────────────────────────
+
+function NumberField({
+  label,
+  hint,
+  value,
+  placeholder,
+  min,
+  max,
+  disabled,
+  onChange,
+}: {
+  label: string
+  hint?: string
+  value: number | undefined
+  placeholder?: string
+  min: number
+  max: number
+  disabled: boolean
+  // undefined = field cleared: the key is omitted on save and the backend default applies
+  onChange: (n: number | undefined) => void
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Input
+        type="number"
+        min={min}
+        max={max}
+        className="w-28"
+        value={value ?? ''}
+        placeholder={placeholder}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+      />
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+    </div>
+  )
+}
+
+function TextFields({
+  title,
+  message,
+  titleLabel,
+  messageLabel,
+  disabled,
+  onTitle,
+  onMessage,
+}: {
+  title: string
+  message: string
+  titleLabel: string
+  messageLabel: string
+  disabled: boolean
+  onTitle: (v: string) => void
+  onMessage: (v: string) => void
+}) {
+  return (
+    <>
+      <div className="space-y-2">
+        <Label>{titleLabel}</Label>
+        <Input
+          value={title}
+          disabled={disabled}
+          placeholder="Usa o texto padrão se ficar em branco"
+          onChange={(e) => onTitle(e.target.value)}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>{messageLabel}</Label>
+        <Textarea
+          value={message}
+          disabled={disabled}
+          rows={3}
+          placeholder="Usa o texto padrão se ficar em branco"
+          onChange={(e) => onMessage(e.target.value)}
+        />
+      </div>
+    </>
+  )
+}
+
+function LifeGroupAttendanceControls({
+  config,
+  onChange,
+  disabled,
+}: {
+  config: LifeGroupAttendanceReminderConfig
+  onChange: (c: LifeGroupAttendanceReminderConfig) => void
+  disabled: boolean
+}) {
+  return (
+    <div className="space-y-5">
+      <div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground space-y-1">
+        <p>
+          Enviado ao líder e ao co-líder de grupos com dia e horário fixos (fuso de São Paulo).
+          Grupos &quot;Sem dia fixo&quot; não recebem lembretes.
+        </p>
+        <p>
+          <strong>Atenção:</strong> o texto da reunião (presença + relatório), o follow-up diário e o
+          aviso ao líder de setor só são enviados quando a flag do servidor{' '}
+          <code>LIFE_GROUP_MEETING_V2</code> está ligada (desligada por padrão, até os apps com a
+          tela combinada estarem publicados). Com a flag desligada vale apenas o texto legado
+          abaixo.
+        </p>
+        <p>
+          No aviso ao líder de setor use <code>{'{group}'}</code> (nome do grupo) e{' '}
+          <code>{'{date}'}</code> (data da reunião, DD/MM).
+        </p>
+      </div>
+
+      <NumberField
+        label="Horas após o início da reunião"
+        hint="Quando o primeiro lembrete é enviado (0 a 23)."
+        value={config.hours_after_meeting_start}
+        placeholder="2"
+        min={0}
+        max={23}
+        disabled={disabled}
+        onChange={(n) => onChange({ ...config, hours_after_meeting_start: n })}
+      />
+
+      <div className="space-y-3 border-t pt-4">
+        <p className="text-sm font-medium">Texto legado (flag desligada)</p>
+        <div className="space-y-2">
+          <Label>Título</Label>
+          <Input
+            value={config.title ?? ''}
+            disabled={disabled}
+            onChange={(e) => onChange({ ...config, title: e.target.value })}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Mensagem</Label>
+          <Textarea
+            value={config.message ?? ''}
+            disabled={disabled}
+            rows={3}
+            onChange={(e) => onChange({ ...config, message: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-3 border-t pt-4">
+        <p className="text-sm font-medium">Primeiro lembrete: presença + relatório (flag ligada)</p>
+        <TextFields
+          title={config.meeting_title ?? ''}
+          message={config.meeting_message ?? ''}
+          titleLabel="Título"
+          messageLabel="Mensagem"
+          disabled={disabled}
+          onTitle={(v) => onChange({ ...config, meeting_title: v })}
+          onMessage={(v) => onChange({ ...config, meeting_message: v })}
+        />
+      </div>
+
+      <div className="space-y-3 border-t pt-4">
+        <p className="text-sm font-medium">Follow-up: presença lançada, relatório pendente (flag ligada)</p>
+        <NumberField
+          label="Primeiro follow-up (horas após a reunião)"
+          hint="Deve ser menor que os dias até escalar × 24 (padrão 120h). Contado a partir do dia e horário da reunião (horário de Brasília). Padrão 24 = no dia seguinte, no mesmo horário da reunião."
+          value={config.followup_first_after_hours}
+          placeholder="24"
+          min={1}
+          max={168}
+          disabled={disabled}
+          onChange={(n) => onChange({ ...config, followup_first_after_hours: n })}
+        />
+        <NumberField
+          label="Repetir a cada (horas)"
+          hint="Padrão 24 = todos os dias no horário da reunião (+24h, +48h, +72h, +96h)."
+          value={config.followup_interval_hours}
+          placeholder="24"
+          min={1}
+          max={168}
+          disabled={disabled}
+          onChange={(n) => onChange({ ...config, followup_interval_hours: n })}
+        />
+        <NumberField
+          label="Tolerância de envio (horas)"
+          hint="O envio roda de hora em hora; um follow-up devido às 21:30 sai às 22:00. Se uma rodada falhar, ainda é enviado até X horas depois do horário devido (mínimo 2, máximo 12, padrão 2; valores antigos menores que 2 valem 2)."
+          value={config.followup_window_hours}
+          placeholder="2"
+          min={2}
+          max={12}
+          disabled={disabled}
+          onChange={(n) => onChange({ ...config, followup_window_hours: n })}
+        />
+        <NumberField
+          label="Máximo de dias de follow-up"
+          hint="Limite de dias após a reunião (0 desliga o follow-up; padrão 5). Se o aviso ao líder de setor estiver ligado, os follow-ups terminam no dia anterior a ele."
+          value={config.followup_max_days}
+          placeholder="5"
+          min={0}
+          max={14}
+          disabled={disabled}
+          onChange={(n) => onChange({ ...config, followup_max_days: n })}
+        />
+        <TextFields
+          title={config.followup_title ?? ''}
+          message={config.followup_message ?? ''}
+          titleLabel="Título"
+          messageLabel="Mensagem"
+          disabled={disabled}
+          onTitle={(v) => onChange({ ...config, followup_title: v })}
+          onMessage={(v) => onChange({ ...config, followup_message: v })}
+        />
+      </div>
+
+      <div className="space-y-3 border-t pt-4">
+        <p className="text-sm font-medium">Aviso ao líder e co-líder de setor (flag ligada)</p>
+        <NumberField
+          label="Avisar o setor após (dias da reunião)"
+          hint="Se ainda não houver relatório X dias (X × 24 horas) após o horário da reunião; padrão 5 = 120 horas (0 desliga). Ignora o interruptor da categoria de notificações, mas respeita o desligamento geral de notificações/push do usuário."
+          value={config.escalation_after_days}
+          placeholder="5"
+          min={0}
+          max={14}
+          disabled={disabled}
+          onChange={(n) => onChange({ ...config, escalation_after_days: n })}
+        />
+        <TextFields
+          title={config.escalation_title ?? ''}
+          message={config.escalation_message ?? ''}
+          titleLabel="Título"
+          messageLabel="Mensagem"
+          disabled={disabled}
+          onTitle={(v) => onChange({ ...config, escalation_title: v })}
+          onMessage={(v) => onChange({ ...config, escalation_message: v })}
+        />
       </div>
     </div>
   )

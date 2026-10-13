@@ -29,6 +29,7 @@ import { MemberRegistrationsModule } from './member-registrations/member-registr
 import { FormConversionsModule } from './form-conversions/form-conversions.module';
 import { LifeGroupReportsModule } from './life-group-reports/life-group-reports.module';
 import { LifeGroupAttendanceModule } from './life-group-attendance/life-group-attendance.module';
+import { LifeGroupMeetingsModule } from './life-group-meetings/life-group-meetings.module';
 import { LifeGroupAnalyticsModule } from './life-group-analytics/life-group-analytics.module';
 import { SectorSupervisorReportsModule } from './sector-supervisor-reports/sector-supervisor-reports.module';
 import { AreaSupervisorReportsModule } from './area-supervisor-reports/area-supervisor-reports.module';
@@ -97,6 +98,7 @@ import ormconfig from './configs/orm.config';
     FormConversionsModule,
     LifeGroupReportsModule,
     LifeGroupAttendanceModule,
+    LifeGroupMeetingsModule,
     LifeGroupAnalyticsModule,
     CasaDePazReportsModule,
     CasaDePazAnalyticsModule,

@@ -20,6 +20,22 @@ import { useSectors } from "@/lib/hooks/use-sectors"
 import { useLifeGroups } from "@/lib/hooks/use-life-groups"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import type { LifeGroupReportPayload } from "@/lib/api/types/formularios"
+
+// Comma-separated list caps (backend: max 20 items of max 80 chars). Shown as a
+// form error instead of silently truncating what the admin typed.
+function parseList(value: string | undefined): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean)
+}
+
+const listField = z
+  .string()
+  .optional()
+  .refine((v) => parseList(v).length <= 20, "No máximo 20 itens")
+  .refine((v) => parseList(v).every((i) => i.length <= 80), "Cada item pode ter no máximo 80 caracteres")
 
 const schema = z.object({
   date: z.string().min(1, "Obrigatório"),
@@ -31,18 +47,42 @@ const schema = z.object({
   kids_0_to_11: z.coerce.number().int().min(0),
   guests: z.coerce.number().int().min(0),
   mdas: z.coerce.number().int().min(0),
-  offering: z.string().min(1, "Obrigatório"),
+  offering: z
+    .string()
+    .regex(/^\d{1,8}(\.\d{1,2})?$/, "Use o formato 0.00 (ex.: 12.50)"),
   committed_at_tadel: z.coerce.number().int().min(0),
   committed_at_culto: z.coerce.number().int().min(0),
   disciples_count: z.coerce.number().int().min(0),
   disciples_discipled_this_week: z.coerce.number().int().min(0),
-  pastoring_activity_type: z.string().min(1, "Obrigatório"),
-  training_activity_type: z.string().min(1, "Obrigatório"),
+  // Multi-value fields are typed as comma-separated text and sent as string[].
+  leader_attended: listField,
+  pastoring_activity_type: listField,
+  pastoring_activity_other: z.string().max(180).optional(),
+  training_activity_type: listField,
+  training_activity_other: z.string().max(180).optional(),
 })
 type FormValues = z.infer<typeof schema>
 
+// "a, b ,, c" -> ["a","b","c"]; caps are enforced by the schema above.
+const splitList = parseList
+
+function toPayload(data: FormValues): LifeGroupReportPayload {
+  return {
+    ...data,
+    leader_attended: splitList(data.leader_attended),
+    pastoring_activity_type: splitList(data.pastoring_activity_type),
+    pastoring_activity_other: data.pastoring_activity_other?.trim() || undefined,
+    training_activity_type: splitList(data.training_activity_type),
+    training_activity_other: data.training_activity_other?.trim() || undefined,
+  }
+}
+
 export function LifeGroupReportsForm({ defaultValues }: { defaultValues?: Partial<FormValues> }) {
-  const todayIso = new Date().toISOString().slice(0, 10)
+  // Church calendar day (the backend rejects dates after "today" in
+  // America/Sao_Paulo); toISOString() would already be tomorrow after 21:00.
+  const todayIso = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date())
   const {
     register,
     control,
@@ -65,7 +105,7 @@ export function LifeGroupReportsForm({ defaultValues }: { defaultValues?: Partia
       ...defaultValues,
     },
   })
-  const create = useCreateFormSubmission<unknown, FormValues>("life-group-reports")
+  const create = useCreateFormSubmission<unknown, LifeGroupReportPayload>("life-group-reports")
   const { data: areas = [] } = useAreas()
   const { data: sectors = [] } = useSectors()
   const { data: lifeGroups = [] } = useLifeGroups()
@@ -145,7 +185,7 @@ export function LifeGroupReportsForm({ defaultValues }: { defaultValues?: Partia
   return (
     <form
       onSubmit={handleSubmit(async (data) => {
-        await create.mutateAsync(data)
+        await create.mutateAsync(toPayload(data))
         toast.success("Relatório enviado")
         router.push("/formularios/life-group-reports")
       })}
@@ -257,14 +297,26 @@ export function LifeGroupReportsForm({ defaultValues }: { defaultValues?: Partia
           <Input {...register("disciples_discipled_this_week")} type="number" min={0} defaultValue={0} />
         </div>
         <div className="space-y-1.5">
-          <Label>Tipo atividade pastoreio *</Label>
-          <Input {...register("pastoring_activity_type")} />
-          {errors.pastoring_activity_type && <p className="text-sm text-destructive mt-1">{errors.pastoring_activity_type.message}</p>}
+          <Label>Líder presente em (separe por vírgula)</Label>
+          <Input {...register("leader_attended")} placeholder="tadel, culto" />
         </div>
         <div className="space-y-1.5">
-          <Label>Tipo atividade treinamento *</Label>
+          <Label>Tipo atividade pastoreio (separe por vírgula)</Label>
+          <Input {...register("pastoring_activity_type")} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Outra atividade de pastoreio</Label>
+          <Input {...register("pastoring_activity_other")} maxLength={180} />
+          {errors.pastoring_activity_other && <p className="text-sm text-destructive mt-1">{errors.pastoring_activity_other.message}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label>Tipo atividade treinamento (separe por vírgula)</Label>
           <Input {...register("training_activity_type")} />
-          {errors.training_activity_type && <p className="text-sm text-destructive mt-1">{errors.training_activity_type.message}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label>Outra atividade de treinamento</Label>
+          <Input {...register("training_activity_other")} maxLength={180} />
+          {errors.training_activity_other && <p className="text-sm text-destructive mt-1">{errors.training_activity_other.message}</p>}
         </div>
       </div>
       <Button type="submit" disabled={isSubmitting}>

@@ -37,14 +37,14 @@ class LifeGroupReportRepositoryImpl(
 }
 
 @Serializable
-private data class SubmittedByDto(
+internal data class SubmittedByDto(
     val name: String? = null,
 )
 
 // Wire contract: snake_case. Multi-valued and numeric-ish fields are read as raw JSON so a
 // string/array (or number/string for `offering`) difference never fails the whole list.
 @Serializable
-private data class LifeGroupReportDto(
+internal data class LifeGroupReportDto(
     val id: String,
     val date: String,
     @SerialName("life_group_id") val lifeGroupId: Int = 0,

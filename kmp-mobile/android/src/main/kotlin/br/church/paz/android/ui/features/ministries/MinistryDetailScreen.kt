@@ -306,9 +306,15 @@ fun LifeGroupDetailScreen(
                 onStudyTap = {
                     navController.navigate(br.church.paz.android.navigation.Screen.LifeGroupStudyList.route)
                 },
-                onAttendanceTap = {
+                onMeetingsTap = {
                     navController.navigate(
-                        br.church.paz.android.navigation.Screen.LifeGroupAttendanceHistory
+                        br.church.paz.android.navigation.Screen.LifeGroupMeetings
+                            .createRoute(group.id.toString(), group.meetingDay, uiState.canWriteMeetings),
+                    )
+                },
+                onSubmitReportTap = {
+                    navController.navigate(
+                        br.church.paz.android.navigation.Screen.LifeGroupReportSubmit
                             .createRoute(group.id.toString()),
                     )
                 },
@@ -333,7 +339,8 @@ private fun LifeGroupContent(
     lifeGroup: LifeGroup,
     canManageAttendance: Boolean,
     onStudyTap: () -> Unit,
-    onAttendanceTap: () -> Unit,
+    onMeetingsTap: () -> Unit,
+    onSubmitReportTap: () -> Unit,
     myTasks: List<LifeGroupTask>,
     onTaskTap: (String) -> Unit,
     onTaskMembersTap: () -> Unit,
@@ -518,10 +525,12 @@ private fun LifeGroupContent(
             }
         }
 
-        if (canManageAttendance) {
+        // "Reuniões" replaces the old "Presença" card: presence + weekly report of each meeting live in one
+        // screen. Same gate as the per-group reports (leader/co-leader, or admin/pastor/area/sector leader).
+        if (canViewGroupReports) {
             item {
                 PazGlassCard(
-                    modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onAttendanceTap),
+                    modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onMeetingsTap),
                     cornerRadius = PazSpacing.CardRadiusCompact,
                 ) {
                     Row(
@@ -535,7 +544,7 @@ private fun LifeGroupContent(
                             tint = PazColors.Primary,
                             modifier = Modifier.size(22.dp),
                         )
-                        Text("Presença", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        Text("Reuniões", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                         Icon(
                             Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                             contentDescription = null,
@@ -546,7 +555,37 @@ private fun LifeGroupContent(
             }
         }
 
-        // Only this group's leader/co-leader (same gate as "Presença") manages task eligibility.
+        // Weekly report submit: same gate as "Presença" (this group's own leader/co-leader), which is
+        // exactly who the backend lets create the report; opens the form with this group preselected.
+        if (canManageAttendance) {
+            item {
+                PazGlassCard(
+                    modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onSubmitReportTap),
+                    cornerRadius = PazSpacing.CardRadiusCompact,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(PazSpacing.Lg),
+                        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Outlined.Assignment,
+                            contentDescription = null,
+                            tint = PazColors.Primary,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Text("Enviar relatório", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        Icon(
+                            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                        )
+                    }
+                }
+            }
+        }
+
+        // Only this group's leader/co-leader manages task eligibility.
         if (canManageAttendance) {
             item {
                 PazGlassCard(

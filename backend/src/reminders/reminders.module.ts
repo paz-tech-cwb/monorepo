@@ -15,6 +15,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { LifeGroupTasksModule } from '../life-group-tasks/life-group-tasks.module';
 import { LifeGroup } from '../life-groups/entities/life-group.entity';
 import { LifeGroupAttendance } from '../life-group-attendance/entities/life-group-attendance.entity';
+import { LifeGroupReport } from '../life-group-reports/entities/life-group-report.entity';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { LifeGroupAttendance } from '../life-group-attendance/entities/life-grou
       ReminderDispatchLog,
       LifeGroup,
       LifeGroupAttendance,
+      LifeGroupReport,
     ]),
     NotificationsModule,
     LifeGroupTasksModule,

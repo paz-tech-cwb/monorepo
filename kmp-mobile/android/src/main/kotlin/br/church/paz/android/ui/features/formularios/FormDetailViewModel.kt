@@ -9,7 +9,6 @@ import br.church.paz.shared.domain.model.ConversionForm
 import br.church.paz.shared.domain.model.CourseForm
 import br.church.paz.shared.domain.model.FormType
 import br.church.paz.shared.domain.model.GuestForm
-import br.church.paz.shared.domain.model.LifeGroupReportForm
 import br.church.paz.shared.domain.model.MemberRegistrationForm
 import br.church.paz.shared.domain.model.MultiplicationForm
 import br.church.paz.shared.domain.model.SectorSupervisorReportForm
@@ -363,17 +362,10 @@ class FormDetailViewModel(
                             enrolledAt = f.isoDate("enrolled_at"),
                         ),
                     )
+                // The weekly report has its own screen (LifeGroupReportFormScreen) that builds the real
+                // DTO payload; this generic form must never post a report.
                 FormType.life_group_report ->
-                    formsRepository.submitLifeGroupReport(
-                        LifeGroupReportForm(
-                            lifeGroupId = userId,
-                            date = f.req("date"),
-                            attendees = f.int("attendees"),
-                            visitors = f.int("visitors"),
-                            offerings = f.brlOrNull("offerings"),
-                            observations = f.opt("observations"),
-                        ),
-                    )
+                    error("O relatório semanal é enviado pela tela do Life Group.")
                 FormType.sector_supervisor_report ->
                     formsRepository.submitSectorReport(
                         SectorSupervisorReportForm(
@@ -458,12 +450,6 @@ class FormDetailViewModel(
     private fun Map<String, String>.brl(key: String): Double {
         val raw = get(key)?.trim() ?: return 0.0
         return raw.replace(".", "").replace(",", ".").toDoubleOrNull() ?: 0.0
-    }
-
-    private fun Map<String, String>.brlOrNull(key: String): Double? {
-        val raw = get(key)?.trim() ?: return null
-        if (raw == "0,00" || raw.isEmpty()) return null
-        return raw.replace(".", "").replace(",", ".").toDoubleOrNull()
     }
 
     private fun Map<String, String>.isoDate(key: String): String {

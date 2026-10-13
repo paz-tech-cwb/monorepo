@@ -77,6 +77,8 @@ fun FormulariosScreen(
                         }
                     navController.navigate(route)
                 }
+                FormulariosEffect.NavigateToLifeGroupReportSubmit ->
+                    navController.navigate(Screen.LifeGroupReportSubmit.createRoute())
                 FormulariosEffect.NavigateBack -> navController.popBackStack()
             }
         }

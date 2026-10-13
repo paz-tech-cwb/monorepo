@@ -61,6 +61,8 @@ export class LifeGroupAttendanceController {
   ) {
     return this.svc.upsert(lifeGroupId, date, dto, req.formScope, {
       id: req.user.id,
+      isAdmin: req.user.role?.slug === 'admin',
+      isPastor: req.user.role?.slug === 'pastor',
     });
   }
 }

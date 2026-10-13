@@ -217,6 +217,59 @@ describe('LifeGroupAttendanceService', () => {
   });
 
   describe('upsert', () => {
+    describe('write authorization (supervisors are read-only)', () => {
+      const body = { entries: [{ userId: 1, present: true }] };
+
+      it('rejects a scope supervisor (not leader/co-leader) with meeting_write_forbidden and never writes', async () => {
+        const { service, em } = createService({
+          findOne: jest.fn().mockResolvedValueOnce(lifeGroup),
+        });
+        const attempt = service.upsert(7, '2026-06-10', body, leaderScope, {
+          id: 900,
+        });
+        await expect(attempt).rejects.toThrow(ForbiddenException);
+        await expect(attempt).rejects.toMatchObject({
+          response: { code: 'meeting_write_forbidden' },
+        });
+        expect(em.save).not.toHaveBeenCalled();
+      });
+
+      it('still lets the supervisor READ the same group', async () => {
+        const { service } = createService({
+          findOne: jest
+            .fn()
+            .mockResolvedValueOnce(lifeGroup)
+            .mockResolvedValueOnce(null),
+        });
+        const res = await service.getByDate(7, '2026-06-10', leaderScope, {
+          id: 900,
+        });
+        expect(res.is_draft).toBe(true);
+      });
+
+      it.each([
+        ['co-leader', { id: 11 }, noAccessScope],
+        ['admin', { id: 900, isAdmin: true }, unrestrictedScope],
+        ['pastor', { id: 901, isPastor: true }, unrestrictedScope],
+      ])('allows %s past the write check', async (_n, actor, scope) => {
+        const { service } = createService({
+          findOne: jest
+            .fn()
+            .mockResolvedValueOnce(lifeGroup)
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce({
+              id: 'att-3',
+              entries: [],
+              recordedBy: { id: actor.id },
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            }),
+        });
+        const res = await service.upsert(7, '2026-06-10', body, scope, actor);
+        expect(res.id).toBe('att-3');
+      });
+    });
+
     it('creates a new attendance record with entries on first save', async () => {
       const { service, em } = createService({
         findOne: jest
@@ -247,6 +300,33 @@ describe('LifeGroupAttendanceService', () => {
 
       expect(em.save).toHaveBeenCalled();
       expect(result.id).toBe('att-2');
+    });
+
+    it('legacy PUT keeps rejecting a non-fixed weekday (no extra-meeting flag there) and never writes', async () => {
+      const saturdayGroup = {
+        ...lifeGroup,
+        meetingDay: 'Sábado',
+      } as unknown as LifeGroup;
+      const { service, em } = createService({
+        findOne: jest
+          .fn()
+          .mockResolvedValueOnce(saturdayGroup)
+          .mockResolvedValueOnce(null),
+      });
+
+      // 2026-06-10 is a Wednesday, not a Saturday: same message as before the
+      // meetings API existed (no mention of extra_meeting).
+      const attempt = service.upsert(
+        7,
+        '2026-06-10',
+        { entries: [{ userId: 1, present: true }] },
+        leaderScope,
+        { id: 10 },
+      );
+      await expect(attempt).rejects.toThrow(
+        '2026-06-10 is not a Sábado — this life group meets on Sábado.',
+      );
+      expect(em.save).not.toHaveBeenCalled();
     });
 
     it('preserves the original roster snapshot when editing a past record', async () => {

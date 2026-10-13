@@ -11,7 +11,7 @@ struct FormDetailDeepLinkView: View {
     var body: some View {
         Group {
             if let form {
-                FormStepView(form: form)
+                FormDestinationView(form: form)
             } else if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -68,29 +68,20 @@ struct MinistryDetailDeepLinkView: View {
     }
 }
 
-struct LifeGroupAttendanceEditorDeepLinkView: View {
+/// `paz://presenca/{id}/{date}` (reminder push): opens the combined "Reunião" screen of that group and day.
+struct LifeGroupMeetingDeepLinkView: View {
     let lifeGroupId: String
     let meetingDate: String
-    let repository: LifeGroupAttendanceRepository
-    let onDismiss: () -> Void
 
     var body: some View {
-        Group {
-            if let id = Int32(lifeGroupId) {
-                LifeGroupAttendanceEditorView(
-                    lifeGroupId: id,
-                    meetingDate: meetingDate,
-                    repository: repository,
-                    onSaved: onDismiss,
-                    onCancel: onDismiss
-                )
-            } else {
-                ContentUnavailableView(
-                    "Grupo não encontrado",
-                    systemImage: "person.fill.questionmark"
-                )
-                .background(PazMeshBackground())
-            }
+        if let id = Int32(lifeGroupId) {
+            LifeGroupMeetingView(lifeGroupId: id, meetingDate: meetingDate)
+        } else {
+            ContentUnavailableView(
+                "Grupo não encontrado",
+                systemImage: "person.fill.questionmark"
+            )
+            .background(PazMeshBackground())
         }
     }
 }

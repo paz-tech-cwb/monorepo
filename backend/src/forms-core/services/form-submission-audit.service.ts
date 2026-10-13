@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
+import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import {
   FormSubmissionAuditLog,
   FormAuditAction,
@@ -13,20 +14,29 @@ export class FormSubmissionAuditService {
     private readonly repo: Repository<FormSubmissionAuditLog>,
   ) {}
 
-  async record(params: {
-    formSlug: string;
-    submissionId: string;
-    actorId: number;
-    action: FormAuditAction;
-    diff?: Record<string, unknown> | null;
-  }): Promise<void> {
-    await this.repo.insert({
+  // `manager` (optional) writes the row through a caller's transaction so the
+  // audit row commits/rolls back together with the data it describes.
+  async record(
+    params: {
+      formSlug: string;
+      submissionId: string;
+      actorId: number;
+      action: FormAuditAction;
+      diff?: Record<string, unknown> | null;
+    },
+    manager?: EntityManager,
+  ): Promise<void> {
+    const target = manager
+      ? manager.getRepository(FormSubmissionAuditLog)
+      : this.repo;
+    await target.insert({
       formSlug: params.formSlug,
       submissionId: params.submissionId,
-      actor: { id: params.actorId } as any,
+      actor: { id: params.actorId } as FormSubmissionAuditLog['actor'],
       action: params.action,
 
-      diff: (params.diff ?? null) as any,
+      diff: (params.diff ??
+        null) as unknown as QueryDeepPartialEntity<FormSubmissionAuditLog>['diff'],
     });
   }
 

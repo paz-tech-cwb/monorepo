@@ -28,6 +28,8 @@ data class LifeGroupDetailUiState(
     // Per-group reports entries ("Relatórios" analytics + "Relatórios semanais"): this group's
     // leader/co-leader or admin/pastor/area/sector leader — see canViewLifeGroupReports.
     val canViewGroupReports: Boolean = false,
+    // Write rights on this group's meetings (shared LifeGroupMeetingRules.canWrite): false = read-only supervisor.
+    val canWriteMeetings: Boolean = false,
     // The signed-in member's upcoming assigned tasks in this group ("Minhas tarefas").
     val myTasks: List<br.church.paz.shared.domain.model.LifeGroupTask> = emptyList(),
 )

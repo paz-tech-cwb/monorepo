@@ -7,6 +7,7 @@ import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.BirthDateRequiredException
 import br.church.paz.shared.domain.repository.FormsRepository
+import br.church.paz.shared.domain.repository.MeetingDraftStore
 import br.church.paz.shared.util.safeRunCatching
 import io.ktor.client.HttpClient
 import io.ktor.client.request.post
@@ -31,6 +32,9 @@ class AuthRepositoryImpl(
     private val tokenStorage: TokenStorage,
     private val userStore: UserStore,
     private val formsRepository: FormsRepository,
+    // Unsaved life-group meeting drafts are wiped on logout. Optional so existing call sites/tests
+    // that do not care keep compiling.
+    private val meetingDraftStore: MeetingDraftStore? = null,
 ) : AuthRepository {
 
     override suspend fun socialLogin(idToken: String, provider: String, birthDate: String?): Result<User> {
@@ -85,6 +89,8 @@ class AuthRepositoryImpl(
             // A different account signing in on the same device must not inherit a
             // permission-filtered forms catalog (or sectors list) cached from this user.
             formsRepository.clearCache()
+            // Local meeting drafts (counts/offering typed but not yet saved) must not outlive the session.
+            runCatching { meetingDraftStore?.clearAll() }
         }
     }
 

@@ -1,17 +1,28 @@
 import { Test } from '@nestjs/testing';
+import { getEntityManagerToken } from '@nestjs/typeorm';
 import { FormsCatalogService } from './forms-catalog.service';
 import { MinistryAccessService } from '../ministry-access/ministry-access.service';
 
 describe('FormsCatalogService', () => {
   let service: FormsCatalogService;
   let ministryAccess: { resolve: jest.Mock };
+  let leadsGroup: boolean;
+  const lgQb = {
+    where: jest.fn().mockReturnThis(),
+    getExists: jest.fn(),
+  };
+  const em = { createQueryBuilder: jest.fn().mockReturnValue(lgQb) };
 
   beforeEach(async () => {
     ministryAccess = { resolve: jest.fn() };
+    leadsGroup = false;
+    em.createQueryBuilder.mockClear();
+    lgQb.getExists.mockImplementation(() => Promise.resolve(leadsGroup));
     const module = await Test.createTestingModule({
       providers: [
         FormsCatalogService,
         { provide: MinistryAccessService, useValue: ministryAccess },
+        { provide: getEntityManagerToken(), useValue: em },
       ],
     }).compile();
     service = module.get(FormsCatalogService);
@@ -92,5 +103,95 @@ describe('FormsCatalogService', () => {
       can_write: true,
     });
     expect(ministryAccess.resolve).not.toHaveBeenCalled();
+  });
+
+  describe('life-group-reports visibility', () => {
+    const find = (r: Array<{ slug: string }>) =>
+      r.find((f) => f.slug === 'life-group-reports');
+
+    it('shows it to a member-role actor who leads or co-leads a life group', async () => {
+      ministryAccess.resolve.mockResolvedValue({
+        isLeader: false,
+        isMember: false,
+      });
+      leadsGroup = true;
+
+      const result = await service.listForRole({ id: 30, roleSlug: 'member' });
+
+      expect(find(result)).toMatchObject({ can_read: true, can_write: true });
+      expect(lgQb.where).toHaveBeenCalledWith(
+        'lg.leader_id = :actorId OR lg.co_leader_id = :actorId',
+        { actorId: 30 },
+      );
+    });
+
+    it('hides it from a plain member who leads nothing', async () => {
+      ministryAccess.resolve.mockResolvedValue({
+        isLeader: false,
+        isMember: false,
+      });
+
+      const result = await service.listForRole({ id: 31, roleSlug: 'member' });
+
+      expect(find(result)).toBeUndefined();
+    });
+
+    it('gives admin/pastor read+write without querying groups', async () => {
+      ministryAccess.resolve.mockResolvedValue({
+        isLeader: false,
+        isMember: false,
+      });
+      for (const roleSlug of ['admin', 'pastor']) {
+        const result = await service.listForRole({ id: 32, roleSlug });
+        expect(find(result)).toMatchObject({ can_read: true, can_write: true });
+      }
+      expect(em.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
+    it('makes pure supervisors / group-less leader roles read-only (can_read, not can_write)', async () => {
+      ministryAccess.resolve.mockResolvedValue({
+        isLeader: false,
+        isMember: false,
+      });
+      for (const roleSlug of [
+        'area_leader',
+        'sector_leader',
+        'life_group_leader',
+      ]) {
+        const result = await service.listForRole({ id: 34, roleSlug });
+        expect(find(result)).toMatchObject({
+          can_read: true,
+          can_write: false,
+        });
+      }
+    });
+
+    it('gives a supervisor who also leads/co-leads a group can_write', async () => {
+      ministryAccess.resolve.mockResolvedValue({
+        isLeader: false,
+        isMember: false,
+      });
+      leadsGroup = true;
+      for (const roleSlug of ['area_leader', 'sector_leader']) {
+        const result = await service.listForRole({ id: 35, roleSlug });
+        expect(find(result)).toMatchObject({ can_read: true, can_write: true });
+      }
+    });
+
+    it('does not widen other role-gated forms for a member-role leader', async () => {
+      ministryAccess.resolve.mockResolvedValue({
+        isLeader: false,
+        isMember: false,
+      });
+      leadsGroup = true;
+
+      const result = await service.listForRole({ id: 33, roleSlug: 'member' });
+      const slugs = result.map((f) => f.slug);
+
+      expect(slugs).toContain('life-group-reports');
+      expect(slugs).toContain('form-guests'); // already write for member
+      expect(slugs).not.toContain('member-registrations');
+      expect(slugs).not.toContain('multiplications');
+    });
   });
 });

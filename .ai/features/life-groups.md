@@ -99,6 +99,191 @@ going forward. If a group's `meeting_day` is "Sem dia fixo" or its
 
 Deep link: `paz://presenca/{lifeGroupId}/{date}`.
 
+## Meetings API (phase 1: attendance + report in one record)
+
+Backend only, additive. Design: `.pipeline/design-attendance-report-merge.md`.
+Module `backend/src/life-group-meetings/`.
+
+- `GET /api/life-groups/:lifeGroupId/meetings/:date` and `PUT` (same path),
+  `AuthGuard('jwt')` + `ScopeGuard`, no `@Roles` (a co-leader / `member`-role
+  leader works). Access = attendance's rule, shared in
+  `life-group-attendance/life-group-access.util.ts`: admin/pastor unrestricted,
+  group in scope (area/sector supervisors via `ScopeResolverService`, keyed off
+  `leader_id`/`co_leader_id` rows), else the group's own leader/co-leader id.
+- `PUT` body `{ attendance?: { entries: [{ user_id, present }] }, report?: {
+  kids_0_to_11, guests, mdas, offering, committed_at_tadel, committed_at_culto,
+  leader_attended[], disciples_count, disciples_discipled_this_week,
+  pastoring_activity_type[], pastoring_activity_other?, training_activity_type[],
+  training_activity_other? } }`, at least one. `report` is a full replace.
+  Client-sent `date`, `area_id`, `sector_id`, `life_group_id`, `committed_members`,
+  `committed_members_present` are not in the DTO and are ignored (global pipe
+  strips non-`@Expose` keys); the server derives them.
+- Response of both verbs: `{ life_group_id, meeting_date, attendance, report,
+  derived: { committed_members, committed_members_present }, can_write, can_edit,
+  edit_deadline, report_blocked_reason }`. `attendance` is the saved record
+  (`is_draft: false`, `default_present: null`) or a draft from the current roster
+  (`is_draft: true`, `default_present: true`, everybody present); its `entries`
+  are the roster snapshot. `report` is the same shape as
+  `/forms/life-group-reports` or `null`. `report_blocked_reason` is
+  `group_has_no_sector` | `sector_has_no_area` | `null`.
+- Errors: 400 invalid date/body/roster/weekday, 403 no access or
+  `edit_window_closed`, 404 group, 409 `attendance_required` (report with no
+  attendance existing or sent in the same PUT), 422 (`group_has_no_sector` /
+  `sector_has_no_area`: area/sector are derived from the group, never invented;
+  attendance alone still saves).
+- One DB transaction per PUT, guarded by `pg_advisory_xact_lock(4207,
+  hashtext('<group>:<date>'))`, then find-then-upsert, so concurrent PUTs give one
+  attendance row and one report row even where the partial unique index below is
+  absent. Idempotent by (group, date). Audit rows for both slugs
+  (`life_group_attendance`, `life-group-reports`) are written in the same
+  transaction (`FormSubmissionAuditService.record(params, manager)`).
+- Derived fields (product decisions Q1/Q2): `committed_members` = attendance
+  `members_count` (the WHOLE roster snapshot, no manual input, no per-member flag);
+  `committed_members_present` = `present_count` (leader/co-leader count only when
+  they are on the roster and marked present). They are snapshots in
+  `life_group_reports`, linked through `attendance_id`, and re-synced on EVERY
+  attendance write, including the OLD `PUT /life-groups/:id/attendance/:date`
+  (hook in `LifeGroupAttendanceService.upsertInTransaction` ->
+  `LifeGroupReportSnapshotService`), in the same transaction. Unlinked legacy
+  reports are never touched by an attendance-only change; a meetings PUT with a
+  `report` links and overwrites the legacy report of that date.
+- Default draft (Q3): all present, unchanged. Mobile can show an explicit "Todos
+  presentes" toggle from `default_present`.
+- Edit policy (Q5): `LIFE_GROUP_MEETING_EDIT_WINDOW_DAYS = 14`
+  (`common/constants/life-group-meeting.ts`, optional env override of the same
+  name, positive integer). Creating or editing either half is allowed for
+  everyone with access until meeting date + 14 days (inclusive, America/Sao_Paulo
+  calendar days: day 14 allowed, day 15 denied); only `admin` is never limited
+  (pastor is bound). Reads are always allowed. `edit_deadline` is `YYYY-MM-DD`
+  (last editable day); `can_edit` is per viewer.
+- Write authorization (D11): READ (GET) needs access (scope incl. area/sector
+  supervisors, leader/co-leader, admin, pastor). WRITE (PUT, and the OLD
+  `PUT .../attendance/:date`) needs admin, pastor, or the group's own
+  `leader_id`/`co_leader_id` (even with role `member`); anyone else who only has
+  scope access (supervisors) is READ-ONLY: PUT -> 403 `meeting_write_forbidden`.
+  `can_write` = that role rule; `can_edit` = `can_write` AND (inside the window
+  or admin). Mobile mirrors it for UX; the server is the authority. Helper:
+  `canWriteLifeGroup`/`assertCanWriteLifeGroup` in `life-group-access.util.ts`.
+- Validation: attendance entries 1..500 (plus the attendance rules: roster-only
+  ids on first save, no duplicates, not in the future, weekday must match
+  `meeting_day` only when creating, unless flagged as an extra meeting (below); groups without a fixed day accept any past
+  date, same as attendance); report counts integers 0..100000, `offering` string
+  `^\d{1,8}(\.\d{1,2})?$`, string arrays max 20 items x 80 chars, `*_other` max 180.
+- Extra meetings (product decision Q7, "extra meetings: yes"): a group WITH a fixed
+  `meeting_day` may record a meeting on another weekday only with an explicit
+  flag. `PUT` body top-level `extra_meeting: true` (boolean; anything else -> 400;
+  omitted = false); `GET .../meetings/:date?extra_meeting=true` previews the draft (only the exact lowercase strings `true`/`false` are accepted, anything else is a 400; the preview does NOT check the weekly cap, so the later PUT can still answer 409 `extra_meeting_limit_reached`)
+  for such a date. Attendance responses (inside the meetings view) carry
+  `is_extra`. Rules (new records only; an existing record never re-checks the
+  weekday):
+  - fixed-day group, other weekday, flag missing/false -> 400
+    `extra_meeting_required` (message tells to send `extra_meeting: true`);
+  - flag on the group's regular weekday -> 400 `extra_meeting_on_regular_day`;
+    flag on a group without a fixed day -> 400 `extra_meeting_not_applicable`
+    (every date is already a regular meeting there, D3 unchanged);
+  - the flag is fixed at creation: omitting it keeps the stored value, sending the
+    opposite value for an existing record -> 400 `extra_meeting_immutable`
+    (never silently flipped); a report-only PUT ignores the flag;
+  - cap: at most `LIFE_GROUP_MAX_EXTRA_MEETINGS_PER_WEEK = 3` extra meetings per
+    group per ISO week (Monday-Sunday of the meeting date), admin included;
+    beyond that -> 409 `extra_meeting_limit_reached`. Creation takes
+    `pg_advisory_xact_lock(4208, hashtext('<group>:<week monday>'))` (after the
+    4207 meeting lock) so parallel PUTs for different dates of one week cannot
+    exceed it. Editing an existing extra is never blocked by the cap;
+  - everything else is unchanged for extras: not in the future, 14-day edit
+    window (admin bypass), access rules, roster-only ids and the roster snapshot
+    (`members_count`/entries fixed on first save), one record per (group, date),
+    report link and `committed_*` snapshots, audit rows.
+  Persistence: `life_group_attendance.is_extra boolean NOT NULL DEFAULT false`
+  (migration `1796000000001-AddIsExtraToLifeGroupAttendance`, idempotent
+  `ADD COLUMN IF NOT EXISTS`, `down()` drops it, no data rewrite: all existing rows
+  are regular).
+  Consumers:
+  - Task eligibility (`LifeGroupTaskRosterService`): extras are real meetings and
+    their `present=true` entries count toward `min_present_meetings`, but at most
+    `LIFE_GROUP_COUNTED_EXTRA_MEETINGS_PER_WEEK = 1` extra meeting per group per ISO
+    week counts (the earliest), so flagging several in a week cannot inflate
+    eligibility. Regular meetings always count. "Earliest" is by meeting DATE, not
+    by creation time: back-filling an earlier-dated extra later moves which extra
+    counts and can lower a member's count retroactively (known behavior). The week
+    is `date_trunc('week', meeting_date)` (Monday-based), identical to
+    `isoWeekRange`, also across a year change (2026-12-28..2027-01-03 is one week;
+    covered by unit and real-Postgres tests).
+  - Analytics: extras are INCLUDED in `meetings_count`/`present_count`/
+    `members_count`/`attendance_rate`; every bucket also has `extra_meetings_count`
+    (additive, monthly and per-meeting granularity).
+  - Reminders: unchanged and unaffected. The attendance reminder derives its meeting
+    date from the group's fixed weekday, so an extra record on another date neither
+    satisfies nor triggers it. For the follow-up/escalation logic (PR #98): treat an
+    extra meeting like any meeting once its attendance exists (e.g. "attendance
+    without report" applies the same), but never create reminders or expectations
+    for extras, and never use their presence to mark the REGULAR date as recorded.
+- Old contracts unchanged: attendance GET/PUT (no new fields; they keep rejecting
+  every non-fixed weekday, there is no flag there; an already-saved extra record
+  can still be edited through them, it stays extra), `/forms/life-group-reports*`.
+  Only addition: a duplicate legacy `POST /forms/life-group-reports` for the same
+  group+date answers 409 when the unique index exists (it used to create a duplicate).
+  Legacy `PATCH` does not re-sync `committed_*` on a linked report (24h submitter
+  rule unchanged).
+- Reminders, push copy, `paz://presenca/{id}/{date}` deep link and the forms
+  catalog are NOT changed in this phase (see `features/notifications.md`).
+- Phase 2 (reminders v2, stacked on this API) changes the `life_group_attendance`
+  reminder rule only behind the server flag `LIFE_GROUP_MEETING_V2` (default off):
+  new combined copy, follow-ups to leader + co-leader 24h/48h/72h/96h after the
+  meeting datetime (date + meeting_time, Sao Paulo; hourly tick tolerance 2h) while
+  attendance exists and no report does, and a push to the sector leader + co-leader
+  120h (day 5) after it. A report by either leader completes the reminder; extra
+  meetings with attendance are followed up like regular ones.
+  Details and switch-on steps in `features/notifications.md`.
+- Weekday rule (verified for phase 2): `assertMatchesMeetingDay` returns early for a
+  group without a fixed `meeting_day`, so ANY past date is accepted for those groups
+  (manual "Nova reuniao" works). For a group WITH a fixed day, a new meeting on another
+  weekday is rejected with 400, so an extra meeting on a different weekday is a known
+  gap; relaxing it was judged not clearly safe (it protects task eligibility and roster
+  snapshots from typos) and is left as an open product question. Reminders never target
+  groups without a fixed day or extra meetings.
+
+## Combined "Reunião" screen (Phase 3: shared + Android + iOS)
+
+One screen per meeting (group + date) with Presença first and Relatório second, on top of the meetings API above (stacked on PR #96, no backend change).
+
+- Shared (`:shared`): `LifeGroupMeetingRepository` (`getMeeting(lifeGroupId, date, extraMeeting)`, `saveAttendance(...)`, `saveReport(...)`), models `LifeGroupMeeting` / `LifeGroupMeetingAttendance` (+ `isDraft`, `isExtra`, `defaultPresent`) / `LifeGroupMeetingReportInput`, `LifeGroupMeetingException(statusCode, code, serverMessage)`. Pure rules in `LifeGroupMeetingRules` (dates in America/Sao_Paulo, weekday/extra-meeting detection, presence toggles, offering/counts parsing, local-draft build/apply, history merge, pt-BR copy) and `LifeGroupMeetingErrors` (code-first message mapping). `LifeGroupMeetingReportDraft` is the raw-string form state AND the persisted draft section; `toInput()` is the wire payload. Its parsers mirror Phase 0's `LifeGroupReportRules` (branch `fix/life-group-report-submit`, not in this base): consolidate after both merge.
+- Flow: presence is saved first (`PUT` with `attendance`), the report second (`PUT` with `report`); the report is locked until the presence is saved and unedited, and when `report_blocked_reason` is set (message from the server reason). `committed_members`/`committed_members_present` are derived server side and shown read-only ("Comprometidos"/"Presentes", live from the toggles). New meetings start all present with an explicit "Todos presentes" switch (on = everyone present, off = everyone absent; `default_present` from the draft).
+- Supervisors are read-only (D11): `LifeGroupMeetingRules.canWrite(role, isGroupLeadership)` (shared, pure, tested; admin, pastor, or this group's leader/co-leader by id) is resolved once by the group detail (`MinistryDetailViewModel.canWriteMeetings` / `MinistryDetailView.canWriteMeetings`) and handed to the history (`canWrite`, default false) and on to the meeting screen (route arg `canWrite`, `viewerCanWrite`; unknown/null for the `paz://presenca` deep link). The "Reuniões" card, history and meeting stay visible to every `canViewGroupReports` user; for supervisors there is no "Nova reunião", no "Reunião extra" switch, no "Todos presentes", no save buttons and the toggles are disabled, with a "Somente leitura" banner. Effective rule: `LifeGroupMeeting.isEditable = canWrite && canEdit` (server `can_write` missing => false, so a missing flag is safe) and a `false` role hint forces read-only; a supervisor opening a date with no record sees "Não há reunião registrada nesta data" instead of the extra-meeting switch. The server stays the authority (403 `meeting_write_forbidden`).
+- Edit window: `can_edit=false` => read-only screen with "O prazo para editar esta reunião terminou em dd/MM/yyyy" (no inputs, no save buttons, stale local drafts ignored); editable meetings show "Você pode editar até dd/MM/yyyy". Admin bypass comes from `can_edit`. A `403 edit_window_closed` while saving reloads into the read-only state.
+- Extra meetings: the client does not need the group's weekday. `GET` without the flag on a non-regular date answers `400 extra_meeting_required`; the screen then shows only the "Reunião extra" switch and re-requests with `?extra_meeting=true`. `extra_meeting: true` is sent on the presence PUT only while creating (draft); an existing record never gets the flag (immutable server side, `extra_meeting_immutable`). "Nova reunião" shows a hint for non-regular weekdays using `needsExtraMeeting(meetingDay, date)`.
+- Review fixes (phase 3): the report form cannot be saved untouched (the first save needs at least one edited field, so a stray tap never files an all-zero report; type "0" to file zeros on purpose). Presence toggles and report edits are ignored while a save is in flight. A stored draft with `extraMeeting=true` that the server rejects (`extra_meeting_on_regular_day` / `extra_meeting_not_applicable`) is dropped and refetched without the flag. `normalizeOffering` rejects more than 2 decimals ("0.125" is invalid, not R$125). A legacy report without attendance shows a read-only explanation. Android history receives the group's `meetingDay` through the route (`life_group_meetings/{id}?meetingDay=...`) instead of fetching all groups; a malformed route argument pops back.
+- Local drafts: `MeetingDraftStore` (DataStore on Android, NSUserDefaults on iOS), key `paz_meeting_draft_{userId}_{groupId}_{date}`, JSON of `LifeGroupMeetingDraft` (unsaved toggles, unsaved report fields, the extra choice). Written on every edit, section removed when saved, whole draft removed when nothing is unsaved, `clearAll()` called by `AuthRepositoryImpl.logout` (and the key is user-scoped, so a missed teardown still never leaks across accounts). Restored drafts show a "Rascunho restaurado" banner.
+- History: "Reuniões" (replaces the "Presença" card on the life group detail; same gate as the per-group reports): saved attendance (`GET /life-groups/:id/attendance`) joined by date with the reports list (`GET /forms/life-group-reports?life_group_id=`), chips "Presença x/y" and "Relatório enviado/pendente" (report chip hidden when the reports list cannot be loaded), pull-to-refresh, "Nova reunião" (date picker, never future; default = latest regular meeting day on/before today, today for groups without a fixed day).
+- Android: package `ui/features/lifegroupmeeting/`; routes `life_group_meetings/{lifeGroupId}` (history), `life_group_meeting/{lifeGroupId}/{date}` (screen) and the legacy `life_group_attendance_editor/{lifeGroupId}/{date}` kept as an alias of the same screen so `paz://presenca/{id}/{date}` pushes (unchanged) open the combined screen. The old attendance editor/history screens were removed.
+- iOS: `ios/PazChurch/Features/LifeGroupMeeting/` (`LifeGroupMeetingView` + attendance/report section views, `LifeGroupMeetingViewModel`, `LifeGroupMeetingHistoryView`/`ViewModel`, `LifeGroupMeetingServices` = Swift seams over the shared repository/draft store plus error mapping through `LifeGroupMeetingErrors`). Same behavior as Android: all rules come from the shared `LifeGroupMeetingRules`. History is a pushed screen from the "Reuniões" row of `LifeGroupDetailView` (same `canViewGroupReports` gate) with a "Nova reunião" sheet (graphical `DatePicker`, upper bound = today in America/Sao_Paulo, default `defaultNewMeetingDate`, extra-meeting hint). `paz://presenca/{id}/{date}` still parses to `DeepLinkDestination.lifeGroupAttendanceEditor` (enum case name kept; parsing/allowlist untouched) and now renders `LifeGroupMeetingDeepLinkView` -> the combined screen on the Home stack. The old `Features/LifeGroupAttendance/` views/view models were removed (`LifeGroupAttendanceRepository` stays: it feeds the history).
+- Not touched: reminders, push copy, deep link strings, the Formulários catalog entry and `paz://form/life-group-reports`. On this base the standalone Phase 0 report form (legacy `POST /forms/life-group-reports`) is not present at all; if/when it lands it should stay reachable only through Formulários/the deep link, while group detail uses "Reuniões".
+
+Migration `1796000000000-AddAttendanceLinkToLifeGroupReports` (human gate, not run
+in any real environment by this branch): nullable `life_group_reports.attendance_id`
+uuid FK -> `life_group_attendance(id)` ON DELETE SET NULL + index
+`idx_lgr_attendance`; duplicate scan, then partial unique index
+`uq_life_group_reports_group_date_active` on `(life_group_id, date) WHERE
+deleted_at IS NULL` ONLY when no duplicates exist. Nothing is ever deleted: with
+duplicates the migration still succeeds, creates no index, logs a warning and
+records the groups in `life_group_report_duplicate_findings`. Find duplicates by hand:
+
+```sql
+SELECT life_group_id, date, array_agg(id ORDER BY created_at) AS ids, count(*)
+FROM life_group_reports WHERE deleted_at IS NULL
+GROUP BY 1, 2 HAVING count(*) > 1;
+```
+
+Soft-delete the extras, then either revert + run the migration again or run
+`CREATE UNIQUE INDEX IF NOT EXISTS uq_life_group_reports_group_date_active ON
+life_group_reports (life_group_id, date) WHERE deleted_at IS NULL;`. The index is
+deliberately not an `@Index` on the entity (so `synchronize` never tries it on
+dirty data); the app guards duplicates itself and, if several active reports exist
+for one meeting, updates the oldest and logs a warning.
+
+Postman: no collection exists in the repo (see `apps/postman-files.md`); the
+endpoint list above is the reference.
+
 ## Rotating tasks
 
 Each meeting, global tasks (templates) are automatically assigned to eligible
@@ -242,7 +427,7 @@ visible (same rule as the list; being the submitter grants no extra read access)
 `/:id/audit` is mapped to the admin-ui `AuditLogEntry` shape
 (`id, form_slug, submission_id, action, diff, created_at, actor:{id,name}`); the
 actor `User` entity is never serialized. Create/update/delete policy is
-unchanged (`@Roles` on create still excludes co-leaders with role `member`).
+changed only as described in "Create (Phase 0)" below.
 
 Response is an explicit snake_case object (`toResponse`, controller uses
 `@SerializeOptions({strategy:'exposeAll', excludeExtraneousValues:false})`):
@@ -254,6 +439,40 @@ pastoring_activity_other, training_activity_type[], training_activity_other,
 submitted_by {id,name}|null, created_at, updated_at, deleted_at`. Before this
 fix the raw entity serialized to `{}` under the global serializer
 (characterized in the Phase 0 commit `852e7fa`).
+
+### Create (Phase 0, `fix/life-group-report-submit`)
+
+`POST /api/forms/life-group-reports` is scope-based (no `@Roles`; `AuthGuard` +
+`ScopeGuard` only). `LifeGroupReportCreatePolicy`
+(`life-group-report-create-policy.ts`, called by the controller before
+`service.create`) enforces, in order:
+
+1. `date` not after today in America/Sao_Paulo (400). A full ISO string is
+   compared by its first 10 chars. (Attendance still uses the UTC day.)
+2. `life_group_id` exists (404).
+3. Allowed if admin/pastor (unrestricted scope), OR the actor is the group's own
+   `leader_id`/`co_leader_id` (so a `member`-role leader/co-leader works).
+   Otherwise 403. Area/sector supervisors (scope) are READ-ONLY: they cannot
+   create for a group they do not lead (D11); a supervisor who also
+   leads/co-leads a group can report only for that group.
+4. The group must have a sector with an area, else 422 (also for admin).
+5. `area_id` and `sector_id` are DERIVED from the group's sector -> area. They
+   stay in the DTO as optional and are IGNORED (old clients that send them
+   keep working; wrong values are not an error).
+
+Validation (create; update inherits it): counts `@Min(0) @Max(100000)`;
+`offering` string matching `^\d{1,8}(\.\d{1,2})?$`; `leader_attended`,
+`pastoring_activity_type`, `training_activity_type` arrays max 20 items of max
+80 chars (values are still free strings); `*_other` max 180 chars. Response
+shape unchanged. `PATCH` no longer accepts `life_group_id`/`area_id`/`sector_id`
+(dropped, no 400) so a report cannot be moved to a group the actor could not
+create for; its edit policy (admin, or submitter within 24h) is unchanged, so a supervisor
+cannot PATCH others' reports; DELETE is admin only.
+Catalog (`GET /api/forms`): `life-group-reports` `can_write` is admin/pastor
+or anyone who is leader/co-leader of at least one group (whatever the role
+slug); area/sector supervisors are `can_read` only (D11) (mobile Formulários lists catalog entries as
+returned). Not covered here: duplicate guard per (group, date) and the meetings
+endpoint (PR #96), mobile submit payload, `form_report` reminder skip.
 
 ## Agent notes
 

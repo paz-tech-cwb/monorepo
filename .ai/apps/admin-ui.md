@@ -16,11 +16,16 @@ Next.js 15, React 19, TypeScript, shadcn/ui-style component patterns.
 - Preserve existing API type conventions unless intentionally changing the contract.
 - Environment variable for API base URL should point at backend `/api`.
 
+## Life group report form
+
+- `app/(dashboard)/formularios/life-group-reports/new/`: sends `pastoring_activity_type`, `training_activity_type`, `leader_attended` as `string[]` (typed as comma-separated text, split in `toPayload`), optional `*_other` strings, `offering` as decimal string (`0.00`), counts as numbers. `area_id`/`sector_id` are still sent but ignored by the backend (derived from the group). Default date is the America/Sao_Paulo day (backend rejects future dates).
+- Types: `LifeGroupReport` and `LifeGroupReportPayload` in `lib/api/types/formularios.ts`; the generic detail view already joins arrays.
+
 ## Life group tasks
 
 - `app/(dashboard)/tarefas-life/`: template management (admin only; markdown guidance editor with Escrever/Visualizar preview, up/down reorder, delete with 409 handling).
 - `components/life-group-tasks/`: panel opened from the life groups "Tarefas" action (meeting generate/re-roll/reassign/skip, per-group overrides, member eligibility and `min_present_meetings`).
-- Reminder settings UI has controls for the `life_group_tasks` rule; category `life_group_task` added to notification system lists.
+- Reminder settings UI (`app/(dashboard)/notifications/reminder-settings.tsx`) has controls for the `life_group_attendance` rule ("Reuniao do Life Group": legacy copy, new meeting copy, first follow-up (hours after the meeting, default 24), interval (hours, default 24), cap (days), send tolerance (hours) and copy, sector escalation day (x24h after the meeting, default 5) and copy; old `followup_hour`/`followup_interval_days` keys are dropped on save; the card notes that the v2 behaviors depend on the server flag `LIFE_GROUP_MEETING_V2`; blank text fields are dropped so the backend defaults apply) and for the `life_group_tasks` rule; category `life_group_task` added to notification system lists.
 - API: `lib/api/endpoints/life-group-tasks.ts`, hooks in `lib/hooks/use-life-group-tasks.ts`.
 
 ## Agent entry points
