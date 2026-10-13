@@ -14,7 +14,10 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ScopeGuard } from '../forms-core/guards/scope.guard';
 import type { RequestWithScope } from '../forms-core/guards/scope.guard';
-import { LifeGroupReportCreatePolicy } from './life-group-report-create-policy';
+import {
+  assertDateNotInFuture,
+  LifeGroupReportCreatePolicy,
+} from './life-group-report-create-policy';
 import { LifeGroupReportsService } from './life-group-reports.service';
 import { CreateLifeGroupReportDto } from './dto/create-life-group-report.dto';
 import { UpdateLifeGroupReportDto } from './dto/update-life-group-report.dto';
@@ -75,6 +78,8 @@ export class LifeGroupReportsController {
     @Body() dto: UpdateLifeGroupReportDto,
     @Req() req: RequestWithScope,
   ) {
+    // Same "not after today (America/Sao_Paulo)" rule as create.
+    if (dto.date) assertDateNotInFuture(dto.date);
     return this.svc.update(id, dto, {
       id: req.user.id,
       roleSlug: req.user.role?.slug ?? 'member',

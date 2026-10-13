@@ -325,3 +325,9 @@ JDK 17 (scratchpad), Node 22.23.3 (scratchpad). Android SDK not installed: no An
 - Android: NOT compiled/tested locally (Compose screen, ViewModel, nav/DI wiring and `LifeGroupReportFormViewModelTest` were cross-read only; CI is the first compile). Risk spots: `SelectableDates`/`rememberDatePickerState(selectableDates=)` (material3 1.3 BOM 2025.04), `if (x != null) { { Text(x) } } else null` for `supportingText`/`placeholder`, Koin `parametersOf(Int?)`.
 - Backend: `npm run build` OK; `npx jest src/reminders`: 8 suites / 56 tests pass (form-report spec 11; also green with TZ=UTC and TZ=Asia/Tokyo); prettier --check clean; eslint on touched files: only the 3 pre-existing `no-unsafe-*` errors of the old part of the spec (same on baseline).
 - Not verified on device: the new screens on a real Android/iOS device against a live backend (date picker, keyboard behavior, dark mode, group picker with several groups, 409/422 from a real server), the deep link `paz://form/life-group-reports`, and the reminder against a real Postgres (mocked EntityManager; `DISTINCT` + soft-delete QB behavior unverified).
+
+## Review fixes (phase 0)
+
+Node 22.23.3 (scratchpad). Backend: `npm run build` OK; scoped jest (life-group-reports, forms-catalog, reminders): 12 suites / 137 tests pass (+1 PATCH future-date test); full jest 6 failed suites / 5 failed tests / 630 passed = the 6 known baseline suites; eslint on the controller clean, prettier --check on src/life-group-reports clean.
+Admin-ui: `tsc --noEmit` 24 errors, none in touched files (identical to baseline, none new); eslint on life-group-reports clean; `next build` OK.
+Android: NOT compiled locally (no SDK); `FormulariosViewModelTest` and the VM/screen change cross-read only, CI is the first compile. iOS/Swift untouched (no xcodebuild run).

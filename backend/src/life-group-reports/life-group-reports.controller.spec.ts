@@ -427,6 +427,13 @@ describe('LifeGroupReportsController (global pipe + serializer)', () => {
       );
     });
 
+    it('rejects moving the date into the future with 400 (same rule as create)', async () => {
+      await request(app.getHttpServer())
+        .patch('/forms/life-group-reports/r-1')
+        .send({ date: '2999-01-01' })
+        .expect(400);
+    });
+
     it('applies the new validation limits to updates', async () => {
       await request(app.getHttpServer())
         .patch('/forms/life-group-reports/r-1')

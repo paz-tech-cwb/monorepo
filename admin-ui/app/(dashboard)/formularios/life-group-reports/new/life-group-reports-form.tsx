@@ -22,6 +22,21 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import type { LifeGroupReportPayload } from "@/lib/api/types/formularios"
 
+// Comma-separated list caps (backend: max 20 items of max 80 chars). Shown as a
+// form error instead of silently truncating what the admin typed.
+function parseList(value: string | undefined): string[] {
+  return (value ?? "")
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean)
+}
+
+const listField = z
+  .string()
+  .optional()
+  .refine((v) => parseList(v).length <= 20, "No máximo 20 itens")
+  .refine((v) => parseList(v).every((i) => i.length <= 80), "Cada item pode ter no máximo 80 caracteres")
+
 const schema = z.object({
   date: z.string().min(1, "Obrigatório"),
   area_id: z.number({ required_error: "Obrigatório" }).int().positive(),
@@ -40,23 +55,16 @@ const schema = z.object({
   disciples_count: z.coerce.number().int().min(0),
   disciples_discipled_this_week: z.coerce.number().int().min(0),
   // Multi-value fields are typed as comma-separated text and sent as string[].
-  leader_attended: z.string().optional(),
-  pastoring_activity_type: z.string().optional(),
+  leader_attended: listField,
+  pastoring_activity_type: listField,
   pastoring_activity_other: z.string().max(180).optional(),
-  training_activity_type: z.string().optional(),
+  training_activity_type: listField,
   training_activity_other: z.string().max(180).optional(),
 })
 type FormValues = z.infer<typeof schema>
 
-// "a, b ,, c" -> ["a","b","c"] (backend: max 20 items of max 80 chars).
-function splitList(value: string | undefined): string[] {
-  return (value ?? "")
-    .split(",")
-    .map((v) => v.trim())
-    .filter(Boolean)
-    .slice(0, 20)
-    .map((v) => v.slice(0, 80))
-}
+// "a, b ,, c" -> ["a","b","c"]; caps are enforced by the schema above.
+const splitList = parseList
 
 function toPayload(data: FormValues): LifeGroupReportPayload {
   return {
