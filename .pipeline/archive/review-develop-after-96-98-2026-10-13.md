@@ -1,0 +1,60 @@
+## Review: PR #98 reminders v2 (feat/life-group-reminders-v2, base feat/life-group-meetings-api)
+
+Checked: backend/src/reminders jest (10 suites, 132 pass), prettier --check clean. admin-ui tsc not run (no node_modules there).
+
+### Blockers
+None.
+
+### Major
+- [M1] Concurrency/scheduling: exact-hour gating means a missed or failed tick is never retried, and the escalation is single-shot. life-group-meeting-v2.reminders.ts:79 (`today.hour === cfg.followup_hour`) and :157 (`day === escalation_after_days`). The scheduler is `@Cron(EVERY_HOUR)` (reminder-scheduler.service.ts:17) and calls evaluators with `new Date()`. A deploy/restart/DB blip during the 09:00 tick loses that day's follow-up (next day catches up, acceptable) but loses the day-5 escalation permanently: on day 6 the exact check no longer matches and nothing ever notifies the sector. Same for the claim release at :266 (comment at :83-85 and spec "can retry the same hour" at spec:476 are misleading: the next tick is 10:00, not 09:00, so the retry never happens). Fix: catch-up window, e.g. `today.hour >= followup_hour && today.hour < followup_hour + 3` (claim keys already dedupe), and for escalation accept `day >= escalation_after_days && day <= escalation_after_days + 2` (key is per group+meetingDate so it stays single). Add a test for 10:00 retry after a failed 09:00. Legacy has the same weakness but it is a daily-recurring push; escalation is the one-shot, so it matters here.
+- [M2] Docs/UI claim is false: escalation is described as non-opt-outable ("Não pode ser silenciado pelo usuário", reminder-settings.tsx hint; spec decision 1; .ai/features/notifications.md). notification-dispatch.service.ts:70-85 still skips users with `allNotificationsEnabled=false` or `pushEnabled=false` (only the per-category toggle is bypassed, because the category is absent from CATEGORY_PREF_MAP). Consistent with the pilot audit. Fix: reword to "ignora o interruptor da categoria, mas respeita o desligamento geral de notificações/push" in the admin hint and docs. No code change needed unless product wants true force-send.
+
+### Minor
+- [m1] Config save is stricter for legacy fields: validateAttendanceConfig (reminder-config.ts) now rejects blank `title`/`message` and out-of-range `hours_after_meeting_start` even when the flag is off. A blank legacy title in admin-ui (reminder-settings.tsx legacy Input, not in ATTENDANCE_TEXT_KEYS so not dropped) gives a generic "Falha ao atualizar lembrete" toast. Add title/message to the blank-dropping list (or client-side check) so the error is intelligible. Not a runtime regression for the flag-off evaluator (runLegacy reads rule.config raw, as before).
+- [m2] NumberField onChange `Number(e.target.value)`: clearing the input yields 0, silently setting follow-up cap/escalation to "off" (0). Keep raw string state or ignore empty.
+- [m3] sendClaimed: `em.save(notification)` happens after the claim; if dispatch throws, the claim is released but the Notification row stays `pending`, and the retry creates a second one (orphans). Minor; mark it failed or reuse. Also dispatch() does not throw on all-recipients-failed (sets status failed), so the claim is kept: total FCM failure is final (same as legacy).
+- [m4] Escalation key `...:{gid}:{date}` ignores `escalation_after_days`; changing the config mid-flight can re-escalate an old meeting if the new day lands on a still-unreported past meeting (bounded by window, low risk). Note only.
+- [m5] Performance: per-group `findOne(attendance)` + `exists(report)` only run on the follow-up hour and only for the one matching weekday day, so ~2 queries/group/day plus one 5-join group load every hour (legacy loaded 2 joins). Fine for hundreds of groups; could short-circuit the sector joins to the escalation path. Also the whole User entities are loaded via joins; no leak, just width.
+- [m6] Product question (already flagged): meetings with no attendance are never followed up/escalated; a group that never records anything is never escalated. Also sector leaders need access to `paz://lifegroup/{id}` detail: both apps parse the scheme (Android PushNotificationHelper.kt:91 -> life_group_detail; iOS DeepLinkDestination.swift:114 -> lifeGroupDetail, "lifegroup" in the allowlist at :80) but whether a sector leader who is not the group's leader can open that screen (authorization) was not verified.
+- [m7] Docs: "Kill switch ... legacy resumes immediately" is only true after restart (env is read per run but process env cannot change without one); the doc says restart, so just drop "immediately".
+
+### Verified OK
+- Flag-off path: runLegacy is the old body moved verbatim (diff adds only the branch and method wrapper); legacy evaluator spec untouched and green. Flag parsing: trims/lowercases, only `true`/`1`, read on every run (evaluator.ts run()).
+- Date math: day k = today shifted -k in SP calendar, weekday must equal the meeting weekday; midnight rollover for primary uses dayOffset consistently; follow-up counts from meeting date not reminder date. followup range logic: lastFollowupDay=min(max, esc-1), escalation exact day; interval uses (k-1)%interval (interval>=1 enforced, no div by zero in validated/resolved config).
+- Claim-first: insert-before-send, 23505 -> false, other errors rethrown, release on throw; keys distinct for primary (same as legacy, so flag toggling does not re-send), follow-up (includes day), escalation. Concurrent-claim tests exist.
+- Escalation recipients: sector leader + co-leader, uniqueUsers dedupe, group without sector / empty recipients warned and skipped. Category reuse `life_group_attendance` fine (channel paz_life_group).
+- hasReport: attendance_id link OR date in [meeting, +6], soft-deleted excluded (DeleteDateColumn), `date` is a date column (string compare ok).
+- Config: resolver falls back per field for old rows; validation covers non-integer, float hour, negatives, bounds, blank/long text; update() replaces config wholesale but admin-ui always sends the full object so nothing is wiped; absent keys fall back at read time, no migration needed.
+- Admin-ui card: types updated, blank new-copy fields dropped so defaults apply, numeric validation client-side.
+- Tests: fake-timer based, UTC vs SP, midnight, concurrency, interval/cap/disable combos, flag matrix.
+
+### Verdict: REQUEST CHANGES (M1 and M2; M2 is wording only). Everything else is shippable behind the default-off flag.
+
+## Round 2 (timing change e81c19a2 + merge of #96 bc746453)
+
+Checks (read-only): jest src/reminders + attendance + meetings = 15 suites pass, 296 tests pass (2 DB suites skipped); eslint 0 errors (1 pre-existing-style `any` warning in v2.reminders.spec.ts:59); prettier clean; tsc errors only in unrelated spec files. Legacy evaluator and its spec (life-group-attendance-reminder.evaluator.spec.ts) are untouched by this round: flag-off behavior is identical. Manual check of zonedDateTimeToDate: 2026-12-31 21:30 -> 2027-01-01T00:30Z, 2027-01-01 00:00 -> 03:00Z, 2026-02-28 23:59 -> 2026-03-01T02:59Z (month/year rollovers correct, -03:00 constant).
+
+### Blockers
+- none
+
+### Major
+- none
+
+### Minor
+- [m1] v2.reminders.ts run(): meeting_time is only checked for NaN. "25:70" is accepted and silently rolls into the next day (zonedDateTimeToDate(.., 25, 70) = next day 05:10Z) so follow-ups would fire at the wrong time. Fix: also require 0<=hour<=23 and 0<=minute<=59 (skip + count in `skipped`). An invalid dateKey would make Intl throw RangeError inside zonedDateTimeToDate; it is caught by the per-group try/catch (logged hourly), fine since dates come from a DATE column.
+- [m2] Tolerance window default 2h is fine, but `followup_window_hours` validation allows 0 (and 1). With an HOURLY cron (reminder-scheduler.service.ts:17 EVERY_HOUR) a window < 1h can miss a due time entirely (tick at :00 vs due 21:30 with window 0), and a window of exactly 1h misses if ticks drift by a few seconds past 60 min. Fix: min 1 is the true floor, recommend validating 2..12 (backend reminder-config.ts ATTENDANCE_INT_FIELDS, UI validateAttendanceConfig + NumberField min), or at minimum warn in the hint. Answer to the drift question: tick at 21:59 vs due 21:30 is fine (elapsed 29 min <= 2h); a tick at 21:29:59 just before due is simply handled by the 22:29 tick (59 min <= 2h). Safe margin = window - 60 min of drift.
+- [m3] Cross-field config not validated: followup_first_after_hours >= escalation_after_days*24 (or > max_days*24) silently yields zero follow-ups (followupOffsets returns []). Escalation still fires. Add a validation error or document; low risk.
+- [m4] Perf: zonedDateTimeToDate builds a new Intl.DateTimeFormat twice per call, and runFollowups calls it for every attendance row of every group every hour (lookback ~7 days x groups). Hundreds of ms at a few thousand groups; cache the formatter per timeZone (module-level Map) or skip rows whose latest possible due+window is already past (meetingDate < today - lookback is already filtered, but all rows within 7 days are computed even when only 1-2 offsets can be live).
+- [m5] hasReport legacy window is meetingDate..+6 days (REPORT_WINDOW_DAYS) while follow-ups/escalation can be configured up to 14 days: for unlinked legacy reports, follow-ups past +6d would ignore a legit report. Also a legacy (unlinked) report for the NEXT regular meeting dated within 6 days of an extra meeting would silence the extra's follow-up (and an extra's window can mask a regular one). Linked reports (meetings API) are exact, so this is bounded to legacy data; consider restricting the date-window fallback to non-extra rows or capping the window at max(6, escalation days).
+- [m6] Claim-key shape changed from `followup:{group}:{date}:{day}` to `:{offset}h`. If v2 was ever live in prod, in-flight meetings may get one extra follow-up at the deploy. Flag-gated and unreleased per the notes, so acceptable; the escalation key is unchanged (deduped).
+- [m7] Changing followup_interval_hours/first_after_hours mid-week re-keys offsets, so a changed config may re-send a follow-up for the same meeting. Acceptable; document.
+
+### Verified
+- Offsets: followupOffsets = first, first+interval ... while h <= max_days*24 and h < escalation hours -> default 24/48/72/96; escalation at 120 takes priority when both fall in a window (escalate branch evaluated first), never double-sends at the same instant.
+- Escalation after follow-ups stop: escalation is independent of followup_max_days (also when max_days=0 or follow-ups are empty); it only needs attendance + no report within [due, due+window], and lookbackDays = max(max_days, escalation days) + ceil(window/24) + 1 (=7 for defaults) covers a 21:30 meeting escalating at D+5 21:30..23:30. Both queries bounded and batched: one attendance query per run (In + Between), groups loaded once; hasReport (1 EXISTS) only when a due action is live.
+- Null/invalid meeting_time: query filters meetingTime IS NOT NULL, loop skips NaN/empty. Minute honored (meeting_time "21:30" -> due 21:30). Old-key fallback: followup_interval_days*24 used only when the new key is absent; followup_hour ignored; validator still accepts deprecated keys; admin-ui drops them on save (cleanAttendanceConfig) and its ranges match the backend (1-168, 1-168, 0-12, 0-14, 0-14).
+- Extras: rows with is_extra are followed up with the row's own date and the group meeting_time; the primary push queries `isExtra: false` so an extra never marks the regular date recorded. "Has a report" is group-based (`lifeGroupId` + attendanceId or date window), so leader/co-leader reports complete the reminder for both recipients.
+- Stuck claims: claim-first with release on failure (and notification marked failed); a hard process crash between claim and dispatch leaves a permanent claim (same pre-existing contract as the legacy path), acceptable; the 2h window means a released claim is retried on the next hourly ticks.
+- Flag off: the v2 class is only used behind LIFE_GROUP_MEETING_V2; legacy evaluator/spec unchanged.
+
+### Verdict: SHIP (m1 and m2 are cheap and worth folding in before merge; none blocking)

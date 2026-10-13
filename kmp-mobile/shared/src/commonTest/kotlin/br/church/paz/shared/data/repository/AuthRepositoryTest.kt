@@ -1,9 +1,11 @@
 package br.church.paz.shared.data.repository
 
 import br.church.paz.shared.auth.TokenPair
+import br.church.paz.shared.domain.model.LifeGroupMeetingDraft
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.model.UserRole
 import br.church.paz.shared.domain.repository.FormsRepository
+import br.church.paz.shared.util.FakeMeetingDraftStore
 import br.church.paz.shared.util.FakeTokenStorage
 import br.church.paz.shared.util.FakeUserStore
 import io.ktor.client.engine.mock.MockEngine
@@ -146,6 +148,23 @@ class AuthRepositoryTest {
         assertNull(tokenStorage.read())
         assertNull(userStore.read())
         assertTrue(formsRepository.clearCacheCalled)
+    }
+
+    @Test
+    fun `logout wipes local meeting drafts`() = runTest {
+        val tokenStorage = FakeTokenStorage().also { it.save(TokenPair("a", "r")) }
+        val userStore    = FakeUserStore().also    { it.save(fakeUser) }
+        val engine = MockEngine { respond("{}", HttpStatusCode.OK, jsonHeaders) }
+        val client = createPazHttpClient(tokenStorage, "http://test", engine)
+        val drafts = FakeMeetingDraftStore()
+        drafts.save("u1", 7, "2026-10-07", LifeGroupMeetingDraft(extraMeeting = true))
+        val repo   = AuthRepositoryImpl(client, tokenStorage, userStore, FakeFormsRepository(), drafts)
+
+        val result = repo.logout()
+
+        assertTrue(result.isSuccess)
+        assertEquals(1, drafts.clearAllCalls)
+        assertNull(drafts.read("u1", 7, "2026-10-07"))
     }
 
     @Test

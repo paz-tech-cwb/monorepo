@@ -1,53 +1,46 @@
-# Test results
+# Test results: Phase 3 shared + Android
 
-## Reminders v2 (phase 2)
+Android SDK is not installed locally, so Gradle tasks of `:android` cannot run here. What was run:
 
-Node v22.23.3. Worktree `scratchpad/wt-phase2` (backend/node_modules and admin-ui/node_modules symlinked from the main checkout, both gitignored).
+| Check | Command / method | Result |
+|---|---|---|
+| Shared tests (iOS sim, all commonTest incl. new) | `./gradlew :shared:iosSimulatorArm64Test --offline` (JDK17, scratch GRADLE_USER_HOME/KONAN_DATA_DIR) | PASS |
+| New shared tests | Rules 20, ReportDraft 5, Repository 9, DraftStorage 4, AuthRepository 10 | PASS |
+| Android ViewModel tests (29 new) + all shared tests on JVM | scratch KMP/JVM project compiling `shared/commonMain` + the Android UiState/ViewModels, running the real test files (JUnit4, mockk, turbine) | PASS, 160 tests, 0 failures |
+| Android Compose screens + Screen.kt + real components/theme | scratch Compose-Desktop (JetBrains Compose 1.7.3) project compiling the real screen files with stubs for `koinViewModel`/`LocalLifecycleOwner`/typography | COMPILES (API differences vs AndroidX BOM 2025.04 possible) |
 
-### Backend
-- `npm run build` (nest build): PASS.
-- Scoped jest (`reminders`, `life-group-meetings`, `life-group-attendance`, `life-group-reports`, `notifications`): 21 suites passed, 1 failed (`notifications/dto/reach.dto.spec.ts`, known baseline failure), 2 skipped (opt-in real-DB specs); 290 tests passed, 35 skipped.
-- Full jest: 78 suites passed, 6 failed, 2 skipped; 738 tests passed, 5 failed, 35 skipped. Failing suites are exactly the known develop baseline: `auth.controller`, `notification-sender`, `home.controller`, `onboarding.service`, `reach.dto`, `user-device-tokens`. No new failures.
-- Existing `life-group-attendance-reminder.evaluator.spec.ts` unchanged and green (flag off = legacy path).
-- New specs: `life-group-meeting-v2.reminders.spec.ts` 50 tests with jest fake timers (09:00 SP follow-up not before/not twice, daily cap, stop at day 5, escalation recipients/none/no sector/dedupe per group+date, two concurrent instances -> one push for primary, follow-up and escalation, claim release on send failure, midnight rollover, UTC vs SP incl. 02:00 UTC = 23:00 SP, co-leader recipients, no fixed day / null time skipped, report exists stops everything, attendance missing -> primary only, flag off variants); config validation and resolver tests; flag unit tests; `reminders.service` validation tests.
-- eslint on every changed/new backend file: clean (pre-existing unrelated errors in untouched `event-reminder` / `form-report-reminder` specs remain). prettier --check src/reminders: clean.
+NOT verified locally (CI or a device must confirm): `:android:compileDebugKotlin`, `:android:testDebugUnitTest` (incl. `MeetingDatesTest`, which needs `Screen`/`PushNotificationHelper` on the Android classpath), `DataStoreMeetingDraftStore` (androidMain actual), `PazNavGraph`/`AndroidModule`/`MinistryDetailScreen` edits (small, read-reviewed), real device behavior, ktlint (not enforced by CI).
 
-### Real SQL (throwaway PostgreSQL 17.5, embedded-postgres reusing the existing install, NEW data dir `scratchpad/pg7`, port 54937, loopback, throwaway user)
-- Full migration chain (incl. 1796000000000) applied, then the opt-in `life-group-meeting-v2.integration.spec.ts`: 7/7 PASS: group query with sector/leader joins, primary claim under 3 parallel evaluators -> 1 push + 1 log row, follow-up once under 2 parallel evaluators, day-5 escalation to sector leader + co-leader, report linked by `attendance_id` / dated meeting day / dated +6 stops everything, soft-deleted report and one dated +7 do not count, group without fixed day skipped.
+## Phase 3 iOS
 
-### Admin-ui
-- `tsc --noEmit`: 24 errors before and after (identical list, none in reminder files).
-- eslint on the two changed files: clean.
-- `next build`: compiled successfully.
+| Check | Command / method | Result |
+|---|---|---|
+| XCFramework | `./gradlew :shared:assembleSharedDebugXCFramework --offline` (JDK17, scratch GRADLE_USER_HOME/KONAN_DATA_DIR) | PASS |
+| iOS unit tests | `xcodebuild test -scheme PazChurch -destination 'platform=iOS Simulator,name=TestPhone' -only-testing:PazChurchTests` (temporary fake `GoogleService-Info.plist`, deleted, not committed) | PASS, 64 tests (23 new in `LifeGroupMeetingViewModelTests`), 0 failures |
+| pbxproj | `plutil -lint` | OK |
+| swiftformat / swiftlint | new files formatted with swiftformat; swiftlint: no violations in the new files that are errors (2 pre-existing errors in `FormDetailView`/`OnboardingView`) | OK |
 
-### Not verified
-- Postgres 16 (tests ran on 17.5); behavior on prod-shaped data; real FCM delivery; the hourly cron in a deployed multi-instance environment.
-- Mobile clients (no change): `paz://lifegroup/{id}` parsing was verified by reading `PushNotificationHelper.kt` and `DeepLinkDestination.swift`, not by running their tests.
+NOT verified: UI on a simulator/device (layout, DatePicker sheet, keyboard handling, VoiceOver, dark mode), a real push-tap on `paz://presenca/...`, Android compile (CI/SDK). CI does not run on this stacked PR (base is not main).
 
-### Cleanup
-Throwaway Postgres stopped (port 54937 closed). `rm -rf scratchpad/pg7/data` was DENIED by the sandbox: the data dir (throwaway creds, fixtures only) remains and needs manual removal.
+## Review fixes (phase 3)
 
-## Review fixes (reminders v2)
-- backend build: ok. Scoped jest (reminders, life-group-meetings, life-group-attendance, notifications): 270 passed, 35 skipped; only failing suite reach.dto (baseline).
-- Full jest: 6 failed suites (baseline: auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens), 78 passed; 745 tests passed, 5 failed (baseline), 35 skipped.
-- eslint src/reminders: only pre-existing errors in event/form-report evaluator specs (untouched); prettier clean.
-- admin-ui: dependencies are not installed in this environment, so tsc/eslint/next build could not be run meaningfully.
-- New tests: 10:00 retry after failed 09:00 sends once (+ Notification marked failed); 11:00 ok, 12:00 no; no wrap past midnight; escalation on day 6 and 7, not day 8, once across 5/6/7; blank legacy title/message accepted.
+| Check | Command / method | Result |
+|---|---|---|
+| Shared tests | `./gradlew :shared:iosSimulatorArm64Test --offline` | PASS, 133 tests, 0 failures (new: offering 3-decimal rejection, `isExtraFlagRejected`) |
+| XCFramework | `./gradlew :shared:assembleSharedDebugXCFramework --offline` | PASS |
+| iOS unit tests | `xcodebuild test ... TestPhone -only-testing:PazChurchTests` (temporary fake plist, deleted) | PASS, 68 tests, 0 failures (new: untouched report not saveable, edits ignored while saving, rejected extra draft refetch, legacy report message) |
+| Android (no local SDK) | CI via temporary retarget of PR #99 to `develop` | see "Android CI" below |
 
-## User decisions round 2 (reminders v2)
-- backend `nest build`: ok. Scoped jest (reminders, life-group-meetings, life-group-attendance, notifications): 320 passed, 42 skipped; only failing suite reach.dto (baseline).
-- Full jest: 78 suites passed, 6 failed (baseline: auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens), 2 skipped; 795 tests passed, 5 failed (baseline), 42 skipped.
-- eslint on all 9 changed backend files: 0 errors (1 `no-unsafe-argument` warning in the v2 spec FakeEm); prettier --check clean.
-- New/rewritten fake-timer tests in `life-group-meeting-v2.reminders.spec.ts`: first follow-up at +24h (not +23h), +48/+72/+96h, nothing after +96h, full hourly sweep = 4 follow-ups + 1 escalation, 22:00 meeting (+24h next day 22:00), 23:30 midnight rollover, 21:30 due sent by the 22:00 tick, UTC vs SP, catch-up window inclusive (+26h yes, +27h no), failed send retried, escalation at +120h with +121h/+122h catch-up and not +123h, once only, configurable window/first/interval/max/escalation, old `followup_interval_days` mapping, leader + co-leader recipients, report by either leader silences all (group-based query without author filter asserted), extras (own date, report silences, no primary for extras, regular + extra independent, extra on regular date not counted as recorded), skipped groups (incl. extras), batched query count, dedupe under two parallel runs, flag off identical. Config validation/resolver tests and `zonedDateTimeToDate` tests added.
-- Real SQL: throwaway PostgreSQL (embedded-postgres, NEW data dir `scratchpad/pg9`, port 54939), all migrations incl. 1796000000001 applied, `life-group-meeting-v2.integration.spec.ts` 8/8 PASS (updated timing + extras case). Postgres stopped afterwards.
-- admin-ui: `tsc --noEmit` 24 errors (same baseline, none in reminder files), eslint clean on both changed files, `next build` ok.
-- CI does not run for this stacked PR (base is `feat/life-group-meetings-api`, not develop).
+New Android tests (history VM: init+resume single load / no empty flash, refresh without skeleton, meetingDay argument; meeting VM: untouched report, edits while saving, rejected extra draft, legacy message) run only in CI.
 
-# Round 2 fixes (v2 reminders) - 2026-10-13
-- m1 meeting_time hour 0-23 / minute 0-59 else skip + warn log; m2 followup_window_hours 2..12 (backend validation, admin-ui range + hint, stored 0/1 read as 2); m3 cross-field 400 when follow-ups and escalation are on and first_after >= escalation_after_days*24 (backend + admin-ui); m4 Intl.DateTimeFormat cached per timeZone in meeting-day.util.ts (behavior identical, specs unchanged + one repeat/timezone test); m5-m7 documented in .ai/features/notifications.md.
-- backend build PASS; scoped jest (reminders, life-group-meetings, attendance, notifications) all pass except the baseline reach.dto; full jest 78 suites pass / 6 fail (baseline: auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens) / 2 skipped; 821 tests pass / 5 fail / 43 skipped.
-- eslint on 6 changed backend ts files: 0 errors (1 pre-existing warning); prettier clean. admin-ui: tsc 24 errors (= baseline, none new), eslint clean, `next build` PASS (prettier on reminder-settings.tsx was already not clean before the change).
+### Android CI (phase 3 fixes), PR #99 temporarily retargeted to `develop`, base restored afterwards
+- Run 38416842269 (head d3cb6a93): android FAIL at `:android:testDebugUnitTest` (compile OK; 2 of 211 failed: my two new history-VM tests asserted an in-flight state that mockk resolved instantly, a test bug), ios PASS (job 115363423849), build PASS (run 38416842096).
+- Run 38419536201 (head 44ae2fb8, test gated with CompletableDeferred): android PASS (job 115372895816), ios PASS (job 115372896339); build PASS (run 38419536178, job 115372892007).
 
-## Merge of origin/feat/life-group-meetings-api (supervisors read-only, D11) - 2026-10-13
-- No functional change to reminders (they dispatch to leader/co-leader/sector leader only; sector escalation is a notification, not a write). `.pipeline` kept ours, other side archived as `.pipeline/archive/*.meetings-api.md`.
-- Backend `nest build` OK; scoped jest (reminders, life-group-meetings, life-group-attendance): 15 suites pass, 2 skipped (opt-in integration), 326 tests pass; eslint on all .ts files differing from the previous branch head: 0 errors.
+## Supervisors read-only on mobile (D11) - 2026-10-13
+| Check | Result |
+|---|---|
+| `./gradlew :shared:iosSimulatorArm64Test --offline` (JDK17, scratch GRADLE_USER_HOME/KONAN_DATA_DIR) | PASS, 138 tests, 0 failures (5 new: `canWrite` matrix over all roles, `isEditable`, copy, repository `can_write` mapping incl. stale `can_edit` true) |
+| `./gradlew :shared:assembleSharedDebugXCFramework --offline` | PASS |
+| iOS: `xcodebuild test ... TestPhone -only-testing:PazChurchTests` (temporary fake `GoogleService-Info.plist`, deleted, not committed) | PASS, 74 tests, 0 failures (6 new: supervisor read-only meeting, role hint forces read-only, leader keeps rights, supervisor no extra switch, shared write rule, supervisor history cannot start a meeting) |
+| Android (SDK not installed locally) | verified by CI only, see below |

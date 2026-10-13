@@ -23,9 +23,10 @@ import br.church.paz.android.ui.features.formularios.FormSubmissionDetailScreen
 import br.church.paz.android.ui.features.formularios.FormSubmissionsListScreen
 import br.church.paz.android.ui.features.formularios.FormulariosScreen
 import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsScreen
-import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceEditorScreen
-import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryScreen
 import br.church.paz.android.ui.features.lifegroupdiscovery.LifeGroupDiscoveryScreen
+import br.church.paz.android.ui.features.lifegroupmeeting.LifeGroupMeetingHistoryScreen
+import br.church.paz.android.ui.features.lifegroupmeeting.LifeGroupMeetingScreen
+import br.church.paz.android.ui.features.lifegroupmeeting.isValidMeetingArguments
 import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportDetailScreen
 import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportFormScreen
 import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportsScreen
@@ -273,23 +274,71 @@ fun PazNavGraph(
             LifeGroupStudyEditorScreen(navController = navController, studyId = studyId)
         }
         composable(
-            route = Screen.LifeGroupAttendanceHistory.route,
-            arguments = listOf(androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType }),
-        ) { backStackEntry ->
-            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
-            LifeGroupAttendanceHistoryScreen(navController = navController, lifeGroupId = lifeGroupId)
-        }
-        composable(
-            route = Screen.LifeGroupAttendanceEditor.route,
+            route = Screen.LifeGroupMeetings.route,
             arguments =
                 listOf(
                     androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType },
-                    androidx.navigation.navArgument("date") { type = androidx.navigation.NavType.StringType },
+                    androidx.navigation.navArgument("meetingDay") {
+                        type = androidx.navigation.NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    androidx.navigation.navArgument("canWrite") {
+                        type = androidx.navigation.NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
                 ),
         ) { backStackEntry ->
-            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
-            val date = backStackEntry.arguments?.getString("date") ?: return@composable
-            LifeGroupAttendanceEditorScreen(navController = navController, lifeGroupId = lifeGroupId, date = date)
+            // The screen needs a numeric id; a malformed route argument pops back instead of showing a blank screen.
+            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId")?.takeIf { it.toIntOrNull() != null }
+            if (lifeGroupId == null) {
+                InvalidRouteFallback(navController)
+            } else {
+                LifeGroupMeetingHistoryScreen(
+                    navController = navController,
+                    lifeGroupId = lifeGroupId,
+                    meetingDay = backStackEntry.arguments?.getString("meetingDay"),
+                    // Only an explicit "true" from the group detail enables writing (default read-only).
+                    canWrite = backStackEntry.arguments?.getString("canWrite") == "true",
+                )
+            }
+        }
+        // `life_group_attendance_editor/...` is the legacy route name used by the `paz://presenca/{id}/{date}`
+        // push deep link: both routes open the same combined presence + report screen.
+        listOf(Screen.LifeGroupMeeting.route, Screen.LifeGroupAttendanceEditor.route).forEach { meetingRoute ->
+            composable(
+                route = meetingRoute,
+                arguments =
+                    buildList {
+                        add(androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType })
+                        add(androidx.navigation.navArgument("date") { type = androidx.navigation.NavType.StringType })
+                        if (meetingRoute == Screen.LifeGroupMeeting.route) {
+                            add(
+                                androidx.navigation.navArgument("canWrite") {
+                                    type = androidx.navigation.NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                },
+                            )
+                        }
+                    },
+            ) { backStackEntry ->
+                val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId").orEmpty()
+                val date = backStackEntry.arguments?.getString("date").orEmpty()
+                // The screen needs a numeric id and an ISO date (push deep links are external input).
+                if (!isValidMeetingArguments(lifeGroupId, date)) {
+                    InvalidRouteFallback(navController)
+                } else {
+                    LifeGroupMeetingScreen(
+                        navController = navController,
+                        lifeGroupId = lifeGroupId,
+                        date = date,
+                        // "" = unknown (push deep link): only the server's can_write applies.
+                        canWrite = backStackEntry.arguments?.getString("canWrite").orEmpty(),
+                    )
+                }
+            }
         }
         composable(
             route = Screen.LifeGroupAnalytics.route,
@@ -370,4 +419,10 @@ fun PazNavGraph(
             CasaDePazLessonDetailScreen(navController = navController, week = week)
         }
     }
+}
+
+/** Destination for a malformed route argument: leave right away instead of rendering a blank screen. */
+@androidx.compose.runtime.Composable
+private fun InvalidRouteFallback(navController: androidx.navigation.NavController) {
+    androidx.compose.runtime.LaunchedEffect(Unit) { navController.popBackStack() }
 }

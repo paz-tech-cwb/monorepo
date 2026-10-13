@@ -97,12 +97,7 @@ struct MainTabView: View {
             )
 
         case let .lifeGroupAttendanceEditor(lifeGroupId, meetingDate):
-            LifeGroupAttendanceEditorDeepLinkView(
-                lifeGroupId: lifeGroupId,
-                meetingDate: meetingDate,
-                repository: IosAppContainer.shared.lifeGroupAttendanceRepository,
-                onDismiss: { if !agendaPath.isEmpty { agendaPath.removeLast() } }
-            )
+            LifeGroupMeetingDeepLinkView(lifeGroupId: lifeGroupId, meetingDate: meetingDate)
 
         case let .lifeGroupTaskGuide(assignmentId):
             LifeGroupTaskGuideView(

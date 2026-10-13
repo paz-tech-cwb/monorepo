@@ -111,10 +111,45 @@ sealed class Screen(
         fun createRoute(studyId: String) = "life_group_study_edit/$studyId"
     }
 
-    data object LifeGroupAttendanceHistory : Screen("life_group_attendance_history/{lifeGroupId}") {
-        fun createRoute(lifeGroupId: String) = "life_group_attendance_history/$lifeGroupId"
+    // "Reuniões": history of a group's meetings (presence + report) and the "Nova reunião" entry.
+    // `meetingDay` (optional) is the group's fixed weekday, handed over from the group detail so the
+    // history screen does not have to fetch the whole group list to learn it.
+    // `canWrite` is the role-based write permission (shared `LifeGroupMeetingRules.canWrite`): without it the
+    // history is read-only (no "Nova reunião").
+    data object LifeGroupMeetings : Screen("life_group_meetings/{lifeGroupId}?meetingDay={meetingDay}&canWrite={canWrite}") {
+        fun createRoute(
+            lifeGroupId: String,
+            meetingDay: String? = null,
+            canWrite: Boolean = false,
+        ): String {
+            val params =
+                buildList {
+                    if (!meetingDay.isNullOrBlank()) {
+                        add("meetingDay=${java.net.URLEncoder.encode(meetingDay, "UTF-8").replace("+", "%20")}")
+                    }
+                    if (canWrite) add("canWrite=true")
+                }
+            val base = "life_group_meetings/$lifeGroupId"
+            return if (params.isEmpty()) base else "$base?${params.joinToString("&")}"
+        }
     }
 
+    // The combined presence + report screen of one meeting (group + ISO date).
+    // `canWrite` (optional) carries the viewer's role-based permission from the history; a push deep link
+    // omits it (unknown: only the server's `can_write` applies).
+    data object LifeGroupMeeting : Screen("life_group_meeting/{lifeGroupId}/{date}?canWrite={canWrite}") {
+        fun createRoute(
+            lifeGroupId: String,
+            date: String,
+            canWrite: Boolean? = null,
+        ): String {
+            val base = "life_group_meeting/$lifeGroupId/$date"
+            return if (canWrite == null) base else "$base?canWrite=$canWrite"
+        }
+    }
+
+    // Compatibility alias: `paz://presenca/{id}/{date}` pushes (already delivered, and sent by the
+    // backend reminder) resolve to this route name. It now opens the combined meeting screen.
     data object LifeGroupAttendanceEditor : Screen("life_group_attendance_editor/{lifeGroupId}/{date}") {
         fun createRoute(
             lifeGroupId: String,

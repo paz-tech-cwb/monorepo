@@ -13,6 +13,7 @@ import br.church.paz.shared.data.repository.FormsRepositoryImpl
 import br.church.paz.shared.data.repository.HomeRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupAnalyticsRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupAttendanceRepositoryImpl
+import br.church.paz.shared.data.repository.LifeGroupMeetingRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupReportRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupStudyRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupTaskRepositoryImpl
@@ -20,6 +21,7 @@ import br.church.paz.shared.data.repository.MemberJourneyRepositoryImpl
 import br.church.paz.shared.data.repository.OnboardingRepositoryImpl
 import br.church.paz.shared.data.repository.UserRepositoryImpl
 import br.church.paz.shared.data.repository.createJourneySnapshotStore
+import br.church.paz.shared.data.repository.createMeetingDraftStore
 import br.church.paz.shared.data.repository.createUserStore
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.repository.AcademyRepository
@@ -34,7 +36,9 @@ import br.church.paz.shared.domain.repository.FormsRepository
 import br.church.paz.shared.domain.repository.HomeRepository
 import br.church.paz.shared.domain.repository.LifeGroupAnalyticsRepository
 import br.church.paz.shared.domain.repository.LifeGroupAttendanceRepository
+import br.church.paz.shared.domain.repository.LifeGroupMeetingRepository
 import br.church.paz.shared.domain.repository.LifeGroupReportRepository
+import br.church.paz.shared.domain.repository.MeetingDraftStore
 import br.church.paz.shared.domain.repository.LifeGroupStudyRepository
 import br.church.paz.shared.domain.repository.LifeGroupTaskRepository
 import br.church.paz.shared.domain.repository.MemberJourneyRepository
@@ -54,6 +58,7 @@ object IosAppContainer {
     private val tokenStorage by lazy { createTokenStorage() }
     private val userStore by lazy { createUserStore() }
     private val journeySnapshotStore by lazy { createJourneySnapshotStore() }
+    val meetingDraftStore: MeetingDraftStore by lazy { createMeetingDraftStore() }
 
     private val httpClient by lazy {
         createPazHttpClient(
@@ -65,7 +70,7 @@ object IosAppContainer {
     }
 
     val authRepository: AuthRepository by lazy {
-        AuthRepositoryImpl(httpClient, tokenStorage, userStore, formsRepository)
+        AuthRepositoryImpl(httpClient, tokenStorage, userStore, formsRepository, meetingDraftStore)
     }
 
     val homeRepository: HomeRepository by lazy { HomeRepositoryImpl(httpClient) }
@@ -88,6 +93,9 @@ object IosAppContainer {
     }
     val lifeGroupReportRepository: LifeGroupReportRepository by lazy {
         LifeGroupReportRepositoryImpl(httpClient)
+    }
+    val lifeGroupMeetingRepository: LifeGroupMeetingRepository by lazy {
+        LifeGroupMeetingRepositoryImpl(httpClient)
     }
     val casaDePazAnalyticsRepository: CasaDePazAnalyticsRepository by lazy {
         CasaDePazAnalyticsRepositoryImpl(httpClient)

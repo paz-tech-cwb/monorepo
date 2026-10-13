@@ -212,6 +212,14 @@ struct LifeGroupDetailView: View {
             || role == .sectorLeader
     }
 
+    /// Write rights on this group's meetings (shared rule): admin, pastor or this group's leader/co-leader.
+    /// Area/sector leaders only supervise: they get the read-only "Reuniões" history.
+    private var canWriteMeetings: Bool {
+        LifeGroupMeetingRules.shared.canWrite(
+            role: authCoordinator.currentUser?.role, isGroupLeadership: canManageAttendance
+        )
+    }
+
     private var canViewGroupReports: Bool {
         Self.canViewGroupReports(role: authCoordinator.currentUser?.role, isGroupLeadership: canManageAttendance)
     }
@@ -376,19 +384,19 @@ struct LifeGroupDetailView: View {
                         )
                     }
 
-                    if canManageAttendance {
+                    if canViewGroupReports {
                         NavigationLink {
-                            LifeGroupAttendanceHistoryView(
+                            LifeGroupMeetingHistoryView(
                                 lifeGroupId: Int32(lifeGroup.id),
                                 meetingDay: lifeGroup.meetingDay,
-                                repository: IosAppContainer.shared.lifeGroupAttendanceRepository
+                                canWrite: canWriteMeetings
                             )
                         } label: {
                             HStack(spacing: PazSpacing.md) {
-                                Image(systemName: "checklist")
+                                Image(systemName: "person.3")
                                     .font(.system(size: 18))
                                     .foregroundColor(PazColors.accent)
-                                Text("Presença")
+                                Text("Reuniões")
                                     .font(PazTypography.titleSmall)
                                     .foregroundColor(PazColors.ink)
                                 Spacer()

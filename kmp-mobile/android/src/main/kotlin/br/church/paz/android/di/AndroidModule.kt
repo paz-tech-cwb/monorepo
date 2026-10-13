@@ -19,10 +19,10 @@ import br.church.paz.android.ui.features.formularios.FormSubmissionsListViewMode
 import br.church.paz.android.ui.features.formularios.FormulariosViewModel
 import br.church.paz.android.ui.features.home.HomeViewModel
 import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsViewModel
-import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceEditorViewModel
-import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryViewModel
 import br.church.paz.android.ui.features.lifegroupdiscovery.LifeGroupDiscoveryViewModel
 import br.church.paz.android.ui.features.lifegroupdiscovery.LocationProvider
+import br.church.paz.android.ui.features.lifegroupmeeting.LifeGroupMeetingHistoryViewModel
+import br.church.paz.android.ui.features.lifegroupmeeting.LifeGroupMeetingViewModel
 import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportDetailViewModel
 import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportFormViewModel
 import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportsViewModel
@@ -95,9 +95,13 @@ val androidModule =
         viewModel { LifeGroupStudyListViewModel(get(), get()) }
         viewModel { (studyId: String) -> LifeGroupStudyDetailViewModel(studyId, get(), get()) }
         viewModel { (studyId: String?) -> LifeGroupStudyEditorViewModel(studyId, get()) }
-        viewModel { (lifeGroupId: Int) -> LifeGroupAttendanceHistoryViewModel(lifeGroupId, get()) }
-        viewModel { (lifeGroupId: Int, date: String) ->
-            LifeGroupAttendanceEditorViewModel(lifeGroupId, date, get())
+        // (LifeGroupAttendanceRepository, LifeGroupReportRepository); meetingDay "" = unknown / no fixed day
+        viewModel { (lifeGroupId: Int, meetingDay: String, canWrite: Boolean) ->
+            LifeGroupMeetingHistoryViewModel(lifeGroupId, get(), get(), meetingDay.ifBlank { null }, canWrite)
+        }
+        // (LifeGroupMeetingRepository, AuthRepository, MeetingDraftStore); canWrite "" = unknown (deep link)
+        viewModel { (lifeGroupId: Int, date: String, canWrite: String) ->
+            LifeGroupMeetingViewModel(lifeGroupId, date, get(), get(), get(), canWrite.toBooleanStrictOrNull())
         }
         viewModel { (lifeGroupId: Int?) -> LifeGroupAnalyticsViewModel(lifeGroupId, get()) }
         viewModel { (lifeGroupId: Int) -> LifeGroupReportsViewModel(lifeGroupId, get()) }

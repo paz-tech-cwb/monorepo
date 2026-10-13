@@ -14,6 +14,7 @@ import br.church.paz.shared.data.repository.FormsRepositoryImpl
 import br.church.paz.shared.data.repository.HomeRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupAnalyticsRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupAttendanceRepositoryImpl
+import br.church.paz.shared.data.repository.LifeGroupMeetingRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupReportRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupStudyRepositoryImpl
 import br.church.paz.shared.data.repository.LifeGroupTaskRepositoryImpl
@@ -23,6 +24,7 @@ import br.church.paz.shared.data.repository.UserRepositoryImpl
 import br.church.paz.shared.data.repository.JourneySnapshotStore
 import br.church.paz.shared.data.repository.UserStore
 import br.church.paz.shared.data.repository.createJourneySnapshotStore
+import br.church.paz.shared.data.repository.createMeetingDraftStore
 import br.church.paz.shared.data.repository.createUserStore
 import br.church.paz.shared.domain.repository.AcademyRepository
 import br.church.paz.shared.domain.repository.AgendaRepository
@@ -35,7 +37,9 @@ import br.church.paz.shared.domain.repository.FormsRepository
 import br.church.paz.shared.domain.repository.HomeRepository
 import br.church.paz.shared.domain.repository.LifeGroupAnalyticsRepository
 import br.church.paz.shared.domain.repository.LifeGroupAttendanceRepository
+import br.church.paz.shared.domain.repository.LifeGroupMeetingRepository
 import br.church.paz.shared.domain.repository.LifeGroupReportRepository
+import br.church.paz.shared.domain.repository.MeetingDraftStore
 import br.church.paz.shared.domain.repository.LifeGroupStudyRepository
 import br.church.paz.shared.domain.repository.LifeGroupTaskRepository
 import br.church.paz.shared.domain.repository.MemberJourneyRepository
@@ -49,6 +53,7 @@ val sharedAuthModule = module {
     single<TokenStorage>       { createTokenStorage() }
     single<UserStore>          { createUserStore() }
     single<JourneySnapshotStore> { createJourneySnapshotStore() }
+    single<MeetingDraftStore>  { createMeetingDraftStore() }
 }
 
 val sharedNetworkModule = module {
@@ -63,7 +68,7 @@ val sharedNetworkModule = module {
 }
 
 val sharedRepositoryModule = module {
-    single<AuthRepository>          { AuthRepositoryImpl(get(), get(), get(), get()) }
+    single<AuthRepository>          { AuthRepositoryImpl(get(), get(), get(), get(), get()) }
     single<HomeRepository>          { HomeRepositoryImpl(get()) }
     single<AgendaRepository>        { AgendaRepositoryImpl(get()) }
     single<AcademyRepository>       { AcademyRepositoryImpl(get()) }
@@ -77,6 +82,7 @@ val sharedRepositoryModule = module {
     single<LifeGroupTaskRepository> { LifeGroupTaskRepositoryImpl(get()) }
     single<LifeGroupAnalyticsRepository>  { LifeGroupAnalyticsRepositoryImpl(get()) }
     single<LifeGroupReportRepository>     { LifeGroupReportRepositoryImpl(get()) }
+    single<LifeGroupMeetingRepository>    { LifeGroupMeetingRepositoryImpl(get()) }
     single<CasaDePazAnalyticsRepository>  { CasaDePazAnalyticsRepositoryImpl(get()) }
     single<OnboardingRepository>    { OnboardingRepositoryImpl(get(), get()) }
     single<CasaDePazLessonRepository> { CasaDePazLessonRepositoryImpl(get()) }
