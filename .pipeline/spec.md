@@ -35,3 +35,8 @@ Policy spec + controller spec (real global pipe + serializer): leader, co-leader
 
 ## Validation
 Backend: `npm run build`; scoped jest (life-group-reports, forms-catalog, forms-core, life-group-attendance); full jest vs develop baseline; scoped eslint (no --fix) and prettier --check. Admin-ui: `pnpm install --frozen-lockfile`, `npx tsc --noEmit` (baseline 28 errors), scoped eslint, `next build`.
+
+## User decisions round 2 (relayed from the user)
+- D8 Admin sees everything: in the mobile report form the group picker offers ALL life groups to admin and pastor (not only led ones); nothing is preselected unless the form is opened from a group; other roles keep the leader/co-leader-only rule (supervisor-only still gets the "can only read" message). Backend already allows admin/pastor to POST for any existing group (unrestricted scope in `LifeGroupReportCreatePolicy`). Logic is shared (`LifeGroupReportRules.resolveGroups`), role from `AuthRepository.currentUser().role`.
+- D9 A co-leader's report completes the reminder: for slug `life-group-reports` the `form_report` skip is group-based (any non-deleted report this Sao Paulo week for the group, whoever submitted) and silences leader and co-leader alike. Decision: a user with several groups is silenced only when ALL of their groups reported. Recipient set stays role-based.
+- D10 The UTC "Sunday 20h" `form_report` clock bug stays untouched (noted: fires ~17h Sao Paulo).

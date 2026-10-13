@@ -8,7 +8,7 @@ data class LifeGroupReportFormUiState(
     val isLoading: Boolean = true,
     // Failure loading the viewer's groups (retryable).
     val loadError: String? = null,
-    // Groups the viewer leads or co-leads (the only ones the backend lets them report for).
+    // Groups the viewer may report for: led/co-led ones, or every group for admin/pastor.
     val groups: List<LifeGroup> = emptyList(),
     // Non-null when the viewer cannot report for any group (e.g. supervisor only): the form is hidden.
     val noGroupsMessage: String? = null,
@@ -24,7 +24,7 @@ data class LifeGroupReportFormUiState(
     val isSubmitted: Boolean = false,
 ) {
     /** The group picker is only worth showing when there is something to choose. */
-    val canChooseGroup: Boolean get() = groups.size > 1
+    val canChooseGroup: Boolean get() = groups.size > 1 || (groups.isNotEmpty() && selectedGroup == null)
 
     val selectedGroup: LifeGroup? get() = groups.firstOrNull { it.id == draft.lifeGroupId }
 }

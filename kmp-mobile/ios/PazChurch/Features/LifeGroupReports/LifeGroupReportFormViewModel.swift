@@ -7,6 +7,10 @@ import Shared
 protocol LifeGroupReportFormDataSource {
     /// `GET /life-groups/me` (each group carries `relationship`: leader | co_leader | supervisor | member).
     func myLifeGroups() async throws -> [LifeGroup]
+    /// `GET /life-groups` (every group); only called for roles that see all groups (admin, pastor).
+    func allLifeGroups() async throws -> [LifeGroup]
+    /// Role of the signed-in user (drives the picker: admin/pastor see every group).
+    func currentRole() async throws -> UserRole?
     /// `POST /forms/life-group-reports`.
     func submit(_ form: LifeGroupReportForm) async throws
 }
@@ -14,9 +18,18 @@ protocol LifeGroupReportFormDataSource {
 struct KotlinLifeGroupReportFormDataSource: LifeGroupReportFormDataSource {
     let churchRepository: ChurchRepository
     let formsRepository: FormsRepository
+    let authRepository: AuthRepository
 
     func myLifeGroups() async throws -> [LifeGroup] {
         try await churchRepository.getMyLifeGroups()
+    }
+
+    func allLifeGroups() async throws -> [LifeGroup] {
+        try await churchRepository.getAllLifeGroups(search: nil)
+    }
+
+    func currentRole() async throws -> UserRole? {
+        try await authRepository.currentUser()?.role
     }
 
     func submit(_ form: LifeGroupReportForm) async throws {
@@ -38,7 +51,7 @@ private func reportFormHTTPStatus(_ error: Error) -> Int? {
 class LifeGroupReportFormViewModel {
     var isLoading = true
     var loadError: String?
-    /// Groups the viewer leads or co-leads (the only ones the backend lets them report for).
+    /// Groups the viewer may report for: led/co-led ones, or every group for admin/pastor.
     var groups: [LifeGroup] = []
     /// Non-nil when the viewer cannot report for any group (e.g. supervisor only): the form is hidden.
     var noGroupsMessage: String?
@@ -85,7 +98,7 @@ class LifeGroupReportFormViewModel {
     }
 
     var canChooseGroup: Bool {
-        groups.count > 1
+        groups.count > 1 || (!groups.isEmpty && selectedGroup == nil)
     }
 
     var selectedGroup: LifeGroup? {
@@ -124,20 +137,25 @@ class LifeGroupReportFormViewModel {
         isLoading = true
         loadError = nil
         do {
-            let all = try await dataSource.myLifeGroups()
-            let reportable = LifeGroupReportRules.shared.reportableGroups(groups: all)
-            groups = reportable
-            noGroupsMessage = reportable.isEmpty
-                ? LifeGroupReportRules.shared.noReportableGroupsMessage(groups: all)
-                : nil
+            let role = try await dataSource.currentRole()
+            let mine = try await dataSource.myLifeGroups()
+            var all: [LifeGroup] = []
+            if LifeGroupReportRules.shared.seesAllGroups(role: role) {
+                all = try await dataSource.allLifeGroups()
+            }
+            let resolved = LifeGroupReportRules.shared.resolveGroups(
+                role: role,
+                myGroups: mine,
+                allGroups: all,
+                preselectedId: preselectedLifeGroupId.map { KotlinInt(value: $0) }
+            )
+            groups = resolved.groups
+            noGroupsMessage = resolved.emptyMessage
             today = LifeGroupReportRules.shared.todayInSaoPaulo(
                 epochMillis: Int64(now().timeIntervalSince1970 * 1000)
             )
             date = today
-            lifeGroupId = LifeGroupReportRules.shared.initialGroupId(
-                reportable: reportable,
-                preselectedId: preselectedLifeGroupId.map { KotlinInt(value: $0) }
-            )?.int32Value
+            lifeGroupId = resolved.initialGroupId?.int32Value
         } catch is CancellationError {
             isLoading = false
             return

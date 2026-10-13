@@ -2,7 +2,8 @@ import Shared
 import SwiftUI
 
 /// Weekly life-group report submit form. Opened from the Formulários list (group picker limited to
-/// the groups the viewer leads/co-leads) or from a group's detail (`preselectedLifeGroupId`).
+/// the groups the viewer leads/co-leads, or every group for admin/pastor) or from a group's detail
+/// (`preselectedLifeGroupId`).
 struct LifeGroupReportFormView: View {
     @State private var viewModel: LifeGroupReportFormViewModel
     @Environment(\.dismiss) private var dismiss
@@ -13,7 +14,8 @@ struct LifeGroupReportFormView: View {
         _viewModel = State(initialValue: LifeGroupReportFormViewModel(
             dataSource: KotlinLifeGroupReportFormDataSource(
                 churchRepository: IosAppContainer.shared.churchRepository,
-                formsRepository: IosAppContainer.shared.formsRepository
+                formsRepository: IosAppContainer.shared.formsRepository,
+                authRepository: IosAppContainer.shared.authRepository
             ),
             preselectedLifeGroupId: preselectedLifeGroupId
         ))
