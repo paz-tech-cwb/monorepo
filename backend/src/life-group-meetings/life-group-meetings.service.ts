@@ -11,7 +11,11 @@ import { EntityManager, IsNull } from 'typeorm';
 import { LifeGroup } from '../life-groups/entities/life-group.entity';
 import { LifeGroupAttendance } from '../life-group-attendance/entities/life-group-attendance.entity';
 import { LifeGroupAttendanceService } from '../life-group-attendance/life-group-attendance.service';
-import { assertCanAccessLifeGroup } from '../life-group-attendance/life-group-access.util';
+import {
+  assertCanAccessLifeGroup,
+  assertCanWriteLifeGroup,
+  canWriteLifeGroup,
+} from '../life-group-attendance/life-group-access.util';
 import { LifeGroupReport } from '../life-group-reports/entities/life-group-report.entity';
 import {
   LifeGroupReportResponse,
@@ -36,6 +40,7 @@ const MEETING_LOCK_NAMESPACE = 4207;
 export interface MeetingActor {
   id: number;
   isAdmin: boolean;
+  isPastor?: boolean;
 }
 
 export type ReportBlockedReason =
@@ -52,6 +57,10 @@ export interface LifeGroupMeetingResponse {
     committed_members: number | null;
     committed_members_present: number | null;
   };
+  // Role-based: viewer is admin/pastor or the group's leader/co-leader.
+  // Supervisors reaching the group via scope get false (read-only).
+  can_write: boolean;
+  // can_write AND inside the edit window (admin bypasses the window).
   can_edit: boolean;
   edit_deadline: string;
   report_blocked_reason: ReportBlockedReason;
@@ -149,6 +158,7 @@ export class LifeGroupMeetingsService {
       }
     }
 
+    const canWrite = canWriteLifeGroup(lifeGroup, actor);
     return {
       life_group_id: lifeGroup.id,
       meeting_date: meetingDate,
@@ -160,7 +170,8 @@ export class LifeGroupMeetingsService {
         committed_members_present:
           (attendance?.present_count as number | undefined) ?? null,
       },
-      can_edit: canEditMeeting(actor, meetingDate),
+      can_write: canWrite,
+      can_edit: canWrite && canEditMeeting(actor, meetingDate),
       edit_deadline: meetingEditDeadline(meetingDate),
       report_blocked_reason: this.reportBlockedReason(lifeGroup),
     };
@@ -196,6 +207,7 @@ export class LifeGroupMeetingsService {
     this.attendance.assertValidMeetingDate(meetingDate);
     const initial = await this.findLifeGroup(this.em, lifeGroupId);
     assertCanAccessLifeGroup(initial, scope, actor);
+    assertCanWriteLifeGroup(initial, actor);
 
     const attendanceInput = dto.attendance ?? null;
     const reportInput = dto.report ?? null;
