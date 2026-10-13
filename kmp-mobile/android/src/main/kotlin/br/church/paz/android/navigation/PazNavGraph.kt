@@ -27,6 +27,7 @@ import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendance
 import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryScreen
 import br.church.paz.android.ui.features.lifegroupdiscovery.LifeGroupDiscoveryScreen
 import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportDetailScreen
+import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportFormScreen
 import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportsScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorScreen
@@ -48,6 +49,9 @@ import br.church.paz.android.ui.features.profile.EditProfileScreen
 import br.church.paz.android.ui.features.profile.ProfileScreen
 import br.church.paz.android.ui.features.reports.ReportsListScreen
 import br.church.paz.android.ui.features.splash.SplashScreen
+
+/** Catalog slug of the weekly life-group report, which has a dedicated submit screen. */
+private const val LIFE_GROUP_REPORTS_FORM_ID = "life-group-reports"
 
 @Composable
 fun PazNavGraph(
@@ -138,14 +142,24 @@ fun PazNavGraph(
             arguments = listOf(androidx.navigation.navArgument("formId") { type = androidx.navigation.NavType.StringType }),
         ) { backStackEntry ->
             val formId = backStackEntry.arguments?.getString("formId") ?: return@composable
-            FormDetailScreen(navController = navController, formId = formId)
+            // Deep link `paz://form/life-group-reports` lands here: the weekly report has its own screen.
+            if (formId == LIFE_GROUP_REPORTS_FORM_ID) {
+                LifeGroupReportFormScreen(navController = navController)
+            } else {
+                FormDetailScreen(navController = navController, formId = formId)
+            }
         }
         composable(
             route = Screen.FormSteps.route,
             arguments = listOf(androidx.navigation.navArgument("formId") { type = androidx.navigation.NavType.StringType }),
         ) { backStackEntry ->
             val formId = backStackEntry.arguments?.getString("formId") ?: return@composable
-            FormStepScreen(navController = navController, formId = formId)
+            // The weekly life-group report has a dedicated screen (group picker + typed fields).
+            if (formId == LIFE_GROUP_REPORTS_FORM_ID) {
+                LifeGroupReportFormScreen(navController = navController)
+            } else {
+                FormStepScreen(navController = navController, formId = formId)
+            }
         }
         composable(Screen.FormSubmissionsList.route) {
             FormSubmissionsListScreen(navController = navController)
@@ -300,6 +314,20 @@ fun PazNavGraph(
                 backStackEntry.arguments?.getString("lifeGroupId")?.takeIf { it.toIntOrNull() != null }
                     ?: return@composable
             LifeGroupReportsScreen(navController = navController, lifeGroupId = lifeGroupId)
+        }
+        composable(
+            route = Screen.LifeGroupReportSubmit.route,
+            arguments =
+                listOf(
+                    androidx.navigation.navArgument("lifeGroupId") {
+                        type = androidx.navigation.NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+        ) { backStackEntry ->
+            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId")
+            LifeGroupReportFormScreen(navController = navController, lifeGroupId = lifeGroupId)
         }
         composable(
             route = Screen.LifeGroupReportDetail.route,

@@ -290,11 +290,6 @@ class FormDetailViewModelIOS {
         func intVal(_ key: String) -> Int32 {
             Int32(snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? "") ?? 0
         }
-        func kdbl(_ key: String) -> KotlinDouble? {
-            let raw = snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? ""
-            let n = raw.replacingOccurrences(of: ".", with: "").replacingOccurrences(of: ",", with: ".")
-            return Double(n).map { KotlinDouble(value: $0) }
-        }
         func isoDate(_ key: String) -> String {
             let raw = snapshot[key]?.trimmingCharacters(in: .whitespaces) ?? ""
             let fmt = DateFormatter(); fmt.dateFormat = "dd/MM/yyyy"
@@ -388,11 +383,12 @@ class FormDetailViewModelIOS {
             ))
 
         case .lifeGroupReport:
-            _ = try await formsRepository.submitLifeGroupReport(form: LifeGroupReportForm(
-                lifeGroupId: userId, date: isoDate("date"),
-                attendees: intVal("attendees"), visitors: intVal("visitors"),
-                offerings: kdbl("offerings"), observations: opt("observations")
-            ))
+            // The weekly report has its own screen (LifeGroupReportFormView) that builds the real DTO
+            // payload; this generic form must never post a report.
+            throw NSError(
+                domain: "FormDetail", code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "O relatório semanal é enviado pela tela do Life Group."]
+            )
 
         case .course:
             _ = try await formsRepository.submitCourse(form: CourseForm(

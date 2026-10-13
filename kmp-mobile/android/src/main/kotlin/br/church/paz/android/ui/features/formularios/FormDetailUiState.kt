@@ -263,14 +263,8 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
                 FormFieldDef("life_group_observations", "Observações dos Grupos", fieldType = FormFieldType.MULTILINE),
                 FormFieldDef("notes", "Observações", fieldType = FormFieldType.MULTILINE),
             )
-        FormType.life_group_report ->
-            listOf(
-                FormFieldDef("date", "Data da Reunião", "DD/MM/YYYY", required = true, fieldType = FormFieldType.DATE),
-                FormFieldDef("attendees", "Quantidade de Participantes", "0", required = true, fieldType = FormFieldType.INTEGER),
-                FormFieldDef("visitors", "Quantidade de Visitantes", "0", fieldType = FormFieldType.INTEGER),
-                FormFieldDef("offerings", "Oferta (R$)", "0,00", fieldType = FormFieldType.CURRENCY),
-                FormFieldDef("observations", "Observações", fieldType = FormFieldType.MULTILINE),
-            )
+        // Handled by LifeGroupReportFormScreen (dedicated fields, group picker, real DTO payload).
+        FormType.life_group_report -> emptyList()
         FormType.course ->
             listOf(
                 FormFieldDef("course_name", "Nome do Curso", "Ex: Escola de Membros", required = true),

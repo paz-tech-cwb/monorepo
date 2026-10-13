@@ -31,6 +31,8 @@ meeting has no assignments yet (late setup).
 
 ## Automatic reminders
 
+`form_report` for the `life-group-reports` slug is group-based: before dispatching, `FormReportReminderEvaluator` loads the groups each role-holder target leads or co-leads (`life_groups.leader_id`/`co_leader_id`) and drops the target when EVERY one of those groups has a non-deleted `life_group_reports` row whose meeting `date` is on/after the Monday of the current church week (America/Sao_Paulo calendar, ISO week Monday..Sunday; `churchWeekStartKey`), regardless of who submitted. So a report by the co-leader silences the leader and vice-versa (the recipient set stays role-based: only role holders are notified); a user with two groups keeps being reminded until both have reported; a target who leads/co-leads no group is always reminded. If everyone is silenced, no notification row is created. Other slugs (sector/area supervisor reports) still notify every target. Clock: `FormReportReminderEvaluator.run` evaluates the entry's `weekday`/`hour` in America/Sao_Paulo (`zonedParts`/`weekdayOf` from `meeting-day.util`), not the server's UTC, so "Sunday 20h" fires at 20:00 Sao Paulo (it used to fire at 17h). Dedupe key is `form_report:<slug>:<Sao Paulo date>` (was the UTC date). Deploy day: the old clock sent at 20:00 UTC = 17:00 SP and the new one fires at 23:00 UTC = 20:00 SP, both on the same UTC and SP date, so the key is identical and the unique `reminder_dispatch_log` row dedupes (no second send that Sunday; rules at hours where UTC and SP dates differ only gain a correct key). Reminder config unchanged.
+
 | Reminder type | Category |
 |---|---|
 | `form_report` | `forms` |

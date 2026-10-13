@@ -40,6 +40,12 @@ const FIELD_LABELS: Record<string, string> = {
   volunteersMiddia: "Voluntários — Mídia",
   volunteersDanca: "Voluntários — Dança",
   notes: "Observações",
+  // life-group-reports (multi-select columns arrive as arrays)
+  leader_attended: "Líder presente em",
+  pastoring_activity_type: "Atividade de pastoreio",
+  pastoring_activity_other: "Outra atividade de pastoreio",
+  training_activity_type: "Atividade de treinamento",
+  training_activity_other: "Outra atividade de treinamento",
   // common
   full_name: "Nome completo",
   email: "E-mail",

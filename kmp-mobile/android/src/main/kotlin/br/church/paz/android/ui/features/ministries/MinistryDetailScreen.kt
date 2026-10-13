@@ -312,6 +312,12 @@ fun LifeGroupDetailScreen(
                             .createRoute(group.id.toString()),
                     )
                 },
+                onSubmitReportTap = {
+                    navController.navigate(
+                        br.church.paz.android.navigation.Screen.LifeGroupReportSubmit
+                            .createRoute(group.id.toString()),
+                    )
+                },
                 myTasks = uiState.myTasks,
                 onTaskTap = viewModel::onTaskTap,
                 onTaskMembersTap = viewModel::onTaskMembersTap,
@@ -334,6 +340,7 @@ private fun LifeGroupContent(
     canManageAttendance: Boolean,
     onStudyTap: () -> Unit,
     onAttendanceTap: () -> Unit,
+    onSubmitReportTap: () -> Unit,
     myTasks: List<LifeGroupTask>,
     onTaskTap: (String) -> Unit,
     onTaskMembersTap: () -> Unit,
@@ -536,6 +543,36 @@ private fun LifeGroupContent(
                             modifier = Modifier.size(22.dp),
                         )
                         Text("Presença", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        Icon(
+                            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                        )
+                    }
+                }
+            }
+        }
+
+        // Weekly report submit: same gate as "Presença" (this group's own leader/co-leader), which is
+        // exactly who the backend lets create the report; opens the form with this group preselected.
+        if (canManageAttendance) {
+            item {
+                PazGlassCard(
+                    modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onSubmitReportTap),
+                    cornerRadius = PazSpacing.CardRadiusCompact,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(PazSpacing.Lg),
+                        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Outlined.Assignment,
+                            contentDescription = null,
+                            tint = PazColors.Primary,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Text("Enviar relatório", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                         Icon(
                             Icons.AutoMirrored.Outlined.KeyboardArrowRight,
                             contentDescription = null,
