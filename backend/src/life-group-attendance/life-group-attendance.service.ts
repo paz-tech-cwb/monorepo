@@ -1,8 +1,8 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
@@ -14,6 +14,8 @@ import { UpsertLifeGroupAttendanceDto } from './dto/upsert-life-group-attendance
 import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
 import { FormSubmissionAuditService } from '../forms-core/services/form-submission-audit.service';
 import { WEEKDAY_INDEX, weekdayOfDateString } from './meeting-day.util';
+import { assertCanAccessLifeGroup } from './life-group-access.util';
+import { LifeGroupReportSnapshotService } from '../life-group-reports/life-group-report-snapshot.service';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -26,30 +28,27 @@ export class LifeGroupAttendanceService {
   constructor(
     @InjectEntityManager() private readonly em: EntityManager,
     private readonly auditService: FormSubmissionAuditService,
+    // Re-syncs linked reports' committed_* snapshots when attendance changes.
+    // Always provided by the Nest modules; optional only so the service can be
+    // built standalone (unit tests that do not exercise reports).
+    @Optional()
+    private readonly reportSnapshots?: LifeGroupReportSnapshotService,
   ) {}
 
   /**
    * Scope reuses ScopeGuard/ScopeResolverService like the other life-group
-   * forms, but the resolved scope is only aware of the `life_group_leader`
-   * role — a co-leader (`co_leader_id`) has no dedicated role slug, so we
-   * fall back to checking the life group record directly for that case.
-   * The primary leader (`leader_id`) gets the same fallback: their role
-   * slug may not be `life_group_leader` either, so scope alone must not be
-   * the only way in for them.
+   * forms; the group's own leader/co-leader ids are a fallback (see
+   * `assertCanAccessLifeGroup`, shared with the meetings module).
    */
   private assertCanAccess(
     lifeGroup: LifeGroup,
     scope: ResolvedScope,
     actor: Actor,
   ): void {
-    if (scope.unrestricted) return;
-    if (scope.lifeGroupIds.includes(lifeGroup.id)) return;
-    if (lifeGroup.coLeader?.id === actor.id) return;
-    if (lifeGroup.leader?.id === actor.id) return;
-    throw new ForbiddenException('You do not have access to this life group.');
+    assertCanAccessLifeGroup(lifeGroup, scope, actor);
   }
 
-  private assertValidMeetingDate(meetingDate: string): void {
+  assertValidMeetingDate(meetingDate: string): void {
     if (!DATE_RE.test(meetingDate)) {
       throw new BadRequestException('date must be in YYYY-MM-DD format.');
     }
@@ -72,10 +71,7 @@ export class LifeGroupAttendanceService {
    * saved record must remain viewable/editable even if it no longer
    * matches the group's current schedule.
    */
-  private assertMatchesMeetingDay(
-    lifeGroup: LifeGroup,
-    meetingDate: string,
-  ): void {
+  assertMatchesMeetingDay(lifeGroup: LifeGroup, meetingDate: string): void {
     const expectedWeekday = lifeGroup.meetingDay
       ? WEEKDAY_INDEX[lifeGroup.meetingDay]
       : undefined;
@@ -100,7 +96,7 @@ export class LifeGroupAttendanceService {
     return lifeGroup;
   }
 
-  private toResponse(attendance: LifeGroupAttendance) {
+  toResponse(attendance: LifeGroupAttendance) {
     return {
       id: attendance.id,
       life_group_id: attendance.lifeGroupId,
@@ -159,6 +155,15 @@ export class LifeGroupAttendanceService {
     if (existing) {
       return { ...this.toResponse(existing), is_draft: false };
     }
+    return this.buildDraft(lifeGroup, meetingDate);
+  }
+
+  /**
+   * Draft (never persisted) from the group's CURRENT roster, everyone present
+   * (product decision Q3: default stays all-present). Enforces the weekday
+   * rule like a first save would.
+   */
+  buildDraft(lifeGroup: LifeGroup, meetingDate: string) {
     this.assertMatchesMeetingDay(lifeGroup, meetingDate);
 
     const members = [...(lifeGroup.users ?? [])].sort((a, b) =>
@@ -166,7 +171,7 @@ export class LifeGroupAttendanceService {
     );
     return {
       id: null,
-      life_group_id: lifeGroupId,
+      life_group_id: lifeGroup.id,
       meeting_date: meetingDate,
       present_count: members.length,
       members_count: members.length,
@@ -194,104 +199,27 @@ export class LifeGroupAttendanceService {
     const lifeGroup = await this.findLifeGroup(lifeGroupId);
     this.assertCanAccess(lifeGroup, scope, actor);
 
-    if (dto.entries.length === 0) {
-      throw new BadRequestException('At least one entry is required.');
-    }
-
-    const seenUserIds = new Set<number>();
-    for (const entry of dto.entries) {
-      if (seenUserIds.has(entry.userId)) {
-        throw new BadRequestException(
-          `Duplicate user_id ${entry.userId} in entries.`,
-        );
-      }
-      seenUserIds.add(entry.userId);
-    }
+    this.assertValidEntries(dto.entries);
 
     try {
       return await this.em.transaction(async (trx) => {
-        const existing = await trx.findOne(LifeGroupAttendance, {
-          where: { lifeGroupId, meetingDate },
-          relations: ['entries'],
-        });
-
-        const attendance =
-          existing ??
-          trx.create(LifeGroupAttendance, { lifeGroupId, meetingDate });
-
-        attendance.recordedBy = { id: actor.id } as User;
-
-        let newEntries: LifeGroupAttendanceEntry[] = [];
-
-        // Preserve the roster snapshot: only update presence for entries
-        // that already exist, and only append brand-new entries when this
-        // is the FIRST time the record is saved. Reopening a past record
-        // never adds members who joined the group afterwards.
-        if (existing) {
-          const byUserId = new Map(existing.entries.map((e) => [e.userId, e]));
-          for (const incoming of dto.entries) {
-            const entry = byUserId.get(incoming.userId);
-            if (entry) entry.present = incoming.present;
-          }
-          attendance.membersCount = existing.entries.length;
-          attendance.presentCount = existing.entries.filter(
-            (e) => e.present,
-          ).length;
-        } else {
-          this.assertMatchesMeetingDay(lifeGroup, meetingDate);
-
-          // Only the FIRST save for a meeting date creates entries from the
-          // submitted payload, so this is the only path where a leader could
-          // fabricate members — validate against the group's actual roster.
-          const rosterIds = new Set((lifeGroup.users ?? []).map((u) => u.id));
-          const unknownUserIds = dto.entries
-            .map((e) => e.userId)
-            .filter((id) => !rosterIds.has(id));
-          if (unknownUserIds.length > 0) {
-            throw new BadRequestException(
-              `Unknown user_id(s) not in this life group's roster: ${unknownUserIds.join(', ')}`,
-            );
-          }
-
-          attendance.membersCount = dto.entries.length;
-          attendance.presentCount = dto.entries.filter((e) => e.present).length;
-          newEntries = dto.entries.map((e) =>
-            trx.create(LifeGroupAttendanceEntry, {
-              userId: e.userId,
-              present: e.present,
-            }),
-          );
-        }
-
-        // Saved without the `entries` relation assigned, then entries are
-        // linked and persisted explicitly below — cascading a fresh child
-        // array through `entries` here left `attendance_id` NULL on insert
-        // (the parent's generated id wasn't backfilled onto the children by
-        // the cascade for this uuid-PK/OneToMany shape), so the FK is set
-        // by hand once the parent's real id is known.
-        const saved = await trx.save(LifeGroupAttendance, attendance);
-
-        if (existing) {
-          await trx.save(LifeGroupAttendanceEntry, existing.entries);
-        } else if (newEntries.length > 0) {
-          for (const entry of newEntries) entry.attendance = saved;
-          await trx.save(LifeGroupAttendanceEntry, newEntries);
-        }
-
-        const loaded = await trx.findOne(LifeGroupAttendance, {
-          where: { id: saved.id },
-          relations: ['entries', 'entries.user', 'recordedBy'],
-        });
+        const { attendance: loaded, existed } = await this.upsertInTransaction(
+          trx,
+          lifeGroup,
+          meetingDate,
+          dto.entries,
+          actor.id,
+        );
 
         await this.auditService.record({
           formSlug: 'life_group_attendance',
-          submissionId: saved.id,
+          submissionId: loaded.id,
           actorId: actor.id,
-          action: existing ? 'update' : 'create',
+          action: existed ? 'update' : 'create',
           diff: { entries: dto.entries },
         });
 
-        return this.toResponse(loaded!);
+        return this.toResponse(loaded);
       });
     } catch (err: unknown) {
       // Concurrent double-submit for the same life group + meeting date can
@@ -302,5 +230,124 @@ export class LifeGroupAttendanceService {
       }
       throw err;
     }
+  }
+
+  assertValidEntries(entries: { userId: number }[]): void {
+    if (entries.length === 0) {
+      throw new BadRequestException('At least one entry is required.');
+    }
+    const seenUserIds = new Set<number>();
+    for (const entry of entries) {
+      if (seenUserIds.has(entry.userId)) {
+        throw new BadRequestException(
+          `Duplicate user_id ${entry.userId} in entries.`,
+        );
+      }
+      seenUserIds.add(entry.userId);
+    }
+  }
+
+  /**
+   * Core attendance write, shared by the legacy `PUT .../attendance/:date` and
+   * the meetings API. Runs inside the caller's transaction; performs NO access
+   * check, NO date validation and NO audit (callers own those). `lifeGroup`
+   * must be loaded with `users` (roster). Re-syncs the committed_* snapshot of
+   * linked reports unless `syncLinkedReports` is false (the meetings API
+   * rewrites the report itself in that case).
+   */
+  async upsertInTransaction(
+    trx: EntityManager,
+    lifeGroup: LifeGroup,
+    meetingDate: string,
+    entries: { userId: number; present: boolean }[],
+    actorId: number,
+    options: { syncLinkedReports?: boolean } = {},
+  ): Promise<{ attendance: LifeGroupAttendance; existed: boolean }> {
+    const lifeGroupId = lifeGroup.id;
+    const existing = await trx.findOne(LifeGroupAttendance, {
+      where: { lifeGroupId, meetingDate },
+      relations: ['entries'],
+    });
+
+    const attendance =
+      existing ?? trx.create(LifeGroupAttendance, { lifeGroupId, meetingDate });
+
+    attendance.recordedBy = { id: actorId } as User;
+
+    let newEntries: LifeGroupAttendanceEntry[] = [];
+
+    // Preserve the roster snapshot: only update presence for entries
+    // that already exist, and only append brand-new entries when this
+    // is the FIRST time the record is saved. Reopening a past record
+    // never adds members who joined the group afterwards.
+    if (existing) {
+      const byUserId = new Map(existing.entries.map((e) => [e.userId, e]));
+      for (const incoming of entries) {
+        const entry = byUserId.get(incoming.userId);
+        if (entry) entry.present = incoming.present;
+      }
+      attendance.membersCount = existing.entries.length;
+      attendance.presentCount = existing.entries.filter(
+        (e) => e.present,
+      ).length;
+    } else {
+      this.assertMatchesMeetingDay(lifeGroup, meetingDate);
+
+      // Only the FIRST save for a meeting date creates entries from the
+      // submitted payload, so this is the only path where a leader could
+      // fabricate members — validate against the group's actual roster.
+      const rosterIds = new Set((lifeGroup.users ?? []).map((u) => u.id));
+      const unknownUserIds = entries
+        .map((e) => e.userId)
+        .filter((id) => !rosterIds.has(id));
+      if (unknownUserIds.length > 0) {
+        throw new BadRequestException(
+          `Unknown user_id(s) not in this life group's roster: ${unknownUserIds.join(', ')}`,
+        );
+      }
+
+      attendance.membersCount = entries.length;
+      attendance.presentCount = entries.filter((e) => e.present).length;
+      newEntries = entries.map((e) =>
+        trx.create(LifeGroupAttendanceEntry, {
+          userId: e.userId,
+          present: e.present,
+        }),
+      );
+    }
+
+    // Saved without the `entries` relation assigned, then entries are
+    // linked and persisted explicitly below — cascading a fresh child
+    // array through `entries` here left `attendance_id` NULL on insert
+    // (the parent's generated id wasn't backfilled onto the children by
+    // the cascade for this uuid-PK/OneToMany shape), so the FK is set
+    // by hand once the parent's real id is known.
+    const saved = await trx.save(LifeGroupAttendance, attendance);
+
+    if (existing) {
+      await trx.save(LifeGroupAttendanceEntry, existing.entries);
+    } else if (newEntries.length > 0) {
+      for (const entry of newEntries) entry.attendance = saved;
+      await trx.save(LifeGroupAttendanceEntry, newEntries);
+    }
+
+    const loaded = await trx.findOne(LifeGroupAttendance, {
+      where: { id: saved.id },
+      relations: ['entries', 'entries.user', 'recordedBy'],
+    });
+
+    if (options.syncLinkedReports !== false && this.reportSnapshots) {
+      await this.reportSnapshots.syncFromAttendance(
+        trx,
+        {
+          id: saved.id,
+          membersCount: attendance.membersCount,
+          presentCount: attendance.presentCount,
+        },
+        actorId,
+      );
+    }
+
+    return { attendance: loaded!, existed: !!existing };
   }
 }
