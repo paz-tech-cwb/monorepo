@@ -295,6 +295,62 @@ object LifeGroupMeetingRules {
         return entries.map { entry -> byUser[entry.userId]?.let { entry.copy(present = it) } ?: entry }
     }
 
+    // ---- entry (Formulários / deep link `paz://form/life-group-reports`) ---------------------
+
+    /**
+     * Resolves where the "report" entry points lead (Formulários list, `paz://form/life-group-reports`):
+     * - admin / pastor: picker over EVERY group ([allGroups], sorted by name), write-capable;
+     * - exactly one led (leader/co-leader) group: open its Reuniões directly ([LifeGroupMeetingEntry.directGroupId]);
+     * - several led groups: picker over them;
+     * - supervisor only: the supervised groups, read-only (a single one opens directly);
+     * - otherwise: an explanatory message.
+     * Pure, shared by Android and iOS. [myGroups] is `GET /life-groups/me`.
+     */
+    fun resolveEntry(
+        role: UserRole?,
+        myGroups: List<LifeGroup>,
+        allGroups: List<LifeGroup>,
+    ): LifeGroupMeetingEntry {
+        if (role == UserRole.admin || role == UserRole.pastor) {
+            val groups =
+                allGroups
+                    .distinctBy { it.id }
+                    .sortedBy { it.name.lowercase() }
+                    .map { LifeGroupMeetingEntryGroup(it, canWrite = true) }
+            return LifeGroupMeetingEntry(
+                groups = groups,
+                directGroupId = null,
+                emptyMessage = if (groups.isEmpty()) "Nenhum Life Group cadastrado." else null,
+            )
+        }
+        val led =
+            myGroups
+                .filter { isLeadership(it) }
+                .distinctBy { it.id }
+                .sortedBy { it.name.lowercase() }
+        if (led.isNotEmpty()) {
+            val groups = led.map { LifeGroupMeetingEntryGroup(it, canWrite = canWrite(role, true)) }
+            return LifeGroupMeetingEntry(groups = groups, directGroupId = groups.singleOrNull()?.group?.id, emptyMessage = null)
+        }
+        val supervised =
+            myGroups
+                .filter { it.relationship == "supervisor" || it.isSupervised }
+                .distinctBy { it.id }
+                .sortedBy { it.name.lowercase() }
+        if (supervised.isNotEmpty()) {
+            val groups = supervised.map { LifeGroupMeetingEntryGroup(it, canWrite = false) }
+            return LifeGroupMeetingEntry(groups = groups, directGroupId = groups.singleOrNull()?.group?.id, emptyMessage = null)
+        }
+        return LifeGroupMeetingEntry(
+            groups = emptyList(),
+            directGroupId = null,
+            emptyMessage = "Apenas o líder ou co-líder de um Life Group pode registrar reuniões e relatórios.",
+        )
+    }
+
+    /** The viewer leads or co-leads [group] (`GET /life-groups/me` -> `relationship`). */
+    fun isLeadership(group: LifeGroup): Boolean = group.relationship == "leader" || group.relationship == "co_leader"
+
     // ---- history ---------------------------------------------------------------------------
 
     /**
@@ -356,6 +412,48 @@ object LifeGroupMeetingErrors {
     const val CODE_EDIT_WINDOW_CLOSED = "edit_window_closed"
     const val CODE_GROUP_HAS_NO_SECTOR = "group_has_no_sector"
     const val CODE_SECTOR_HAS_NO_AREA = "sector_has_no_area"
+    const val CODE_GROUP_NOT_FOUND = "group_not_found"
+
+    /** Legacy Nest message of an unknown group, used while an older backend sends no `code`. */
+    private val legacyGroupNotFound = Regex("^Life group with ID \\d+ not found$", RegexOption.IGNORE_CASE)
+
+    /** What went wrong, in terms the screen can react to (copy and retry policy). */
+    enum class Kind {
+        // 404 `group_not_found`: the group really does not exist (or is not visible).
+        GROUP_NOT_FOUND,
+
+        // 404 without a group code: the route does not exist on the server (not deployed / old server).
+        SERVER_UNAVAILABLE,
+        NO_PERMISSION,
+        SESSION_EXPIRED,
+
+        // No HTTP answer at all (timeout, no connection, DNS...).
+        OFFLINE,
+        OTHER,
+    }
+
+    /**
+     * Classifies [error]. A 404 is "group not found" ONLY with the explicit `group_not_found` code (or
+     * the legacy "Life group with ID N not found" message); every other 404, such as Nest's generic
+     * "Cannot GET /api/..." for a route that is not deployed, is [Kind.SERVER_UNAVAILABLE].
+     */
+    fun kind(error: Throwable): Kind {
+        val e = error as? LifeGroupMeetingException ?: return Kind.OFFLINE
+        return when {
+            e.statusCode == 404 && isGroupNotFoundBody(e) -> Kind.GROUP_NOT_FOUND
+            e.statusCode == 404 || e.statusCode == 501 || e.statusCode == 502 || e.statusCode == 503 -> Kind.SERVER_UNAVAILABLE
+            e.statusCode == 401 -> Kind.SESSION_EXPIRED
+            e.statusCode == 403 -> Kind.NO_PERMISSION
+            else -> Kind.OTHER
+        }
+    }
+
+    private fun isGroupNotFoundBody(e: LifeGroupMeetingException): Boolean =
+        e.code == CODE_GROUP_NOT_FOUND ||
+            (e.code == null && e.serverMessage?.trim()?.let { legacyGroupNotFound.matches(it) } == true)
+
+    /** Retrying cannot help: the group is gone. Everything else may recover (server redeployed, network back). */
+    fun isRetryable(error: Throwable): Boolean = kind(error) != Kind.GROUP_NOT_FOUND && kind(error) != Kind.NO_PERMISSION
 
     /** `extra_meeting=true` was sent for a group/date where the server no longer accepts the flag. */
     fun isExtraFlagRejected(error: Throwable): Boolean {
@@ -371,8 +469,7 @@ object LifeGroupMeetingErrors {
 
     /** Friendly pt-BR message; `null` [error] details (network etc.) fall back to a connectivity hint. */
     fun message(error: Throwable): String {
-        val e = error as? LifeGroupMeetingException
-            ?: return "Não foi possível conectar. Verifique sua conexão e tente novamente."
+        val e = error as? LifeGroupMeetingException ?: return MESSAGE_OFFLINE
         return when (e.code) {
             CODE_EXTRA_REQUIRED ->
                 "Esta data não é o dia da reunião do grupo. Marque \"Reunião extra\" para registrá-la."
@@ -392,16 +489,30 @@ object LifeGroupMeetingErrors {
                 "Este grupo ainda não tem setor. Peça a um administrador para vinculá-lo."
             CODE_SECTOR_HAS_NO_AREA ->
                 "O setor deste grupo ainda não tem área. Peça a um administrador para completar o cadastro."
+            CODE_GROUP_NOT_FOUND -> MESSAGE_GROUP_NOT_FOUND
             else -> byStatus(e)
         }
     }
+
+    /**
+     * Copy for a failed history/list request that has no meetings-API error body (attendance and reports
+     * endpoints): [statusCode] null = no HTTP answer (offline).
+     */
+    fun messageForHttpStatus(statusCode: Int?): String =
+        if (statusCode == null) MESSAGE_OFFLINE else message(LifeGroupMeetingException(statusCode, null, null))
+
+    const val MESSAGE_GROUP_NOT_FOUND = "Grupo não encontrado. Atualize a tela e tente novamente."
+    const val MESSAGE_SERVER_UNAVAILABLE = "Recurso indisponível no servidor. Tente novamente mais tarde."
+    const val MESSAGE_NO_PERMISSION = "Você não tem permissão para esta reunião."
+    const val MESSAGE_OFFLINE = "Não foi possível conectar. Verifique sua conexão e tente novamente."
 
     private fun byStatus(e: LifeGroupMeetingException): String =
         when (e.statusCode) {
             400 -> e.serverMessage?.takeIf { it.isNotBlank() } ?: "Alguns dados não foram aceitos. Confira os campos e tente novamente."
             401 -> "Sua sessão expirou. Entre novamente."
-            403 -> "Você não tem permissão para esta reunião."
-            404 -> "Grupo não encontrado. Atualize a tela e tente novamente."
+            403 -> MESSAGE_NO_PERMISSION
+            404 -> if (isGroupNotFoundBody(e)) MESSAGE_GROUP_NOT_FOUND else MESSAGE_SERVER_UNAVAILABLE
+            501, 502, 503 -> MESSAGE_SERVER_UNAVAILABLE
             409 -> "Esta reunião foi alterada ao mesmo tempo. Recarregue e tente novamente."
             422 -> "Este grupo ainda não está vinculado a um setor e área. Peça à liderança para completar o cadastro."
             429 -> "Muitas tentativas. Aguarde um instante e tente de novo."

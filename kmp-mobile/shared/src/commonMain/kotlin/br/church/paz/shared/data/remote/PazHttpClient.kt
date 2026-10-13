@@ -5,6 +5,7 @@ import br.church.paz.shared.auth.TokenStorage
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.HttpCallValidator
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.ServerResponseException
@@ -141,6 +142,9 @@ fun HttpClient.clearBearerTokenCache() {
  * when a caller needs to branch on a specific status code.
  */
 fun Throwable.httpStatusCodeOrNull(): Int? = (this as? ClientRequestException)?.response?.status?.value
+
+/** Like [httpStatusCodeOrNull] but also for 5xx ([ServerResponseException]); null only when there was no HTTP answer. */
+fun Throwable.anyHttpStatusCodeOrNull(): Int? = (this as? ResponseException)?.response?.status?.value
 
 /**
  * Explicitly raises a [ClientRequestException]/[ServerResponseException] for a non-2xx

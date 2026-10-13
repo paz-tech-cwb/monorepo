@@ -92,6 +92,8 @@ import br.church.paz.shared.domain.model.AgendaEvent
 import br.church.paz.shared.domain.model.BankInfo
 import br.church.paz.shared.domain.model.Banner
 import br.church.paz.shared.domain.model.HomeLifeGroupCard
+import br.church.paz.shared.domain.model.HomeLifeGroupsSection
+import br.church.paz.shared.domain.model.homeLifeGroupsLayout
 import br.church.paz.shared.domain.model.LifeGroupTask
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
@@ -249,11 +251,12 @@ private fun HomeContent(
         // Best-effort life group cards (tasks folded in); hidden when the viewer has no group or
         // the groups fetch failed.
         if (lifeGroupCards.isNotEmpty()) {
-            items(lifeGroupCards, key = { "life_group_${it.group.id}" }) { card ->
+            // ONE section for every group (a header plus a row per group), not one card per group.
+            item(key = "life_groups") {
                 AnimatedSection(index = sectionOrder.size) {
-                    LifeGroupHomeCard(
-                        card = card,
-                        onGroupTap = { onLifeGroupTap(card.group.id) },
+                    LifeGroupsHomeSection(
+                        cards = lifeGroupCards,
+                        onGroupTap = onLifeGroupTap,
                         onTaskTap = onTaskTap,
                         modifier =
                             Modifier
@@ -311,76 +314,106 @@ private fun HomeContent(
 // ── Life group card ──────────────────────────────────────────────────────────
 
 /**
- * One card per life group: the header (name, leader, meeting, members) opens the group detail;
- * the viewer's upcoming tasks for this group ("Minhas tarefas") are folded in below it. The
- * header and each task row are sibling click targets, never nested.
+ * The viewer's life groups as ONE glass card: with several groups a "MEUS GRUPOS" header and one row per
+ * group separated by dividers; with a single group the same card keeps its "LIFE GROUP" kicker (unchanged
+ * look). Each row's header opens that group's detail and its upcoming tasks ("Minhas tarefas") are folded in
+ * below it; the header and each task row are sibling click targets, never nested.
  */
 @Composable
-private fun LifeGroupHomeCard(
-    card: HomeLifeGroupCard,
-    onGroupTap: () -> Unit,
+private fun LifeGroupsHomeSection(
+    cards: List<HomeLifeGroupCard>,
+    onGroupTap: (Int) -> Unit,
     onTaskTap: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val group = card.group
-    val subdued = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-    val meetingLabel = lifeGroupMeetingLabel(group)
+    val layout = homeLifeGroupsLayout(cards.size)
     PazGlassCard(
         modifier = modifier.fillMaxWidth().clip(PazShapes.large),
         cornerRadius = PazSpacing.CardRadiusCompact,
     ) {
         Column(Modifier.padding(PazSpacing.Lg), verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
-            androidx.compose.material3.Surface(
-                onClick = onGroupTap,
+            if (layout.showsSectionHeader) {
+                Text(
+                    HomeLifeGroupsSection.HEADER_SEVERAL,
+                    style = MaterialTheme.typography.labelMedium.copy(color = PazColors.accent.copy(alpha = 0.7f)),
+                )
+            }
+            cards.forEachIndexed { index, card ->
+                if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = PazSpacing.Xs))
+                LifeGroupHomeRow(
+                    card = card,
+                    showKicker = layout.showsRowKicker,
+                    onGroupTap = { onGroupTap(card.group.id) },
+                    onTaskTap = onTaskTap,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LifeGroupHomeRow(
+    card: HomeLifeGroupCard,
+    showKicker: Boolean,
+    onGroupTap: () -> Unit,
+    onTaskTap: (String) -> Unit,
+) {
+    val group = card.group
+    val subdued = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+    val meetingLabel = lifeGroupMeetingLabel(group)
+    Column(verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
+        androidx.compose.material3.Surface(
+            onClick = onGroupTap,
+            modifier = Modifier.fillMaxWidth(),
+            color = Color.Transparent,
+            shape = PazShapes.medium,
+        ) {
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                color = Color.Transparent,
-                shape = PazShapes.medium,
+                horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(PazSpacing.Xs)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(PazSpacing.Xs)) {
+                    if (showKicker) {
                         Text(
-                            "LIFE GROUP",
+                            HomeLifeGroupsSection.KICKER_SINGLE,
                             style = MaterialTheme.typography.labelMedium.copy(color = PazColors.accent.copy(alpha = 0.7f)),
                         )
-                        Text(group.name, style = MaterialTheme.typography.titleMedium)
-                        group.leader?.let {
-                            Text("Líder: $it", style = MaterialTheme.typography.bodySmall.copy(color = subdued))
-                        }
-                        meetingLabel?.let {
-                            Text(it, style = MaterialTheme.typography.bodySmall.copy(color = subdued))
-                        }
-                        Text(
-                            "${group.membersCount} membros",
-                            style = MaterialTheme.typography.bodySmall.copy(color = subdued),
-                        )
                     }
-                    Icon(
-                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    Text(group.name, style = MaterialTheme.typography.titleMedium)
+                    group.leader?.let {
+                        Text("Líder: $it", style = MaterialTheme.typography.bodySmall.copy(color = subdued))
+                    }
+                    meetingLabel?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall.copy(color = subdued))
+                    }
+                    Text(
+                        "${group.membersCount} membros",
+                        style = MaterialTheme.typography.bodySmall.copy(color = subdued),
                     )
                 }
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                )
             }
-            if (card.tasks.isNotEmpty()) {
-                HorizontalDivider()
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Outlined.Assignment,
-                        contentDescription = null,
-                        tint = PazColors.Primary,
-                        modifier = Modifier.size(22.dp),
-                    )
-                    Text("Minhas tarefas", style = MaterialTheme.typography.titleSmall)
-                }
-                MyTasksRows(tasks = card.tasks, onTaskTap = onTaskTap)
+        }
+        if (card.tasks.isNotEmpty()) {
+            HorizontalDivider()
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Outlined.Assignment,
+                    contentDescription = null,
+                    tint = PazColors.Primary,
+                    modifier = Modifier.size(22.dp),
+                )
+                Text("Minhas tarefas", style = MaterialTheme.typography.titleSmall)
             }
+            MyTasksRows(tasks = card.tasks, onTaskTap = onTaskTap)
         }
     }
 }

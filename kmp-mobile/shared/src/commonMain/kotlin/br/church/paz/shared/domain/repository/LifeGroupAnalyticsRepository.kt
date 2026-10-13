@@ -20,5 +20,6 @@ interface LifeGroupAnalyticsRepository {
     suspend fun getDistribution(lifeGroupId: Int? = null): LifeGroupDistributionAnalytics
 
     @Throws(Exception::class)
-    suspend fun getOverview(): LifeGroupOverview
+    // `lifeGroupId` restricts every figure to that group (backend sends `life_group_id`).
+    suspend fun getOverview(lifeGroupId: Int? = null): LifeGroupOverview
 }

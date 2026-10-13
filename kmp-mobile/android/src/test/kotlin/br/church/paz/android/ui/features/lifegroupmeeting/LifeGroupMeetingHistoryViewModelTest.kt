@@ -3,6 +3,7 @@ package br.church.paz.android.ui.features.lifegroupmeeting
 import app.cash.turbine.test
 import br.church.paz.android.util.MainDispatcherRule
 import br.church.paz.shared.domain.model.LifeGroupAttendance
+import br.church.paz.shared.domain.model.LifeGroupMeetingErrors
 import br.church.paz.shared.domain.model.LifeGroupWeeklyReport
 import br.church.paz.shared.domain.repository.LifeGroupAttendanceRepository
 import br.church.paz.shared.domain.repository.LifeGroupReportRepository
@@ -175,7 +176,8 @@ class LifeGroupMeetingHistoryViewModelTest {
             coEvery { reportRepository.getReports(7) } returns emptyList()
             val vm = viewModel()
             testScheduler.advanceUntilIdle()
-            assertEquals("boom", vm.uiState.value.error)
+            // No HTTP answer: the offline copy, not the raw exception text.
+            assertEquals(LifeGroupMeetingErrors.MESSAGE_OFFLINE, vm.uiState.value.error)
 
             coEvery { attendanceRepository.getHistory(7) } returns listOf(attendance("2026-10-07"))
             vm.load()
@@ -271,5 +273,40 @@ class LifeGroupMeetingHistoryViewModelTest {
             testScheduler.advanceUntilIdle()
 
             assertTrue(vm.uiState.value.canWrite)
+        }
+
+    @Test
+    fun `a legacy report without presence is a report only row`() =
+        runTest {
+            coEvery { attendanceRepository.getHistory(7) } returns listOf(attendance("2026-10-07"))
+            coEvery { reportRepository.getReports(7) } returns listOf(report("2026-09-08"))
+            val vm = viewModel()
+            testScheduler.advanceUntilIdle()
+
+            val rows = vm.uiState.value.meetings
+            assertEquals(listOf("2026-10-07", "2026-09-08"), rows.map { it.date })
+            assertFalse(rows[0].isReportOnly)
+            assertTrue(rows[1].isReportOnly)
+            // Tapping the legacy row opens the same meeting screen.
+            vm.effect.test {
+                vm.onMeetingTapped("2026-09-08")
+                testScheduler.advanceUntilIdle()
+                assertEquals(LifeGroupMeetingHistoryEffect.NavigateToMeeting("2026-09-08"), awaitItem())
+            }
+        }
+
+    @Test
+    fun `the screen starts on the meetings tab and switches to the group stats`() =
+        runTest {
+            coEvery { attendanceRepository.getHistory(7) } returns emptyList()
+            coEvery { reportRepository.getReports(7) } returns emptyList()
+            val vm = viewModel()
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(LifeGroupMeetingsTab.MEETINGS, vm.uiState.value.selectedTab)
+            vm.onTabSelected(LifeGroupMeetingsTab.REPORTS)
+            assertEquals(LifeGroupMeetingsTab.REPORTS, vm.uiState.value.selectedTab)
+            vm.onTabSelected(LifeGroupMeetingsTab.MEETINGS)
+            assertEquals(LifeGroupMeetingsTab.MEETINGS, vm.uiState.value.selectedTab)
         }
 }

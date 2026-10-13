@@ -65,3 +65,27 @@ fun buildHomeLifeGroupCards(
         }
     return HomeLifeGroupCards(cards = cards, hiddenCount = (ordered.size - cards.size).coerceAtLeast(0))
 }
+
+/** Titles of the home life group section ("Meus grupos"), shared so Android and iOS cannot drift. */
+object HomeLifeGroupsSection {
+    const val HEADER_SEVERAL = "MEUS GRUPOS"
+    const val KICKER_SINGLE = "LIFE GROUP"
+}
+
+/**
+ * How the home life groups render: ONE card for any number of groups. A single group keeps its
+ * "LIFE GROUP" kicker and no section header (the original look); several groups get the
+ * "MEUS GRUPOS" header and a divider between consecutive rows.
+ */
+data class HomeLifeGroupsLayout(
+    val showsSectionHeader: Boolean,
+    val showsRowKicker: Boolean,
+    val dividerCount: Int,
+)
+
+fun homeLifeGroupsLayout(groupCount: Int): HomeLifeGroupsLayout =
+    HomeLifeGroupsLayout(
+        showsSectionHeader = groupCount > 1,
+        showsRowKicker = groupCount == 1,
+        dividerCount = (groupCount - 1).coerceAtLeast(0),
+    )

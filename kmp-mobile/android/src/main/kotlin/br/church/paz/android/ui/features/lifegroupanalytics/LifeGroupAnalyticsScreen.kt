@@ -82,6 +82,11 @@ import java.time.format.DateTimeFormatter
 private val MONTH_LABELS =
     listOf("Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez")
 
+/**
+ * Stand-alone "Relatórios" screen (Account > Relatórios): all groups the viewer may query, with the
+ * group dropdown. The single-group view lives in the "Relatórios" tab of the Reuniões screen, which embeds
+ * [LifeGroupAnalyticsPanel] directly.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LifeGroupAnalyticsScreen(
@@ -90,12 +95,6 @@ fun LifeGroupAnalyticsScreen(
     viewModel: LifeGroupAnalyticsViewModel =
         koinViewModel(parameters = { parametersOf(lifeGroupId?.toIntOrNull()) }),
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var isExportingPdf by remember { mutableStateOf(false) }
-    var exportError by remember { mutableStateOf<String?>(null) }
-
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -104,12 +103,56 @@ fun LifeGroupAnalyticsScreen(
         }
     }
 
+    // Single full-screen background: mesh behind a transparent Scaffold (same pattern as every screen).
+    Box(Modifier.fillMaxSize()) {
+        PazMeshBackground()
+
+        Scaffold(
+            topBar = {
+                LargeTopAppBar(
+                    title = { Text("Relatórios") },
+                    navigationIcon = {
+                        IconButton(onClick = viewModel::onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "voltar")
+                        }
+                    },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
+                )
+            },
+            containerColor = Color.Transparent,
+        ) { innerPadding ->
+            LifeGroupAnalyticsPanel(
+                viewModel = viewModel,
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(top = innerPadding.calculateTopPadding()),
+            )
+        }
+    }
+}
+
+/**
+ * The report itself (filters, export, charts) WITHOUT any Scaffold/background, so it can be hosted by the
+ * stand-alone screen and by the "Relatórios" tab of the Reuniões screen. A [viewModel] opened for one group
+ * ([LifeGroupAnalyticsUiState.isScopedToGroup]) renders only that group's data: no group dropdown, no
+ * church-wide overview cards, no distribution of groups.
+ */
+@Composable
+fun LifeGroupAnalyticsPanel(
+    viewModel: LifeGroupAnalyticsViewModel,
+    modifier: Modifier = Modifier,
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var isExportingPdf by remember { mutableStateOf(false) }
+    var exportError by remember { mutableStateOf<String?>(null) }
+
     // Renders the FULL report (stat cards, overview donuts, attendance chart,
     // distribution chart — filters excluded, since they're controls, not
     // report content) off-screen into a paginated PDF via [ReportPdfExporter]
-    // and opens the system share sheet with the resulting file. Replaces the
-    // previous viewport-clipped `graphicsLayer` screenshot export, which only
-    // captured whatever was currently scrolled into view.
+    // and opens the system share sheet with the resulting file.
     fun exportAndShare() {
         val activity =
             context as? Activity ?: run {
@@ -148,70 +191,33 @@ fun LifeGroupAnalyticsScreen(
         )
     }
 
-    Box(Modifier.fillMaxSize()) {
-        PazMeshBackground()
-
-        Scaffold(
-            topBar = {
-                LargeTopAppBar(
-                    title = { Text("Relatórios") },
-                    navigationIcon = {
-                        IconButton(onClick = viewModel::onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "voltar")
-                        }
-                    },
-                    actions = {
-                        if (!uiState.isLoading && uiState.error == null) {
-                            IconButton(onClick = ::exportAndShare, enabled = !isExportingPdf) {
-                                if (isExportingPdf) {
-                                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                                } else {
-                                    Icon(Icons.Filled.Share, "exportar PDF")
-                                }
-                            }
-                        }
-                    },
-                    colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent),
-                )
-            },
-            containerColor = Color.Transparent,
-        ) { innerPadding ->
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(top = innerPadding.calculateTopPadding()),
-            ) {
-                PazPullToRefresh(
-                    isRefreshing = uiState.isRefreshing,
-                    onRefresh = viewModel::refresh,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    // The filter row is hoisted outside the loading/error branches
-                    // below and stays mounted across filter-triggered reloads —
-                    // only `isLoading` (the genuine first load) shows the full
-                    // skeleton INSTEAD of the filters; a filter-triggered reload
-                    // sets `isRefreshing` and keeps the filters + any already
-                    // rendered content, with a lighter indicator in the content
-                    // area (root cause C).
-                    Column(Modifier.fillMaxSize()) {
-                        AnalyticsFilters(
-                            uiState = uiState,
-                            onYearSelected = viewModel::onYearSelected,
-                            onMonthSelected = viewModel::onMonthSelected,
-                            onLifeGroupSelected = viewModel::onLifeGroupSelected,
-                            modifier = Modifier.padding(PazSpacing.Lg),
-                        )
-                        when {
-                            uiState.isLoading -> AnalyticsSkeleton()
-                            uiState.error != null -> AnalyticsError(uiState.error!!, viewModel::load)
-                            else ->
-                                AnalyticsReportContent(
-                                    uiState = uiState,
-                                    onDistributionTabSelected = viewModel::onDistributionTabSelected,
-                                )
-                        }
-                    }
-                }
+    PazPullToRefresh(
+        isRefreshing = uiState.isRefreshing,
+        onRefresh = viewModel::refresh,
+        modifier = modifier,
+    ) {
+        // The filter row is hoisted outside the loading/error branches below and stays mounted across
+        // filter-triggered reloads — only `isLoading` (the genuine first load) shows the full skeleton
+        // INSTEAD of the filters (root cause C).
+        Column(Modifier.fillMaxSize()) {
+            AnalyticsFilters(
+                uiState = uiState,
+                onYearSelected = viewModel::onYearSelected,
+                onMonthSelected = viewModel::onMonthSelected,
+                onLifeGroupSelected = viewModel::onLifeGroupSelected,
+                canExport = !uiState.isLoading && uiState.error == null,
+                isExporting = isExportingPdf,
+                onExport = ::exportAndShare,
+                modifier = Modifier.padding(PazSpacing.Lg),
+            )
+            when {
+                uiState.isLoading -> AnalyticsSkeleton()
+                uiState.error != null -> AnalyticsError(uiState.error!!, viewModel::load)
+                else ->
+                    AnalyticsReportContent(
+                        uiState = uiState,
+                        onDistributionTabSelected = viewModel::onDistributionTabSelected,
+                    )
             }
         }
     }
@@ -249,9 +255,13 @@ private fun LifeGroupReportExportContent(uiState: LifeGroupAnalyticsUiState) {
                     append(uiState.year)
                 },
         )
-        uiState.overview?.let { overview ->
-            LifeGroupStatCards(overview)
-            LifeGroupOverviewCharts(overview)
+        if (uiState.isScopedToGroup) {
+            AttendanceSummaryCard(uiState)
+        } else {
+            uiState.overview?.let { overview ->
+                LifeGroupStatCards(overview)
+                LifeGroupOverviewCharts(overview)
+            }
         }
         SectionCard(title = "Frequência de Presença") {
             if (uiState.attendanceRows.all { it.meetingsCount == 0 }) {
@@ -260,12 +270,14 @@ private fun LifeGroupReportExportContent(uiState: LifeGroupAnalyticsUiState) {
                 PazBarChart(entries = uiState.attendanceRows.toChartEntries(uiState.month != null))
             }
         }
-        SectionCard(title = "Distribuição dos Life Groups") {
-            val bucketEntries = uiState.distributionForSelectedTab
-            if (bucketEntries.isEmpty()) {
-                PazBarChartEmpty("Nenhum life group com esse dado cadastrado.")
-            } else {
-                PazBarChart(entries = bucketEntries.map { PazBarChartEntry(it.label, it.count.toFloat()) })
+        if (!uiState.isScopedToGroup) {
+            SectionCard(title = "Distribuição dos Life Groups") {
+                val bucketEntries = uiState.distributionForSelectedTab
+                if (bucketEntries.isEmpty()) {
+                    PazBarChartEmpty("Nenhum life group com esse dado cadastrado.")
+                } else {
+                    PazBarChart(entries = bucketEntries.map { PazBarChartEntry(it.label, it.count.toFloat()) })
+                }
             }
         }
     }
@@ -306,9 +318,15 @@ private fun AnalyticsReportContent(
         // The overview stat cards/donuts are fed by their own independent
         // endpoint, unrelated to attendance/distribution, so they always
         // render regardless of either of those failing.
-        uiState.overview?.let { overview ->
-            item { LifeGroupStatCards(overview) }
-            item { LifeGroupOverviewCharts(overview) }
+        // A single group never shows these: they are church-wide numbers (groups by sector, members
+        // with/without a group, average per group) that do not belong to the selected group.
+        if (uiState.isScopedToGroup) {
+            if (uiState.attendanceError == null) item { AttendanceSummaryCard(uiState) }
+        } else {
+            uiState.overview?.let { overview ->
+                item { LifeGroupStatCards(overview) }
+                item { LifeGroupOverviewCharts(overview) }
+            }
         }
 
         item {
@@ -326,38 +344,55 @@ private fun AnalyticsReportContent(
             }
         }
 
-        item {
-            SectionCard(title = "Distribuição dos Life Groups") {
-                if (uiState.distributionError != null) {
-                    Text(uiState.distributionError, style = MaterialTheme.typography.bodySmall)
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Xs),
-                    ) {
-                        DistributionTab.entries.forEach { tab ->
-                            FilterChip(
-                                selected = uiState.distributionTab == tab,
-                                onClick = { onDistributionTabSelected(tab) },
-                                label = { Text(tab.label()) },
+        if (!uiState.isScopedToGroup) {
+            item {
+                SectionCard(title = "Distribuição dos Life Groups") {
+                    if (uiState.distributionError != null) {
+                        Text(uiState.distributionError, style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(PazSpacing.Xs),
+                        ) {
+                            DistributionTab.entries.forEach { tab ->
+                                FilterChip(
+                                    selected = uiState.distributionTab == tab,
+                                    onClick = { onDistributionTabSelected(tab) },
+                                    label = { Text(tab.label()) },
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(PazSpacing.Md))
+                        val bucketEntries = uiState.distributionForSelectedTab
+                        if (bucketEntries.isEmpty()) {
+                            PazBarChartEmpty("Nenhum life group com esse dado cadastrado.")
+                        } else {
+                            PazBarChart(
+                                entries = bucketEntries.map { PazBarChartEntry(it.label, it.count.toFloat()) },
                             )
                         }
                     }
-                    Spacer(Modifier.height(PazSpacing.Md))
-                    val bucketEntries = uiState.distributionForSelectedTab
-                    if (bucketEntries.isEmpty()) {
-                        PazBarChartEmpty("Nenhum life group com esse dado cadastrado.")
-                    } else {
-                        PazBarChart(
-                            entries = bucketEntries.map { PazBarChartEntry(it.label, it.count.toFloat()) },
-                        )
-                    }
                 }
             }
+
         }
 
         item { Spacer(Modifier.height(PazSpacing.Xl)) }
     }
+}
+
+/** Totals of the selected group's attendance rows (the only summary that is group-scoped). */
+@Composable
+private fun AttendanceSummaryCard(uiState: LifeGroupAnalyticsUiState) {
+    val summary = uiState.attendanceSummary
+    PazStatCard(
+        title = "Frequência do grupo",
+        value = summary.attendancePercent?.let { "$it%" } ?: "–",
+        subtitle =
+            "${summary.meetingsCount} ${if (summary.meetingsCount == 1) "reunião" else "reuniões"} · " +
+                "${summary.presentCount} presenças de ${summary.membersCount}",
+        icon = Icons.Filled.Groups,
+    )
 }
 
 @Composable
@@ -475,6 +510,9 @@ private fun AnalyticsFilters(
     onYearSelected: (Int) -> Unit,
     onMonthSelected: (Int?) -> Unit,
     onLifeGroupSelected: (Int?) -> Unit,
+    canExport: Boolean,
+    isExporting: Boolean,
+    onExport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val currentYear = remember { LocalDate.now().year }
@@ -508,7 +546,19 @@ private fun AnalyticsFilters(
             }
         }
 
-        // Opened from a group's detail: locked to that group, no way to widen the scope.
+        if (canExport) {
+            TextButton(onClick = onExport, enabled = !isExporting) {
+                if (isExporting) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                }
+                Spacer(Modifier.size(PazSpacing.Sm))
+                Text("Exportar PDF")
+            }
+        }
+
+        // Opened for one group (Reuniões > Relatórios): locked to that group, no way to widen the scope.
         if (!uiState.isScopedToGroup) {
             LifeGroupDropdown(
                 lifeGroups = uiState.lifeGroups,

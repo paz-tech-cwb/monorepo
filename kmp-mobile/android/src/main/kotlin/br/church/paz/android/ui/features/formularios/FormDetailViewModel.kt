@@ -362,10 +362,10 @@ class FormDetailViewModel(
                             enrolledAt = f.isoDate("enrolled_at"),
                         ),
                     )
-                // The weekly report has its own screen (LifeGroupReportFormScreen) that builds the real
-                // DTO payload; this generic form must never post a report.
+                // The weekly report is filed from the Reunião screen (Reuniões); this generic form must never
+                // post a report.
                 FormType.life_group_report ->
-                    error("O relatório semanal é enviado pela tela do Life Group.")
+                    error("O relatório semanal é enviado pela tela da Reunião do Life Group.")
                 FormType.sector_supervisor_report ->
                     formsRepository.submitSectorReport(
                         SectorSupervisorReportForm(

@@ -1,6 +1,7 @@
 package br.church.paz.shared.domain.model
 
 import kotlinx.serialization.Serializable
+import kotlin.math.roundToInt
 
 @Serializable
 data class LifeGroupAttendancePoint(
@@ -46,3 +47,24 @@ data class LifeGroupOverview(
     // filter dropdown, so it can never offer a group that 403s.
     val lifeGroups: List<LifeGroupSummary> = emptyList(),
 )
+
+/**
+ * Totals of the attendance rows of ONE group (the single-group "Relatórios" tab): the overview
+ * cards are church-wide, so this is the only summary that is safe to show for a single group.
+ * [attendancePercent] is `present / members` over all meetings (0..100), null without any member slot.
+ */
+data class LifeGroupAttendanceSummary(
+    val meetingsCount: Int,
+    val presentCount: Int,
+    val membersCount: Int,
+) {
+    val attendancePercent: Int?
+        get() = if (membersCount > 0) (presentCount * 100.0 / membersCount).roundToInt() else null
+}
+
+fun List<LifeGroupAttendancePoint>.summarizeAttendance(): LifeGroupAttendanceSummary =
+    LifeGroupAttendanceSummary(
+        meetingsCount = sumOf { it.meetingsCount },
+        presentCount = sumOf { it.presentCount },
+        membersCount = sumOf { it.membersCount },
+    )

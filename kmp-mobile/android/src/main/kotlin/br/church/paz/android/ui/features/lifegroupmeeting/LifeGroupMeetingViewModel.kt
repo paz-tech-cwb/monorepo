@@ -53,7 +53,7 @@ class LifeGroupMeetingViewModel(
 
     fun load() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, loadError = null) }
+            _uiState.update { it.copy(isLoading = true, loadError = null, loadErrorRetryable = true) }
             val currentUserId = userId ?: runCatching { authRepository.currentUser()?.id }.getOrNull()
             userId = currentUserId
             val draft = readDraft(currentUserId)
@@ -101,7 +101,13 @@ class LifeGroupMeetingViewModel(
                     )
                 }
             } else {
-                _uiState.update { it.copy(isLoading = false, loadError = LifeGroupMeetingErrors.message(e)) }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        loadError = LifeGroupMeetingErrors.message(e),
+                        loadErrorRetryable = LifeGroupMeetingErrors.isRetryable(e),
+                    )
+                }
             }
         }
     }

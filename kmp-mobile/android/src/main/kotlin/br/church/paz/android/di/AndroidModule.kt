@@ -21,11 +21,9 @@ import br.church.paz.android.ui.features.home.HomeViewModel
 import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsViewModel
 import br.church.paz.android.ui.features.lifegroupdiscovery.LifeGroupDiscoveryViewModel
 import br.church.paz.android.ui.features.lifegroupdiscovery.LocationProvider
+import br.church.paz.android.ui.features.lifegroupmeeting.LifeGroupMeetingEntryViewModel
 import br.church.paz.android.ui.features.lifegroupmeeting.LifeGroupMeetingHistoryViewModel
 import br.church.paz.android.ui.features.lifegroupmeeting.LifeGroupMeetingViewModel
-import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportDetailViewModel
-import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportFormViewModel
-import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportsViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyEditorViewModel
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyListViewModel
@@ -104,10 +102,8 @@ val androidModule =
             LifeGroupMeetingViewModel(lifeGroupId, date, get(), get(), get(), canWrite.toBooleanStrictOrNull())
         }
         viewModel { (lifeGroupId: Int?) -> LifeGroupAnalyticsViewModel(lifeGroupId, get()) }
-        viewModel { (lifeGroupId: Int) -> LifeGroupReportsViewModel(lifeGroupId, get()) }
-        viewModel { (reportId: String) -> LifeGroupReportDetailViewModel(reportId, get()) }
-        // (preselected life group id or null, FormsRepository, ChurchRepository, AuthRepository)
-        viewModel { (lifeGroupId: Int?) -> LifeGroupReportFormViewModel(lifeGroupId, get(), get(), get()) }
+        // Entry of the Reunião flow from Formulários / deep link (ChurchRepository, AuthRepository).
+        viewModel { LifeGroupMeetingEntryViewModel(get(), get()) }
         viewModel { (assignmentId: String) -> LifeGroupTaskGuideViewModel(assignmentId, get()) }
         viewModel { (lifeGroupId: Int) -> LifeGroupTaskMembersViewModel(lifeGroupId, get()) }
         viewModel { CasaDePazAnalyticsViewModel(get()) }

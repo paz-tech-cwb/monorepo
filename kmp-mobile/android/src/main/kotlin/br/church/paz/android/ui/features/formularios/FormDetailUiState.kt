@@ -263,7 +263,7 @@ fun FormType.fieldDefs(): List<FormFieldDef> =
                 FormFieldDef("life_group_observations", "Observações dos Grupos", fieldType = FormFieldType.MULTILINE),
                 FormFieldDef("notes", "Observações", fieldType = FormFieldType.MULTILINE),
             )
-        // Handled by LifeGroupReportFormScreen (dedicated fields, group picker, real DTO payload).
+        // Handled by the Reunião flow (LifeGroupMeetingEntryScreen -> Reuniões), never by the generic form.
         FormType.life_group_report -> emptyList()
         FormType.course ->
             listOf(

@@ -5,6 +5,7 @@ import br.church.paz.shared.auth.TokenStorage
 import br.church.paz.shared.data.remote.createPazHttpClient
 import br.church.paz.shared.data.remote.throwOnClientOrServerError
 import br.church.paz.shared.domain.model.LifeGroupAttendanceAnalytics
+import br.church.paz.shared.domain.model.LifeGroupAttendancePoint
 import br.church.paz.shared.domain.model.LifeGroupDistributionAnalytics
 import br.church.paz.shared.domain.model.LifeGroupOverview
 import br.church.paz.shared.domain.model.LifeGroupSummary
@@ -15,6 +16,7 @@ import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
@@ -172,5 +174,56 @@ class LifeGroupAnalyticsViewModelTest {
             assertTrue(scoped.uiState.value.isScopedToGroup)
             assertEquals(7, scoped.uiState.value.lifeGroupId)
             assertFalse(general.uiState.value.isScopedToGroup)
+        }
+
+    @Test
+    fun `a single group sends life_group_id and never asks for church wide data`() =
+        runTest {
+            coEvery { analyticsRepository.getAttendance(any(), any(), any(), any()) } returns emptyAttendance
+
+            val scoped = LifeGroupAnalyticsViewModel(7, analyticsRepository)
+            testScheduler.advanceUntilIdle()
+
+            coVerify(exactly = 1) { analyticsRepository.getAttendance(any(), any(), 7, any()) }
+            // The overview (groups by sector, members without group...) and the distribution of groups
+            // do not belong to one group: not even requested.
+            coVerify(exactly = 0) { analyticsRepository.getOverview() }
+            coVerify(exactly = 0) { analyticsRepository.getDistribution(any()) }
+            assertNull(scoped.uiState.value.overview)
+            assertTrue(scoped.uiState.value.lifeGroups.isEmpty())
+            assertNull(scoped.uiState.value.distributionError)
+            assertFalse(scoped.uiState.value.isLoading)
+        }
+
+    @Test
+    fun `changing the month of a single group keeps sending its id`() =
+        runTest {
+            coEvery { analyticsRepository.getAttendance(any(), any(), any(), any()) } returns emptyAttendance
+            val scoped = LifeGroupAnalyticsViewModel(7, analyticsRepository)
+            testScheduler.advanceUntilIdle()
+
+            scoped.onMonthSelected(3)
+            testScheduler.advanceUntilIdle()
+
+            coVerify { analyticsRepository.getAttendance(any(), 3, 7, "meeting") }
+        }
+
+    @Test
+    fun `the group summary adds up the loaded attendance rows`() =
+        runTest {
+            val rows =
+                listOf(
+                    LifeGroupAttendancePoint("2026-09", meetingsCount = 2, presentCount = 9, membersCount = 12, attendanceRate = 0.75),
+                    LifeGroupAttendancePoint("2026-10", meetingsCount = 1, presentCount = 6, membersCount = 12, attendanceRate = 0.5),
+                )
+            coEvery { analyticsRepository.getAttendance(any(), any(), any(), any()) } returns
+                emptyAttendance.copy(rows = rows)
+            val scoped = LifeGroupAnalyticsViewModel(7, analyticsRepository)
+            testScheduler.advanceUntilIdle()
+
+            val summary = scoped.uiState.value.attendanceSummary
+            assertEquals(3, summary.meetingsCount)
+            assertEquals(15, summary.presentCount)
+            assertEquals(63, summary.attendancePercent)
         }
 }

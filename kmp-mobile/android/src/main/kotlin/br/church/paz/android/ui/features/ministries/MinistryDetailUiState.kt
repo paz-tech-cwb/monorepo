@@ -25,7 +25,7 @@ data class LifeGroupDetailUiState(
     // broader gate than canManageAttendance, which is scoped to just this
     // group's own leader/co-leader.
     val canManage: Boolean = false,
-    // Per-group reports entries ("Relatórios" analytics + "Relatórios semanais"): this group's
+    // Per-group "Reuniões" entry (meetings + weekly reports + stats): this group's
     // leader/co-leader or admin/pastor/area/sector leader — see canViewLifeGroupReports.
     val canViewGroupReports: Boolean = false,
     // Write rights on this group's meetings (shared LifeGroupMeetingRules.canWrite): false = read-only supervisor.
@@ -54,10 +54,6 @@ sealed class LifeGroupDetailEffect {
     ) : LifeGroupDetailEffect()
 
     data class NavigateToManage(
-        val lifeGroupId: String,
-    ) : LifeGroupDetailEffect()
-
-    data class NavigateToReports(
         val lifeGroupId: String,
     ) : LifeGroupDetailEffect()
 }
