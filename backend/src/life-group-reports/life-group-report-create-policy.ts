@@ -22,10 +22,10 @@ import { CreateLifeGroupReportDto } from './dto/create-life-group-report.dto';
  * Authorization is scope-based (no @Roles on POST), so a `member`-role
  * co-leader works:
  *  - admin/pastor (unrestricted scope): any existing group;
- *  - otherwise the group must be in the actor's resolved scope (supervisors
- *    and leaders, derived from leader_id/co_leader_id rows) OR the actor must
- *    be the group's own leader_id/co_leader_id (explicit fallback so access
- *    never depends on scope resolution alone).
+ *  - everyone else: the actor must be the group's own leader_id/co_leader_id.
+ *    Area/sector supervisors get read-only visibility through scope but may
+ *    NOT create reports for groups they do not lead (a supervisor who also
+ *    leads/co-leads a group can report only for that group).
  * `area_id`/`sector_id` sent by the client are never trusted: they are
  * derived from the group's sector -> area.
  */
@@ -54,7 +54,6 @@ export class LifeGroupReportCreatePolicy {
 
     const allowed =
       scope.unrestricted ||
-      scope.lifeGroupIds.includes(group.id) ||
       group.leader?.id === actor.id ||
       group.coLeader?.id === actor.id;
     if (!allowed) {

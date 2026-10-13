@@ -342,3 +342,7 @@ Not verified: the new TypeORM query builders (LifeGroup leader/coLeader join wit
 
 ## Clock fix (round 2 addendum)
 `npx jest src/reminders`: 8 suites / 67 tests pass under TZ=UTC, TZ=Asia/Tokyo and TZ=America/Sao_Paulo; eslint 0 problems, prettier clean, `npm run build` OK.
+
+## Round 3: supervisors read-only (D11)
+See final validation numbers appended below.
+Backend: `npm run build` OK; scoped jest (life-group-reports, forms-catalog, forms-core): all pass except the baseline notification-sender suite; full jest 6 failed suites / 5 failed tests / 644 passed = the 6 known baseline suites; eslint on src/life-group-reports + src/forms-catalog 0 errors (12 pre-existing warnings); prettier --check clean. admin-ui/mobile untouched, no checks needed.

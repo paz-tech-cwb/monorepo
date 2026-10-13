@@ -265,10 +265,11 @@ fix the raw entity serialized to `{}` under the global serializer
 1. `date` not after today in America/Sao_Paulo (400). A full ISO string is
    compared by its first 10 chars. (Attendance still uses the UTC day.)
 2. `life_group_id` exists (404).
-3. Allowed if admin/pastor (unrestricted scope), OR the group is in the actor's
-   resolved scope (`lifeGroupIds`, from leader_id/co_leader_id rows), OR the
-   actor is the group's own `leader_id`/`co_leader_id` (explicit fallback, so a
-   `member`-role leader/co-leader works). Otherwise 403.
+3. Allowed if admin/pastor (unrestricted scope), OR the actor is the group's own
+   `leader_id`/`co_leader_id` (so a `member`-role leader/co-leader works).
+   Otherwise 403. Area/sector supervisors (scope) are READ-ONLY: they cannot
+   create for a group they do not lead (D11); a supervisor who also
+   leads/co-leads a group can report only for that group.
 4. The group must have a sector with an area, else 422 (also for admin).
 5. `area_id` and `sector_id` are DERIVED from the group's sector -> area. They
    stay in the DTO as optional and are IGNORED (old clients that send them
@@ -280,10 +281,11 @@ Validation (create; update inherits it): counts `@Min(0) @Max(100000)`;
 80 chars (values are still free strings); `*_other` max 180 chars. Response
 shape unchanged. `PATCH` no longer accepts `life_group_id`/`area_id`/`sector_id`
 (dropped, no 400) so a report cannot be moved to a group the actor could not
-create for; its edit policy (admin, or submitter within 24h) is unchanged.
-Catalog (`GET /api/forms`): `life-group-reports` is also visible
-(`can_read` and `can_write`) to anyone who is leader/co-leader of at least one
-group, whatever the role slug (mobile Formulários lists catalog entries as
+create for; its edit policy (admin, or submitter within 24h) is unchanged, so a supervisor
+cannot PATCH others' reports; DELETE is admin only.
+Catalog (`GET /api/forms`): `life-group-reports` `can_write` is admin/pastor
+or anyone who is leader/co-leader of at least one group (whatever the role
+slug); area/sector supervisors are `can_read` only (D11) (mobile Formulários lists catalog entries as
 returned). Not covered here: duplicate guard per (group, date) and the meetings
 endpoint (PR #96), mobile submit payload, `form_report` reminder skip.
 

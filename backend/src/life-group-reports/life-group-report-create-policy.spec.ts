@@ -64,10 +64,10 @@ describe('LifeGroupReportCreatePolicy', () => {
     ).resolves.toMatchObject({ areaId: 30, sectorId: 20 });
   });
 
-  it('lets a leader of two groups create for either via scope', async () => {
+  it('lets a leader of two groups create for either (leader_id match, scope irrelevant)', async () => {
     const scope = { ...NO_SCOPE, lifeGroupIds: [10, 11] };
     const a = make(group({ id: 10, leader: { id: 7 } }));
-    const b = make(group({ id: 11, leader: { id: 7 } }));
+    const b = make(group({ id: 11, leader: null, coLeader: { id: 7 } }));
     await expect(
       a.policy.authorizeAndDerive(dto({ lifeGroupId: 10 }), scope, { id: 7 }),
     ).resolves.toBeDefined();
@@ -76,7 +76,7 @@ describe('LifeGroupReportCreatePolicy', () => {
     ).resolves.toBeDefined();
   });
 
-  it('lets an area/sector supervisor create for a group in scope', async () => {
+  it('rejects an area/sector supervisor for an in-scope group they do not lead (403)', async () => {
     const { policy } = make(group({ leader: { id: 50 }, coLeader: null }));
     await expect(
       policy.authorizeAndDerive(
@@ -84,17 +84,29 @@ describe('LifeGroupReportCreatePolicy', () => {
         { ...NO_SCOPE, areaIds: [30], sectorIds: [20], lifeGroupIds: [10] },
         { id: 99 },
       ),
-    ).resolves.toBeDefined();
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it('rejects a supervisor for a group outside their scope with 403', async () => {
-    const { policy } = make(group({ leader: { id: 50 }, coLeader: null }));
+  it('lets a supervisor who co-leads a different group report only for that one', async () => {
+    const scope = {
+      ...NO_SCOPE,
+      areaIds: [30],
+      sectorIds: [20],
+      lifeGroupIds: [10, 11],
+    };
+    const own = make(
+      group({ id: 11, leader: { id: 50 }, coLeader: { id: 99 } }),
+    );
+    const other = make(group({ id: 10, leader: { id: 50 }, coLeader: null }));
     await expect(
-      policy.authorizeAndDerive(
-        dto(),
-        { ...NO_SCOPE, areaIds: [31], sectorIds: [21], lifeGroupIds: [11] },
-        { id: 99 },
-      ),
+      own.policy.authorizeAndDerive(dto({ lifeGroupId: 11 }), scope, {
+        id: 99,
+      }),
+    ).resolves.toBeDefined();
+    await expect(
+      other.policy.authorizeAndDerive(dto({ lifeGroupId: 10 }), scope, {
+        id: 99,
+      }),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 

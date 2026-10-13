@@ -17,7 +17,7 @@ Operational church forms for reports, member registration, ministry/service work
 - `admin` and `pastor`: all submissions.
 - Other leaders: own submissions plus cascade-scoped submissions.
 - Members: own applicable forms/submissions.
-- Catalog exception: `life-group-reports` is also listed (read and write) for any user who is leader/co-leader of at least one life group, whatever the role slug; creation is scope-based, not `@Roles` (see `features/life-groups.md`).
+- Catalog exception: `life-group-reports` `can_write` is only admin/pastor or any user who is leader/co-leader of at least one life group (whatever the role slug); area/sector supervisors and group-less `life_group_leader` get `can_read` only (read-only, D11); creation is scope-based, not `@Roles` (see `features/life-groups.md`).
 
 ## Client behavior
 

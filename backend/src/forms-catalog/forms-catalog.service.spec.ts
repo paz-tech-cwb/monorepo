@@ -136,22 +136,46 @@ describe('FormsCatalogService', () => {
       expect(find(result)).toBeUndefined();
     });
 
-    it('keeps it for life_group_leader / area / sector leaders without querying groups', async () => {
+    it('gives admin/pastor read+write without querying groups', async () => {
+      ministryAccess.resolve.mockResolvedValue({
+        isLeader: false,
+        isMember: false,
+      });
+      for (const roleSlug of ['admin', 'pastor']) {
+        const result = await service.listForRole({ id: 32, roleSlug });
+        expect(find(result)).toMatchObject({ can_read: true, can_write: true });
+      }
+      expect(em.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
+    it('makes pure supervisors / group-less leader roles read-only (can_read, not can_write)', async () => {
       ministryAccess.resolve.mockResolvedValue({
         isLeader: false,
         isMember: false,
       });
       for (const roleSlug of [
-        'life_group_leader',
         'area_leader',
         'sector_leader',
-        'admin',
-        'pastor',
+        'life_group_leader',
       ]) {
-        const result = await service.listForRole({ id: 32, roleSlug });
+        const result = await service.listForRole({ id: 34, roleSlug });
+        expect(find(result)).toMatchObject({
+          can_read: true,
+          can_write: false,
+        });
+      }
+    });
+
+    it('gives a supervisor who also leads/co-leads a group can_write', async () => {
+      ministryAccess.resolve.mockResolvedValue({
+        isLeader: false,
+        isMember: false,
+      });
+      leadsGroup = true;
+      for (const roleSlug of ['area_leader', 'sector_leader']) {
+        const result = await service.listForRole({ id: 35, roleSlug });
         expect(find(result)).toMatchObject({ can_read: true, can_write: true });
       }
-      expect(em.createQueryBuilder).not.toHaveBeenCalled();
     });
 
     it('does not widen other role-gated forms for a member-role leader', async () => {

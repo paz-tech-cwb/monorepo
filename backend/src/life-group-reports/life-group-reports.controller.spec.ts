@@ -303,13 +303,23 @@ describe('LifeGroupReportsController (global pipe + serializer)', () => {
       await post(validBody({ life_group_id: 10 })).expect(201);
     });
 
-    it('lets a supervisor create for an in-scope group and 403s outside it', async () => {
+    it('403s a supervisor (area/sector leader) for a group in scope that they do not lead', async () => {
       user = { id: 600, role: { slug: 'area_leader' } };
       foundGroup = group({ leader: { id: 1 }, coLeader: null });
       scope.lifeGroupIds = [10];
-      await post(validBody()).expect(201);
+      await post(validBody()).expect(403);
       scope.lifeGroupIds = [11];
       await post(validBody()).expect(403);
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it('lets a supervisor who co-leads a group report only for that group', async () => {
+      user = { id: 600, role: { slug: 'sector_leader' } };
+      scope.lifeGroupIds = [10, 11];
+      foundGroup = group({ id: 10, leader: { id: 1 }, coLeader: { id: 600 } });
+      await post(validBody()).expect(201);
+      foundGroup = group({ id: 11, leader: { id: 1 }, coLeader: null });
+      await post(validBody({ life_group_id: 11 })).expect(403);
     });
 
     it('lets admin/pastor create for any group', async () => {

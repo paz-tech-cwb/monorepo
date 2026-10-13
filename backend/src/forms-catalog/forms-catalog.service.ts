@@ -56,17 +56,13 @@ const FORM_DEFINITIONS = [
     slug: 'life-group-reports',
     name: 'Relatório de Life Group',
     description: 'Relatório semanal do LG',
-    // Also visible to anyone who is leader_id/co_leader_id of at least one
-    // life group, whatever their role slug (a co-leader is usually `member`).
-    // Matches POST/GET life-group-reports, which are scope-based.
+    // Write (submit) is for admin/pastor and for anyone who is
+    // leader_id/co_leader_id of at least one life group, whatever their role
+    // slug (a co-leader is usually `member`). Area/sector supervisors who lead
+    // no group are read-only (can_read, not can_write): they may not submit
+    // reports for groups they do not lead (D11). Matches POST life-group-reports.
     leadsLifeGroup: true,
-    write: [
-      'admin',
-      'pastor',
-      'area_leader',
-      'sector_leader',
-      'life_group_leader',
-    ],
+    write: ['admin', 'pastor'],
     read: [
       'admin',
       'pastor',
@@ -204,7 +200,7 @@ export class FormsCatalogService {
           if (
             'leadsLifeGroup' in f &&
             f.leadsLifeGroup &&
-            !(canWrite && canRead) &&
+            !canWrite &&
             (await this.leadsAnyLifeGroup(actor.id))
           ) {
             canWrite = true;
