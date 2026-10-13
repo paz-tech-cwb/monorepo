@@ -29,3 +29,32 @@ None.
 - Tests: fake-timer based, UTC vs SP, midnight, concurrency, interval/cap/disable combos, flag matrix.
 
 ### Verdict: REQUEST CHANGES (M1 and M2; M2 is wording only). Everything else is shippable behind the default-off flag.
+
+## Round 2 (timing change e81c19a2 + merge of #96 bc746453)
+
+Checks (read-only): jest src/reminders + attendance + meetings = 15 suites pass, 296 tests pass (2 DB suites skipped); eslint 0 errors (1 pre-existing-style `any` warning in v2.reminders.spec.ts:59); prettier clean; tsc errors only in unrelated spec files. Legacy evaluator and its spec (life-group-attendance-reminder.evaluator.spec.ts) are untouched by this round: flag-off behavior is identical. Manual check of zonedDateTimeToDate: 2026-12-31 21:30 -> 2027-01-01T00:30Z, 2027-01-01 00:00 -> 03:00Z, 2026-02-28 23:59 -> 2026-03-01T02:59Z (month/year rollovers correct, -03:00 constant).
+
+### Blockers
+- none
+
+### Major
+- none
+
+### Minor
+- [m1] v2.reminders.ts run(): meeting_time is only checked for NaN. "25:70" is accepted and silently rolls into the next day (zonedDateTimeToDate(.., 25, 70) = next day 05:10Z) so follow-ups would fire at the wrong time. Fix: also require 0<=hour<=23 and 0<=minute<=59 (skip + count in `skipped`). An invalid dateKey would make Intl throw RangeError inside zonedDateTimeToDate; it is caught by the per-group try/catch (logged hourly), fine since dates come from a DATE column.
+- [m2] Tolerance window default 2h is fine, but `followup_window_hours` validation allows 0 (and 1). With an HOURLY cron (reminder-scheduler.service.ts:17 EVERY_HOUR) a window < 1h can miss a due time entirely (tick at :00 vs due 21:30 with window 0), and a window of exactly 1h misses if ticks drift by a few seconds past 60 min. Fix: min 1 is the true floor, recommend validating 2..12 (backend reminder-config.ts ATTENDANCE_INT_FIELDS, UI validateAttendanceConfig + NumberField min), or at minimum warn in the hint. Answer to the drift question: tick at 21:59 vs due 21:30 is fine (elapsed 29 min <= 2h); a tick at 21:29:59 just before due is simply handled by the 22:29 tick (59 min <= 2h). Safe margin = window - 60 min of drift.
+- [m3] Cross-field config not validated: followup_first_after_hours >= escalation_after_days*24 (or > max_days*24) silently yields zero follow-ups (followupOffsets returns []). Escalation still fires. Add a validation error or document; low risk.
+- [m4] Perf: zonedDateTimeToDate builds a new Intl.DateTimeFormat twice per call, and runFollowups calls it for every attendance row of every group every hour (lookback ~7 days x groups). Hundreds of ms at a few thousand groups; cache the formatter per timeZone (module-level Map) or skip rows whose latest possible due+window is already past (meetingDate < today - lookback is already filtered, but all rows within 7 days are computed even when only 1-2 offsets can be live).
+- [m5] hasReport legacy window is meetingDate..+6 days (REPORT_WINDOW_DAYS) while follow-ups/escalation can be configured up to 14 days: for unlinked legacy reports, follow-ups past +6d would ignore a legit report. Also a legacy (unlinked) report for the NEXT regular meeting dated within 6 days of an extra meeting would silence the extra's follow-up (and an extra's window can mask a regular one). Linked reports (meetings API) are exact, so this is bounded to legacy data; consider restricting the date-window fallback to non-extra rows or capping the window at max(6, escalation days).
+- [m6] Claim-key shape changed from `followup:{group}:{date}:{day}` to `:{offset}h`. If v2 was ever live in prod, in-flight meetings may get one extra follow-up at the deploy. Flag-gated and unreleased per the notes, so acceptable; the escalation key is unchanged (deduped).
+- [m7] Changing followup_interval_hours/first_after_hours mid-week re-keys offsets, so a changed config may re-send a follow-up for the same meeting. Acceptable; document.
+
+### Verified
+- Offsets: followupOffsets = first, first+interval ... while h <= max_days*24 and h < escalation hours -> default 24/48/72/96; escalation at 120 takes priority when both fall in a window (escalate branch evaluated first), never double-sends at the same instant.
+- Escalation after follow-ups stop: escalation is independent of followup_max_days (also when max_days=0 or follow-ups are empty); it only needs attendance + no report within [due, due+window], and lookbackDays = max(max_days, escalation days) + ceil(window/24) + 1 (=7 for defaults) covers a 21:30 meeting escalating at D+5 21:30..23:30. Both queries bounded and batched: one attendance query per run (In + Between), groups loaded once; hasReport (1 EXISTS) only when a due action is live.
+- Null/invalid meeting_time: query filters meetingTime IS NOT NULL, loop skips NaN/empty. Minute honored (meeting_time "21:30" -> due 21:30). Old-key fallback: followup_interval_days*24 used only when the new key is absent; followup_hour ignored; validator still accepts deprecated keys; admin-ui drops them on save (cleanAttendanceConfig) and its ranges match the backend (1-168, 1-168, 0-12, 0-14, 0-14).
+- Extras: rows with is_extra are followed up with the row's own date and the group meeting_time; the primary push queries `isExtra: false` so an extra never marks the regular date recorded. "Has a report" is group-based (`lifeGroupId` + attendanceId or date window), so leader/co-leader reports complete the reminder for both recipients.
+- Stuck claims: claim-first with release on failure (and notification marked failed); a hard process crash between claim and dispatch leaves a permanent claim (same pre-existing contract as the legacy path), acceptable; the 2h window means a released claim is retried on the next hourly ticks.
+- Flag off: the v2 class is only used behind LIFE_GROUP_MEETING_V2; legacy evaluator/spec unchanged.
+
+### Verdict: SHIP (m1 and m2 are cheap and worth folding in before merge; none blocking)

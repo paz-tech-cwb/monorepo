@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -23,6 +24,15 @@ import { UpsertLifeGroupMeetingDto } from './dto/upsert-life-group-meeting.dto';
 // @SerializeOptions is required: the service returns plain snake_case objects
 // (no @Expose), which the global excludeAll/excludeExtraneousValues serializer
 // would reduce to `{}`.
+function parseExtraMeetingQuery(raw: unknown): boolean | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  throw new BadRequestException(
+    "extra_meeting must be 'true' or 'false' (lowercase).",
+  );
+}
+
 @SerializeOptions({ strategy: 'exposeAll', excludeExtraneousValues: false })
 @UseGuards(AuthGuard('jwt'), ScopeGuard)
 @Controller('life-groups/:lifeGroupId/meetings')
@@ -36,6 +46,9 @@ export class LifeGroupMeetingsController {
     @Req() req: RequestWithScope,
     // `?extra_meeting=true` previews a draft for an extra meeting (a date that
     // is not the group's fixed weekday). Ignored when a record already exists.
+    // Only the exact (case-sensitive) strings 'true' / 'false' are accepted;
+    // anything else is a 400. The preview does NOT check the weekly cap (the
+    // PUT may still answer 409 extra_meeting_limit_reached).
     @Query('extra_meeting') extraMeeting?: string,
   ) {
     return this.svc.getMeeting(
@@ -46,7 +59,7 @@ export class LifeGroupMeetingsController {
         id: req.user.id,
         isAdmin: req.user.role?.slug === 'admin',
       },
-      extraMeeting === undefined ? undefined : extraMeeting === 'true',
+      parseExtraMeetingQuery(extraMeeting),
     );
   }
 
