@@ -1,38 +1,43 @@
-# Spec: Supervisors see every life group they supervise
+# Spec: Meetings API (phase 1, backend only, additive)
+
+Branch `feat/life-group-meetings-api` (from origin/develop @6d87aef). Source design: `.pipeline/design-attendance-report-merge.md` (phase 1) and `.pipeline/pilot-audit.md`.
 
 ## Request
-Area and sector leaders (and co-leaders) must see ALL life groups under their supervision wherever a life group list or scope is used. No widening for ordinary members; admin/pastor unchanged. `GET /life-groups/me` must include supervised groups and say how the viewer relates to each. Backend only plus the minimum client change (PR #92 home card depends on `/life-groups/me`).
+One transactional endpoint pair that reads/writes a life group meeting (attendance + weekly report) keyed by (life group, date). Tables stay separate; old endpoints keep their contracts. No reminder, push copy or deep link changes.
 
 ## `.ai/` context read
-`CLAUDE.md`, `.ai/README.md`, `features/life-groups.md`, `apps/backend.md`, `backend/CLAUDE.md`.
+`CLAUDE.md`, `.ai/README.md`, `features/life-groups.md`, `apps/backend.md`, `apps/postman-files.md`, `backend/CLAUDE.md`.
 
-## Verified findings (code, not assumption)
-1. CONFIRMED. `ScopeResolverService.resolve` used `findOne` for area/sector/group (first row only) and gated on the role slug (`area_leader` / `sector_leader` / `life_group_leader`): one slug = one branch, so a user leading several areas/sectors/groups got only the first, and a leader/co-leader of a row without the matching slug got an empty scope. Roles are assigned manually (`PATCH users/:id/role`, admin only); creating/editing an Area/Sector/LifeGroup leader does NOT change the leader's role (areas/sectors/life-groups services never touch roles). So row-without-slug is a real state (e.g. co-leaders have no slug at all, see attendance/analytics fallbacks).
-2. CONFIRMED. `LifeGroupsService.findMine` returned only groups where the viewer is leader, co-leader or roster member.
-3. CONFIRMED, left as is. `findAll` (`GET /life-groups`) returns every group to any authenticated user. Mobile uses it for discovery (`ChurchRepositoryImpl.getLifeGroups`, search by `q`/`search`); admin-ui uses it for the life groups page, selectors and notifications. Intended for discovery; flagged as product question.  Not changed at all (no extra query on the discovery endpoint).
-4. Consumers of `ResolvedScope` audited (see changes.md): all use `scope.lifeGroupIds/sectorIds/areaIds` as sets, so they work with multi-valued scope once the resolver returns it. Guards (`@Roles`) are unchanged, so widening the resolver cannot open role-gated endpoints.
+## Product decisions (recorded)
+- Q1: "comprometidos" = the whole roster. `committed_members` = attendance `members_count` (roster snapshot), derived server-side, no manual input, no per-member flag.
+- Q2: `committed_members_present` = attendance `present_count`; leader/co-leader count only if they are on the roster and marked present (same as any roster member).
+- Q3: new attendance draft stays all-present. GET exposes `attendance.is_draft: true` and `attendance.default_present: true` so mobile can add an explicit "Todos presentes" toggle later.
+- Q5: edit window = 14 days after the meeting date, ONE constant `LIFE_GROUP_MEETING_EDIT_WINDOW_DAYS = 14` (`common/constants/life-group-meeting.ts`), optionally overridden by env var of the same name (positive integer, else default). Leader, co-leader and in-scope supervisors (ScopeResolver, keyed off leader_id/co_leader_id rows) may create/edit both pieces within the window; admin always. Days are America/Sao_Paulo calendar days; day 14 allowed, day 15 denied. Reads are always allowed for anyone with access.
+- Q4, Q6-Q12 open: nothing built that depends on them. Reminders, push copy, deep links, catalog untouched.
 
-## Decisions
-- Scope keys off the real `leader_id`/`co_leader_id` rows, not the role slug. Rationale: the code comment already states that intent; slug gating produced the empty-scope bug; access is granted only for rows the user actually leads/co-leads, and endpoint-level `@Roles` guards still apply. Admin/pastor keep the unrestricted branch (checked first). A user with no leader row (member, guest, discipler, or any slug) gets an empty scope exactly as before.
-- Union of everything regardless of slug: areas led/co-led -> their sectors; sectors led/co-led directly; groups = all groups of those sectors + groups led/co-led directly.
-- `areaIds` = areas led/co-led; `sectorIds` = union (areas' sectors + directly led sectors); `lifeGroupIds` = union. `ResolvedScope` shape unchanged.
-- `GET /life-groups/me`: add supervised groups through one query joining the group's sector, area and their leaders/co-leaders. Add `relationship` (`leader` | `co_leader` | `supervisor` | `member`, precedence in that order) and `is_supervised` (true when the viewer supervises the group via area/sector, regardless of precedence). Membership via roster is `member`. Ordering unchanged (name asc).
-- Supervisors can see the roster of supervised groups (`members`) in `/me` and `/:id` (one extra id query in `/:id`). `GET /life-groups` unchanged. Plain members: unchanged.
-- `relationship`/`is_supervised` only in `/me` (other endpoints unchanged).
+## Scope
+1. Migration `1796000000000-AddAttendanceLinkToLifeGroupReports`: nullable `life_group_reports.attendance_id uuid` FK -> `life_group_attendance(id)` ON DELETE SET NULL (+ plain index), duplicate scan on `(life_group_id, date) WHERE deleted_at IS NULL` that never deletes anything: duplicates -> no index, RAISE NOTICE + console warning + rows recorded in new table `life_group_report_duplicate_findings`; clean -> `CREATE UNIQUE INDEX IF NOT EXISTS uq_life_group_reports_group_date_active`. Idempotent (every statement IF NOT EXISTS / guarded), `down()` drops index, FK, column, findings table. No TypeORM `@Index` decorator for the partial index (synchronize must not try to create it on dirty data); documented in the entity.
+2. Entity `LifeGroupReport`: `attendanceId` + relation.
+3. Module `life-group-meetings`: `GET|PUT /api/life-groups/:lifeGroupId/meetings/:date`, `AuthGuard('jwt')` + `ScopeGuard`, no `@Roles`, same access rule as attendance (shared `assertCanAccessLifeGroup`).
+4. Shared logic extraction (no duplication): attendance upsert core -> `LifeGroupAttendanceService.upsertInTransaction`; report snapshot sync -> `LifeGroupReportSnapshotService` (hooked into the attendance upsert so the OLD attendance PUT keeps linked reports consistent); report mapper `toLifeGroupReportResponse`; audit service accepts an optional `manager` so audit rows join the transaction.
+5. Duplicate guard in application code (index may be absent): transaction + `pg_advisory_xact_lock(ns, hashtext(group:date))`, then find-then-upsert; 23505 mapped to retry/409.
+6. Tests, docs (`.ai/features/life-groups.md`, `.ai/apps/backend.md`), `.pipeline` records.
 
-## Client (minimum)
-Kotlin `LifeGroup` (shared) gets `relationship: String? = null` and `isSupervised: Boolean = false` (`is_supervised`), defaulted, so existing constructors and old backends keep working. Swift reads the shared Kotlin model: no Swift change. Kotlin `ignoreUnknownKeys = true` already protects older app builds from the new fields. PR #92 does not touch `Church.kt` (no conflict).
+## Contract
+`PUT` body `{ attendance?: {entries:[{user_id, present}]}, report?: {kids_0_to_11, guests, mdas, offering, committed_at_tadel, committed_at_culto, leader_attended[], disciples_count, disciples_discipled_this_week, pastoring_activity_type[], pastoring_activity_other?, training_activity_type[], training_activity_other?} }`, at least one. `report` is a full replace (all required fields every time). Client-sent `date/area_id/sector_id/life_group_id/committed_*` are NOT in the DTO: ignored (the global pipe strips non-`@Expose` keys, `excludeExtraneousValues`), values come from path/group/attendance.
+Responses (GET and PUT): `{ life_group_id, meeting_date, attendance: {id|null, ..., entries, is_draft, default_present}, report: {...}|null, derived: {committed_members, committed_members_present}, can_edit, edit_deadline, report_blocked_reason }`.
+Errors: 400 bad date/body/weekday mismatch/roster, 403 no access or edit window closed, 404 group, 409 `attendance_required` (report without attendance), 422 group has no sector/area (report only; attendance still saves).
 
-## Home card recommendation (product question)
-`buildHomeLifeGroupCards` (PR #92) orders leader/co-leader first then by name, cap 3 + "Ver todos (N)". Without a change, supervised groups sort alphabetically after leadership groups: a supervisor of 100 groups sees their own groups first, then 3 - n alphabetical supervised ones, and "Ver todos (N)". Recommended rank: leader > co_leader > member > supervisor, cap unchanged at 3, and when the supervisor has more than 3 groups show ONE summary card ("Você supervisiona N grupos") instead of alphabetical supervised cards. Follow-up on #92 (not in this branch): 3 lines in `buildHomeLifeGroupCards` using `relationship`.
+## Decisions I had to take (flag)
+- D1 Only `admin` bypasses the edit window; `pastor` has unrestricted access but is bound by the window.
+- D2 Report requires sector+area on the group: 422, attendance part still allowed (never silently invent area/sector).
+- D3 Groups without a fixed `meeting_day`: same as attendance today, any past date accepted.
+- D4 Attendance-only PUT on a date that has an UNLINKED legacy report leaves that report untouched (not linked, not re-synced); a PUT with `report` links it and overwrites its snapshot fields.
+- D5 Multiple non-deleted reports for one (group,date) in a dirty DB: the oldest is the one updated; extra rows untouched (warn log).
+- D6 Old `POST /forms/life-group-reports` duplicate (index present) now answers 409 instead of a DB 500; old `PATCH` unchanged (does not re-sync `committed_*` on linked rows; phase 0/4).
+- D7 `edit_deadline` is `YYYY-MM-DD` (last editable day, inclusive, Sao Paulo), same for everyone; `can_edit` is per viewer.
+- D8 Attendance entries capped at 500, report arrays at 20 items x 80 chars, `*_other` 180, counts 0..100000, offering `^\d{1,8}(\.\d{1,2})?$`.
+- D9 "Future date" check reuses the attendance rule (UTC date), the edit window uses Sao Paulo days.
 
 ## Validation plan
-Scoped jest (scope resolver, life-groups service, consumers), full jest vs baseline 6 failing suites, `npm run build`, scoped eslint/prettier, throwaway Postgres for the `findMine` query, Kotlin model compile not possible without JDK check (see test-results).
-
-## Review decisions (Malcolm review, applied by Arnold)
-- M1 (write authz): `casa-de-paz-reports` update/delete bypass of the owner policy requires `scope.unrestricted` OR (role slug `area_leader`/`sector_leader` AND sector in scope), as before. Row-based scope only widens READ.
-- M2 (PRODUCT QUESTION, kept as is): row-based scope widens READ for slug-less leaders/co-leaders on ScopeGuard-only GETs: member-registrations, form-guests, form-conversions, life-group-reports (list/:id/audit), casa-de-paz-reports (list/:id/audit), life-group-analytics. They can now see registration/guest/conversion PII for their groups/sectors. Alternative if rejected: add RolesGuard to those GETs.
-- M3: resolver = 1 user+role lookup + 1 ids-only SQL (CTE); admin/pastor 1 query. Double resolution in guests/journey kept (no ScopeGuard on those routes).
-- m1: analytics `members_total` for sector-scoped callers can grow (users in scoped groups with different/null sectorId now counted).
-- m2: `/me` omits roster for supervisor-only rows (`members: null`, `member_count` kept); `/:id` roster visibility for supervisors kept.
-- m3: findOne's supervised check restricted to the requested group id.
+build, scoped jest (new module, attendance, reports, analytics, tasks, forms-core), full jest vs develop baseline (worktree), scoped eslint, prettier --check, throwaway Postgres (migration clean / duplicates / re-run / down, real-DB concurrency + rollback).

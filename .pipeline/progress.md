@@ -1,15 +1,15 @@
 # Progress
 
 ## Request
-Area/sector leaders and co-leaders see all life groups they supervise (scope resolver + `GET /life-groups/me` with `relationship`).
+Meetings API phase 1 (backend): migration, `life-group-meetings` module, shared upsert extraction, report snapshot sync, tests, docs.
 
 ## Status
 - [x] Context reviewed
 - [x] Spec created
-- [x] Implementation
-- [x] Tests
-- [x] Docs
-- [x] Validation (see test-results.md)
+- [ ] Implementation
+- [ ] Tests
+- [ ] Docs
+- [ ] Validation (see test-results.md)
 
 ## Timeline
-- 2026-10-12 Grant/Owen/Sattler: spec written after verifying the four lead findings against code.
+- 2026-10-13 Grant/Owen/Sattler: previous pipeline files archived as `*-before-meetings-api-2026-10-13.md`; spec written from the approved design; decisions Q1/Q2/Q3/Q5 recorded.
