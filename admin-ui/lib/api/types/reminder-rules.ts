@@ -1,6 +1,11 @@
 // admin-ui/lib/api/types/reminder-rules.ts
 
-export type ReminderRuleType = 'form_report' | 'event' | 'member_journey' | 'life_group_tasks'
+export type ReminderRuleType =
+  | 'form_report'
+  | 'event'
+  | 'member_journey'
+  | 'life_group_attendance'
+  | 'life_group_tasks'
 
 export interface FormReminderEntry {
   form_slug: string
@@ -34,6 +39,32 @@ export interface MemberJourneyReminderConfig {
   // category is always 'member_journey' — hardcoded in the evaluator
 }
 
+export interface LifeGroupAttendanceReminderConfig {
+  // Hours after the group's meeting start at which the primary push is sent.
+  hours_after_meeting_start: number
+  // Legacy copy (primary push while LIFE_GROUP_MEETING_V2 is off).
+  title: string
+  message: string
+  // ---- Fields below only take effect when the backend flag LIFE_GROUP_MEETING_V2 is on.
+  // Primary push copy (attendance + report).
+  meeting_title?: string
+  meeting_message?: string
+  // Church-timezone hour (0-23) of the daily follow-up and of the escalation.
+  followup_hour?: number
+  // 1 = every day, 2 = every other day...
+  followup_interval_days?: number
+  // Cap: last day after the meeting that may get a follow-up (0 = no follow-up).
+  followup_max_days?: number
+  followup_title?: string
+  followup_message?: string
+  // Day after the meeting when the sector leader is told (0 = off).
+  escalation_after_days?: number
+  // `{group}` and `{date}` (DD/MM) are replaced.
+  escalation_title?: string
+  escalation_message?: string
+  // category is always 'life_group_attendance' — hardcoded in the evaluator
+}
+
 export interface LifeGroupTasksReminderConfig {
   // Days before the meeting. The largest value draws the tasks and notifies
   // assignees; smaller values only remind people already assigned.
@@ -53,6 +84,7 @@ export type ReminderConfig =
   | FormReportReminderConfig
   | EventReminderConfig
   | MemberJourneyReminderConfig
+  | LifeGroupAttendanceReminderConfig
   | LifeGroupTasksReminderConfig
 
 export interface ReminderRule {
