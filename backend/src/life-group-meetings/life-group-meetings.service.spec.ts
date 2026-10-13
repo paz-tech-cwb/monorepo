@@ -228,10 +228,22 @@ describe('LifeGroupMeetingsService', () => {
       },
     );
 
-    it('404 for an unknown group', async () => {
+    it('404 for an unknown group, with the stable group_not_found code', async () => {
+      const call = build().service.getMeeting(99, TODAY, unrestricted, admin);
+      await expect(call).rejects.toThrow(NotFoundException);
+      await expect(call).rejects.toMatchObject({
+        response: expect.objectContaining({ code: 'group_not_found' }),
+      });
+    });
+
+    it('403 carries life_group_access_forbidden', async () => {
       await expect(
-        build().service.getMeeting(99, TODAY, unrestricted, admin),
-      ).rejects.toThrow(NotFoundException);
+        build().service.getMeeting(5, TODAY, none, leader),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({
+          code: 'life_group_access_forbidden',
+        }),
+      });
     });
   });
 
@@ -403,6 +415,41 @@ describe('LifeGroupMeetingsService', () => {
       const view = await service.getMeeting(1, '2026-10-13', none, leader);
       expect(view.attendance).toBeNull();
       expect(view.report?.id).toBe('legacy');
+    });
+
+    it('past date outside the edit window with no record is a read-only draft of the CURRENT roster', async () => {
+      const { service } = build();
+      // Group 4 has no fixed day (any date is regular); group 1 meets Wednesdays.
+      for (const [group, date] of [
+        [4, '2026-09-08'],
+        [1, '2026-09-09'],
+      ] as const) {
+        const view = await service.getMeeting(group, date, none, leader);
+        expect(view.can_write).toBe(true);
+        expect(view.can_edit).toBe(false);
+        expect(view.edit_deadline < TODAY).toBe(true);
+        expect(view.attendance).toMatchObject({
+          is_draft: true,
+          id: null,
+          members_count: 3,
+        });
+        expect(view.report).toBeNull();
+      }
+    });
+
+    it('rejects bad and future dates with stable codes', async () => {
+      const { service } = build();
+      for (const [date, code] of [
+        ['2026-13-40', 'invalid_meeting_date'],
+        ['2026-10-21', 'date_in_future'],
+        ['nope', 'invalid_meeting_date_format'],
+      ] as const) {
+        await expect(
+          service.getMeeting(1, date, none, leader),
+        ).rejects.toMatchObject({
+          response: expect.objectContaining({ code }),
+        });
+      }
     });
 
     it('rejects bad and future dates', async () => {

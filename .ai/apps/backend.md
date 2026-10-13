@@ -66,6 +66,7 @@ report in one transaction. Shared pieces: `LifeGroupAttendanceService.upsertInTr
 opt-in `life-group-meetings.integration.spec.ts` (real PostgreSQL, env
 `MEETINGS_PG_*`, skipped by default). Extra meetings: `extra_meeting` flag on the meetings PUT/GET only (rules, cap
 and consumers in `features/life-groups.md`).
+Error-code contract (`common/errors/coded-error-body.ts`) and the generic-404 vs `group_not_found` distinction: `features/life-groups.md` ("Error-code contract"). The integration specs (`MEETINGS_PG_*`, `ANALYTICS_PG_*`) need a DB with all migrations applied.
 Details in `features/life-groups.md`.
 
 ## Reminders v2 (meeting reminders)

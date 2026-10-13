@@ -318,6 +318,89 @@ describe('LifeGroupMeetingsController (global pipe + serializer)', () => {
     });
   });
 
+  // Error-code contract for GET /life-groups/:id/meetings/:date. Clients
+  // branch on `code`; a 404 WITHOUT a code is Nest's generic route-not-found
+  // (the running build does not have the route, e.g. a failed deploy).
+  describe('GET error-code contract', () => {
+    const OLD_WED = '2026-09-09'; // 5 weeks ago, a Wednesday (group meets Wed)
+    const OLD_TUE = '2026-09-08';
+
+    it('past date outside the edit window with NO record: 200 read-only draft (never 404)', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/life-groups/1/meetings/${OLD_WED}`)
+        .expect(200);
+      expect(res.body).toMatchObject({
+        meeting_date: OLD_WED,
+        can_write: true,
+        can_edit: false,
+        edit_deadline: '2026-09-23',
+        attendance: { is_draft: true, id: null, members_count: 2 },
+        report: null,
+      });
+      expect(res.body.edit_deadline < TODAY).toBe(true);
+    });
+
+    it('the same past date for an admin stays editable', async () => {
+      role = 'admin';
+      userId = 999;
+      scope = { ...scope, unrestricted: true };
+      const res = await request(app.getHttpServer())
+        .get(`/life-groups/1/meetings/${OLD_WED}`)
+        .expect(200);
+      expect(res.body).toMatchObject({ can_edit: true, can_write: true });
+    });
+
+    it('past non-regular weekday without the flag: 400 extra_meeting_required', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/life-groups/1/meetings/${OLD_TUE}`)
+        .expect(400);
+      expect(res.body.code).toBe('extra_meeting_required');
+    });
+
+    it('unknown group: 404 group_not_found', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/life-groups/2/meetings/${OLD_WED}`)
+        .expect(404);
+      expect(res.body).toMatchObject({
+        statusCode: 404,
+        error: 'Not Found',
+        code: 'group_not_found',
+      });
+    });
+
+    it('no access: 403 life_group_access_forbidden', async () => {
+      em.rows(LifeGroup)[0].leader = { id: 555 };
+      const res = await request(app.getHttpServer()).get(url).expect(403);
+      expect(res.body.code).toBe('life_group_access_forbidden');
+    });
+
+    it.each([
+      ['2026-10-21', 'date_in_future'],
+      ['2026-13-40', 'invalid_meeting_date'],
+      ['not-a-date', 'invalid_meeting_date_format'],
+    ])('date %s: 400 %s', async (date, code) => {
+      const res = await request(app.getHttpServer())
+        .get(`/life-groups/1/meetings/${date}`)
+        .expect(400);
+      expect(res.body.code).toBe(code);
+    });
+
+    it('bad extra_meeting param: 400 invalid_extra_meeting_param', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`${url}?extra_meeting=yes`)
+        .expect(400);
+      expect(res.body.code).toBe('invalid_extra_meeting_param');
+    });
+
+    it('a route the build does not have answers a generic 404 with NO code', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/life-groups/1/not-deployed/2026-09-08')
+        .expect(404);
+      expect(res.body.code).toBeUndefined();
+      expect(res.body.message).toMatch(/^Cannot GET /);
+    });
+  });
+
   it('answers 400 for an empty body', async () => {
     await request(app.getHttpServer()).put(url).send({}).expect(400);
   });

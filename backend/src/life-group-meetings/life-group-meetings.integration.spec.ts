@@ -854,4 +854,86 @@ maybe('life-group-meetings (real PostgreSQL)', () => {
       .expect(200);
     expect(list.body).toEqual([]);
   });
+
+  describe('GET error-code contract (the TestFlight 404 report)', () => {
+    it('leader, past date outside the edit window, NO record: 200 read-only draft of the current roster', async () => {
+      const res = await http()
+        .get(meetingUrl(9001, OLD))
+        .set(as(9101))
+        .expect(200);
+      expect(res.body).toMatchObject({
+        life_group_id: 9001,
+        meeting_date: OLD,
+        can_write: true,
+        can_edit: false,
+        report: null,
+        attendance: { id: null, is_draft: true, members_count: 3 },
+      });
+      expect(res.body.edit_deadline < THIS_WEEK).toBe(true);
+      expect(
+        res.body.attendance.entries.map((e: { name: string }) => e.name),
+      ).toEqual(['Ana', 'Bruno', 'Carla']);
+      // The draft is never persisted.
+      expect(await count('life_group_attendance', 'life_group_id=9001')).toBe(
+        0,
+      );
+    });
+
+    it('the same date for an admin is editable', async () => {
+      const res = await http()
+        .get(meetingUrl(9001, OLD))
+        .set(as(9109))
+        .expect(200);
+      expect(res.body.can_edit).toBe(true);
+    });
+
+    it('past non-regular weekday: 400 extra_meeting_required', async () => {
+      const [y, m, d] = OLD.split('-').map(Number);
+      const tuesday = dateKeyOf(shiftDays({ year: y, month: m, day: d }, -1));
+      const res = await http()
+        .get(meetingUrl(9001, tuesday))
+        .set(as(9101))
+        .expect(400);
+      expect(res.body.code).toBe('extra_meeting_required');
+    });
+
+    it('future date: 400 date_in_future', async () => {
+      const [y, m, d] = THIS_WEEK.split('-').map(Number);
+      const future = dateKeyOf(shiftDays({ year: y, month: m, day: d }, 14));
+      const res = await http()
+        .get(meetingUrl(9001, future))
+        .set(as(9101))
+        .expect(400);
+      expect(res.body.code).toBe('date_in_future');
+    });
+
+    it('unknown group: 404 group_not_found', async () => {
+      const res = await http()
+        .get(meetingUrl(9999, OLD))
+        .set(as(9109))
+        .expect(404);
+      expect(res.body).toMatchObject({
+        statusCode: 404,
+        error: 'Not Found',
+        code: 'group_not_found',
+      });
+    });
+
+    it('non-member: 403 life_group_access_forbidden (never a 404)', async () => {
+      const res = await http()
+        .get(meetingUrl(9001, OLD))
+        .set(as(9111))
+        .expect(403);
+      expect(res.body.code).toBe('life_group_access_forbidden');
+    });
+
+    it('a route the build does not have: generic 404, NO code', async () => {
+      const res = await http()
+        .get(`/life-groups/9001/meetings-missing/${OLD}`)
+        .set(as(9101))
+        .expect(404);
+      expect(res.body.code).toBeUndefined();
+      expect(res.body.message).toMatch(/^Cannot GET /);
+    });
+  });
 });
