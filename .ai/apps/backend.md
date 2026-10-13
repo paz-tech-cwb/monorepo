@@ -61,6 +61,18 @@ report in one transaction. Shared pieces: `LifeGroupAttendanceService.upsertInTr
 opt-in `life-group-meetings.integration.spec.ts` (real PostgreSQL, env
 `MEETINGS_PG_*`, skipped by default). Details in `features/life-groups.md`.
 
+## Reminders v2 (meeting reminders)
+
+`reminders/evaluators/life-group-attendance-reminder.evaluator.ts` keeps the legacy
+path verbatim and delegates to `life-group-meeting-v2.reminders.ts` only when
+`isLifeGroupMeetingV2Enabled()` (`reminders/life-group-meeting-v2.flag.ts`, env
+`LIFE_GROUP_MEETING_V2`, default off, read at runtime). `reminders/claim-dispatch-key.ts`
+is the rule-type-parameterized claim-first helper (same contract as
+`life-group-tasks/dispatch-claim.ts`). Config types, defaults, validation and
+`resolveLifeGroupAttendanceConfig` live in `reminders/types/reminder-config.ts`.
+Behavior, deep links and switch-on steps: `features/notifications.md`. Opt-in real-DB
+spec env: `REMINDERS_PG_HOST|PORT|USER|PASSWORD|DB`.
+
 ## Validation
 
 Prefer focused tests first:

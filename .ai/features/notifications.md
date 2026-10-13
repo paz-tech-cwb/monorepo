@@ -16,7 +16,7 @@ Send push notifications and route users to the correct screen when notifications
 | `member_journey` | Minha Jornada | `paz://journey` |
 | `admin_alerts` | Account/admin alert area | `paz://account` |
 | `contributions` | Account/contributions area | `paz://account` |
-| `life_group_attendance` | Life group attendance editor | `paz://presenca/{lifeGroupId}/{date}` |
+| `life_group_attendance` | Life group attendance editor (sector-leader escalation: life group detail) | `paz://presenca/{lifeGroupId}/{date}` (escalation: `paz://lifegroup/{lifeGroupId}`) |
 | `life_group_task` | Life group task guide | `paz://tarefa/{assignmentId}` |
 | `life_group_study` | Estudo do Life detail | `paz://estudo-do-life/{studyId}` |
 
@@ -50,6 +50,72 @@ for groups without a fixed meeting day/time ("Sem dia fixo" or no
 
 The Meetings API (`features/life-groups.md`, phase 1) does not change this rule,
 the push copy, the dedupe keys or the `paz://presenca/{lifeGroupId}/{date}` deep link.
+
+### Meeting reminders v2 (phase 2) - server flag `LIFE_GROUP_MEETING_V2`
+
+The `life_group_attendance` rule gained the merged attendance + report behavior
+(`reminders/evaluators/life-group-meeting-v2.reminders.ts`), ALL behind the
+server env flag `LIFE_GROUP_MEETING_V2` (`true`/`1`; **default OFF**, read on every
+evaluator run via `reminders/life-group-meeting-v2.flag.ts`). With the flag off
+the evaluator runs the legacy path unchanged (same copy, check-then-send-then-
+insert dedupe, no follow-up, no escalation, `form_report` untouched).
+With the flag on (everything in church time, America/Sao_Paulo):
+
+1. **Primary push** at meeting start + `hours_after_meeting_start`, new copy
+   (`meeting_title`/`meeting_message`, default "Registre a reunião do Life Group"),
+   deep link `paz://presenca/{lifeGroupId}/{date}`, recipients leader + co-leader
+   (deduped by user, co-leader included even with role `member`). Sent only when
+   attendance is missing (attendance saved without a report is the follow-up's job).
+   Claim-first: the `ReminderDispatchLog` row is inserted before sending and
+   deleted if the send throws; the key is the same as the legacy one
+   (`life_group_attendance:{gid}:{date}`) so flipping the flag never re-sends.
+2. **Follow-up** at `followup_hour` (default 9) on day k after the meeting
+   (k = 1..`followup_max_days`, default 5, only when `(k-1) % followup_interval_days
+   == 0`, default 1 = DAILY, and only before the escalation day) to leader +
+   co-leader, when attendance exists for that meeting but no report. Copy
+   `followup_title`/`followup_message`, same deep link. Dedupe key
+   `life_group_meeting_followup:{gid}:{date}:{k}`, claim-first.
+3. **Escalation** on day `escalation_after_days` (default 5; 0 = off) at
+   `followup_hour`: one push to the group's SECTOR leader and sector co-leader
+   (deduped; none if the group has no sector or the sector has no leader) with
+   `{group}`/`{date}` (DD/MM) placeholders. Category `life_group_attendance`
+   (reused: non-opt-outable, channel `paz_life_group`, no enum migration, no
+   client change), deep link `paz://lifegroup/{lifeGroupId}` (already parsed by
+   Android `life_group_detail/{id}` and iOS; no new scheme). Dedupe key
+   `life_group_meeting_escalation:{gid}:{date}` (one per group and meeting date),
+   claim-first. The daily follow-ups stop the day before, so day 5 is the only push
+   of that day.
+4. "Has a report": a non-deleted `life_group_reports` row linked via `attendance_id`
+   OR dated within [meeting date, meeting date + 6]. A meeting without attendance
+   is never followed up or escalated (the primary push owns that gap).
+5. Groups without a fixed day (or null `meeting_time`) are skipped everywhere.
+   Extra meetings / manual dates are created by leaders in the Phase 3 app; reminders
+   never target them.
+
+Config (`reminder_rules.config`, validated in `validateReminderConfig`; rows
+saved before v2 get defaults through `resolveLifeGroupAttendanceConfig`):
+`hours_after_meeting_start`, legacy `title`/`message`, `meeting_title`/
+`meeting_message`, `followup_hour` (0-23), `followup_interval_days` (1-7),
+`followup_max_days` (0-14, 0 = off), `followup_title`/`followup_message`,
+`escalation_after_days` (0-14, 0 = off), `escalation_title`/`escalation_message`.
+Edit them in admin-ui Notificacoes > Lembretes automaticos > "Reuniao do Life Group".
+
+Switch-on steps (order matters, the combined screen does not exist in the apps yet and
+old apps open the old attendance editor through the same deep link):
+1. Release the app builds that contain the combined meeting screen (Phase 3).
+2. Confirm adoption of those builds.
+3. Set `LIFE_GROUP_MEETING_V2=true` in the backend environment and restart.
+4. Later, as a separate cutover step (NOT part of phase 2): remove the
+   `life-group-reports` entry from the `form_report` rule (defaults + a data migration on
+   `reminder_rules`, pattern of `1780900000004`), so leaders stop getting the
+   Sunday 20:00 form reminder in addition to the new follow-up.
+Kill switch: unset/`false` and restart; the legacy path resumes immediately.
+Already-claimed keys are shared with the legacy path, so no duplicate pushes either way.
+
+Tests: `reminders/evaluators/life-group-meeting-v2.reminders.spec.ts` (jest fake
+timers), `types/reminder-config.spec.ts`, `life-group-meeting-v2.flag.spec.ts`,
+opt-in `life-group-meeting-v2.integration.spec.ts` (real PostgreSQL, env
+`REMINDERS_PG_*`, skipped by default).
 
 `life_group_task` is also absent from `CATEGORY_PREF_MAP` (not opt-outable) and
 maps to Android channel `paz_life_group`. The `life_group_tasks` rule is
