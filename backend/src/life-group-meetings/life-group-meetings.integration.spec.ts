@@ -204,21 +204,26 @@ maybe('life-group-meetings (real PostgreSQL)', () => {
   });
 
   describe('authorization matrix with the REAL scope resolver', () => {
+    // [name, user, group, canRead, canWrite]: supervisors are read-only (D11).
     it.each([
-      ['leader (role member)', 9101, 9001, true],
-      ['co-leader (role member)', 9102, 9001, true],
-      ['leader of two groups (second)', 9101, 9004, true],
-      ['area supervisor in scope', 9106, 9001, true],
-      ['sector supervisor in scope', 9107, 9001, true],
-      ['supervisor of ANOTHER area', 9112, 9001, false],
-      ['plain roster member', 9103, 9001, false],
-      ['outsider', 9111, 9001, false],
-      ["other group's leader", 9108, 9001, false],
-      ['admin', 9109, 9001, true],
-      ['pastor', 9110, 9001, true],
-    ])('%s', async (_n, user, group, allowed) => {
+      ['leader (role member)', 9101, 9001, true, true],
+      ['co-leader (role member)', 9102, 9001, true, true],
+      ['leader of two groups (second)', 9101, 9004, true, true],
+      ['area supervisor in scope (read-only)', 9106, 9001, true, false],
+      ['sector supervisor in scope (read-only)', 9107, 9001, true, false],
+      ['supervisor of ANOTHER area', 9112, 9001, false, false],
+      ['plain roster member', 9103, 9001, false, false],
+      ['outsider', 9111, 9001, false, false],
+      ["other group's leader", 9108, 9001, false, false],
+      ['admin', 9109, 9001, true, true],
+      ['pastor', 9110, 9001, true, true],
+    ])('%s', async (_n, user, group, canRead, canWrite) => {
       const get = await http().get(meetingUrl(group, THIS_WEEK)).set(as(user));
-      expect(get.status).toBe(allowed ? 200 : 403);
+      expect(get.status).toBe(canRead ? 200 : 403);
+      if (canRead) {
+        expect(get.body.can_write).toBe(canWrite);
+        expect(get.body.can_edit).toBe(canWrite);
+      }
       const put = await http()
         .put(meetingUrl(group, THIS_WEEK))
         .set(as(user))
@@ -228,10 +233,13 @@ maybe('life-group-meetings (real PostgreSQL)', () => {
               ? att()
               : { entries: [{ user_id: 9103, present: true }] },
         });
-      expect(put.status).toBe(allowed ? 200 : 403);
+      expect(put.status).toBe(canWrite ? 200 : 403);
+      if (canRead && !canWrite) {
+        expect(put.body.code).toBe('meeting_write_forbidden');
+      }
       expect(
         await count('life_group_attendance', `life_group_id=${group}`),
-      ).toBe(allowed ? 1 : 0);
+      ).toBe(canWrite ? 1 : 0);
     });
   });
 

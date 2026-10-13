@@ -119,7 +119,7 @@ Module `backend/src/life-group-meetings/`.
   `committed_members_present` are not in the DTO and are ignored (global pipe
   strips non-`@Expose` keys); the server derives them.
 - Response of both verbs: `{ life_group_id, meeting_date, attendance, report,
-  derived: { committed_members, committed_members_present }, can_edit,
+  derived: { committed_members, committed_members_present }, can_write, can_edit,
   edit_deadline, report_blocked_reason }`. `attendance` is the saved record
   (`is_draft: false`, `default_present: null`) or a draft from the current roster
   (`is_draft: true`, `default_present: true`, everybody present); its `entries`
@@ -156,6 +156,14 @@ Module `backend/src/life-group-meetings/`.
   calendar days: day 14 allowed, day 15 denied); only `admin` is never limited
   (pastor is bound). Reads are always allowed. `edit_deadline` is `YYYY-MM-DD`
   (last editable day); `can_edit` is per viewer.
+- Write authorization (D11): READ (GET) needs access (scope incl. area/sector
+  supervisors, leader/co-leader, admin, pastor). WRITE (PUT, and the OLD
+  `PUT .../attendance/:date`) needs admin, pastor, or the group's own
+  `leader_id`/`co_leader_id` (even with role `member`); anyone else who only has
+  scope access (supervisors) is READ-ONLY: PUT -> 403 `meeting_write_forbidden`.
+  `can_write` = that role rule; `can_edit` = `can_write` AND (inside the window
+  or admin). Mobile mirrors it for UX; the server is the authority. Helper:
+  `canWriteLifeGroup`/`assertCanWriteLifeGroup` in `life-group-access.util.ts`.
 - Validation: attendance entries 1..500 (plus the attendance rules: roster-only
   ids on first save, no duplicates, not in the future, weekday must match
   `meeting_day` only when creating, unless flagged as an extra meeting (below); groups without a fixed day accept any past

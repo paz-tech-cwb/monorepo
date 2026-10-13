@@ -80,4 +80,6 @@ npm run lint
 or co-leads (row-based, not role-slug-based); admin/pastor stay unrestricted.
 `LifeGroupsService.findMine` (`GET /life-groups/me`) includes supervised groups
 and adds `relationship` + `is_supervised` (roster omitted for supervisor-only rows). `ScopeResolverService` is row-based, one ids-only SQL; casa-de-paz write bypass still needs the area/sector leader slug. See `features/life-groups.md`
-(Visibility).
+(Visibility). Scope grants READ of attendance/meetings to supervisors; WRITE of
+attendance/meetings (and, with PR #97, reports) is admin, pastor or the group's own
+leader/co-leader (`assertCanWriteLifeGroup`, 403 `meeting_write_forbidden`).
