@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsInt,
   IsObject,
   IsOptional,
@@ -126,4 +127,12 @@ export class UpsertLifeGroupMeetingDto {
   @ValidateNested()
   @Type(() => MeetingReportDto)
   report?: MeetingReportDto | null;
+
+  // Explicit "extra meeting" flag: lets a NEW attendance be recorded on a
+  // weekday other than the group's fixed meeting_day. Only meaningful together
+  // with `attendance`; ignored by a report-only PUT.
+  @Expose({ name: 'extra_meeting' })
+  @IsOptional()
+  @IsBoolean()
+  extraMeeting?: boolean;
 }

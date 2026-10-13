@@ -351,3 +351,18 @@ Not verified: Postgres 16; migration on a prod-shaped DB.
 Cleanup: Postgres stopped (port 54926 closed). `kill` of the idle node wrapper (pid 25717, `node start.mjs`) and `rm -rf <scratchpad>/pg6/data` were DENIED; they remain (plus older wrappers 18789, 69663, 86989, 119 from earlier runs).
 
 CI follow-up: Backend CI "Lint changed files" failed on run 38382034060 (earlier head) and 38382728357 (review-fix head) with 2 `no-unsafe-assignment` errors in `form-submission-audit.service.ts` (`as any`). Not inherited in effect: CI lints files changed by the branch and this branch touches that file (the errors pre-existed in the lines, which the earlier notes called pre-existing). Fixed by typing the two casts; eslint over all branch-changed ts files clean.
+
+# Extra meeting flag - 2026-10-13
+
+Node 22.23.3 (scratchpad). Branch `feat/life-group-meetings-api`.
+- `npm run build`: PASS.
+- New/updated unit specs: meetings service (13 extra-meeting tests: flag accepted/rejected combos, immutability, cap 3/week incl. admin, other week/group unaffected, advisory-lock order 4207 then 4208, edit window and future date, access, rollback, GET draft), controller (flag via the real global pipe: stored/exposed, non-boolean values 400, `?extra_meeting=true`), attendance service (legacy PUT still rejects a non-fixed weekday with the unchanged message and writes nothing), `isoWeekRange`, analytics (`extra_meetings_count`).
+- Scoped jest (life-group*, reminders, forms-core): 32 suites pass, 1 fails (`notification-sender.spec.ts`, pre-existing), 1 skipped; 408 tests pass.
+- Full jest: 76 suites pass / 6 fail / 1 skipped; 681 tests pass / 5 fail / 34 skipped. Failing set identical to the known baseline (auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens.service).
+- eslint on all 17 changed files (16 .ts + the migration): 0 errors, 0 warnings. prettier --check: clean.
+
+## Throwaway PostgreSQL (embedded-postgres 17.5, NEW scratchpad dir `pg8`, port 54928, loopback, DB `mig`)
+- Real TypeORM CLI: full chain on an empty DB (89 migrations incl. 1796000000001) PASS; `revert` removes `is_extra` (the previous migration stays); run again PASS; migrations row deleted and re-run with the column already present PASS (idempotent); re-run reports nothing pending.
+- Integration spec: 34/34 pass (28 existing + 6 new: flag required/accepted/persisted + report in the same PUT + roster snapshot kept; immutability and misuse incl. no-fixed-day group; OLD attendance endpoint unchanged message + legacy shape without `is_extra`, editing a saved extra keeps it; GET draft with/without `?extra_meeting=true`; cap with 4 parallel PUTs on different dates of one week -> exactly 3 saved, 1x 409; task roster eligibility count with 1 regular + 2 extras in one week + 1 extra in another = 3 present). Mutation check: removing the (group, week) advisory lock makes the parallel cap test fail, so it proves the lock.
+
+Not verified: Postgres 16; migration on a prod-shaped DB; no client sends the flag yet.

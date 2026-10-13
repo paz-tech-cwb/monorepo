@@ -8,6 +8,7 @@ import {
   DEFAULT_MIN_PRESENT_MEETINGS,
   LifeGroupTaskGroupSetting,
 } from './entities/life-group-task-group-setting.entity';
+import { LIFE_GROUP_COUNTED_EXTRA_MEETINGS_PER_WEEK } from '../common/constants/life-group-meeting';
 import { CHURCH_TIME_ZONE } from '../life-group-attendance/meeting-day.util';
 import { LifeGroupTaskMemberSetting } from './entities/life-group-task-member-setting.entity';
 
@@ -89,6 +90,17 @@ export class LifeGroupTaskRosterService {
          AND (
            ulg.joined_at IS NULL
            OR a.meeting_date >= (ulg.joined_at AT TIME ZONE $2)::date
+         )
+         AND (
+           a.is_extra = false
+           OR a.meeting_date IN (
+             SELECT x.meeting_date FROM life_group_attendance x
+             WHERE x.life_group_id = a.life_group_id
+               AND x.is_extra = true
+               AND date_trunc('week', x.meeting_date) = date_trunc('week', a.meeting_date)
+             ORDER BY x.meeting_date ASC
+             LIMIT ${LIFE_GROUP_COUNTED_EXTRA_MEETINGS_PER_WEEK}
+           )
          )
        GROUP BY e.user_id`,
       [lifeGroup.id, CHURCH_TIME_ZONE],

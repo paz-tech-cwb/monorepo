@@ -111,3 +111,17 @@ export function nextMeetingDate(
   const ahead = (((weekday - weekdayOf(today)) % 7) + 7) % 7;
   return dateKeyOf(shiftDays(today, ahead));
 }
+
+/**
+ * Monday..Sunday (inclusive, `YYYY-MM-DD`) of the ISO week containing a plain
+ * calendar date. Timezone-independent (pure calendar math).
+ */
+export function isoWeekRange(dateString: string): {
+  start: string;
+  end: string;
+} {
+  const [year, month, day] = dateString.split('-').map(Number);
+  const sinceMonday = (weekdayOfDateString(dateString) + 6) % 7;
+  const start = shiftDays({ year, month, day }, -sinceMonday);
+  return { start: dateKeyOf(start), end: dateKeyOf(shiftDays(start, 6)) };
+}

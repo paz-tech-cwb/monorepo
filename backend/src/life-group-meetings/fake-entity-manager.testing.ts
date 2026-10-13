@@ -132,6 +132,23 @@ export class FakeEntityManager {
 
   query = jest.fn((sql: string, params?: unknown[]) => {
     this.queries.push({ sql, params });
+    if (sql.includes('is_extra = true') && sql.includes('count(*)')) {
+      // Extra-meeting cap count: (group, from, to).
+      const [groupId, from, to] = params as [number, string, string];
+      const attendanceCtor = [...this.tables.keys()].find(
+        (k) => k.name === 'LifeGroupAttendance',
+      );
+      const c = attendanceCtor
+        ? this.rows(attendanceCtor).filter(
+            (r) =>
+              r.lifeGroupId === groupId &&
+              r.isExtra === true &&
+              r.meetingDate >= from &&
+              r.meetingDate <= to,
+          ).length
+        : 0;
+      return Promise.resolve([{ c }]);
+    }
     return Promise.resolve([]);
   });
 

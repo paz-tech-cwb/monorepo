@@ -158,10 +158,56 @@ Module `backend/src/life-group-meetings/`.
   (last editable day); `can_edit` is per viewer.
 - Validation: attendance entries 1..500 (plus the attendance rules: roster-only
   ids on first save, no duplicates, not in the future, weekday must match
-  `meeting_day` only when creating; groups without a fixed day accept any past
+  `meeting_day` only when creating, unless flagged as an extra meeting (below); groups without a fixed day accept any past
   date, same as attendance); report counts integers 0..100000, `offering` string
   `^\d{1,8}(\.\d{1,2})?$`, string arrays max 20 items x 80 chars, `*_other` max 180.
-- Old contracts unchanged: attendance GET/PUT (no new fields), `/forms/life-group-reports*`.
+- Extra meetings (product decision Q7, "extra meetings: yes"): a group WITH a fixed
+  `meeting_day` may record a meeting on another weekday only with an explicit
+  flag. `PUT` body top-level `extra_meeting: true` (boolean; anything else -> 400;
+  omitted = false); `GET .../meetings/:date?extra_meeting=true` previews the draft
+  for such a date. Attendance responses (inside the meetings view) carry
+  `is_extra`. Rules (new records only; an existing record never re-checks the
+  weekday):
+  - fixed-day group, other weekday, flag missing/false -> 400
+    `extra_meeting_required` (message tells to send `extra_meeting: true`);
+  - flag on the group's regular weekday -> 400 `extra_meeting_on_regular_day`;
+    flag on a group without a fixed day -> 400 `extra_meeting_not_applicable`
+    (every date is already a regular meeting there, D3 unchanged);
+  - the flag is fixed at creation: omitting it keeps the stored value, sending the
+    opposite value for an existing record -> 400 `extra_meeting_immutable`
+    (never silently flipped); a report-only PUT ignores the flag;
+  - cap: at most `LIFE_GROUP_MAX_EXTRA_MEETINGS_PER_WEEK = 3` extra meetings per
+    group per ISO week (Monday-Sunday of the meeting date), admin included;
+    beyond that -> 409 `extra_meeting_limit_reached`. Creation takes
+    `pg_advisory_xact_lock(4208, hashtext('<group>:<week monday>'))` (after the
+    4207 meeting lock) so parallel PUTs for different dates of one week cannot
+    exceed it. Editing an existing extra is never blocked by the cap;
+  - everything else is unchanged for extras: not in the future, 14-day edit
+    window (admin bypass), access rules, roster-only ids and the roster snapshot
+    (`members_count`/entries fixed on first save), one record per (group, date),
+    report link and `committed_*` snapshots, audit rows.
+  Persistence: `life_group_attendance.is_extra boolean NOT NULL DEFAULT false`
+  (migration `1796000000001-AddIsExtraToLifeGroupAttendance`, idempotent
+  `ADD COLUMN IF NOT EXISTS`, `down()` drops it, no data rewrite: all existing rows
+  are regular).
+  Consumers:
+  - Task eligibility (`LifeGroupTaskRosterService`): extras are real meetings and
+    their `present=true` entries count toward `min_present_meetings`, but at most
+    `LIFE_GROUP_COUNTED_EXTRA_MEETINGS_PER_WEEK = 1` extra meeting per group per ISO
+    week counts (the earliest), so flagging several in a week cannot inflate
+    eligibility. Regular meetings always count.
+  - Analytics: extras are INCLUDED in `meetings_count`/`present_count`/
+    `members_count`/`attendance_rate`; every bucket also has `extra_meetings_count`
+    (additive, monthly and per-meeting granularity).
+  - Reminders: unchanged and unaffected. The attendance reminder derives its meeting
+    date from the group's fixed weekday, so an extra record on another date neither
+    satisfies nor triggers it. For the follow-up/escalation logic (PR #98): treat an
+    extra meeting like any meeting once its attendance exists (e.g. "attendance
+    without report" applies the same), but never create reminders or expectations
+    for extras, and never use their presence to mark the REGULAR date as recorded.
+- Old contracts unchanged: attendance GET/PUT (no new fields; they keep rejecting
+  every non-fixed weekday, there is no flag there; an already-saved extra record
+  can still be edited through them, it stays extra), `/forms/life-group-reports*`.
   Only addition: a duplicate legacy `POST /forms/life-group-reports` for the same
   group+date answers 409 when the unique index exists (it used to create a duplicate).
   Legacy `PATCH` does not re-sync `committed_*` on a linked report (24h submitter

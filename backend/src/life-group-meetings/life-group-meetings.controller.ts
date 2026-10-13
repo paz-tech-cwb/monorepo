@@ -5,6 +5,7 @@ import {
   Param,
   ParseIntPipe,
   Put,
+  Query,
   Req,
   SerializeOptions,
   UseGuards,
@@ -33,11 +34,20 @@ export class LifeGroupMeetingsController {
     @Param('lifeGroupId', ParseIntPipe) lifeGroupId: number,
     @Param('date') date: string,
     @Req() req: RequestWithScope,
+    // `?extra_meeting=true` previews a draft for an extra meeting (a date that
+    // is not the group's fixed weekday). Ignored when a record already exists.
+    @Query('extra_meeting') extraMeeting?: string,
   ) {
-    return this.svc.getMeeting(lifeGroupId, date, req.formScope, {
-      id: req.user.id,
-      isAdmin: req.user.role?.slug === 'admin',
-    });
+    return this.svc.getMeeting(
+      lifeGroupId,
+      date,
+      req.formScope,
+      {
+        id: req.user.id,
+        isAdmin: req.user.role?.slug === 'admin',
+      },
+      extraMeeting === undefined ? undefined : extraMeeting === 'true',
+    );
   }
 
   @Put(':date')

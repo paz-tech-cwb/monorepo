@@ -38,6 +38,11 @@ export class LifeGroupAttendance {
   @Column({ name: 'members_count', type: 'int', default: 0 })
   membersCount: number;
 
+  // True for a meeting explicitly flagged as "extra": held on a weekday other
+  // than the group's fixed meeting_day. Set once, when the record is created.
+  @Column({ name: 'is_extra', type: 'boolean', default: false })
+  isExtra: boolean;
+
   @ManyToOne(() => User, { nullable: false })
   @JoinColumn({ name: 'recorded_by' })
   recordedBy: User;

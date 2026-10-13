@@ -1,6 +1,7 @@
 import {
   CHURCH_TIME_ZONE,
   dateKeyOf,
+  isoWeekRange,
   nextMeetingDate,
   shiftDays,
   weekdayOf,
@@ -9,6 +10,27 @@ import {
 } from './meeting-day.util';
 
 describe('meeting-day.util', () => {
+  it('isoWeekRange returns Monday..Sunday around any date', () => {
+    // 2026-10-14 is a Wednesday.
+    expect(isoWeekRange('2026-10-14')).toEqual({
+      start: '2026-10-12',
+      end: '2026-10-18',
+    });
+    expect(isoWeekRange('2026-10-12')).toEqual({
+      start: '2026-10-12',
+      end: '2026-10-18',
+    });
+    expect(isoWeekRange('2026-10-18')).toEqual({
+      start: '2026-10-12',
+      end: '2026-10-18',
+    });
+    // Across a month/year boundary.
+    expect(isoWeekRange('2027-01-01')).toEqual({
+      start: '2026-12-28',
+      end: '2027-01-03',
+    });
+  });
+
   it('zonedParts uses the church timezone, not UTC', () => {
     expect(CHURCH_TIME_ZONE).toBe('America/Sao_Paulo');
     // 01:30 UTC on the 11th is 22:30 on the 10th in Sao Paulo.

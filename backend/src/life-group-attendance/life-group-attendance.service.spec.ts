@@ -249,6 +249,33 @@ describe('LifeGroupAttendanceService', () => {
       expect(result.id).toBe('att-2');
     });
 
+    it('legacy PUT keeps rejecting a non-fixed weekday (no extra-meeting flag there) and never writes', async () => {
+      const saturdayGroup = {
+        ...lifeGroup,
+        meetingDay: 'Sábado',
+      } as unknown as LifeGroup;
+      const { service, em } = createService({
+        findOne: jest
+          .fn()
+          .mockResolvedValueOnce(saturdayGroup)
+          .mockResolvedValueOnce(null),
+      });
+
+      // 2026-06-10 is a Wednesday, not a Saturday: same message as before the
+      // meetings API existed (no mention of extra_meeting).
+      const attempt = service.upsert(
+        7,
+        '2026-06-10',
+        { entries: [{ userId: 1, present: true }] },
+        leaderScope,
+        { id: 10 },
+      );
+      await expect(attempt).rejects.toThrow(
+        '2026-06-10 is not a Sábado — this life group meets on Sábado.',
+      );
+      expect(em.save).not.toHaveBeenCalled();
+    });
+
     it('preserves the original roster snapshot when editing a past record', async () => {
       const existingEntries = [
         { userId: 1, present: false },

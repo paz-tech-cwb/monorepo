@@ -23,6 +23,8 @@ interface Actor {
 export interface MonthlyBucket {
   period: string;
   meetings_count: number;
+  // Of meetings_count, how many were flagged "extra" (non-fixed weekday).
+  extra_meetings_count: number;
   present_count: number;
   members_count: number;
   attendance_rate: number;
@@ -126,6 +128,10 @@ export class LifeGroupAnalyticsService {
       .createQueryBuilder(LifeGroupAttendance, 'a')
       .select("to_char(a.meeting_date, 'YYYY-MM')", 'period')
       .addSelect('COUNT(*)', 'meetings_count')
+      .addSelect(
+        'COUNT(*) FILTER (WHERE a.is_extra = true)',
+        'extra_meetings_count',
+      )
       .addSelect('COALESCE(SUM(a.present_count), 0)', 'present_count')
       .addSelect('COALESCE(SUM(a.members_count), 0)', 'members_count')
       .where('EXTRACT(YEAR FROM a.meeting_date) = :year', { year })
@@ -139,6 +145,7 @@ export class LifeGroupAnalyticsService {
     const raw = await qb.getRawMany<{
       period: string;
       meetings_count: string;
+      extra_meetings_count: string;
       present_count: string;
       members_count: string;
     }>();
@@ -149,6 +156,7 @@ export class LifeGroupAnalyticsService {
         {
           period: r.period,
           meetings_count: Number(r.meetings_count),
+          extra_meetings_count: Number(r.extra_meetings_count ?? 0),
           present_count: Number(r.present_count),
           members_count: Number(r.members_count),
           attendance_rate:
@@ -168,6 +176,7 @@ export class LifeGroupAnalyticsService {
         byPeriod.get(period) ?? {
           period,
           meetings_count: 0,
+          extra_meetings_count: 0,
           present_count: 0,
           members_count: 0,
           attendance_rate: 0,
@@ -190,6 +199,10 @@ export class LifeGroupAnalyticsService {
     const qb = this.em
       .createQueryBuilder(LifeGroupAttendance, 'a')
       .select("to_char(a.meeting_date, 'YYYY-MM-DD')", 'meeting_date')
+      .addSelect(
+        'COUNT(*) FILTER (WHERE a.is_extra = true)',
+        'extra_meetings_count',
+      )
       .addSelect('COALESCE(SUM(a.present_count), 0)', 'present_count')
       .addSelect('COALESCE(SUM(a.members_count), 0)', 'members_count')
       .where('EXTRACT(YEAR FROM a.meeting_date) = :year', { year })
@@ -203,6 +216,7 @@ export class LifeGroupAnalyticsService {
 
     const raw = await qb.getRawMany<{
       meeting_date: string;
+      extra_meetings_count: string;
       present_count: string;
       members_count: string;
     }>();
@@ -210,6 +224,7 @@ export class LifeGroupAnalyticsService {
     return raw.map((r) => ({
       period: r.meeting_date,
       meetings_count: 1,
+      extra_meetings_count: Number(r.extra_meetings_count ?? 0),
       present_count: Number(r.present_count),
       members_count: Number(r.members_count),
       attendance_rate:
