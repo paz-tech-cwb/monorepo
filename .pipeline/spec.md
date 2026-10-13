@@ -1,38 +1,37 @@
-# Spec: Supervisors see every life group they supervise
+# Spec: Phase 0 - stabilize the weekly life-group report (backend + admin-ui)
 
-## Request
-Area and sector leaders (and co-leaders) must see ALL life groups under their supervision wherever a life group list or scope is used. No widening for ordinary members; admin/pastor unchanged. `GET /life-groups/me` must include supervised groups and say how the viewer relates to each. Backend only plus the minimum client change (PR #92 home card depends on `/life-groups/me`).
+Source: `.pipeline/design-attendance-report-merge.md` section 6 "Phase 0", `.pipeline/pilot-audit.md` flow 6. Branch `fix/life-group-report-submit` (from origin/develop 6d87aef). This spec covers scope items 1 (backend) and 2 (admin-ui). Mobile submit fix and the form_report reminder skip are a later agent on this branch.
 
-## `.ai/` context read
-`CLAUDE.md`, `.ai/README.md`, `features/life-groups.md`, `apps/backend.md`, `backend/CLAUDE.md`.
-
-## Verified findings (code, not assumption)
-1. CONFIRMED. `ScopeResolverService.resolve` used `findOne` for area/sector/group (first row only) and gated on the role slug (`area_leader` / `sector_leader` / `life_group_leader`): one slug = one branch, so a user leading several areas/sectors/groups got only the first, and a leader/co-leader of a row without the matching slug got an empty scope. Roles are assigned manually (`PATCH users/:id/role`, admin only); creating/editing an Area/Sector/LifeGroup leader does NOT change the leader's role (areas/sectors/life-groups services never touch roles). So row-without-slug is a real state (e.g. co-leaders have no slug at all, see attendance/analytics fallbacks).
-2. CONFIRMED. `LifeGroupsService.findMine` returned only groups where the viewer is leader, co-leader or roster member.
-3. CONFIRMED, left as is. `findAll` (`GET /life-groups`) returns every group to any authenticated user. Mobile uses it for discovery (`ChurchRepositoryImpl.getLifeGroups`, search by `q`/`search`); admin-ui uses it for the life groups page, selectors and notifications. Intended for discovery; flagged as product question.  Not changed at all (no extra query on the discovery endpoint).
-4. Consumers of `ResolvedScope` audited (see changes.md): all use `scope.lifeGroupIds/sectorIds/areaIds` as sets, so they work with multi-valued scope once the resolver returns it. Guards (`@Roles`) are unchanged, so widening the resolver cannot open role-gated endpoints.
+## Verified findings (code)
+1. `POST /forms/life-group-reports` has `@Roles('admin','pastor','area_leader','sector_leader','life_group_leader')`: a co-leader (role `member`) or a `member`-role leader gets 403.
+2. `create()` never checks the actor may report for `dto.life_group_id`, and trusts client `area_id`/`sector_id` (any leader can post for any group, with mismatching area/sector).
+3. DTO has no `@Min`, no array/string caps, `offering` only `IsNumberString` (column is `numeric(10,2)`: an 11+ digit value would 500), no future-date check.
+4. `PATCH :id` (`UpdateLifeGroupReportDto = PartialType(Create)`) does `Object.assign(m, dto)`: a submitter within 24h could move the report to another group/area/sector by sending `life_group_id`, bypassing any create-time check.
+5. `forms-catalog.service.ts` shows `life-group-reports` only for role slugs admin/pastor/area_leader/sector_leader/life_group_leader: a `member`-role leader or co-leader never sees the entry. Catalog is the only thing the mobile Formularios list uses to show entries (`can_write`/`can_read`), so mobile hides the form for them.
+6. admin-ui form sends `pastoring_activity_type`/`training_activity_type` as plain strings (DTO wants `string[]`), omits `leader_attended` and both `*_other`; `lib/api/types/formularios.ts` types the two as `string`.
+7. Attendance's future-date check uses UTC (`new Date().toISOString().slice(0,10)`); the church timezone is America/Sao_Paulo (`CHURCH_TIME_ZONE`, `zonedParts` in `life-group-attendance/meeting-day.util.ts`).
 
 ## Decisions
-- Scope keys off the real `leader_id`/`co_leader_id` rows, not the role slug. Rationale: the code comment already states that intent; slug gating produced the empty-scope bug; access is granted only for rows the user actually leads/co-leads, and endpoint-level `@Roles` guards still apply. Admin/pastor keep the unrestricted branch (checked first). A user with no leader row (member, guest, discipler, or any slug) gets an empty scope exactly as before.
-- Union of everything regardless of slug: areas led/co-led -> their sectors; sectors led/co-led directly; groups = all groups of those sectors + groups led/co-led directly.
-- `areaIds` = areas led/co-led; `sectorIds` = union (areas' sectors + directly led sectors); `lifeGroupIds` = union. `ResolvedScope` shape unchanged.
-- `GET /life-groups/me`: add supervised groups through one query joining the group's sector, area and their leaders/co-leaders. Add `relationship` (`leader` | `co_leader` | `supervisor` | `member`, precedence in that order) and `is_supervised` (true when the viewer supervises the group via area/sector, regardless of precedence). Membership via roster is `member`. Ordering unchanged (name asc).
-- Supervisors can see the roster of supervised groups (`members`) in `/me` and `/:id` (one extra id query in `/:id`). `GET /life-groups` unchanged. Plain members: unchanged.
-- `relationship`/`is_supervised` only in `/me` (other endpoints unchanged).
+- D1 Create authorization is scope-based, enforced by a NEW injectable `LifeGroupReportCreatePolicy` (`life-group-reports/life-group-report-create-policy.ts`) called by the controller before `service.create`. `LifeGroupReportsService` is NOT edited (zero textual overlap with PR #96, which rewrites `create`, imports and `toResponse` in that file). `service.create(dto, actorId)` stays a raw persist and is only reachable through the controller.
+- D2 Policy order: (a) date not in the future (400, Sao Paulo calendar day; stricter and more correct than attendance's UTC key, never rejects a legitimate same-day submission since SP today <= UTC today); (b) load group with leader/coLeader/sector/area (404 if missing); (c) allow if scope unrestricted OR `group.id` in `scope.lifeGroupIds` OR actor is `leader.id`/`coLeader.id` else 403; (d) 422 if group has no sector or its sector has no area; (e) derive `areaId`/`sectorId` from the group and return a copy of the dto with them overwritten.
+- D3 `area_id`/`sector_id` stay in the DTO as `@IsOptional @IsInt` and are IGNORED (overwritten by derivation). Old clients/admin-ui that send them keep working; mismatching values are not an error.
+- D4 Validation (shared by create and, via PartialType, update): counts `@IsInt @Min(0) @Max(100000)`; `offering` keeps `@IsNumberString` and adds `@Matches(/^\d{1,8}(\.\d{1,2})?$/)`; arrays `@IsArray @ArrayMaxSize(20) @IsString({each}) @MaxLength(80,{each})`; `*_other` `@MaxLength(180)` (column is varchar(180)). Request/response shapes unchanged.
+- D5 Update path: only to keep the new create rule from being bypassed, `life_group_id`, `area_id`, `sector_id` are NOT accepted by PATCH (the update DTO omits them; extraneous keys are dropped by the global pipe, so no client gets a 400). The policy check (`FormSubmissionPolicyService`) is not widened. Documented as a narrowing.
+- D6 Catalog: `life-group-reports` entry becomes visible (`can_write` and `can_read`) for any actor who is leader/co-leader of at least one life group, in addition to the static role list. `FormsCatalogService` gets a cheap `EntityManager` existence query (only run for actors NOT already allowed by role and only for entries flagged `ledGroupAccess`). Read side already allows leaders/co-leaders (#92), so can_read=true is consistent. Mobile shows catalog entries as returned: no mobile change needed for visibility.
+- D7 Not done here (later agent / out of scope): mobile submit payload, `form_report` reminder smart skip, duplicate-per-(group,date) guard (PR #96 adds the partial unique index and 409 mapping), meetings endpoint.
 
-## Client (minimum)
-Kotlin `LifeGroup` (shared) gets `relationship: String? = null` and `isSupervised: Boolean = false` (`is_supervised`), defaulted, so existing constructors and old backends keep working. Swift reads the shared Kotlin model: no Swift change. Kotlin `ignoreUnknownKeys = true` already protects older app builds from the new fields. PR #92 does not touch `Church.kt` (no conflict).
+## PR #96 overlap (origin/feat/life-group-meetings-api, draft)
+#96 changes `life-group-reports.service.ts` (imports, response type moved to mapper, `create` try/catch 23505 -> 409), `entities/life-group-report.entity.ts` (attendance_id), adds `life-group-report-snapshot.service.ts`, `life-group-report.mapper.ts`, `life-group-attendance/life-group-access.util.ts`, edits `form-submission-audit.service.ts`, and `.ai/*`, `.pipeline/*`.
+This branch: does NOT touch `life-group-reports.service.ts`, the entity, `form-submission-audit.service.ts` or any file #96 adds. It edits: `life-group-reports.controller.ts`, `life-group-reports.module.ts` (add provider), `dto/create-life-group-report.dto.ts`, `dto/update-life-group-report.dto.ts`, new policy files, `forms-catalog.*`, specs `life-group-reports.controller.spec.ts`. Expected conflicts: only the shared `.ai/features/life-groups.md`, `.ai/apps/backend.md` and `.pipeline/*.md` (documentation; resolve by keeping both). The policy does not use #96's `assertCanAccessLifeGroup`; after both merge it can be swapped for it.
 
-## Home card recommendation (product question)
-`buildHomeLifeGroupCards` (PR #92) orders leader/co-leader first then by name, cap 3 + "Ver todos (N)". Without a change, supervised groups sort alphabetically after leadership groups: a supervisor of 100 groups sees their own groups first, then 3 - n alphabetical supervised ones, and "Ver todos (N)". Recommended rank: leader > co_leader > member > supervisor, cap unchanged at 3, and when the supervisor has more than 3 groups show ONE summary card ("Você supervisiona N grupos") instead of alphabetical supervised cards. Follow-up on #92 (not in this branch): 3 lines in `buildHomeLifeGroupCards` using `relationship`.
+## Scope
+New: `backend/src/life-group-reports/life-group-report-create-policy.ts` (+ `.spec.ts`).
+Modified backend: controller, module, create/update DTOs, controller spec, `forms-catalog.service.ts` (+ spec), `forms-catalog.module.ts` if the EntityManager needs wiring (TypeORM root provides it).
+Modified admin-ui: `lib/api/types/formularios.ts`, `app/(dashboard)/formularios/life-group-reports/new/life-group-reports-form.tsx`, list/detail rendering of arrays (`_columns.tsx`/detail if arrays are rendered).
+Docs: `.ai/features/life-groups.md`, `forms.md`, `apps/backend.md`, `apps/admin-ui.md`; `.pipeline/changes.md`, `test-results.md`.
 
-## Validation plan
-Scoped jest (scope resolver, life-groups service, consumers), full jest vs baseline 6 failing suites, `npm run build`, scoped eslint/prettier, throwaway Postgres for the `findMine` query, Kotlin model compile not possible without JDK check (see test-results).
+## Tests
+Policy spec + controller spec (real global pipe + serializer): leader, co-leader with role member, member-role leader, leader of two groups, area/sector supervisor in/out of scope, plain member 403, other group's leader 403, admin/pastor, group without sector/area 422, client-sent area/sector ignored, validation limits (counts, offering, arrays, other, future date), derived fields, unchanged old behaviors (GETs). Catalog: leader-of-group member sees entry, plain member does not, role-based unchanged, admin does not query DB. Update DTO drops life_group_id.
 
-## Review decisions (Malcolm review, applied by Arnold)
-- M1 (write authz): `casa-de-paz-reports` update/delete bypass of the owner policy requires `scope.unrestricted` OR (role slug `area_leader`/`sector_leader` AND sector in scope), as before. Row-based scope only widens READ.
-- M2 (PRODUCT QUESTION, kept as is): row-based scope widens READ for slug-less leaders/co-leaders on ScopeGuard-only GETs: member-registrations, form-guests, form-conversions, life-group-reports (list/:id/audit), casa-de-paz-reports (list/:id/audit), life-group-analytics. They can now see registration/guest/conversion PII for their groups/sectors. Alternative if rejected: add RolesGuard to those GETs.
-- M3: resolver = 1 user+role lookup + 1 ids-only SQL (CTE); admin/pastor 1 query. Double resolution in guests/journey kept (no ScopeGuard on those routes).
-- m1: analytics `members_total` for sector-scoped callers can grow (users in scoped groups with different/null sectorId now counted).
-- m2: `/me` omits roster for supervisor-only rows (`members: null`, `member_count` kept); `/:id` roster visibility for supervisors kept.
-- m3: findOne's supervised check restricted to the requested group id.
+## Validation
+Backend: `npm run build`; scoped jest (life-group-reports, forms-catalog, forms-core, life-group-attendance); full jest vs develop baseline; scoped eslint (no --fix) and prettier --check. Admin-ui: `pnpm install --frozen-lockfile`, `npx tsc --noEmit` (baseline 28 errors), scoped eslint, `next build`.
