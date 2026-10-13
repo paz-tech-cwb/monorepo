@@ -346,3 +346,18 @@ Arnold, from Malcolm's `.pipeline/review.md`.
 - Merge 381faaf (origin/develop into fix/pilot-readiness). `git diff origin/develop...HEAD` is only our 41 files; textual overlap was AccountView.swift and MainTabView.swift (our push-routing rewrite on top of #89's `churchRepository`), no other overlap with #89/#93 backend (scope-resolver, life-groups.service, casa-de-paz, analytics) or Android DI.
 - Migrations renumbered to avoid #89's 1795900000003..5: `AddLifeGroupTasksEnumValues1795900000006`, `CreateLifeGroupTasks1795900000007`, `AddLifeGroupStudyNotificationCategory1795900000008`. Develop already carried the tasks migrations under the old names (`...0003`/`...0004`); a DB that ran those will run 6/7 again, which is safe because both are idempotent (IF NOT EXISTS, ON CONFLICT DO NOTHING).
 - Semantic conflict found and fixed: #93 added required Swift-visible `relationship`/`isSupervised` params to the shared `LifeGroup` model, which broke compilation of `HomeViewModelTests.swift` (from #92) on develop itself. Fixed in the test helper (`relationship: nil, isSupervised: false`).
+
+## Phase 0 backend+admin-ui: stabilize the life-group report (branch fix/life-group-report-submit)
+
+Spec: `.pipeline/spec.md`. Backend:
+- NEW `backend/src/life-group-reports/life-group-report-create-policy.ts` (+ spec): scope/leader/co-leader authorization, 404/403/422, area/sector derived from group sector->area, future date (Sao Paulo day) 400. `LifeGroupReportsService` is NOT modified.
+- `life-group-reports.controller.ts`: POST lost `@UseGuards(RolesGuard)`/`@Roles(...)`; calls the policy then `svc.create`. `life-group-reports.module.ts`: provider added.
+- `dto/create-life-group-report.dto.ts`: `area_id`/`sector_id` optional and ignored; `@Min(0) @Max(100000)` counts; offering regex `^\d{1,8}(\.\d{1,2})?$` (keeps `IsNumberString`); arrays max 20 x 80 chars; `*_other` max 180. `dto/update-life-group-report.dto.ts`: omits `life_group_id/area_id/sector_id` (PATCH can no longer move a report to another group; extraneous keys dropped, not 400).
+- `forms-catalog/forms-catalog.service.ts`: `life-group-reports` entry visible to leaders/co-leaders of any group (EntityManager `getExists` query, only for actors not already allowed by role).
+- Specs: policy spec (new), controller spec (POST/PATCH through real pipe+serializer), catalog spec.
+Admin-ui: `lib/api/types/formularios.ts` (arrays + `*_other` on `LifeGroupReport`, new `LifeGroupReportPayload`), report form payload (arrays, `leader_attended`, `*_other`, offering regex, Sao Paulo default date), detail labels.
+Docs: `.ai/features/life-groups.md`, `forms.md`, `apps/backend.md`, `apps/admin-ui.md`.
+
+PR #96 overlap (origin/feat/life-group-meetings-api): this branch edits NONE of the files #96 touches in code (`life-group-reports.service.ts`, `entities/life-group-report.entity.ts`, `life-group-report-snapshot.service.ts`, `life-group-report.mapper.ts`, `life-group-access.util.ts`, `form-submission-audit.service.ts`). Overlap is limited to docs (`.ai/features/life-groups.md`, `.ai/apps/backend.md`, `.pipeline/*.md`): keep both sides. After both merge, the policy could use #96's `assertCanAccessLifeGroup`; #96's new meetings flow does its own access check and does not use this policy. #96's 23505 -> 409 mapping lives in the service `create`, which this branch leaves intact.
+
+Decisions to flag: (1) authorization lives in a policy called by the controller, not inside `service.create` (merge-safety); (2) 422 also applies to admin for a group without sector/area; (3) future-date uses the Sao Paulo day, stricter than attendance's UTC day; (4) PATCH narrowing; (5) catalog visibility for leaders of any group also grants `can_read`, consistent with the read endpoints.

@@ -306,3 +306,13 @@ iOS (Xcode 26.6, TestPhone, scratchpad JDK17/Gradle/Konan):
 - `./gradlew :shared:assembleSharedDebugXCFramework :shared:iosSimulatorArm64Test`: BUILD SUCCESSFUL, 92 tests, 0 failures.
 - `xcodebuild test` PazChurch on TestPhone: first run FAILED to compile `HomeViewModelTests.swift:41` (missing `relationship`/`isSupervised`, from #93, inherited on develop). After the one-line test fix: TEST SUCCEEDED (15+9+12+6 = 42 tests, 0 failures). Temporary fake GoogleService-Info.plist (39-char key) deleted afterwards, never committed.
 - Android: not buildable locally (no SDK); cross-read only: Android files changed by #89 (AccountViewModel, AndroidModule, Academy, MemberJourney) do not overlap ours (MainActivity, PazNavGraph, push helper, MinistryDetailScreen).
+
+## Phase 0 backend+admin-ui (fix/life-group-report-submit)
+
+Node 22.23.3 (scratchpad). Backend:
+- `npm run build` OK.
+- Scoped jest (life-group-reports, forms-catalog, forms-core, life-group-attendance): 10 suites; only failure is the known `forms-core/services/notification-sender.spec`.
+- Full `npx jest`: 6 failed suites / 5 failed tests / 620 passed (80 suites): exactly the 6 known baseline suites (auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens). No develop worktree was needed since the failing set matches the documented baseline.
+- eslint (no --fix) on src/life-group-reports and src/forms-catalog: 0 errors, 11 `no-unsafe-argument` warnings (supertest `app.getHttpServer()` pattern, same as the pre-existing lines of the controller spec). prettier --check clean.
+Admin-ui: `pnpm install --frozen-lockfile` (pnpm 9.15.9) OK; `tsc --noEmit` 26 errors both before and after this change (identical sorted lists, so no new ones; lead's baseline said 28); eslint on the 3 changed files clean; `next build` OK.
+Not verified: no real Postgres run of the `findOne` with `select` + nested relations (mocked EntityManager); no manual run of the admin-ui form against a live backend; mobile untouched.
