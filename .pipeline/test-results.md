@@ -32,3 +32,7 @@ NOT verified: UI on a simulator/device (layout, DatePicker sheet, keyboard handl
 | Android (no local SDK) | CI via temporary retarget of PR #99 to `develop` | see "Android CI" below |
 
 New Android tests (history VM: init+resume single load / no empty flash, refresh without skeleton, meetingDay argument; meeting VM: untouched report, edits while saving, rejected extra draft, legacy message) run only in CI.
+
+### Android CI (phase 3 fixes), PR #99 temporarily retargeted to `develop`, base restored afterwards
+- Run 38416842269 (head d3cb6a93): android FAIL at `:android:testDebugUnitTest` (compile OK; 2 of 211 failed: my two new history-VM tests asserted an in-flight state that mockk resolved instantly, a test bug), ios PASS (job 115363423849), build PASS (run 38416842096).
+- Run 38419536201 (head 44ae2fb8, test gated with CompletableDeferred): android PASS (job 115372895816), ios PASS (job 115372896339); build PASS (run 38419536178, job 115372892007).
