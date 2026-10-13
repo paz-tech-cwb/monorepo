@@ -227,6 +227,21 @@ Module `backend/src/life-group-meetings/`.
   rule unchanged).
 - Reminders, push copy, `paz://presenca/{id}/{date}` deep link and the forms
   catalog are NOT changed in this phase (see `features/notifications.md`).
+- Phase 2 (reminders v2, stacked on this API) changes the `life_group_attendance`
+  reminder rule only behind the server flag `LIFE_GROUP_MEETING_V2` (default off):
+  new combined copy, follow-ups to leader + co-leader 24h/48h/72h/96h after the
+  meeting datetime (date + meeting_time, Sao Paulo; hourly tick tolerance 2h) while
+  attendance exists and no report does, and a push to the sector leader + co-leader
+  120h (day 5) after it. A report by either leader completes the reminder; extra
+  meetings with attendance are followed up like regular ones.
+  Details and switch-on steps in `features/notifications.md`.
+- Weekday rule (verified for phase 2): `assertMatchesMeetingDay` returns early for a
+  group without a fixed `meeting_day`, so ANY past date is accepted for those groups
+  (manual "Nova reuniao" works). For a group WITH a fixed day, a new meeting on another
+  weekday is rejected with 400, so an extra meeting on a different weekday is a known
+  gap; relaxing it was judged not clearly safe (it protects task eligibility and roster
+  snapshots from typos) and is left as an open product question. Reminders never target
+  groups without a fixed day or extra meetings.
 
 ## Combined "Reunião" screen (Phase 3: shared + Android + iOS)
 
@@ -412,7 +427,7 @@ visible (same rule as the list; being the submitter grants no extra read access)
 `/:id/audit` is mapped to the admin-ui `AuditLogEntry` shape
 (`id, form_slug, submission_id, action, diff, created_at, actor:{id,name}`); the
 actor `User` entity is never serialized. Create/update/delete policy is
-unchanged (`@Roles` on create still excludes co-leaders with role `member`).
+changed only as described in "Create (Phase 0)" below.
 
 Response is an explicit snake_case object (`toResponse`, controller uses
 `@SerializeOptions({strategy:'exposeAll', excludeExtraneousValues:false})`):
@@ -424,6 +439,40 @@ pastoring_activity_other, training_activity_type[], training_activity_other,
 submitted_by {id,name}|null, created_at, updated_at, deleted_at`. Before this
 fix the raw entity serialized to `{}` under the global serializer
 (characterized in the Phase 0 commit `852e7fa`).
+
+### Create (Phase 0, `fix/life-group-report-submit`)
+
+`POST /api/forms/life-group-reports` is scope-based (no `@Roles`; `AuthGuard` +
+`ScopeGuard` only). `LifeGroupReportCreatePolicy`
+(`life-group-report-create-policy.ts`, called by the controller before
+`service.create`) enforces, in order:
+
+1. `date` not after today in America/Sao_Paulo (400). A full ISO string is
+   compared by its first 10 chars. (Attendance still uses the UTC day.)
+2. `life_group_id` exists (404).
+3. Allowed if admin/pastor (unrestricted scope), OR the actor is the group's own
+   `leader_id`/`co_leader_id` (so a `member`-role leader/co-leader works).
+   Otherwise 403. Area/sector supervisors (scope) are READ-ONLY: they cannot
+   create for a group they do not lead (D11); a supervisor who also
+   leads/co-leads a group can report only for that group.
+4. The group must have a sector with an area, else 422 (also for admin).
+5. `area_id` and `sector_id` are DERIVED from the group's sector -> area. They
+   stay in the DTO as optional and are IGNORED (old clients that send them
+   keep working; wrong values are not an error).
+
+Validation (create; update inherits it): counts `@Min(0) @Max(100000)`;
+`offering` string matching `^\d{1,8}(\.\d{1,2})?$`; `leader_attended`,
+`pastoring_activity_type`, `training_activity_type` arrays max 20 items of max
+80 chars (values are still free strings); `*_other` max 180 chars. Response
+shape unchanged. `PATCH` no longer accepts `life_group_id`/`area_id`/`sector_id`
+(dropped, no 400) so a report cannot be moved to a group the actor could not
+create for; its edit policy (admin, or submitter within 24h) is unchanged, so a supervisor
+cannot PATCH others' reports; DELETE is admin only.
+Catalog (`GET /api/forms`): `life-group-reports` `can_write` is admin/pastor
+or anyone who is leader/co-leader of at least one group (whatever the role
+slug); area/sector supervisors are `can_read` only (D11) (mobile Formulários lists catalog entries as
+returned). Not covered here: duplicate guard per (group, date) and the meetings
+endpoint (PR #96), mobile submit payload, `form_report` reminder skip.
 
 ## Agent notes
 

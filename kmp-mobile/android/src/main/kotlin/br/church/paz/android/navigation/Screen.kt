@@ -166,6 +166,12 @@ sealed class Screen(
         fun createRoute(lifeGroupId: String) = "life_group_reports/$lifeGroupId"
     }
 
+    /** Weekly report submit form; `lifeGroupId` (optional) preselects the group it was opened from. */
+    data object LifeGroupReportSubmit : Screen("life_group_report_submit?lifeGroupId={lifeGroupId}") {
+        fun createRoute(lifeGroupId: String? = null) =
+            if (lifeGroupId != null) "life_group_report_submit?lifeGroupId=$lifeGroupId" else "life_group_report_submit"
+    }
+
     data object LifeGroupReportDetail : Screen("life_group_report/{reportId}") {
         fun createRoute(reportId: String) = "life_group_report/$reportId"
     }

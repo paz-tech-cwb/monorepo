@@ -410,6 +410,30 @@ struct LifeGroupDetailView: View {
                         .buttonStyle(.plain)
                     }
 
+                    // Weekly report submit: same gate as "Presença" (this group's own leader/co-leader), which is
+                    // exactly who the backend lets create the report; opens the form with this group preselected.
+                    if canManageAttendance {
+                        NavigationLink {
+                            LifeGroupReportFormView(preselectedLifeGroupId: Int32(lifeGroup.id))
+                        } label: {
+                            HStack(spacing: PazSpacing.md) {
+                                Image(systemName: "square.and.pencil")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(PazColors.accent)
+                                Text("Enviar relatório")
+                                    .font(PazTypography.titleSmall)
+                                    .foregroundColor(PazColors.ink)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(PazSpacing.lg)
+                            .glassCard(radius: PazSpacing.cardRadiusCompact)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     if canManageAttendance {
                         NavigationLink {
                             LifeGroupTaskMembersView(

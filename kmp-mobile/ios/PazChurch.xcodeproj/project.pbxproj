@@ -16,6 +16,9 @@
 		104859FBBF19976C21347463 /* LifeGroupMeetingHistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BECA4E35783287217D9D56F9 /* LifeGroupMeetingHistoryViewModel.swift */; };
 		76245460F38ED233279FA3D0 /* LifeGroupMeetingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8320612C9918D0C9E0D3D067 /* LifeGroupMeetingViewModel.swift */; };
 		1FD9FBACF0AE864EFBC77CD3 /* LifeGroupMeetingServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 379A36FFA84298692AD87EA9 /* LifeGroupMeetingServices.swift */; };
+		EB37166DBE8F0005EC5433BF /* LifeGroupReportFormTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8AFA5B2FBD754C34AFC4309 /* LifeGroupReportFormTests.swift */; };
+		0D5D7D637EE313C737EA0CDB /* LifeGroupReportFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2493D4F148FAF5704C72EB8D /* LifeGroupReportFormView.swift */; };
+		E508038BA0B3E749A4B8A2CA /* LifeGroupReportFormViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 226F7535C7EBC1D52BF00043 /* LifeGroupReportFormViewModel.swift */; };
 		42CA3B771426D7A0770A7563 /* LifeGroupReportsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CC9929E4F0DA5A78870527 /* LifeGroupReportsTests.swift */; };
 		9FE88920EB30FCB77097041E /* LifeGroupReportDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB5EC09C73F64250E2350FA6 /* LifeGroupReportDetailView.swift */; };
 		3F99685C6044E69D79B29D35 /* LifeGroupReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32C3F7EC2411EBE8BE7F414 /* LifeGroupReportsView.swift */; };
@@ -187,6 +190,9 @@
 		BECA4E35783287217D9D56F9 /* LifeGroupMeetingHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupMeetingHistoryViewModel.swift; sourceTree = "<group>"; };
 		8320612C9918D0C9E0D3D067 /* LifeGroupMeetingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupMeetingViewModel.swift; sourceTree = "<group>"; };
 		379A36FFA84298692AD87EA9 /* LifeGroupMeetingServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupMeetingServices.swift; sourceTree = "<group>"; };
+		F8AFA5B2FBD754C34AFC4309 /* LifeGroupReportFormTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportFormTests.swift; sourceTree = "<group>"; };
+		2493D4F148FAF5704C72EB8D /* LifeGroupReportFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportFormView.swift; sourceTree = "<group>"; };
+		226F7535C7EBC1D52BF00043 /* LifeGroupReportFormViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportFormViewModel.swift; sourceTree = "<group>"; };
 		C9CC9929E4F0DA5A78870527 /* LifeGroupReportsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportsTests.swift; sourceTree = "<group>"; };
 		FB5EC09C73F64250E2350FA6 /* LifeGroupReportDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportDetailView.swift; sourceTree = "<group>"; };
 		C32C3F7EC2411EBE8BE7F414 /* LifeGroupReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportsView.swift; sourceTree = "<group>"; };
@@ -561,6 +567,8 @@
 				FB5EC09C73F64250E2350FA6 /* LifeGroupReportDetailView.swift */,
 				C32C3F7EC2411EBE8BE7F414 /* LifeGroupReportsView.swift */,
 				DEFFE7517343A243C1E1ACDB /* LifeGroupReportsViewModel.swift */,
+				2493D4F148FAF5704C72EB8D /* LifeGroupReportFormView.swift */,
+				226F7535C7EBC1D52BF00043 /* LifeGroupReportFormViewModel.swift */,
 			);
 			path = LifeGroupReports;
 			sourceTree = "<group>";
@@ -757,6 +765,7 @@
 			isa = PBXGroup;
 			children = (
 				C9CC9929E4F0DA5A78870527 /* LifeGroupReportsTests.swift */,
+				F8AFA5B2FBD754C34AFC4309 /* LifeGroupReportFormTests.swift */,
 				A11CE5710000000000000001 /* DeepLinkDestinationTests.swift */,
 				A11CE5710000000000000002 /* LifeGroupTaskMarkdownTests.swift */,
 				A11CE5710000000000000003 /* HomeViewModelTests.swift */,
@@ -958,6 +967,8 @@
 				214CF4956D0B65E1AFA723F8 /* HomeView.swift in Sources */,
 				7D84EAFFB66F36F34DCC7984 /* LifeGroupHomeCard.swift in Sources */,
 				0A3D77FBFA2947F33B50A96E /* LifeGroupReportsViewModel.swift in Sources */,
+				0D5D7D637EE313C737EA0CDB /* LifeGroupReportFormView.swift in Sources */,
+				E508038BA0B3E749A4B8A2CA /* LifeGroupReportFormViewModel.swift in Sources */,
 				3F99685C6044E69D79B29D35 /* LifeGroupReportsView.swift in Sources */,
 				9FE88920EB30FCB77097041E /* LifeGroupReportDetailView.swift in Sources */,
 				81241EF8344367972B2409AF /* HomeViewModel.swift in Sources */,
@@ -1043,6 +1054,7 @@
 				A11CE5710000000000000065 /* DeepLinkDestinationTests.swift in Sources */,
 				A11CE5710000000000000066 /* LifeGroupTaskMarkdownTests.swift in Sources */,
 				42CA3B771426D7A0770A7563 /* LifeGroupReportsTests.swift in Sources */,
+				EB37166DBE8F0005EC5433BF /* LifeGroupReportFormTests.swift in Sources */,
 				A11CE5710000000000000067 /* HomeViewModelTests.swift in Sources */,
 				3A68E6DF2DCD4296CD7C2E37 /* LifeGroupMeetingViewModelTests.swift in Sources */,
 			);

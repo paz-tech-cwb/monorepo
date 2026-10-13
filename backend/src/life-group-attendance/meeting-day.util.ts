@@ -40,18 +40,33 @@ export interface ZonedParts {
   hour: number;
 }
 
+// Intl.DateTimeFormat construction is expensive and these helpers run per
+// attendance row per group per hourly tick, so formatters are cached.
+const formatterCache = new Map<string, Intl.DateTimeFormat>();
+function formatterFor(
+  key: string,
+  options: () => Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+  let fmt = formatterCache.get(key);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat('en-CA', options());
+    formatterCache.set(key, fmt);
+  }
+  return fmt;
+}
+
 export function zonedParts(
   date: Date,
   timeZone = CHURCH_TIME_ZONE,
 ): ZonedParts {
-  const fmt = new Intl.DateTimeFormat('en-CA', {
+  const fmt = formatterFor(`h:${timeZone}`, () => ({
     timeZone,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     hour12: false,
-  });
+  }));
   const map: Record<string, string> = {};
   for (const part of fmt.formatToParts(date)) {
     map[part.type] = part.value;
@@ -64,6 +79,48 @@ export function zonedParts(
     day: Number(map.day),
     hour,
   };
+}
+
+/**
+ * The UTC instant of a wall-clock date/time in `timeZone` (`dateKey` is
+ * `YYYY-MM-DD`). Resolves the zone offset through Intl, so it stays correct
+ * if the zone ever observes DST (Sao Paulo currently does not).
+ */
+export function zonedDateTimeToDate(
+  dateKey: string,
+  hour: number,
+  minute: number,
+  timeZone = CHURCH_TIME_ZONE,
+): Date {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  const wall = Date.UTC(year, month - 1, day, hour, minute);
+  const offsetAt = (instant: number): number => {
+    const fmt = formatterFor(`s:${timeZone}`, () => ({
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }));
+    const map: Record<string, string> = {};
+    for (const part of fmt.formatToParts(new Date(instant))) {
+      map[part.type] = part.value;
+    }
+    const asUtc = Date.UTC(
+      Number(map.year),
+      Number(map.month) - 1,
+      Number(map.day),
+      Number(map.hour) % 24,
+      Number(map.minute),
+      Number(map.second),
+    );
+    return asUtc - Math.floor(instant / 1000) * 1000;
+  };
+  const first = wall - offsetAt(wall);
+  return new Date(wall - offsetAt(first));
 }
 
 // A pure calendar-day computation (weekday of a Y/M/D triple, or a Y/M/D

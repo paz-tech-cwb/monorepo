@@ -2,6 +2,7 @@ package br.church.paz.android.ui.features.formularios
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import br.church.paz.shared.domain.model.FormType
 import br.church.paz.shared.domain.repository.FormsRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,7 +47,9 @@ class FormulariosViewModel(
         viewModelScope.launch {
             val form = _uiState.value.forms.find { it.id == formId }
             val effect =
-                if (form?.canRead == true) {
+                if (form?.type == FormType.life_group_report) {
+                    FormulariosEffect.NavigateToLifeGroupReportSubmit
+                } else if (form?.canRead == true) {
                     FormulariosEffect.NavigateToSubmissionsList(formId)
                 } else {
                     FormulariosEffect.NavigateToForm(formId)

@@ -11,7 +11,7 @@ struct FormDetailDeepLinkView: View {
     var body: some View {
         Group {
             if let form {
-                FormStepView(form: form)
+                FormDestinationView(form: form)
             } else if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
