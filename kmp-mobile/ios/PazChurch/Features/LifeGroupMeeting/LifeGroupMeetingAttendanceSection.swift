@@ -60,7 +60,7 @@ struct LifeGroupMeetingAttendanceSection: View {
                         .glassCard(radius: PazSpacing.cardRadiusCompact)
                     }
                     .buttonStyle(.plain)
-                    .disabled(viewModel.isReadOnly)
+                    .disabled(viewModel.isReadOnly || viewModel.isBusy)
                     .accessibilityElement(children: .combine)
                     .accessibilityValue(entry.present ? "Presente" : "Ausente")
                 }

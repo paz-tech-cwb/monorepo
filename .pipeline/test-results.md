@@ -21,3 +21,14 @@ NOT verified locally (CI or a device must confirm): `:android:compileDebugKotlin
 | swiftformat / swiftlint | new files formatted with swiftformat; swiftlint: no violations in the new files that are errors (2 pre-existing errors in `FormDetailView`/`OnboardingView`) | OK |
 
 NOT verified: UI on a simulator/device (layout, DatePicker sheet, keyboard handling, VoiceOver, dark mode), a real push-tap on `paz://presenca/...`, Android compile (CI/SDK). CI does not run on this stacked PR (base is not main).
+
+## Review fixes (phase 3)
+
+| Check | Command / method | Result |
+|---|---|---|
+| Shared tests | `./gradlew :shared:iosSimulatorArm64Test --offline` | PASS, 133 tests, 0 failures (new: offering 3-decimal rejection, `isExtraFlagRejected`) |
+| XCFramework | `./gradlew :shared:assembleSharedDebugXCFramework --offline` | PASS |
+| iOS unit tests | `xcodebuild test ... TestPhone -only-testing:PazChurchTests` (temporary fake plist, deleted) | PASS, 68 tests, 0 failures (new: untouched report not saveable, edits ignored while saving, rejected extra draft refetch, legacy report message) |
+| Android (no local SDK) | CI via temporary retarget of PR #99 to `develop` | see "Android CI" below |
+
+New Android tests (history VM: init+resume single load / no empty flash, refresh without skeleton, meetingDay argument; meeting VM: untouched report, edits while saving, rejected extra draft, legacy message) run only in CI.

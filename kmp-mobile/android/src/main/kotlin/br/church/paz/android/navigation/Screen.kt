@@ -112,8 +112,17 @@ sealed class Screen(
     }
 
     // "Reuniões": history of a group's meetings (presence + report) and the "Nova reunião" entry.
-    data object LifeGroupMeetings : Screen("life_group_meetings/{lifeGroupId}") {
-        fun createRoute(lifeGroupId: String) = "life_group_meetings/$lifeGroupId"
+    // `meetingDay` (optional) is the group's fixed weekday, handed over from the group detail so the
+    // history screen does not have to fetch the whole group list to learn it.
+    data object LifeGroupMeetings : Screen("life_group_meetings/{lifeGroupId}?meetingDay={meetingDay}") {
+        fun createRoute(
+            lifeGroupId: String,
+            meetingDay: String? = null,
+        ): String {
+            val base = "life_group_meetings/$lifeGroupId"
+            if (meetingDay.isNullOrBlank()) return base
+            return "$base?meetingDay=${java.net.URLEncoder.encode(meetingDay, "UTF-8").replace("+", "%20")}"
+        }
     }
 
     // The combined presence + report screen of one meeting (group + ISO date).

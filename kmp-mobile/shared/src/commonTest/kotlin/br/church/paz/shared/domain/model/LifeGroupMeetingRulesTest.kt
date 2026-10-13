@@ -178,6 +178,23 @@ class LifeGroupMeetingRulesTest {
     }
 
     @Test
+    fun `normalizeOffering rejects more than two decimals instead of inflating`() {
+        assertNull(LifeGroupMeetingRules.normalizeOffering("0.125"))
+        assertNull(LifeGroupMeetingRules.normalizeOffering("0,125"))
+        assertNull(LifeGroupMeetingRules.normalizeOffering("1.2345"))
+        assertEquals("0.12", LifeGroupMeetingRules.normalizeOffering("0.12"))
+        assertEquals("1234.00", LifeGroupMeetingRules.normalizeOffering("1.234"))
+    }
+
+    @Test
+    fun `extra flag rejection codes are recognised`() {
+        assertTrue(LifeGroupMeetingErrors.isExtraFlagRejected(LifeGroupMeetingException(400, "extra_meeting_on_regular_day", null)))
+        assertTrue(LifeGroupMeetingErrors.isExtraFlagRejected(LifeGroupMeetingException(400, "extra_meeting_not_applicable", null)))
+        assertFalse(LifeGroupMeetingErrors.isExtraFlagRejected(LifeGroupMeetingException(400, "extra_meeting_required", null)))
+        assertFalse(LifeGroupMeetingErrors.isExtraFlagRejected(RuntimeException("x")))
+    }
+
+    @Test
     fun `splitValues and chip toggle`() {
         assertEquals(listOf("a", "b"), LifeGroupMeetingRules.splitValues("a, b;\n a ,"))
         assertTrue(LifeGroupMeetingRules.hasValue("Tadel, culto", "tadel"))

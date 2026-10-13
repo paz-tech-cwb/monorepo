@@ -24,6 +24,9 @@ object LifeGroupMeetingRules {
     const val MAX_ITEM_LENGTH = 80
     const val MAX_OTHER_LENGTH = 180
 
+    /** A report filed before presence existed for that date: nothing to unlock, it is shown as is. */
+    fun legacyReportMessage(): String = "Este relatório foi enviado sem registro de presença e não pode ser alterado aqui."
+
     /** Suggested chips for "Líder presente em" (the backend stores free strings; see design Q8). */
     val leaderAttendedOptions: List<LifeGroupMeetingOption> =
         listOf(LifeGroupMeetingOption("tadel", "Tadel"), LifeGroupMeetingOption("culto", "Culto"))
@@ -133,7 +136,9 @@ object LifeGroupMeetingRules {
                 '.' in text -> {
                     val decimals = text.substringAfter('.')
                     val whole = text.substringBefore('.')
-                    if (decimals.length == 3 && whole.length in 1..3) text.replace(".", "") else text
+                    // "1.234" is a thousands separator, but "0.125" (leading zero) is a 3-decimal amount: keep it
+                    // as is so the decimals check below rejects it instead of inflating it x1000.
+                    if (decimals.length == 3 && whole.length in 1..3 && whole.first() != '0') text.replace(".", "") else text
                 }
                 else -> text
             }
@@ -333,6 +338,12 @@ object LifeGroupMeetingErrors {
     const val CODE_EDIT_WINDOW_CLOSED = "edit_window_closed"
     const val CODE_GROUP_HAS_NO_SECTOR = "group_has_no_sector"
     const val CODE_SECTOR_HAS_NO_AREA = "sector_has_no_area"
+
+    /** `extra_meeting=true` was sent for a group/date where the server no longer accepts the flag. */
+    fun isExtraFlagRejected(error: Throwable): Boolean {
+        val code = (error as? LifeGroupMeetingException)?.code
+        return code == CODE_EXTRA_NOT_APPLICABLE || code == CODE_EXTRA_ON_REGULAR_DAY
+    }
 
     /** The date is not the group's weekday: the user must tick "Reunião extra" before a draft exists. */
     fun requiresExtraChoice(error: Throwable): Boolean = (error as? LifeGroupMeetingException)?.code == CODE_EXTRA_REQUIRED

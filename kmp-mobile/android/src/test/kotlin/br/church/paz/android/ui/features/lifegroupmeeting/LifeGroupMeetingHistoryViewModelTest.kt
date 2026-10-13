@@ -2,13 +2,12 @@ package br.church.paz.android.ui.features.lifegroupmeeting
 
 import app.cash.turbine.test
 import br.church.paz.android.util.MainDispatcherRule
-import br.church.paz.shared.domain.model.LifeGroup
 import br.church.paz.shared.domain.model.LifeGroupAttendance
 import br.church.paz.shared.domain.model.LifeGroupWeeklyReport
-import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.LifeGroupAttendanceRepository
 import br.church.paz.shared.domain.repository.LifeGroupReportRepository
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -24,7 +23,6 @@ class LifeGroupMeetingHistoryViewModelTest {
 
     private val attendanceRepository = mockk<LifeGroupAttendanceRepository>()
     private val reportRepository = mockk<LifeGroupReportRepository>()
-    private val churchRepository = mockk<ChurchRepository>()
 
     // 2026-10-13 is a Tuesday.
     private val today = "2026-10-13"
@@ -66,18 +64,16 @@ class LifeGroupMeetingHistoryViewModelTest {
             createdAt = null,
         )
 
-    private fun group(meetingDay: String?) = LifeGroup(id = 7, name = "Grupo", meetingDay = meetingDay)
-
-    private fun viewModel() = LifeGroupMeetingHistoryViewModel(7, attendanceRepository, reportRepository, churchRepository) { today }
+    private fun viewModel(meetingDay: String? = null) =
+        LifeGroupMeetingHistoryViewModel(7, attendanceRepository, reportRepository, meetingDay) { today }
 
     @Test
     fun `merges attendance and reports newest first with chips data`() =
         runTest {
             coEvery { attendanceRepository.getHistory(7) } returns listOf(attendance("2026-10-07"), attendance("2026-09-30"))
             coEvery { reportRepository.getReports(7) } returns listOf(report("2026-10-07"))
-            coEvery { churchRepository.getAllLifeGroups(any()) } returns listOf(group("Quarta-feira"))
 
-            val vm = viewModel()
+            val vm = viewModel("Quarta-feira")
             testScheduler.advanceUntilIdle()
 
             val state = vm.uiState.value
@@ -95,7 +91,6 @@ class LifeGroupMeetingHistoryViewModelTest {
         runTest {
             coEvery { attendanceRepository.getHistory(7) } returns listOf(attendance("2026-10-07"))
             coEvery { reportRepository.getReports(7) } throws RuntimeException("403")
-            coEvery { churchRepository.getAllLifeGroups(any()) } throws RuntimeException("offline")
 
             val vm = viewModel()
             testScheduler.advanceUntilIdle()
@@ -108,11 +103,58 @@ class LifeGroupMeetingHistoryViewModelTest {
         }
 
     @Test
+    fun `init plus the on resume refresh never flashes the empty state nor loads twice`() =
+        runTest {
+            coEvery { attendanceRepository.getHistory(7) } returns listOf(attendance("2026-10-07"))
+            coEvery { reportRepository.getReports(7) } returns emptyList()
+
+            val vm = viewModel()
+            // The screen's lifecycle observer fires ON_RESUME right after init, while the first load is in flight.
+            vm.refresh()
+            testScheduler.runCurrent()
+            val inFlight = vm.uiState.value
+            assertTrue(inFlight.isLoading)
+            assertFalse(inFlight.isRefreshing)
+
+            testScheduler.advanceUntilIdle()
+            assertFalse(vm.uiState.value.isLoading)
+            assertEquals(1, vm.uiState.value.meetings.size)
+            coVerify(exactly = 1) { attendanceRepository.getHistory(7) }
+        }
+
+    @Test
+    fun `refresh after the first load keeps the list and reloads without the skeleton`() =
+        runTest {
+            coEvery { attendanceRepository.getHistory(7) } returns listOf(attendance("2026-10-07"))
+            coEvery { reportRepository.getReports(7) } returns emptyList()
+            val vm = viewModel()
+            testScheduler.advanceUntilIdle()
+
+            vm.refresh()
+            testScheduler.runCurrent()
+            assertFalse(vm.uiState.value.isLoading)
+            assertTrue(vm.uiState.value.isRefreshing)
+            assertEquals(1, vm.uiState.value.meetings.size)
+
+            testScheduler.advanceUntilIdle()
+            assertFalse(vm.uiState.value.isRefreshing)
+            coVerify(exactly = 2) { attendanceRepository.getHistory(7) }
+        }
+
+    @Test
+    fun `the group day comes from the argument and blank means unknown`() =
+        runTest {
+            coEvery { attendanceRepository.getHistory(7) } returns emptyList()
+            coEvery { reportRepository.getReports(7) } returns emptyList()
+            assertNull(viewModel("  ").uiState.value.meetingDay)
+            assertEquals("Quarta-feira", viewModel("Quarta-feira").uiState.value.meetingDay)
+        }
+
+    @Test
     fun `attendance history failure surfaces an error and retry recovers`() =
         runTest {
             coEvery { attendanceRepository.getHistory(7) } throws RuntimeException("boom")
             coEvery { reportRepository.getReports(7) } returns emptyList()
-            coEvery { churchRepository.getAllLifeGroups(any()) } returns emptyList()
             val vm = viewModel()
             testScheduler.advanceUntilIdle()
             assertEquals("boom", vm.uiState.value.error)
@@ -130,8 +172,7 @@ class LifeGroupMeetingHistoryViewModelTest {
         runTest {
             coEvery { attendanceRepository.getHistory(7) } returns emptyList()
             coEvery { reportRepository.getReports(7) } returns emptyList()
-            coEvery { churchRepository.getAllLifeGroups(any()) } returns listOf(group("Quarta-feira"))
-            val vm = viewModel()
+            val vm = viewModel("Quarta-feira")
             testScheduler.advanceUntilIdle()
 
             assertEquals("2026-10-07", vm.defaultNewMeetingDate())
@@ -145,8 +186,7 @@ class LifeGroupMeetingHistoryViewModelTest {
         runTest {
             coEvery { attendanceRepository.getHistory(7) } returns emptyList()
             coEvery { reportRepository.getReports(7) } returns emptyList()
-            coEvery { churchRepository.getAllLifeGroups(any()) } returns listOf(group("Sem dia fixo"))
-            val vm = viewModel()
+            val vm = viewModel("Sem dia fixo")
             testScheduler.advanceUntilIdle()
 
             assertEquals(today, vm.defaultNewMeetingDate())
@@ -158,7 +198,6 @@ class LifeGroupMeetingHistoryViewModelTest {
         runTest {
             coEvery { attendanceRepository.getHistory(7) } returns emptyList()
             coEvery { reportRepository.getReports(7) } returns emptyList()
-            coEvery { churchRepository.getAllLifeGroups(any()) } returns emptyList()
             val vm = viewModel()
             testScheduler.advanceUntilIdle()
 
@@ -176,7 +215,6 @@ class LifeGroupMeetingHistoryViewModelTest {
         runTest {
             coEvery { attendanceRepository.getHistory(7) } returns listOf(attendance("2026-10-07"))
             coEvery { reportRepository.getReports(7) } returns emptyList()
-            coEvery { churchRepository.getAllLifeGroups(any()) } returns emptyList()
             val vm = viewModel()
             testScheduler.advanceUntilIdle()
 

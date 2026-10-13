@@ -206,7 +206,7 @@ private fun MeetingContent(
             }
         } else {
             items(uiState.entries, key = { it.userId }) { entry ->
-                MemberRow(entry = entry, enabled = !readOnly, onToggle = { viewModel.onTogglePresent(entry.userId) })
+                MemberRow(entry = entry, enabled = !readOnly && !uiState.isBusy, onToggle = { viewModel.onTogglePresent(entry.userId) })
             }
         }
         item {

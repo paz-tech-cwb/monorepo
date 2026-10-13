@@ -30,3 +30,16 @@ Branch `feat/life-group-meeting-screen`, stacked on PR #96 (`feat/life-group-mee
 - Tests: `PazChurchTests/LifeGroupMeetingViewModelTests.swift` (23 tests).
 - Docs: `.ai/features/life-groups.md`, `.ai/features/mobile-app.md`, `.ai/apps/mobile.md`.
 - Decisions/flags: (1) iOS history row gate widened from `canManageAttendance` to `canViewGroupReports` (user instruction / Android parity): admin/pastor/area/sector leaders now see "Reuniões". (2) The old per-group meetingDay comes from the group already in `LifeGroupDetailView` (no extra church repository call, unlike Android). (3) After an `edit_window_closed` save error the reload replaces the inline error with the read-only banner (Android parity). (4) Draft writes are fire-and-forget Tasks chained in order.
+
+## Review fixes (phase 3)
+Merged `origin/feat/life-group-meetings-api` first (conflict only in `.pipeline/test-results.md`: kept this branch's, archived PR #96's as `.pipeline/archive/test-results-pr96-2026-10-13.md`).
+- M1 Android history: `refresh()` is a no-op while a load is in flight (init + ON_RESUME no longer double load or race), `isLoading = showSkeleton || meetings.isEmpty()` (no empty-state flash), previous job cancelled by an explicit `load()`.
+- M2 Android history: `meetingDay` is a route/Koin argument (`Screen.LifeGroupMeetings.createRoute(id, meetingDay)`, optional query arg), passed from `MinistryDetailScreen`; `ChurchRepository.getAllLifeGroups()` dropped from the history VM.
+- M3 (Android `LifeGroupMeetingUiState`, iOS `LifeGroupMeetingViewModel`): `canSaveReport = canEditReport && !isBusy && reportDirty`; an untouched form is never saveable.
+- m1: presence toggles / all-present / report edits ignored while `isBusy` (VM + `MemberRow` disabled on Android, `.disabled` on iOS).
+- m2: Android draft write runs in `NonCancellable`, chained after the previous write (latest edit wins, survives leaving the screen). iOS already used unstructured chained Tasks.
+- m4: `LifeGroupMeetingErrors.isExtraFlagRejected` (shared); both VMs drop the extra flag and refetch once.
+- m5: `normalizeOffering` keeps "0.125" as 3 decimals -> null (thousands separator needs a non-zero leading digit). `LifeGroupReportRules` (PR #97) untouched.
+- m6 (route part): malformed `lifeGroupId`/`date` pops the back stack (`InvalidRouteFallback`) instead of a blank screen. The backend English 400 text is left as is.
+- m8: `LifeGroupMeetingRules.legacyReportMessage()` shown when `attendance == null && report != null`.
+Leftovers (not changed): M4 (merge with #97, whoever merges second), m3 stale draft over newer server data, m7, m9, m10-m12, entry-point gate decision (author flag 3).

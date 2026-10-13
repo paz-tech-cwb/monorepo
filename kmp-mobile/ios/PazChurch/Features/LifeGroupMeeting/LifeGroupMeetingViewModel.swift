@@ -101,8 +101,9 @@ final class LifeGroupMeetingViewModel {
         meeting != nil && !isReadOnly && reportBlockedReason == nil && isAttendanceSaved && !attendanceDirty
     }
 
+    /// A never-touched form must not be saveable (it would file an all-zero report): the first save needs an edit.
     var canSaveReport: Bool {
-        canEditReport && !isBusy && (!isReportSaved || reportDirty)
+        canEditReport && !isBusy && reportDirty
     }
 
     /// Why the report cannot be edited right now (nil when it can, or when the screen is read-only).
@@ -110,6 +111,9 @@ final class LifeGroupMeetingViewModel {
         guard meeting != nil, !isReadOnly else { return nil }
         if let blocked = reportBlockedReason {
             return LifeGroupMeetingRules.shared.reportBlockedMessage(reason: blocked)
+        }
+        if meeting?.attendance == nil, meeting?.report != nil {
+            return LifeGroupMeetingRules.shared.legacyReportMessage()
         }
         if !isAttendanceSaved {
             return "Salve a presença para liberar o relatório."
@@ -162,6 +166,20 @@ final class LifeGroupMeetingViewModel {
             applyLoaded(loaded, draft: draft, extra: extra)
         } catch {
             if Task.isCancelled {
+                return
+            }
+            if extra, LifeGroupMeetingErrorMapping.isExtraFlagRejected(error) {
+                // A stored draft (or earlier choice) says "extra", but the group's day changed: the server
+                // now refuses the flag. Drop it and refetch instead of looping on the same 400 forever.
+                await fetch(
+                    extra: false,
+                    draft: draft.map { $0.doCopy(attendance: $0.attendance, report: $0.report, extraMeeting: false) }
+                )
+                if meeting == nil {
+                    await clearStoredDraft()
+                } else {
+                    persistDraft()
+                }
                 return
             }
             if LifeGroupMeetingErrorMapping.requiresExtraChoice(error) {
@@ -219,7 +237,8 @@ final class LifeGroupMeetingViewModel {
     // MARK: - Presence
 
     func togglePresent(userId: Int32) {
-        guard !isReadOnly else { return }
+        // Edits while a save is in flight would be overwritten by the response: ignore them.
+        guard !isReadOnly, !isBusy else { return }
         entries = LifeGroupMeetingRules.shared.togglePresent(entries: entries, userId: userId)
         attendanceNotice = nil
         attendanceError = nil
@@ -228,7 +247,7 @@ final class LifeGroupMeetingViewModel {
 
     /// "Todos presentes": on marks everyone present, off marks everyone absent.
     func setAllPresent(_ present: Bool) {
-        guard !isReadOnly else { return }
+        guard !isReadOnly, !isBusy else { return }
         entries = LifeGroupMeetingRules.shared.setAllPresent(entries: entries, present: present)
         attendanceNotice = nil
         attendanceError = nil
@@ -280,7 +299,7 @@ final class LifeGroupMeetingViewModel {
     // MARK: - Report
 
     func updateReport(_ field: LifeGroupMeetingReportFormField, to value: String) {
-        guard canEditReport else { return }
+        guard canEditReport, !isBusy else { return }
         reportDraft = reportDraft.setting(field, to: value)
         reportErrors = [:]
         reportError = nil

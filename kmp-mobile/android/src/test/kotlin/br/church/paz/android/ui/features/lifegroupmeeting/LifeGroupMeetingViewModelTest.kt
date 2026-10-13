@@ -18,6 +18,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -415,6 +416,91 @@ class LifeGroupMeetingViewModelTest {
             assertEquals("150.50", vm.uiState.value.reportDraft.offering)
             assertFalse(vm.uiState.value.reportDirty)
             assertFalse(vm.uiState.value.canSaveReport)
+        }
+
+    @Test
+    fun `an untouched report form cannot be saved as an all zero report`() =
+        runTest {
+            coEvery { repository.getMeeting(7, date, null) } returns savedMeeting()
+            coEvery { repository.saveReport(7, date, any()) } returns savedMeeting(report = report())
+            val vm = viewModel()
+            settle()
+
+            assertTrue(vm.uiState.value.canEditReport)
+            assertFalse(vm.uiState.value.canSaveReport)
+            vm.onSaveReport()
+            settle()
+            coVerify(exactly = 0) { repository.saveReport(any(), any(), any()) }
+
+            vm.onReportChanged(LifeGroupMeetingReportDraft(guests = "0"))
+            assertTrue(vm.uiState.value.canSaveReport)
+            vm.onSaveReport()
+            settle()
+            coVerify(exactly = 1) { repository.saveReport(7, date, any()) }
+        }
+
+    @Test
+    fun `presence and report edits are ignored while a save is in flight`() =
+        runTest {
+            val gate = CompletableDeferred<LifeGroupMeeting>()
+            coEvery { repository.getMeeting(7, date, null) } returns draftMeeting()
+            coEvery { repository.saveAttendance(7, date, any(), null) } coAnswers { gate.await() }
+            val vm = viewModel()
+            settle()
+
+            vm.onSaveAttendance()
+            testScheduler.runCurrent()
+            assertTrue(vm.uiState.value.isSavingAttendance)
+
+            vm.onTogglePresent(1)
+            vm.onAllPresentChanged(false)
+            vm.onReportChanged(LifeGroupMeetingReportDraft(guests = "3"))
+            assertTrue(vm.uiState.value.entries.all { it.present })
+            assertEquals("", vm.uiState.value.reportDraft.guests)
+
+            gate.complete(savedMeeting())
+            settle()
+            assertFalse(vm.uiState.value.isSavingAttendance)
+            vm.onTogglePresent(1)
+            assertFalse(vm.uiState.value.entries.first { it.userId == 1 }.present)
+        }
+
+    @Test
+    fun `a stored extra draft the server now rejects is dropped and refetched without the flag`() =
+        runTest {
+            draftStore.drafts[draftKey] =
+                LifeGroupMeetingDraft(
+                    attendance = listOf(LifeGroupMeetingDraftEntry(1, false)),
+                    report = null,
+                    extraMeeting = true,
+                )
+            coEvery { repository.getMeeting(7, date, true) } throws
+                LifeGroupMeetingException(400, "extra_meeting_on_regular_day", null)
+            coEvery { repository.getMeeting(7, date, null) } returns draftMeeting()
+
+            val vm = viewModel()
+            settle()
+
+            val state = vm.uiState.value
+            assertNull(state.loadError)
+            assertNotNull(state.meeting)
+            assertFalse(state.isExtra)
+            coVerify(exactly = 1) { repository.getMeeting(7, date, true) }
+            assertTrue(draftStore.drafts[draftKey]?.extraMeeting != true)
+        }
+
+    @Test
+    fun `a legacy report without attendance says so instead of asking to save the presence`() =
+        runTest {
+            coEvery { repository.getMeeting(7, date, null) } returns meeting(attendance = null, report = report())
+            val vm = viewModel()
+            settle()
+
+            assertFalse(vm.uiState.value.canEditReport)
+            assertEquals(
+                br.church.paz.shared.domain.model.LifeGroupMeetingRules.legacyReportMessage(),
+                vm.uiState.value.reportLockedMessage,
+            )
         }
 
     // ---- read only ----

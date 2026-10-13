@@ -68,8 +68,10 @@ import org.koin.core.parameter.parametersOf
 fun LifeGroupMeetingHistoryScreen(
     navController: NavController,
     lifeGroupId: String,
+    // The group's fixed weekday from the group detail (null: unknown / "Sem dia fixo").
+    meetingDay: String? = null,
     viewModel: LifeGroupMeetingHistoryViewModel =
-        koinViewModel(parameters = { parametersOf(lifeGroupId.toInt()) }),
+        koinViewModel(parameters = { parametersOf(lifeGroupId.toInt(), meetingDay.orEmpty()) }),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showDatePicker by remember { mutableStateOf(false) }

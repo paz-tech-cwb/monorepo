@@ -243,6 +243,65 @@ final class LifeGroupMeetingViewModelTests: XCTestCase {
         XCTAssertTrue(vm.canSaveAttendance)
     }
 
+    func testUntouchedReportFormCannotBeSavedAsAllZeroReport() async {
+        let service = draftMeetingService()
+        service.attendanceResult = .success(meeting(attendance: attendance([true, true, true], isDraft: false)))
+        service.reportResult = .success(meeting(attendance: attendance([true, true, true], isDraft: false), report: report()))
+        let vm = makeViewModel(service: service)
+        await vm.load()
+        await vm.saveAttendance()
+        XCTAssertTrue(vm.canEditReport)
+        XCTAssertFalse(vm.canSaveReport)
+        await vm.saveReport()
+        XCTAssertEqual(service.calls, ["get", "saveAttendance"])
+
+        vm.updateReport(.guests, to: "0")
+        XCTAssertTrue(vm.canSaveReport)
+        await vm.saveReport()
+        XCTAssertEqual(service.calls, ["get", "saveAttendance", "saveReport"])
+    }
+
+    func testEditsAreIgnoredWhileASaveIsInFlight() async {
+        let vm = makeViewModel(service: draftMeetingService())
+        await vm.load()
+        vm.isSavingAttendance = true
+        vm.togglePresent(userId: 1)
+        vm.setAllPresent(false)
+        XCTAssertTrue(vm.allPresent)
+        vm.isSavingAttendance = false
+        vm.togglePresent(userId: 1)
+        XCTAssertFalse(vm.allPresent)
+    }
+
+    func testStoredExtraDraftRejectedByServerIsDroppedAndRefetchedWithoutFlag() async {
+        let store = FakeDraftStore()
+        store.drafts["u1_7_2026-10-07"] = LifeGroupMeetingDraft(
+            attendance: [LifeGroupMeetingDraftEntry(userId: 1, present: false)], report: nil, extraMeeting: true
+        )
+        let service = FakeMeetingService()
+        service.getResults = [
+            .failure(meetingError(400, "extra_meeting_on_regular_day")),
+            .success(meeting(attendance: attendance([true, true], isDraft: true))),
+        ]
+        let vm = makeViewModel(service: service, store: store)
+        await vm.load()
+        XCTAssertNil(vm.loadError)
+        XCTAssertNotNil(vm.meeting)
+        XCTAssertFalse(vm.isExtra)
+        XCTAssertEqual(service.extraFlags.count, 2)
+        XCTAssertEqual(service.extraFlags.last ?? nil, nil)
+        await vm.persistTask?.value
+        XCTAssertNotEqual(store.drafts["u1_7_2026-10-07"]?.extraMeeting, true)
+    }
+
+    func testLegacyReportWithoutAttendanceExplainsInsteadOfAskingToSavePresence() async {
+        let service = FakeMeetingService()
+        service.getResults = [.success(meeting(attendance: nil, report: report()))]
+        let vm = makeViewModel(service: service)
+        await vm.load()
+        XCTAssertEqual(vm.reportLockedMessage, LifeGroupMeetingRules.shared.legacyReportMessage())
+    }
+
     func testInvalidReportShowsFieldErrorsWithoutCallingService() async {
         let service = draftMeetingService()
         service.attendanceResult = .success(meeting(attendance: attendance([true, true, true], isDraft: false)))

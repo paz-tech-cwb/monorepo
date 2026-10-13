@@ -3,10 +3,10 @@ package br.church.paz.android.ui.features.lifegroupmeeting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.shared.domain.model.LifeGroupMeetingRules
-import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.LifeGroupAttendanceRepository
 import br.church.paz.shared.domain.repository.LifeGroupReportRepository
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,14 +23,17 @@ class LifeGroupMeetingHistoryViewModel(
     private val lifeGroupId: Int,
     private val attendanceRepository: LifeGroupAttendanceRepository,
     private val reportRepository: LifeGroupReportRepository,
-    private val churchRepository: ChurchRepository,
+    // The group's fixed weekday, handed over by the group detail (null/blank: "Sem dia fixo" or unknown).
+    meetingDay: String?,
     private val today: () -> String = { LifeGroupMeetingRules.todayInSaoPaulo(System.currentTimeMillis()) },
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(LifeGroupMeetingHistoryUiState())
+    private val _uiState = MutableStateFlow(LifeGroupMeetingHistoryUiState(meetingDay = meetingDay?.takeIf { it.isNotBlank() }))
     val uiState: StateFlow<LifeGroupMeetingHistoryUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<LifeGroupMeetingHistoryEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
+
+    private var loadJob: Job? = null
 
     init {
         load(showSkeleton = true)
@@ -39,23 +42,30 @@ class LifeGroupMeetingHistoryViewModel(
     fun load() = load(showSkeleton = true)
 
     /** Pull-to-refresh / on-resume entry point: same load path without the full-screen skeleton. */
-    fun refresh() = load(showSkeleton = false)
+    fun refresh() {
+        // The first load runs from init and the lifecycle observer fires ON_RESUME right after: never
+        // start a second, racing load while one is in flight.
+        if (loadJob?.isActive == true) return
+        load(showSkeleton = false)
+    }
 
     private fun load(showSkeleton: Boolean) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton, error = null) }
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            // Without data yet the skeleton stays up (never flash the empty state before the first answer).
+            _uiState.update {
+                val skeleton = showSkeleton || it.meetings.isEmpty()
+                it.copy(isLoading = skeleton, isRefreshing = !skeleton, error = null)
+            }
             try {
                 val attendance = attendanceRepository.getHistory(lifeGroupId)
-                // Both are best effort: without reports the chips just hide, without the group the
-                // "Nova reunião" default date falls back to today.
+                // Best effort: without reports the chips just hide.
                 val reports = bestEffort { reportRepository.getReports(lifeGroupId) }
-                val group = bestEffort { churchRepository.getAllLifeGroups().find { it.id == lifeGroupId } }
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         isRefreshing = false,
                         meetings = LifeGroupMeetingRules.mergeHistory(attendance, reports),
-                        meetingDay = group?.meetingDay ?: it.meetingDay,
                     )
                 }
             } catch (e: CancellationException) {

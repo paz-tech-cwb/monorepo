@@ -63,8 +63,10 @@ data class LifeGroupMeetingUiState(
     val canEditReport: Boolean
         get() = meeting != null && !isReadOnly && reportBlockedReason == null && isAttendanceSaved && !attendanceDirty
 
+    // A never-touched form must not be saveable: it would file an all-zero report with offering 0.00
+    // (and silence the reminder follow-up). The first save needs at least one edited field.
     val canSaveReport: Boolean
-        get() = canEditReport && !isBusy && (!isReportSaved || reportDirty)
+        get() = canEditReport && !isBusy && reportDirty
 
     /** Why the report cannot be edited right now (null when it can, or when the screen is read-only). */
     val reportLockedMessage: String?
@@ -73,6 +75,7 @@ data class LifeGroupMeetingUiState(
             return when {
                 meeting == null || isReadOnly -> null
                 blocked != null -> LifeGroupMeetingRules.reportBlockedMessage(blocked)
+                meeting?.attendance == null && meeting?.report != null -> LifeGroupMeetingRules.legacyReportMessage()
                 !isAttendanceSaved -> "Salve a presença para liberar o relatório."
                 attendanceDirty -> "Salve as alterações da presença antes de enviar o relatório."
                 else -> null

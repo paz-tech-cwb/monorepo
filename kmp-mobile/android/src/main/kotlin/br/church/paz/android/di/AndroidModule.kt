@@ -94,8 +94,10 @@ val androidModule =
         viewModel { LifeGroupStudyListViewModel(get(), get()) }
         viewModel { (studyId: String) -> LifeGroupStudyDetailViewModel(studyId, get(), get()) }
         viewModel { (studyId: String?) -> LifeGroupStudyEditorViewModel(studyId, get()) }
-        // (LifeGroupAttendanceRepository, LifeGroupReportRepository, ChurchRepository)
-        viewModel { (lifeGroupId: Int) -> LifeGroupMeetingHistoryViewModel(lifeGroupId, get(), get(), get()) }
+        // (LifeGroupAttendanceRepository, LifeGroupReportRepository); meetingDay "" = unknown / no fixed day
+        viewModel { (lifeGroupId: Int, meetingDay: String) ->
+            LifeGroupMeetingHistoryViewModel(lifeGroupId, get(), get(), meetingDay.ifBlank { null })
+        }
         // (LifeGroupMeetingRepository, AuthRepository, MeetingDraftStore)
         viewModel { (lifeGroupId: Int, date: String) ->
             LifeGroupMeetingViewModel(lifeGroupId, date, get(), get(), get())

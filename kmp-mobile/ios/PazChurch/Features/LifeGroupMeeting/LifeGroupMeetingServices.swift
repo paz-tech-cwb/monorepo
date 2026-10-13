@@ -103,6 +103,10 @@ enum LifeGroupMeetingErrorMapping {
         LifeGroupMeetingErrors.shared.requiresExtraChoice(error: throwable(error))
     }
 
+    static func isExtraFlagRejected(_ error: Error) -> Bool {
+        LifeGroupMeetingErrors.shared.isExtraFlagRejected(error: throwable(error))
+    }
+
     static func isEditWindowClosed(_ error: Error) -> Bool {
         LifeGroupMeetingErrors.shared.isEditWindowClosed(error: throwable(error))
     }

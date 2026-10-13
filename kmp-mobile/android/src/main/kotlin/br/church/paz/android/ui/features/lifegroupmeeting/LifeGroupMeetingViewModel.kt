@@ -12,6 +12,7 @@ import br.church.paz.shared.domain.repository.LifeGroupMeetingRepository
 import br.church.paz.shared.domain.repository.MeetingDraftStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * The combined "Reunião" screen of one (life group, date): a presence section and a report section,
@@ -76,6 +78,13 @@ class LifeGroupMeetingViewModel(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            if (extra && LifeGroupMeetingErrors.isExtraFlagRejected(e)) {
+                // A stored draft (or earlier choice) says "extra", but the group's day changed: the server
+                // now refuses the flag. Drop it and refetch instead of looping on the same 400 forever.
+                fetch(extra = false, draft = draft?.copy(extraMeeting = false))
+                if (_uiState.value.meeting == null) clearStoredDraft() else persistDraft()
+                return
+            }
             if (LifeGroupMeetingErrors.requiresExtraChoice(e)) {
                 _uiState.update {
                     it.copy(
@@ -136,7 +145,8 @@ class LifeGroupMeetingViewModel(
     // ---- presence ------------------------------------------------------------------------
 
     fun onTogglePresent(userId: Int) {
-        if (_uiState.value.isReadOnly) return
+        // Edits while a save is in flight would be overwritten by the response: ignore them.
+        if (_uiState.value.isReadOnly || _uiState.value.isBusy) return
         _uiState.update {
             it.copy(
                 entries = LifeGroupMeetingRules.togglePresent(it.entries, userId),
@@ -149,7 +159,7 @@ class LifeGroupMeetingViewModel(
 
     /** "Todos presentes": on marks everyone present, off marks everyone absent. */
     fun onAllPresentChanged(allPresent: Boolean) {
-        if (_uiState.value.isReadOnly) return
+        if (_uiState.value.isReadOnly || _uiState.value.isBusy) return
         _uiState.update {
             it.copy(
                 entries = LifeGroupMeetingRules.setAllPresent(it.entries, allPresent),
@@ -202,7 +212,7 @@ class LifeGroupMeetingViewModel(
 
     fun onReportChanged(draft: LifeGroupMeetingReportDraft) {
         val state = _uiState.value
-        if (!state.canEditReport) return
+        if (!state.canEditReport || state.isBusy) return
         _uiState.update {
             it.copy(reportDraft = draft, reportErrors = emptyMap(), reportError = null, reportNotice = null)
         }
@@ -273,19 +283,22 @@ class LifeGroupMeetingViewModel(
         if (!meeting.canEdit) return
         val currentUserId = userId ?: return
         val draft = LifeGroupMeetingRules.buildDraft(meeting, state.entries, state.reportDraft, state.isExtra)
-        persistJob?.cancel()
+        val previous = persistJob
         persistJob =
             viewModelScope.launch {
-                try {
-                    if (draft == null) {
-                        draftStore.clear(currentUserId, lifeGroupId, meetingDate)
-                    } else {
-                        draftStore.save(currentUserId, lifeGroupId, meetingDate, draft)
+                // Small bounded write that must survive leaving the screen (onCleared cancels the scope):
+                // NonCancellable, and ordered after the previous write so the latest edit always wins.
+                withContext(NonCancellable) {
+                    previous?.join()
+                    try {
+                        if (draft == null) {
+                            draftStore.clear(currentUserId, lifeGroupId, meetingDate)
+                        } else {
+                            draftStore.save(currentUserId, lifeGroupId, meetingDate, draft)
+                        }
+                    } catch (e: Exception) {
+                        // Best effort: a failed local write must never break the screen.
                     }
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    // Best effort: a failed local write must never break the screen.
                 }
             }
     }
