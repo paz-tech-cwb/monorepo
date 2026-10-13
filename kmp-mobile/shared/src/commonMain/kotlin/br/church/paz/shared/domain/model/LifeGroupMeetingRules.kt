@@ -1,0 +1,364 @@
+package br.church.paz.shared.domain.model
+
+import br.church.paz.shared.domain.repository.LifeGroupMeetingException
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
+import kotlinx.datetime.toLocalDateTime
+
+/**
+ * Pure rules of the combined "Reunião" screen (presence + weekly report), shared by Android and iOS:
+ * dates and weekdays, extra-meeting detection, presence toggles, local-draft handling, history
+ * merging and input parsing. No I/O.
+ *
+ * NOTE: the number/offering/multi-value parsers intentionally mirror the Phase 0 standalone report
+ * form's `LifeGroupReportRules` (branch fix/life-group-report-submit, not in this branch's base).
+ * Once that branch is merged the two should be consolidated into one.
+ */
+object LifeGroupMeetingRules {
+    const val MAX_COUNT = 100000
+    const val MAX_ARRAY_ITEMS = 20
+    const val MAX_ITEM_LENGTH = 80
+    const val MAX_OTHER_LENGTH = 180
+
+    /** Suggested chips for "Líder presente em" (the backend stores free strings; see design Q8). */
+    val leaderAttendedOptions: List<LifeGroupMeetingOption> =
+        listOf(LifeGroupMeetingOption("tadel", "Tadel"), LifeGroupMeetingOption("culto", "Culto"))
+
+    private val saoPaulo = TimeZone.of("America/Sao_Paulo")
+
+    // ---- dates -----------------------------------------------------------------------------
+
+    /** Today's calendar day (`yyyy-MM-dd`) in the church timezone, the same day the backend uses. */
+    fun todayInSaoPaulo(epochMillis: Long): String =
+        Instant.fromEpochMilliseconds(epochMillis).toLocalDateTime(saoPaulo).date.toString()
+
+    /** `yyyy-MM-dd` -> `dd/MM/yyyy` for display; returns the input untouched when it is not ISO. */
+    fun displayDate(iso: String): String {
+        val parsed = parseDate(iso) ?: return iso
+        val day = parsed.dayOfMonth.toString().padStart(2, '0')
+        val month = parsed.monthNumber.toString().padStart(2, '0')
+        return "$day/$month/${parsed.year.toString().padStart(4, '0')}"
+    }
+
+    private fun parseDate(iso: String): LocalDate? = runCatching { LocalDate.parse(iso.trim()) }.getOrNull()
+
+    /** True when [date] is a real ISO date that is not after [today]. */
+    fun isSelectableDate(
+        date: String,
+        today: String,
+    ): Boolean {
+        val parsed = parseDate(date) ?: return false
+        val limit = parseDate(today) ?: return true
+        return parsed <= limit
+    }
+
+    /** Weekday of a fixed `meeting_day` ("Quarta-feira", "Sábado", "Domingo"...); null = "Sem dia fixo"/unknown. */
+    fun weekdayOfMeetingDay(meetingDay: String?): DayOfWeek? {
+        val name = meetingDay?.trim()?.lowercase() ?: return null
+        return when {
+            name.startsWith("seg") -> DayOfWeek.MONDAY
+            name.startsWith("ter") -> DayOfWeek.TUESDAY
+            name.startsWith("qua") -> DayOfWeek.WEDNESDAY
+            name.startsWith("qui") -> DayOfWeek.THURSDAY
+            name.startsWith("sex") -> DayOfWeek.FRIDAY
+            name.startsWith("sáb") || name.startsWith("sab") -> DayOfWeek.SATURDAY
+            name.startsWith("dom") -> DayOfWeek.SUNDAY
+            else -> null
+        }
+    }
+
+    /**
+     * True when [date] is NOT on the group's fixed weekday, i.e. recording it needs `extra_meeting`.
+     * Groups without a fixed day (and unparseable dates) never need it: every date is regular.
+     */
+    fun needsExtraMeeting(
+        meetingDay: String?,
+        date: String,
+    ): Boolean {
+        val expected = weekdayOfMeetingDay(meetingDay) ?: return false
+        val parsed = parseDate(date) ?: return false
+        return parsed.dayOfWeek != expected
+    }
+
+    /**
+     * The date "Nova reunião" opens with: the latest regular meeting date on or before [today]
+     * (future dates are rejected by the backend); [today] itself for groups without a fixed day.
+     */
+    fun defaultNewMeetingDate(
+        meetingDay: String?,
+        today: String,
+    ): String {
+        val expected = weekdayOfMeetingDay(meetingDay) ?: return today
+        val parsedToday = parseDate(today) ?: return today
+        for (back in 0..6) {
+            val candidate = parsedToday.minus(back, DateTimeUnit.DAY)
+            if (candidate.dayOfWeek == expected) return candidate.toString()
+        }
+        return today
+    }
+
+    // ---- parsing ---------------------------------------------------------------------------
+
+    /** A non-negative integer up to [MAX_COUNT]; blank means 0; anything else (sign, decimals) is null. */
+    fun parseCount(raw: String): Int? {
+        val text = raw.trim()
+        if (text.isEmpty()) return 0
+        if (text.length > 7 || !text.all { it in '0'..'9' }) return null
+        val value = text.toIntOrNull() ?: return null
+        return if (value in 0..MAX_COUNT) value else null
+    }
+
+    /**
+     * "150,50" / "150.5" / "R$ 1.234,56" / "150" -> "150.50" / "150.50" / "1234.56" / "150.00".
+     * Blank means no offering ("0.00"). A single dot followed by exactly three digits is read as a
+     * thousands separator ("1.234" -> "1234.00"), since the backend allows at most two decimals.
+     * Returns null for an invalid amount (letters, negative, > 8 integer digits, > 2 decimals).
+     */
+    fun normalizeOffering(raw: String): String? {
+        var text = raw.trim().removePrefix("R$").trim().replace(" ", "")
+        if (text.isEmpty()) return "0.00"
+        if (!text.all { it in '0'..'9' || it == ',' || it == '.' }) return null
+
+        text =
+            when {
+                ',' in text -> {
+                    if (text.count { it == ',' } > 1) return null
+                    text.replace(".", "").replace(',', '.')
+                }
+                text.count { it == '.' } > 1 -> text.replace(".", "")
+                '.' in text -> {
+                    val decimals = text.substringAfter('.')
+                    val whole = text.substringBefore('.')
+                    if (decimals.length == 3 && whole.length in 1..3) text.replace(".", "") else text
+                }
+                else -> text
+            }
+
+        val whole = text.substringBefore('.')
+        val decimals = if ('.' in text) text.substringAfter('.') else ""
+        if (whole.isEmpty() || whole.length > 8 || decimals.length > 2) return null
+        if (!whole.all { it in '0'..'9' } || !decimals.all { it in '0'..'9' }) return null
+        return "${whole.trimStart('0').ifEmpty { "0" }}.${decimals.padEnd(2, '0')}"
+    }
+
+    /** Free text -> trimmed, non-blank, de-duplicated values (comma, semicolon or new line separated). */
+    fun splitValues(raw: String): List<String> =
+        raw
+            .split(',', ';', '\n')
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+
+    fun valuesError(
+        values: List<String>,
+        label: String,
+    ): String? =
+        when {
+            values.size > MAX_ARRAY_ITEMS -> "$label: informe no máximo $MAX_ARRAY_ITEMS itens."
+            values.any { it.length > MAX_ITEM_LENGTH } ->
+                "$label: cada item deve ter no máximo $MAX_ITEM_LENGTH caracteres."
+            else -> null
+        }
+
+    /** True when the free-text multi-value [raw] already contains [value] (case-insensitive). */
+    fun hasValue(
+        raw: String,
+        value: String,
+    ): Boolean = splitValues(raw).any { it.equals(value, ignoreCase = true) }
+
+    /** Adds [value] to / removes it from the free-text multi-value [raw] (chip toggle). */
+    fun toggleValue(
+        raw: String,
+        value: String,
+    ): String {
+        val current = splitValues(raw)
+        val next =
+            if (current.any { it.equals(value, ignoreCase = true) }) {
+                current.filterNot { it.equals(value, ignoreCase = true) }
+            } else {
+                current + value
+            }
+        return next.joinToString(", ")
+    }
+
+    // ---- presence --------------------------------------------------------------------------
+
+    fun presentCount(entries: List<LifeGroupAttendanceEntry>): Int = entries.count { it.present }
+
+    fun allPresent(entries: List<LifeGroupAttendanceEntry>): Boolean = entries.isNotEmpty() && entries.all { it.present }
+
+    fun setAllPresent(
+        entries: List<LifeGroupAttendanceEntry>,
+        present: Boolean,
+    ): List<LifeGroupAttendanceEntry> = entries.map { it.copy(present = present) }
+
+    fun togglePresent(
+        entries: List<LifeGroupAttendanceEntry>,
+        userId: Int,
+    ): List<LifeGroupAttendanceEntry> = entries.map { if (it.userId == userId) it.copy(present = !it.present) else it }
+
+    /** Null when the presence can be saved; else the pt-BR reason (an empty roster cannot be saved). */
+    fun attendanceError(entries: List<LifeGroupAttendanceEntry>): String? =
+        if (entries.isEmpty()) "Este grupo ainda não tem membros para lançar presença." else null
+
+    /** "6 de 8 presentes". */
+    fun presenceSummary(entries: List<LifeGroupAttendanceEntry>): String = "${presentCount(entries)} de ${entries.size} presentes"
+
+    /**
+     * What `extra_meeting` to send with a presence save: `true` only while CREATING an extra meeting
+     * (the draft). For an existing record it is omitted (the stored value is immutable; a mismatch is
+     * rejected by the backend with `extra_meeting_immutable`).
+     */
+    fun extraFlagForSave(
+        attendance: LifeGroupMeetingAttendance?,
+        extraSelected: Boolean,
+    ): Boolean? = if (attendance != null && attendance.isDraft && extraSelected) true else null
+
+    // ---- local draft -----------------------------------------------------------------------
+
+    /**
+     * Builds the draft to persist from the current edits, or null when there is nothing unsaved.
+     * An attendance section is unsaved when the toggles differ from the server entries
+     * (or the attendance was never saved); a report section when it differs from the saved report
+     * (or from empty when there is none).
+     */
+    fun buildDraft(
+        meeting: LifeGroupMeeting,
+        entries: List<LifeGroupAttendanceEntry>,
+        reportDraft: LifeGroupMeetingReportDraft,
+        extraMeeting: Boolean,
+    ): LifeGroupMeetingDraft? {
+        val server = meeting.attendance?.entries.orEmpty()
+        val attendanceChanged =
+            entries.map { it.userId to it.present }.toSet() != server.map { it.userId to it.present }.toSet()
+        val baseline = meeting.report?.let { LifeGroupMeetingReportDraft.fromReport(it) } ?: LifeGroupMeetingReportDraft()
+        val reportChanged = reportDraft != baseline
+        val draft =
+            LifeGroupMeetingDraft(
+                attendance = if (attendanceChanged) entries.map { LifeGroupMeetingDraftEntry(it.userId, it.present) } else null,
+                report = if (reportChanged) reportDraft else null,
+                extraMeeting = extraMeeting && meeting.attendance?.isDraft == true,
+            )
+        return draft.takeUnless { it.isEmpty }
+    }
+
+    /** Applies the persisted unsaved toggles on top of the server [entries] (unknown users are ignored). */
+    fun applyDraftEntries(
+        entries: List<LifeGroupAttendanceEntry>,
+        draft: List<LifeGroupMeetingDraftEntry>?,
+    ): List<LifeGroupAttendanceEntry> {
+        if (draft == null) return entries
+        val byUser = draft.associate { it.userId to it.present }
+        return entries.map { entry -> byUser[entry.userId]?.let { entry.copy(present = it) } ?: entry }
+    }
+
+    // ---- history ---------------------------------------------------------------------------
+
+    /**
+     * Merges the attendance history and the reports list into one row per date, newest first.
+     * [reports] is null when the reports list could not be loaded (report status unknown).
+     */
+    fun mergeHistory(
+        attendance: List<LifeGroupAttendance>,
+        reports: List<LifeGroupWeeklyReport>?,
+    ): List<LifeGroupMeetingSummary> {
+        val saved = attendance.filter { !it.isDraft }.associateBy { it.meetingDate }
+        val reportDates = reports?.map { it.date }?.toSet().orEmpty()
+        return (saved.keys + reportDates)
+            .sortedDescending()
+            .map { date ->
+                val record = saved[date]
+                LifeGroupMeetingSummary(
+                    date = date,
+                    hasAttendance = record != null,
+                    reportStatusKnown = reports != null,
+                    hasReport = date in reportDates,
+                    presentCount = record?.presentCount,
+                    membersCount = record?.membersCount,
+                )
+            }
+    }
+
+    // ---- copy ------------------------------------------------------------------------------
+
+    /** "Prazo de edição encerrado em dd/MM/yyyy." for a read-only meeting. */
+    fun readOnlyMessage(editDeadline: String): String =
+        "O prazo para editar esta reunião terminou em ${displayDate(editDeadline)}. " +
+            "Somente leitura: peça a um administrador para alterar."
+
+    /** Banner for an editable meeting: "Você pode editar até dd/MM/yyyy." */
+    fun editableUntilMessage(editDeadline: String): String = "Você pode editar até ${displayDate(editDeadline)}."
+
+    fun reportBlockedMessage(reason: MeetingReportBlockedReason): String =
+        when (reason) {
+            MeetingReportBlockedReason.GROUP_HAS_NO_SECTOR ->
+                "Este grupo ainda não tem setor, então o relatório não pode ser enviado. Peça a um administrador para vinculá-lo."
+            MeetingReportBlockedReason.SECTOR_HAS_NO_AREA ->
+                "O setor deste grupo ainda não tem área, então o relatório não pode ser enviado. Peça a um administrador para completar o cadastro."
+            MeetingReportBlockedReason.UNKNOWN ->
+                "O relatório não pode ser enviado para este grupo no momento."
+        }
+}
+
+/** Maps meeting API failures to pt-BR copy and to the extra-meeting flow. */
+object LifeGroupMeetingErrors {
+    const val CODE_EXTRA_REQUIRED = "extra_meeting_required"
+    const val CODE_EXTRA_ON_REGULAR_DAY = "extra_meeting_on_regular_day"
+    const val CODE_EXTRA_NOT_APPLICABLE = "extra_meeting_not_applicable"
+    const val CODE_EXTRA_IMMUTABLE = "extra_meeting_immutable"
+    const val CODE_EXTRA_LIMIT = "extra_meeting_limit_reached"
+    const val CODE_ATTENDANCE_REQUIRED = "attendance_required"
+    const val CODE_EDIT_WINDOW_CLOSED = "edit_window_closed"
+    const val CODE_GROUP_HAS_NO_SECTOR = "group_has_no_sector"
+    const val CODE_SECTOR_HAS_NO_AREA = "sector_has_no_area"
+
+    /** The date is not the group's weekday: the user must tick "Reunião extra" before a draft exists. */
+    fun requiresExtraChoice(error: Throwable): Boolean = (error as? LifeGroupMeetingException)?.code == CODE_EXTRA_REQUIRED
+
+    /** The edit window closed while the screen was open: reload to show the read-only state. */
+    fun isEditWindowClosed(error: Throwable): Boolean = (error as? LifeGroupMeetingException)?.code == CODE_EDIT_WINDOW_CLOSED
+
+    /** Friendly pt-BR message; `null` [error] details (network etc.) fall back to a connectivity hint. */
+    fun message(error: Throwable): String {
+        val e = error as? LifeGroupMeetingException
+            ?: return "Não foi possível conectar. Verifique sua conexão e tente novamente."
+        return when (e.code) {
+            CODE_EXTRA_REQUIRED ->
+                "Esta data não é o dia da reunião do grupo. Marque \"Reunião extra\" para registrá-la."
+            CODE_EXTRA_ON_REGULAR_DAY ->
+                "Esta data é o dia regular de reunião do grupo. Desmarque \"Reunião extra\"."
+            CODE_EXTRA_NOT_APPLICABLE ->
+                "Este grupo não tem dia fixo: toda data é uma reunião regular."
+            CODE_EXTRA_IMMUTABLE ->
+                "O tipo desta reunião (regular ou extra) já foi salvo e não pode ser alterado."
+            CODE_EXTRA_LIMIT ->
+                "Este grupo já atingiu o limite de reuniões extras desta semana."
+            CODE_ATTENDANCE_REQUIRED ->
+                "Salve a presença antes de enviar o relatório."
+            CODE_EDIT_WINDOW_CLOSED ->
+                "O prazo para editar esta reunião terminou. Peça a um administrador."
+            CODE_GROUP_HAS_NO_SECTOR ->
+                "Este grupo ainda não tem setor. Peça a um administrador para vinculá-lo."
+            CODE_SECTOR_HAS_NO_AREA ->
+                "O setor deste grupo ainda não tem área. Peça a um administrador para completar o cadastro."
+            else -> byStatus(e)
+        }
+    }
+
+    private fun byStatus(e: LifeGroupMeetingException): String =
+        when (e.statusCode) {
+            400 -> e.serverMessage?.takeIf { it.isNotBlank() } ?: "Alguns dados não foram aceitos. Confira os campos e tente novamente."
+            401 -> "Sua sessão expirou. Entre novamente."
+            403 -> "Você não tem permissão para esta reunião."
+            404 -> "Grupo não encontrado. Atualize a tela e tente novamente."
+            409 -> "Esta reunião foi alterada ao mesmo tempo. Recarregue e tente novamente."
+            422 -> "Este grupo ainda não está vinculado a um setor e área. Peça à liderança para completar o cadastro."
+            429 -> "Muitas tentativas. Aguarde um instante e tente de novo."
+            in 500..599 -> "O servidor não conseguiu processar o pedido. Tente novamente em instantes."
+            else -> "Não foi possível concluir. Tente novamente."
+        }
+}
