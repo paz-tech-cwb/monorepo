@@ -164,7 +164,7 @@ Module `backend/src/life-group-meetings/`.
 - Extra meetings (product decision Q7, "extra meetings: yes"): a group WITH a fixed
   `meeting_day` may record a meeting on another weekday only with an explicit
   flag. `PUT` body top-level `extra_meeting: true` (boolean; anything else -> 400;
-  omitted = false); `GET .../meetings/:date?extra_meeting=true` previews the draft
+  omitted = false); `GET .../meetings/:date?extra_meeting=true` previews the draft (only the exact lowercase strings `true`/`false` are accepted, anything else is a 400; the preview does NOT check the weekly cap, so the later PUT can still answer 409 `extra_meeting_limit_reached`)
   for such a date. Attendance responses (inside the meetings view) carry
   `is_extra`. Rules (new records only; an existing record never re-checks the
   weekday):
@@ -195,7 +195,12 @@ Module `backend/src/life-group-meetings/`.
     their `present=true` entries count toward `min_present_meetings`, but at most
     `LIFE_GROUP_COUNTED_EXTRA_MEETINGS_PER_WEEK = 1` extra meeting per group per ISO
     week counts (the earliest), so flagging several in a week cannot inflate
-    eligibility. Regular meetings always count.
+    eligibility. Regular meetings always count. "Earliest" is by meeting DATE, not
+    by creation time: back-filling an earlier-dated extra later moves which extra
+    counts and can lower a member's count retroactively (known behavior). The week
+    is `date_trunc('week', meeting_date)` (Monday-based), identical to
+    `isoWeekRange`, also across a year change (2026-12-28..2027-01-03 is one week;
+    covered by unit and real-Postgres tests).
   - Analytics: extras are INCLUDED in `meetings_count`/`present_count`/
     `members_count`/`attendance_rate`; every bucket also has `extra_meetings_count`
     (additive, monthly and per-meeting granularity).

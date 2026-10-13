@@ -866,6 +866,40 @@ describe('LifeGroupMeetingsService', () => {
       });
     });
 
+    it('year boundary: the ISO week Mon 2026-12-28 .. Sun 2027-01-03 is ONE cap week', async () => {
+      jest.setSystemTime(new Date('2027-01-10T12:00:00Z'));
+      const { service, em } = build();
+      // Wed 2026-12-30 is the regular day; these are all extras in one ISO week.
+      for (const d of ['2026-12-28', '2026-12-29', '2027-01-01']) {
+        await put(service, d, { attendance: att(), extraMeeting: true });
+      }
+      await expect(
+        put(service, '2027-01-03', { attendance: att(), extraMeeting: true }),
+      ).rejects.toMatchObject({
+        status: 409,
+        response: { code: 'extra_meeting_limit_reached' },
+      });
+      // Mon 2027-01-04 starts the next ISO week.
+      await put(service, '2027-01-04', {
+        attendance: att(),
+        extraMeeting: true,
+      });
+      expect(rowsOf(em)).toHaveLength(4);
+      const weekLocks = em.queries
+        .filter((q) => q.sql.includes('pg_advisory_xact_lock'))
+        .map((q) => q.params)
+        .filter((p) => p?.[0] === 4208)
+        .map((p) => p?.[1]);
+      // Both December and January dates lock the same Monday key.
+      expect(weekLocks.slice(0, 4)).toEqual(Array(4).fill('1:2026-12-28'));
+      expect(weekLocks[weekLocks.length - 1]).toBe('1:2027-01-04');
+    });
+
+    // Known behavior (review m2): the draft preview does not check the cap.
+    // Known behavior (review m3): eligibility counts the EARLIEST-DATED extra
+    // of a week, so back-filling an earlier-dated extra later moves the
+    // counted one (documented in .ai/features/life-groups.md).
+
     it('takes the (group, week) advisory lock before counting', async () => {
       const { service, em } = build();
       await put(service, TUE, { attendance: att(), extraMeeting: true });
