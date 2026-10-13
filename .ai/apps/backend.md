@@ -45,6 +45,22 @@ scope-aware (404 out of scope; `:id/audit` mapped to `AuditLogEntry`, no actor P
 `life-group-reports.service.spec.ts`, `life-group-reports.controller.spec.ts`
 (real global pipe + `ClassSerializerInterceptor`).
 
+## Life group meetings
+
+`src/life-group-meetings/` (registered in `app.module.ts`): `GET|PUT
+/life-groups/:lifeGroupId/meetings/:date` combining attendance and the weekly
+report in one transaction. Shared pieces: `LifeGroupAttendanceService.upsertInTransaction`
+(attendance core, also used by the legacy PUT), `assertCanAccessLifeGroup`,
+`LifeGroupReportSnapshotService` (re-syncs `committed_*` of linked reports),
+`life-group-report.mapper.ts` (report response/input columns),
+`FormSubmissionAuditService.record(params, manager?)`. Edit window constant:
+`common/constants/life-group-meeting.ts`. Migration `1796000000000` is pending
+(human gate). Specs: `meeting-edit-policy.spec.ts`,
+`life-group-meetings.service.spec.ts` (in-memory `fake-entity-manager.testing.ts`),
+`life-group-meetings.controller.spec.ts` (real global pipe + serializer) and the
+opt-in `life-group-meetings.integration.spec.ts` (real PostgreSQL, env
+`MEETINGS_PG_*`, skipped by default). Details in `features/life-groups.md`.
+
 ## Validation
 
 Prefer focused tests first:

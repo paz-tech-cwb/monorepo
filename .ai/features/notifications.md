@@ -48,6 +48,9 @@ hours after the group's `meeting_day`/`meeting_time`, and is skipped entirely
 for groups without a fixed meeting day/time ("Sem dia fixo" or no
 `meeting_time`).
 
+The Meetings API (`features/life-groups.md`, phase 1) does not change this rule,
+the push copy, the dedupe keys or the `paz://presenca/{lifeGroupId}/{date}` deep link.
+
 `life_group_task` is also absent from `CATEGORY_PREF_MAP` (not opt-outable) and
 maps to Android channel `paz_life_group`. The `life_group_tasks` rule is
 seeded enabled with `days_before_meeting: [3,1]` and `hour: 9` (validated in

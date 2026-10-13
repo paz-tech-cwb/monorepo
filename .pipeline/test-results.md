@@ -306,3 +306,30 @@ iOS (Xcode 26.6, TestPhone, scratchpad JDK17/Gradle/Konan):
 - `./gradlew :shared:assembleSharedDebugXCFramework :shared:iosSimulatorArm64Test`: BUILD SUCCESSFUL, 92 tests, 0 failures.
 - `xcodebuild test` PazChurch on TestPhone: first run FAILED to compile `HomeViewModelTests.swift:41` (missing `relationship`/`isSupervised`, from #93, inherited on develop). After the one-line test fix: TEST SUCCEEDED (15+9+12+6 = 42 tests, 0 failures). Temporary fake GoogleService-Info.plist (39-char key) deleted afterwards, never committed.
 - Android: not buildable locally (no SDK); cross-read only: Android files changed by #89 (AccountViewModel, AndroidModule, Academy, MemberJourney) do not overlap ours (MainActivity, PazNavGraph, push helper, MinistryDetailScreen).
+
+---
+
+# Meetings API (phase 1) - 2026-10-13
+
+Node 22.23.3 (scratchpad). Branch `feat/life-group-meetings-api`.
+
+- `npm run build`: PASS.
+- New specs: `meeting-edit-policy.spec.ts` (12), `life-group-meetings.service.spec.ts` (service, in-memory EntityManager with transactional rollback), `life-group-meetings.controller.spec.ts` (real Nest app, global ValidationPipe + ClassSerializerInterceptor), opt-in `life-group-meetings.integration.spec.ts` (real PostgreSQL, 27 tests, skipped without `MEETINGS_PG_PORT`). Covered: authorization matrix (leader, co-leader with member role, leader of two groups, area/sector supervisor in scope, supervisor out of scope, plain member, outsider, other group's leader, admin, pastor; GET and PUT; real scope resolver in the integration run), edit window with fake timers (day 14 allowed to 23:59 Sao Paulo, day 15 denied for leader/co-leader/supervisor/pastor, admin always, env override, reads always allowed, report half too), 409 `attendance_required`, 422 no sector/area (nothing written), derived fields, client-sent derived fields ignored, validation (counts, offering, arrays, `*_other`, attendance caps), idempotency, advisory-lock query order, rollback (fake and real DB), 23505 replay then 409, snapshot re-sync via the meetings PUT and via the OLD attendance PUT, legacy unlinked/soft-deleted reports untouched, old attendance GET/PUT shape unchanged (no `default_present`).
+- Scoped jest (meetings, attendance, reports, analytics, tasks, forms-core): 20 suites pass, 1 fails (`notification-sender.spec.ts`, pre-existing on develop), 1 skipped (integration), 272 tests pass.
+- Full jest: mine 76 passed / 6 failed / 1 skipped suites, 652 passed / 5 failed / 27 skipped tests. Baseline origin/develop (git worktree under the scratchpad, removed afterwards): 73 passed / 6 failed suites, 573 passed / 5 failed tests. The failing set is IDENTICAL (auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens.service): no new failures; +3 passing suites, +79 passing tests.
+- eslint on changed/new files: clean except 2 pre-existing `no-unsafe-assignment` errors in `form-submission-audit.service.ts` (present on develop; reproduced by stashing). prettier --check: clean.
+
+## Throwaway PostgreSQL (embedded-postgres 17.5.0-beta.15, new scratchpad dir `pg5`, port 54925, loopback only, throwaway user, DB `mig`)
+Real TypeORM CLI (`nest build`, `typeorm -d dist/db/data-source.js migration:run|revert`, DB_* env only on that process).
+1. Full chain on an empty DB (88 migrations incl. 1796000000000): PASS; column `attendance_id uuid`, FK `fk_life_group_reports_attendance` ON DELETE SET NULL, `idx_lgr_attendance`, partial unique index `uq_life_group_reports_group_date_active ... WHERE deleted_at IS NULL`, findings table empty.
+2. Duplicate fixtures (two active reports for group 1 / 2026-10-07, one soft-deleted extra on another date): migration SUCCEEDS, index NOT created, 1 finding row recorded (ids + count), CLI warning printed, `md5` of all original `life_group_reports` columns identical before/after (rows untouched).
+3. Resolved the duplicate (soft-delete), deleted the migrations row and re-ran: index created, findings table empty. Re-run again with the migration row removed (everything already present): PASS, idempotent. A duplicate INSERT then fails with 23505.
+4. `down()`: column, FK, both indexes and the findings table removed; data rows intact. `up` again: PASS.
+5. Integration spec against this DB (migrations applied): 27/27 pass, including 8 parallel combined PUTs -> one attendance + one report row, the same with the unique index dropped, 10 parallel report-only PUTs with the index dropped (mutation check: replacing the advisory lock with a no-op makes exactly this test fail, so it proves the lock), legacy attendance PUTs racing meetings PUTs, DB-level failure on the report insert (NUL byte in `text[]`) rolling back the attendance and audit rows, failing report audit rolling everything back, old attendance PUT re-syncing the linked report (audit row `update` by the editor), ON DELETE SET NULL, soft-deleted report not blocking a new one, legacy POST duplicate -> 409, dirty DB (index absent, duplicates present) -> oldest updated, rest untouched.
+
+## Not verified
+- Migration on a real/prod-shaped database; prod duplicate count.
+- Postgres 16 specifically (tests ran on 17.5).
+- Any mobile/admin-ui consumer (none exists yet).
+
+Cleanup outcome: the throwaway Postgres was stopped (SIGINT to the postmaster, port 54925 no longer listening). `rm -rf` of its data dir (`<scratchpad>/pg5/data`) and `kill` of the idle node wrapper (`node start.mjs`, pid 18789) were DENIED by the sandbox permission system, so the data dir (throwaway user/password, fixtures only) and the idle wrapper process remain in the scratchpad and need manual removal.

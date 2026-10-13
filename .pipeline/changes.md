@@ -346,3 +346,26 @@ Arnold, from Malcolm's `.pipeline/review.md`.
 - Merge 381faaf (origin/develop into fix/pilot-readiness). `git diff origin/develop...HEAD` is only our 41 files; textual overlap was AccountView.swift and MainTabView.swift (our push-routing rewrite on top of #89's `churchRepository`), no other overlap with #89/#93 backend (scope-resolver, life-groups.service, casa-de-paz, analytics) or Android DI.
 - Migrations renumbered to avoid #89's 1795900000003..5: `AddLifeGroupTasksEnumValues1795900000006`, `CreateLifeGroupTasks1795900000007`, `AddLifeGroupStudyNotificationCategory1795900000008`. Develop already carried the tasks migrations under the old names (`...0003`/`...0004`); a DB that ran those will run 6/7 again, which is safe because both are idempotent (IF NOT EXISTS, ON CONFLICT DO NOTHING).
 - Semantic conflict found and fixed: #93 added required Swift-visible `relationship`/`isSupervised` params to the shared `LifeGroup` model, which broke compilation of `HomeViewModelTests.swift` (from #92) on develop itself. Fixed in the test helper (`relationship: nil, isSupervised: false`).
+
+---
+
+# Meetings API (phase 1) - 2026-10-13
+
+Branch `feat/life-group-meetings-api` (from origin/develop @6d87aef). Spec: `spec.md`. Design: `design-attendance-report-merge.md`.
+
+## Endpoints (new)
+- `GET /api/life-groups/:lifeGroupId/meetings/:date` and `PUT` (same path). JWT + ScopeGuard, no `@Roles`. Body/response/errors documented in `.ai/features/life-groups.md` ("Meetings API"). No Postman collection exists in the repo (`.ai/apps/postman-files.md`), so this list is the reference.
+
+## Files
+- New: `backend/database/migrations/1796000000000-AddAttendanceLinkToLifeGroupReports.ts`; `backend/src/life-group-meetings/` (module, controller, service, DTO, `meeting-edit-policy.ts`, specs, `fake-entity-manager.testing.ts`, opt-in integration spec); `backend/src/common/constants/life-group-meeting.ts`; `backend/src/life-group-attendance/life-group-access.util.ts`; `backend/src/life-group-reports/life-group-report.mapper.ts`; `backend/src/life-group-reports/life-group-report-snapshot.service.ts`.
+- Modified: `life-group-attendance.service.ts` (core extracted to `upsertInTransaction`, `buildDraft`, `assertValidEntries`, shared access util, optional snapshot-sync collaborator; legacy `upsert` behavior and audit call unchanged), `life-group-attendance.module.ts`, `life-group-reports.service.ts` (mapper extraction, 23505 -> 409), `life-group-report.entity.ts` (`attendanceId` + relation), `form-submission-audit.service.ts` (optional `manager`), `app.module.ts`, docs (`.ai/features/life-groups.md`, `.ai/apps/backend.md`, `.ai/features/notifications.md` one-line "no change").
+
+## Decisions (flag)
+Product: Q1 whole roster, Q2 present_count, Q3 all-present default + `is_draft`/`default_present`, Q5 14 days, one constant + env override. Q4, Q6-Q12 untouched; reminders, push copy, deep links, catalog NOT changed.
+Mine (see `spec.md` D1-D9): D1 only admin bypasses the window (pastor bound); D2 422 for groups with no sector/area; D3 no-fixed-day groups accept any past date; D4 legacy unlinked report untouched by attendance-only edits, linked+overwritten when a report is sent; D5 oldest of duplicate active reports is the one updated; D6 legacy POST duplicate -> 409, legacy PATCH not re-syncing; D7 `edit_deadline` YYYY-MM-DD; D8 caps (entries 500, arrays 20x80, counts 0..100000, offering regex); D9 future-date check stays UTC-based (as attendance), window is Sao Paulo days. Also: client-sent derived fields are ignored, not rejected (global pipe strips non-`@Expose` keys); no `@Index` decorator for the partial index so `synchronize` cannot trip on dirty data (FK declared with `createForeignKeyConstraints: false` for the same reason; the migration owns both).
+
+## Unverified
+- Migration not run on any real/prod database (human gate); prod duplicate count unknown (Q9).
+- Android/iOS untouched; no client consumes the endpoint yet.
+- Postgres used for tests is 17.5 (embedded), prod is 16.
+- Behavior of legacy `PATCH /forms/life-group-reports/:id` on linked reports (no re-sync) is a known gap, phase 0/4.

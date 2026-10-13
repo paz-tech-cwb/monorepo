@@ -99,6 +99,101 @@ going forward. If a group's `meeting_day` is "Sem dia fixo" or its
 
 Deep link: `paz://presenca/{lifeGroupId}/{date}`.
 
+## Meetings API (phase 1: attendance + report in one record)
+
+Backend only, additive. Design: `.pipeline/design-attendance-report-merge.md`.
+Module `backend/src/life-group-meetings/`.
+
+- `GET /api/life-groups/:lifeGroupId/meetings/:date` and `PUT` (same path),
+  `AuthGuard('jwt')` + `ScopeGuard`, no `@Roles` (a co-leader / `member`-role
+  leader works). Access = attendance's rule, shared in
+  `life-group-attendance/life-group-access.util.ts`: admin/pastor unrestricted,
+  group in scope (area/sector supervisors via `ScopeResolverService`, keyed off
+  `leader_id`/`co_leader_id` rows), else the group's own leader/co-leader id.
+- `PUT` body `{ attendance?: { entries: [{ user_id, present }] }, report?: {
+  kids_0_to_11, guests, mdas, offering, committed_at_tadel, committed_at_culto,
+  leader_attended[], disciples_count, disciples_discipled_this_week,
+  pastoring_activity_type[], pastoring_activity_other?, training_activity_type[],
+  training_activity_other? } }`, at least one. `report` is a full replace.
+  Client-sent `date`, `area_id`, `sector_id`, `life_group_id`, `committed_members`,
+  `committed_members_present` are not in the DTO and are ignored (global pipe
+  strips non-`@Expose` keys); the server derives them.
+- Response of both verbs: `{ life_group_id, meeting_date, attendance, report,
+  derived: { committed_members, committed_members_present }, can_edit,
+  edit_deadline, report_blocked_reason }`. `attendance` is the saved record
+  (`is_draft: false`, `default_present: null`) or a draft from the current roster
+  (`is_draft: true`, `default_present: true`, everybody present); its `entries`
+  are the roster snapshot. `report` is the same shape as
+  `/forms/life-group-reports` or `null`. `report_blocked_reason` is
+  `group_has_no_sector` | `sector_has_no_area` | `null`.
+- Errors: 400 invalid date/body/roster/weekday, 403 no access or
+  `edit_window_closed`, 404 group, 409 `attendance_required` (report with no
+  attendance existing or sent in the same PUT), 422 (`group_has_no_sector` /
+  `sector_has_no_area`: area/sector are derived from the group, never invented;
+  attendance alone still saves).
+- One DB transaction per PUT, guarded by `pg_advisory_xact_lock(4207,
+  hashtext('<group>:<date>'))`, then find-then-upsert, so concurrent PUTs give one
+  attendance row and one report row even where the partial unique index below is
+  absent. Idempotent by (group, date). Audit rows for both slugs
+  (`life_group_attendance`, `life-group-reports`) are written in the same
+  transaction (`FormSubmissionAuditService.record(params, manager)`).
+- Derived fields (product decisions Q1/Q2): `committed_members` = attendance
+  `members_count` (the WHOLE roster snapshot, no manual input, no per-member flag);
+  `committed_members_present` = `present_count` (leader/co-leader count only when
+  they are on the roster and marked present). They are snapshots in
+  `life_group_reports`, linked through `attendance_id`, and re-synced on EVERY
+  attendance write, including the OLD `PUT /life-groups/:id/attendance/:date`
+  (hook in `LifeGroupAttendanceService.upsertInTransaction` ->
+  `LifeGroupReportSnapshotService`), in the same transaction. Unlinked legacy
+  reports are never touched by an attendance-only change; a meetings PUT with a
+  `report` links and overwrites the legacy report of that date.
+- Default draft (Q3): all present, unchanged. Mobile can show an explicit "Todos
+  presentes" toggle from `default_present`.
+- Edit policy (Q5): `LIFE_GROUP_MEETING_EDIT_WINDOW_DAYS = 14`
+  (`common/constants/life-group-meeting.ts`, optional env override of the same
+  name, positive integer). Creating or editing either half is allowed for
+  everyone with access until meeting date + 14 days (inclusive, America/Sao_Paulo
+  calendar days: day 14 allowed, day 15 denied); only `admin` is never limited
+  (pastor is bound). Reads are always allowed. `edit_deadline` is `YYYY-MM-DD`
+  (last editable day); `can_edit` is per viewer.
+- Validation: attendance entries 1..500 (plus the attendance rules: roster-only
+  ids on first save, no duplicates, not in the future, weekday must match
+  `meeting_day` only when creating; groups without a fixed day accept any past
+  date, same as attendance); report counts integers 0..100000, `offering` string
+  `^\d{1,8}(\.\d{1,2})?$`, string arrays max 20 items x 80 chars, `*_other` max 180.
+- Old contracts unchanged: attendance GET/PUT (no new fields), `/forms/life-group-reports*`.
+  Only addition: a duplicate legacy `POST /forms/life-group-reports` for the same
+  group+date answers 409 when the unique index exists (it used to create a duplicate).
+  Legacy `PATCH` does not re-sync `committed_*` on a linked report (24h submitter
+  rule unchanged).
+- Reminders, push copy, `paz://presenca/{id}/{date}` deep link and the forms
+  catalog are NOT changed in this phase (see `features/notifications.md`).
+
+Migration `1796000000000-AddAttendanceLinkToLifeGroupReports` (human gate, not run
+in any real environment by this branch): nullable `life_group_reports.attendance_id`
+uuid FK -> `life_group_attendance(id)` ON DELETE SET NULL + index
+`idx_lgr_attendance`; duplicate scan, then partial unique index
+`uq_life_group_reports_group_date_active` on `(life_group_id, date) WHERE
+deleted_at IS NULL` ONLY when no duplicates exist. Nothing is ever deleted: with
+duplicates the migration still succeeds, creates no index, logs a warning and
+records the groups in `life_group_report_duplicate_findings`. Find duplicates by hand:
+
+```sql
+SELECT life_group_id, date, array_agg(id ORDER BY created_at) AS ids, count(*)
+FROM life_group_reports WHERE deleted_at IS NULL
+GROUP BY 1, 2 HAVING count(*) > 1;
+```
+
+Soft-delete the extras, then either revert + run the migration again or run
+`CREATE UNIQUE INDEX IF NOT EXISTS uq_life_group_reports_group_date_active ON
+life_group_reports (life_group_id, date) WHERE deleted_at IS NULL;`. The index is
+deliberately not an `@Index` on the entity (so `synchronize` never tries it on
+dirty data); the app guards duplicates itself and, if several active reports exist
+for one meeting, updates the oldest and logs a warning.
+
+Postman: no collection exists in the repo (see `apps/postman-files.md`); the
+endpoint list above is the reference.
+
 ## Rotating tasks
 
 Each meeting, global tasks (templates) are automatically assigned to eligible
