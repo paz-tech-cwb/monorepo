@@ -27,6 +27,24 @@ object LifeGroupMeetingRules {
     /** A report filed before presence existed for that date: nothing to unlock, it is shown as is. */
     fun legacyReportMessage(): String = "Este relatório foi enviado sem registro de presença e não pode ser alterado aqui."
 
+    /**
+     * Who may CREATE/EDIT presence, reports and extra meetings of a group: admin, pastor, or the
+     * group's own leader/co-leader ([isGroupLeadership], by id: works for a co-leader whose role is
+     * `member`). Area/sector leaders reaching the group only through scope are read-only supervisors.
+     * UI gate only: the server is the authority (403 `meeting_write_forbidden`).
+     */
+    fun canWrite(
+        role: UserRole?,
+        isGroupLeadership: Boolean,
+    ): Boolean = isGroupLeadership || role == UserRole.admin || role == UserRole.pastor
+
+    /** Banner of a meeting the viewer may read but not write (supervisor). */
+    fun writeForbiddenMessage(): String =
+        "Somente leitura: apenas o líder, o co-líder do grupo ou um administrador podem registrar presença e relatório."
+
+    /** A supervisor opened a date with no recorded meeting: there is nothing to show and nothing to create. */
+    fun noMeetingToViewMessage(): String = "Não há reunião registrada nesta data."
+
     /** Suggested chips for "Líder presente em" (the backend stores free strings; see design Q8). */
     val leaderAttendedOptions: List<LifeGroupMeetingOption> =
         listOf(LifeGroupMeetingOption("tadel", "Tadel"), LifeGroupMeetingOption("culto", "Culto"))

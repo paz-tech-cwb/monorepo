@@ -95,12 +95,12 @@ val androidModule =
         viewModel { (studyId: String) -> LifeGroupStudyDetailViewModel(studyId, get(), get()) }
         viewModel { (studyId: String?) -> LifeGroupStudyEditorViewModel(studyId, get()) }
         // (LifeGroupAttendanceRepository, LifeGroupReportRepository); meetingDay "" = unknown / no fixed day
-        viewModel { (lifeGroupId: Int, meetingDay: String) ->
-            LifeGroupMeetingHistoryViewModel(lifeGroupId, get(), get(), meetingDay.ifBlank { null })
+        viewModel { (lifeGroupId: Int, meetingDay: String, canWrite: Boolean) ->
+            LifeGroupMeetingHistoryViewModel(lifeGroupId, get(), get(), meetingDay.ifBlank { null }, canWrite)
         }
-        // (LifeGroupMeetingRepository, AuthRepository, MeetingDraftStore)
-        viewModel { (lifeGroupId: Int, date: String) ->
-            LifeGroupMeetingViewModel(lifeGroupId, date, get(), get(), get())
+        // (LifeGroupMeetingRepository, AuthRepository, MeetingDraftStore); canWrite "" = unknown (deep link)
+        viewModel { (lifeGroupId: Int, date: String, canWrite: String) ->
+            LifeGroupMeetingViewModel(lifeGroupId, date, get(), get(), get(), canWrite.toBooleanStrictOrNull())
         }
         viewModel { (lifeGroupId: Int?) -> LifeGroupAnalyticsViewModel(lifeGroupId, get()) }
         viewModel { (lifeGroupId: Int) -> LifeGroupReportsViewModel(lifeGroupId, get()) }

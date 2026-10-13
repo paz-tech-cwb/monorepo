@@ -15,17 +15,21 @@ final class LifeGroupMeetingHistoryViewModel {
     let lifeGroupId: Int32
     /// The group's fixed weekday ("Quarta-feira"), nil for "Sem dia fixo".
     let meetingDay: String?
+    /// Role-based (`LifeGroupMeetingRules.canWrite`) from the group detail; false = read-only history, no "Nova reunião".
+    let canWrite: Bool
     private let source: LifeGroupMeetingHistorySource
     private let today: () -> String
 
     init(
         lifeGroupId: Int32,
         meetingDay: String?,
+        canWrite: Bool = false,
         source: LifeGroupMeetingHistorySource,
         today: @escaping () -> String = { LifeGroupMeetingDates.todayInSaoPaulo() }
     ) {
         self.lifeGroupId = lifeGroupId
         self.meetingDay = meetingDay
+        self.canWrite = canWrite
         self.source = source
         self.today = today
     }
@@ -73,6 +77,7 @@ final class LifeGroupMeetingHistoryViewModel {
 
     /// "Nova reunião": a future or invalid date is ignored (the picker already blocks them).
     func validatedNewMeetingDate(_ date: String) -> String? {
-        LifeGroupMeetingRules.shared.isSelectableDate(date: date, today: today()) ? date : nil
+        guard canWrite else { return nil }
+        return LifeGroupMeetingRules.shared.isSelectableDate(date: date, today: today()) ? date : nil
     }
 }

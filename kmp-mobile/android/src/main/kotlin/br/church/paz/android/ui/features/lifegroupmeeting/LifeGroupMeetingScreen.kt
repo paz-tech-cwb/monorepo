@@ -66,8 +66,10 @@ fun LifeGroupMeetingScreen(
     navController: NavController,
     lifeGroupId: String,
     date: String,
+    // Role-based hint from the history screen: "true"/"false", "" when unknown (push deep link).
+    canWrite: String = "",
     viewModel: LifeGroupMeetingViewModel =
-        koinViewModel(parameters = { parametersOf(lifeGroupId.toInt(), date) }),
+        koinViewModel(parameters = { parametersOf(lifeGroupId.toInt(), date, canWrite) }),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -110,6 +112,10 @@ fun LifeGroupMeetingScreen(
                     uiState.isLoading -> MeetingSkeleton()
                     uiState.loadError != null ->
                         PazErrorState(message = uiState.loadError.orEmpty(), onRetry = viewModel::load)
+                    uiState.needsExtraChoice && uiState.isWriteForbidden ->
+                        Column(Modifier.fillMaxSize().padding(PazSpacing.Lg)) {
+                            NoticeCard(text = LifeGroupMeetingRules.noMeetingToViewMessage(), isWarning = false)
+                        }
                     uiState.needsExtraChoice ->
                         ExtraChoiceContent(
                             date = uiState.meetingDate,
@@ -145,7 +151,9 @@ private fun MeetingContent(
         }
         if (meeting != null) {
             item {
-                if (readOnly) {
+                if (uiState.isWriteForbidden) {
+                    NoticeCard(text = LifeGroupMeetingRules.writeForbiddenMessage(), isWarning = false)
+                } else if (readOnly) {
                     NoticeCard(text = LifeGroupMeetingRules.readOnlyMessage(meeting.editDeadline), isWarning = true)
                 } else if (meeting.editDeadline.isNotBlank()) {
                     Text(
@@ -242,18 +250,20 @@ private fun AttendanceHeader(
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
-            SwitchRow(
-                title = "Todos presentes",
-                subtitle =
-                    if (attendance?.isDraft == true && attendance.defaultPresent == true) {
-                        "Todos começam presentes. Desmarque quem faltou."
-                    } else {
-                        null
-                    },
-                checked = LifeGroupMeetingRules.allPresent(uiState.entries),
-                enabled = !uiState.isReadOnly && !uiState.isBusy,
-                onCheckedChange = onAllPresentChanged,
-            )
+            if (!uiState.isWriteForbidden) {
+                SwitchRow(
+                    title = "Todos presentes",
+                    subtitle =
+                        if (attendance?.isDraft == true && attendance.defaultPresent == true) {
+                            "Todos começam presentes. Desmarque quem faltou."
+                        } else {
+                            null
+                        },
+                    checked = LifeGroupMeetingRules.allPresent(uiState.entries),
+                    enabled = !uiState.isReadOnly && !uiState.isBusy,
+                    onCheckedChange = onAllPresentChanged,
+                )
+            }
         }
     }
 }

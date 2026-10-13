@@ -70,8 +70,10 @@ fun LifeGroupMeetingHistoryScreen(
     lifeGroupId: String,
     // The group's fixed weekday from the group detail (null: unknown / "Sem dia fixo").
     meetingDay: String? = null,
+    // Role-based write permission from the group detail (false: read-only history, no "Nova reunião").
+    canWrite: Boolean = false,
     viewModel: LifeGroupMeetingHistoryViewModel =
-        koinViewModel(parameters = { parametersOf(lifeGroupId.toInt(), meetingDay.orEmpty()) }),
+        koinViewModel(parameters = { parametersOf(lifeGroupId.toInt(), meetingDay.orEmpty(), canWrite) }),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showDatePicker by remember { mutableStateOf(false) }
@@ -94,7 +96,7 @@ fun LifeGroupMeetingHistoryScreen(
             when (effect) {
                 LifeGroupMeetingHistoryEffect.NavigateBack -> navController.popBackStack()
                 is LifeGroupMeetingHistoryEffect.NavigateToMeeting ->
-                    navController.navigate(Screen.LifeGroupMeeting.createRoute(lifeGroupId, effect.date))
+                    navController.navigate(Screen.LifeGroupMeeting.createRoute(lifeGroupId, effect.date, canWrite))
             }
         }
     }
@@ -115,11 +117,13 @@ fun LifeGroupMeetingHistoryScreen(
                 )
             },
             floatingActionButton = {
-                ExtendedFloatingActionButton(
-                    onClick = { showDatePicker = true },
-                    icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                    text = { Text("Nova reunião") },
-                )
+                if (uiState.canWrite) {
+                    ExtendedFloatingActionButton(
+                        onClick = { showDatePicker = true },
+                        icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                        text = { Text("Nova reunião") },
+                    )
+                }
             },
             containerColor = Color.Transparent,
         ) { innerPadding ->
@@ -131,7 +135,7 @@ fun LifeGroupMeetingHistoryScreen(
                 when {
                     uiState.isLoading -> MeetingHistorySkeleton()
                     uiState.error != null -> PazErrorState(message = uiState.error.orEmpty(), onRetry = viewModel::load)
-                    uiState.meetings.isEmpty() -> MeetingHistoryEmpty()
+                    uiState.meetings.isEmpty() -> MeetingHistoryEmpty(canWrite = uiState.canWrite)
                     else ->
                         MeetingHistoryList(
                             meetings = uiState.meetings,
@@ -142,7 +146,7 @@ fun LifeGroupMeetingHistoryScreen(
         }
     }
 
-    if (showDatePicker) {
+    if (showDatePicker && uiState.canWrite) {
         NewMeetingDatePicker(
             initialDate = viewModel.defaultNewMeetingDate(),
             latestDate = viewModel.latestSelectableDate(),
@@ -269,12 +273,16 @@ private fun Chip(
 }
 
 @Composable
-private fun MeetingHistoryEmpty() {
+private fun MeetingHistoryEmpty(canWrite: Boolean) {
     Box(Modifier.fillMaxSize(), Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
             Icon(Icons.Outlined.Groups, null, tint = MaterialTheme.colorScheme.primary)
             Text(
-                "Nenhuma reunião registrada ainda. Toque em \"Nova reunião\" para começar.",
+                if (canWrite) {
+                    "Nenhuma reunião registrada ainda. Toque em \"Nova reunião\" para começar."
+                } else {
+                    "Nenhuma reunião registrada ainda."
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 modifier = Modifier.padding(horizontal = PazSpacing.Xl),

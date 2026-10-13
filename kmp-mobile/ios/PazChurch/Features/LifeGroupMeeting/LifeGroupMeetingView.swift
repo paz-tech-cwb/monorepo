@@ -5,14 +5,16 @@ import SwiftUI
 struct LifeGroupMeetingView: View {
     @State private var viewModel: LifeGroupMeetingViewModel
 
-    init(lifeGroupId: Int32, meetingDate: String) {
+    /// `canWrite` is the role-based hint from the history screen (nil: unknown, e.g. a push deep link).
+    init(lifeGroupId: Int32, meetingDate: String, canWrite: Bool? = nil) {
         _viewModel = State(
             initialValue: LifeGroupMeetingViewModel(
                 lifeGroupId: lifeGroupId,
                 meetingDate: meetingDate,
                 service: KotlinLifeGroupMeetingService(repository: IosAppContainer.shared.lifeGroupMeetingRepository),
                 draftStore: KotlinLifeGroupMeetingDraftStore(store: IosAppContainer.shared.meetingDraftStore),
-                currentUserId: { try? await IosAppContainer.shared.authRepository.currentUser()?.id }
+                currentUserId: { try? await IosAppContainer.shared.authRepository.currentUser()?.id },
+                viewerCanWrite: canWrite
             )
         )
     }
@@ -37,6 +39,12 @@ struct LifeGroupMeetingView: View {
             }
         } else if let error = viewModel.loadError {
             ErrorStateView(message: error, onRetry: { Task { await viewModel.load() } })
+        } else if viewModel.needsExtraChoice, viewModel.isWriteForbidden {
+            VStack {
+                MeetingNoticeCard(text: LifeGroupMeetingRules.shared.noMeetingToViewMessage(), isWarning: false)
+                Spacer()
+            }
+            .padding(PazSpacing.lg)
         } else if viewModel.needsExtraChoice {
             extraChoice
         } else {
@@ -90,7 +98,9 @@ struct LifeGroupMeetingView: View {
             )
         }
         if let meeting = viewModel.meeting {
-            if viewModel.isReadOnly {
+            if viewModel.isWriteForbidden {
+                MeetingNoticeCard(text: LifeGroupMeetingRules.shared.writeForbiddenMessage(), isWarning: false)
+            } else if viewModel.isReadOnly {
                 MeetingNoticeCard(
                     text: LifeGroupMeetingRules.shared.readOnlyMessage(editDeadline: meeting.editDeadline),
                     isWarning: true

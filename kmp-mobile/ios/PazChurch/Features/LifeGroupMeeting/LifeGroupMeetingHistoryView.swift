@@ -8,12 +8,13 @@ struct LifeGroupMeetingHistoryView: View {
     @State private var openedDate: String?
     @State private var showDatePicker = false
 
-    init(lifeGroupId: Int32, meetingDay: String?) {
+    init(lifeGroupId: Int32, meetingDay: String?, canWrite: Bool) {
         self.lifeGroupId = lifeGroupId
         _viewModel = State(
             initialValue: LifeGroupMeetingHistoryViewModel(
                 lifeGroupId: lifeGroupId,
                 meetingDay: meetingDay,
+                canWrite: canWrite,
                 source: KotlinLifeGroupMeetingHistorySource(
                     attendanceRepository: IosAppContainer.shared.lifeGroupAttendanceRepository,
                     reportRepository: IosAppContainer.shared.lifeGroupReportRepository
@@ -29,8 +30,10 @@ struct LifeGroupMeetingHistoryView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Nova reunião", systemImage: "plus") { showDatePicker = true }
+                if viewModel.canWrite {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Nova reunião", systemImage: "plus") { showDatePicker = true }
+                    }
                 }
             }
             .sheet(isPresented: $showDatePicker) {
@@ -41,7 +44,7 @@ struct LifeGroupMeetingHistoryView: View {
                 .presentationDetents([.large])
             }
             .navigationDestination(item: $openedDate) { date in
-                LifeGroupMeetingView(lifeGroupId: lifeGroupId, meetingDate: date)
+                LifeGroupMeetingView(lifeGroupId: lifeGroupId, meetingDate: date, canWrite: viewModel.canWrite)
             }
             .onChange(of: openedDate) { _, newValue in
                 // Coming back from a meeting: pick up what was just saved.
@@ -67,7 +70,7 @@ struct LifeGroupMeetingHistoryView: View {
             ContentUnavailableView(
                 "Nenhuma reunião registrada ainda",
                 systemImage: "person.3",
-                description: Text("Toque em + (Nova reunião) para começar.")
+                description: Text(viewModel.canWrite ? "Toque em + (Nova reunião) para começar." : "")
             )
         } else {
             List {

@@ -29,6 +29,9 @@ final class LifeGroupMeetingViewModel {
     var reportError: String?
     var reportNotice: String?
     var draftRestored = false
+    /// Role-based hint from the caller (`LifeGroupMeetingRules.canWrite`), nil when unknown (push deep link).
+    /// `false` forces read-only even if the server flag is missing; the server stays the authority.
+    let viewerCanWrite: Bool?
 
     private let service: LifeGroupMeetingService
     private let draftStore: LifeGroupMeetingDraftStoring
@@ -42,8 +45,10 @@ final class LifeGroupMeetingViewModel {
         meetingDate: String,
         service: LifeGroupMeetingService,
         draftStore: LifeGroupMeetingDraftStoring,
-        currentUserId: @escaping () async -> String?
+        currentUserId: @escaping () async -> String?,
+        viewerCanWrite: Bool? = nil
     ) {
+        self.viewerCanWrite = viewerCanWrite
         self.lifeGroupId = lifeGroupId
         self.meetingDate = meetingDate
         self.service = service
@@ -53,9 +58,14 @@ final class LifeGroupMeetingViewModel {
 
     // MARK: - Derived state
 
-    /// Past the edit window for this user (admins bypass it server side through `canEdit`).
+    /// The viewer may read but never write this meeting (supervisor): no actions at all, not only disabled ones.
+    var isWriteForbidden: Bool {
+        viewerCanWrite == false || meeting?.canWrite == false
+    }
+
+    /// Read-only: a supervisor (`isWriteForbidden`) or past the edit window (admins bypass it through `canEdit`).
     var isReadOnly: Bool {
-        meeting.map { !$0.canEdit } ?? false
+        isWriteForbidden || (meeting.map { !$0.isEditable } ?? false)
     }
 
     var isAttendanceSaved: Bool {
@@ -76,7 +86,7 @@ final class LifeGroupMeetingViewModel {
 
     /// The "Reunião extra" switch: shown until the first save, then the type is fixed.
     var showExtraToggle: Bool {
-        needsExtraChoice || (meeting?.attendance?.isDraft == true && isExtra && !isReadOnly)
+        !isWriteForbidden && (needsExtraChoice || (meeting?.attendance?.isDraft == true && isExtra && !isReadOnly))
     }
 
     var isExtraLocked: Bool {
@@ -199,7 +209,7 @@ final class LifeGroupMeetingViewModel {
     private func applyLoaded(_ loaded: LifeGroupMeeting, draft: LifeGroupMeetingDraft?, extra: Bool) {
         let serverEntries = loaded.attendance?.entries ?? []
         // A closed edit window is read-only: a stale local draft must not resurface as editable input.
-        let usableDraft = loaded.canEdit ? draft : nil
+        let usableDraft = (loaded.isEditable && viewerCanWrite != false) ? draft : nil
         let baselineReport = loaded.report.map { LifeGroupMeetingReportDraft.companion.fromReport(report: $0) }
             ?? LifeGroupMeetingReportDraft.empty
         isLoading = false
@@ -218,7 +228,7 @@ final class LifeGroupMeetingViewModel {
     // MARK: - Extra meeting
 
     func setExtraMeeting(_ extra: Bool) async {
-        guard !isExtraLocked, !isBusy, isExtra != extra else { return }
+        guard !isWriteForbidden, !isExtraLocked, !isBusy, isExtra != extra else { return }
         isExtra = extra
         isLoading = true
         loadError = nil
@@ -356,7 +366,7 @@ final class LifeGroupMeetingViewModel {
 
     /// Mirrors the unsaved edits to the local draft store (or removes the draft when nothing is unsaved).
     private func persistDraft() {
-        guard let current = meeting, current.canEdit, let userId else { return }
+        guard let current = meeting, current.isEditable, !isWriteForbidden, let userId else { return }
         let draft = LifeGroupMeetingRules.shared.buildDraft(
             meeting: current, entries: entries, reportDraft: reportDraft, extraMeeting: isExtra
         )

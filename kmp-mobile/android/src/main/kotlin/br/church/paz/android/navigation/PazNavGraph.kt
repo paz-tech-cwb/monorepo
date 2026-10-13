@@ -269,6 +269,11 @@ fun PazNavGraph(
                         nullable = true
                         defaultValue = null
                     },
+                    androidx.navigation.navArgument("canWrite") {
+                        type = androidx.navigation.NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
                 ),
         ) { backStackEntry ->
             // The screen needs a numeric id; a malformed route argument pops back instead of showing a blank screen.
@@ -280,6 +285,8 @@ fun PazNavGraph(
                     navController = navController,
                     lifeGroupId = lifeGroupId,
                     meetingDay = backStackEntry.arguments?.getString("meetingDay"),
+                    // Only an explicit "true" from the group detail enables writing (default read-only).
+                    canWrite = backStackEntry.arguments?.getString("canWrite") == "true",
                 )
             }
         }
@@ -289,10 +296,19 @@ fun PazNavGraph(
             composable(
                 route = meetingRoute,
                 arguments =
-                    listOf(
-                        androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType },
-                        androidx.navigation.navArgument("date") { type = androidx.navigation.NavType.StringType },
-                    ),
+                    buildList {
+                        add(androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType })
+                        add(androidx.navigation.navArgument("date") { type = androidx.navigation.NavType.StringType })
+                        if (meetingRoute == Screen.LifeGroupMeeting.route) {
+                            add(
+                                androidx.navigation.navArgument("canWrite") {
+                                    type = androidx.navigation.NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                },
+                            )
+                        }
+                    },
             ) { backStackEntry ->
                 val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId").orEmpty()
                 val date = backStackEntry.arguments?.getString("date").orEmpty()
@@ -300,7 +316,13 @@ fun PazNavGraph(
                 if (!isValidMeetingArguments(lifeGroupId, date)) {
                     InvalidRouteFallback(navController)
                 } else {
-                    LifeGroupMeetingScreen(navController = navController, lifeGroupId = lifeGroupId, date = date)
+                    LifeGroupMeetingScreen(
+                        navController = navController,
+                        lifeGroupId = lifeGroupId,
+                        date = date,
+                        // "" = unknown (push deep link): only the server's can_write applies.
+                        canWrite = backStackEntry.arguments?.getString("canWrite").orEmpty(),
+                    )
                 }
             }
         }

@@ -65,8 +65,10 @@ class LifeGroupMeetingHistoryViewModelTest {
             createdAt = null,
         )
 
-    private fun viewModel(meetingDay: String? = null) =
-        LifeGroupMeetingHistoryViewModel(7, attendanceRepository, reportRepository, meetingDay) { today }
+    private fun viewModel(
+        meetingDay: String? = null,
+        canWrite: Boolean = true,
+    ) = LifeGroupMeetingHistoryViewModel(7, attendanceRepository, reportRepository, meetingDay, canWrite) { today }
 
     @Test
     fun `merges attendance and reports newest first with chips data`() =
@@ -239,5 +241,35 @@ class LifeGroupMeetingHistoryViewModelTest {
                 testScheduler.advanceUntilIdle()
                 assertEquals(LifeGroupMeetingHistoryEffect.NavigateToMeeting("2026-10-07"), awaitItem())
             }
+        }
+
+    @Test
+    fun `a supervisor sees the history but cannot start a new meeting`() =
+        runTest {
+            coEvery { attendanceRepository.getHistory(7) } returns listOf(attendance("2026-10-07"))
+            coEvery { reportRepository.getReports(7) } returns emptyList()
+            val vm = viewModel(canWrite = false)
+            testScheduler.advanceUntilIdle()
+
+            assertFalse(vm.uiState.value.canWrite)
+            assertEquals(1, vm.uiState.value.meetings.size)
+            vm.effect.test {
+                vm.onNewMeetingDateChosen("2026-10-08")
+                vm.onMeetingTapped("2026-10-07")
+                testScheduler.advanceUntilIdle()
+                assertEquals(LifeGroupMeetingHistoryEffect.NavigateToMeeting("2026-10-07"), awaitItem())
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `the group leader can start a new meeting`() =
+        runTest {
+            coEvery { attendanceRepository.getHistory(7) } returns emptyList()
+            coEvery { reportRepository.getReports(7) } returns emptyList()
+            val vm = viewModel(canWrite = true)
+            testScheduler.advanceUntilIdle()
+
+            assertTrue(vm.uiState.value.canWrite)
         }
 }

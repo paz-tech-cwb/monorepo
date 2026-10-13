@@ -206,6 +206,7 @@ private data class MeetingResponseDto(
     val report: LifeGroupReportDto? = null,
     val derived: MeetingDerivedDto? = null,
     // Safe defaults: unknown permission = read-only.
+    @SerialName("can_write") val canWrite: Boolean = false,
     @SerialName("can_edit") val canEdit: Boolean = false,
     @SerialName("edit_deadline") val editDeadline: String = "",
     @SerialName("report_blocked_reason") val reportBlockedReason: String? = null,
@@ -218,6 +219,7 @@ private data class MeetingResponseDto(
             report = report?.toDomain(),
             committedMembers = derived?.committedMembers,
             committedMembersPresent = derived?.committedMembersPresent,
+            canWrite = canWrite,
             canEdit = canEdit,
             editDeadline = editDeadline,
             reportBlockedReason =

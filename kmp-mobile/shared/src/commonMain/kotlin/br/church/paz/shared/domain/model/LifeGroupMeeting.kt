@@ -43,7 +43,10 @@ data class LifeGroupMeeting(
     // "Comprometidos" (= roster snapshot size) and "Presentes" (= present count); null without attendance.
     val committedMembers: Int?,
     val committedMembersPresent: Int?,
-    // False after the edit window (14 days) for non-admins: the screen is read-only.
+    // Role-based: the viewer is admin/pastor or this group's leader/co-leader. Supervisors (area/sector
+    // leaders reaching the group through scope) are read-only. Unknown (flag missing) = false.
+    val canWrite: Boolean,
+    // `canWrite` AND inside the edit window (14 days, admins bypass it): false means read-only.
     val canEdit: Boolean,
     // Last day (ISO `yyyy-MM-dd`, inclusive) a non-admin may still edit.
     val editDeadline: String,
@@ -54,6 +57,9 @@ data class LifeGroupMeeting(
     val isAttendanceSaved: Boolean get() = attendance != null && !attendance.isDraft
 
     val isReportSaved: Boolean get() = report != null
+
+    /** Presence and report may be typed and saved: write-authorized AND inside the edit window. */
+    val isEditable: Boolean get() = canWrite && canEdit
 }
 
 /** The 13 report values a leader types (everything else in the report is derived by the server). */

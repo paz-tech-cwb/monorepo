@@ -40,6 +40,7 @@ class LifeGroupMeetingRulesTest {
         report = report,
         committedMembers = attendance?.membersCount,
         committedMembersPresent = attendance?.presentCount,
+        canWrite = true,
         canEdit = true,
         editDeadline = "2026-10-21",
         reportBlockedReason = null,
@@ -351,5 +352,40 @@ class LifeGroupMeetingRulesTest {
         assertTrue(LifeGroupMeetingRules.editableUntilMessage("2026-10-21").contains("21/10/2026"))
         assertTrue(LifeGroupMeetingRules.reportBlockedMessage(MeetingReportBlockedReason.GROUP_HAS_NO_SECTOR).contains("setor"))
         assertTrue(LifeGroupMeetingRules.reportBlockedMessage(MeetingReportBlockedReason.SECTOR_HAS_NO_AREA).contains("área"))
+    }
+
+    @Test
+    fun `canWrite is leadership of this group or admin or pastor only`() {
+        // The group's own leader/co-leader writes whatever the role (a co-leader is often `member`).
+        for (role in UserRole.entries + null) assertTrue(LifeGroupMeetingRules.canWrite(role, isGroupLeadership = true))
+        assertTrue(LifeGroupMeetingRules.canWrite(UserRole.admin, false))
+        assertTrue(LifeGroupMeetingRules.canWrite(UserRole.pastor, false))
+        // Supervisors (area/sector leaders via scope), another group's leader and everyone else: read-only.
+        for (role in listOf(
+            UserRole.area_leader,
+            UserRole.sector_leader,
+            UserRole.life_group_leader,
+            UserRole.member,
+            UserRole.guest,
+            UserRole.discipler,
+            null,
+        )) {
+            assertFalse(LifeGroupMeetingRules.canWrite(role, isGroupLeadership = false), "role=$role")
+        }
+    }
+
+    @Test
+    fun `isEditable needs both the role permission and the open edit window`() {
+        val base = meeting(attendance = null)
+        assertTrue(base.isEditable)
+        assertFalse(base.copy(canWrite = false).isEditable)
+        assertFalse(base.copy(canEdit = false).isEditable)
+        assertFalse(base.copy(canWrite = false, canEdit = false).isEditable)
+    }
+
+    @Test
+    fun `write forbidden copy explains who can write`() {
+        assertTrue(LifeGroupMeetingRules.writeForbiddenMessage().contains("Somente leitura"))
+        assertTrue(LifeGroupMeetingRules.noMeetingToViewMessage().contains("Não há reunião"))
     }
 }

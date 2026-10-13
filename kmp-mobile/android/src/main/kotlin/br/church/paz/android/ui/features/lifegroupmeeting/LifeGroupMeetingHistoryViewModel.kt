@@ -25,9 +25,12 @@ class LifeGroupMeetingHistoryViewModel(
     private val reportRepository: LifeGroupReportRepository,
     // The group's fixed weekday, handed over by the group detail (null/blank: "Sem dia fixo" or unknown).
     meetingDay: String?,
+    // `LifeGroupMeetingRules.canWrite(role, isGroupLeadership)` from the group detail. Default false (read-only):
+    // a supervisor sees the history but never gets "Nova reunião". The server stays the authority.
+    canWrite: Boolean = false,
     private val today: () -> String = { LifeGroupMeetingRules.todayInSaoPaulo(System.currentTimeMillis()) },
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(LifeGroupMeetingHistoryUiState(meetingDay = meetingDay?.takeIf { it.isNotBlank() }))
+    private val _uiState = MutableStateFlow(LifeGroupMeetingHistoryUiState(meetingDay = meetingDay?.takeIf { it.isNotBlank() }, canWrite = canWrite))
     val uiState: StateFlow<LifeGroupMeetingHistoryUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<LifeGroupMeetingHistoryEffect>(Channel.BUFFERED)
@@ -102,6 +105,7 @@ class LifeGroupMeetingHistoryViewModel(
 
     /** "Nova reunião": ignores a future or invalid date (the picker already blocks them). */
     fun onNewMeetingDateChosen(date: String) {
+        if (!_uiState.value.canWrite) return
         if (!LifeGroupMeetingRules.isSelectableDate(date, today())) return
         viewModelScope.launch { _effect.send(LifeGroupMeetingHistoryEffect.NavigateToMeeting(date)) }
     }

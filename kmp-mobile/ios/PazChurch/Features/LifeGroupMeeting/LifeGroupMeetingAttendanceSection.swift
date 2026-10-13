@@ -11,12 +11,14 @@ struct LifeGroupMeetingAttendanceSection: View {
                 Text(viewModel.presenceSummary)
                     .font(PazTypography.titleSmall)
                     .foregroundStyle(PazColors.titleInk)
-                MeetingSwitchRow(
-                    title: "Todos presentes",
-                    subtitle: allPresentSubtitle,
-                    isOn: Binding(get: { viewModel.allPresent }, set: { viewModel.setAllPresent($0) }),
-                    isEnabled: !viewModel.isReadOnly && !viewModel.isBusy
-                )
+                if !viewModel.isWriteForbidden {
+                    MeetingSwitchRow(
+                        title: "Todos presentes",
+                        subtitle: allPresentSubtitle,
+                        isOn: Binding(get: { viewModel.allPresent }, set: { viewModel.setAllPresent($0) }),
+                        isEnabled: !viewModel.isReadOnly && !viewModel.isBusy
+                    )
+                }
             }
             roster
             MeetingSaveBlock(

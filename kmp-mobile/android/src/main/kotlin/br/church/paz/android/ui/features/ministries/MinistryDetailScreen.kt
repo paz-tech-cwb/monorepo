@@ -309,7 +309,7 @@ fun LifeGroupDetailScreen(
                 onMeetingsTap = {
                     navController.navigate(
                         br.church.paz.android.navigation.Screen.LifeGroupMeetings
-                            .createRoute(group.id.toString(), group.meetingDay),
+                            .createRoute(group.id.toString(), group.meetingDay, uiState.canWriteMeetings),
                     )
                 },
                 myTasks = uiState.myTasks,

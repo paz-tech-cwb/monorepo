@@ -110,13 +110,13 @@ private func report() -> LifeGroupWeeklyReport {
 
 private func meeting(
     attendance att: LifeGroupMeetingAttendance?, report rep: LifeGroupWeeklyReport? = nil,
-    canEdit: Bool = true, blocked: MeetingReportBlockedReason? = nil
+    canEdit: Bool = true, blocked: MeetingReportBlockedReason? = nil, canWrite: Bool = true
 ) -> LifeGroupMeeting {
     LifeGroupMeeting(
         lifeGroupId: 7, meetingDate: "2026-10-07", attendance: att, report: rep,
         committedMembers: att.map { KotlinInt(int: $0.membersCount) },
         committedMembersPresent: att.map { KotlinInt(int: $0.presentCount) },
-        canEdit: canEdit, editDeadline: "2026-10-21", reportBlockedReason: blocked
+        canWrite: canWrite, canEdit: canEdit, editDeadline: "2026-10-21", reportBlockedReason: blocked
     )
 }
 
@@ -131,11 +131,12 @@ private func validReportDraft() -> LifeGroupMeetingReportDraft {
 @MainActor
 final class LifeGroupMeetingViewModelTests: XCTestCase {
     private func makeViewModel(
-        service: FakeMeetingService, store: FakeDraftStore? = nil, userId: String? = "u1"
+        service: FakeMeetingService, store: FakeDraftStore? = nil, userId: String? = "u1",
+        viewerCanWrite: Bool? = nil
     ) -> LifeGroupMeetingViewModel {
         LifeGroupMeetingViewModel(
             lifeGroupId: 7, meetingDate: "2026-10-07", service: service, draftStore: store ?? FakeDraftStore(),
-            currentUserId: { userId }
+            currentUserId: { userId }, viewerCanWrite: viewerCanWrite
         )
     }
 
@@ -378,6 +379,90 @@ final class LifeGroupMeetingViewModelTests: XCTestCase {
         XCTAssertTrue(vm.isReadOnly)
     }
 
+    // MARK: - Supervisors (read-only)
+
+    func testSupervisorSeesMeetingReadOnlyWithNoActions() async {
+        let store = FakeDraftStore()
+        store.drafts["u1_7_2026-10-07"] = LifeGroupMeetingDraft(
+            attendance: [LifeGroupMeetingDraftEntry(userId: 1, present: false)], report: nil, extraMeeting: false
+        )
+        let service = FakeMeetingService()
+        service.getResults = [.success(meeting(
+            attendance: attendance([true, false], isDraft: false), report: report(), canEdit: false, canWrite: false
+        ))]
+        let vm = makeViewModel(service: service, store: store)
+        await vm.load()
+        XCTAssertTrue(vm.isWriteForbidden)
+        XCTAssertTrue(vm.isReadOnly)
+        XCTAssertFalse(vm.showExtraToggle)
+        XCTAssertFalse(vm.draftRestored)
+        vm.togglePresent(userId: 1)
+        vm.setAllPresent(true)
+        await vm.setExtraMeeting(true)
+        await vm.saveAttendance()
+        await vm.saveReport()
+        XCTAssertEqual(vm.entries.map(\.present), [true, false])
+        XCTAssertFalse(vm.canSaveAttendance)
+        XCTAssertFalse(vm.canSaveReport)
+        XCTAssertEqual(service.calls, ["get"])
+    }
+
+    func testRoleHintForcesReadOnlyEvenWhenTheServerFlagIsPermissive() async {
+        let service = FakeMeetingService()
+        service.getResults = [.success(meeting(attendance: attendance([true, true], isDraft: false)))]
+        let vm = makeViewModel(service: service, viewerCanWrite: false)
+        await vm.load()
+        XCTAssertTrue(vm.isWriteForbidden)
+        XCTAssertTrue(vm.isReadOnly)
+        vm.togglePresent(userId: 1)
+        await vm.saveAttendance()
+        XCTAssertFalse(vm.canSaveAttendance)
+        XCTAssertEqual(service.calls, ["get"])
+    }
+
+    func testLeaderKeepsFullEditRights() async {
+        let service = FakeMeetingService()
+        service.getResults = [.success(meeting(attendance: attendance([true, true], isDraft: false)))]
+        let vm = makeViewModel(service: service, viewerCanWrite: true)
+        await vm.load()
+        XCTAssertFalse(vm.isWriteForbidden)
+        XCTAssertFalse(vm.isReadOnly)
+        vm.togglePresent(userId: 1)
+        XCTAssertTrue(vm.canSaveAttendance)
+    }
+
+    func testSupervisorOnADateWithoutARecordGetsNoExtraSwitch() async {
+        let service = FakeMeetingService()
+        service.getResults = [.failure(meetingError(400, "extra_meeting_required"))]
+        let vm = makeViewModel(service: service, viewerCanWrite: false)
+        await vm.load()
+        XCTAssertTrue(vm.needsExtraChoice)
+        XCTAssertTrue(vm.isWriteForbidden)
+        XCTAssertFalse(vm.showExtraToggle)
+        await vm.setExtraMeeting(true)
+        XCTAssertEqual(service.calls, ["get"])
+    }
+
+    func testSharedWriteRuleMatchesTheServerPolicy() {
+        let shared = LifeGroupMeetingRules.shared
+        XCTAssertTrue(shared.canWrite(role: .admin, isGroupLeadership: false))
+        XCTAssertTrue(shared.canWrite(role: .pastor, isGroupLeadership: false))
+        XCTAssertTrue(shared.canWrite(role: .member, isGroupLeadership: true))
+        XCTAssertFalse(shared.canWrite(role: .areaLeader, isGroupLeadership: false))
+        XCTAssertFalse(shared.canWrite(role: .sectorLeader, isGroupLeadership: false))
+        XCTAssertFalse(shared.canWrite(role: .lifeGroupLeader, isGroupLeadership: false))
+        XCTAssertFalse(shared.canWrite(role: .member, isGroupLeadership: false))
+        XCTAssertFalse(shared.canWrite(role: nil, isGroupLeadership: false))
+    }
+
+    func testSupervisorHistoryCannotStartANewMeeting() {
+        let vm = LifeGroupMeetingHistoryViewModel(
+            lifeGroupId: 7, meetingDay: "Sábado", canWrite: false, source: FakeHistorySource(), today: { "2026-10-14" }
+        )
+        XCTAssertFalse(vm.canWrite)
+        XCTAssertNil(vm.validatedNewMeetingDate("2026-10-14"))
+    }
+
     func testReadOnlyMeetingBlocksEditsAndIgnoresStaleDraft() async {
         let store = FakeDraftStore()
         store.drafts["u1_7_2026-10-07"] = LifeGroupMeetingDraft(
@@ -534,7 +619,7 @@ final class LifeGroupMeetingHistoryViewModelTests: XCTestCase {
     func testNewMeetingDefaultsToLatestRegularDayAndRejectsFuture() {
         // 2026-10-14 is a Wednesday.
         let vm = LifeGroupMeetingHistoryViewModel(
-            lifeGroupId: 7, meetingDay: "Sábado", source: FakeHistorySource(), today: { "2026-10-14" }
+            lifeGroupId: 7, meetingDay: "Sábado", canWrite: true, source: FakeHistorySource(), today: { "2026-10-14" }
         )
         XCTAssertEqual(vm.defaultNewMeetingDate, "2026-10-10")
         XCTAssertTrue(vm.needsExtraMeeting("2026-10-14"))
@@ -544,7 +629,7 @@ final class LifeGroupMeetingHistoryViewModelTests: XCTestCase {
         XCTAssertNil(vm.validatedNewMeetingDate("garbage"))
 
         let noFixedDay = LifeGroupMeetingHistoryViewModel(
-            lifeGroupId: 7, meetingDay: nil, source: FakeHistorySource(), today: { "2026-10-14" }
+            lifeGroupId: 7, meetingDay: nil, canWrite: true, source: FakeHistorySource(), today: { "2026-10-14" }
         )
         XCTAssertEqual(noFixedDay.defaultNewMeetingDate, "2026-10-14")
         XCTAssertFalse(noFixedDay.needsExtraMeeting("2026-10-13"))

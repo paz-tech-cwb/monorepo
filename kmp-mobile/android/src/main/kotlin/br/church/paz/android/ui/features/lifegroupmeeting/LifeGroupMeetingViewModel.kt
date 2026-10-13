@@ -33,8 +33,12 @@ class LifeGroupMeetingViewModel(
     private val repository: LifeGroupMeetingRepository,
     private val authRepository: AuthRepository,
     private val draftStore: MeetingDraftStore,
+    // `LifeGroupMeetingRules.canWrite(role, isGroupLeadership)` decided by the caller (group detail); null when
+    // unknown (push deep link): then only the server's `can_write` applies. `false` forces read-only.
+    private val viewerCanWrite: Boolean? = null,
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(LifeGroupMeetingUiState(meetingDate = meetingDate))
+    private val _uiState =
+        MutableStateFlow(LifeGroupMeetingUiState(meetingDate = meetingDate, viewerCanWrite = viewerCanWrite))
     val uiState: StateFlow<LifeGroupMeetingUiState> = _uiState.asStateFlow()
 
     private val _effect = Channel<LifeGroupMeetingEffect>(Channel.BUFFERED)
@@ -109,7 +113,7 @@ class LifeGroupMeetingViewModel(
     ) {
         val serverEntries = meeting.attendance?.entries.orEmpty()
         // A closed edit window is read-only: a stale local draft must not resurface as editable input.
-        val usableDraft = draft?.takeIf { meeting.canEdit }
+        val usableDraft = draft?.takeIf { meeting.isEditable && viewerCanWrite != false }
         val entries = LifeGroupMeetingRules.applyDraftEntries(serverEntries, usableDraft?.attendance)
         val baselineReport =
             meeting.report?.let { LifeGroupMeetingReportDraft.fromReport(it) } ?: LifeGroupMeetingReportDraft()
@@ -134,7 +138,7 @@ class LifeGroupMeetingViewModel(
 
     fun onExtraMeetingChanged(extra: Boolean) {
         val state = _uiState.value
-        if (state.isExtraLocked || state.isBusy || state.isExtra == extra) return
+        if (state.isWriteForbidden || state.isExtraLocked || state.isBusy || state.isExtra == extra) return
         viewModelScope.launch {
             _uiState.update { it.copy(isExtra = extra, isLoading = true, loadError = null) }
             fetch(extra = extra, draft = readDraft(userId)?.copy(extraMeeting = extra))
@@ -280,7 +284,7 @@ class LifeGroupMeetingViewModel(
     private fun persistDraft() {
         val state = _uiState.value
         val meeting = state.meeting ?: return
-        if (!meeting.canEdit) return
+        if (!meeting.isEditable || state.isWriteForbidden) return
         val currentUserId = userId ?: return
         val draft = LifeGroupMeetingRules.buildDraft(meeting, state.entries, state.reportDraft, state.isExtra)
         val previous = persistJob

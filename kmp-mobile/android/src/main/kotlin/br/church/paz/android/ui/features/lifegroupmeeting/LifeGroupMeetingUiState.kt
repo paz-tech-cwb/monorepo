@@ -27,9 +27,15 @@ data class LifeGroupMeetingUiState(
     val reportError: String? = null,
     val reportNotice: String? = null,
     val draftRestored: Boolean = false,
+    // The caller's role-based hint (shared `LifeGroupMeetingRules.canWrite`), null when unknown (deep link).
+    // `false` makes the screen read-only even before/without the server's `can_write`; the server stays the authority.
+    val viewerCanWrite: Boolean? = null,
 ) {
-    /** Past the edit window for this user (admins bypass it server side through `can_edit`). */
-    val isReadOnly: Boolean get() = meeting?.canEdit == false
+    /** The viewer may read but never write this meeting (supervisor): no actions at all, not only disabled ones. */
+    val isWriteForbidden: Boolean get() = viewerCanWrite == false || meeting?.canWrite == false
+
+    /** Read-only: a supervisor ([isWriteForbidden]) or past the edit window (admins bypass it through `can_edit`). */
+    val isReadOnly: Boolean get() = isWriteForbidden || meeting?.isEditable == false
 
     val isAttendanceSaved: Boolean get() = meeting?.isAttendanceSaved == true
 
@@ -43,7 +49,7 @@ data class LifeGroupMeetingUiState(
 
     /** The "Reunião extra" switch: shown until the first save, then the type is fixed. */
     val showExtraToggle: Boolean
-        get() = needsExtraChoice || (meeting?.attendance?.isDraft == true && isExtra && !isReadOnly)
+        get() = !isWriteForbidden && (needsExtraChoice || (meeting?.attendance?.isDraft == true && isExtra && !isReadOnly))
 
     val isExtraLocked: Boolean get() = meeting?.attendance?.isDraft == false
 
@@ -100,6 +106,8 @@ data class LifeGroupMeetingHistoryUiState(
     val error: String? = null,
     // The group's fixed weekday ("Quarta-feira"), null for "Sem dia fixo" or when it could not be loaded.
     val meetingDay: String? = null,
+    // Viewer may create meetings (shows "Nova reunião"); false for supervisors (read-only history).
+    val canWrite: Boolean = false,
 )
 
 sealed class LifeGroupMeetingHistoryEffect {

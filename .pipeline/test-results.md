@@ -36,3 +36,11 @@ New Android tests (history VM: init+resume single load / no empty flash, refresh
 ### Android CI (phase 3 fixes), PR #99 temporarily retargeted to `develop`, base restored afterwards
 - Run 38416842269 (head d3cb6a93): android FAIL at `:android:testDebugUnitTest` (compile OK; 2 of 211 failed: my two new history-VM tests asserted an in-flight state that mockk resolved instantly, a test bug), ios PASS (job 115363423849), build PASS (run 38416842096).
 - Run 38419536201 (head 44ae2fb8, test gated with CompletableDeferred): android PASS (job 115372895816), ios PASS (job 115372896339); build PASS (run 38419536178, job 115372892007).
+
+## Supervisors read-only on mobile (D11) - 2026-10-13
+| Check | Result |
+|---|---|
+| `./gradlew :shared:iosSimulatorArm64Test --offline` (JDK17, scratch GRADLE_USER_HOME/KONAN_DATA_DIR) | PASS, 138 tests, 0 failures (5 new: `canWrite` matrix over all roles, `isEditable`, copy, repository `can_write` mapping incl. stale `can_edit` true) |
+| `./gradlew :shared:assembleSharedDebugXCFramework --offline` | PASS |
+| iOS: `xcodebuild test ... TestPhone -only-testing:PazChurchTests` (temporary fake `GoogleService-Info.plist`, deleted, not committed) | PASS, 74 tests, 0 failures (6 new: supervisor read-only meeting, role hint forces read-only, leader keeps rights, supervisor no extra switch, shared write rule, supervisor history cannot start a meeting) |
+| Android (SDK not installed locally) | verified by CI only, see below |

@@ -212,6 +212,14 @@ struct LifeGroupDetailView: View {
             || role == .sectorLeader
     }
 
+    /// Write rights on this group's meetings (shared rule): admin, pastor or this group's leader/co-leader.
+    /// Area/sector leaders only supervise: they get the read-only "Reuniões" history.
+    private var canWriteMeetings: Bool {
+        LifeGroupMeetingRules.shared.canWrite(
+            role: authCoordinator.currentUser?.role, isGroupLeadership: canManageAttendance
+        )
+    }
+
     private var canViewGroupReports: Bool {
         Self.canViewGroupReports(role: authCoordinator.currentUser?.role, isGroupLeadership: canManageAttendance)
     }
@@ -380,7 +388,8 @@ struct LifeGroupDetailView: View {
                         NavigationLink {
                             LifeGroupMeetingHistoryView(
                                 lifeGroupId: Int32(lifeGroup.id),
-                                meetingDay: lifeGroup.meetingDay
+                                meetingDay: lifeGroup.meetingDay,
+                                canWrite: canWriteMeetings
                             )
                         } label: {
                             HStack(spacing: PazSpacing.md) {

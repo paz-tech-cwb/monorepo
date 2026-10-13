@@ -86,6 +86,7 @@ class LifeGroupMeetingViewModelTest {
         report: LifeGroupWeeklyReport? = null,
         canEdit: Boolean = true,
         blocked: MeetingReportBlockedReason? = null,
+        canWrite: Boolean = true,
     ) = LifeGroupMeeting(
         lifeGroupId = 7,
         meetingDate = date,
@@ -93,6 +94,7 @@ class LifeGroupMeetingViewModelTest {
         report = report,
         committedMembers = attendance?.membersCount,
         committedMembersPresent = attendance?.presentCount,
+        canWrite = canWrite,
         canEdit = canEdit,
         editDeadline = "2026-10-21",
         reportBlockedReason = blocked,
@@ -110,9 +112,9 @@ class LifeGroupMeetingViewModelTest {
         blocked: MeetingReportBlockedReason? = null,
     ) = meeting(attendance(entries(*presentOrDefault(present)), isDraft = false), report, canEdit, blocked)
 
-    private fun viewModel(): LifeGroupMeetingViewModel {
+    private fun viewModel(viewerCanWrite: Boolean? = null): LifeGroupMeetingViewModel {
         coEvery { authRepository.currentUser() } returns User(id = "5", name = "Ana")
-        return LifeGroupMeetingViewModel(7, date, repository, authRepository, draftStore)
+        return LifeGroupMeetingViewModel(7, date, repository, authRepository, draftStore, viewerCanWrite)
     }
 
     private fun kotlinx.coroutines.test.TestScope.settle() = testScheduler.advanceUntilIdle()
@@ -548,6 +550,86 @@ class LifeGroupMeetingViewModelTest {
 
             assertTrue(vm.uiState.value.isReadOnly)
             coVerify(exactly = 2) { repository.getMeeting(7, date, null) }
+        }
+
+    // ---- supervisors (read-only) ----
+
+    private fun supervisorMeeting() = meeting(attendance(entries(true, false), isDraft = false), report(), canWrite = false, canEdit = false)
+
+    @Test
+    fun `a supervisor (can_write false) sees the meeting read only with no actions`() =
+        runTest {
+            coEvery { repository.getMeeting(7, date, null) } returns supervisorMeeting()
+            draftStore.drafts[draftKey] = LifeGroupMeetingDraft(attendance = listOf(LifeGroupMeetingDraftEntry(1, false)))
+            val vm = viewModel()
+            settle()
+
+            vm.onTogglePresent(1)
+            vm.onAllPresentChanged(false)
+            vm.onExtraMeetingChanged(true)
+            vm.onReportChanged(LifeGroupMeetingReportDraft(guests = "99"))
+            vm.onSaveAttendance()
+            vm.onSaveReport()
+            settle()
+
+            val state = vm.uiState.value
+            assertTrue(state.isWriteForbidden)
+            assertTrue(state.isReadOnly)
+            assertFalse(state.showExtraToggle)
+            assertFalse(state.canSaveAttendance)
+            assertFalse(state.canSaveReport)
+            assertFalse(state.draftRestored)
+            assertEquals(listOf(true, false), state.entries.map { it.present })
+            assertEquals("2", state.reportDraft.guests)
+            coVerify(exactly = 0) { repository.saveAttendance(any(), any(), any(), any()) }
+            coVerify(exactly = 0) { repository.saveReport(any(), any(), any()) }
+        }
+
+    @Test
+    fun `the role hint forces read only even when the server flag is permissive`() =
+        runTest {
+            coEvery { repository.getMeeting(7, date, null) } returns savedMeeting()
+            val vm = viewModel(viewerCanWrite = false)
+            settle()
+
+            vm.onTogglePresent(1)
+            vm.onSaveAttendance()
+            settle()
+
+            assertTrue(vm.uiState.value.isWriteForbidden)
+            assertTrue(vm.uiState.value.isReadOnly)
+            assertFalse(vm.uiState.value.canSaveAttendance)
+            coVerify(exactly = 0) { repository.saveAttendance(any(), any(), any(), any()) }
+        }
+
+    @Test
+    fun `a leader (hint true and can_write true) keeps full edit rights`() =
+        runTest {
+            coEvery { repository.getMeeting(7, date, null) } returns savedMeeting()
+            val vm = viewModel(viewerCanWrite = true)
+            settle()
+
+            vm.onTogglePresent(1)
+
+            assertFalse(vm.uiState.value.isWriteForbidden)
+            assertFalse(vm.uiState.value.isReadOnly)
+            assertTrue(vm.uiState.value.canSaveAttendance)
+        }
+
+    @Test
+    fun `a supervisor on a date without a record gets no extra meeting switch`() =
+        runTest {
+            coEvery { repository.getMeeting(7, date, null) } throws
+                LifeGroupMeetingException(400, "extra_meeting_required", "not a Quarta-feira")
+            val vm = viewModel(viewerCanWrite = false)
+            settle()
+
+            assertTrue(vm.uiState.value.needsExtraChoice)
+            assertTrue(vm.uiState.value.isWriteForbidden)
+            assertFalse(vm.uiState.value.showExtraToggle)
+            vm.onExtraMeetingChanged(true)
+            settle()
+            coVerify(exactly = 0) { repository.getMeeting(7, date, true) }
         }
 
     // ---- local drafts ----

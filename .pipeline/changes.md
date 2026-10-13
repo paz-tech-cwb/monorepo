@@ -43,3 +43,7 @@ Merged `origin/feat/life-group-meetings-api` first (conflict only in `.pipeline/
 - m6 (route part): malformed `lifeGroupId`/`date` pops the back stack (`InvalidRouteFallback`) instead of a blank screen. The backend English 400 text is left as is.
 - m8: `LifeGroupMeetingRules.legacyReportMessage()` shown when `attendance == null && report != null`.
 Leftovers (not changed): M4 (merge with #97, whoever merges second), m3 stale draft over newer server data, m7, m9, m10-m12, entry-point gate decision (author flag 3).
+
+## Supervisors read-only on mobile (D11) - 2026-10-13
+- Shared: `LifeGroupMeetingRules.canWrite(role, isGroupLeadership)`, `writeForbiddenMessage`, `noMeetingToViewMessage`; `LifeGroupMeeting.canWrite` (from `can_write`, default false) and `isEditable = canWrite && canEdit`; repository maps `can_write`.
+- Android + iOS: meeting screen read-only for supervisors (no extra switch, no "Todos presentes", no save, disabled toggles, banner); history hides "Nova reunião" and ignores new-meeting dates unless `canWrite`; group detail resolves `canWriteMeetings` with the shared rule and passes it down (route arg / init param); deep link keeps working with an unknown hint (server flag only). Merged `origin/feat/life-group-meetings-api` (backend D11); `.pipeline` kept ours, other side archived as `archive/*.meetings-api.md`.

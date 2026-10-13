@@ -63,12 +63,13 @@ class LifeGroupMeetingRepositoryTest {
                "recorded_by":null,"entries":[{"user_id":1,"name":"Ana","present":true},{"user_id":2,"name":"Bia","present":true}],
                "created_at":null,"updated_at":null,"is_draft":true,"is_extra":false,"default_present":true}""",
         report: String = "null",
+        canWrite: Boolean = true,
         canEdit: Boolean = true,
         blocked: String = "null",
     ) = """
         {"life_group_id":7,"meeting_date":"2026-10-07","attendance":$attendance,"report":$report,
          "derived":{"committed_members":2,"committed_members_present":2},
-         "can_edit":$canEdit,"edit_deadline":"2026-10-21","report_blocked_reason":$blocked}
+         "can_write":$canWrite,"can_edit":$canEdit,"edit_deadline":"2026-10-21","report_blocked_reason":$blocked}
     """.trimIndent()
 
     @Test
@@ -95,7 +96,9 @@ class LifeGroupMeetingRepositoryTest {
             assertEquals(listOf("Ana", "Bia"), attendance.entries.map { it.name })
             assertEquals(2, meeting.committedMembers)
             assertEquals(2, meeting.committedMembersPresent)
+            assertTrue(meeting.canWrite)
             assertTrue(meeting.canEdit)
+            assertTrue(meeting.isEditable)
             assertEquals("2026-10-21", meeting.editDeadline)
             assertNull(meeting.report)
             assertNull(meeting.reportBlockedReason)
@@ -153,6 +156,34 @@ class LifeGroupMeetingRepositoryTest {
         }
 
     @Test
+    fun `a supervisor view maps can_write false and keeps the deadline`() =
+        runTest {
+            val repo =
+                buildRepo(
+                    MockEngine {
+                        respond(meetingJson(canWrite = false, canEdit = false), HttpStatusCode.OK, jsonHeaders)
+                    },
+                )
+
+            val meeting = repo.getMeeting(7, "2026-10-07", extraMeeting = null)
+
+            assertFalse(meeting.canWrite)
+            assertFalse(meeting.isEditable)
+            assertEquals("2026-10-21", meeting.editDeadline)
+        }
+
+    @Test
+    fun `can_write false wins over a stale can_edit true on an older server`() =
+        runTest {
+            val repo =
+                buildRepo(
+                    MockEngine { respond(meetingJson(canWrite = false, canEdit = true), HttpStatusCode.OK, jsonHeaders) },
+                )
+
+            assertFalse(repo.getMeeting(7, "2026-10-07", extraMeeting = null).isEditable)
+        }
+
+    @Test
     fun `an unknown blocked reason and a missing can_edit fail safe`() =
         runTest {
             val repo =
@@ -171,6 +202,8 @@ class LifeGroupMeetingRepositoryTest {
             val meeting = repo.getMeeting(7, "2026-10-07", extraMeeting = null)
 
             assertFalse(meeting.canEdit)
+            assertFalse(meeting.canWrite)
+            assertFalse(meeting.isEditable)
             assertEquals(MeetingReportBlockedReason.UNKNOWN, meeting.reportBlockedReason)
             assertNull(meeting.attendance)
             assertNull(meeting.committedMembers)
