@@ -17,18 +17,19 @@ describe('FormReportReminderEvaluator', () => {
 
   const entityManager = {
     createQueryBuilder: jest.fn(),
-    create: jest.fn((_e, v) => v),
-    save: jest.fn((x) => Promise.resolve({ id: 10, ...x })),
+    create: jest.fn((_e: unknown, v: unknown) => v),
+    save: jest.fn((x: object) => Promise.resolve({ id: 10, ...x })),
     update: jest.fn(),
   } as never;
-  const dispatch = { dispatch: jest.fn() } as never;
+  const dispatchFn = jest.fn();
+  const dispatch = { dispatch: dispatchFn } as never;
 
   it('does not fire when current weekday/hour does not match config', async () => {
     const evaluator = new FormReportReminderEvaluator(entityManager, dispatch);
     // Monday 10:00 — config wants Sunday 20:00
     const now = new Date('2026-06-08T10:00:00');
     await evaluator.run(makeRule(), now);
-    expect((dispatch as any).dispatch).not.toHaveBeenCalled();
+    expect(dispatchFn).not.toHaveBeenCalled();
   });
 
   it('does not fire twice in the same period (lastRunAt this period)', async () => {
@@ -36,7 +37,7 @@ describe('FormReportReminderEvaluator', () => {
     const now = new Date('2026-06-07T20:30:00'); // Sunday 20:xx
     const rule = makeRule({ lastRunAt: new Date('2026-06-07T20:05:00') });
     await evaluator.run(rule, now);
-    expect((dispatch as any).dispatch).not.toHaveBeenCalled();
+    expect(dispatchFn).not.toHaveBeenCalled();
   });
 
   describe('week start (America/Sao_Paulo, ISO week Monday..Sunday)', () => {
