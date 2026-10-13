@@ -1,4 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { InjectEntityManager } from '@nestjs/typeorm';
+import { EntityManager } from 'typeorm';
+import { LifeGroup } from '../life-groups/entities/life-group.entity';
 import { MinistryAccessService } from '../ministry-access/ministry-access.service';
 import { MINISTRY_LINKED_FORMS } from '../ministry-access/ministry-linked-forms';
 
@@ -53,6 +56,10 @@ const FORM_DEFINITIONS = [
     slug: 'life-group-reports',
     name: 'Relatório de Life Group',
     description: 'Relatório semanal do LG',
+    // Also visible to anyone who is leader_id/co_leader_id of at least one
+    // life group, whatever their role slug (a co-leader is usually `member`).
+    // Matches POST/GET life-group-reports, which are scope-based.
+    leadsLifeGroup: true,
     write: [
       'admin',
       'pastor',
@@ -159,7 +166,19 @@ export const FORM_SLUGS: readonly string[] = FORM_DEFINITIONS.map(
 
 @Injectable()
 export class FormsCatalogService {
-  constructor(private readonly ministryAccess: MinistryAccessService) {}
+  constructor(
+    private readonly ministryAccess: MinistryAccessService,
+    @InjectEntityManager() private readonly em: EntityManager,
+  ) {}
+
+  private async leadsAnyLifeGroup(actorId: number): Promise<boolean> {
+    return this.em
+      .createQueryBuilder(LifeGroup, 'lg')
+      .where('lg.leader_id = :actorId OR lg.co_leader_id = :actorId', {
+        actorId,
+      })
+      .getExists();
+  }
 
   async listForRole(actor: {
     id: number;
@@ -182,6 +201,15 @@ export class FormsCatalogService {
         } else {
           canWrite = f.write.includes(actor.roleSlug);
           canRead = f.read.includes(actor.roleSlug);
+          if (
+            'leadsLifeGroup' in f &&
+            f.leadsLifeGroup &&
+            !(canWrite && canRead) &&
+            (await this.leadsAnyLifeGroup(actor.id))
+          ) {
+            canWrite = true;
+            canRead = true;
+          }
         }
 
         return {

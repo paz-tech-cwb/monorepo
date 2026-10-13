@@ -14,8 +14,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ScopeGuard } from '../forms-core/guards/scope.guard';
 import type { RequestWithScope } from '../forms-core/guards/scope.guard';
-import { Roles } from '../common/decorators/roles.decorator';
-import { RolesGuard } from '../common/guards/roles.guard';
+import { LifeGroupReportCreatePolicy } from './life-group-report-create-policy';
 import { LifeGroupReportsService } from './life-group-reports.service';
 import { CreateLifeGroupReportDto } from './dto/create-life-group-report.dto';
 import { UpdateLifeGroupReportDto } from './dto/update-life-group-report.dto';
@@ -27,7 +26,10 @@ import { ListLifeGroupReportsQueryDto } from './dto/list-life-group-reports-quer
 @UseGuards(AuthGuard('jwt'), ScopeGuard)
 @Controller('forms/life-group-reports')
 export class LifeGroupReportsController {
-  constructor(private readonly svc: LifeGroupReportsService) {}
+  constructor(
+    private readonly svc: LifeGroupReportsService,
+    private readonly createPolicy: LifeGroupReportCreatePolicy,
+  ) {}
 
   @Get()
   list(
@@ -51,11 +53,20 @@ export class LifeGroupReportsController {
     return this.svc.auditLog(id, req.formScope, { id: req.user.id });
   }
 
+  // No @Roles: access is scope-based (admin/pastor, groups in the actor's
+  // scope, or groups they lead/co-lead), so a `member`-role co-leader works.
+  // area_id/sector_id are derived from the group; client values are ignored.
   @Post()
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'pastor', 'area_leader', 'sector_leader', 'life_group_leader')
-  create(@Body() dto: CreateLifeGroupReportDto, @Req() req: RequestWithScope) {
-    return this.svc.create(dto, req.user.id);
+  async create(
+    @Body() dto: CreateLifeGroupReportDto,
+    @Req() req: RequestWithScope,
+  ) {
+    const authorized = await this.createPolicy.authorizeAndDerive(
+      dto,
+      req.formScope,
+      { id: req.user.id },
+    );
+    return this.svc.create(authorized, req.user.id);
   }
 
   @Patch(':id')
