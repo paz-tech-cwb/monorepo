@@ -87,6 +87,20 @@ describe('meeting-day.util', () => {
     });
   });
 
+  it('cached formatters stay per timeZone and give repeatable results', () => {
+    const d = new Date('2026-06-11T01:30:00Z');
+    for (let i = 0; i < 2; i++) {
+      expect(zonedParts(d).day).toBe(10);
+      expect(zonedParts(d, 'UTC').day).toBe(11);
+      expect(zonedDateTimeToDate('2026-06-10', 19, 0).toISOString()).toBe(
+        '2026-06-10T22:00:00.000Z',
+      );
+      expect(
+        zonedDateTimeToDate('2026-06-10', 19, 0, 'UTC').toISOString(),
+      ).toBe('2026-06-10T19:00:00.000Z');
+    }
+  });
+
   describe('zonedDateTimeToDate', () => {
     it('converts a Sao Paulo wall-clock time (UTC-3) to the UTC instant, minutes included', () => {
       expect(zonedDateTimeToDate('2026-06-10', 19, 0).toISOString()).toBe(

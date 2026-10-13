@@ -93,9 +93,17 @@ export class LifeGroupMeetingV2Reminders {
       if (
         weekday === undefined ||
         !group.meetingTime ||
-        Number.isNaN(meetingHour) ||
-        Number.isNaN(meetingMinute)
+        !Number.isInteger(meetingHour) ||
+        !Number.isInteger(meetingMinute) ||
+        meetingHour < 0 ||
+        meetingHour > 23 ||
+        meetingMinute < 0 ||
+        meetingMinute > 59
       ) {
+        // e.g. "25:70" would otherwise roll into the next day silently
+        this.logger.warn(
+          `life_group_attendance: skipping life group ${group.id}: invalid meeting_time "${group.meetingTime ?? ''}"`,
+        );
         skipped++;
         continue;
       }

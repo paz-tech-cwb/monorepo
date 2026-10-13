@@ -437,13 +437,27 @@ describe('LifeGroupMeetingV2Reminders (LIFE_GROUP_MEETING_V2 on)', () => {
       expect(sent).toHaveLength(0);
     });
 
-    it('followup_window_hours is configurable (0 = only the exact instant)', async () => {
-      const config = { ...rule.config, followup_window_hours: 0 };
-      await tickAt(sp('2026-06-11T20:00:00'), evaluator, config);
+    it('followup_window_hours is configurable (6h: still sent 5h after the due time, not 7h)', async () => {
+      const config = { ...rule.config, followup_window_hours: 6 };
+      await tickAt(sp('2026-06-11T18:00:00'), evaluator, config);
       expect(sent).toHaveLength(0);
-      await tickAt(sp(FOLLOWUPS[0]), evaluator, config);
+      await tickAt(sp('2026-06-12T00:00:00'), evaluator, config);
       expect(sent).toHaveLength(1);
+      sent.length = 0;
+      await tickAt(sp('2026-06-12T02:00:00'), evaluator, config);
+      expect(sent).toHaveLength(0);
     });
+
+    it.each([0, 1])(
+      'a stored window of %i (below the 2h floor) behaves as 2h',
+      async (stored) => {
+        const config = { ...rule.config, followup_window_hours: stored };
+        await tickAt(sp('2026-06-11T21:30:00'), evaluator, config);
+        expect(sent).toHaveLength(0);
+        await tickAt(sp('2026-06-11T20:59:00'), evaluator, config);
+        expect(sent).toHaveLength(1);
+      },
+    );
 
     it('honors followup_first_after_hours / followup_interval_hours (first +12h, every 36h)', async () => {
       const config = {
@@ -780,6 +794,10 @@ describe('LifeGroupMeetingV2Reminders (LIFE_GROUP_MEETING_V2 on)', () => {
       ['no fixed day', { meetingDay: 'Sem dia fixo' }],
       ['null meeting day', { meetingDay: null }],
       ['null meeting time', { meetingTime: null }],
+      ['hour out of range', { meetingTime: '25:70:00' }],
+      ['hour 24', { meetingTime: '24:00:00' }],
+      ['minute out of range', { meetingTime: '19:60:00' }],
+      ['garbage', { meetingTime: 'abc' }],
     ])(
       '%s: no primary push, follow-up or escalation (even with an extra attendance)',
       async (_label, patch) => {

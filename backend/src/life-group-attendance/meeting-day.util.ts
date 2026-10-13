@@ -40,18 +40,33 @@ export interface ZonedParts {
   hour: number;
 }
 
+// Intl.DateTimeFormat construction is expensive and these helpers run per
+// attendance row per group per hourly tick, so formatters are cached.
+const formatterCache = new Map<string, Intl.DateTimeFormat>();
+function formatterFor(
+  key: string,
+  options: () => Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+  let fmt = formatterCache.get(key);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat('en-CA', options());
+    formatterCache.set(key, fmt);
+  }
+  return fmt;
+}
+
 export function zonedParts(
   date: Date,
   timeZone = CHURCH_TIME_ZONE,
 ): ZonedParts {
-  const fmt = new Intl.DateTimeFormat('en-CA', {
+  const fmt = formatterFor(`h:${timeZone}`, () => ({
     timeZone,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     hour12: false,
-  });
+  }));
   const map: Record<string, string> = {};
   for (const part of fmt.formatToParts(date)) {
     map[part.type] = part.value;
@@ -80,7 +95,7 @@ export function zonedDateTimeToDate(
   const [year, month, day] = dateKey.split('-').map(Number);
   const wall = Date.UTC(year, month - 1, day, hour, minute);
   const offsetAt = (instant: number): number => {
-    const fmt = new Intl.DateTimeFormat('en-CA', {
+    const fmt = formatterFor(`s:${timeZone}`, () => ({
       timeZone,
       year: 'numeric',
       month: '2-digit',
@@ -89,7 +104,7 @@ export function zonedDateTimeToDate(
       minute: '2-digit',
       second: '2-digit',
       hour12: false,
-    });
+    }));
     const map: Record<string, string> = {};
     for (const part of fmt.formatToParts(new Date(instant))) {
       map[part.type] = part.value;

@@ -55,7 +55,7 @@ export interface LifeGroupAttendanceReminderConfig {
   followup_first_after_hours?: number; // 1-168; default 24
   followup_interval_hours?: number; // 1-168; default 24
   followup_max_days?: number; // cap: last day after the meeting that may get a follow-up (0 = follow-ups off)
-  followup_window_hours?: number; // 0-12; catch-up window after each due time (hourly ticks); default 2
+  followup_window_hours?: number; // 2-12; catch-up window after each due time (hourly ticks; < 2h can miss a due time); default 2; values < 2 saved earlier are read as 2
   /** @deprecated pre-2026-10-13 saved configs: 09:00-next-morning model. Ignored. */
   followup_hour?: number;
   /** @deprecated read only as a fallback: followup_interval_hours = days * 24. */
@@ -182,12 +182,16 @@ function isIntInRange(value: unknown, min: number, max: number): boolean {
   );
 }
 
+// The scheduler ticks hourly, so a window under 2h can miss a due time (tick
+// drift); 2 is the floor for new saves and the clamp for older stored values.
+export const MIN_FOLLOWUP_WINDOW_HOURS = 2;
+
 const ATTENDANCE_INT_FIELDS: Array<[string, number, number]> = [
   ['hours_after_meeting_start', 0, 23],
   ['followup_first_after_hours', 1, 168],
   ['followup_interval_hours', 1, 168],
   ['followup_max_days', 0, 14],
-  ['followup_window_hours', 0, 12],
+  ['followup_window_hours', MIN_FOLLOWUP_WINDOW_HOURS, 12],
   // deprecated keys: still accepted so configs saved before the
   // meeting-relative timing keep saving
   ['followup_hour', 0, 23],
@@ -215,6 +219,16 @@ function validateAttendanceConfig(config: unknown): string | null {
     if (cfg[key] !== undefined && !isIntInRange(cfg[key], min, max)) {
       return `${key} must be an integer ${min}-${max}`;
     }
+  }
+  // Cross-field: follow-ups only happen strictly before the escalation
+  // instant. Otherwise the configured follow-ups would silently never fire.
+  const eff = resolveLifeGroupAttendanceConfig(cfg);
+  if (
+    eff.followup_max_days > 0 &&
+    eff.escalation_after_days > 0 &&
+    eff.followup_first_after_hours >= eff.escalation_after_days * 24
+  ) {
+    return `followup_first_after_hours (${eff.followup_first_after_hours}) must be less than escalation_after_days * 24 (${eff.escalation_after_days * 24}), otherwise no follow-up would ever be sent`;
   }
   for (const key of ATTENDANCE_TEXT_FIELDS) {
     const value = cfg[key];
@@ -313,11 +327,10 @@ export function resolveLifeGroupAttendanceConfig(
       1,
       168,
     ),
-    followup_window_hours: int(
-      cfg.followup_window_hours,
-      defaults.followup_window_hours,
-      0,
-      12,
+    // Values saved before the 2h floor (0 or 1) are clamped to 2.
+    followup_window_hours: Math.max(
+      MIN_FOLLOWUP_WINDOW_HOURS,
+      int(cfg.followup_window_hours, defaults.followup_window_hours, 0, 12),
     ),
     followup_max_days: int(
       cfg.followup_max_days,

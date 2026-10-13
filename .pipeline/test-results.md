@@ -42,3 +42,8 @@ Throwaway Postgres stopped (port 54937 closed). `rm -rf scratchpad/pg7/data` was
 - Real SQL: throwaway PostgreSQL (embedded-postgres, NEW data dir `scratchpad/pg9`, port 54939), all migrations incl. 1796000000001 applied, `life-group-meeting-v2.integration.spec.ts` 8/8 PASS (updated timing + extras case). Postgres stopped afterwards.
 - admin-ui: `tsc --noEmit` 24 errors (same baseline, none in reminder files), eslint clean on both changed files, `next build` ok.
 - CI does not run for this stacked PR (base is `feat/life-group-meetings-api`, not develop).
+
+# Round 2 fixes (v2 reminders) - 2026-10-13
+- m1 meeting_time hour 0-23 / minute 0-59 else skip + warn log; m2 followup_window_hours 2..12 (backend validation, admin-ui range + hint, stored 0/1 read as 2); m3 cross-field 400 when follow-ups and escalation are on and first_after >= escalation_after_days*24 (backend + admin-ui); m4 Intl.DateTimeFormat cached per timeZone in meeting-day.util.ts (behavior identical, specs unchanged + one repeat/timezone test); m5-m7 documented in .ai/features/notifications.md.
+- backend build PASS; scoped jest (reminders, life-group-meetings, attendance, notifications) all pass except the baseline reach.dto; full jest 78 suites pass / 6 fail (baseline: auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens) / 2 skipped; 821 tests pass / 5 fail / 43 skipped.
+- eslint on 6 changed backend ts files: 0 errors (1 pre-existing warning); prettier clean. admin-ui: tsc 24 errors (= baseline, none new), eslint clean, `next build` PASS (prettier on reminder-settings.tsx was already not clean before the change).

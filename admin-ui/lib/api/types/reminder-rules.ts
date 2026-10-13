@@ -56,7 +56,7 @@ export interface LifeGroupAttendanceReminderConfig {
   followup_interval_hours?: number
   // Cap: last day after the meeting that may get a follow-up (0 = no follow-up).
   followup_max_days?: number
-  // Catch-up window after each due time, in hours (hourly scheduler ticks; default 2).
+  // Catch-up window after each due time, in hours (2-12, hourly scheduler ticks; default 2; older values < 2 are read as 2).
   followup_window_hours?: number
   /** @deprecated old 09:00 model; never sent any more, dropped on save. */
   followup_hour?: number

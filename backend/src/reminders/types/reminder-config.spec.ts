@@ -109,6 +109,8 @@ describe('life_group_attendance config', () => {
     ['followup_interval_hours', 0],
     ['followup_interval_hours', 169],
     ['followup_window_hours', -1],
+    ['followup_window_hours', 0],
+    ['followup_window_hours', 1],
     ['followup_window_hours', 13],
     ['followup_hour', 24],
     ['followup_hour', -1],
@@ -178,6 +180,52 @@ describe('life_group_attendance config', () => {
     expect(resolved.escalation_after_days).toBe(5);
     expect(resolved.followup_title).toBe(defaults.followup_title);
     expect(resolveLifeGroupAttendanceConfig(null)).toEqual(defaults);
+  });
+
+  it('clamps a stored followup_window_hours below the 2h floor to 2 at read time', () => {
+    for (const stored of [0, 1]) {
+      expect(
+        resolveLifeGroupAttendanceConfig({ followup_window_hours: stored })
+          .followup_window_hours,
+      ).toBe(2);
+    }
+    expect(
+      resolveLifeGroupAttendanceConfig({ followup_window_hours: 6 })
+        .followup_window_hours,
+    ).toBe(6);
+  });
+
+  describe('cross-field: follow-ups must start before the escalation', () => {
+    const save = (patch: Record<string, unknown>) =>
+      validateReminderConfig('life_group_attendance', {
+        ...defaults,
+        ...patch,
+      });
+
+    it('rejects first_after >= escalation hours with a clear 400 message', () => {
+      expect(save({ followup_first_after_hours: 120 })).toMatch(
+        /followup_first_after_hours \(120\) must be less than escalation_after_days \* 24 \(120\)/,
+      );
+      expect(
+        save({ followup_first_after_hours: 100, escalation_after_days: 4 }),
+      ).not.toBeNull();
+      // Judged against the default escalation (5d) when the key is absent.
+      expect(
+        validateReminderConfig('life_group_attendance', {
+          followup_first_after_hours: 130,
+        }),
+      ).not.toBeNull();
+    });
+
+    it('accepts the boundary below, and either feature switched off', () => {
+      expect(save({ followup_first_after_hours: 119 })).toBeNull();
+      expect(
+        save({ followup_first_after_hours: 168, escalation_after_days: 0 }),
+      ).toBeNull();
+      expect(
+        save({ followup_first_after_hours: 168, followup_max_days: 0 }),
+      ).toBeNull();
+    });
   });
 
   it('maps a pre-existing followup_interval_days to hours only when the new key is absent', () => {

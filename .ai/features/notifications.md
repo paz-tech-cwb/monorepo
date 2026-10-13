@@ -128,13 +128,26 @@ saved before v2 get defaults through `resolveLifeGroupAttendanceConfig`):
 `hours_after_meeting_start`, legacy `title`/`message`, `meeting_title`/
 `meeting_message`, `followup_first_after_hours` (1-168, default 24),
 `followup_interval_hours` (1-168, default 24), `followup_max_days` (0-14, default 5,
-0 = off), `followup_window_hours` (0-12, default 2), `followup_title`/
+0 = off), `followup_window_hours` (2-12, default 2; a stored 0/1 saved earlier is read as 2 because the hourly tick can miss a due time with a smaller window; keep window - 60 min above any tick drift), `followup_title`/
 `followup_message`, `escalation_after_days` (0-14, default 5, 0 = off),
 `escalation_title`/`escalation_message`. Old -> new mapping (rows saved with the
 earlier model keep working): `followup_hour` is ignored (the 09:00 model is gone);
 `followup_interval_days` (1-7) is still ACCEPTED on save and used as a fallback
 `followup_interval_hours = days x 24` only when `followup_interval_hours` is absent;
 the admin UI no longer sends either old key. No data migration (defaults at read time).
+Cross-field rule (400 on save): when follow-ups AND escalation are on
+(`followup_max_days > 0`, `escalation_after_days > 0`), `followup_first_after_hours`
+must be less than `escalation_after_days * 24`, otherwise no follow-up would ever
+fire (judged against the stored-or-default values). Known behavior (review
+2026-10-13): changing `followup_interval_hours`/`first_after_hours` mid-week re-keys
+the offsets, so a changed config can re-send a follow-up for a meeting already
+followed up; the claim key moved from `:{day}` to `:{offset}h` so a deploy may send
+one extra follow-up for in-flight meetings (flag-gated, unreleased); the legacy
+report date-window (meeting date .. +6 days) is shorter than a follow-up/escalation
+that can be configured up to 14 days, and an unlinked legacy report dated near an
+extra meeting can silence that extra's follow-up (linked reports are exact);
+meetings with an invalid `meeting_time` (hour 0-23 / minute 0-59) are skipped with a
+warning log.
 Legacy `title`/`message` may be blank (flag-off saves unchanged); the V2 copy
 keys reject blank, so the admin UI omits blank/cleared fields and the defaults
 apply. A send failure marks the just-created Notification `failed` and releases

@@ -90,7 +90,7 @@ function validateAttendanceConfig(c: LifeGroupAttendanceReminderConfig): string 
     ['Horas após o início', c.hours_after_meeting_start, 0, 23],
     ['Primeiro follow-up (horas)', c.followup_first_after_hours, 1, 168],
     ['Intervalo do follow-up (horas)', c.followup_interval_hours, 1, 168],
-    ['Tolerância (horas)', c.followup_window_hours, 0, 12],
+    ['Tolerância (horas)', c.followup_window_hours, 2, 12],
     ['Máximo de dias de follow-up', c.followup_max_days, 0, 14],
     ['Dias até escalar ao líder de setor', c.escalation_after_days, 0, 14],
   ]
@@ -99,6 +99,13 @@ function validateAttendanceConfig(c: LifeGroupAttendanceReminderConfig): string 
     if (!Number.isInteger(value) || value < min || value > max) {
       return `${label}: informe um número inteiro de ${min} a ${max}`
     }
+  }
+  // Same rule as the backend: follow-ups must start before the escalation.
+  const firstAfter = c.followup_first_after_hours ?? 24
+  const escalationDays = c.escalation_after_days ?? 5
+  const maxDays = c.followup_max_days ?? 5
+  if (maxDays > 0 && escalationDays > 0 && firstAfter >= escalationDays * 24) {
+    return `Primeiro follow-up (${firstAfter}h) deve ser menor que os dias até escalar × 24 (${escalationDays * 24}h); senão nenhum follow-up seria enviado`
   }
   return null
 }
@@ -920,7 +927,7 @@ function LifeGroupAttendanceControls({
         <p className="text-sm font-medium">Follow-up: presença lançada, relatório pendente (flag ligada)</p>
         <NumberField
           label="Primeiro follow-up (horas após a reunião)"
-          hint="Contado a partir do dia e horário da reunião (horário de Brasília). Padrão 24 = no dia seguinte, no mesmo horário da reunião."
+          hint="Deve ser menor que os dias até escalar × 24 (padrão 120h). Contado a partir do dia e horário da reunião (horário de Brasília). Padrão 24 = no dia seguinte, no mesmo horário da reunião."
           value={config.followup_first_after_hours}
           placeholder="24"
           min={1}
@@ -940,10 +947,10 @@ function LifeGroupAttendanceControls({
         />
         <NumberField
           label="Tolerância de envio (horas)"
-          hint="O envio roda de hora em hora; um follow-up devido às 21:30 sai às 22:00. Se uma rodada falhar, ainda é enviado até X horas depois do horário devido (padrão 2)."
+          hint="O envio roda de hora em hora; um follow-up devido às 21:30 sai às 22:00. Se uma rodada falhar, ainda é enviado até X horas depois do horário devido (mínimo 2, máximo 12, padrão 2; valores antigos menores que 2 valem 2)."
           value={config.followup_window_hours}
           placeholder="2"
-          min={0}
+          min={2}
           max={12}
           disabled={disabled}
           onChange={(n) => onChange({ ...config, followup_window_hours: n })}
