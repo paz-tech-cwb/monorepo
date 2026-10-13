@@ -2,6 +2,10 @@ import {
   FormReportReminderEvaluator,
   churchWeekStartKey,
 } from './form-report-reminder.evaluator';
+import {
+  weekdayOf,
+  zonedParts,
+} from '../../life-group-attendance/meeting-day.util';
 import { ReminderRule } from '../entities/reminder-rule.entity';
 
 describe('FormReportReminderEvaluator', () => {
@@ -57,15 +61,112 @@ describe('FormReportReminderEvaluator', () => {
     });
   });
 
+  describe('weekday/hour are evaluated in America/Sao_Paulo', () => {
+    function build() {
+      const userQb = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([{ id: 1 }]),
+      };
+      const em = {
+        insert: jest.fn().mockResolvedValue(undefined),
+        createQueryBuilder: jest.fn(() => userQb),
+        create: jest.fn((_e: unknown, v: unknown) => v),
+        save: jest.fn((x: unknown) =>
+          Promise.resolve({ id: 10, ...(x as object) }),
+        ),
+      };
+      const dispatch = {
+        dispatch: jest.fn().mockResolvedValue(undefined),
+      };
+      const evaluator = new FormReportReminderEvaluator(
+        em as never,
+        dispatch as never,
+      );
+      return { evaluator, em, dispatch };
+    }
+    const rule = (weekday: number, hour: number) =>
+      makeRule({
+        config: {
+          forms: [
+            {
+              form_slug: 'sector-supervisor-reports',
+              title: 't',
+              message: 'm',
+              weekday,
+              hour,
+              roles: ['sector_leader'],
+            },
+          ],
+        } as never,
+      });
+
+    it.each([
+      // Sunday 23:00 SP = Monday 02:00 UTC fires a Sunday 23h rule
+      [
+        '2026-06-08T02:00:00Z',
+        0,
+        23,
+        true,
+        'form_report:sector-supervisor-reports:2026-06-07',
+      ],
+      // Sunday 20:00 SP = Sunday 23:00 UTC fires a Sunday 20h rule
+      [
+        '2026-06-07T23:00:00Z',
+        0,
+        20,
+        true,
+        'form_report:sector-supervisor-reports:2026-06-07',
+      ],
+      // Old-clock time (Sunday 20:00 UTC = 17:00 SP) no longer fires the 20h rule
+      ['2026-06-07T20:00:00Z', 0, 20, false, ''],
+      // Saturday 22:00 SP = Sunday 01:00 UTC must NOT fire a Sunday rule
+      ['2026-06-07T01:00:00Z', 0, 22, false, ''],
+      [
+        '2026-06-07T01:00:00Z',
+        6,
+        22,
+        true,
+        'form_report:sector-supervisor-reports:2026-06-06',
+      ],
+    ])(
+      '%s weekday %i hour %i -> fires=%s',
+      async (iso, weekday, hour, fires, key) => {
+        const { evaluator, em, dispatch } = build();
+        await evaluator.run(rule(weekday, hour), new Date(iso));
+        expect(dispatch.dispatch).toHaveBeenCalledTimes(fires ? 1 : 0);
+        if (fires) {
+          expect(em.insert).toHaveBeenCalledWith(expect.anything(), {
+            ruleType: 'form_report',
+            dedupeKey: key,
+          });
+        } else {
+          expect(em.insert).not.toHaveBeenCalled();
+        }
+      },
+    );
+
+    it('deploy day: a run already logged for the SP day (old 17h send) dedupes the new 20h run', async () => {
+      const { evaluator, em, dispatch } = build();
+      em.insert.mockRejectedValue({ code: '23505' });
+      await evaluator.run(rule(0, 20), new Date('2026-06-07T23:00:00Z'));
+      expect(em.insert).toHaveBeenCalledWith(expect.anything(), {
+        ruleType: 'form_report',
+        dedupeKey: 'form_report:sector-supervisor-reports:2026-06-07',
+      });
+      expect(dispatch.dispatch).not.toHaveBeenCalled();
+    });
+  });
+
   describe('life-group-reports group-based skip', () => {
-    // The evaluator checks weekday/hour in the runtime's local time: derive the rule from `now`.
+    // The evaluator checks weekday/hour in Sao Paulo time: derive the rule from `now`.
     const now = new Date('2026-06-07T20:00:00-03:00');
     const entryFor = (at: Date, slug = 'life-group-reports') => ({
       form_slug: slug,
       title: 'Relatório pendente',
       message: 'msg',
-      weekday: at.getDay(),
-      hour: at.getHours(),
+      weekday: weekdayOf(zonedParts(at)),
+      hour: zonedParts(at).hour,
       roles:
         slug === 'life-group-reports'
           ? ['life_group_leader']

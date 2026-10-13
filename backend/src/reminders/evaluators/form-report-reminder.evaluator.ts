@@ -51,8 +51,11 @@ export class FormReportReminderEvaluator implements ReminderEvaluator {
     const cfg = rule.config as FormReportReminderConfig;
     if (!cfg.forms?.length) return;
 
+    // Weekday/hour are church-local (America/Sao_Paulo), not the server clock (UTC).
+    const today = zonedParts(now);
+    const weekday = weekdayOf(today);
     for (const entry of cfg.forms) {
-      if (now.getDay() !== entry.weekday || now.getHours() !== entry.hour) {
+      if (weekday !== entry.weekday || today.hour !== entry.hour) {
         continue;
       }
       await this.runEntry(entry, now);
@@ -60,9 +63,11 @@ export class FormReportReminderEvaluator implements ReminderEvaluator {
   }
 
   private async runEntry(entry: FormReminderEntry, now: Date): Promise<void> {
-    const periodStart = new Date(now);
-    periodStart.setHours(0, 0, 0, 0);
-    const dedupeKey = `form_report:${entry.form_slug}:${periodStart.toISOString().slice(0, 10)}`;
+    // One send per (slug, Sao Paulo calendar day). Before the clock fix the key used the UTC
+    // date; on the (UTC) server the two coincide for any hour that can fire a church-day rule
+    // (a run at 17h SP = 20h UTC and one at 20h SP = 23h UTC share the same date), so a send
+    // made by the old clock on deploy day still dedupes the new-clock run of the same SP day.
+    const dedupeKey = `form_report:${entry.form_slug}:${dateKeyOf(zonedParts(now))}`;
 
     try {
       await this.em.insert(ReminderDispatchLog, {

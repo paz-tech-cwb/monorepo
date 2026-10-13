@@ -339,3 +339,6 @@ Node 22.23.3, JDK 17 (scratchpad). Backend: `npm run build` OK; `npx jest src/re
 Shared: `./gradlew :shared:iosSimulatorArm64Test` OK (`LifeGroupReportDraftTest` 18 tests, 0 failures); `assembleSharedDebugXCFramework` OK. iOS: `xcodebuild test -only-testing:PazChurchTests` on "TestPhone" with a TEMPORARY fake `GoogleService-Info.plist` (deleted, gitignored, never committed, needs JAVA_HOME/GRADLE_USER_HOME/KONAN_DATA_DIR exported for the KMP script phase): 55 tests, 0 failures, TEST SUCCEEDED (new admin/pastor + leader-never-loads-all tests pass).
 Android: NOT compiled/run locally (no SDK): VM/UiState/DI changes and 3 new VM tests cross-read; CI is the first compile.
 Not verified: the new TypeORM query builders (LifeGroup leader/coLeader join with raw aliases, DISTINCT `r.lifeGroupId`) run against mocks only, no real Postgres this round; one manual run of the reminder against a real DB is advised. Real devices/backends not exercised.
+
+## Clock fix (round 2 addendum)
+`npx jest src/reminders`: 8 suites / 67 tests pass under TZ=UTC, TZ=Asia/Tokyo and TZ=America/Sao_Paulo; eslint 0 problems, prettier clean, `npm run build` OK.
