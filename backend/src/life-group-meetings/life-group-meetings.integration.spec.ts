@@ -567,6 +567,36 @@ maybe('life-group-meetings (real PostgreSQL)', () => {
       ).toBe(3);
     });
 
+    it('year boundary (ISO week 2025-12-29..2026-01-04): cap and eligibility treat the week as one, across the year change', async () => {
+      await ds.query(
+        `UPDATE user_life_groups SET joined_at = '2000-01-01' WHERE life_group_id = 9001`,
+      );
+      const a = { attendance: att([true, false, false]) };
+      // Group 9001 meets on Wednesday: 2025-12-31 is the regular day.
+      await put('2025-12-31', a, 9109).expect(200);
+      for (const d of ['2025-12-29', '2026-01-01', '2026-01-04']) {
+        await put(d, { ...a, extra_meeting: true }, 9109).expect(200);
+      }
+      // 4th extra of that ISO week -> cap (it spans Dec 2025 and Jan 2026).
+      const over = await put(
+        '2025-12-30',
+        { ...a, extra_meeting: true },
+        9109,
+      ).expect(409);
+      expect(over.body.code).toBe('extra_meeting_limit_reached');
+      // Monday of the next ISO week is counted separately.
+      await put('2026-01-05', { ...a, extra_meeting: true }, 9109).expect(200);
+      const roster = new LifeGroupTaskRosterService(ds.manager);
+      const group = await ds.manager.findOneOrFail(LifeGroup, {
+        where: { id: 9001 },
+        relations: ['leader', 'coLeader', 'users'],
+      });
+      const { members } = await roster.resolveRoster(group);
+      // 9103: 1 regular + 3 extras in the boundary week (only the earliest,
+      // 2025-12-29, counts) + 1 extra in the next week = 3.
+      expect(members.find((m) => m.user.id === 9103)?.presentCount).toBe(3);
+    });
+
     it('task eligibility counts at most ONE extra meeting per ISO week (regular always)', async () => {
       await ds.query(
         `UPDATE user_life_groups SET joined_at = '2000-01-01' WHERE life_group_id = 9001`,

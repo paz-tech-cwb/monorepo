@@ -292,9 +292,25 @@ describe('LifeGroupMeetingsController (global pipe + serializer)', () => {
         is_extra: true,
         default_present: true,
       });
-      // Anything but "true" is treated as not requested.
+      // 'false' is valid and means "not requested" (still 400 on this day).
       await request(app.getHttpServer())
         .get(`${tueUrl}?extra_meeting=false`)
+        .expect(400);
+    });
+
+    it.each(['TRUE', 'False', '1', 'yes', 'abc', ''])(
+      'GET rejects extra_meeting=%j with a 400 naming the param',
+      async (value) => {
+        const res = await request(app.getHttpServer())
+          .get(`${tueUrl}?extra_meeting=${value}`)
+          .expect(400);
+        expect(res.body.message).toContain("extra_meeting must be 'true'");
+      },
+    );
+
+    it('GET rejects a repeated extra_meeting param', async () => {
+      await request(app.getHttpServer())
+        .get(`${tueUrl}?extra_meeting=true&extra_meeting=true`)
         .expect(400);
     });
   });

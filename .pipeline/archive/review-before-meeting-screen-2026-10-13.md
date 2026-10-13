@@ -30,3 +30,31 @@ None.
 - Migration is defensive and non-destructive; entity avoids declaring the partial index.
 
 ### Verdict: REQUEST CHANGES (one major, M1: a 2-line DTO fix; everything else can ship as-is or be noted). SHIP after M1 is fixed and tested.
+
+## Round 2 (extra meeting flag) — commit 123e5f0e vs 3dc342a
+
+Checks run (read-only): jest on life-group-attendance/meetings/analytics/tasks = 15 suites pass, 254 tests pass, 34 skipped (the DB-backed integration spec is skipped here, so the roster SQL and the advisory locks were NOT exercised against real Postgres); eslint clean on changed files; prettier --check clean.
+
+### Blockers
+- none
+
+### Major
+- [M1] Tests/SQL: the new eligibility SQL (life-group-task-roster.service.ts:94-103) and the 4208 cap are only verified by mocks/fake EM; the real-DB integration spec is skipped in this run. Run `life-group-meetings.integration.spec.ts` + a roster query against Postgres once before merge (at minimum: 4 extras in one week -> only earliest counts; non-extra data counts unchanged).
+
+### Minor
+- [m1] GET param parsing (life-group-meetings.controller.ts, `extraMeeting === 'true'`): `?extra_meeting=TRUE`, `1`, `yes` or `abc` silently become false and the user gets `extra_meeting_required` instead of a 400 on the param. Fix: accept only 'true'/'false', else 400 (or ParseBoolPipe-like).
+- [m2] Draft GET with extra_meeting=true does not check the weekly cap, so mobile can preview a draft that PUT then refuses with 409. Acceptable (documented as preview); optionally return a hint.
+- [m3] Eligibility "earliest extra of week" is date-ordered, not creation-ordered: back-filling an earlier-dated extra later moves the counted extra and can lower a member's count retroactively. Document, or count by created_at if undesired.
+- [m4] roster SQL uses `date_trunc('week', date)`: on a `date` it casts to timestamptz (session TZ) but both sides use the same cast so grouping is consistent and Monday-based like isoWeekRange; fine, but compare against `isoWeekRange` in a test with a week spanning month/year (e.g. 2026-12-28..2027-01-03) to lock the equivalence. meeting-day.util.spec covers isoWeekRange only on the util side.
+- [m5] `is_extra` is not exposed in the legacy attendance GET/PUT responses (intentional per docs), but a legacy PUT can edit an extra record; fine and documented.
+
+### Verified correct
+- Weekday logic: resolveNewMeetingIsExtra uses pure calendar math (weekdayOfDateString), no TZ drift; matrix is right (fixed-day+other day needs flag; flag on regular day -> 400; flag on no-fixed-day group -> 400; omitted on regular -> false). Legacy path (`extra` undefined) still calls assertMatchesMeetingDay and forces isExtra=false.
+- Immutability: for an existing record the flag is only compared, never written; omitted keeps stored value; contradicting -> 400 extra_meeting_immutable in both directions. Report-only PUT ignores flag.
+- Cap race: lock order is always 4207 (group,date) then 4208 (group,ISO-week Monday); no code path takes 4208 first or 4207 after, so no deadlock; both are xact-level so held until commit, and the count runs after the lock in READ COMMITTED so it sees prior commits. Parallel same-date requests are serialized by 4207 and the unique-index 23505 handler. hashtext collision only causes harmless extra serialization. Cap applies only on creation; editing never blocked. Counting happens before the insert so `>= 3` is the right comparison.
+- Eligibility SQL: non-extra rows short-circuit logically (`is_extra = false OR ...`), default false on all existing rows, so counts for pre-existing data are identical. Correlated subquery runs only for extra rows, limited to one group/week, on the (life_group_id, meeting_date) unique index: negligible cost. Unique (group,date) means `meeting_date IN` identifies the one record, no tie issue.
+- Migration 1796000000001: ADD COLUMN IF NOT EXISTS ... NOT NULL DEFAULT false (metadata-only on PG11+, no rewrite), down uses DROP COLUMN IF EXISTS: idempotent and reversible. Entity default matches.
+- Analytics: additive field, `COUNT(*) FILTER` correct, extras included in existing totals (documented).
+- Docs (.ai/features/life-groups.md) accurately describe codes, cap, lock order, consumers and the PR #98 guidance.
+
+### Verdict: SHIP (run the DB-backed integration spec once as a pre-merge sanity; m1 is a cheap fix worth doing)
