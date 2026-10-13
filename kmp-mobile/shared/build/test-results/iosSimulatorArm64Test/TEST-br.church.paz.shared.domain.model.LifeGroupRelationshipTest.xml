@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.domain.model.LifeGroupRelationshipTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.001">
+  <properties/>
+  <testcase name="decodes relationship and is_supervised from life-groups me[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.LifeGroupRelationshipTest" time="0.0"/>
+  <testcase name="older backend without the new fields still decodes with defaults[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.LifeGroupRelationshipTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

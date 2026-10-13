@@ -15,6 +15,7 @@ import {
 import { NotificationDispatchService } from '../../notifications/notification-dispatch.service';
 import { ReminderDispatchLog } from '../entities/reminder-dispatch-log.entity';
 import { User } from '../../users/entities/user.entity';
+import { LifeGroup } from '../../life-groups/entities/life-group.entity';
 import { LifeGroupReport } from '../../life-group-reports/entities/life-group-report.entity';
 import {
   dateKeyOf,
@@ -23,7 +24,7 @@ import {
   zonedParts,
 } from '../../life-group-attendance/meeting-day.util';
 
-/** Catalog slug of the weekly life-group report (the only slug that skips submitters). */
+/** Catalog slug of the weekly life-group report (the only slug whose reminder is skipped per group). */
 export const LIFE_GROUP_REPORTS_SLUG = 'life-group-reports';
 
 /**
@@ -79,11 +80,11 @@ export class FormReportReminderEvaluator implements ReminderEvaluator {
       .where('role.slug IN (:...roles)', { roles: entry.roles })
       .getMany();
 
-    // Only the weekly life-group report is a "did you submit yet" nag: leaders who already
-    // reported for this church week are not reminded. Other slugs keep notifying every target.
+    // Only the weekly life-group report is a "did the group report yet" nag: leaders whose group(s)
+    // already have a report this church week are not reminded. Other slugs keep notifying every target.
     const recipients =
       entry.form_slug === LIFE_GROUP_REPORTS_SLUG
-        ? await this.withoutThisWeeksSubmitters(targets, now)
+        ? await this.withoutReportedLeaders(targets, now)
         : targets;
 
     if (recipients.length === 0) return;
@@ -104,22 +105,61 @@ export class FormReportReminderEvaluator implements ReminderEvaluator {
   }
 
   /**
-   * Drops users who submitted (`submitted_by`) a non-deleted life-group report whose meeting
-   * date falls in the current church week (Monday 00:00 America/Sao_Paulo up to `now`).
+   * Group-based skip: a recipient is dropped when EVERY life group they lead or co-lead already has
+   * a non-deleted report whose meeting date falls in the current church week (Monday 00:00
+   * America/Sao_Paulo up to `now`), no matter who submitted it. So a co-leader's report silences
+   * the leader and vice-versa; a person holding two groups keeps being reminded until both have
+   * reported (safest: never silence a still-missing report). Recipients who lead/co-lead no group
+   * are always reminded. The recipient set itself stays role-based.
    */
-  private async withoutThisWeeksSubmitters(
+  private async withoutReportedLeaders(
     targets: User[],
     now: Date,
   ): Promise<User[]> {
-    const rows = await this.em
+    if (targets.length === 0) return targets;
+    const ids = targets.map((t) => Number(t.id));
+
+    const groupRows = await this.em
+      .createQueryBuilder(LifeGroup, 'g')
+      .leftJoin('g.leader', 'leader')
+      .leftJoin('g.coLeader', 'coLeader')
+      .select('g.id', 'id')
+      .addSelect('leader.id', 'leaderId')
+      .addSelect('coLeader.id', 'coLeaderId')
+      .where('leader.id IN (:...ids) OR coLeader.id IN (:...ids)', { ids })
+      .getRawMany<{
+        id: number | string;
+        leaderId: number | string | null;
+        coLeaderId: number | string | null;
+      }>();
+    if (groupRows.length === 0) return targets;
+
+    const reportRows = await this.em
       .createQueryBuilder(LifeGroupReport, 'r')
-      .innerJoin('r.submittedBy', 's')
-      .select('s.id', 'id')
+      .select('r.lifeGroupId', 'id')
       .distinct(true)
       .where('r.date >= :weekStart', { weekStart: churchWeekStartKey(now) })
-      .andWhere('s.id IN (:...ids)', { ids: targets.map((t) => t.id) })
+      .andWhere('r.lifeGroupId IN (:...groupIds)', {
+        groupIds: groupRows.map((row) => Number(row.id)),
+      })
       .getRawMany<{ id: number | string }>();
-    const submitted = new Set(rows.map((row) => Number(row.id)));
-    return targets.filter((t) => !submitted.has(Number(t.id)));
+    const reportedGroups = new Set(reportRows.map((row) => Number(row.id)));
+
+    const groupsByUser = new Map<number, number[]>();
+    for (const row of groupRows) {
+      for (const userId of [row.leaderId, row.coLeaderId]) {
+        if (userId == null) continue;
+        const key = Number(userId);
+        groupsByUser.set(key, [
+          ...(groupsByUser.get(key) ?? []),
+          Number(row.id),
+        ]);
+      }
+    }
+
+    return targets.filter((t) => {
+      const groups = groupsByUser.get(Number(t.id));
+      return !groups?.length || !groups.every((g) => reportedGroups.has(g));
+    });
   }
 }

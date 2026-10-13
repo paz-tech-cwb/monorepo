@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.forms.LifeGroupReportDraftTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.003">
+  <properties/>
+  <testcase name="today uses the Sao Paulo calendar day and not UTC[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="date accepts today and past and rejects future and blank and malformed[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="displayDate formats ISO as dd MM yyyy[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="counts are non-negative integers up to 100000 and blank is zero[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="offering accepts comma or dot decimals and normalises to two decimals[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="offering rejects invalid amounts[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="splitValues trims and drops blanks and duplicates[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="values over 20 items or 80 chars are invalid[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="other fields are capped at 180 chars[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="valid draft builds the exact payload[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="blank counts submit as zero and other text is trimmed[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="invalid draft reports one message per field and builds nothing[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="only led or co-led groups are reportable[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="supervisor-only and no-group messages differ[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="initial group is the preselected one and the only one and or none[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="admin and pastor see all groups with nothing preselected unless opened from one[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.001"/>
+  <testcase name="other roles keep the leader or co-leader rule and ignore the full list[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <testcase name="server statuses map to friendly pt-BR messages[iosSimulatorArm64]" classname="br.church.paz.shared.forms.LifeGroupReportDraftTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.036">
+  <properties/>
+  <testcase name="missingSteps returns birthday whatsapp and address when user has none of them[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.0"/>
+  <testcase name="missingSteps is empty when user has all fields[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.0"/>
+  <testcase name="lookupCep returns Found for a valid response[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.0"/>
+  <testcase name="lookupCep returns NotFound when ViaCEP reports erro[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.0"/>
+  <testcase name="lookupCep returns Error on network failure[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.0"/>
+  <testcase name="submitBirthday returns success on 2xx[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.0"/>
+  <testcase name="submitBirthday sends birth_date in the serialized request body[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.001"/>
+  <testcase name="submitWhatsapp sends phone in the serialized request body[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.002"/>
+  <testcase name="missingSteps excludes a step just submitted successfully in the same session[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.002"/>
+  <testcase name="submitAddress sends hardcoded country and digits-only zip code[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.001"/>
+  <testcase name="submitAddress strips the UI display mask so the backend varchar8 column is never truncated[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.002"/>
+  <testcase name="submitWhatsapp returns failure on non-2xx[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.0"/>
+  <testcase name="missingSteps reads GET users me rather than the cached login user[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.003"/>
+  <testcase name="missingSteps sees fields the login response never carries[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.006"/>
+  <testcase name="missingSteps propagates a profile fetch failure instead of skipping onboarding[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.0"/>
+  <testcase name="lookupCep does not leak the bearer token to viacep[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.OnboardingRepositoryImplTest" time="0.0"/>
+  <system-out><![CDATA[[PazHttp] HTTP 500 Internal Server Error — https://viacep.com.br/ws/80000000/json/
+[PazAuth] loadTokens -> NO TOKEN
+[PazAuth] loadTokens -> NO TOKEN
+[PazAuth] loadTokens -> NO TOKEN
+[PazAuth] loadTokens -> NO TOKEN
+[PazAuth] loadTokens -> NO TOKEN
+[PazAuth] loadTokens -> NO TOKEN
+[PazAuth] loadTokens -> NO TOKEN
+[PazHttp] HTTP 400 Bad Request — http://test/api/users/me
+[PazAuth] loadTokens -> NO TOKEN
+[PazAuth] loadTokens -> NO TOKEN
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

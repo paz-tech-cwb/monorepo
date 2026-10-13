@@ -4,6 +4,7 @@ import br.church.paz.shared.domain.model.LifeGroup
 import br.church.paz.shared.domain.model.LifeGroupReportDraft
 import br.church.paz.shared.domain.model.LifeGroupReportField
 import br.church.paz.shared.domain.model.LifeGroupReportRules
+import br.church.paz.shared.domain.model.UserRole
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -253,6 +254,43 @@ class LifeGroupReportDraftTest {
         assertNull(LifeGroupReportRules.initialGroupId(two, 99))
         assertEquals(1, LifeGroupReportRules.initialGroupId(one, 99))
         assertNull(LifeGroupReportRules.initialGroupId(emptyList(), 1))
+    }
+
+    @Test
+    fun `admin and pastor see all groups with nothing preselected unless opened from one`() {
+        val mine = listOf(group(1, "leader"))
+        val all = listOf(group(3, null), group(1, "leader"), group(2, null), group(2, null))
+        for (role in listOf(UserRole.admin, UserRole.pastor)) {
+            assertTrue(LifeGroupReportRules.seesAllGroups(role))
+            val none = LifeGroupReportRules.resolveGroups(role, mine, all, null)
+            assertEquals(listOf(1, 2, 3), none.groups.map { it.id })
+            assertNull(none.initialGroupId)
+            assertNull(none.emptyMessage)
+            assertEquals(3, LifeGroupReportRules.resolveGroups(role, mine, all, 3).initialGroupId)
+            assertNull(LifeGroupReportRules.resolveGroups(role, mine, all, 99).initialGroupId)
+        }
+        // A single existing group is still not auto-selected for admin.
+        assertNull(LifeGroupReportRules.resolveGroups(UserRole.admin, emptyList(), listOf(group(5, null)), null).initialGroupId)
+        assertEquals(
+            "Nenhum Life Group cadastrado.",
+            LifeGroupReportRules.resolveGroups(UserRole.admin, emptyList(), emptyList(), null).emptyMessage,
+        )
+    }
+
+    @Test
+    fun `other roles keep the leader or co-leader rule and ignore the full list`() {
+        val mine = listOf(group(1, "leader"), group(2, "supervisor", supervised = true))
+        val all = listOf(group(1, "leader"), group(2, null), group(3, null))
+        for (role in listOf(UserRole.life_group_leader, UserRole.area_leader, UserRole.sector_leader, UserRole.member, null)) {
+            assertFalse(LifeGroupReportRules.seesAllGroups(role))
+            val resolved = LifeGroupReportRules.resolveGroups(role, mine, all, null)
+            assertEquals(listOf(1), resolved.groups.map { it.id })
+            assertEquals(1, resolved.initialGroupId)
+        }
+        val supervisorOnly =
+            LifeGroupReportRules.resolveGroups(UserRole.area_leader, listOf(group(2, "supervisor")), all, null)
+        assertTrue(supervisorOnly.groups.isEmpty())
+        assertTrue(supervisorOnly.emptyMessage!!.contains("consultar"))
     }
 
     // endregion

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.domain.model.HomeLifeGroupCardTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.001">
+  <properties/>
+  <testcase name="no groups gives no cards[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.HomeLifeGroupCardTest" time="0.0"/>
+  <testcase name="one group folds only its own tasks[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.HomeLifeGroupCardTest" time="0.0"/>
+  <testcase name="tasks are filtered sorted and capped per card[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.HomeLifeGroupCardTest" time="0.0"/>
+  <testcase name="leadership groups come first then by name[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.HomeLifeGroupCardTest" time="0.0"/>
+  <testcase name="unknown viewer id means no leadership ordering[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.HomeLifeGroupCardTest" time="0.0"/>
+  <testcase name="more than max cards reports the hidden count[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.HomeLifeGroupCardTest" time="0.0"/>
+  <testcase name="selectUpcomingLifeGroupTasks honors the limit[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.HomeLifeGroupCardTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

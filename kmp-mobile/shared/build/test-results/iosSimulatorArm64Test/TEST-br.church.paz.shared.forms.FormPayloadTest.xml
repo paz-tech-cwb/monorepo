@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.forms.FormPayloadTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.0">
+  <properties/>
+  <testcase name="GuestForm serializes email and date[iosSimulatorArm64]" classname="br.church.paz.shared.forms.FormPayloadTest" time="0.0"/>
+  <testcase name="MemberRegistrationForm serializes all required fields[iosSimulatorArm64]" classname="br.church.paz.shared.forms.FormPayloadTest" time="0.0"/>
+  <testcase name="ConversionForm serializes decision_type[iosSimulatorArm64]" classname="br.church.paz.shared.forms.FormPayloadTest" time="0.0"/>
+  <testcase name="MultiplicationForm serializes id arrays[iosSimulatorArm64]" classname="br.church.paz.shared.forms.FormPayloadTest" time="0.0"/>
+  <testcase name="SectorSupervisorReportForm serializes correctly[iosSimulatorArm64]" classname="br.church.paz.shared.forms.FormPayloadTest" time="0.0"/>
+  <testcase name="AreaSupervisorReportForm serializes correctly[iosSimulatorArm64]" classname="br.church.paz.shared.forms.FormPayloadTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.auth.TokenStorageTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.035">
+  <properties/>
+  <testcase name="save and read round-trips the token pair[iosSimulatorArm64]" classname="br.church.paz.shared.auth.TokenStorageTest" time="0.023"/>
+  <testcase name="read returns null before any save[iosSimulatorArm64]" classname="br.church.paz.shared.auth.TokenStorageTest" time="0.0"/>
+  <testcase name="clear removes stored tokens[iosSimulatorArm64]" classname="br.church.paz.shared.auth.TokenStorageTest" time="0.0"/>
+  <testcase name="save overwrites existing tokens[iosSimulatorArm64]" classname="br.church.paz.shared.auth.TokenStorageTest" time="0.0"/>
+  <testcase name="clear increments clearCallCount[iosSimulatorArm64]" classname="br.church.paz.shared.auth.TokenStorageTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

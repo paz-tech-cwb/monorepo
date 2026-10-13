@@ -6,6 +6,7 @@ import br.church.paz.shared.data.remote.httpStatusCodeOrNull
 import br.church.paz.shared.domain.model.LifeGroupReportDraft
 import br.church.paz.shared.domain.model.LifeGroupReportField
 import br.church.paz.shared.domain.model.LifeGroupReportRules
+import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.FormsRepository
 import kotlinx.coroutines.CancellationException
@@ -22,12 +23,14 @@ import kotlinx.coroutines.launch
  * `:shared` ([LifeGroupReportDraft], [LifeGroupReportRules]); this class only holds UI state.
  *
  * @param preselectedLifeGroupId group the form was opened from (group detail); ignored when the
- *   viewer does not lead/co-lead it.
+ *   viewer cannot report for it. Admin and pastor are offered every life group (nothing preselected
+ *   unless opened from a group); every other role only the groups they lead/co-lead.
  */
 class LifeGroupReportFormViewModel(
     private val preselectedLifeGroupId: Int?,
     private val formsRepository: FormsRepository,
     private val churchRepository: ChurchRepository,
+    private val authRepository: AuthRepository,
     private val clock: () -> Long = { System.currentTimeMillis() },
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(LifeGroupReportFormUiState())
@@ -44,21 +47,19 @@ class LifeGroupReportFormViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, loadError = null) }
             try {
-                val all = churchRepository.getMyLifeGroups()
-                val reportable = LifeGroupReportRules.reportableGroups(all)
+                val role = authRepository.currentUser()?.role
+                val mine = churchRepository.getMyLifeGroups()
+                val all =
+                    if (LifeGroupReportRules.seesAllGroups(role)) churchRepository.getAllLifeGroups() else emptyList()
+                val resolved = LifeGroupReportRules.resolveGroups(role, mine, all, preselectedLifeGroupId)
                 val today = LifeGroupReportRules.todayInSaoPaulo(clock())
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        groups = reportable,
-                        noGroupsMessage =
-                            if (reportable.isEmpty()) LifeGroupReportRules.noReportableGroupsMessage(all) else null,
+                        groups = resolved.groups,
+                        noGroupsMessage = resolved.emptyMessage,
                         today = today,
-                        draft =
-                            LifeGroupReportDraft(
-                                date = today,
-                                lifeGroupId = LifeGroupReportRules.initialGroupId(reportable, preselectedLifeGroupId),
-                            ),
+                        draft = LifeGroupReportDraft(date = today, lifeGroupId = resolved.initialGroupId),
                     )
                 }
             } catch (e: CancellationException) {

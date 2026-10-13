@@ -159,6 +159,14 @@ data class LifeGroupReportDraft(
     }
 }
 
+/** Group picker content for the report form (see [LifeGroupReportRules.resolveGroups]). */
+data class LifeGroupReportGroups(
+    val groups: List<LifeGroup>,
+    // Non-null when there is nothing to report for (the form is replaced by this message).
+    val emptyMessage: String?,
+    val initialGroupId: Int?,
+)
+
 /** Pure rules of the weekly report form: input parsing, group eligibility and error copy. */
 object LifeGroupReportRules {
     const val MAX_COUNT = 100000
@@ -258,6 +266,37 @@ object LifeGroupReportRules {
      */
     fun reportableGroups(groups: List<LifeGroup>): List<LifeGroup> =
         groups.filter { it.relationship == "leader" || it.relationship == "co_leader" }
+
+    /** Admin and pastor see every life group (backend scope: unrestricted), not only the ones they lead. */
+    fun seesAllGroups(role: UserRole?): Boolean = role == UserRole.admin || role == UserRole.pastor
+
+    /**
+     * Resolves the picker for [role]: admin/pastor get ALL groups ([allGroups], `GET /life-groups`,
+     * sorted by name, de-duplicated by id) and nothing is preselected unless the form was opened from
+     * a group; every other role keeps the leader/co-leader-only rule over [myGroups]
+     * (`GET /life-groups/me`) and still auto-selects a single group.
+     */
+    fun resolveGroups(
+        role: UserRole?,
+        myGroups: List<LifeGroup>,
+        allGroups: List<LifeGroup>,
+        preselectedId: Int?,
+    ): LifeGroupReportGroups {
+        if (seesAllGroups(role)) {
+            val groups = allGroups.distinctBy { it.id }.sortedBy { it.name.lowercase() }
+            return LifeGroupReportGroups(
+                groups = groups,
+                emptyMessage = if (groups.isEmpty()) "Nenhum Life Group cadastrado." else null,
+                initialGroupId = preselectedId?.takeIf { id -> groups.any { it.id == id } },
+            )
+        }
+        val reportable = reportableGroups(myGroups)
+        return LifeGroupReportGroups(
+            groups = reportable,
+            emptyMessage = if (reportable.isEmpty()) noReportableGroupsMessage(myGroups) else null,
+            initialGroupId = initialGroupId(reportable, preselectedId),
+        )
+    }
 
     /** True when the viewer has groups but only supervises them (read-only access). */
     fun isSupervisorOnly(groups: List<LifeGroup>): Boolean =

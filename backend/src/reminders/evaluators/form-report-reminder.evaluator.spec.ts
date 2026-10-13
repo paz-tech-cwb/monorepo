@@ -57,45 +57,58 @@ describe('FormReportReminderEvaluator', () => {
     });
   });
 
-  describe('life-group-reports submitter skip', () => {
+  describe('life-group-reports group-based skip', () => {
     // The evaluator checks weekday/hour in the runtime's local time: derive the rule from `now`.
     const now = new Date('2026-06-07T20:00:00-03:00');
-    const lgEntry = {
-      form_slug: 'life-group-reports',
+    const entryFor = (at: Date, slug = 'life-group-reports') => ({
+      form_slug: slug,
       title: 'Relatório pendente',
       message: 'msg',
-      weekday: now.getDay(),
-      hour: now.getHours(),
-      roles: ['life_group_leader'],
-    };
-    const sectorEntry = {
-      ...lgEntry,
-      form_slug: 'sector-supervisor-reports',
-      roles: ['sector_leader'],
-    };
+      weekday: at.getDay(),
+      hour: at.getHours(),
+      roles:
+        slug === 'life-group-reports'
+          ? ['life_group_leader']
+          : ['sector_leader'],
+    });
     const leaders = [{ id: 1 }, { id: 2 }, { id: 3 }];
 
-    function setup(submitterIds: number[]) {
+    interface GroupRow {
+      id: number;
+      leaderId: number | null;
+      coLeaderId: number | null;
+    }
+
+    /** `groups`: the groups led/co-led by the recipients; `reported`: ids with a report this week. */
+    function setup(groups: GroupRow[], reported: number[]) {
       const userQb = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue(leaders),
       };
+      const groupQb = {
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue(groups),
+      };
       const reportQb = {
-        innerJoin: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
         distinct: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         getRawMany: jest
           .fn()
-          .mockResolvedValue(submitterIds.map((id) => ({ id: String(id) }))),
+          .mockResolvedValue(reported.map((id) => ({ id: String(id) }))),
       };
       const em = {
         insert: jest.fn().mockResolvedValue(undefined),
-        createQueryBuilder: jest.fn((entity: { name: string }) =>
-          entity.name === 'LifeGroupReport' ? reportQb : userQb,
-        ),
+        createQueryBuilder: jest.fn((entity: { name: string }) => {
+          if (entity.name === 'LifeGroupReport') return reportQb;
+          if (entity.name === 'LifeGroup') return groupQb;
+          return userQb;
+        }),
         create: jest.fn((_e: unknown, v: unknown) => v),
         save: jest.fn((x: unknown) =>
           Promise.resolve({ id: 10, ...(x as object) }),
@@ -110,60 +123,136 @@ describe('FormReportReminderEvaluator', () => {
         em as never,
         dispatch as never,
       );
-      return { evaluator, em, dispatch, reportQb };
+      return { evaluator, em, dispatch, reportQb, groupQb };
     }
 
-    it('does not notify leaders who already reported this church week', async () => {
-      const { evaluator, dispatch, reportQb } = setup([2]);
-      await evaluator.run(
-        makeRule({ config: { forms: [lgEntry] } as never }),
-        now,
+    const run = (
+      evaluator: FormReportReminderEvaluator,
+      at: Date = now,
+      slug = 'life-group-reports',
+    ) =>
+      evaluator.run(
+        makeRule({ config: { forms: [entryFor(at, slug)] } as never }),
+        at,
       );
+    const recipientIds = (dispatch: {
+      dispatch: jest.Mock<Promise<void>, [unknown, { id: number }[]]>;
+    }) => dispatch.dispatch.mock.calls[0][1].map((u) => u.id);
 
+    it('skips a leader whose group has a report this church week and looks it up by group + week', async () => {
+      const { evaluator, dispatch, reportQb, groupQb } = setup(
+        [
+          { id: 10, leaderId: 2, coLeaderId: null },
+          { id: 11, leaderId: 3, coLeaderId: null },
+        ],
+        [10],
+      );
+      await run(evaluator);
+
+      expect(groupQb.where).toHaveBeenCalledWith(
+        'leader.id IN (:...ids) OR coLeader.id IN (:...ids)',
+        { ids: [1, 2, 3] },
+      );
       expect(reportQb.where).toHaveBeenCalledWith('r.date >= :weekStart', {
         weekStart: '2026-06-01',
       });
-      expect(reportQb.andWhere).toHaveBeenCalledWith('s.id IN (:...ids)', {
-        ids: [1, 2, 3],
+      expect(reportQb.andWhere).toHaveBeenCalledWith(
+        'r.lifeGroupId IN (:...groupIds)',
+        { groupIds: [10, 11] },
+      );
+      // 1 leads nothing -> still reminded; 2 reported; 3 did not.
+      expect(recipientIds(dispatch)).toEqual([1, 3]);
+    });
+
+    it('a co-leader report silences the leader (regardless of who submitted)', async () => {
+      const { evaluator, dispatch } = setup(
+        [{ id: 10, leaderId: 2, coLeaderId: 3 }],
+        [10],
+      );
+      await run(evaluator);
+      // 2 (leader) and 3 (co-leader holding the role) are both silenced; 1 leads no group.
+      expect(recipientIds(dispatch)).toEqual([1]);
+    });
+
+    it('a leader report silences a co-leader who holds the role', async () => {
+      const { evaluator, dispatch } = setup(
+        [{ id: 20, leaderId: 9, coLeaderId: 1 }],
+        [20],
+      );
+      await run(evaluator);
+      expect(recipientIds(dispatch)).toEqual([2, 3]);
+    });
+
+    it('a recipient who is only a co-leader is handled (leader without the role)', async () => {
+      const { evaluator, dispatch } = setup(
+        [{ id: 30, leaderId: null, coLeaderId: 2 }],
+        [],
+      );
+      await run(evaluator);
+      expect(recipientIds(dispatch)).toEqual([1, 2, 3]);
+    });
+
+    it('a user with two groups is silenced only when ALL of their groups reported', async () => {
+      const groups = [
+        { id: 10, leaderId: 2, coLeaderId: null },
+        { id: 11, leaderId: null, coLeaderId: 2 },
+      ];
+      const partial = setup(groups, [10]);
+      await run(partial.evaluator);
+      expect(recipientIds(partial.dispatch)).toEqual([1, 2, 3]);
+
+      const all = setup(groups, [10, 11]);
+      await run(all.evaluator);
+      expect(recipientIds(all.dispatch)).toEqual([1, 3]);
+    });
+
+    it('counts the new week from Monday 00:00 Sao Paulo (Monday morning needs a fresh report)', async () => {
+      const monday = new Date('2026-06-08T00:30:00-03:00');
+      const { evaluator, reportQb } = setup(
+        [{ id: 10, leaderId: 2, coLeaderId: null }],
+        [],
+      );
+      await run(evaluator, monday);
+      expect(reportQb.where).toHaveBeenCalledWith('r.date >= :weekStart', {
+        weekStart: '2026-06-08',
       });
-      expect(dispatch.dispatch).toHaveBeenCalledTimes(1);
-      const recipients = dispatch.dispatch.mock.calls[0][1];
-      expect(recipients.map((u) => u.id)).toEqual([1, 3]);
     });
 
     it('notifies everyone when nobody reported yet', async () => {
-      const { evaluator, dispatch } = setup([]);
-      await evaluator.run(
-        makeRule({ config: { forms: [lgEntry] } as never }),
-        now,
+      const { evaluator, dispatch } = setup(
+        [{ id: 10, leaderId: 2, coLeaderId: null }],
+        [],
       );
-      const recipients = dispatch.dispatch.mock.calls[0][1];
-      expect(recipients.map((u) => u.id)).toEqual([1, 2, 3]);
+      await run(evaluator);
+      expect(recipientIds(dispatch)).toEqual([1, 2, 3]);
     });
 
-    it('sends nothing (no notification row) when every leader already reported', async () => {
-      const { evaluator, em, dispatch } = setup([1, 2, 3]);
-      await evaluator.run(
-        makeRule({ config: { forms: [lgEntry] } as never }),
-        now,
+    it('sends nothing (no notification row) when every leader already has a report', async () => {
+      const { evaluator, em, dispatch } = setup(
+        [
+          { id: 10, leaderId: 1, coLeaderId: null },
+          { id: 11, leaderId: 2, coLeaderId: null },
+          { id: 12, leaderId: null, coLeaderId: 3 },
+        ],
+        [10, 11, 12],
       );
+      await run(evaluator);
       expect(dispatch.dispatch).not.toHaveBeenCalled();
       expect(em.save).not.toHaveBeenCalled();
     });
 
-    it('leaves other form slugs untouched (no submission lookup)', async () => {
-      const { evaluator, em, dispatch } = setup([1, 2, 3]);
-      await evaluator.run(
-        makeRule({ config: { forms: [sectorEntry] } as never }),
-        now,
+    it('leaves other form slugs untouched (no group/report lookup)', async () => {
+      const { evaluator, em, dispatch } = setup(
+        [{ id: 10, leaderId: 1, coLeaderId: null }],
+        [10],
       );
-      expect(
-        em.createQueryBuilder.mock.calls.some(
-          ([entity]) => entity.name === 'LifeGroupReport',
-        ),
-      ).toBe(false);
-      const recipients = dispatch.dispatch.mock.calls[0][1];
-      expect(recipients.map((u) => u.id)).toEqual([1, 2, 3]);
+      await run(evaluator, now, 'sector-supervisor-reports');
+      const queried = em.createQueryBuilder.mock.calls.map(
+        ([entity]) => entity.name,
+      );
+      expect(queried).not.toContain('LifeGroupReport');
+      expect(queried).not.toContain('LifeGroup');
+      expect(recipientIds(dispatch)).toEqual([1, 2, 3]);
     });
   });
 });

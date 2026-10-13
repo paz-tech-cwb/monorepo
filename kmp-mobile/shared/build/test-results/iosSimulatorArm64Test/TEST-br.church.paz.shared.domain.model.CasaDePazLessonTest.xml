@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.domain.model.CasaDePazLessonTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.001">
+  <properties/>
+  <testcase name="extracts id from watch v= form[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.CasaDePazLessonTest" time="0.001"/>
+  <testcase name="extracts id from watch v= form with trailing params[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.CasaDePazLessonTest" time="0.0"/>
+  <testcase name="extracts id from youtu-be short form[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.CasaDePazLessonTest" time="0.0"/>
+  <testcase name="extracts id from embed form[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.CasaDePazLessonTest" time="0.0"/>
+  <testcase name="returns null for malformed or unparseable url[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.CasaDePazLessonTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

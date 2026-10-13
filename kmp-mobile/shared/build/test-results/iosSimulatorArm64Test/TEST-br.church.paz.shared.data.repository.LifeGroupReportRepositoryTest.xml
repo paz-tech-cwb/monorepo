@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.data.repository.LifeGroupReportRepositoryTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.008">
+  <properties/>
+  <testcase name="getReports sends life_group_id and maps the snake_case list[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.LifeGroupReportRepositoryTest" time="0.001"/>
+  <testcase name="getReports tolerates numeric offering and a string activity value[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.LifeGroupReportRepositoryTest" time="0.001"/>
+  <testcase name="getReport fetches by id[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.LifeGroupReportRepositoryTest" time="0.001"/>
+  <testcase name="getReports maps 403 to a client exception with status[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.LifeGroupReportRepositoryTest" time="0.004"/>
+  <testcase name="getReport maps 404 to a client exception with status[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.LifeGroupReportRepositoryTest" time="0.001"/>
+  <system-out><![CDATA[[PazAuth] loadTokens -> access=a… len=1
+[PazAuth] loadTokens -> access=a… len=1
+[PazAuth] loadTokens -> access=a… len=1
+[PazAuth] loadTokens -> access=a… len=1
+[PazHttp] HTTP 403 Forbidden — http://test/api/forms/life-group-reports?life_group_id=9
+[PazAuth] loadTokens -> access=a… len=1
+[PazHttp] HTTP 404 Not Found — http://test/api/forms/life-group-reports/nope
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

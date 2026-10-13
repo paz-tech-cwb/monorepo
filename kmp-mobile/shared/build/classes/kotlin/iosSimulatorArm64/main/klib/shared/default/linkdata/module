@@ -1,0 +1,2 @@
+
+<PazChurch:shared>:br.church.paz.shared.auth: br.church.paz.shared.data.remote:$br.church.paz.shared.data.repository:br.church.paz.shared.di:!br.church.paz.shared.domain.model:&br.church.paz.shared.domain.repository:#br.church.paz.shared.domain.usecase:br.church.paz.shared.media:br.church.paz.shared.push:br.church.paz.shared.util

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.domain.model.LifeGroupDistanceTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.0">
+  <properties/>
+  <testcase name="returns zero for identical points[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.LifeGroupDistanceTest" time="0.0"/>
+  <testcase name="returns approximate known distance between two Curitiba landmarks[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.LifeGroupDistanceTest" time="0.0"/>
+  <testcase name="returns null when first coordinate is missing[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.LifeGroupDistanceTest" time="0.0"/>
+  <testcase name="returns null when second coordinate is missing[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.LifeGroupDistanceTest" time="0.0"/>
+  <testcase name="returns null when only one axis is missing[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.LifeGroupDistanceTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,2 @@
+
+<PazChurch:shared_test>:br.church.paz.shared.auth: br.church.paz.shared.data.remote:$br.church.paz.shared.data.repository:!br.church.paz.shared.domain.model:br.church.paz.shared.forms:br.church.paz.shared.util

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.data.repository.FormsRepositoryLifeGroupReportTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.001">
+  <properties/>
+  <testcase name="submit posts the exact DTO payload without area_id or sector_id[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.FormsRepositoryLifeGroupReportTest" time="0.0"/>
+  <testcase name="server errors surface their status code[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.FormsRepositoryLifeGroupReportTest" time="0.001"/>
+  <system-out><![CDATA[[PazAuth] loadTokens -> access=a… len=1
+[PazAuth] loadTokens -> access=a… len=1
+[PazHttp] HTTP 400 Bad Request — http://test/api/forms/life-group-reports
+[PazAuth] loadTokens -> access=a… len=1
+[PazHttp] HTTP 403 Forbidden — http://test/api/forms/life-group-reports
+[PazAuth] loadTokens -> access=a… len=1
+[PazHttp] HTTP 404 Not Found — http://test/api/forms/life-group-reports
+[PazAuth] loadTokens -> access=a… len=1
+[PazHttp] HTTP 409 Conflict — http://test/api/forms/life-group-reports
+[PazAuth] loadTokens -> access=a… len=1
+[PazHttp] HTTP 422 Unprocessable Entity — http://test/api/forms/life-group-reports
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

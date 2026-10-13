@@ -1,0 +1,93 @@
+4[PazAuth] loadTokens -> access=test-acces… len=11
+	![PazAuth] loadTokens -> NO TOKEN
+
+0[PazAuth] loadTokens -> access=expired… len=7
+
+ [PazAuth] refreshTokens invoked
+0[PazAuth] loadTokens -> access=expired… len=7
+ [PazAuth] refreshTokens invoked
+J[PazHttp] HTTP 500 Internal Server Error — http://test/api/auth/refresh
+5[PazHttp] HTTP 401 Unauthorized — http://test/home
+*[PazAuth] loadTokens -> access=a… len=1
+$[PazHttp] REQUEST: http://test/ping
+METHOD: GET
+BODY Content-Type: null
+BODY START
+
+	BODY END
+[PazHttp] RESPONSE: 200 OK
+METHOD: GET
+FROM: http://test/ping
+$BODY Content-Type: application/json
+BODY START
+{}
+	BODY END
+![PazAuth] loadTokens -> NO TOKEN
+-[PazAuth] socialLogin OK, saving token len=3
+![PazAuth] loadTokens -> NO TOKEN
+-[PazAuth] socialLogin OK, saving token len=3
+![PazAuth] loadTokens -> NO TOKEN
+![PazAuth] loadTokens -> NO TOKEN
+ [PazAuth] refreshTokens invoked
+F[PazHttp] HTTP 401 Unauthorized — http://test/api/auth/social-login
+![PazAuth] loadTokens -> NO TOKEN
+O[PazHttp] HTTP 500 Internal Server Error — http://test/api/auth/social-login
+![PazAuth] loadTokens -> NO TOKEN
+-[PazAuth] socialLogin OK, saving token len=3
+*[PazAuth] loadTokens -> access=a… len=1
+*[PazAuth] loadTokens -> access=a… len=1
+I[PazHttp] HTTP 500 Internal Server Error — http://test/api/auth/logout
+![PazAuth] loadTokens -> NO TOKEN
+-[PazAuth] socialLogin OK, saving token len=3
+*[PazAuth] loadTokens -> access=a… len=1
+*[PazAuth] loadTokens -> access=a… len=1
+*[PazAuth] loadTokens -> access=a… len=1
+*[PazAuth] loadTokens -> access=a… len=1
+ [PazAuth] refreshTokens invoked
+J[PazHttp] HTTP 500 Internal Server Error — http://test/api/auth/refresh
+R[PazHttp] HTTP 401 Unauthorized — http://test/api/casa-de-paz-analytics/summary
+*[PazAuth] loadTokens -> access=a… len=1
+[[PazHttp] HTTP 500 Internal Server Error — http://test/api/casa-de-paz-analytics/summary
+*[PazAuth] loadTokens -> access=a… len=1
+*[PazAuth] loadTokens -> access=a… len=1
+L[PazHttp] HTTP 400 Bad Request — http://test/api/forms/life-group-reports
+*[PazAuth] loadTokens -> access=a… len=1
+J[PazHttp] HTTP 403 Forbidden — http://test/api/forms/life-group-reports
+*[PazAuth] loadTokens -> access=a… len=1
+J[PazHttp] HTTP 404 Not Found — http://test/api/forms/life-group-reports
+*[PazAuth] loadTokens -> access=a… len=1
+I[PazHttp] HTTP 409 Conflict — http://test/api/forms/life-group-reports
+*[PazAuth] loadTokens -> access=a… len=1
+U[PazHttp] HTTP 422 Unprocessable Entity — http://test/api/forms/life-group-reports
+! *[PazAuth] loadTokens -> access=a… len=1
+!"*[PazAuth] loadTokens -> access=a… len=1
+$#*[PazAuth] loadTokens -> access=a… len=1
+$%*[PazAuth] loadTokens -> access=a… len=1
+$&*[PazAuth] loadTokens -> access=a… len=1
+('*[PazAuth] loadTokens -> access=a… len=1
+()*[PazAuth] loadTokens -> access=a… len=1
+(**[PazAuth] loadTokens -> access=a… len=1
+(+*[PazAuth] loadTokens -> access=a… len=1
+(+Z[PazHttp] HTTP 403 Forbidden — http://test/api/forms/life-group-reports?life_group_id=9
+(,*[PazAuth] loadTokens -> access=a… len=1
+(,O[PazHttp] HTTP 404 Not Found — http://test/api/forms/life-group-reports/nope
+.-*[PazAuth] loadTokens -> access=a… len=1
+./*[PazAuth] loadTokens -> access=a… len=1
+.0*[PazAuth] loadTokens -> access=a… len=1
+.1*[PazAuth] loadTokens -> access=a… len=1
+.1P[PazHttp] HTTP 409 Conflict — http://test/api/me/life-group-tasks/abc/decline
+.2*[PazAuth] loadTokens -> access=a… len=1
+.3*[PazAuth] loadTokens -> access=a… len=1
+.4*[PazAuth] loadTokens -> access=a… len=1
+.5*[PazAuth] loadTokens -> access=a… len=1
+7;U[PazHttp] HTTP 500 Internal Server Error — https://viacep.com.br/ws/80000000/json/
+7<![PazAuth] loadTokens -> NO TOKEN
+7=![PazAuth] loadTokens -> NO TOKEN
+7>![PazAuth] loadTokens -> NO TOKEN
+7?![PazAuth] loadTokens -> NO TOKEN
+7@![PazAuth] loadTokens -> NO TOKEN
+7A![PazAuth] loadTokens -> NO TOKEN
+7B![PazAuth] loadTokens -> NO TOKEN
+7B<[PazHttp] HTTP 400 Bad Request — http://test/api/users/me
+7C![PazAuth] loadTokens -> NO TOKEN
+7D![PazAuth] loadTokens -> NO TOKEN

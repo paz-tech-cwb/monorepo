@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.util.ResultExtTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.0">
+  <properties/>
+  <testcase name="safeRunCatching returns success for normal result[iosSimulatorArm64]" classname="br.church.paz.shared.util.ResultExtTest" time="0.0"/>
+  <testcase name="safeRunCatching wraps non-cancellation exceptions[iosSimulatorArm64]" classname="br.church.paz.shared.util.ResultExtTest" time="0.0"/>
+  <testcase name="safeRunCatching rethrows CancellationException[iosSimulatorArm64]" classname="br.church.paz.shared.util.ResultExtTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

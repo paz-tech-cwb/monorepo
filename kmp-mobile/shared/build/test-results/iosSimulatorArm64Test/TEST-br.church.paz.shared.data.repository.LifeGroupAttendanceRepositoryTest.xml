@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.data.repository.LifeGroupAttendanceRepositoryTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.0">
+  <properties/>
+  <testcase name="getByDate returns a draft when the backend reports is_draft true[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.LifeGroupAttendanceRepositoryTest" time="0.0"/>
+  <testcase name="getHistory maps the list response into domain models[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.LifeGroupAttendanceRepositoryTest" time="0.0"/>
+  <testcase name="save sends entries as user_id present pairs[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.LifeGroupAttendanceRepositoryTest" time="0.0"/>
+  <system-out><![CDATA[[PazAuth] loadTokens -> access=a… len=1
+[PazAuth] loadTokens -> access=a… len=1
+[PazAuth] loadTokens -> access=a… len=1
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

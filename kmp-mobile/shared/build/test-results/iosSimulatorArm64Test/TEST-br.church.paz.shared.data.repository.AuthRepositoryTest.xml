@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.data.repository.AuthRepositoryTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.007">
+  <properties/>
+  <testcase name="socialLogin success saves tokens and user then returns user[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.AuthRepositoryTest" time="0.0"/>
+  <testcase name="socialLogin success accepts wrapped response payload[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.AuthRepositoryTest" time="0.003"/>
+  <testcase name="socialLogin failure surfaces backend message instead of response shape error[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.AuthRepositoryTest" time="0.0"/>
+  <testcase name="socialLogin failure returns failure result[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.AuthRepositoryTest" time="0.001"/>
+  <testcase name="currentUser returns null when not logged in[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.AuthRepositoryTest" time="0.0"/>
+  <testcase name="currentUser returns user after successful login[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.AuthRepositoryTest" time="0.001"/>
+  <testcase name="logout clears tokens and user store[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.AuthRepositoryTest" time="0.0"/>
+  <testcase name="logout succeeds even when network call fails[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.AuthRepositoryTest" time="0.001"/>
+  <testcase name="socialLogin request body includes client=mobile[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.AuthRepositoryTest" time="0.0"/>
+  <system-out><![CDATA[[PazAuth] loadTokens -> NO TOKEN
+[PazAuth] socialLogin OK, saving token len=3
+[PazAuth] loadTokens -> NO TOKEN
+[PazAuth] socialLogin OK, saving token len=3
+[PazAuth] loadTokens -> NO TOKEN
+[PazAuth] loadTokens -> NO TOKEN
+[PazAuth] refreshTokens invoked
+[PazHttp] HTTP 401 Unauthorized — http://test/api/auth/social-login
+[PazAuth] loadTokens -> NO TOKEN
+[PazHttp] HTTP 500 Internal Server Error — http://test/api/auth/social-login
+[PazAuth] loadTokens -> NO TOKEN
+[PazAuth] socialLogin OK, saving token len=3
+[PazAuth] loadTokens -> access=a… len=1
+[PazAuth] loadTokens -> access=a… len=1
+[PazHttp] HTTP 500 Internal Server Error — http://test/api/auth/logout
+[PazAuth] loadTokens -> NO TOKEN
+[PazAuth] socialLogin OK, saving token len=3
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

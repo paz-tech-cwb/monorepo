@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.data.repository.CasaDePazAnalyticsRepositoryTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.009">
+  <properties/>
+  <testcase name="getSummary maps a full snake_case payload into domain[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.CasaDePazAnalyticsRepositoryTest" time="0.001"/>
+  <testcase name="getSummary maps null growth fields and a null comparison[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.CasaDePazAnalyticsRepositoryTest" time="0.005"/>
+  <testcase name="getSummary omits from and to query params when null[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.CasaDePazAnalyticsRepositoryTest" time="0.001"/>
+  <testcase name="getSummary throws when the backend returns 401 after a failed refresh[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.CasaDePazAnalyticsRepositoryTest" time="0.0"/>
+  <testcase name="getSummary throws when the backend returns 500[iosSimulatorArm64]" classname="br.church.paz.shared.data.repository.CasaDePazAnalyticsRepositoryTest" time="0.0"/>
+  <system-out><![CDATA[[PazAuth] loadTokens -> access=a… len=1
+[PazAuth] loadTokens -> access=a… len=1
+[PazAuth] loadTokens -> access=a… len=1
+[PazAuth] loadTokens -> access=a… len=1
+[PazAuth] refreshTokens invoked
+[PazHttp] HTTP 500 Internal Server Error — http://test/api/auth/refresh
+[PazHttp] HTTP 401 Unauthorized — http://test/api/casa-de-paz-analytics/summary
+[PazAuth] loadTokens -> access=a… len=1
+[PazHttp] HTTP 500 Internal Server Error — http://test/api/casa-de-paz-analytics/summary
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

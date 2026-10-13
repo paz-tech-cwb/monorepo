@@ -7,6 +7,9 @@ import br.church.paz.shared.data.remote.throwOnClientOrServerError
 import br.church.paz.shared.domain.model.LifeGroup
 import br.church.paz.shared.domain.model.LifeGroupReportField
 import br.church.paz.shared.domain.model.LifeGroupReportForm
+import br.church.paz.shared.domain.model.User
+import br.church.paz.shared.domain.model.UserRole
+import br.church.paz.shared.domain.repository.AuthRepository
 import br.church.paz.shared.domain.repository.ChurchRepository
 import br.church.paz.shared.domain.repository.FormsRepository
 import io.ktor.client.engine.mock.MockEngine
@@ -33,6 +36,7 @@ class LifeGroupReportFormViewModelTest {
 
     private val formsRepository = mockk<FormsRepository>()
     private val churchRepository = mockk<ChurchRepository>()
+    private val authRepository = mockk<AuthRepository>()
 
     // 2026-10-12T02:30:00Z == 2026-10-11 23:30 in America/Sao_Paulo.
     private val clock: () -> Long = { 1_791_772_200_000L }
@@ -43,8 +47,13 @@ class LifeGroupReportFormViewModelTest {
         supervised: Boolean = false,
     ) = LifeGroup(id = id, name = "Grupo $id", relationship = relationship, isSupervised = supervised)
 
-    private fun viewModel(preselected: Int? = null) =
-        LifeGroupReportFormViewModel(preselected, formsRepository, churchRepository, clock)
+    private fun viewModel(
+        preselected: Int? = null,
+        role: UserRole = UserRole.life_group_leader,
+    ): LifeGroupReportFormViewModel {
+        coEvery { authRepository.currentUser() } returns User(id = "1", name = "U", role = role)
+        return LifeGroupReportFormViewModel(preselected, formsRepository, churchRepository, authRepository, clock)
+    }
 
     // A REAL Ktor ClientRequestException so `httpStatusCodeOrNull()` recognizes the status.
     private suspend fun clientException(status: HttpStatusCode): ClientRequestException {
@@ -104,6 +113,54 @@ class LifeGroupReportFormViewModelTest {
             val notAllowed = viewModel(preselected = 9)
             testScheduler.advanceUntilIdle()
             assertNull(notAllowed.uiState.value.draft.lifeGroupId)
+        }
+
+    @Test
+    fun `admin and pastor are offered every group and none is preselected`() =
+        runTest {
+            coEvery { churchRepository.getMyLifeGroups() } returns listOf(group(7, "leader"))
+            coEvery { churchRepository.getAllLifeGroups() } returns
+                listOf(group(7, "leader"), group(8, null), group(9, null))
+
+            for (role in listOf(UserRole.admin, UserRole.pastor)) {
+                val vm = viewModel(role = role)
+                testScheduler.advanceUntilIdle()
+
+                val state = vm.uiState.value
+                assertEquals(listOf(7, 8, 9), state.groups.map { it.id })
+                assertTrue(state.canChooseGroup)
+                assertNull(state.draft.lifeGroupId)
+                assertNull(state.noGroupsMessage)
+
+                val fromGroup = viewModel(preselected = 9, role = role)
+                testScheduler.advanceUntilIdle()
+                assertEquals(9, fromGroup.uiState.value.draft.lifeGroupId)
+            }
+        }
+
+    @Test
+    fun `admin with a single existing group still has to pick it`() =
+        runTest {
+            coEvery { churchRepository.getMyLifeGroups() } returns emptyList()
+            coEvery { churchRepository.getAllLifeGroups() } returns listOf(group(8, null))
+
+            val vm = viewModel(role = UserRole.admin)
+            testScheduler.advanceUntilIdle()
+
+            assertTrue(vm.uiState.value.canChooseGroup)
+            assertNull(vm.uiState.value.draft.lifeGroupId)
+        }
+
+    @Test
+    fun `leader role never loads the full group list`() =
+        runTest {
+            coEvery { churchRepository.getMyLifeGroups() } returns listOf(group(7, "leader"))
+
+            val vm = viewModel(role = UserRole.life_group_leader)
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(listOf(7), vm.uiState.value.groups.map { it.id })
+            coVerify(exactly = 0) { churchRepository.getAllLifeGroups(any()) }
         }
 
     @Test

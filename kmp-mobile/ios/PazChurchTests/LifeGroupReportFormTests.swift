@@ -4,6 +4,9 @@ import XCTest
 
 private final class FakeFormDataSource: LifeGroupReportFormDataSource {
     var groups: [LifeGroup] = []
+    var allGroups: [LifeGroup] = []
+    var role: UserRole? = .lifeGroupLeader
+    private(set) var allGroupsRequested = false
     var loadFailure: Error?
     var submitFailure: Error?
     private(set) var submitted: [LifeGroupReportForm] = []
@@ -13,6 +16,15 @@ private final class FakeFormDataSource: LifeGroupReportFormDataSource {
             throw loadFailure
         }
         return groups
+    }
+
+    func allLifeGroups() async throws -> [LifeGroup] {
+        allGroupsRequested = true
+        return allGroups
+    }
+
+    func currentRole() async throws -> UserRole? {
+        role
     }
 
     func submit(_ form: LifeGroupReportForm) async throws {
@@ -79,6 +91,39 @@ final class LifeGroupReportFormTests: XCTestCase {
         XCTAssertFalse(vm.canChooseGroup)
         XCTAssertEqual(vm.lifeGroupId, 7)
         XCTAssertNil(vm.noGroupsMessage)
+    }
+
+    @MainActor
+    func testAdminAndPastorAreOfferedEveryGroupWithNonePreselected() async {
+        for role in [UserRole.admin, UserRole.pastor] {
+            let source = FakeFormDataSource()
+            source.role = role
+            source.groups = [group(7, "leader")]
+            source.allGroups = [group(9, nil), group(7, "leader"), group(8, nil)]
+
+            let vm = makeViewModel(source)
+            await vm.load()
+            XCTAssertEqual(vm.groups.map(\.id), [7, 8, 9])
+            XCTAssertTrue(vm.canChooseGroup)
+            XCTAssertNil(vm.lifeGroupId)
+            XCTAssertNil(vm.noGroupsMessage)
+
+            let fromGroup = makeViewModel(source, preselected: 9)
+            await fromGroup.load()
+            XCTAssertEqual(fromGroup.lifeGroupId, 9)
+        }
+    }
+
+    @MainActor
+    func testLeaderNeverRequestsTheFullGroupList() async {
+        let source = FakeFormDataSource()
+        source.role = .lifeGroupLeader
+        source.groups = [group(7, "leader")]
+        source.allGroups = [group(7, "leader"), group(8, nil)]
+        let vm = makeViewModel(source)
+        await vm.load()
+        XCTAssertEqual(vm.groups.map(\.id), [7])
+        XCTAssertFalse(source.allGroupsRequested)
     }
 
     @MainActor

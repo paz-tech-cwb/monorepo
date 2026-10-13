@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.domain.model.CasaDePazReportSectionsTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.002">
+  <properties/>
+  <testcase name="groups submissions by date within the selected cycle newest date first[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.CasaDePazReportSectionsTest" time="0.002"/>
+  <testcase name="returns no sections when the cycle has no submissions[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.CasaDePazReportSectionsTest" time="0.0"/>
+  <testcase name="defaults to the cycle of the newest submission by date[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.CasaDePazReportSectionsTest" time="0.0"/>
+  <testcase name="falls back to the newest cycle by month when there are no submissions[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.CasaDePazReportSectionsTest" time="0.0"/>
+  <testcase name="falls back to the newest cycle when the newest submission references a deleted cycle[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.CasaDePazReportSectionsTest" time="0.0"/>
+  <testcase name="returns null when there are no cycles at all[iosSimulatorArm64]" classname="br.church.paz.shared.domain.model.CasaDePazReportSectionsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

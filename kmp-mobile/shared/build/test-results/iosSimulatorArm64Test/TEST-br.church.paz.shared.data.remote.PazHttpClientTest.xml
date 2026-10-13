@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="br.church.paz.shared.data.remote.PazHttpClientTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-13T13:22:35" hostname="Jonatha-Lima-HK7K3X9CWJ" time="0.016">
+  <properties/>
+  <testcase name="attaches Bearer token to authenticated requests[iosSimulatorArm64]" classname="br.church.paz.shared.data.remote.PazHttpClientTest" time="0.013"/>
+  <testcase name="does not attach Authorization when no token stored[iosSimulatorArm64]" classname="br.church.paz.shared.data.remote.PazHttpClientTest" time="0.0"/>
+  <testcase name="refreshes token on 401 and retries request[iosSimulatorArm64]" classname="br.church.paz.shared.data.remote.PazHttpClientTest" time="0.0"/>
+  <testcase name="clears tokens when refresh request returns 500[iosSimulatorArm64]" classname="br.church.paz.shared.data.remote.PazHttpClientTest" time="0.003"/>
+  <testcase name="Authorization header is sanitized in logs[iosSimulatorArm64]" classname="br.church.paz.shared.data.remote.PazHttpClientTest" time="0.0"/>
+  <system-out><![CDATA[[PazAuth] loadTokens -> access=test-acces… len=11
+[PazAuth] loadTokens -> NO TOKEN
+[PazAuth] loadTokens -> access=expired… len=7
+[PazAuth] refreshTokens invoked
+[PazAuth] loadTokens -> access=expired… len=7
+[PazAuth] refreshTokens invoked
+[PazHttp] HTTP 500 Internal Server Error — http://test/api/auth/refresh
+[PazHttp] HTTP 401 Unauthorized — http://test/home
+[PazAuth] loadTokens -> access=a… len=1
+[PazHttp] REQUEST: http://test/ping
+METHOD: GET
+BODY Content-Type: null
+BODY START
+
+BODY END
+[PazHttp] RESPONSE: 200 OK
+METHOD: GET
+FROM: http://test/ping
+BODY Content-Type: application/json
+BODY START
+{}
+BODY END
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
