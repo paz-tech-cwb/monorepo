@@ -5,4 +5,4 @@
 - [x] Android: ViewModels, screens, history, nav, DI, tests (JVM + Compose-desktop scratch checks green; Android Gradle unverified)
 - [x] Docs (.ai), changes.md, test-results.md
 - [ ] Push + draft PR (base feat/life-group-meetings-api)
-- [ ] iOS (next agent, same branch)
+- [x] iOS (Features/LifeGroupMeeting, tests green, docs)
