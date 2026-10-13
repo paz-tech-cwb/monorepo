@@ -349,3 +349,5 @@ Validation (Node 22.23.3):
 Not verified: Postgres 16; migration on a prod-shaped DB.
 
 Cleanup: Postgres stopped (port 54926 closed). `kill` of the idle node wrapper (pid 25717, `node start.mjs`) and `rm -rf <scratchpad>/pg6/data` were DENIED; they remain (plus older wrappers 18789, 69663, 86989, 119 from earlier runs).
+
+CI follow-up: Backend CI "Lint changed files" failed on run 38382034060 (earlier head) and 38382728357 (review-fix head) with 2 `no-unsafe-assignment` errors in `form-submission-audit.service.ts` (`as any`). Not inherited in effect: CI lints files changed by the branch and this branch touches that file (the errors pre-existed in the lines, which the earlier notes called pre-existing). Fixed by typing the two casts; eslint over all branch-changed ts files clean.

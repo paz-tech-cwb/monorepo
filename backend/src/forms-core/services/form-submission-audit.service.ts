@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
+import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import {
   FormSubmissionAuditLog,
   FormAuditAction,
@@ -31,10 +32,11 @@ export class FormSubmissionAuditService {
     await target.insert({
       formSlug: params.formSlug,
       submissionId: params.submissionId,
-      actor: { id: params.actorId } as any,
+      actor: { id: params.actorId } as FormSubmissionAuditLog['actor'],
       action: params.action,
 
-      diff: (params.diff ?? null) as any,
+      diff: (params.diff ??
+        null) as unknown as QueryDeepPartialEntity<FormSubmissionAuditLog>['diff'],
     });
   }
 
