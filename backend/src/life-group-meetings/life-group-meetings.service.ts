@@ -115,6 +115,7 @@ export class LifeGroupMeetingsService {
     lifeGroup: LifeGroup,
     meetingDate: string,
     actor: MeetingActor,
+    extraMeetingRequested?: boolean,
   ): Promise<LifeGroupMeetingResponse> {
     const saved = await manager.findOne(LifeGroupAttendance, {
       where: { lifeGroupId: lifeGroup.id, meetingDate },
@@ -126,6 +127,7 @@ export class LifeGroupMeetingsService {
     if (saved) {
       attendance = {
         ...this.attendance.toResponse(saved),
+        is_extra: saved.isExtra ?? false,
         is_draft: false,
         default_present: null,
       };
@@ -134,7 +136,9 @@ export class LifeGroupMeetingsService {
         // Draft from the CURRENT roster, everyone present (decision Q3);
         // `default_present` lets mobile show an explicit "Todos presentes".
         attendance = {
-          ...this.attendance.buildDraft(lifeGroup, meetingDate),
+          ...this.attendance.buildDraft(lifeGroup, meetingDate, {
+            requested: extraMeetingRequested,
+          }),
           default_present: true,
         };
       } catch (err: unknown) {
@@ -167,11 +171,18 @@ export class LifeGroupMeetingsService {
     meetingDate: string,
     scope: ResolvedScope,
     actor: MeetingActor,
+    extraMeetingRequested?: boolean,
   ): Promise<LifeGroupMeetingResponse> {
     this.attendance.assertValidMeetingDate(meetingDate);
     const lifeGroup = await this.findLifeGroup(this.em, lifeGroupId);
     assertCanAccessLifeGroup(lifeGroup, scope, actor);
-    return this.buildView(this.em, lifeGroup, meetingDate, actor);
+    return this.buildView(
+      this.em,
+      lifeGroup,
+      meetingDate,
+      actor,
+      extraMeetingRequested,
+    );
   }
 
   async upsertMeeting(
@@ -235,7 +246,10 @@ export class LifeGroupMeetingsService {
             attendanceInput.entries,
             actor.id,
             // The report below rewrites its own snapshot.
-            { syncLinkedReports: !reportInput },
+            {
+              syncLinkedReports: !reportInput,
+              extra: { requested: dto.extraMeeting },
+            },
           );
           attendance = result.attendance;
           await this.audit.record(
@@ -278,7 +292,13 @@ export class LifeGroupMeetingsService {
           );
         }
 
-        return this.buildView(trx, lifeGroup, meetingDate, actor);
+        return this.buildView(
+          trx,
+          lifeGroup,
+          meetingDate,
+          actor,
+          dto.extraMeeting,
+        );
       });
     } catch (err: unknown) {
       if ((err as { code?: string }).code === '23505') {

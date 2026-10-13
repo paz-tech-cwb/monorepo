@@ -18,6 +18,8 @@ import { FormSubmissionAuditService } from '../forms-core/services/form-submissi
 import { LifeGroupAttendanceModule } from '../life-group-attendance/life-group-attendance.module';
 import { LifeGroupReportsModule } from '../life-group-reports/life-group-reports.module';
 import { User } from '../users/entities/user.entity';
+import { LifeGroup } from '../life-groups/entities/life-group.entity';
+import { LifeGroupTaskRosterService } from '../life-group-tasks/life-group-task-roster.service';
 import { LifeGroupMeetingsModule } from './life-group-meetings.module';
 import {
   zonedParts,
@@ -27,7 +29,7 @@ import {
 
 /**
  * OPT-IN integration spec against a REAL PostgreSQL that already has every
- * migration applied (including 1796000000000). Skipped unless
+ * migration applied (including 1796000000000 and 1796000000001). Skipped unless
  * MEETINGS_PG_PORT is set, so the default `npm test` never needs a database:
  *
  *   MEETINGS_PG_HOST=127.0.0.1 MEETINGS_PG_PORT=5432 MEETINGS_PG_USER=... \
@@ -51,6 +53,12 @@ function wednesday(weeksAgo: number): string {
   }
   const [y, m, d] = key.split('-').map(Number);
   return dateKeyOf(shiftDays({ year: y, month: m, day: d }, -7 * weeksAgo));
+}
+
+// Wednesday-relative date (church zone): wed(n) + offsetDays.
+function around(weeksAgo: number, offsetDays: number): string {
+  const [y, m, d] = wednesday(weeksAgo).split('-').map(Number);
+  return dateKeyOf(shiftDays({ year: y, month: m, day: d }, offsetDays));
 }
 
 const report = {
@@ -411,6 +419,173 @@ maybe('life-group-meetings (real PostgreSQL)', () => {
       expect(row.committed_members).toBe(before + 7);
       expect(row.committed_members_present).toBe(5);
       await clean();
+    });
+  });
+
+  describe('extra meetings (is_extra, migration 1796000000001)', () => {
+    // Tuesday before last Wednesday: inside the 14-day window, in the past.
+    const TUE = around(1, -1);
+    const put = (date: string, body: object, user = 9101, group = 9001) =>
+      http().put(meetingUrl(group, date)).set(as(user)).send(body);
+
+    it('non-fixed weekday: 400 without the flag, 200 with it; is_extra persisted and exposed', async () => {
+      const bad = await put(TUE, { attendance: att() }).expect(400);
+      expect(bad.body.code).toBe('extra_meeting_required');
+      expect(bad.body.message).toContain('extra_meeting');
+      expect(await count('life_group_attendance', 'life_group_id=9001')).toBe(
+        0,
+      );
+      const ok = await put(TUE, {
+        attendance: att(),
+        report,
+        extra_meeting: true,
+      }).expect(200);
+      expect(ok.body.attendance.is_extra).toBe(true);
+      expect(ok.body.report.committed_members).toBe(3);
+      expect(
+        await count(
+          'life_group_attendance',
+          `life_group_id=9001 AND meeting_date='${TUE}' AND is_extra = true`,
+        ),
+      ).toBe(1);
+      const get = await http().get(meetingUrl(9001, TUE)).set(as(9101));
+      expect(get.body.attendance).toMatchObject({
+        is_extra: true,
+        is_draft: false,
+        members_count: 3,
+      });
+      // Roster snapshot kept: a member who joins later is not added on edit.
+      expect(
+        await count(
+          'life_group_attendance_entries',
+          `attendance_id IN (SELECT id FROM life_group_attendance WHERE life_group_id=9001)`,
+        ),
+      ).toBe(3);
+    });
+
+    it('immutability and misuse of the flag', async () => {
+      await put(TUE, { attendance: att(), extra_meeting: true }).expect(200);
+      // omitted keeps it
+      const kept = await put(TUE, { attendance: att([false, false, false]) });
+      expect(kept.status).toBe(200);
+      expect(kept.body.attendance).toMatchObject({
+        is_extra: true,
+        present_count: 0,
+      });
+      const flip = await put(TUE, {
+        attendance: att(),
+        extra_meeting: false,
+      }).expect(400);
+      expect(flip.body.code).toBe('extra_meeting_immutable');
+      // regular day: flag rejected, regular record cannot become extra
+      const reg = await put(THIS_WEEK, {
+        attendance: att(),
+        extra_meeting: true,
+      }).expect(400);
+      expect(reg.body.code).toBe('extra_meeting_on_regular_day');
+      await put(THIS_WEEK, { attendance: att() }).expect(200);
+      await put(THIS_WEEK, { attendance: att(), extra_meeting: true }).expect(
+        400,
+      );
+      // group without a fixed weekday: flag not applicable
+      await ds.query(`UPDATE life_groups SET meeting_day=NULL WHERE id=9004`);
+      try {
+        const na = await put(
+          TUE,
+          {
+            attendance: { entries: [{ user_id: 9103, present: true }] },
+            extra_meeting: true,
+          },
+          9101,
+          9004,
+        ).expect(400);
+        expect(na.body.code).toBe('extra_meeting_not_applicable');
+      } finally {
+        await ds.query(
+          `UPDATE life_groups SET meeting_day='Quarta-feira' WHERE id=9004`,
+        );
+      }
+    });
+
+    it('the OLD attendance endpoint keeps rejecting non-fixed weekdays (unchanged message) but can still edit a saved extra', async () => {
+      const old = await http()
+        .put(`/life-groups/9001/attendance/${TUE}`)
+        .set(as(9101))
+        .send(att())
+        .expect(400);
+      expect(old.body.message).toMatch(/is not a Quarta-feira/);
+      expect(old.body.message).not.toMatch(/extra_meeting/);
+      await put(TUE, { attendance: att(), extra_meeting: true }).expect(200);
+      const edit = await http()
+        .put(`/life-groups/9001/attendance/${TUE}`)
+        .set(as(9101))
+        .send(att([false, true, true]))
+        .expect(200);
+      expect(edit.body).toMatchObject({ present_count: 2 });
+      // The legacy shape is unchanged (no is_extra key); the flag stays set.
+      expect(edit.body).not.toHaveProperty('is_extra');
+      expect(
+        await count(
+          'life_group_attendance',
+          `life_group_id=9001 AND meeting_date='${TUE}' AND is_extra = true`,
+        ),
+      ).toBe(1);
+    });
+
+    it('GET draft: 400 without ?extra_meeting=true on a non-fixed weekday, extra draft with it', async () => {
+      await http().get(meetingUrl(9001, TUE)).set(as(9101)).expect(400);
+      const res = await http()
+        .get(`${meetingUrl(9001, TUE)}?extra_meeting=true`)
+        .set(as(9101))
+        .expect(200);
+      expect(res.body.attendance).toMatchObject({
+        is_draft: true,
+        is_extra: true,
+      });
+    });
+
+    it('cap: 4 parallel extras on different dates of one ISO week -> exactly 3 saved, 1 answered 409', async () => {
+      const dates = [
+        around(1, -1), // Tue
+        around(1, 1), // Thu
+        around(1, 2), // Fri
+        around(1, 3), // Sat
+      ];
+      const results = await Promise.all(
+        dates.map((d) => put(d, { attendance: att(), extra_meeting: true })),
+      );
+      const statuses = results.map((r) => r.status).sort();
+      expect(statuses).toEqual([200, 200, 200, 409]);
+      expect(results.find((r) => r.status === 409)?.body.code).toBe(
+        'extra_meeting_limit_reached',
+      );
+      expect(
+        await count(
+          'life_group_attendance',
+          'life_group_id=9001 AND is_extra = true',
+        ),
+      ).toBe(3);
+    });
+
+    it('task eligibility counts at most ONE extra meeting per ISO week (regular always)', async () => {
+      await ds.query(
+        `UPDATE user_life_groups SET joined_at = '2000-01-01' WHERE life_group_id = 9001`,
+      );
+      const a = { attendance: att([true, false, false]) };
+      // Admin: these dates are past the leader's edit window.
+      await put(around(2, 0), a, 9109).expect(200); // regular
+      await put(around(2, -1), { ...a, extra_meeting: true }, 9109).expect(200);
+      await put(around(2, 1), { ...a, extra_meeting: true }, 9109).expect(200);
+      await put(around(3, 2), { ...a, extra_meeting: true }, 9109).expect(200);
+      const roster = new LifeGroupTaskRosterService(ds.manager);
+      const group = await ds.manager.findOneOrFail(LifeGroup, {
+        where: { id: 9001 },
+        relations: ['leader', 'coLeader', 'users'],
+      });
+      const { members } = await roster.resolveRoster(group);
+      // 9103 was present in 4 meetings: 1 regular + 2 extras in one week
+      // (only 1 counts) + 1 extra in another week = 3.
+      expect(members.find((m) => m.user.id === 9103)?.presentCount).toBe(3);
     });
   });
 

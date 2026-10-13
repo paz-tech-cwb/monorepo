@@ -663,6 +663,311 @@ describe('LifeGroupMeetingsService', () => {
     });
   });
 
+  describe('extra meetings (extra_meeting flag)', () => {
+    const TUE = '2026-10-13';
+    const put = (
+      service: LifeGroupMeetingsService,
+      date: string,
+      body: Partial<UpsertLifeGroupMeetingDto>,
+      groupId = 1,
+      actor: MeetingActor = leader,
+    ) =>
+      service.upsertMeeting(
+        groupId,
+        date,
+        dto(body),
+        actor.isAdmin ? unrestricted : none,
+        actor,
+      );
+    const att = () => attendanceBody() as never;
+    const rowsOf = (em: FakeEntityManager) => em.rows(LifeGroupAttendance);
+
+    it('rejects a non-fixed weekday without the flag (message and code mention it)', async () => {
+      const { service, em } = build();
+      for (const body of [{}, { extraMeeting: false }]) {
+        await expect(
+          put(service, TUE, { attendance: att(), ...body }),
+        ).rejects.toMatchObject({
+          response: {
+            code: 'extra_meeting_required',
+            message: expect.stringContaining('extra_meeting: true'),
+          },
+        });
+      }
+      expect(rowsOf(em)).toHaveLength(0);
+    });
+
+    it('accepts a non-fixed weekday with the flag, stores is_extra and exposes it', async () => {
+      const { service, em } = build();
+      const view = await put(service, TUE, {
+        attendance: att(),
+        extraMeeting: true,
+      });
+      expect(view.attendance).toMatchObject({
+        is_extra: true,
+        is_draft: false,
+        members_count: 3,
+        present_count: 2,
+      });
+      expect(rowsOf(em)[0]).toMatchObject({ isExtra: true });
+      // Roster snapshot is kept: entries are the submitted roster.
+      expect(em.rows(LifeGroupAttendanceEntry)).toHaveLength(3);
+      const again = await service.getMeeting(1, TUE, none, leader);
+      expect(again.attendance).toMatchObject({ is_extra: true });
+    });
+
+    it('a regular weekday stays is_extra=false (flag omitted or false)', async () => {
+      const { service } = build();
+      const view = await put(service, TODAY, { attendance: att() });
+      expect(view.attendance).toMatchObject({ is_extra: false });
+      const view2 = await put(service, '2026-10-07', {
+        attendance: att(),
+        extraMeeting: false,
+      });
+      expect(view2.attendance).toMatchObject({ is_extra: false });
+    });
+
+    it('rejects the flag on the regular weekday and on a group without a fixed day', async () => {
+      const { service, em } = build();
+      await expect(
+        put(service, TODAY, { attendance: att(), extraMeeting: true }),
+      ).rejects.toMatchObject({
+        response: { code: 'extra_meeting_on_regular_day' },
+      });
+      await expect(
+        put(service, TUE, { attendance: att(), extraMeeting: true }, 4),
+      ).rejects.toMatchObject({
+        response: { code: 'extra_meeting_not_applicable' },
+      });
+      expect(rowsOf(em)).toHaveLength(0);
+    });
+
+    it('a group without a fixed day still accepts any date without the flag', async () => {
+      const { service } = build();
+      const view = await put(service, TUE, { attendance: att() }, 4);
+      expect(view.attendance).toMatchObject({ is_extra: false });
+    });
+
+    it('is immutable on an existing record: omitted keeps it, contradicting is rejected', async () => {
+      const { service, em } = build();
+      await put(service, TUE, { attendance: att(), extraMeeting: true });
+      // omitted: edit works and stays extra
+      const kept = await put(service, TUE, {
+        attendance: attendanceBody([
+          [103, false],
+          [104, false],
+          [105, false],
+        ]) as never,
+      });
+      expect(kept.attendance).toMatchObject({
+        is_extra: true,
+        present_count: 0,
+      });
+      // same value: fine
+      await put(service, TUE, { attendance: att(), extraMeeting: true });
+      // flip extra -> regular
+      await expect(
+        put(service, TUE, { attendance: att(), extraMeeting: false }),
+      ).rejects.toMatchObject({
+        response: { code: 'extra_meeting_immutable' },
+      });
+      // flip regular -> extra
+      await put(service, TODAY, { attendance: att() });
+      await expect(
+        put(service, TODAY, { attendance: att(), extraMeeting: true }),
+      ).rejects.toMatchObject({
+        response: { code: 'extra_meeting_immutable' },
+      });
+      expect(
+        rowsOf(em)
+          .map((r): [string, boolean] => [
+            r.meetingDate as string,
+            r.isExtra as boolean,
+          ])
+          .sort(),
+      ).toEqual([
+        [TUE, true],
+        [TODAY, false],
+      ]);
+    });
+
+    it('a report-only PUT ignores the flag (attendance must already exist)', async () => {
+      const { service } = build();
+      await put(service, TUE, { attendance: att(), extraMeeting: true });
+      const view = await put(service, TUE, {
+        report: report as never,
+        extraMeeting: true,
+      });
+      expect(view.report).not.toBeNull();
+      expect(view.attendance).toMatchObject({ is_extra: true });
+      await expect(
+        put(service, '2026-10-12', {
+          report: report as never,
+          extraMeeting: true,
+        }),
+      ).rejects.toMatchObject({ response: { code: 'attendance_required' } });
+    });
+
+    it('attendance + report in one PUT on an extra date', async () => {
+      const { service } = build();
+      const view = await put(service, TUE, {
+        attendance: att(),
+        report: report as never,
+        extraMeeting: true,
+      });
+      expect(view.attendance).toMatchObject({ is_extra: true });
+      expect(view.derived).toEqual({
+        committed_members: 3,
+        committed_members_present: 2,
+      });
+    });
+
+    it('caps extra meetings at 3 per group per ISO week; other week and other group unaffected', async () => {
+      const { service, em } = build();
+      // Week Mon 2026-10-05 .. Sun 2026-10-11 (Wed 10-07 is the regular day).
+      for (const d of ['2026-10-05', '2026-10-06', '2026-10-08']) {
+        await put(service, d, { attendance: att(), extraMeeting: true });
+      }
+      await expect(
+        put(service, '2026-10-09', { attendance: att(), extraMeeting: true }),
+      ).rejects.toMatchObject({
+        status: 409,
+        response: { code: 'extra_meeting_limit_reached' },
+      });
+      expect(rowsOf(em)).toHaveLength(3);
+      // Editing an existing extra of that full week is still fine.
+      await put(service, '2026-10-06', { attendance: att() });
+      // A regular meeting in that week is not blocked and does not count.
+      await put(service, '2026-10-07', { attendance: att() });
+      // Next ISO week (Mon 10-12): counted separately.
+      await put(service, '2026-10-12', {
+        attendance: att(),
+        extraMeeting: true,
+      });
+      // Another group (no weekday constraint issue: group 5 meets Wednesday).
+      await service.upsertMeeting(
+        5,
+        '2026-10-09',
+        dto({ attendance: att(), extraMeeting: true }),
+        scopeOf(5),
+        { id: 108, isAdmin: false },
+      );
+      // Admin is bound by the cap too.
+      await expect(
+        put(
+          service,
+          '2026-10-10',
+          { attendance: att(), extraMeeting: true },
+          1,
+          admin,
+        ),
+      ).rejects.toMatchObject({
+        response: { code: 'extra_meeting_limit_reached' },
+      });
+    });
+
+    it('takes the (group, week) advisory lock before counting', async () => {
+      const { service, em } = build();
+      await put(service, TUE, { attendance: att(), extraMeeting: true });
+      const lockCalls = em.queries
+        .filter((q) => q.sql.includes('pg_advisory_xact_lock'))
+        .map((q) => q.params);
+      expect(lockCalls).toEqual([
+        [4207, `1:${TUE}`],
+        [4208, '1:2026-10-12'],
+      ]);
+    });
+
+    it('still enforces the edit window and future dates for extras', async () => {
+      const { service } = build();
+      // Tuesday 2026-09-22 is 22 days ago: window closed for a leader.
+      await expect(
+        put(service, '2026-09-22', { attendance: att(), extraMeeting: true }),
+      ).rejects.toThrow(ForbiddenException);
+      // ... but an admin may.
+      await put(
+        service,
+        '2026-09-22',
+        { attendance: att(), extraMeeting: true },
+        1,
+        admin,
+      );
+      await expect(
+        put(service, '2026-10-20', { attendance: att(), extraMeeting: true }),
+      ).rejects.toThrow(/future/);
+    });
+
+    it('keeps the access rules for extras', async () => {
+      const { service } = build();
+      await expect(
+        service.upsertMeeting(
+          1,
+          TUE,
+          dto({ attendance: att(), extraMeeting: true }),
+          none,
+          { id: 111, isAdmin: false },
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('rolls back when the extra attendance fails later (roster check)', async () => {
+      const { service, em } = build();
+      await expect(
+        put(service, TUE, {
+          attendance: attendanceBody([[999, true]]) as never,
+          extraMeeting: true,
+        }),
+      ).rejects.toThrow(/Unknown user_id/);
+      expect(rowsOf(em)).toHaveLength(0);
+    });
+
+    describe('GET draft', () => {
+      it('is rejected on a non-fixed weekday without the flag, mentioning it', async () => {
+        const { service } = build();
+        await expect(
+          service.getMeeting(1, TUE, none, leader),
+        ).rejects.toMatchObject({
+          response: { code: 'extra_meeting_required' },
+        });
+      });
+
+      it('previews an extra draft with extra_meeting=true', async () => {
+        const { service } = build();
+        const view = await service.getMeeting(1, TUE, none, leader, true);
+        expect(view.attendance).toMatchObject({
+          is_draft: true,
+          is_extra: true,
+          default_present: true,
+          members_count: 3,
+        });
+      });
+
+      it('regular drafts report is_extra=false; flag on a regular day is 400', async () => {
+        const { service } = build();
+        expect(
+          (await service.getMeeting(1, TODAY, none, leader)).attendance,
+        ).toMatchObject({ is_extra: false });
+        await expect(
+          service.getMeeting(1, TODAY, none, leader, true),
+        ).rejects.toMatchObject({
+          response: { code: 'extra_meeting_on_regular_day' },
+        });
+      });
+
+      it('a saved extra record is returned regardless of the query flag', async () => {
+        const { service } = build();
+        await put(service, TUE, { attendance: att(), extraMeeting: true });
+        for (const flag of [undefined, true]) {
+          const view = await service.getMeeting(1, TUE, none, leader, flag);
+          expect(view.attendance).toMatchObject({
+            is_extra: true,
+            is_draft: false,
+          });
+        }
+      });
+    });
+  });
+
   describe('report snapshot re-sync', () => {
     async function withCombined() {
       const ctx = build();

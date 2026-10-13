@@ -230,6 +230,75 @@ describe('LifeGroupMeetingsController (global pipe + serializer)', () => {
     await request(app.getHttpServer()).get(old).expect(200); // reads allowed
   });
 
+  describe('extra_meeting flag', () => {
+    const TUE = '2026-10-13';
+    const tueUrl = `/life-groups/1/meetings/${TUE}`;
+
+    it('PUT without the flag on a non-fixed weekday: 400 mentioning extra_meeting', async () => {
+      const res = await request(app.getHttpServer())
+        .put(tueUrl)
+        .send({ attendance: validAttendance })
+        .expect(400);
+      expect(res.body.code).toBe('extra_meeting_required');
+      expect(res.body.message).toContain('extra_meeting');
+      expect(em.rows(LifeGroupAttendance)).toHaveLength(0);
+    });
+
+    it('PUT with extra_meeting: true stores and returns is_extra; GET shows it', async () => {
+      const res = await request(app.getHttpServer())
+        .put(tueUrl)
+        .send({ attendance: validAttendance, extra_meeting: true })
+        .expect(200);
+      expect(res.body.attendance).toMatchObject({
+        is_extra: true,
+        is_draft: false,
+        members_count: 2,
+      });
+      const get = await request(app.getHttpServer()).get(tueUrl).expect(200);
+      expect(get.body.attendance).toMatchObject({ is_extra: true });
+    });
+
+    it('PUT: regular day returns is_extra=false; the flag there is a 400', async () => {
+      const ok = await request(app.getHttpServer())
+        .put(url)
+        .send({ attendance: validAttendance })
+        .expect(200);
+      expect(ok.body.attendance.is_extra).toBe(false);
+      const bad = await request(app.getHttpServer())
+        .put(url)
+        .send({ attendance: validAttendance, extra_meeting: true })
+        .expect(400);
+      expect(bad.body.code).toBe('extra_meeting_immutable');
+    });
+
+    it.each(['yes', 1, 'true', {}, []])(
+      'rejects a non-boolean extra_meeting (%j)',
+      async (value) => {
+        await request(app.getHttpServer())
+          .put(tueUrl)
+          .send({ attendance: validAttendance, extra_meeting: value })
+          .expect(400);
+        expect(em.rows(LifeGroupAttendance)).toHaveLength(0);
+      },
+    );
+
+    it('GET ?extra_meeting=true previews an extra draft; without it 400', async () => {
+      await request(app.getHttpServer()).get(tueUrl).expect(400);
+      const res = await request(app.getHttpServer())
+        .get(`${tueUrl}?extra_meeting=true`)
+        .expect(200);
+      expect(res.body.attendance).toMatchObject({
+        is_draft: true,
+        is_extra: true,
+        default_present: true,
+      });
+      // Anything but "true" is treated as not requested.
+      await request(app.getHttpServer())
+        .get(`${tueUrl}?extra_meeting=false`)
+        .expect(400);
+    });
+  });
+
   it('answers 400 for an empty body', async () => {
     await request(app.getHttpServer()).put(url).send({}).expect(400);
   });

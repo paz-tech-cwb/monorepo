@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
   Optional,
@@ -13,11 +14,29 @@ import { User } from '../users/entities/user.entity';
 import { UpsertLifeGroupAttendanceDto } from './dto/upsert-life-group-attendance.dto';
 import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
 import { FormSubmissionAuditService } from '../forms-core/services/form-submission-audit.service';
-import { WEEKDAY_INDEX, weekdayOfDateString } from './meeting-day.util';
+import {
+  WEEKDAY_INDEX,
+  isoWeekRange,
+  weekdayOfDateString,
+} from './meeting-day.util';
+import { LIFE_GROUP_MAX_EXTRA_MEETINGS_PER_WEEK } from '../common/constants/life-group-meeting';
 import { assertCanAccessLifeGroup } from './life-group-access.util';
 import { LifeGroupReportSnapshotService } from '../life-group-reports/life-group-report-snapshot.service';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+// Namespace (first int4 key) of the per-(group, ISO week) advisory lock that
+// serializes creation of extra meetings (cap check). The meetings API takes its
+// own per-(group, date) lock (namespace 4207) first, then this one.
+const EXTRA_MEETING_LOCK_NAMESPACE = 4208;
+
+/**
+ * Extra-meeting handling, passed ONLY by the meetings API. `requested` is the
+ * client's `extra_meeting` (undefined when omitted). The legacy attendance PUT
+ * passes nothing and keeps rejecting every non-fixed weekday.
+ */
+export interface ExtraMeetingOption {
+  requested: boolean | undefined;
+}
 
 interface Actor {
   id: number;
@@ -80,6 +99,82 @@ export class LifeGroupAttendanceService {
       throw new BadRequestException(
         `${meetingDate} is not a ${lifeGroup.meetingDay} — this life group meets on ${lifeGroup.meetingDay}.`,
       );
+    }
+  }
+
+  /**
+   * Weekday rule for a NEW record, flag-aware (meetings API only). Returns
+   * whether the new meeting is an extra one. A fixed-day group meeting on a
+   * different weekday requires `extra_meeting: true`; the flag is rejected when
+   * it does not apply (regular weekday, or a group without a fixed day).
+   */
+  resolveNewMeetingIsExtra(
+    lifeGroup: LifeGroup,
+    meetingDate: string,
+    requested: boolean | undefined,
+  ): boolean {
+    const expectedWeekday = lifeGroup.meetingDay
+      ? WEEKDAY_INDEX[lifeGroup.meetingDay]
+      : undefined;
+    const regular =
+      expectedWeekday === undefined ||
+      weekdayOfDateString(meetingDate) === expectedWeekday;
+    if (requested === true) {
+      if (expectedWeekday === undefined) {
+        throw new BadRequestException({
+          statusCode: 400,
+          error: 'Bad Request',
+          code: 'extra_meeting_not_applicable',
+          message:
+            'extra_meeting only applies to life groups with a fixed meeting day; every date is a regular meeting for this group.',
+        });
+      }
+      if (regular) {
+        throw new BadRequestException({
+          statusCode: 400,
+          error: 'Bad Request',
+          code: 'extra_meeting_on_regular_day',
+          message: `${meetingDate} is a ${lifeGroup.meetingDay}, this life group's regular meeting day; send it without extra_meeting.`,
+        });
+      }
+      return true;
+    }
+    if (!regular) {
+      throw new BadRequestException({
+        statusCode: 400,
+        error: 'Bad Request',
+        code: 'extra_meeting_required',
+        message: `${meetingDate} is not a ${lifeGroup.meetingDay} — this life group meets on ${lifeGroup.meetingDay}. To record a meeting on another day, send extra_meeting: true.`,
+      });
+    }
+    return false;
+  }
+
+  // Cap on extra meetings per group per ISO week. Takes a lock on (group,
+  // week) so two different dates of the same week cannot both pass the count.
+  private async assertExtraMeetingCapacity(
+    trx: EntityManager,
+    lifeGroupId: number,
+    meetingDate: string,
+  ): Promise<void> {
+    const { start, end } = isoWeekRange(meetingDate);
+    await trx.query('SELECT pg_advisory_xact_lock($1, hashtext($2))', [
+      EXTRA_MEETING_LOCK_NAMESPACE,
+      `${lifeGroupId}:${start}`,
+    ]);
+    const rows = await trx.query<{ c: number }[]>(
+      `SELECT count(*)::int AS c FROM life_group_attendance
+       WHERE life_group_id = $1 AND is_extra = true
+         AND meeting_date BETWEEN $2 AND $3`,
+      [lifeGroupId, start, end],
+    );
+    if (Number(rows[0]?.c ?? 0) >= LIFE_GROUP_MAX_EXTRA_MEETINGS_PER_WEEK) {
+      throw new ConflictException({
+        statusCode: 409,
+        error: 'Conflict',
+        code: 'extra_meeting_limit_reached',
+        message: `At most ${LIFE_GROUP_MAX_EXTRA_MEETINGS_PER_WEEK} extra meetings can be recorded per life group per week (${start} to ${end}).`,
+      });
     }
   }
 
@@ -163,8 +258,15 @@ export class LifeGroupAttendanceService {
    * (product decision Q3: default stays all-present). Enforces the weekday
    * rule like a first save would.
    */
-  buildDraft(lifeGroup: LifeGroup, meetingDate: string) {
-    this.assertMatchesMeetingDay(lifeGroup, meetingDate);
+  buildDraft(
+    lifeGroup: LifeGroup,
+    meetingDate: string,
+    extra?: ExtraMeetingOption,
+  ) {
+    // Flag-aware (meetings API) or legacy weekday rule.
+    const isExtra = extra
+      ? this.resolveNewMeetingIsExtra(lifeGroup, meetingDate, extra.requested)
+      : (this.assertMatchesMeetingDay(lifeGroup, meetingDate), false);
 
     const members = [...(lifeGroup.users ?? [])].sort((a, b) =>
       a.name.localeCompare(b.name),
@@ -184,6 +286,9 @@ export class LifeGroupAttendanceService {
       created_at: null,
       updated_at: null,
       is_draft: true,
+      // Only the flag-aware (meetings API) draft carries `is_extra`; the legacy
+      // attendance GET keeps its original shape.
+      ...(extra ? { is_extra: isExtra } : {}),
     };
   }
 
@@ -261,7 +366,11 @@ export class LifeGroupAttendanceService {
     meetingDate: string,
     entries: { userId: number; present: boolean }[],
     actorId: number,
-    options: { syncLinkedReports?: boolean } = {},
+    options: {
+      syncLinkedReports?: boolean;
+      // Meetings API only; absent = legacy weekday rule.
+      extra?: ExtraMeetingOption;
+    } = {},
   ): Promise<{ attendance: LifeGroupAttendance; existed: boolean }> {
     const lifeGroupId = lifeGroup.id;
     const existing = await trx.findOne(LifeGroupAttendance, {
@@ -281,6 +390,19 @@ export class LifeGroupAttendanceService {
     // is the FIRST time the record is saved. Reopening a past record
     // never adds members who joined the group afterwards.
     if (existing) {
+      // The extra flag is fixed when the record is created. Omitting it keeps
+      // the stored value; contradicting it is rejected (never silently flipped).
+      const requested = options.extra?.requested;
+      if (requested !== undefined && requested !== existing.isExtra) {
+        throw new BadRequestException({
+          statusCode: 400,
+          error: 'Bad Request',
+          code: 'extra_meeting_immutable',
+          message: existing.isExtra
+            ? 'This meeting was saved as an extra meeting; it cannot be turned into a regular one.'
+            : 'This meeting was saved as a regular meeting; it cannot be turned into an extra one.',
+        });
+      }
       const byUserId = new Map(existing.entries.map((e) => [e.userId, e]));
       for (const incoming of entries) {
         const entry = byUserId.get(incoming.userId);
@@ -291,7 +413,19 @@ export class LifeGroupAttendanceService {
         (e) => e.present,
       ).length;
     } else {
-      this.assertMatchesMeetingDay(lifeGroup, meetingDate);
+      if (options.extra) {
+        attendance.isExtra = this.resolveNewMeetingIsExtra(
+          lifeGroup,
+          meetingDate,
+          options.extra.requested,
+        );
+        if (attendance.isExtra) {
+          await this.assertExtraMeetingCapacity(trx, lifeGroupId, meetingDate);
+        }
+      } else {
+        this.assertMatchesMeetingDay(lifeGroup, meetingDate);
+        attendance.isExtra = false;
+      }
 
       // Only the FIRST save for a meeting date creates entries from the
       // submitted payload, so this is the only path where a leader could

@@ -54,12 +54,14 @@ report in one transaction. Shared pieces: `LifeGroupAttendanceService.upsertInTr
 `LifeGroupReportSnapshotService` (re-syncs `committed_*` of linked reports),
 `life-group-report.mapper.ts` (report response/input columns),
 `FormSubmissionAuditService.record(params, manager?)`. Edit window constant:
-`common/constants/life-group-meeting.ts`. Migration `1796000000000` is pending
+`common/constants/life-group-meeting.ts`. Migrations `1796000000000` and `1796000000001` (`is_extra`, extra-meeting flag) are pending
 (human gate). Specs: `meeting-edit-policy.spec.ts`,
 `life-group-meetings.service.spec.ts` (in-memory `fake-entity-manager.testing.ts`),
 `life-group-meetings.controller.spec.ts` (real global pipe + serializer) and the
 opt-in `life-group-meetings.integration.spec.ts` (real PostgreSQL, env
-`MEETINGS_PG_*`, skipped by default). Details in `features/life-groups.md`.
+`MEETINGS_PG_*`, skipped by default). Extra meetings: `extra_meeting` flag on the meetings PUT/GET only (rules, cap
+and consumers in `features/life-groups.md`).
+Details in `features/life-groups.md`.
 
 ## Reminders v2 (meeting reminders)
 
