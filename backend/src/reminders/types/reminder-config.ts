@@ -204,6 +204,13 @@ function validateAttendanceConfig(config: unknown): string | null {
   for (const key of ATTENDANCE_TEXT_FIELDS) {
     const value = cfg[key];
     if (value === undefined) continue;
+    // Legacy copy (`title`/`message`) was never validated before V2, so a
+    // blank one keeps saving (flag-off behavior unchanged); the V2 copy keys
+    // reject blank (the admin UI omits them so the defaults apply).
+    const legacy = key === 'title' || key === 'message';
+    if (typeof value === 'string' && value.trim().length === 0 && legacy) {
+      continue;
+    }
     if (typeof value !== 'string' || value.trim().length === 0) {
       return `${key} must be a non-empty string`;
     }

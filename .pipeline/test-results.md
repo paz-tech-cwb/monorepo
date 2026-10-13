@@ -26,3 +26,10 @@ Node v22.23.3. Worktree `scratchpad/wt-phase2` (backend/node_modules and admin-u
 
 ### Cleanup
 Throwaway Postgres stopped (port 54937 closed). `rm -rf scratchpad/pg7/data` was DENIED by the sandbox: the data dir (throwaway creds, fixtures only) remains and needs manual removal.
+
+## Review fixes (reminders v2)
+- backend build: ok. Scoped jest (reminders, life-group-meetings, life-group-attendance, notifications): 270 passed, 35 skipped; only failing suite reach.dto (baseline).
+- Full jest: 6 failed suites (baseline: auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens), 78 passed; 745 tests passed, 5 failed (baseline), 35 skipped.
+- eslint src/reminders: only pre-existing errors in event/form-report evaluator specs (untouched); prettier clean.
+- admin-ui: dependencies are not installed in this environment, so tsc/eslint/next build could not be run meaningfully.
+- New tests: 10:00 retry after failed 09:00 sends once (+ Notification marked failed); 11:00 ok, 12:00 no; no wrap past midnight; escalation on day 6 and 7, not day 8, once across 5/6/7; blank legacy title/message accepted.

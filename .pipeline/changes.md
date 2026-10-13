@@ -22,3 +22,11 @@ Branch `feat/life-group-reminders-v2`, stacked on PR #96 (`feat/life-group-meeti
 
 ### Not changed on purpose
 `form_report` `life-group-reports` entry and its data (cutover is a later migration), mobile apps, categories/enums/migrations, the `.env` examples.
+
+## Review fixes (reminders v2)
+- M1: follow-up accepts hours [followup_hour, +2] (same SP day, no wrap); escalation accepts days [N, N+2]; claim keys dedupe (one push per follow-up day k / per meeting). Primary push and flag-off legacy unchanged. Comments fixed (retry happens on the next hourly ticks inside the window).
+- M2: admin-ui hint and docs reworded: only the per-category toggle is bypassed; user-level allNotificationsEnabled/pushEnabled still suppress.
+- m1: backend validation lets blank legacy `title`/`message` through (as before V2); V2 copy keys still reject blank (admin-ui omits them).
+- m2: admin-ui NumberField: cleared input = undefined (key omitted, default applies), placeholder shows the default; `hours_after_meeting_start` optional in the admin-ui type.
+- m3: sendClaimed marks the Notification `failed` when dispatch throws, then releases the claim.
+- m4/m7/m6: documented (escalation key ignores escalation_after_days; kill switch needs restart; GET /life-groups/:id has no role gate and supervisors get the full detail, so a sector leader can open paz://lifegroup/{id}).

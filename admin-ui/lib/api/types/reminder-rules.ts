@@ -41,7 +41,7 @@ export interface MemberJourneyReminderConfig {
 
 export interface LifeGroupAttendanceReminderConfig {
   // Hours after the group's meeting start at which the primary push is sent.
-  hours_after_meeting_start: number
+  hours_after_meeting_start?: number
   // Legacy copy (primary push while LIFE_GROUP_MEETING_V2 is off).
   title: string
   message: string

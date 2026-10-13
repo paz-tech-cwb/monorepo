@@ -69,22 +69,32 @@ With the flag on (everything in church time, America/Sao_Paulo):
    Claim-first: the `ReminderDispatchLog` row is inserted before sending and
    deleted if the send throws; the key is the same as the legacy one
    (`life_group_attendance:{gid}:{date}`) so flipping the flag never re-sends.
-2. **Follow-up** at `followup_hour` (default 9) on day k after the meeting
+2. **Follow-up** from `followup_hour` (default 9) on day k after the meeting
    (k = 1..`followup_max_days`, default 5, only when `(k-1) % followup_interval_days
    == 0`, default 1 = DAILY, and only before the escalation day) to leader +
    co-leader, when attendance exists for that meeting but no report. Copy
    `followup_title`/`followup_message`, same deep link. Dedupe key
-   `life_group_meeting_followup:{gid}:{date}:{k}`, claim-first.
-3. **Escalation** on day `escalation_after_days` (default 5; 0 = off) at
-   `followup_hour`: one push to the group's SECTOR leader and sector co-leader
+   `life_group_meeting_followup:{gid}:{date}:{k}`, claim-first. Catch-up window:
+   the hourly tick is accepted for `followup_hour` .. `followup_hour + 2` (same
+   Sao Paulo day, no wrap past midnight), so a lost or failed 09:00 tick is
+   retried at 10:00/11:00; the per-day claim key keeps it to one push per k.
+   (The primary push has no window: it stays exact-hour, as in legacy.)
+3. **Escalation** on day `escalation_after_days` (default 5; 0 = off), or on
+   the 2 days after it if that tick was missed (days N..N+2), within the
+   follow-up hour window: one push to the group's SECTOR leader and sector co-leader
    (deduped; none if the group has no sector or the sector has no leader) with
    `{group}`/`{date}` (DD/MM) placeholders. Category `life_group_attendance`
-   (reused: non-opt-outable, channel `paz_life_group`, no enum migration, no
+   (reused: absent from `CATEGORY_PREF_MAP`, so the per-category toggle does not
+   apply; the user-level global opt-outs `allNotificationsEnabled=false` /
+   `pushEnabled=false` in `NotificationDispatchService` STILL suppress it; channel `paz_life_group`, no enum migration, no
    client change), deep link `paz://lifegroup/{lifeGroupId}` (already parsed by
    Android `life_group_detail/{id}` and iOS; no new scheme). Dedupe key
    `life_group_meeting_escalation:{gid}:{date}` (one per group and meeting date),
-   claim-first. The daily follow-ups stop the day before, so day 5 is the only push
-   of that day.
+   claim-first. The key ignores `escalation_after_days`: changing that setting
+   mid-flight can re-escalate an older still-unreported meeting whose new window
+   lands today (bounded, low risk). The daily follow-ups stop the day before, so
+   day 5 is the only push of that day. The sector leader opens
+   `paz://lifegroup/{id}` through `GET /life-groups/:id`; see the access note below.
 4. "Has a report": a non-deleted `life_group_reports` row linked via `attendance_id`
    OR dated within [meeting date, meeting date + 6]. A meeting without attendance
    is never followed up or escalated (the primary push owns that gap).
@@ -98,6 +108,10 @@ saved before v2 get defaults through `resolveLifeGroupAttendanceConfig`):
 `meeting_message`, `followup_hour` (0-23), `followup_interval_days` (1-7),
 `followup_max_days` (0-14, 0 = off), `followup_title`/`followup_message`,
 `escalation_after_days` (0-14, 0 = off), `escalation_title`/`escalation_message`.
+Legacy `title`/`message` may be blank (flag-off saves unchanged); the V2 copy
+keys reject blank, so the admin UI omits blank/cleared fields and the defaults
+apply. A send failure marks the just-created Notification `failed` and releases
+the claim, so a retry does not leave a stray `pending` row.
 Edit them in admin-ui Notificacoes > Lembretes automaticos > "Reuniao do Life Group".
 
 Switch-on steps (order matters, the combined screen does not exist in the apps yet and
@@ -109,7 +123,12 @@ old apps open the old attendance editor through the same deep link):
    `life-group-reports` entry from the `form_report` rule (defaults + a data migration on
    `reminder_rules`, pattern of `1780900000004`), so leaders stop getting the
    Sunday 20:00 form reminder in addition to the new follow-up.
-Kill switch: unset/`false` and restart; the legacy path resumes immediately.
+Escalation deep link access: `GET /life-groups/:id` has no role gate (any
+authenticated user), and `findSupervisedGroupIds` marks the group as supervised
+for the sector leader/co-leader and area leader/co-leader, so they get the full
+detail including members (`is_supervised: true`). A sector leader who is not the
+group's leader can therefore open `paz://lifegroup/{id}`; no backend change needed.
+Kill switch: unset/`false` and restart (the env var is only re-read after a restart); the legacy path then resumes.
 Already-claimed keys are shared with the legacy path, so no duplicate pushes either way.
 
 Tests: `reminders/evaluators/life-group-meeting-v2.reminders.spec.ts` (jest fake

@@ -761,6 +761,7 @@ function NumberField({
   label,
   hint,
   value,
+  placeholder,
   min,
   max,
   disabled,
@@ -768,11 +769,13 @@ function NumberField({
 }: {
   label: string
   hint?: string
-  value: number
+  value: number | undefined
+  placeholder?: string
   min: number
   max: number
   disabled: boolean
-  onChange: (n: number) => void
+  // undefined = field cleared: the key is omitted on save and the backend default applies
+  onChange: (n: number | undefined) => void
 }) {
   return (
     <div className="space-y-2">
@@ -782,9 +785,10 @@ function NumberField({
         min={min}
         max={max}
         className="w-28"
-        value={value}
+        value={value ?? ''}
+        placeholder={placeholder}
         disabled={disabled}
-        onChange={(e) => onChange(Number(e.target.value))}
+        onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
       />
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
@@ -865,7 +869,8 @@ function LifeGroupAttendanceControls({
       <NumberField
         label="Horas após o início da reunião"
         hint="Quando o primeiro lembrete é enviado (0 a 23)."
-        value={config.hours_after_meeting_start ?? 2}
+        value={config.hours_after_meeting_start}
+        placeholder="2"
         min={0}
         max={23}
         disabled={disabled}
@@ -919,7 +924,8 @@ function LifeGroupAttendanceControls({
         <NumberField
           label="Repetir a cada (dias)"
           hint="1 = todos os dias."
-          value={config.followup_interval_days ?? 1}
+          value={config.followup_interval_days}
+          placeholder="1"
           min={1}
           max={7}
           disabled={disabled}
@@ -928,7 +934,8 @@ function LifeGroupAttendanceControls({
         <NumberField
           label="Máximo de dias de follow-up"
           hint="Limite de dias após a reunião (0 desliga o follow-up). Se o aviso ao líder de setor estiver ligado, os follow-ups terminam no dia anterior a ele."
-          value={config.followup_max_days ?? 5}
+          value={config.followup_max_days}
+          placeholder="5"
           min={0}
           max={14}
           disabled={disabled}
@@ -949,8 +956,9 @@ function LifeGroupAttendanceControls({
         <p className="text-sm font-medium">Aviso ao líder e co-líder de setor (flag ligada)</p>
         <NumberField
           label="Avisar o setor após (dias)"
-          hint="Se ainda não houver relatório X dias após a reunião (0 desliga). Não pode ser silenciado pelo usuário."
-          value={config.escalation_after_days ?? 5}
+          hint="Se ainda não houver relatório X dias após a reunião (0 desliga). Ignora o interruptor da categoria de notificações, mas respeita o desligamento geral de notificações/push do usuário."
+          value={config.escalation_after_days}
+          placeholder="5"
           min={0}
           max={14}
           disabled={disabled}

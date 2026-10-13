@@ -125,6 +125,16 @@ describe('life_group_attendance config', () => {
     ).toContain(key);
   });
 
+  it('keeps accepting a blank legacy title/message (flag-off saves are unchanged)', () => {
+    expect(
+      validateReminderConfig('life_group_attendance', {
+        ...defaults,
+        title: '',
+        message: '  ',
+      }),
+    ).toBeNull();
+  });
+
   it('allows 0 to switch the follow-up and the escalation off', () => {
     expect(
       validateReminderConfig('life_group_attendance', {

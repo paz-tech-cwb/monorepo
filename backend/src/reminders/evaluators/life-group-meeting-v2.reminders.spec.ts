@@ -86,6 +86,13 @@ class FakeEm {
   save(values: Row): Promise<Row> {
     return Promise.resolve({ id: 1, ...values });
   }
+
+  updates: Row[] = [];
+
+  update(_entity: unknown, where: Row, values: Row): Promise<void> {
+    this.updates.push({ where, values });
+    return Promise.resolve();
+  }
 }
 
 interface Sent {
@@ -473,11 +480,37 @@ describe('LifeGroupMeetingV2Reminders (LIFE_GROUP_MEETING_V2 on)', () => {
       expect(sent).toHaveLength(1);
     });
 
-    it('a follow-up failure releases the claim so the same hour can retry', async () => {
+    it('a failed 09:00 follow-up is retried by the 10:00 tick (catch-up) and sent once', async () => {
       dispatchMock.mockRejectedValueOnce(new Error('fcm down'));
       await tickAt(sp('2026-06-11T09:00:00'));
       expect(sent).toHaveLength(0);
-      await tickAt(sp('2026-06-11T09:30:00'));
+      expect(em.updates).toEqual([
+        { where: { id: 1 }, values: { status: 'failed' } },
+      ]);
+      await tickAt(sp('2026-06-11T10:00:00'));
+      expect(sent).toHaveLength(1);
+      await tickAt(sp('2026-06-11T11:00:00'));
+      await tickAt(sp('2026-06-11T12:00:00'));
+      expect(sent).toHaveLength(1);
+    });
+
+    it('catch-up window is [followup_hour, +2]: 11:00 still sends, 12:00 does not', async () => {
+      await tickAt(sp('2026-06-11T11:00:00'));
+      expect(sent).toHaveLength(1);
+
+      em.log.clear();
+      sent.length = 0;
+      await tickAt(sp('2026-06-11T12:00:00'));
+      expect(sent).toHaveLength(0);
+    });
+
+    it('the window never wraps past midnight (followup_hour 23 only ticks at 23:00)', async () => {
+      const config = { ...rule.config, followup_hour: 23 };
+      await tickAt(sp('2026-06-11T22:00:00'), evaluator, config);
+      expect(sent).toHaveLength(0);
+      await tickAt(sp('2026-06-11T23:00:00'), evaluator, config);
+      expect(sent).toHaveLength(1);
+      await tickAt(sp('2026-06-12T00:00:00'), evaluator, config);
       expect(sent).toHaveLength(1);
     });
 
@@ -506,13 +539,33 @@ describe('LifeGroupMeetingV2Reminders (LIFE_GROUP_MEETING_V2 on)', () => {
       });
     });
 
-    it('does not fire on day 4 or day 6 (the escalation day is exact)', async () => {
+    it('does not fire on day 4', async () => {
       await tickAt(sp('2026-06-14T09:00:00'));
-      await tickAt(sp('2026-06-16T09:00:00'));
-      expect(sent.every((s) => s.deepLink.startsWith('paz://presenca'))).toBe(
-        true,
-      );
       expect(sent.some((s) => s.deepLink === 'paz://lifegroup/7')).toBe(false);
+    });
+
+    it.each(['2026-06-16', '2026-06-17'])(
+      'catches up on %s (day 6/7) when day 5 was missed',
+      async (date) => {
+        await tickAt(sp(`${date}T09:00:00`));
+        const esc = sent.filter((s) => s.deepLink === 'paz://lifegroup/7');
+        expect(esc).toHaveLength(1);
+        expect(esc[0].recipients).toEqual([20, 21]);
+      },
+    );
+
+    it('does not escalate on day 8 (outside the catch-up window)', async () => {
+      await tickAt(sp('2026-06-18T09:00:00'));
+      expect(sent.some((s) => s.deepLink === 'paz://lifegroup/7')).toBe(false);
+    });
+
+    it('escalates only once across days 5, 6 and 7', async () => {
+      await tickAt(sp('2026-06-15T09:00:00'));
+      await tickAt(sp('2026-06-16T09:00:00'));
+      await tickAt(sp('2026-06-17T09:00:00'));
+      expect(
+        sent.filter((s) => s.deepLink === 'paz://lifegroup/7'),
+      ).toHaveLength(1);
     });
 
     it('goes to a lone sector co-leader when the sector has no leader', async () => {

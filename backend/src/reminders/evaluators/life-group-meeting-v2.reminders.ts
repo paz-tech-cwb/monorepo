@@ -26,16 +26,29 @@ const RULE_TYPE = 'life_group_attendance' as const;
 /** Days after the meeting date during which a (legacy, unlinked) report still counts for that meeting. */
 const REPORT_WINDOW_DAYS = 6;
 
+/**
+ * Catch-up window: the scheduler ticks hourly, so a tick lost to a deploy or a
+ * DB blip is retried by the following ticks. Follow-ups accept the hours
+ * [followup_hour, followup_hour + 2] (same Sao Paulo day, no wrap past
+ * midnight); escalation accepts days [N, N + 2]. Claim keys dedupe, so a
+ * widened window never sends twice.
+ */
+const CATCH_UP_EXTRA = 2;
+
+function isInCatchUpWindow(hour: number, startHour: number): boolean {
+  return hour >= startHour && hour <= Math.min(startHour + CATCH_UP_EXTRA, 23);
+}
+
 type FollowupAction = 'followup' | 'escalate';
 
 /**
  * Behavior of the `life_group_attendance` rule while LIFE_GROUP_MEETING_V2 is
  * on (see life-group-meeting-v2.flag.ts):
  * - primary push at meeting start + N hours with the combined copy, claim-first;
- * - at `followup_hour` (Sao Paulo), a follow-up to leader + co-leader for a past
+ * - from `followup_hour` (Sao Paulo, with a 2-hour catch-up window), a follow-up to leader + co-leader for a past
  *   meeting that has attendance but no report, repeated every
  *   `followup_interval_days` up to `followup_max_days`;
- * - on day `escalation_after_days`, a single push to the sector leader and
+ * - on day `escalation_after_days` (or the 2 days after, if missed), a single push to the sector leader and
  *   sector co-leader (the daily follow-ups stop before that day).
  * Everything is computed in the church timezone via the shared zoned helpers.
  */
@@ -76,12 +89,14 @@ export class LifeGroupMeetingV2Reminders {
       }
       try {
         await this.runPrimary(group, weekday, meetingHour, cfg, today);
-        if (today.hour === cfg.followup_hour) {
+        if (isInCatchUpWindow(today.hour, cfg.followup_hour)) {
           await this.runFollowups(group, weekday, cfg, today);
         }
       } catch (err: unknown) {
         // One group's failure must not starve the others; the claim was
-        // released, so the next tick retries.
+        // released, so a later tick retries (follow-up/escalation: the next
+        // hourly ticks inside the catch-up window; primary: only the same
+        // hour, as in the legacy path).
         this.logger.error(
           `life_group_attendance v2 failed for life group ${group.id}`,
           err as Error,
@@ -147,14 +162,26 @@ export class LifeGroupMeetingV2Reminders {
           ? Math.min(cfg.followup_max_days, cfg.escalation_after_days - 1)
           : cfg.followup_max_days
         : 0;
-    const horizon = Math.max(lastFollowupDay, cfg.escalation_after_days);
+    const escalationLastDay = cfg.escalation_after_days + CATCH_UP_EXTRA;
+    const horizon = Math.max(
+      lastFollowupDay,
+      escalationOn ? escalationLastDay : 0,
+    );
 
     for (let day = 1; day <= horizon; day++) {
       const meetingParts = shiftDays(today, -day);
       if (weekdayOf(meetingParts) !== weekday) continue;
 
       let action: FollowupAction | null = null;
-      if (escalationOn && day === cfg.escalation_after_days) {
+      // Escalation tolerates a missed day-N tick: accepted on N..N+2. The
+      // weekday filter above leaves at most one candidate day per meeting
+      // (the window is shorter than a week) and the claim key is per
+      // group + meeting date, so it still fires once.
+      if (
+        escalationOn &&
+        day >= cfg.escalation_after_days &&
+        day <= escalationLastDay
+      ) {
         action = 'escalate';
       } else if (
         day <= lastFollowupDay &&
@@ -260,7 +287,15 @@ export class LifeGroupMeetingV2Reminders {
           origin: 'automatic',
         }),
       );
-      await this.dispatch.dispatch(notification, recipients);
+      try {
+        await this.dispatch.dispatch(notification, recipients);
+      } catch (err: unknown) {
+        // Do not leave an orphan `pending` row: the retry creates a new one.
+        await this.em
+          .update(Notification, { id: notification.id }, { status: 'failed' })
+          .catch(() => undefined);
+        throw err;
+      }
       return true;
     } catch (err: unknown) {
       await releaseReminderKey(this.em, RULE_TYPE, dedupeKey);
