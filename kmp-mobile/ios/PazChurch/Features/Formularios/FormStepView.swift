@@ -1,6 +1,20 @@
 import Shared
 import SwiftUI
 
+/// Destination for any catalog form: the weekly life-group report has a dedicated screen (group
+/// picker, typed fields, real DTO payload); every other form uses the one-question-per-screen flow.
+struct FormDestinationView: View {
+    let form: FormCatalogItem
+
+    var body: some View {
+        if form.type == .lifeGroupReport {
+            LifeGroupReportFormView()
+        } else {
+            FormStepView(form: form)
+        }
+    }
+}
+
 /// One-question-per-screen fill flow — the only way to fill a form in this app.
 ///
 /// Keyboard-flicker avoidance: a single, stable `TextField` instance (bound via a computed

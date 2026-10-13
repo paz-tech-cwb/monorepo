@@ -223,19 +223,8 @@ extension FormType {
             ]
 
         case .lifeGroupReport:
-            [
-                FormFieldDef("date", "Data da Reunião", placeholder: "DD/MM/YYYY", required: true, fieldType: .date),
-                FormFieldDef(
-                    "attendees",
-                    "Quantidade de Participantes",
-                    placeholder: "0",
-                    required: true,
-                    fieldType: .integer
-                ),
-                FormFieldDef("visitors", "Quantidade de Visitantes", placeholder: "0", fieldType: .integer),
-                FormFieldDef("offerings", "Oferta (R$)", placeholder: "0,00", fieldType: .currency),
-                FormFieldDef("observations", "Observações", fieldType: .multiline),
-            ]
+            // Handled by LifeGroupReportFormView (dedicated fields, group picker, real DTO payload).
+            []
 
         case .course:
             [

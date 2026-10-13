@@ -36,7 +36,7 @@ struct FormulariosView: View {
             VStack(spacing: 10) {
                 Spacer().frame(height: 8)
                 ForEach(viewModel.forms, id: \.id) { form in
-                    NavigationLink(destination: FormStepView(form: form)) {
+                    NavigationLink(destination: FormDestinationView(form: form)) {
                         FormCard(form: form)
                     }
                     .buttonStyle(.plain)
