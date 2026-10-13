@@ -1,26 +1,19 @@
-# Spec: Phase 3 (shared + Android) combined "Reunião" screen
+# Spec: meetings 404 hardening + group-scoped analytics (backend)
 
-Branch: feat/life-group-meeting-screen, stacked on PR #96 (`feat/life-group-meetings-api`, head 123e5f0). Design: `.pipeline/design-attendance-report-merge.md` (section 5.5). iOS follows on the same branch (separate agent).
+Branch: fix/meetings-404-analytics-scope (from origin/develop). Backend only; kmp-mobile is owned by another agent.
 
-## API consumed (backend/src/life-group-meetings, no backend change)
-- `GET /api/life-groups/:id/meetings/:date[?extra_meeting=true]` -> `{life_group_id, meeting_date, attendance|null, report|null, derived:{committed_members, committed_members_present}, can_edit, edit_deadline, report_blocked_reason}`; `attendance` = attendance response + `is_draft`, `is_extra`, `default_present` (true for drafts).
-- `PUT /api/life-groups/:id/meetings/:date` body `{attendance?:{entries:[{user_id,present}]}, report?:{...12 input fields}, extra_meeting?:bool}`; returns the same view. Report-only PUT before attendance exists -> 409 `attendance_required`.
-- Errors: 400 `extra_meeting_required|extra_meeting_on_regular_day|extra_meeting_not_applicable|extra_meeting_immutable`, 403 `edit_window_closed`, 409 `attendance_required|extra_meeting_limit_reached`, 422 `group_has_no_sector|sector_has_no_area`, 404.
-- History (existing endpoints): `GET /life-groups/:id/attendance` and `GET /forms/life-group-reports?life_group_id=`.
+## Task 1: GET /life-groups/:id/meetings/:date 404 on TestFlight
+Evidence: Deploy Backend run 38479306265 (release commit 84f1dd9e) failed (SSH step waited for /var/lock/vps-deploy/global.lock, then `client_loop: send disconnect: Broken pipe`, exit 255). New /meetings routes + migrations 1796000000000/1 were most likely not deployed; Nest answers `{"message":"Cannot GET /api/life-groups/2/meetings/2026-09-08","error":"Not Found","statusCode":404}` which the clients map to "Grupo nao encontrado".
+Plan:
+- Enumerate every 404 source and prove (real app + real Postgres): route missing (generic body, no `code`), service `NotFoundException` (group id unknown only).
+- Stable machine-readable `code` on every error of the meetings GET (and attendance GET sharing the validators): `group_not_found` 404, `life_group_access_forbidden` 403, `invalid_meeting_date_format` / `invalid_meeting_date` / `date_in_future` 400, `invalid_extra_meeting_param` 400, existing `extra_meeting_required` etc. Messages unchanged.
+- Past date, no record, outside the edit window, leader: 200 draft, can_edit=false, is_draft=true, edit_deadline in the past (tests).
+- Document: draft roster of a past date = CURRENT roster.
+- Document how migrations run on deploy (container CMD start:prod:migrate) and an "after a failed Deploy Backend" checklist.
 
-## Decisions (user, relayed)
-1. No fixed day / extra meetings: leader picks a date via "Nova reunião" (date picker, never future). Fixed-day group on another weekday: "Reunião extra" toggle (`extra_meeting`).
-2. Q3 all present by default, explicit "Todos presentes" toggle. Q1/Q2: `committed_*` derived server side, read-only in UI. Q5: 14-day window from API (`can_edit`, `edit_deadline`), read-only state afterwards.
-3. Drafts persisted locally keyed by (user, group, date), cleared at logout. Attendance saved first, report second; PUT idempotent.
-4. Reminders, push copy and deep links untouched. `paz://presenca/{id}/{date}` keeps route `life_group_attendance_editor/{id}/{date}` which now renders the combined screen.
-5. Phase 0 standalone report form is NOT in this branch's base (it lives on fix/life-group-report-submit); Formulários entry / `paz://form/life-group-reports` are left exactly as-is on this base. Documented and flagged.
+## Task 2: analytics scoped to the selected group
+Root cause: `GET /life-group-analytics/overview` takes no filter, clients call it without params, so members_in_group/members_total (donut "in groups / without group") aggregate the whole users table. attendance/distribution already accept `life_group_id`.
+Plan: overview accepts `life_group_id`; when present (and authorized via resolveLifeGroupIds, 403 otherwise) every figure is restricted to that group: life_groups=[group], members_total = members_in_group = group roster, so without-group = 0, groups_by_sector = that group's sector, avg = roster size, kids = group's kids. Response echoes `life_group_id`. Unscoped unchanged. Client change documented for the mobile agent.
 
-## Scope
-Shared (KMP): models, `LifeGroupMeetingRepository` (+Impl, error mapping), pure rules/draft/validation (commonMain, commonTest), `MeetingDraftStore` (expect/actual DataStore / NSUserDefaults) cleared on logout, Koin + IosAppContainer.
-Android: package `ui/features/lifegroupmeeting` (screen, ViewModels, UiState), history list "Reuniões" + "Nova reunião" on group detail (replaces the Presença card), route `life_group_meeting/{lifeGroupId}/{date}` + aliasing of the old editor route, ViewModel tests, nav tests.
-
-## Out of scope
-iOS UI, backend, reminders, removing the legacy attendance endpoints, admin-ui.
-
-## Acceptance
-- Shared tests green (`:shared:iosSimulatorArm64Test`). Android compile/tests verified by CI only (SDK not installed locally): UNVERIFIED locally.
+## Validation
+build, scoped jest, full jest vs 6 baseline failures, eslint changed files, prettier, real Postgres (integration specs), draft PR to develop, CI watch, self-review (.pipeline/review.md).
