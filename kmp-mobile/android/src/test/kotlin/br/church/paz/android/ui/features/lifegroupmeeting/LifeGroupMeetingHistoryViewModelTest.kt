@@ -9,6 +9,7 @@ import br.church.paz.shared.domain.repository.LifeGroupReportRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -105,17 +106,25 @@ class LifeGroupMeetingHistoryViewModelTest {
     @Test
     fun `init plus the on resume refresh never flashes the empty state nor loads twice`() =
         runTest {
-            coEvery { attendanceRepository.getHistory(7) } returns listOf(attendance("2026-10-07"))
+            val gate = CompletableDeferred<Unit>()
+            coEvery { attendanceRepository.getHistory(7) } coAnswers
+                {
+                    gate.await()
+                    listOf(attendance("2026-10-07"))
+                }
             coEvery { reportRepository.getReports(7) } returns emptyList()
 
             val vm = viewModel()
+            testScheduler.runCurrent()
             // The screen's lifecycle observer fires ON_RESUME right after init, while the first load is in flight.
             vm.refresh()
             testScheduler.runCurrent()
             val inFlight = vm.uiState.value
             assertTrue(inFlight.isLoading)
             assertFalse(inFlight.isRefreshing)
+            assertTrue(inFlight.meetings.isEmpty())
 
+            gate.complete(Unit)
             testScheduler.advanceUntilIdle()
             assertFalse(vm.uiState.value.isLoading)
             assertEquals(1, vm.uiState.value.meetings.size)
@@ -130,12 +139,19 @@ class LifeGroupMeetingHistoryViewModelTest {
             val vm = viewModel()
             testScheduler.advanceUntilIdle()
 
+            val gate = CompletableDeferred<Unit>()
+            coEvery { attendanceRepository.getHistory(7) } coAnswers
+                {
+                    gate.await()
+                    listOf(attendance("2026-10-07"))
+                }
             vm.refresh()
             testScheduler.runCurrent()
             assertFalse(vm.uiState.value.isLoading)
             assertTrue(vm.uiState.value.isRefreshing)
             assertEquals(1, vm.uiState.value.meetings.size)
 
+            gate.complete(Unit)
             testScheduler.advanceUntilIdle()
             assertFalse(vm.uiState.value.isRefreshing)
             coVerify(exactly = 2) { attendanceRepository.getHistory(7) }
