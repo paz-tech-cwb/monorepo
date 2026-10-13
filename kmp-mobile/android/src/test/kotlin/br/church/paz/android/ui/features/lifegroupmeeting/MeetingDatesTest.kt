@@ -30,7 +30,22 @@ class MeetingDatesTest {
     fun `meeting routes carry the group id and date`() {
         assertEquals("life_group_meeting/42/2026-10-05", Screen.LifeGroupMeeting.createRoute("42", "2026-10-05"))
         assertEquals("life_group_meetings/42", Screen.LifeGroupMeetings.createRoute("42"))
-        assertEquals("life_group_meeting/{lifeGroupId}/{date}", Screen.LifeGroupMeeting.route)
+        assertEquals("life_group_meeting/{lifeGroupId}/{date}?canWrite={canWrite}", Screen.LifeGroupMeeting.route)
+    }
+
+    @Test
+    fun `routes carry the role based write hint only when known`() {
+        // Unknown (push deep link): no hint, only the server's can_write applies.
+        assertEquals("life_group_meeting/42/2026-10-05", Screen.LifeGroupMeeting.createRoute("42", "2026-10-05", null))
+        assertEquals("life_group_meeting/42/2026-10-05?canWrite=false", Screen.LifeGroupMeeting.createRoute("42", "2026-10-05", false))
+        assertEquals("life_group_meeting/42/2026-10-05?canWrite=true", Screen.LifeGroupMeeting.createRoute("42", "2026-10-05", true))
+        // History: read-only unless the group detail says the viewer can write.
+        assertEquals("life_group_meetings/42?canWrite=true", Screen.LifeGroupMeetings.createRoute("42", null, true))
+        assertEquals(
+            "life_group_meetings/42?meetingDay=Quarta-feira&canWrite=true",
+            Screen.LifeGroupMeetings.createRoute("42", "Quarta-feira", true),
+        )
+        assertEquals("life_group_meetings/42?meetingDay=Quarta-feira", Screen.LifeGroupMeetings.createRoute("42", "Quarta-feira"))
     }
 
     @Test
@@ -40,7 +55,7 @@ class MeetingDatesTest {
         val pushRoute = PushNotificationHelper.parseDeepLink("paz://presenca/42/2026-10-05")
         assertEquals(Screen.LifeGroupAttendanceEditor.createRoute("42", "2026-10-05"), pushRoute)
         assertEquals(
-            Screen.LifeGroupMeeting.route.substringAfter('/'),
+            Screen.LifeGroupMeeting.route.substringAfter('/').substringBefore('?'),
             Screen.LifeGroupAttendanceEditor.route.substringAfter('/'),
         )
     }
