@@ -1,16 +1,17 @@
 # Progress
 
 ## Request
-Meetings API phase 1 (backend): migration, `life-group-meetings` module, shared upsert extraction, report snapshot sync, tests, docs.
+Phase 2 (reminder consolidation): follow-up, sector-leader escalation, new copy, claim-first, behind server flag `LIFE_GROUP_MEETING_V2` (default OFF); admin-ui settings card.
 
 ## Status
 - [x] Context reviewed
 - [x] Spec created
-- [x] Implementation
-- [x] Tests
-- [x] Docs
-- [x] Validation (see test-results.md)
+- [ ] Implementation (backend)
+- [ ] Implementation (admin-ui)
+- [ ] Tests
+- [ ] Docs
+- [ ] Validation (see test-results.md)
+- [ ] Draft PR (base feat/life-group-meetings-api)
 
 ## Timeline
-- 2026-10-13 Grant/Owen/Sattler: previous pipeline files archived as `*-before-meetings-api-2026-10-13.md`; spec written from the approved design; decisions Q1/Q2/Q3/Q5 recorded.
-- 2026-10-13 Owen: migration, module, extraction, specs, docs. Sattler: build, scoped + full jest vs develop baseline, eslint/prettier, throwaway Postgres (migration + integration).
+- 2026-10-13 Grant/Owen/Sattler: previous pipeline files archived as `*-before-reminders-v2-2026-10-13.md`; spec written; product decisions Q4/Q6/Q7/Q10 recorded. Work in separate git worktree on `feat/life-group-reminders-v2`.
