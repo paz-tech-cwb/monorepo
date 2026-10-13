@@ -1,0 +1,102 @@
+package br.church.paz.android.ui.features.lifegroupmeeting
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import br.church.paz.shared.domain.model.LifeGroupMeetingRules
+import br.church.paz.shared.domain.repository.ChurchRepository
+import br.church.paz.shared.domain.repository.LifeGroupAttendanceRepository
+import br.church.paz.shared.domain.repository.LifeGroupReportRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+/**
+ * "Reuniões" of one life group: the saved attendance records joined with the weekly reports by date
+ * (existing endpoints, no dedicated history endpoint), plus the "Nova reunião" entry.
+ */
+class LifeGroupMeetingHistoryViewModel(
+    private val lifeGroupId: Int,
+    private val attendanceRepository: LifeGroupAttendanceRepository,
+    private val reportRepository: LifeGroupReportRepository,
+    private val churchRepository: ChurchRepository,
+    private val today: () -> String = { LifeGroupMeetingRules.todayInSaoPaulo(System.currentTimeMillis()) },
+) : ViewModel() {
+    private val _uiState = MutableStateFlow(LifeGroupMeetingHistoryUiState())
+    val uiState: StateFlow<LifeGroupMeetingHistoryUiState> = _uiState.asStateFlow()
+
+    private val _effect = Channel<LifeGroupMeetingHistoryEffect>(Channel.BUFFERED)
+    val effect = _effect.receiveAsFlow()
+
+    init {
+        load(showSkeleton = true)
+    }
+
+    fun load() = load(showSkeleton = true)
+
+    /** Pull-to-refresh / on-resume entry point: same load path without the full-screen skeleton. */
+    fun refresh() = load(showSkeleton = false)
+
+    private fun load(showSkeleton: Boolean) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = showSkeleton, isRefreshing = !showSkeleton, error = null) }
+            try {
+                val attendance = attendanceRepository.getHistory(lifeGroupId)
+                // Both are best effort: without reports the chips just hide, without the group the
+                // "Nova reunião" default date falls back to today.
+                val reports = bestEffort { reportRepository.getReports(lifeGroupId) }
+                val group = bestEffort { churchRepository.getAllLifeGroups().find { it.id == lifeGroupId } }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        isRefreshing = false,
+                        meetings = LifeGroupMeetingRules.mergeHistory(attendance, reports),
+                        meetingDay = group?.meetingDay ?: it.meetingDay,
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Erro ao carregar reuniões")
+                }
+            }
+        }
+    }
+
+    private suspend fun <T> bestEffort(block: suspend () -> T): T? =
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+
+    /** The date "Nova reunião" opens with: the latest regular meeting day, or today without a fixed day. */
+    fun defaultNewMeetingDate(): String = LifeGroupMeetingRules.defaultNewMeetingDate(_uiState.value.meetingDay, today())
+
+    /** Last selectable day of the date picker (the backend rejects future dates). */
+    fun latestSelectableDate(): String = today()
+
+    /** True when [date] is not the group's weekday, so the meeting must be saved as an "extra" one. */
+    fun needsExtraMeeting(date: String): Boolean = LifeGroupMeetingRules.needsExtraMeeting(_uiState.value.meetingDay, date)
+
+    fun onMeetingTapped(date: String) {
+        viewModelScope.launch { _effect.send(LifeGroupMeetingHistoryEffect.NavigateToMeeting(date)) }
+    }
+
+    /** "Nova reunião": ignores a future or invalid date (the picker already blocks them). */
+    fun onNewMeetingDateChosen(date: String) {
+        if (!LifeGroupMeetingRules.isSelectableDate(date, today())) return
+        viewModelScope.launch { _effect.send(LifeGroupMeetingHistoryEffect.NavigateToMeeting(date)) }
+    }
+
+    fun onBack() {
+        viewModelScope.launch { _effect.send(LifeGroupMeetingHistoryEffect.NavigateBack) }
+    }
+}

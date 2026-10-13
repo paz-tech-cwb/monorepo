@@ -111,10 +111,21 @@ sealed class Screen(
         fun createRoute(studyId: String) = "life_group_study_edit/$studyId"
     }
 
-    data object LifeGroupAttendanceHistory : Screen("life_group_attendance_history/{lifeGroupId}") {
-        fun createRoute(lifeGroupId: String) = "life_group_attendance_history/$lifeGroupId"
+    // "Reuniões": history of a group's meetings (presence + report) and the "Nova reunião" entry.
+    data object LifeGroupMeetings : Screen("life_group_meetings/{lifeGroupId}") {
+        fun createRoute(lifeGroupId: String) = "life_group_meetings/$lifeGroupId"
     }
 
+    // The combined presence + report screen of one meeting (group + ISO date).
+    data object LifeGroupMeeting : Screen("life_group_meeting/{lifeGroupId}/{date}") {
+        fun createRoute(
+            lifeGroupId: String,
+            date: String,
+        ) = "life_group_meeting/$lifeGroupId/$date"
+    }
+
+    // Compatibility alias: `paz://presenca/{id}/{date}` pushes (already delivered, and sent by the
+    // backend reminder) resolve to this route name. It now opens the combined meeting screen.
     data object LifeGroupAttendanceEditor : Screen("life_group_attendance_editor/{lifeGroupId}/{date}") {
         fun createRoute(
             lifeGroupId: String,

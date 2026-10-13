@@ -58,3 +58,9 @@ leader or co-leader) with `relationship` (`leader` | `co_leader` | `supervisor` 
 `member`) and `is_supervised`; the shared Kotlin `LifeGroup` exposes them as
 `relationship` / `isSupervised` (optional). Ranking/cap for the home card for
 supervisors is an open product question (see `features/life-groups.md`).
+
+## Life group meetings: combined "Reunião" screen (shared + Android; iOS follows)
+
+- Life group detail: the "Presença" card became "Reuniões" (gate `canViewGroupReports`) opening the meetings history (Android route `life_group_meetings/{lifeGroupId}`, package `ui/features/lifegroupmeeting/`): one row per date with chips "Presença x/y" and "Relatório enviado/pendente" (merged client side from the existing attendance history and reports list endpoints), "Nova reunião" with a date picker (no future dates; defaults to the latest regular meeting day; groups without a fixed day open today). Fixed-day groups can record another weekday with the "Reunião extra" switch (`extra_meeting`).
+- Tapping a row, "Nova reunião" and the `paz://presenca/{lifeGroupId}/{date}` push (legacy route `life_group_attendance_editor/{lifeGroupId}/{date}` kept as an alias) open `life_group_meeting/{lifeGroupId}/{date}`: Presença (roster toggles, "Todos presentes", counts, "Salvar presença") then Relatório (read-only "Comprometidos"/"Presentes", counts, offering, Tadel/Culto chips, free-text activity lists, "Salvar relatório"). Presence is saved first; the report is locked until then and when the group has no sector/area. After `edit_deadline` (14 days, admins bypass) the screen is read-only.
+- Unsaved edits are kept locally per (user, group, date) and restored with a banner; cleared on logout. Full contract and rules: `features/life-groups.md` ("Combined Reunião screen").

@@ -23,9 +23,10 @@ import br.church.paz.android.ui.features.formularios.FormSubmissionDetailScreen
 import br.church.paz.android.ui.features.formularios.FormSubmissionsListScreen
 import br.church.paz.android.ui.features.formularios.FormulariosScreen
 import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsScreen
-import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceEditorScreen
-import br.church.paz.android.ui.features.lifegroupattendance.LifeGroupAttendanceHistoryScreen
 import br.church.paz.android.ui.features.lifegroupdiscovery.LifeGroupDiscoveryScreen
+import br.church.paz.android.ui.features.lifegroupmeeting.LifeGroupMeetingHistoryScreen
+import br.church.paz.android.ui.features.lifegroupmeeting.LifeGroupMeetingScreen
+import br.church.paz.android.ui.features.lifegroupmeeting.isValidMeetingArguments
 import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportDetailScreen
 import br.church.paz.android.ui.features.lifegroupreports.LifeGroupReportsScreen
 import br.church.paz.android.ui.features.lifegroupstudy.LifeGroupStudyDetailScreen
@@ -259,23 +260,32 @@ fun PazNavGraph(
             LifeGroupStudyEditorScreen(navController = navController, studyId = studyId)
         }
         composable(
-            route = Screen.LifeGroupAttendanceHistory.route,
+            route = Screen.LifeGroupMeetings.route,
             arguments = listOf(androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType }),
         ) { backStackEntry ->
-            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
-            LifeGroupAttendanceHistoryScreen(navController = navController, lifeGroupId = lifeGroupId)
+            // The screen needs a numeric id; ignore a malformed route argument instead of crashing.
+            val lifeGroupId =
+                backStackEntry.arguments?.getString("lifeGroupId")?.takeIf { it.toIntOrNull() != null }
+                    ?: return@composable
+            LifeGroupMeetingHistoryScreen(navController = navController, lifeGroupId = lifeGroupId)
         }
-        composable(
-            route = Screen.LifeGroupAttendanceEditor.route,
-            arguments =
-                listOf(
-                    androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType },
-                    androidx.navigation.navArgument("date") { type = androidx.navigation.NavType.StringType },
-                ),
-        ) { backStackEntry ->
-            val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
-            val date = backStackEntry.arguments?.getString("date") ?: return@composable
-            LifeGroupAttendanceEditorScreen(navController = navController, lifeGroupId = lifeGroupId, date = date)
+        // `life_group_attendance_editor/...` is the legacy route name used by the `paz://presenca/{id}/{date}`
+        // push deep link: both routes open the same combined presence + report screen.
+        listOf(Screen.LifeGroupMeeting.route, Screen.LifeGroupAttendanceEditor.route).forEach { meetingRoute ->
+            composable(
+                route = meetingRoute,
+                arguments =
+                    listOf(
+                        androidx.navigation.navArgument("lifeGroupId") { type = androidx.navigation.NavType.StringType },
+                        androidx.navigation.navArgument("date") { type = androidx.navigation.NavType.StringType },
+                    ),
+            ) { backStackEntry ->
+                val lifeGroupId = backStackEntry.arguments?.getString("lifeGroupId") ?: return@composable
+                val date = backStackEntry.arguments?.getString("date") ?: return@composable
+                // The screen needs a numeric id and an ISO date; ignore malformed arguments instead of crashing.
+                if (!isValidMeetingArguments(lifeGroupId, date)) return@composable
+                LifeGroupMeetingScreen(navController = navController, lifeGroupId = lifeGroupId, date = date)
+            }
         }
         composable(
             route = Screen.LifeGroupAnalytics.route,

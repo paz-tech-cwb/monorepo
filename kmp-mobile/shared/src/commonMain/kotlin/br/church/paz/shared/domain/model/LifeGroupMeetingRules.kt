@@ -220,11 +220,27 @@ object LifeGroupMeetingRules {
 
     // ---- local draft -----------------------------------------------------------------------
 
+    /** True when the toggles differ from what the server has (or from the draft roster it proposed). */
+    fun isAttendanceDirty(
+        meeting: LifeGroupMeeting,
+        entries: List<LifeGroupAttendanceEntry>,
+    ): Boolean {
+        val server = meeting.attendance?.entries.orEmpty()
+        return entries.map { it.userId to it.present }.toSet() != server.map { it.userId to it.present }.toSet()
+    }
+
+    /** True when the report fields differ from the saved report (or from an empty form when none exists). */
+    fun isReportDirty(
+        meeting: LifeGroupMeeting,
+        reportDraft: LifeGroupMeetingReportDraft,
+    ): Boolean {
+        val baseline = meeting.report?.let { LifeGroupMeetingReportDraft.fromReport(it) } ?: LifeGroupMeetingReportDraft()
+        return reportDraft != baseline
+    }
+
     /**
      * Builds the draft to persist from the current edits, or null when there is nothing unsaved.
-     * An attendance section is unsaved when the toggles differ from the server entries
-     * (or the attendance was never saved); a report section when it differs from the saved report
-     * (or from empty when there is none).
+     * Only the sections that differ from the server are kept (see [isAttendanceDirty], [isReportDirty]).
      */
     fun buildDraft(
         meeting: LifeGroupMeeting,
@@ -232,15 +248,15 @@ object LifeGroupMeetingRules {
         reportDraft: LifeGroupMeetingReportDraft,
         extraMeeting: Boolean,
     ): LifeGroupMeetingDraft? {
-        val server = meeting.attendance?.entries.orEmpty()
-        val attendanceChanged =
-            entries.map { it.userId to it.present }.toSet() != server.map { it.userId to it.present }.toSet()
-        val baseline = meeting.report?.let { LifeGroupMeetingReportDraft.fromReport(it) } ?: LifeGroupMeetingReportDraft()
-        val reportChanged = reportDraft != baseline
         val draft =
             LifeGroupMeetingDraft(
-                attendance = if (attendanceChanged) entries.map { LifeGroupMeetingDraftEntry(it.userId, it.present) } else null,
-                report = if (reportChanged) reportDraft else null,
+                attendance =
+                    if (isAttendanceDirty(meeting, entries)) {
+                        entries.map { LifeGroupMeetingDraftEntry(it.userId, it.present) }
+                    } else {
+                        null
+                    },
+                report = if (isReportDirty(meeting, reportDraft)) reportDraft else null,
                 extraMeeting = extraMeeting && meeting.attendance?.isDraft == true,
             )
         return draft.takeUnless { it.isEmpty }
@@ -296,9 +312,11 @@ object LifeGroupMeetingRules {
     fun reportBlockedMessage(reason: MeetingReportBlockedReason): String =
         when (reason) {
             MeetingReportBlockedReason.GROUP_HAS_NO_SECTOR ->
-                "Este grupo ainda não tem setor, então o relatório não pode ser enviado. Peça a um administrador para vinculá-lo."
+                "Este grupo ainda não tem setor, então o relatório não pode ser enviado. " +
+                    "Peça a um administrador para vinculá-lo."
             MeetingReportBlockedReason.SECTOR_HAS_NO_AREA ->
-                "O setor deste grupo ainda não tem área, então o relatório não pode ser enviado. Peça a um administrador para completar o cadastro."
+                "O setor deste grupo ainda não tem área, então o relatório não pode ser enviado. " +
+                    "Peça a um administrador para completar o cadastro."
             MeetingReportBlockedReason.UNKNOWN ->
                 "O relatório não pode ser enviado para este grupo no momento."
         }
