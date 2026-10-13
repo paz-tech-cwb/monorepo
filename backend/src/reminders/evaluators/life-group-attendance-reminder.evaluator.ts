@@ -23,6 +23,8 @@ import {
   weekdayOf,
   zonedParts,
 } from '../../life-group-attendance/meeting-day.util';
+import { isLifeGroupMeetingV2Enabled } from '../life-group-meeting-v2.flag';
+import { LifeGroupMeetingV2Reminders } from './life-group-meeting-v2.reminders';
 
 @Injectable()
 export class LifeGroupAttendanceReminderEvaluator implements ReminderEvaluator {
@@ -38,6 +40,19 @@ export class LifeGroupAttendanceReminderEvaluator implements ReminderEvaluator {
   ) {}
 
   async run(rule: ReminderRule, now: Date): Promise<void> {
+    // LIFE_GROUP_MEETING_V2 (default off) switches to the merged attendance +
+    // report reminders; with it off the legacy path below runs untouched.
+    if (isLifeGroupMeetingV2Enabled()) {
+      await new LifeGroupMeetingV2Reminders(this.em, this.dispatch).run(
+        rule,
+        now,
+      );
+      return;
+    }
+    await this.runLegacy(rule, now);
+  }
+
+  private async runLegacy(rule: ReminderRule, now: Date): Promise<void> {
     const cfg = rule.config as LifeGroupAttendanceReminderConfig;
     const hoursAfter = cfg.hours_after_meeting_start ?? 2;
 

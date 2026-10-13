@@ -227,6 +227,21 @@ Module `backend/src/life-group-meetings/`.
   rule unchanged).
 - Reminders, push copy, `paz://presenca/{id}/{date}` deep link and the forms
   catalog are NOT changed in this phase (see `features/notifications.md`).
+- Phase 2 (reminders v2, stacked on this API) changes the `life_group_attendance`
+  reminder rule only behind the server flag `LIFE_GROUP_MEETING_V2` (default off):
+  new combined copy, follow-ups to leader + co-leader 24h/48h/72h/96h after the
+  meeting datetime (date + meeting_time, Sao Paulo; hourly tick tolerance 2h) while
+  attendance exists and no report does, and a push to the sector leader + co-leader
+  120h (day 5) after it. A report by either leader completes the reminder; extra
+  meetings with attendance are followed up like regular ones.
+  Details and switch-on steps in `features/notifications.md`.
+- Weekday rule (verified for phase 2): `assertMatchesMeetingDay` returns early for a
+  group without a fixed `meeting_day`, so ANY past date is accepted for those groups
+  (manual "Nova reuniao" works). For a group WITH a fixed day, a new meeting on another
+  weekday is rejected with 400, so an extra meeting on a different weekday is a known
+  gap; relaxing it was judged not clearly safe (it protects task eligibility and roster
+  snapshots from typos) and is left as an open product question. Reminders never target
+  groups without a fixed day or extra meetings.
 
 Migration `1796000000000-AddAttendanceLinkToLifeGroupReports` (human gate, not run
 in any real environment by this branch): nullable `life_group_reports.attendance_id`
