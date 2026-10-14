@@ -20,7 +20,7 @@ struct LifeGroupStudyDetailView: View {
 
     var body: some View {
         screenContent
-            .background(PazMeshBackground())
+            .pazScreenBackground()
             .navigationTitle(viewModel.study?.title ?? "Estudo do Life")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)

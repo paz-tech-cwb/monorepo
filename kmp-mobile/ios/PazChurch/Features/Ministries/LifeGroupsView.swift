@@ -28,7 +28,7 @@ struct LifeGroupsView: View {
                 AllLifeGroupsContentView(churchRepository: churchRepository)
             }
         }
-        .background(PazMeshBackground())
+        .pazScreenBackground()
         .navigationTitle("Life Groups")
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
@@ -252,7 +252,7 @@ struct AllLifeGroupsContentView: View {
                 }
             }
         }
-        .background(PazMeshBackground())
+        .pazScreenBackground()
         .task {
             locationProvider.requestAuthorization()
         }

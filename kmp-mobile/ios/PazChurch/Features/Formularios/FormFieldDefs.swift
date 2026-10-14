@@ -223,7 +223,7 @@ extension FormType {
             ]
 
         case .lifeGroupReport:
-            // Handled by LifeGroupReportFormView (dedicated fields, group picker, real DTO payload).
+            // Handled by the Reuniões flow (LifeGroupMeetingEntryView -> meeting screen).
             []
 
         case .course:

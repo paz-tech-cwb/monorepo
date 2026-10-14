@@ -36,7 +36,7 @@ struct FormSubmissionsListView: View {
 
     var body: some View {
         screenContent
-            .background(PazMeshBackground())
+            .pazScreenBackground()
             .navigationTitle("Relatório do Culto")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
@@ -153,7 +153,7 @@ struct FormSubmissionDetailView: View {
             }
             .padding(.horizontal, PazSpacing.lg)
         }
-        .background(PazMeshBackground())
+        .pazScreenBackground()
         .navigationTitle("Detalhe do Registro")
         .navigationBarTitleDisplayMode(.inline)
     }

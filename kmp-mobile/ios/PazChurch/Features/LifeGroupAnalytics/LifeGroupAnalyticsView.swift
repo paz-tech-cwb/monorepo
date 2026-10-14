@@ -1,16 +1,10 @@
 import Shared
 import SwiftUI
 
+/// Standalone "Relatórios" screen of the Account area (church-wide, with its group dropdown). The single-group
+/// stats live in the "Reuniões" screen's "Relatórios" tab, which embeds `LifeGroupAnalyticsPanel` directly.
 struct LifeGroupAnalyticsView: View {
     @State private var viewModel: LifeGroupAnalyticsViewModel
-    @State private var shareFileURL: URL?
-    @State private var showShareSheet = false
-    @State private var isExportingPDF = false
-    @State private var exportError: String?
-
-    private static let monthLabels = [
-        "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez",
-    ]
 
     init(lifeGroupId: Int32?, analyticsRepository: LifeGroupAnalyticsRepository) {
         _viewModel = State(
@@ -22,11 +16,40 @@ struct LifeGroupAnalyticsView: View {
     }
 
     var body: some View {
-        screenContent
-            .background(PazMeshBackground())
+        LifeGroupAnalyticsPanel(viewModel: viewModel, groupName: nil)
+            .pazScreenBackground()
             .navigationTitle("Relatórios")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
+    }
+}
+
+/// The report itself (filters, stat cards, charts, PDF export), without background or navigation chrome so it
+/// can be a full screen (`LifeGroupAnalyticsView`) or a tab. Scoped to one group (`viewModel.isScopedToGroup`) it
+/// drops everything church-wide: no group picker, no overview cards/donuts, no distribution; it shows that
+/// group's attendance summary and chart only.
+struct LifeGroupAnalyticsPanel: View {
+    let viewModel: LifeGroupAnalyticsViewModel
+    /// Shown in the exported PDF header when scoped to one group.
+    let groupName: String?
+
+    @State private var shareFileURL: URL?
+    @State private var showShareSheet = false
+    @State private var isExportingPDF = false
+    @State private var exportError: String?
+
+    private static let monthLabels = [
+        "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+    ]
+
+    /// Export needs the content it prints: the overview for the church-wide report, the rows for a group.
+    private var canExport: Bool {
+        !viewModel.isLoading && viewModel.error == nil && !isExportingPDF
+            && (viewModel.isScopedToGroup || viewModel.overview != nil)
+    }
+
+    var body: some View {
+        screenContent
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { Task { await exportPDF() } }) {
@@ -36,7 +59,7 @@ struct LifeGroupAnalyticsView: View {
                             Image(systemName: "square.and.arrow.up")
                         }
                     }
-                    .disabled(viewModel.isLoading || viewModel.error != nil || isExportingPDF || viewModel.overview == nil)
+                    .disabled(!canExport)
                     .accessibilityLabel("Exportar PDF")
                 }
             }
@@ -53,18 +76,7 @@ struct LifeGroupAnalyticsView: View {
             } message: {
                 Text(exportError ?? "")
             }
-            .task {
-                // Overview is best-effort and must never block or delay the
-                // main attendance/distribution report — run it concurrently
-                // rather than awaiting it before `load()`, matching Android's
-                // LifeGroupAnalyticsViewModel (launches overview in its own
-                // coroutine). It's also the (scoped) source of the filter
-                // dropdown's groups now, replacing the unscoped
-                // ChurchRepository.getAllLifeGroups() call.
-                async let overview: Void = viewModel.loadOverview()
-                async let main: Void = viewModel.load()
-                _ = await (overview, main)
-            }
+            .task { await viewModel.loadInitial() }
     }
 
     /// Renders the FULL report (stat cards, overview donuts, attendance
@@ -78,12 +90,16 @@ struct LifeGroupAnalyticsView: View {
             let url = try await ReportPDFExporter.export(fileName: "relatorio-life-group.pdf") {
                 VStack(alignment: .leading, spacing: 20) {
                     exportHeaderSection
-                    if let overview = viewModel.overview {
+                    if viewModel.isScopedToGroup {
+                        summarySection
+                    } else if let overview = viewModel.overview {
                         statCardsSection(overview)
                         overviewChartsSection(overview)
                     }
                     attendanceSection
-                    distributionChartSection
+                    if !viewModel.isScopedToGroup {
+                        distributionChartSection
+                    }
                 }
                 .padding(20)
                 .background(PazColors.background)
@@ -129,12 +145,16 @@ struct LifeGroupAnalyticsView: View {
             // The overview stat cards/donuts are fed by their own independent
             // endpoint, unrelated to attendance/distribution, so they always
             // render regardless of either of those failing.
-            if let overview = viewModel.overview {
+            if viewModel.isScopedToGroup {
+                summarySection
+            } else if let overview = viewModel.overview {
                 statCardsSection(overview)
                 overviewChartsSection(overview)
             }
             attendanceSection
-            distributionSection
+            if !viewModel.isScopedToGroup {
+                distributionSection
+            }
         }
     }
 
@@ -145,6 +165,19 @@ struct LifeGroupAnalyticsView: View {
         }
         .padding(16)
         .glassCard(radius: PazSpacing.cardRadiusCompact)
+    }
+
+    // MARK: Single-group summary
+
+    /// This group's own totals (never the church-wide overview).
+    private var summarySection: some View {
+        let summary = viewModel.attendanceSummary
+        return PazStatCard(
+            title: "Presença no período",
+            value: summary.attendancePercent.map { "\($0)%" } ?? "—",
+            subtitle: "\(summary.presentCount) presenças em \(summary.meetingsCount) reuniões",
+            icon: "person.3.fill"
+        )
     }
 
     // MARK: Overview stat cards + donuts
@@ -404,6 +437,10 @@ struct LifeGroupAnalyticsView: View {
     }
 
     private var exportScopeLabel: String {
+        if viewModel.isScopedToGroup {
+            let monthLabel = viewModel.month.map { Self.monthLabels[Int($0) - 1] } ?? "Todos os meses"
+            return "\(groupName ?? "Life Group") · \(monthLabel) \(viewModel.year)"
+        }
         let monthLabel = viewModel.month.map { Self.monthLabels[Int($0) - 1] } ?? "Todos os meses"
         return "\(selectedLifeGroupLabel) · \(monthLabel) \(viewModel.year)"
     }

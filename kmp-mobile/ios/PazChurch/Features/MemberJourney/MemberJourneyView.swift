@@ -90,7 +90,7 @@ struct MemberJourneyView: View {
             }
             .padding(.horizontal, PazSpacing.lg)
         }
-        .background(PazMeshBackground())
+        .pazScreenBackground()
         .refreshable { await viewModel.loadJourney() }
     }
 
@@ -120,7 +120,7 @@ struct MemberJourneyView: View {
             Spacer()
         }
         .padding(PazSpacing.lg)
-        .background(PazMeshBackground())
+        .pazScreenBackground()
     }
 }
 

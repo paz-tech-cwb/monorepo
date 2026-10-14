@@ -102,9 +102,32 @@ class LifeGroupAnalyticsViewModel {
         self.year = Int(Calendar.current.component(.year, from: Date()))
     }
 
+    /// Totals of THIS group's attendance rows (the single-group "Relatórios" tab): the overview cards are
+    /// church-wide, so this is the only summary that is safe to show when scoped to one group.
+    var attendanceSummary: LifeGroupAttendanceSummary {
+        LifeGroupAnalyticsKt.summarizeAttendance(attendanceRows)
+    }
+
+    /// First load of the screen/tab (a no-op afterwards, so switching tabs back and forth does not refetch).
+    /// The overview is church-wide (groups by sector, members with/without a group...) and only feeds the
+    /// group dropdown and the stat cards: a single-group view needs neither, so it is not even requested.
+    func loadInitial() async {
+        guard !hasLoadedOnce else { return }
+        if isScopedToGroup {
+            await load()
+        } else {
+            // Overview is best-effort and must never block or delay the main attendance/distribution
+            // report, so it runs concurrently.
+            async let overview: Void = loadOverview()
+            async let main: Void = load()
+            _ = await (overview, main)
+        }
+    }
+
     func loadOverview() async {
         do {
-            let result = try await analyticsRepository.getOverview()
+            // Always the church-wide overview (nil): it feeds the group dropdown of the unscoped screen.
+            let result = try await analyticsRepository.getOverview(lifeGroupId: nil)
             overview = result
             lifeGroups = result.lifeGroups.map { (id: $0.id, name: $0.name) }
         } catch {
@@ -146,7 +169,8 @@ class LifeGroupAnalyticsViewModel {
         // successfully-loaded content or the always-independent `overview`
         // section.
         async let attendanceOutcome = fetchAttendance(monthArg: monthArg, lifeGroupIdArg: lifeGroupIdArg)
-        async let distributionOutcome = fetchDistribution(lifeGroupIdArg: lifeGroupIdArg)
+        // A single group has nothing to distribute (it IS the one group): skip the request.
+        async let distributionOutcome = fetchDistribution(lifeGroupIdArg: lifeGroupIdArg, skip: isScopedToGroup)
         let (attendance, distribution) = await (attendanceOutcome, distributionOutcome)
 
         guard !Task.isCancelled else { return }
@@ -159,12 +183,14 @@ class LifeGroupAnalyticsViewModel {
         }
 
         switch distribution {
-        case .success(let result):
+        case nil:
+            break
+        case .success(let result)?:
             byDay = result.byDay
             byHour = result.byHour
             byNeighborhood = result.byNeighborhood
             byCity = result.byCity
-        case .failure(let err):
+        case .failure(let err)?:
             distributionError = inlineErrorMessage(for: err)
         }
 
@@ -189,7 +215,11 @@ class LifeGroupAnalyticsViewModel {
         }
     }
 
-    private func fetchDistribution(lifeGroupIdArg: KotlinInt?) async -> Result<LifeGroupDistributionAnalytics, Error> {
+    private func fetchDistribution(
+        lifeGroupIdArg: KotlinInt?,
+        skip: Bool
+    ) async -> Result<LifeGroupDistributionAnalytics, Error>? {
+        if skip { return nil }
         do {
             let result = try await analyticsRepository.getDistribution(lifeGroupId: lifeGroupIdArg)
             return .success(result)

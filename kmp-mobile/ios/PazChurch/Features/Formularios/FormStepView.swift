@@ -1,14 +1,14 @@
 import Shared
 import SwiftUI
 
-/// Destination for any catalog form: the weekly life-group report has a dedicated screen (group
-/// picker, typed fields, real DTO payload); every other form uses the one-question-per-screen flow.
+/// Destination for any catalog form: the weekly life-group report is the "Reuniões" flow (entry/picker ->
+/// group -> meeting screen with presence + report); every other form uses the one-question-per-screen flow.
 struct FormDestinationView: View {
     let form: FormCatalogItem
 
     var body: some View {
         if form.type == .lifeGroupReport {
-            LifeGroupReportFormView()
+            LifeGroupMeetingEntryView()
         } else {
             FormStepView(form: form)
         }
@@ -73,7 +73,7 @@ struct FormStepView: View {
                 stepContent
             }
         }
-        .background(PazMeshBackground().ignoresSafeArea())
+        .pazScreenBackground()
         .background(InteractivePopGestureDisabler(
             isDisabled: viewModel.isDirty,
             onBlockedSwipeAttempt: { showDiscardDialog = true }

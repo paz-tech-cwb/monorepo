@@ -219,7 +219,6 @@ private class FakeFormsRepository : FormsRepository {
     override suspend fun submitMultiplication(form: br.church.paz.shared.domain.model.MultiplicationForm) {}
     override suspend fun submitServiceReport(form: br.church.paz.shared.domain.model.ServiceReportForm) {}
     override suspend fun submitCourse(form: br.church.paz.shared.domain.model.CourseForm) {}
-    override suspend fun submitLifeGroupReport(form: br.church.paz.shared.domain.model.LifeGroupReportForm) {}
     override suspend fun submitSectorReport(form: br.church.paz.shared.domain.model.SectorSupervisorReportForm) {}
     override suspend fun submitAreaReport(form: br.church.paz.shared.domain.model.AreaSupervisorReportForm) {}
     override suspend fun getServiceReportSubmissions() = emptyList<br.church.paz.shared.domain.model.ServiceReportSubmission>()

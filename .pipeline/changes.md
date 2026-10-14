@@ -1,4 +1,4 @@
-# Changes: Reunioes UX (shared + Android)
+# Changes: Reunioes UX (shared + Android + iOS)
 
 Branch `feat/life-group-reunioes-ux` from develop c8f13d25. Client only; backend contract = PR #102.
 
@@ -28,3 +28,15 @@ iOS cause (read from `LifeGroupMeetingView`): `content.background(PazMeshBackgro
 
 ## Assumptions / defaults
 See spec.md A1-A6. Extra: a supervisor with exactly one supervised group opens it directly; admin/pastor always get the picker; single-group stats hide church-wide cards (overview param exists but the scoped view does not call it).
+
+## iOS (`kmp-mobile/ios/PazChurch`)
+- Compile fix: `LifeGroupAnalyticsViewModel.loadOverview` calls `getOverview(lifeGroupId: nil)` (church-wide, feeds the unscoped group dropdown). Scoped mode (`isScopedToGroup`) skips overview and distribution (`loadInitial()`), exposes `attendanceSummary` (`LifeGroupAnalyticsKt.summarizeAttendance`).
+- Errors: `LifeGroupMeetingErrorMapping` now also exposes `kind`, `isRetryable`, `historyMessage`. `LifeGroupMeetingViewModel.loadErrorRetryable`; missing group / no permission show "Voltar" instead of "Tentar novamente"; history and entry errors use the mapped copy.
+- Read-only states: `isEmptyReadOnly` (deadline banner + "Não há reunião registrada nesta data."), `showAttendanceRoster`, pills "Sem presença"/"Sem relatório"; legacy report without presence renders "Sem presença registrada para esta data.".
+- Double background: root cause `.background(PazMeshBackground())` sizing the mesh to compact content (`ErrorStateView`). New `View.pazScreenBackground()` (frame max + mesh); applied to the meeting/history/entry/analytics screens and every other screen root that can host a compact state view (list in `.ai/features/mobile-app.md`). State views add no background/card. Left unchanged on purpose: `SearchView` (backs a VStack that already fills), `AgendaDetailView` bottom bar, `VideoPlayerView` inner scroll, `PazChurchApp` app-level mesh.
+- IA: group detail rows Reuniões (first), Membros, Estudo do Life, Elegibilidade; removed "Enviar relatório", "Relatórios semanais", "Relatórios". `LifeGroupMeetingHistoryView` = segmented [Reuniões | Relatórios] (`LifeGroupMeetingsTab`); Relatórios = `LifeGroupAnalyticsPanel` scoped to the group (no picker, no overview cards, no distribution). Row chips via `LifeGroupMeetingRowChips`.
+- Entry: `LifeGroupMeetingEntryView`/`ViewModel` (shared `resolveEntry`), hosted by `FormDestinationView` for the `life-group-reports` form (Formulários list and `paz://form/life-group-reports` via `FormDetailDeepLinkView`).
+- Home: `LifeGroupsHomeSection` (one glass card, dividers, "MEUS GRUPOS"/"LIFE GROUP" from shared `HomeLifeGroupsSection`, layout from `homeLifeGroupsLayout`), sibling NavigationLinks, cap 3 and "Ver todos (N)" unchanged.
+- Removed (iOS): `Features/LifeGroupReports/` (LifeGroupReportFormView/ViewModel, LifeGroupReportsView/ViewModel, LifeGroupReportDetailView), tests `LifeGroupReportFormTests`, `LifeGroupReportsTests` (gate matrix kept in `LifeGroupReunioesUXTests`), pbxproj entries.
+- Removed (shared, nothing else referenced them on either platform): `LifeGroupReportDraft.kt` (draft, rules, groups, validation), `LifeGroupReportForm` DTO, `FormsRepository.submitLifeGroupReport` (+impl, AuthRepositoryTest fake), `LifeGroupReportDraftTest`, `FormsRepositoryLifeGroupReportTest`. Backend `POST /forms/life-group-reports` untouched.
+- Tests: `PazChurchTests/LifeGroupReunioesUXTests.swift` (error kinds, retry policy, no-record read-only, report-only, row chips, entry resolution, scoped analytics calls, home layout, tabs, gate matrix); `LifeGroupMeetingViewModelTests` updated for the 404 contract.

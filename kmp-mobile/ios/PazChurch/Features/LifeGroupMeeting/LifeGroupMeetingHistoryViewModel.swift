@@ -2,6 +2,38 @@ import Foundation
 import Observation
 import Shared
 
+/// The two tabs of the "Reuniões" screen: the meetings list and the group's stats ("Relatórios").
+enum LifeGroupMeetingsTab: String, CaseIterable, Identifiable {
+    case meetings, reports
+
+    var id: String {
+        rawValue
+    }
+
+    var label: String {
+        switch self {
+        case .meetings: "Reuniões"
+        case .reports: "Relatórios"
+        }
+    }
+}
+
+/// What a history row shows: the presence chip only when a presence was saved ("Presença x/y"; a report-only
+/// legacy row has none, so it shows only the report chip), the report chip only when the status is known.
+struct LifeGroupMeetingRowChips: Equatable {
+    var presenceText: String?
+    var reportText: String?
+    var reportDone: Bool
+
+    init(_ meeting: LifeGroupMeetingSummary) {
+        presenceText = meeting.hasAttendance
+            ? "Presença \(meeting.presentCount?.intValue ?? 0)/\(meeting.membersCount?.intValue ?? 0)"
+            : nil
+        reportText = meeting.reportStatusKnown ? (meeting.hasReport ? "Relatório enviado" : "Relatório pendente") : nil
+        reportDone = meeting.hasReport
+    }
+}
+
 /// "Reuniões" of one life group: saved attendance records joined with the weekly reports by date
 /// (existing endpoints, no dedicated history endpoint), plus the "Nova reunião" date rules.
 @MainActor
@@ -11,6 +43,7 @@ final class LifeGroupMeetingHistoryViewModel {
     var isLoading = true
     var isRefreshing = false
     var error: String?
+    var selectedTab: LifeGroupMeetingsTab = .meetings
 
     let lifeGroupId: Int32
     /// The group's fixed weekday ("Quarta-feira"), nil for "Sem dia fixo".
@@ -53,7 +86,7 @@ final class LifeGroupMeetingHistoryViewModel {
             meetings = LifeGroupMeetingRules.shared.mergeHistory(attendance: attendance, reports: reports)
         } catch {
             if !Task.isCancelled {
-                self.error = error.localizedDescription
+                self.error = LifeGroupMeetingErrorMapping.historyMessage(error)
             }
         }
         isLoading = false

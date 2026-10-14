@@ -1,15 +1,19 @@
 import Shared
 import SwiftUI
 
-/// "Reuniões" of one group: past meetings (presence + report chips) and the "Nova reunião" date picker.
+/// "Reuniões" of one group, with a segmented control: the meetings list (past meetings with presence + report
+/// chips and the "Nova reunião" date picker) and "Relatórios" (this group's stats only).
 struct LifeGroupMeetingHistoryView: View {
     let lifeGroupId: Int32
     @State private var viewModel: LifeGroupMeetingHistoryViewModel
+    @State private var analytics: LifeGroupAnalyticsViewModel
+    private let groupName: String?
     @State private var openedDate: String?
     @State private var showDatePicker = false
 
-    init(lifeGroupId: Int32, meetingDay: String?, canWrite: Bool) {
+    init(lifeGroupId: Int32, groupName: String? = nil, meetingDay: String?, canWrite: Bool) {
         self.lifeGroupId = lifeGroupId
+        self.groupName = groupName
         _viewModel = State(
             initialValue: LifeGroupMeetingHistoryViewModel(
                 lifeGroupId: lifeGroupId,
@@ -21,42 +25,64 @@ struct LifeGroupMeetingHistoryView: View {
                 )
             )
         )
+        _analytics = State(
+            initialValue: LifeGroupAnalyticsViewModel(
+                lifeGroupId: lifeGroupId,
+                analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository
+            )
+        )
     }
 
     var body: some View {
-        screenContent
-            .background(PazMeshBackground())
-            .navigationTitle("Reuniões")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                if viewModel.canWrite {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button("Nova reunião", systemImage: "plus") { showDatePicker = true }
-                    }
+        VStack(spacing: 0) {
+            Picker("Seção", selection: $viewModel.selectedTab) {
+                ForEach(LifeGroupMeetingsTab.allCases) { tab in
+                    Text(tab.label).tag(tab)
                 }
             }
-            .sheet(isPresented: $showDatePicker) {
-                NewMeetingDateSheet(viewModel: viewModel) { date in
-                    showDatePicker = false
-                    openedDate = date
+            .pickerStyle(.segmented)
+            .padding(.horizontal, PazSpacing.lg)
+            .padding(.vertical, PazSpacing.sm)
+
+            switch viewModel.selectedTab {
+            case .meetings:
+                meetingsContent
+            case .reports:
+                LifeGroupAnalyticsPanel(viewModel: analytics, groupName: groupName)
+            }
+        }
+        .pazScreenBackground()
+        .navigationTitle("Reuniões")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            if viewModel.canWrite, viewModel.selectedTab == .meetings {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Nova reunião", systemImage: "plus") { showDatePicker = true }
                 }
-                .presentationDetents([.large])
             }
-            .navigationDestination(item: $openedDate) { date in
-                LifeGroupMeetingView(lifeGroupId: lifeGroupId, meetingDate: date, canWrite: viewModel.canWrite)
+        }
+        .sheet(isPresented: $showDatePicker) {
+            NewMeetingDateSheet(viewModel: viewModel) { date in
+                showDatePicker = false
+                openedDate = date
             }
-            .onChange(of: openedDate) { _, newValue in
-                // Coming back from a meeting: pick up what was just saved.
-                if newValue == nil {
-                    Task { await viewModel.refresh() }
-                }
+            .presentationDetents([.large])
+        }
+        .navigationDestination(item: $openedDate) { date in
+            LifeGroupMeetingView(lifeGroupId: lifeGroupId, meetingDate: date, canWrite: viewModel.canWrite)
+        }
+        .onChange(of: openedDate) { _, newValue in
+            // Coming back from a meeting: pick up what was just saved.
+            if newValue == nil {
+                Task { await viewModel.refresh() }
             }
-            .task { await viewModel.load() }
+        }
+        .task { await viewModel.load() }
     }
 
     @ViewBuilder
-    private var screenContent: some View {
+    private var meetingsContent: some View {
         if viewModel.isLoading {
             ScrollView {
                 VStack(spacing: PazSpacing.md) {
@@ -82,6 +108,7 @@ struct LifeGroupMeetingHistoryView: View {
                 }
             }
             .listStyle(.plain)
+            .scrollContentBackground(.hidden)
             .refreshable { await viewModel.refresh() }
         }
     }
@@ -91,18 +118,18 @@ private struct MeetingSummaryRow: View {
     let meeting: LifeGroupMeetingSummary
 
     var body: some View {
+        let chips = LifeGroupMeetingRowChips(meeting)
         HStack(spacing: PazSpacing.md) {
             Image(systemName: "person.3.fill").foregroundStyle(PazColors.accent)
             VStack(alignment: .leading, spacing: PazSpacing.xs) {
                 Text(brDateString(fromISODate: meeting.date)).font(PazTypography.titleSmall)
                     .foregroundStyle(PazColors.ink)
                 HStack(spacing: PazSpacing.sm) {
-                    MeetingStatusPill(text: presenceText, done: meeting.hasAttendance)
-                    if meeting.reportStatusKnown {
-                        MeetingStatusPill(
-                            text: meeting.hasReport ? "Relatório enviado" : "Relatório pendente",
-                            done: meeting.hasReport
-                        )
+                    if let presence = chips.presenceText {
+                        MeetingStatusPill(text: presence, done: true)
+                    }
+                    if let report = chips.reportText {
+                        MeetingStatusPill(text: report, done: chips.reportDone)
                     }
                 }
             }
@@ -111,12 +138,6 @@ private struct MeetingSummaryRow: View {
         }
         .padding(PazSpacing.lg)
         .glassCard(radius: PazSpacing.cardRadiusCompact)
-    }
-
-    private var presenceText: String {
-        meeting.hasAttendance
-            ? "Presença \(meeting.presentCount?.intValue ?? 0)/\(meeting.membersCount?.intValue ?? 0)"
-            : "Presença pendente"
     }
 }
 

@@ -95,8 +95,28 @@ enum LifeGroupMeetingErrorMapping {
         return KotlinException(message: error.localizedDescription)
     }
 
+    static func kind(_ error: Error) -> LifeGroupMeetingErrors.Kind {
+        LifeGroupMeetingErrors.shared.kind(error: throwable(error))
+    }
+
     static func message(_ error: Error) -> String {
         LifeGroupMeetingErrors.shared.message(error: throwable(error))
+    }
+
+    /// Retrying cannot help for a missing group or a missing permission; everything else may recover
+    /// (server redeployed, network back).
+    static func isRetryable(_ error: Error) -> Bool {
+        LifeGroupMeetingErrors.shared.isRetryable(error: throwable(error))
+    }
+
+    /// Copy for a failed history/list request (attendance and reports endpoints have no meetings-API
+    /// error body): the HTTP status decides, no status means offline.
+    static func historyMessage(_ error: Error) -> String {
+        historyMessage(statusCode: throwable(error).anyHttpStatusCodeOrNull()?.intValue)
+    }
+
+    static func historyMessage(statusCode: Int?) -> String {
+        LifeGroupMeetingErrors.shared.messageForHttpStatus(statusCode: statusCode.map { KotlinInt(value: Int32($0)) })
     }
 
     static func requiresExtraChoice(_ error: Error) -> Bool {

@@ -130,13 +130,13 @@ private struct AgendaDetailDeepLinkView: View {
             } else if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(PazMeshBackground())
+                    .pazScreenBackground()
             } else {
                 ContentUnavailableView(
                     "Evento não encontrado",
                     systemImage: "calendar.badge.exclamationmark"
                 )
-                .background(PazMeshBackground())
+                .pazScreenBackground()
             }
         }
         .task {

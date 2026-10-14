@@ -13,10 +13,6 @@ import kotlinx.datetime.toLocalDateTime
  * Pure rules of the combined "Reunião" screen (presence + weekly report), shared by Android and iOS:
  * dates and weekdays, extra-meeting detection, presence toggles, local-draft handling, history
  * merging and input parsing. No I/O.
- *
- * NOTE: the number/offering/multi-value parsers intentionally mirror the Phase 0 standalone report
- * form's `LifeGroupReportRules` (branch fix/life-group-report-submit, not in this branch's base).
- * Once that branch is merged the two should be consolidated into one.
  */
 object LifeGroupMeetingRules {
     const val MAX_COUNT = 100000

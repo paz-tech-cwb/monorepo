@@ -18,7 +18,7 @@ struct LifeGroupTaskGuideView: View {
 
     var body: some View {
         screenContent
-            .background(PazMeshBackground())
+            .pazScreenBackground()
             .navigationTitle("Tarefa do Life")
             .navigationBarTitleDisplayMode(.inline)
             .task { await viewModel.load() }
