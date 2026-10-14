@@ -68,6 +68,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -335,6 +337,7 @@ private fun LifeGroupsHomeSection(
             if (layout.showsSectionHeader) {
                 Text(
                     HomeLifeGroupsSection.HEADER_SEVERAL,
+                    modifier = Modifier.semantics { heading() },
                     style = MaterialTheme.typography.labelMedium.copy(color = PazColors.accent.copy(alpha = 0.7f)),
                 )
             }

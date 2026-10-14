@@ -3,6 +3,7 @@ package br.church.paz.android.ui.features.lifegroupmeeting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.church.paz.shared.data.remote.anyHttpStatusCodeOrNull
+import br.church.paz.shared.data.remote.httpErrorCodeOrNull
 import br.church.paz.shared.domain.model.LifeGroupMeetingErrors
 import br.church.paz.shared.domain.model.LifeGroupMeetingRules
 import br.church.paz.shared.domain.repository.LifeGroupAttendanceRepository
@@ -80,7 +81,7 @@ class LifeGroupMeetingHistoryViewModel(
                     it.copy(
                         isLoading = false,
                         isRefreshing = false,
-                        error = LifeGroupMeetingErrors.messageForHttpStatus(e.anyHttpStatusCodeOrNull()),
+                        error = LifeGroupMeetingErrors.messageForHttpStatus(e.anyHttpStatusCodeOrNull(), e.httpErrorCodeOrNull()),
                     )
                 }
             }

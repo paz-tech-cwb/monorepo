@@ -57,19 +57,32 @@ final class LifeGroupMeetingEntryViewModel {
         entry?.emptyMessage
     }
 
+    /// First load only: the host view's `.task` re-runs on every reappearance (popping back from the history),
+    /// which must neither flash the skeleton nor refetch.
+    func loadIfNeeded() async {
+        guard entry == nil else { return }
+        await load()
+    }
+
+    /// (Re)loads the entry. A failed refresh keeps the previous `entry` (the screen the user is in must not
+    /// be replaced by an error); only a first load surfaces the error.
     func load() async {
-        isLoading = true
+        let isRefresh = entry != nil
+        if !isRefresh { isLoading = true }
         error = nil
         do {
             let role = await source.currentRole()
-            let mine = try await source.myGroups()
             let isAdminLike = role == .admin || role == .pastor
+            // Admin/pastor pick from every group: "my groups" is unused for them, so it must not block them.
+            let mine = isAdminLike ? [] : try await source.myGroups()
             let all = isAdminLike ? try await source.allGroups() : []
             entry = LifeGroupMeetingRules.shared.resolveEntry(role: role, myGroups: mine, allGroups: all)
         } catch {
-            if Task.isCancelled { return }
-            self.error = LifeGroupMeetingErrorMapping.historyMessage(error)
-            entry = nil
+            if Task.isCancelled { isLoading = false; return }
+            if !isRefresh {
+                self.error = LifeGroupMeetingErrorMapping.historyMessage(error)
+                entry = nil
+            }
         }
         isLoading = false
     }

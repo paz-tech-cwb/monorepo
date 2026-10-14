@@ -28,6 +28,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.Url
 import io.ktor.http.contentType
+import io.ktor.util.AttributeKey
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.SerialName
@@ -146,6 +147,15 @@ fun Throwable.httpStatusCodeOrNull(): Int? = (this as? ClientRequestException)?.
 /** Like [httpStatusCodeOrNull] but also for 5xx ([ServerResponseException]); null only when there was no HTTP answer. */
 fun Throwable.anyHttpStatusCodeOrNull(): Int? = (this as? ResponseException)?.response?.status?.value
 
+private val ErrorCodeAttribute = AttributeKey<String>("paz.errorCode")
+
+/**
+ * The backend's machine-readable `code` of the error body (e.g. `group_not_found`), recorded by
+ * [throwOnClientOrServerError]; null when the body had none or this is not an HTTP error.
+ */
+fun Throwable.httpErrorCodeOrNull(): String? =
+    (this as? ResponseException)?.response?.call?.attributes?.getOrNull(ErrorCodeAttribute)
+
 /**
  * Explicitly raises a [ClientRequestException]/[ServerResponseException] for a non-2xx
  * [HttpResponse].
@@ -162,6 +172,9 @@ suspend fun HttpResponse.throwOnClientOrServerError() {
     if (status.isSuccess()) return
     val text = runCatching { bodyAsText() }.getOrDefault("")
     val message = friendlyErrorText(status.value, text)
+    runCatching {
+        Json.parseToJsonElement(text).jsonObject["code"]?.jsonPrimitive?.contentOrNull
+    }.getOrNull()?.let { call.attributes.put(ErrorCodeAttribute, it) }
     when (status.value) {
         in 400..499 -> throw ClientRequestException(this, message)
         in 500..599 -> throw ServerResponseException(this, message)

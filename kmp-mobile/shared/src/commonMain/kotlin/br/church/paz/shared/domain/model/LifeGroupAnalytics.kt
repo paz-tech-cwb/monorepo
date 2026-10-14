@@ -60,6 +60,18 @@ data class LifeGroupAttendanceSummary(
 ) {
     val attendancePercent: Int?
         get() = if (membersCount > 0) (presentCount * 100.0 / membersCount).roundToInt() else null
+
+    /** Card copy, shared by Android and iOS so both say the same (singular/plural handled here). */
+    val cardTitle: String get() = "Frequência do grupo"
+
+    val cardValue: String get() = attendancePercent?.let { "$it%" } ?: "–"
+
+    val cardSubtitle: String
+        get() {
+            val meetings = if (meetingsCount == 1) "reunião" else "reuniões"
+            val present = if (presentCount == 1) "presença" else "presenças"
+            return "$meetingsCount $meetings · $presentCount $present de $membersCount"
+        }
 }
 
 fun List<LifeGroupAttendancePoint>.summarizeAttendance(): LifeGroupAttendanceSummary =

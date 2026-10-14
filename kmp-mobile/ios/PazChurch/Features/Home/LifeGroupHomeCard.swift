@@ -31,6 +31,7 @@ struct LifeGroupsHomeSection: View {
                 Text(HomeLifeGroupsSection.shared.HEADER_SEVERAL)
                     .font(PazTypography.labelMedium)
                     .foregroundStyle(PazColors.accent.opacity(0.7))
+                    .accessibilityAddTraits(.isHeader)
             }
             ForEach(Array(cards.enumerated()), id: \.element.group.id) { index, card in
                 if index > 0 {

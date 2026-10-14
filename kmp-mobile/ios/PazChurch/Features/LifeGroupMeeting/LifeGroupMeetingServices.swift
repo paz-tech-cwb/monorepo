@@ -112,11 +112,12 @@ enum LifeGroupMeetingErrorMapping {
     /// Copy for a failed history/list request (attendance and reports endpoints have no meetings-API
     /// error body): the HTTP status decides, no status means offline.
     static func historyMessage(_ error: Error) -> String {
-        historyMessage(statusCode: throwable(error).anyHttpStatusCodeOrNull()?.intValue)
+        let t = throwable(error)
+        return historyMessage(statusCode: t.anyHttpStatusCodeOrNull()?.intValue, code: t.httpErrorCodeOrNull())
     }
 
-    static func historyMessage(statusCode: Int?) -> String {
-        LifeGroupMeetingErrors.shared.messageForHttpStatus(statusCode: statusCode.map { KotlinInt(value: Int32($0)) })
+    static func historyMessage(statusCode: Int?, code: String? = nil) -> String {
+        LifeGroupMeetingErrors.shared.messageForHttpStatus(statusCode: statusCode.map { KotlinInt(value: Int32($0)) }, code: code)
     }
 
     static func requiresExtraChoice(_ error: Error) -> Bool {

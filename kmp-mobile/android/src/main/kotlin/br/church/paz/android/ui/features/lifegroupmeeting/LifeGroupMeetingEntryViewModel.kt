@@ -2,8 +2,11 @@ package br.church.paz.android.ui.features.lifegroupmeeting
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import br.church.paz.shared.data.remote.anyHttpStatusCodeOrNull
+import br.church.paz.shared.data.remote.httpErrorCodeOrNull
 import br.church.paz.shared.domain.model.LifeGroupMeetingEntry
 import br.church.paz.shared.domain.model.LifeGroupMeetingEntryGroup
+import br.church.paz.shared.domain.model.LifeGroupMeetingErrors
 import br.church.paz.shared.domain.model.LifeGroupMeetingRules
 import br.church.paz.shared.domain.model.UserRole
 import br.church.paz.shared.domain.repository.AuthRepository
@@ -41,15 +44,17 @@ class LifeGroupMeetingEntryViewModel(
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
                 val role: UserRole? = authRepository.currentUser()?.role
-                val mine = churchRepository.getMyLifeGroups()
-                val all = if (role == UserRole.admin || role == UserRole.pastor) churchRepository.getAllLifeGroups() else emptyList()
+                val seesAllGroups = role == UserRole.admin || role == UserRole.pastor
+                // Admin/pastor pick from every group: /life-groups/me is unused for them, so it must not block them.
+                val mine = if (seesAllGroups) emptyList() else churchRepository.getMyLifeGroups()
+                val all = if (seesAllGroups) churchRepository.getAllLifeGroups() else emptyList()
                 val entry = LifeGroupMeetingRules.resolveEntry(role, mine, all)
                 _uiState.update { it.copy(isLoading = false, entry = entry) }
                 entry.directGroupId?.let { id -> entry.group(id)?.let { open(it, replaceEntry = true) } }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Erro ao carregar seus grupos") }
+                _uiState.update { it.copy(isLoading = false, error = LifeGroupMeetingErrors.messageForHttpStatus(e.anyHttpStatusCodeOrNull(), e.httpErrorCodeOrNull())) }
             }
         }
     }

@@ -76,6 +76,8 @@ struct LifeGroupMeetingHistoryView: View {
             // Coming back from a meeting: pick up what was just saved.
             if newValue == nil {
                 Task { await viewModel.refresh() }
+                // The Relatórios tab keeps its own view model: reload it too if it was already shown.
+                Task { await analytics.refreshIfLoaded() }
             }
         }
         .task { await viewModel.load() }

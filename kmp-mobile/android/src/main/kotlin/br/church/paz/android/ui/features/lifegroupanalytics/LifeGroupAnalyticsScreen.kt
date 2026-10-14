@@ -154,6 +154,10 @@ fun LifeGroupAnalyticsPanel(
     // report content) off-screen into a paginated PDF via [ReportPdfExporter]
     // and opens the system share sheet with the resulting file.
     fun exportAndShare() {
+        if (uiState.attendanceError != null) {
+            exportError = "Não foi possível exportar: a frequência não foi carregada. Atualize e tente novamente."
+            return
+        }
         val activity =
             context as? Activity ?: run {
                 exportError = "Não foi possível exportar o relatório. Tente novamente."
@@ -256,7 +260,8 @@ private fun LifeGroupReportExportContent(uiState: LifeGroupAnalyticsUiState) {
                 },
         )
         if (uiState.isScopedToGroup) {
-            AttendanceSummaryCard(uiState)
+            // Mirror the on-screen guard: a failed attendance load must not export "–" / 0 totals.
+            if (uiState.attendanceError == null) AttendanceSummaryCard(uiState)
         } else {
             uiState.overview?.let { overview ->
                 LifeGroupStatCards(overview)
@@ -386,11 +391,9 @@ private fun AnalyticsReportContent(
 private fun AttendanceSummaryCard(uiState: LifeGroupAnalyticsUiState) {
     val summary = uiState.attendanceSummary
     PazStatCard(
-        title = "Frequência do grupo",
-        value = summary.attendancePercent?.let { "$it%" } ?: "–",
-        subtitle =
-            "${summary.meetingsCount} ${if (summary.meetingsCount == 1) "reunião" else "reuniões"} · " +
-                "${summary.presentCount} presenças de ${summary.membersCount}",
+        title = summary.cardTitle,
+        value = summary.cardValue,
+        subtitle = summary.cardSubtitle,
         icon = Icons.Filled.Groups,
     )
 }

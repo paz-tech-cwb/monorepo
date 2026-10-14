@@ -124,6 +124,12 @@ class LifeGroupAnalyticsViewModel {
         }
     }
 
+    /// Reloads only when the screen/tab already loaded once (e.g. after a meeting was saved elsewhere).
+    func refreshIfLoaded() async {
+        guard hasLoadedOnce else { return }
+        await load()
+    }
+
     func loadOverview() async {
         do {
             // Always the church-wide overview (nil): it feeds the group dropdown of the unscoped screen.

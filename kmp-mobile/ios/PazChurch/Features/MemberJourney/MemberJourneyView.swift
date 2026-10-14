@@ -27,7 +27,7 @@ struct MemberJourneyView: View {
                 contentState
             }
         }
-        .background(PazColors.background.ignoresSafeArea())
+        .pazScreenBackground()
         .navigationTitle("Minha Jornada")
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
@@ -90,7 +90,6 @@ struct MemberJourneyView: View {
             }
             .padding(.horizontal, PazSpacing.lg)
         }
-        .pazScreenBackground()
         .refreshable { await viewModel.loadJourney() }
     }
 
@@ -120,7 +119,6 @@ struct MemberJourneyView: View {
             Spacer()
         }
         .padding(PazSpacing.lg)
-        .pazScreenBackground()
     }
 }
 

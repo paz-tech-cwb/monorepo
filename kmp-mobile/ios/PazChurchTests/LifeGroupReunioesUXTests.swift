@@ -120,6 +120,26 @@ private struct UXEntrySource: LifeGroupMeetingEntrySource {
     }
 }
 
+private final class UXFlakyEntrySource: LifeGroupMeetingEntrySource {
+    var failing = false
+    var myGroupsCalls = 0
+    let mine: [LifeGroup]
+
+    init(mine: [LifeGroup]) {
+        self.mine = mine
+    }
+
+    func currentRole() async -> UserRole? { .member }
+
+    func myGroups() async throws -> [LifeGroup] {
+        myGroupsCalls += 1
+        if failing { throw UXTestError.offline }
+        return mine
+    }
+
+    func allGroups() async throws -> [LifeGroup] { [] }
+}
+
 private final class UXAnalyticsRepository: NSObject, LifeGroupAnalyticsRepository {
     var overviewCalls: [Int32?] = []
     var distributionCalls = 0
@@ -178,6 +198,13 @@ final class LifeGroupMeetingErrorKindTests: XCTestCase {
         XCTAssertTrue(LifeGroupMeetingErrorMapping.isRetryable(UXTestError.offline))
     }
 
+    func testHistoryMessageUsesTheErrorCodeWhenPresent() {
+        XCTAssertEqual(
+            LifeGroupMeetingErrorMapping.historyMessage(statusCode: 404, code: "group_not_found"),
+            LifeGroupMeetingErrors.shared.MESSAGE_GROUP_NOT_FOUND
+        )
+    }
+
     func testHistoryMessagesUseTheStatusOnly() {
         // Attendance/reports endpoints have no meetings-API body: a bare 404 must never say "group not found".
         XCTAssertEqual(
@@ -190,7 +217,7 @@ final class LifeGroupMeetingErrorKindTests: XCTestCase {
         )
         XCTAssertEqual(
             LifeGroupMeetingErrorMapping.historyMessage(UXTestError.offline),
-            LifeGroupMeetingErrors.shared.messageForHttpStatus(statusCode: nil)
+            LifeGroupMeetingErrors.shared.messageForHttpStatus(statusCode: nil, code: nil)
         )
     }
 }
@@ -350,7 +377,7 @@ final class LifeGroupMeetingsTabsTests: XCTestCase {
             source: UXHistorySource(failure: UXTestError.offline)
         )
         await vm.load()
-        XCTAssertEqual(vm.error, LifeGroupMeetingErrors.shared.messageForHttpStatus(statusCode: nil))
+        XCTAssertEqual(vm.error, LifeGroupMeetingErrors.shared.messageForHttpStatus(statusCode: nil, code: nil))
         XCTAssertFalse(vm.isLoading)
     }
 
@@ -409,12 +436,40 @@ final class LifeGroupMeetingsTabsTests: XCTestCase {
         XCTAssertNotNil(vm.emptyMessage)
     }
 
+    func testLeadingOneGroupAndSupervisingAnotherListsBoth() async {
+        let vm = LifeGroupMeetingEntryViewModel(
+            source: UXEntrySource(
+                role: .member,
+                mine: [uxGroup(2, "A", relationship: "leader"), uxGroup(3, "B", relationship: "supervisor")]
+            )
+        )
+        await vm.load()
+        XCTAssertNil(vm.directGroup)
+        XCTAssertEqual(vm.pickerGroups.map(\.group.id), [2, 3])
+        XCTAssertEqual(vm.pickerGroups.map(\.canWrite), [true, false])
+    }
+
+    func testEntryLoadsOnceAndAFailedRefreshKeepsTheEntry() async {
+        let source = UXFlakyEntrySource(mine: [uxGroup(2, "Centro", relationship: "leader")])
+        let vm = LifeGroupMeetingEntryViewModel(source: source)
+        await vm.loadIfNeeded()
+        await vm.loadIfNeeded()
+        XCTAssertEqual(source.myGroupsCalls, 1)
+        XCTAssertEqual(vm.directGroup?.group.id, 2)
+
+        source.failing = true
+        await vm.load()
+        XCTAssertEqual(vm.directGroup?.group.id, 2)
+        XCTAssertNil(vm.error)
+        XCTAssertFalse(vm.isLoading)
+    }
+
     func testEntryLoadFailureIsMapped() async {
         let vm = LifeGroupMeetingEntryViewModel(
             source: UXEntrySource(role: .member, failure: UXTestError.offline)
         )
         await vm.load()
-        XCTAssertEqual(vm.error, LifeGroupMeetingErrors.shared.messageForHttpStatus(statusCode: nil))
+        XCTAssertEqual(vm.error, LifeGroupMeetingErrors.shared.messageForHttpStatus(statusCode: nil, code: nil))
         XCTAssertNil(vm.entry)
     }
 }
@@ -445,6 +500,9 @@ final class LifeGroupScopedAnalyticsTests: XCTestCase {
         XCTAssertEqual(summary.presentCount, 20)
         XCTAssertEqual(summary.membersCount, 30)
         XCTAssertEqual(summary.attendancePercent?.intValue, 67)
+        XCTAssertEqual(summary.cardTitle, "Frequência do grupo")
+        XCTAssertEqual(summary.cardValue, "67%")
+        XCTAssertEqual(summary.cardSubtitle, "3 reuniões · 20 presenças de 30")
     }
 
     func testLoadInitialIsIdempotentSoSwitchingTabsDoesNotRefetch() async {

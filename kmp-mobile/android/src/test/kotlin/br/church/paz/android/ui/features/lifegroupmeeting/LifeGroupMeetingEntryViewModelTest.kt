@@ -3,6 +3,7 @@ package br.church.paz.android.ui.features.lifegroupmeeting
 import app.cash.turbine.test
 import br.church.paz.android.util.MainDispatcherRule
 import br.church.paz.shared.domain.model.LifeGroup
+import br.church.paz.shared.domain.model.LifeGroupMeetingErrors
 import br.church.paz.shared.domain.model.User
 import br.church.paz.shared.domain.model.UserRole
 import br.church.paz.shared.domain.repository.AuthRepository
@@ -125,11 +126,32 @@ class LifeGroupMeetingEntryViewModelTest {
             coEvery { churchRepository.getMyLifeGroups() } throws RuntimeException("offline")
             vm.load()
             testScheduler.advanceUntilIdle()
-            assertEquals("offline", vm.uiState.value.error)
+            assertEquals(LifeGroupMeetingErrors.MESSAGE_OFFLINE, vm.uiState.value.error)
 
             coEvery { churchRepository.getMyLifeGroups() } returns listOf(group(2, "A", "leader"))
             vm.load()
             testScheduler.advanceUntilIdle()
             assertNull(vm.uiState.value.error)
+        }
+
+    @Test
+    fun `admin does not depend on the my groups request`() =
+        runTest {
+            val vm = viewModel(UserRole.admin, all = listOf(group(1, "A", null)))
+            coEvery { churchRepository.getMyLifeGroups() } throws RuntimeException("boom")
+            vm.load()
+            testScheduler.advanceUntilIdle()
+            assertNull(vm.uiState.value.error)
+            assertEquals(listOf(1), vm.uiState.value.entry!!.groups.map { it.group.id })
+        }
+
+    @Test
+    fun `leading one group and supervising another shows both with the supervised one read only`() =
+        runTest {
+            val vm = viewModel(UserRole.member, mine = listOf(group(2, "A", "leader"), group(3, "B", "supervisor")))
+            testScheduler.advanceUntilIdle()
+            val entry = vm.uiState.value.entry!!
+            assertNull(entry.directGroupId)
+            assertEquals(listOf(true, false), entry.groups.map { it.canWrite })
         }
 }

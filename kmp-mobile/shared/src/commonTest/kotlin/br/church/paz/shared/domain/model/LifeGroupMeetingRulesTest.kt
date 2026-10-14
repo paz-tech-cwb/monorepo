@@ -432,10 +432,10 @@ class LifeGroupMeetingRulesTest {
 
     @Test
     fun `history errors without a body are mapped by status`() {
-        assertEquals(LifeGroupMeetingErrors.MESSAGE_OFFLINE, LifeGroupMeetingErrors.messageForHttpStatus(null))
-        assertEquals(LifeGroupMeetingErrors.MESSAGE_NO_PERMISSION, LifeGroupMeetingErrors.messageForHttpStatus(403))
-        assertEquals(LifeGroupMeetingErrors.MESSAGE_SERVER_UNAVAILABLE, LifeGroupMeetingErrors.messageForHttpStatus(404))
-        assertTrue(LifeGroupMeetingErrors.messageForHttpStatus(500).contains("servidor"))
+        assertEquals(LifeGroupMeetingErrors.MESSAGE_OFFLINE, LifeGroupMeetingErrors.messageForHttpStatus(null, null))
+        assertEquals(LifeGroupMeetingErrors.MESSAGE_NO_PERMISSION, LifeGroupMeetingErrors.messageForHttpStatus(403, null))
+        assertEquals(LifeGroupMeetingErrors.MESSAGE_SERVER_UNAVAILABLE, LifeGroupMeetingErrors.messageForHttpStatus(404, null))
+        assertTrue(LifeGroupMeetingErrors.messageForHttpStatus(500, null).contains("servidor"))
     }
 
     @Test
@@ -500,7 +500,9 @@ class LifeGroupMeetingRulesTest {
                 emptyList(),
             )
         assertNull(entry.directGroupId)
-        assertEquals(listOf(2, 5), entry.groups.map { it.group.id })
+        // Led groups sorted by name, then the supervised one (read-only).
+        assertEquals(listOf(2, 5, 9), entry.groups.map { it.group.id })
+        assertEquals(listOf(true, true, false), entry.groups.map { it.canWrite })
     }
 
     @Test
@@ -563,5 +565,43 @@ class LifeGroupAttendanceSummaryTest {
         assertEquals(0, summary.meetingsCount)
         assertNull(summary.attendancePercent)
         assertNull(emptyList<LifeGroupAttendancePoint>().summarizeAttendance().attendancePercent)
+    }
+
+    @Test
+    fun `summary card copy is shared and keeps singular and plural correct`() {
+        val many = listOf(point(2, 9, 12), point(1, 5, 12)).summarizeAttendance()
+        assertEquals("Frequência do grupo", many.cardTitle)
+        assertEquals("58%", many.cardValue)
+        assertEquals("3 reuniões · 14 presenças de 24", many.cardSubtitle)
+        val one = listOf(point(1, 1, 10)).summarizeAttendance()
+        assertEquals("1 reunião · 1 presença de 10", one.cardSubtitle)
+        assertEquals("–", emptyList<LifeGroupAttendancePoint>().summarizeAttendance().cardValue)
+    }
+
+    @Test
+    fun `entry lists led groups first then supervised ones read-only`() {
+        fun g(id: Int, name: String, rel: String?, supervised: Boolean = false) =
+            LifeGroup(id = id, name = name, relationship = rel, isSupervised = supervised)
+        val entry =
+            LifeGroupMeetingRules.resolveEntry(
+                UserRole.member,
+                listOf(g(2, "B", "supervisor", true), g(1, "A", "leader")),
+                emptyList(),
+            )
+        assertEquals(listOf(1, 2), entry.groups.map { it.group.id })
+        assertEquals(listOf(true, false), entry.groups.map { it.canWrite })
+        assertNull(entry.directGroupId)
+    }
+
+    @Test
+    fun `error code passes through to the history copy`() {
+        assertEquals(
+            LifeGroupMeetingErrors.MESSAGE_GROUP_NOT_FOUND,
+            LifeGroupMeetingErrors.messageForHttpStatus(404, LifeGroupMeetingErrors.CODE_GROUP_NOT_FOUND),
+        )
+        assertEquals(
+            LifeGroupMeetingErrors.MESSAGE_SERVER_UNAVAILABLE,
+            LifeGroupMeetingErrors.messageForHttpStatus(404, null),
+        )
     }
 }

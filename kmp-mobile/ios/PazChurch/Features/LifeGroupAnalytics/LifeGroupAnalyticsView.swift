@@ -173,9 +173,9 @@ struct LifeGroupAnalyticsPanel: View {
     private var summarySection: some View {
         let summary = viewModel.attendanceSummary
         return PazStatCard(
-            title: "Presença no período",
-            value: summary.attendancePercent.map { "\($0)%" } ?? "—",
-            subtitle: "\(summary.presentCount) presenças em \(summary.meetingsCount) reuniões",
+            title: summary.cardTitle,
+            value: summary.cardValue,
+            subtitle: summary.cardSubtitle,
             icon: "person.3.fill"
         )
     }

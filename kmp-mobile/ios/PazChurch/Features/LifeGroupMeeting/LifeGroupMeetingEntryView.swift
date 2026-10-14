@@ -27,7 +27,7 @@ struct LifeGroupMeetingEntryView: View {
                 pickerScreen
             }
         }
-        .task { await viewModel.load() }
+        .task { await viewModel.loadIfNeeded() }
     }
 
     private var pickerScreen: some View {

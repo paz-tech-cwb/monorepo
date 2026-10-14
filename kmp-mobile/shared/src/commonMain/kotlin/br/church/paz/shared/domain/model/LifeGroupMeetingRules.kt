@@ -297,7 +297,7 @@ object LifeGroupMeetingRules {
      * Resolves where the "report" entry points lead (Formulários list, `paz://form/life-group-reports`):
      * - admin / pastor: picker over EVERY group ([allGroups], sorted by name), write-capable;
      * - exactly one led (leader/co-leader) group: open its Reuniões directly ([LifeGroupMeetingEntry.directGroupId]);
-     * - several led groups: picker over them;
+     * - several led groups: picker over them; supervised groups (not led) are listed after them, read-only;
      * - supervisor only: the supervised groups, read-only (a single one opens directly);
      * - otherwise: an explanatory message.
      * Pure, shared by Android and iOS. [myGroups] is `GET /life-groups/me`.
@@ -324,17 +324,16 @@ object LifeGroupMeetingRules {
                 .filter { isLeadership(it) }
                 .distinctBy { it.id }
                 .sortedBy { it.name.lowercase() }
-        if (led.isNotEmpty()) {
-            val groups = led.map { LifeGroupMeetingEntryGroup(it, canWrite = canWrite(role, true)) }
-            return LifeGroupMeetingEntry(groups = groups, directGroupId = groups.singleOrNull()?.group?.id, emptyMessage = null)
-        }
+        val ledIds = led.map { it.id }.toSet()
         val supervised =
             myGroups
-                .filter { it.relationship == "supervisor" || it.isSupervised }
+                .filter { (it.relationship == "supervisor" || it.isSupervised) && it.id !in ledIds }
                 .distinctBy { it.id }
                 .sortedBy { it.name.lowercase() }
-        if (supervised.isNotEmpty()) {
-            val groups = supervised.map { LifeGroupMeetingEntryGroup(it, canWrite = false) }
+        if (led.isNotEmpty() || supervised.isNotEmpty()) {
+            val groups =
+                led.map { LifeGroupMeetingEntryGroup(it, canWrite = canWrite(role, true)) } +
+                    supervised.map { LifeGroupMeetingEntryGroup(it, canWrite = false) }
             return LifeGroupMeetingEntry(groups = groups, directGroupId = groups.singleOrNull()?.group?.id, emptyMessage = null)
         }
         return LifeGroupMeetingEntry(
@@ -492,10 +491,14 @@ object LifeGroupMeetingErrors {
 
     /**
      * Copy for a failed history/list request that has no meetings-API error body (attendance and reports
-     * endpoints): [statusCode] null = no HTTP answer (offline).
+     * endpoints): [statusCode] null = no HTTP answer (offline). [code] is the parsed error `code`, if any
+     * (a legacy attendance 404 carrying `group_not_found` reads "Grupo não encontrado").
      */
-    fun messageForHttpStatus(statusCode: Int?): String =
-        if (statusCode == null) MESSAGE_OFFLINE else message(LifeGroupMeetingException(statusCode, null, null))
+    fun messageForHttpStatus(
+        statusCode: Int?,
+        code: String?,
+    ): String =
+        if (statusCode == null) MESSAGE_OFFLINE else message(LifeGroupMeetingException(statusCode, code, null))
 
     const val MESSAGE_GROUP_NOT_FOUND = "Grupo não encontrado. Atualize a tela e tente novamente."
     const val MESSAGE_SERVER_UNAVAILABLE = "Recurso indisponível no servidor. Tente novamente mais tarde."

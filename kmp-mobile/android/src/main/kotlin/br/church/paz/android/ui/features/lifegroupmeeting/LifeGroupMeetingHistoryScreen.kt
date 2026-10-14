@@ -59,6 +59,7 @@ import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazPullToRefresh
 import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsPanel
+import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsViewModel
 import br.church.paz.android.ui.theme.PazShapePill
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
@@ -85,7 +86,15 @@ fun LifeGroupMeetingHistoryScreen(
     // Reload whenever this screen returns to the foreground (e.g. popping back from a meeting after a
     // save): the ViewModel is scoped to the back stack entry and only loads once in init otherwise.
     val lifecycleOwner = LocalLifecycleOwner.current
-    val currentOnResume = rememberUpdatedState(viewModel::refresh)
+    // The Relatórios tab keeps its own ViewModel: flag it stale on every return so it reloads when shown.
+    var reportsStale by remember { mutableStateOf(false) }
+    var hasResumedOnce by remember { mutableStateOf(false) }
+    val currentOnResume =
+        rememberUpdatedState {
+            viewModel.refresh()
+            if (hasResumedOnce) reportsStale = true
+            hasResumedOnce = true
+        }
     DisposableEffect(lifecycleOwner) {
         val observer =
             LifecycleEventObserver { _, event ->
@@ -156,11 +165,20 @@ fun LifeGroupMeetingHistoryScreen(
                             }
                         }
                     // The stats of THIS group only (no group picker); the panel has no background of its own.
-                    LifeGroupMeetingsTab.REPORTS ->
+                    LifeGroupMeetingsTab.REPORTS -> {
+                        val analyticsViewModel: LifeGroupAnalyticsViewModel =
+                            koinViewModel(parameters = { parametersOf(lifeGroupId.toInt()) })
+                        LaunchedEffect(reportsStale) {
+                            if (reportsStale) {
+                                analyticsViewModel.refresh()
+                                reportsStale = false
+                            }
+                        }
                         LifeGroupAnalyticsPanel(
-                            viewModel = koinViewModel(parameters = { parametersOf(lifeGroupId.toInt()) }),
+                            viewModel = analyticsViewModel,
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                         )
+                    }
                 }
             }
         }
