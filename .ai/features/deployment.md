@@ -47,6 +47,16 @@ The monorepo runs path-filtered GitHub Actions workflows from `.github/workflows
 - For local/manual workflows, use `cd backend && npm run migration:run` when applying pending migrations directly.
 - Keep `DB_SYNCHRONIZE=false` outside disposable local/dev contexts.
 
+### After a failed "Deploy Backend" run
+
+The container CMD is `npm run start:prod:migrate` (Dockerfile): pending migrations run automatically at every container start, right before the API boots. So a successful deploy applies migrations by itself; a FAILED deploy means neither new routes nor new migrations are live (mobile builds shipped from the same release then hit Nest's generic 404 "Cannot GET /api/...", which has no `code`). Checklist:
+
+1. Open the failed `Deploy Backend` run (GitHub Actions). An SSH step stuck on `waiting for deploy lock: /var/lock/vps-deploy/global.lock` followed by `client_loop: send disconnect: Broken pipe` (exit 255) means another deploy held the VPS lock; no deploy happened.
+2. Re-run the workflow (Re-run failed jobs) once the other deploys (admin-ui, etc.) finished; the guarded deploy serializes on that lock.
+3. Verify the routes are live: an authenticated `GET /api/life-groups/<id>/meetings/<date>` must answer 200/400/403/404 WITH a JSON `code` (never `Cannot GET`). An unauthenticated request must answer 401, not 404.
+4. Verify migrations: container logs show `Migration ... has been executed successfully` (or `No migrations are pending`); `SELECT name FROM migrations ORDER BY id DESC LIMIT 3` lists the newest ones (e.g. `1796000000001`).
+5. Only then re-test the mobile build.
+
 ## Observability bridge
 
 The optional `observability-bridge/` service provides read-only, sanitized GlitchTip summaries for OpenHarness/debugging. It is reusable across projects through JSON config aliases, enforces project/environment allowlists and range limits, and keeps the GlitchTip API token server-side.

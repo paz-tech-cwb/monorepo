@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument -- supertest app handle is typed any in this setup */
 import {
   ExecutionContext,
   INestApplication,
@@ -32,6 +33,8 @@ describe('LifeGroupAnalyticsController (ValidationPipe regression)', () => {
     by_city: [],
   });
 
+  const overview = jest.fn().mockResolvedValue({ life_group_id: 7 });
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [LifeGroupAnalyticsController],
@@ -41,7 +44,7 @@ describe('LifeGroupAnalyticsController (ValidationPipe regression)', () => {
           useValue: {
             distribution,
             attendance: jest.fn(),
-            overview: jest.fn(),
+            overview,
           },
         },
       ],
@@ -90,4 +93,42 @@ describe('LifeGroupAnalyticsController (ValidationPipe regression)', () => {
     const [query] = distribution.mock.calls[0] as [{ life_group_id: number }];
     expect(query.life_group_id).toBe(7);
   });
+
+  it('passes life_group_id through the real pipe to overview (typed number)', async () => {
+    overview.mockClear();
+    await request(app.getHttpServer())
+      .get('/life-group-analytics/overview')
+      .query({ life_group_id: '7' })
+      .expect(200);
+    const [, actor, query] = overview.mock.calls[0] as [
+      unknown,
+      { id: number },
+      { life_group_id: number },
+    ];
+    expect(actor.id).toBe(42);
+    expect(query.life_group_id).toBe(7);
+  });
+
+  it('overview without a filter still works (old clients)', async () => {
+    overview.mockClear();
+    await request(app.getHttpServer())
+      .get('/life-group-analytics/overview')
+      .expect(200);
+    const [, , query] = overview.mock.calls[0] as [
+      unknown,
+      unknown,
+      { life_group_id?: number },
+    ];
+    expect(query.life_group_id).toBeUndefined();
+  });
+
+  it.each(['abc', '0', '-3', '1.5'])(
+    'rejects an invalid overview life_group_id (%s) with 400',
+    async (value) => {
+      await request(app.getHttpServer())
+        .get('/life-group-analytics/overview')
+        .query({ life_group_id: value })
+        .expect(400);
+    },
+  );
 });

@@ -1,46 +1,10 @@
-# Test results: Phase 3 shared + Android
+# Test results
 
-Android SDK is not installed locally, so Gradle tasks of `:android` cannot run here. What was run:
+Node v22.23.3 (scratchpad). Throwaway PostgreSQL 17.5 (embedded-postgres 17.5.0-beta.15 installed with --ignore-scripts in NEW scratchpad dir `pg12`, 127.0.0.1:54942, user pgtest, DB `mig`); full chain of migrations run with `nest build` + `typeorm -d dist/db/data-source.js migration:run` (ends with 1796000000000, 1796000000001; `migrations` table confirms).
 
-| Check | Command / method | Result |
-|---|---|---|
-| Shared tests (iOS sim, all commonTest incl. new) | `./gradlew :shared:iosSimulatorArm64Test --offline` (JDK17, scratch GRADLE_USER_HOME/KONAN_DATA_DIR) | PASS |
-| New shared tests | Rules 20, ReportDraft 5, Repository 9, DraftStorage 4, AuthRepository 10 | PASS |
-| Android ViewModel tests (29 new) + all shared tests on JVM | scratch KMP/JVM project compiling `shared/commonMain` + the Android UiState/ViewModels, running the real test files (JUnit4, mockk, turbine) | PASS, 160 tests, 0 failures |
-| Android Compose screens + Screen.kt + real components/theme | scratch Compose-Desktop (JetBrains Compose 1.7.3) project compiling the real screen files with stubs for `koinViewModel`/`LocalLifecycleOwner`/typography | COMPILES (API differences vs AndroidX BOM 2025.04 possible) |
-
-NOT verified locally (CI or a device must confirm): `:android:compileDebugKotlin`, `:android:testDebugUnitTest` (incl. `MeetingDatesTest`, which needs `Screen`/`PushNotificationHelper` on the Android classpath), `DataStoreMeetingDraftStore` (androidMain actual), `PazNavGraph`/`AndroidModule`/`MinistryDetailScreen` edits (small, read-reviewed), real device behavior, ktlint (not enforced by CI).
-
-## Phase 3 iOS
-
-| Check | Command / method | Result |
-|---|---|---|
-| XCFramework | `./gradlew :shared:assembleSharedDebugXCFramework --offline` (JDK17, scratch GRADLE_USER_HOME/KONAN_DATA_DIR) | PASS |
-| iOS unit tests | `xcodebuild test -scheme PazChurch -destination 'platform=iOS Simulator,name=TestPhone' -only-testing:PazChurchTests` (temporary fake `GoogleService-Info.plist`, deleted, not committed) | PASS, 64 tests (23 new in `LifeGroupMeetingViewModelTests`), 0 failures |
-| pbxproj | `plutil -lint` | OK |
-| swiftformat / swiftlint | new files formatted with swiftformat; swiftlint: no violations in the new files that are errors (2 pre-existing errors in `FormDetailView`/`OnboardingView`) | OK |
-
-NOT verified: UI on a simulator/device (layout, DatePicker sheet, keyboard handling, VoiceOver, dark mode), a real push-tap on `paz://presenca/...`, Android compile (CI/SDK). CI does not run on this stacked PR (base is not main).
-
-## Review fixes (phase 3)
-
-| Check | Command / method | Result |
-|---|---|---|
-| Shared tests | `./gradlew :shared:iosSimulatorArm64Test --offline` | PASS, 133 tests, 0 failures (new: offering 3-decimal rejection, `isExtraFlagRejected`) |
-| XCFramework | `./gradlew :shared:assembleSharedDebugXCFramework --offline` | PASS |
-| iOS unit tests | `xcodebuild test ... TestPhone -only-testing:PazChurchTests` (temporary fake plist, deleted) | PASS, 68 tests, 0 failures (new: untouched report not saveable, edits ignored while saving, rejected extra draft refetch, legacy report message) |
-| Android (no local SDK) | CI via temporary retarget of PR #99 to `develop` | see "Android CI" below |
-
-New Android tests (history VM: init+resume single load / no empty flash, refresh without skeleton, meetingDay argument; meeting VM: untouched report, edits while saving, rejected extra draft, legacy message) run only in CI.
-
-### Android CI (phase 3 fixes), PR #99 temporarily retargeted to `develop`, base restored afterwards
-- Run 38416842269 (head d3cb6a93): android FAIL at `:android:testDebugUnitTest` (compile OK; 2 of 211 failed: my two new history-VM tests asserted an in-flight state that mockk resolved instantly, a test bug), ios PASS (job 115363423849), build PASS (run 38416842096).
-- Run 38419536201 (head 44ae2fb8, test gated with CompletableDeferred): android PASS (job 115372895816), ios PASS (job 115372896339); build PASS (run 38419536178, job 115372892007).
-
-## Supervisors read-only on mobile (D11) - 2026-10-13
-| Check | Result |
-|---|---|
-| `./gradlew :shared:iosSimulatorArm64Test --offline` (JDK17, scratch GRADLE_USER_HOME/KONAN_DATA_DIR) | PASS, 138 tests, 0 failures (5 new: `canWrite` matrix over all roles, `isEditable`, copy, repository `can_write` mapping incl. stale `can_edit` true) |
-| `./gradlew :shared:assembleSharedDebugXCFramework --offline` | PASS |
-| iOS: `xcodebuild test ... TestPhone -only-testing:PazChurchTests` (temporary fake `GoogleService-Info.plist`, deleted, not committed) | PASS, 74 tests, 0 failures (6 new: supervisor read-only meeting, role hint forces read-only, leader keeps rights, supervisor no extra switch, shared write rule, supervisor history cannot start a meeting) |
-| Android (SDK not installed locally) | verified by CI only, see below |
+- Build: `npx nest build` OK.
+- Real Postgres: `life-group-meetings.integration` 42/42 (incl. 7 new "error-code contract": leader + 5-weeks-old date + no record => 200 read-only draft with can_edit=false; admin editable; past non-regular weekday 400 extra_meeting_required; future 400 date_in_future; unknown group 404 group_not_found; non-member 403 life_group_access_forbidden; missing route => generic 404 with no code). `life-group-analytics.integration` 10/10 (2 groups + 3 users without group; scoped overview exact figures, leader 403 on other group, sector supervisor scoped to one group, 404/403/400; attendance/distribution scoped; unscoped unchanged).
+- Bug reproduction: with develop's service/controller restored, the new analytics integration spec FAILED (scoped overview returned whole table: members_total 15, members_in_group 6, total_kids 7, both groups listed); with the fix it passes. attendance/distribution tests passed on both (they already supported the filter).
+- Scoped jest (life-group-meetings, life-group-analytics, life-group-attendance, forms-core): green; default run skips the 2 integration suites.
+- Full jest (`npx jest`): Test Suites 6 failed / 3 skipped / 79 passed (85 of 88); Tests 5 failed / 60 skipped / 927 passed. The 6 failing suites are exactly the known baseline set: auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens.
+- eslint on all changed/new files (src/life-group-analytics, life-group-meetings, life-group-attendance, common/errors): 0 errors, 0 warnings. prettier --check: clean (the .md docs under .ai were already non-prettier-clean on develop).

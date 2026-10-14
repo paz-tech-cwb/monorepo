@@ -1,8 +1,11 @@
 import {
   BadRequestException,
   ForbiddenException,
+  HttpStatus,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
+import { codedErrorBody } from '../common/errors/coded-error-body';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import { LifeGroupAttendance } from '../life-group-attendance/entities/life-group-attendance.entity';
@@ -11,6 +14,7 @@ import { User } from '../users/entities/user.entity';
 import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
 import { AttendanceQueryDto } from './dto/attendance-query.dto';
 import { DistributionQueryDto } from './dto/distribution-query.dto';
+import { OverviewQueryDto } from './dto/overview-query.dto';
 import { WEEKDAY_INDEX } from '../life-group-attendance/meeting-day.util';
 
 const NEIGHBORHOOD_TOP_N = 10;
@@ -72,7 +76,11 @@ export class LifeGroupAnalyticsService {
         !ledGroupIds.includes(lifeGroupIdFilter)
       ) {
         throw new ForbiddenException(
-          'You do not have access to this life group.',
+          codedErrorBody(
+            HttpStatus.FORBIDDEN,
+            'life_group_access_forbidden',
+            'You do not have access to this life group.',
+          ),
         );
       }
       return [lifeGroupIdFilter];
@@ -326,10 +334,22 @@ export class LifeGroupAnalyticsService {
    * their own slice instead of the org-wide numbers admin-ui computes from
    * an unfiltered `useLifeGroups()`/`useUsers()`.
    */
-  async overview(scope: ResolvedScope, actor: Actor) {
-    const lifeGroupIds = await this.resolveLifeGroupIds(scope, actor);
+  async overview(
+    scope: ResolvedScope,
+    actor: Actor,
+    query: OverviewQueryDto = {},
+  ) {
+    const lifeGroupIds = await this.resolveLifeGroupIds(
+      scope,
+      actor,
+      query.life_group_id,
+    );
+    // Single-group scope: `life_group_id` was supplied and passed the access
+    // check above (403 otherwise).
+    const scopedLifeGroupId = query.life_group_id ?? null;
     if (lifeGroupIds !== null && lifeGroupIds.length === 0) {
       return {
+        life_group_id: scopedLifeGroupId,
         total_kids: 0,
         avg_members_per_group: 0,
         groups_by_sector: [] as { label: string; count: number }[],
@@ -360,6 +380,16 @@ export class LifeGroupAnalyticsService {
       sector_label: string | null;
       member_count: string;
     }>();
+
+    if (scopedLifeGroupId !== null && groupsRaw.length === 0) {
+      throw new NotFoundException(
+        codedErrorBody(
+          HttpStatus.NOT_FOUND,
+          'group_not_found',
+          `Life group with ID ${scopedLifeGroupId} not found`,
+        ),
+      );
+    }
 
     // Scoped list of life groups this caller is actually allowed to query
     // via `?life_group_id=` on the attendance/distribution endpoints — the
@@ -393,7 +423,13 @@ export class LifeGroupAnalyticsService {
       .map(([label, count]) => ({ label, count }))
       .sort((a, b) => b.count - a.count);
 
-    // Members universe: unrestricted callers see every user, sector/area
+    // Members universe. Single-group scope (`life_group_id`): exactly that
+    // group's roster, so members_total === members_in_group (the "without
+    // group" slice, total - in_group, is 0 by definition: it is meaningless
+    // for one group and clients should hide it). Authorization already ran in
+    // resolveLifeGroupIds, so no sector/area logic applies here.
+    //
+    // Otherwise: unrestricted callers see every user, sector/area
     // leaders see only users belonging to their sectors. A caller with no
     // sector scope but an explicit life-group scope (e.g. life_group_leader,
     // per scope-resolver.service.ts) has no sectorIds to filter by — for
@@ -405,10 +441,13 @@ export class LifeGroupAnalyticsService {
       .leftJoin('u.lifeGroups', 'lg')
       .select('u.id', 'id')
       .addSelect('COUNT(DISTINCT lg.id)', 'life_group_count');
-    if (!scope.unrestricted) {
+    if (scopedLifeGroupId !== null) {
+      usersQb.where('lg.id = :scopedLifeGroupId', { scopedLifeGroupId });
+    } else if (!scope.unrestricted) {
       if (scope.sectorIds.length === 0) {
         if (lifeGroupIds === null || lifeGroupIds.length === 0) {
           return {
+            life_group_id: scopedLifeGroupId,
             total_kids: totalKids,
             avg_members_per_group: avgMembersPerGroup,
             groups_by_sector: groupsBySector,
@@ -447,6 +486,7 @@ export class LifeGroupAnalyticsService {
     ).length;
 
     return {
+      life_group_id: scopedLifeGroupId,
       total_kids: totalKids,
       avg_members_per_group: avgMembersPerGroup,
       groups_by_sector: groupsBySector,

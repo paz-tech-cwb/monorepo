@@ -295,6 +295,7 @@ describe('LifeGroupAnalyticsService', () => {
       const { service, em } = createService([[]]);
       const result = await service.overview(noAccessScope, actor);
       expect(result).toEqual({
+        life_group_id: null,
         total_kids: 0,
         avg_members_per_group: 0,
         groups_by_sector: [],
@@ -394,6 +395,7 @@ describe('LifeGroupAnalyticsService', () => {
       const { service, em } = createService([[]]);
       const result = await service.overview(noScope, actor);
       expect(result).toEqual({
+        life_group_id: null,
         total_kids: 0,
         avg_members_per_group: 0,
         groups_by_sector: [],
@@ -402,6 +404,126 @@ describe('LifeGroupAnalyticsService', () => {
         life_groups: [],
       });
       expect(em.createQueryBuilder).toHaveBeenCalledTimes(1);
+    });
+    describe('scoped to one life group (life_group_id)', () => {
+      const group2 = {
+        id: '2',
+        name: 'Centro',
+        kids_count: '3',
+        sector_label: 'Norte',
+        member_count: '2',
+      };
+
+      it('restricts every figure to that group for an unrestricted caller (no whole-table member universe)', async () => {
+        const { service, em } = createService([
+          [group2],
+          [
+            { id: '10', life_group_count: '1' },
+            { id: '11', life_group_count: '1' },
+          ],
+        ]);
+        const result = await service.overview(unrestrictedScope, actor, {
+          life_group_id: 2,
+        });
+        expect(result).toEqual({
+          life_group_id: 2,
+          total_kids: 3,
+          avg_members_per_group: 2,
+          groups_by_sector: [{ label: 'Norte', count: 1 }],
+          members_in_group: 2,
+          members_total: 2,
+          life_groups: [{ id: 2, name: 'Centro' }],
+        });
+        // No "without group" slice for a single group.
+        expect(result.members_total - result.members_in_group).toBe(0);
+
+        const groupsQb = em.createQueryBuilder.mock.results[0].value as {
+          where: jest.Mock;
+        };
+        expect(groupsQb.where).toHaveBeenCalledWith(
+          'lg.id IN (:...lifeGroupIds)',
+          {
+            lifeGroupIds: [2],
+          },
+        );
+        const usersQb = em.createQueryBuilder.mock.results[1].value as {
+          where: jest.Mock;
+        };
+        expect(usersQb.where).toHaveBeenCalledWith(
+          'lg.id = :scopedLifeGroupId',
+          { scopedLifeGroupId: 2 },
+        );
+      });
+
+      it('ignores the caller sector scope for the members query (supervisor scope union cannot widen it)', async () => {
+        const supervisorScope: ResolvedScope = {
+          unrestricted: false,
+          areaIds: [],
+          sectorIds: [5],
+          lifeGroupIds: [2, 7],
+        };
+        const { service, em } = createService([
+          [],
+          [group2],
+          [{ id: '10', life_group_count: '1' }],
+        ]);
+        await service.overview(supervisorScope, actor, { life_group_id: 2 });
+        const usersQb = em.createQueryBuilder.mock.results[2].value as {
+          where: jest.Mock;
+        };
+        expect(usersQb.where).toHaveBeenCalledTimes(1);
+        expect(usersQb.where).toHaveBeenCalledWith(
+          'lg.id = :scopedLifeGroupId',
+          { scopedLifeGroupId: 2 },
+        );
+      });
+
+      it('lets the leader of the group in even without scope access', async () => {
+        const { service } = createService([
+          [{ id: '2' }],
+          [group2],
+          [{ id: '10', life_group_count: '1' }],
+        ]);
+        const result = await service.overview(noAccessScope, actor, {
+          life_group_id: 2,
+        });
+        expect(result.life_group_id).toBe(2);
+        expect(result.members_total).toBe(1);
+      });
+
+      it('rejects (403, coded) a group outside the caller access', async () => {
+        const { service } = createService([[{ id: '9' }]]);
+        await expect(
+          service.overview(leaderScope, actor, { life_group_id: 2 }),
+        ).rejects.toMatchObject({
+          status: 403,
+          response: expect.objectContaining({
+            code: 'life_group_access_forbidden',
+          }) as unknown,
+        });
+      });
+
+      it('answers 404 group_not_found when an unrestricted caller asks for a group that does not exist', async () => {
+        const { service } = createService([[]]);
+        await expect(
+          service.overview(unrestrictedScope, actor, { life_group_id: 999 }),
+        ).rejects.toMatchObject({
+          status: 404,
+          response: expect.objectContaining({
+            code: 'group_not_found',
+          }) as unknown,
+        });
+      });
+
+      it('leaves the unscoped response unchanged apart from the null echo', async () => {
+        const { service, em } = createService([[group2], []]);
+        const result = await service.overview(unrestrictedScope, actor);
+        expect(result.life_group_id).toBeNull();
+        const usersQb = em.createQueryBuilder.mock.results[1].value as {
+          where: jest.Mock;
+        };
+        expect(usersQb.where).not.toHaveBeenCalled();
+      });
     });
   });
 });

@@ -1,12 +1,14 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpStatus,
   Injectable,
   NotFoundException,
   Optional,
 } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
+import { codedErrorBody } from '../common/errors/coded-error-body';
 import { LifeGroupAttendance } from './entities/life-group-attendance.entity';
 import { LifeGroupAttendanceEntry } from './entities/life-group-attendance-entry.entity';
 import { LifeGroup } from '../life-groups/entities/life-group.entity';
@@ -74,18 +76,36 @@ export class LifeGroupAttendanceService {
 
   assertValidMeetingDate(meetingDate: string): void {
     if (!DATE_RE.test(meetingDate)) {
-      throw new BadRequestException('date must be in YYYY-MM-DD format.');
+      throw new BadRequestException(
+        codedErrorBody(
+          HttpStatus.BAD_REQUEST,
+          'invalid_meeting_date_format',
+          'date must be in YYYY-MM-DD format.',
+        ),
+      );
     }
     const parsed = new Date(`${meetingDate}T00:00:00.000Z`);
     if (
       Number.isNaN(parsed.getTime()) ||
       parsed.toISOString().slice(0, 10) !== meetingDate
     ) {
-      throw new BadRequestException('date is not a valid calendar date.');
+      throw new BadRequestException(
+        codedErrorBody(
+          HttpStatus.BAD_REQUEST,
+          'invalid_meeting_date',
+          'date is not a valid calendar date.',
+        ),
+      );
     }
     const todayKey = new Date().toISOString().slice(0, 10);
     if (meetingDate > todayKey) {
-      throw new BadRequestException('date cannot be in the future.');
+      throw new BadRequestException(
+        codedErrorBody(
+          HttpStatus.BAD_REQUEST,
+          'date_in_future',
+          'date cannot be in the future.',
+        ),
+      );
     }
   }
 
@@ -190,7 +210,11 @@ export class LifeGroupAttendanceService {
     });
     if (!lifeGroup) {
       throw new NotFoundException(
-        `Life group with ID ${lifeGroupId} not found`,
+        codedErrorBody(
+          HttpStatus.NOT_FOUND,
+          'group_not_found',
+          `Life group with ID ${lifeGroupId} not found`,
+        ),
       );
     }
     return lifeGroup;

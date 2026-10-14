@@ -1,49 +1,27 @@
-# Changes: Phase 3 shared + Android (combined "Reunião" screen)
+# Changes: meetings 404 hardening + group-scoped analytics (backend)
 
-Branch `feat/life-group-meeting-screen`, stacked on PR #96 (`feat/life-group-meetings-api`, 123e5f0). No backend change.
+## Root cause of the TestFlight "Grupo nao encontrado"
+Deploy Backend run 38479306265 (release commit 84f1dd9e) FAILED (SSH waited on `/var/lock/vps-deploy/global.lock`, then `client_loop: send disconnect: Broken pipe`, exit 255). The `/meetings` routes were not live; Nest answered its generic `Cannot GET /api/life-groups/2/meetings/2026-09-08` 404 (no `code`) and the clients map any 404 to "Grupo nao encontrado". The service itself never answers 404 for a leader of an existing group, and a past date without a record is a 200 read-only draft (proved on a real Postgres).
 
-## Shared (`kmp-mobile/shared`)
-- New: `domain/model/LifeGroupMeeting.kt` (models, report input/draft/validation, local draft, history summary), `domain/model/LifeGroupMeetingRules.kt` (`LifeGroupMeetingRules`, `LifeGroupMeetingErrors`), `domain/repository/LifeGroupMeetingRepository.kt` (+ `LifeGroupMeetingException`, `MeetingDraftStore`), `data/repository/LifeGroupMeetingRepositoryImpl.kt`, `data/repository/MeetingDraftStorage.kt` (+ `MeetingDraftStore.android.kt` DataStore, `MeetingDraftStore.ios.kt` NSUserDefaults).
-- Changed: `AuthRepositoryImpl` (optional `meetingDraftStore`, wiped on logout), `SharedModule`, `IosAppContainer` (`lifeGroupMeetingRepository`, `meetingDraftStore`), `LifeGroupReportRepositoryImpl` (report DTOs `internal` for reuse).
-- Tests: `LifeGroupMeetingRulesTest`, `LifeGroupMeetingReportDraftTest`, `LifeGroupMeetingRepositoryTest`, `MeetingDraftStorageTest`, `AuthRepositoryTest` (+logout wipes drafts), `FakeMeetingDraftStore`.
+## Backend
+- `common/errors/coded-error-body.ts` (new): `codedErrorBody(status, code, message)`.
+- Stable `code` on: `group_not_found` (404; meetings + attendance services, analytics overview), `life_group_access_forbidden` (403; `assertCanAccessLifeGroup`, analytics), `invalid_meeting_date_format`, `invalid_meeting_date`, `date_in_future` (400; `assertValidMeetingDate`), `invalid_extra_meeting_param` (400; meetings controller). Messages unchanged. A 404 with no `code` = route missing.
+- `life-group-analytics`: `GET /overview?life_group_id=` (new `OverviewQueryDto`); scoped => every figure restricted to the group (members_total = members_in_group = roster; without-group = 0; `life_groups` = [group]); response echoes `life_group_id` (null unscoped). 403 outside access, 404 unknown group (unrestricted caller). Unscoped unchanged.
+- Tests: service/controller unit specs, opt-in real-Postgres integration specs (`life-group-meetings.integration.spec.ts` +7, new `life-group-analytics.integration.spec.ts` 10).
+- Docs: `.ai/features/life-groups.md` (error-code contract, scoped overview), `.ai/apps/backend.md`, `.ai/features/deployment.md` ("After a failed Deploy Backend").
 
-## Android (`kmp-mobile/android`)
-- New package `ui/features/lifegroupmeeting/`: `LifeGroupMeetingScreen`, `LifeGroupMeetingViewModel`, `LifeGroupMeetingUiState`, `LifeGroupMeetingHistoryScreen`, `LifeGroupMeetingHistoryViewModel`, `MeetingDates`.
-- Nav: `Screen.LifeGroupMeetings`, `Screen.LifeGroupMeeting`, `LifeGroupAttendanceEditor` kept as alias of the same screen (push `paz://presenca/{id}/{date}` unchanged); `PazNavGraph`; Koin in `AndroidModule`.
-- `MinistryDetailScreen`: "Presença" card replaced by "Reuniões" (gate `canViewGroupReports`).
-- Removed: `ui/features/lifegroupattendance/*` (editor, history, ui state, view models).
-- Tests: `LifeGroupMeetingViewModelTest` (22), `LifeGroupMeetingHistoryViewModelTest` (7), `MeetingDatesTest`, `FakeMeetingDraftStore`.
+## Required mobile change (NOT done here; kmp-mobile belongs to another agent)
+1. `shared/.../domain/repository/LifeGroupAnalyticsRepository.kt`: `suspend fun getOverview(lifeGroupId: Int? = null): LifeGroupOverview`.
+2. `shared/.../data/repository/LifeGroupAnalyticsRepositoryImpl.kt` `getOverview`: `client.get("api/life-group-analytics/overview") { lifeGroupId?.let { parameter("life_group_id", it) } }`. (Optionally add `life_group_id` to `LifeGroupOverviewDto`; it is ignorable.)
+3. iOS `Features/LifeGroupAnalytics/LifeGroupAnalyticsViewModel.swift` `loadOverview()`: call `getOverview(lifeGroupId: lifeGroupId)` (the `Int32?` already stored; pass `nil` when not scoped). Android `ui/features/lifegroupanalytics/LifeGroupAnalyticsViewModel.kt` `loadOverview()` (line ~63): same, with the screen's `lifeGroupId` argument. Update the Android VM test mock `getOverview()` -> `getOverview(any())` and the repository test.
+4. When scoped (`isScopedToGroup`), hide the "in groups / without group" donut (backend returns `members_total == members_in_group`) and the sector/group filter dropdown (`life_groups` has one item).
+5. Error mapping: map 404 to "Grupo nao encontrado" ONLY when the body `code == "group_not_found"`; a 404 without `code` (or 5xx) should show a generic "Servico indisponivel/atualize o app" message. Branch on `code` (`extra_meeting_required`, `date_in_future`, ...), never `message`.
+Old clients keep working (param optional, response only gained `life_group_id`).
 
-## Docs
-`.ai/features/life-groups.md`, `.ai/features/mobile-app.md`, `.ai/apps/mobile.md`.
+## Behavior notes / risks
+- `overview` now validates its query with the global pipe (`forbidNonWhitelisted`): an unknown query param on `/overview` is a 400 (previously ignored). No client sends one.
+- Draft roster for a date without a record is the CURRENT roster (not historical membership).
+- `assertValidMeetingDate` compares with the UTC date (pre-existing): between 21:00 and 24:00 Sao Paulo "tomorrow" is still accepted by GET. Not changed.
 
-## Decisions / flags
-- Phase 0 standalone report form is NOT in this base (lives on `fix/life-group-report-submit`), so no "Enviar relatório" row existed here to remove and the Formulários entry / `paz://form/life-group-reports` are untouched. Phase 0's `LifeGroupReportRules` parsers are mirrored (not imported) in `LifeGroupMeetingRules`: consolidate after both merge.
-- History is a separate screen opened from the "Reuniões" card (not an inline list in the detail screen), to avoid adding two more network calls to the detail view model.
-- Report multi-values: Tadel/Culto chips + free text (option lists are still design Q8).
-
-## Phase 3 iOS (`kmp-mobile/ios`)
-- New `PazChurch/Features/LifeGroupMeeting/`: `LifeGroupMeetingServices` (Swift seams over the shared repository/draft store/history endpoints, error mapping via `LifeGroupMeetingErrors`, `LifeGroupMeetingReportDraft` helpers, ISO date helpers), `LifeGroupMeetingViewModel`, `LifeGroupMeetingHistoryViewModel`, `LifeGroupMeetingView` (+ `...AttendanceSection`, `...ReportSection`, `...Components`), `LifeGroupMeetingHistoryView` ("Reuniões" list + "Nova reunião" date-picker sheet).
-- `MinistryDetailView.swift` (`LifeGroupDetailView`): "Presença" row replaced by "Reuniões" (gate `canViewGroupReports`, as on Android; was `canManageAttendance`).
-- `paz://presenca/{id}/{date}`: `DeepLinkDestination.lifeGroupAttendanceEditor` case name and parsing/allowlist kept; `MainTabView` now renders `LifeGroupMeetingDeepLinkView` (replaces `LifeGroupAttendanceEditorDeepLinkView`).
-- Removed `Features/LifeGroupAttendance/*` (editor, history, view models; no remaining references, analytics unaffected). `project.pbxproj` hand-edited (old group removed, new `LifeGroupMeeting` group + test file; `plutil -lint` OK); `project.yml` needs no change (directory sources).
-- Tests: `PazChurchTests/LifeGroupMeetingViewModelTests.swift` (23 tests).
-- Docs: `.ai/features/life-groups.md`, `.ai/features/mobile-app.md`, `.ai/apps/mobile.md`.
-- Decisions/flags: (1) iOS history row gate widened from `canManageAttendance` to `canViewGroupReports` (user instruction / Android parity): admin/pastor/area/sector leaders now see "Reuniões". (2) The old per-group meetingDay comes from the group already in `LifeGroupDetailView` (no extra church repository call, unlike Android). (3) After an `edit_window_closed` save error the reload replaces the inline error with the read-only banner (Android parity). (4) Draft writes are fire-and-forget Tasks chained in order.
-
-## Review fixes (phase 3)
-Merged `origin/feat/life-group-meetings-api` first (conflict only in `.pipeline/test-results.md`: kept this branch's, archived PR #96's as `.pipeline/archive/test-results-pr96-2026-10-13.md`).
-- M1 Android history: `refresh()` is a no-op while a load is in flight (init + ON_RESUME no longer double load or race), `isLoading = showSkeleton || meetings.isEmpty()` (no empty-state flash), previous job cancelled by an explicit `load()`.
-- M2 Android history: `meetingDay` is a route/Koin argument (`Screen.LifeGroupMeetings.createRoute(id, meetingDay)`, optional query arg), passed from `MinistryDetailScreen`; `ChurchRepository.getAllLifeGroups()` dropped from the history VM.
-- M3 (Android `LifeGroupMeetingUiState`, iOS `LifeGroupMeetingViewModel`): `canSaveReport = canEditReport && !isBusy && reportDirty`; an untouched form is never saveable.
-- m1: presence toggles / all-present / report edits ignored while `isBusy` (VM + `MemberRow` disabled on Android, `.disabled` on iOS).
-- m2: Android draft write runs in `NonCancellable`, chained after the previous write (latest edit wins, survives leaving the screen). iOS already used unstructured chained Tasks.
-- m4: `LifeGroupMeetingErrors.isExtraFlagRejected` (shared); both VMs drop the extra flag and refetch once.
-- m5: `normalizeOffering` keeps "0.125" as 3 decimals -> null (thousands separator needs a non-zero leading digit). `LifeGroupReportRules` (PR #97) untouched.
-- m6 (route part): malformed `lifeGroupId`/`date` pops the back stack (`InvalidRouteFallback`) instead of a blank screen. The backend English 400 text is left as is.
-- m8: `LifeGroupMeetingRules.legacyReportMessage()` shown when `attendance == null && report != null`.
-Leftovers (not changed): M4 (merge with #97, whoever merges second), m3 stale draft over newer server data, m7, m9, m10-m12, entry-point gate decision (author flag 3).
-
-## Supervisors read-only on mobile (D11) - 2026-10-13
-- Shared: `LifeGroupMeetingRules.canWrite(role, isGroupLeadership)`, `writeForbiddenMessage`, `noMeetingToViewMessage`; `LifeGroupMeeting.canWrite` (from `can_write`, default false) and `isEditable = canWrite && canEdit`; repository maps `can_write`.
-- Android + iOS: meeting screen read-only for supervisors (no extra switch, no "Todos presentes", no save, disabled toggles, banner); history hides "Nova reunião" and ignores new-meeting dates unless `canWrite`; group detail resolves `canWriteMeetings` with the shared rule and passes it down (route arg / init param); deep link keeps working with an unknown hint (server flag only). Merged `origin/feat/life-group-meetings-api` (backend D11); `.pipeline` kept ours, other side archived as `archive/*.meetings-api.md`.
+## Follow-up: history rows open for any date with a record
+`GET /meetings/:date` already returned 200 for such dates; now locked by specs (controller + real Postgres): legacy report on a non-regular weekday -> 200 `attendance: null` + populated `report` (`derived` nulls); saved extra attendance opens without the flag; no-record non-regular date stays 400 `extra_meeting_required`; past regular date without record = 200 read-only draft. No production code change.
