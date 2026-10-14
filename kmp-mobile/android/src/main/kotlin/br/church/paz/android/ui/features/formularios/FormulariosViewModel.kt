@@ -48,7 +48,7 @@ class FormulariosViewModel(
             val form = _uiState.value.forms.find { it.id == formId }
             val effect =
                 if (form?.type == FormType.life_group_report) {
-                    FormulariosEffect.NavigateToLifeGroupReportSubmit
+                    FormulariosEffect.NavigateToLifeGroupMeetings
                 } else if (form?.canRead == true) {
                     FormulariosEffect.NavigateToSubmissionsList(formId)
                 } else {

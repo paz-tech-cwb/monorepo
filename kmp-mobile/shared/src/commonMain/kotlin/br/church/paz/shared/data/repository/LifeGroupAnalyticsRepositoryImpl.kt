@@ -48,8 +48,11 @@ class LifeGroupAnalyticsRepositoryImpl(
     }
 
     @Throws(Exception::class)
-    override suspend fun getOverview(): LifeGroupOverview {
-        val httpResponse = client.get("api/life-group-analytics/overview")
+    override suspend fun getOverview(lifeGroupId: Int?): LifeGroupOverview {
+        val httpResponse =
+            client.get("api/life-group-analytics/overview") {
+                lifeGroupId?.let { parameter("life_group_id", it) }
+            }
         httpResponse.throwOnClientOrServerError()
         return httpResponse.body<LifeGroupOverviewDto>().toDomain()
     }

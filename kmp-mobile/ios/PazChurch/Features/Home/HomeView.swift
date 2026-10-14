@@ -92,7 +92,7 @@ struct HomeView: View {
             }
         }
         .refreshable { await viewModel.load() }
-        .background(PazMeshBackground())
+        .pazScreenBackground()
         .navigationTitle("Início")
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
@@ -138,9 +138,9 @@ struct HomeView: View {
                 }
             }
 
-            ForEach(viewModel.lifeGroupCards, id: \.group.id) { card in
-                LifeGroupHomeCard(
-                    card: card,
+            if !viewModel.lifeGroupCards.isEmpty {
+                LifeGroupsHomeSection(
+                    cards: viewModel.lifeGroupCards,
                     taskRepository: IosAppContainer.shared.lifeGroupTaskRepository
                 )
                 .padding(.horizontal, PazSpacing.lg)

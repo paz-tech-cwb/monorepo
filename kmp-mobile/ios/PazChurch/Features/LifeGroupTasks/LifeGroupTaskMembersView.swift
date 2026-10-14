@@ -14,7 +14,7 @@ struct LifeGroupTaskMembersView: View {
 
     var body: some View {
         screenContent
-            .background(PazMeshBackground())
+            .pazScreenBackground()
             .navigationTitle("Elegibilidade para tarefas")
             .navigationBarTitleDisplayMode(.inline)
             .task { await viewModel.load() }

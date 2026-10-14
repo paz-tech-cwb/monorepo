@@ -95,7 +95,7 @@ struct MinistryDetailView: View {
             .padding(.horizontal, PazSpacing.lg)
         }
         .refreshable { await refresh() }
-        .background(PazMeshBackground())
+        .pazScreenBackground()
         .navigationTitle(ministry.name)
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
@@ -199,7 +199,7 @@ struct LifeGroupDetailView: View {
         return lifeGroup.leaderId?.int32Value == userId || lifeGroup.coLeaderId?.int32Value == userId
     }
 
-    /// Who sees the "Relatórios" and "Relatórios semanais" entries: this group's own
+    /// Who sees the "Reuniões" entry (meetings list + this group's "Relatórios" tab): this group's own
     /// leader/co-leader (by id, so a co-leader whose role slug is `member` still qualifies) or an
     /// admin/pastor/area leader/sector leader (the client cannot know their scope; the backend
     /// answers 403/404 for out-of-scope groups). A `life_group_leader` of ANOTHER group, plain
@@ -316,6 +316,33 @@ struct LifeGroupDetailView: View {
                         }
                     }
 
+                    if canViewGroupReports {
+                        NavigationLink {
+                            LifeGroupMeetingHistoryView(
+                                lifeGroupId: Int32(lifeGroup.id),
+                                groupName: lifeGroup.name,
+                                meetingDay: lifeGroup.meetingDay,
+                                canWrite: canWriteMeetings
+                            )
+                        } label: {
+                            HStack(spacing: PazSpacing.md) {
+                                Image(systemName: "person.3")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(PazColors.accent)
+                                Text("Reuniões")
+                                    .font(PazTypography.titleSmall)
+                                    .foregroundColor(PazColors.ink)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(PazSpacing.lg)
+                            .glassCard(radius: PazSpacing.cardRadiusCompact)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     if let members = lifeGroup.members {
                         // Pushed to its own screen rather than listed inline —
                         // a life group can have well over 10 members.
@@ -384,56 +411,6 @@ struct LifeGroupDetailView: View {
                         )
                     }
 
-                    if canViewGroupReports {
-                        NavigationLink {
-                            LifeGroupMeetingHistoryView(
-                                lifeGroupId: Int32(lifeGroup.id),
-                                meetingDay: lifeGroup.meetingDay,
-                                canWrite: canWriteMeetings
-                            )
-                        } label: {
-                            HStack(spacing: PazSpacing.md) {
-                                Image(systemName: "person.3")
-                                    .font(.system(size: 18))
-                                    .foregroundColor(PazColors.accent)
-                                Text("Reuniões")
-                                    .font(PazTypography.titleSmall)
-                                    .foregroundColor(PazColors.ink)
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.gray)
-                            }
-                            .padding(PazSpacing.lg)
-                            .glassCard(radius: PazSpacing.cardRadiusCompact)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    // Weekly report submit: same gate as "Presença" (this group's own leader/co-leader), which is
-                    // exactly who the backend lets create the report; opens the form with this group preselected.
-                    if canManageAttendance {
-                        NavigationLink {
-                            LifeGroupReportFormView(preselectedLifeGroupId: Int32(lifeGroup.id))
-                        } label: {
-                            HStack(spacing: PazSpacing.md) {
-                                Image(systemName: "square.and.pencil")
-                                    .font(.system(size: 18))
-                                    .foregroundColor(PazColors.accent)
-                                Text("Enviar relatório")
-                                    .font(PazTypography.titleSmall)
-                                    .foregroundColor(PazColors.ink)
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.gray)
-                            }
-                            .padding(PazSpacing.lg)
-                            .glassCard(radius: PazSpacing.cardRadiusCompact)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
                     if canManageAttendance {
                         NavigationLink {
                             LifeGroupTaskMembersView(
@@ -459,56 +436,6 @@ struct LifeGroupDetailView: View {
                         .buttonStyle(.plain)
                     }
 
-                    if canViewGroupReports {
-                        NavigationLink {
-                            LifeGroupReportsView(
-                                lifeGroupId: Int32(lifeGroup.id),
-                                repository: IosAppContainer.shared.lifeGroupReportRepository
-                            )
-                        } label: {
-                            HStack(spacing: PazSpacing.md) {
-                                Image(systemName: "doc.text.fill")
-                                    .font(.system(size: 18))
-                                    .foregroundColor(PazColors.accent)
-                                Text("Relatórios semanais")
-                                    .font(PazTypography.titleSmall)
-                                    .foregroundColor(PazColors.ink)
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.gray)
-                            }
-                            .padding(PazSpacing.lg)
-                            .glassCard(radius: PazSpacing.cardRadiusCompact)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    if canViewGroupReports {
-                        NavigationLink {
-                            LifeGroupAnalyticsView(
-                                lifeGroupId: Int32(lifeGroup.id),
-                                analyticsRepository: IosAppContainer.shared.lifeGroupAnalyticsRepository
-                            )
-                        } label: {
-                            HStack(spacing: PazSpacing.md) {
-                                Image(systemName: "chart.bar.fill")
-                                    .font(.system(size: 18))
-                                    .foregroundColor(PazColors.accent)
-                                Text("Relatórios")
-                                    .font(PazTypography.titleSmall)
-                                    .foregroundColor(PazColors.ink)
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.gray)
-                            }
-                            .padding(PazSpacing.lg)
-                            .glassCard(radius: PazSpacing.cardRadiusCompact)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
                     Spacer().frame(height: PazSpacing.xl)
                 }
                 .padding(.horizontal, PazSpacing.lg)
@@ -519,7 +446,7 @@ struct LifeGroupDetailView: View {
             await loadMyTasks()
         }
         .task { await loadMyTasks() }
-        .background(PazMeshBackground())
+        .pazScreenBackground()
         .navigationTitle(lifeGroup.name)
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)
@@ -600,7 +527,7 @@ struct GroupMembersListView: View {
                 .searchable(text: $query, prompt: "Buscar membro")
             }
         }
-        .background(PazMeshBackground())
+        .pazScreenBackground()
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)

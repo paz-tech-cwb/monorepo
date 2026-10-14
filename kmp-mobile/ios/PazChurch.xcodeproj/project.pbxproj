@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F758E33DD8293D3B4905DC0B /* LifeGroupReunioesUXTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7640C7C6A833CF4260A45B10 /* LifeGroupReunioesUXTests.swift */; };
+		45F454122DAB562AAF108059 /* LifeGroupMeetingEntryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D1F8EF08913699510719A9 /* LifeGroupMeetingEntryViewModel.swift */; };
+		F8411319A6CB12E0FCC34F94 /* LifeGroupMeetingEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D65CEAFAEBB17F980DBED71 /* LifeGroupMeetingEntryView.swift */; };
 		3A68E6DF2DCD4296CD7C2E37 /* LifeGroupMeetingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B2301A5623C7D0648BD02DE /* LifeGroupMeetingViewModelTests.swift */; };
 		C9621EF3B19A986CE23C8E55 /* LifeGroupMeetingHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94725C8A1874630EC2645C58 /* LifeGroupMeetingHistoryView.swift */; };
 		A6D64CC3C878CB89CEF48B27 /* LifeGroupMeetingComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = F67342AFFB582CA0D7D29021 /* LifeGroupMeetingComponents.swift */; };
@@ -16,13 +19,6 @@
 		104859FBBF19976C21347463 /* LifeGroupMeetingHistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BECA4E35783287217D9D56F9 /* LifeGroupMeetingHistoryViewModel.swift */; };
 		76245460F38ED233279FA3D0 /* LifeGroupMeetingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8320612C9918D0C9E0D3D067 /* LifeGroupMeetingViewModel.swift */; };
 		1FD9FBACF0AE864EFBC77CD3 /* LifeGroupMeetingServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 379A36FFA84298692AD87EA9 /* LifeGroupMeetingServices.swift */; };
-		EB37166DBE8F0005EC5433BF /* LifeGroupReportFormTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8AFA5B2FBD754C34AFC4309 /* LifeGroupReportFormTests.swift */; };
-		0D5D7D637EE313C737EA0CDB /* LifeGroupReportFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2493D4F148FAF5704C72EB8D /* LifeGroupReportFormView.swift */; };
-		E508038BA0B3E749A4B8A2CA /* LifeGroupReportFormViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 226F7535C7EBC1D52BF00043 /* LifeGroupReportFormViewModel.swift */; };
-		42CA3B771426D7A0770A7563 /* LifeGroupReportsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9CC9929E4F0DA5A78870527 /* LifeGroupReportsTests.swift */; };
-		9FE88920EB30FCB77097041E /* LifeGroupReportDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB5EC09C73F64250E2350FA6 /* LifeGroupReportDetailView.swift */; };
-		3F99685C6044E69D79B29D35 /* LifeGroupReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32C3F7EC2411EBE8BE7F414 /* LifeGroupReportsView.swift */; };
-		0A3D77FBFA2947F33B50A96E /* LifeGroupReportsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEFFE7517343A243C1E1ACDB /* LifeGroupReportsViewModel.swift */; };
 		7D84EAFFB66F36F34DCC7984 /* LifeGroupHomeCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 995A21848F9DFDCAFC64B4A9 /* LifeGroupHomeCard.swift */; };
 		D5E0E520DC3A7B939E8F2110 /* LifeGroupTaskMembersViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B171DEE2C8BD7B9723EC438 /* LifeGroupTaskMembersViewModel.swift */; };
 		4124D5D23C6992CAB01A7E10 /* LifeGroupTaskMembersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1F07E7BEE9EBD1CF5A9D03E /* LifeGroupTaskMembersView.swift */; };
@@ -181,6 +177,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7640C7C6A833CF4260A45B10 /* LifeGroupReunioesUXTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReunioesUXTests.swift; sourceTree = "<group>"; };
+		E1D1F8EF08913699510719A9 /* LifeGroupMeetingEntryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupMeetingEntryViewModel.swift; sourceTree = "<group>"; };
+		4D65CEAFAEBB17F980DBED71 /* LifeGroupMeetingEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupMeetingEntryView.swift; sourceTree = "<group>"; };
 		0B2301A5623C7D0648BD02DE /* LifeGroupMeetingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupMeetingViewModelTests.swift; sourceTree = "<group>"; };
 		94725C8A1874630EC2645C58 /* LifeGroupMeetingHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupMeetingHistoryView.swift; sourceTree = "<group>"; };
 		F67342AFFB582CA0D7D29021 /* LifeGroupMeetingComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupMeetingComponents.swift; sourceTree = "<group>"; };
@@ -190,13 +189,6 @@
 		BECA4E35783287217D9D56F9 /* LifeGroupMeetingHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupMeetingHistoryViewModel.swift; sourceTree = "<group>"; };
 		8320612C9918D0C9E0D3D067 /* LifeGroupMeetingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupMeetingViewModel.swift; sourceTree = "<group>"; };
 		379A36FFA84298692AD87EA9 /* LifeGroupMeetingServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupMeetingServices.swift; sourceTree = "<group>"; };
-		F8AFA5B2FBD754C34AFC4309 /* LifeGroupReportFormTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportFormTests.swift; sourceTree = "<group>"; };
-		2493D4F148FAF5704C72EB8D /* LifeGroupReportFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportFormView.swift; sourceTree = "<group>"; };
-		226F7535C7EBC1D52BF00043 /* LifeGroupReportFormViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportFormViewModel.swift; sourceTree = "<group>"; };
-		C9CC9929E4F0DA5A78870527 /* LifeGroupReportsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportsTests.swift; sourceTree = "<group>"; };
-		FB5EC09C73F64250E2350FA6 /* LifeGroupReportDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportDetailView.swift; sourceTree = "<group>"; };
-		C32C3F7EC2411EBE8BE7F414 /* LifeGroupReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportsView.swift; sourceTree = "<group>"; };
-		DEFFE7517343A243C1E1ACDB /* LifeGroupReportsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupReportsViewModel.swift; sourceTree = "<group>"; };
 		995A21848F9DFDCAFC64B4A9 /* LifeGroupHomeCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupHomeCard.swift; sourceTree = "<group>"; };
 		8B171DEE2C8BD7B9723EC438 /* LifeGroupTaskMembersViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskMembersViewModel.swift; sourceTree = "<group>"; };
 		B1F07E7BEE9EBD1CF5A9D03E /* LifeGroupTaskMembersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeGroupTaskMembersView.swift; sourceTree = "<group>"; };
@@ -443,7 +435,6 @@
 				4572C86A42A72B7ABC777BAE /* LifeGroupAnalytics */,
 				8392A3E0842B35CEF8A6F3A1 /* LifeGroupMeeting */,
 				744A2D117CBCEF98E72B91EC /* LifeGroupTasks */,
-				119E252E2E5C14B209388E46 /* LifeGroupReports */,
 				7AC12741EED7CF558368863F /* LifeGroupStudy */,
 				F1CD9530F50CB5214AE5DF32 /* MemberJourney */,
 				36D27ED148027B3DCC6FD3CF /* Ministries */,
@@ -561,18 +552,6 @@
 			path = LifeGroupStudy;
 			sourceTree = "<group>";
 		};
-		119E252E2E5C14B209388E46 /* LifeGroupReports */ = {
-			isa = PBXGroup;
-			children = (
-				FB5EC09C73F64250E2350FA6 /* LifeGroupReportDetailView.swift */,
-				C32C3F7EC2411EBE8BE7F414 /* LifeGroupReportsView.swift */,
-				DEFFE7517343A243C1E1ACDB /* LifeGroupReportsViewModel.swift */,
-				2493D4F148FAF5704C72EB8D /* LifeGroupReportFormView.swift */,
-				226F7535C7EBC1D52BF00043 /* LifeGroupReportFormViewModel.swift */,
-			);
-			path = LifeGroupReports;
-			sourceTree = "<group>";
-		};
 		744A2D117CBCEF98E72B91EC /* LifeGroupTasks */ = {
 			isa = PBXGroup;
 			children = (
@@ -596,6 +575,8 @@
 				6B0CE3CE07B69C5AB78B422C /* LifeGroupMeetingAttendanceSection.swift */,
 				D4BB710E6D19E30E0A2BE00E /* LifeGroupMeetingReportSection.swift */,
 				F67342AFFB582CA0D7D29021 /* LifeGroupMeetingComponents.swift */,
+				4D65CEAFAEBB17F980DBED71 /* LifeGroupMeetingEntryView.swift */,
+				E1D1F8EF08913699510719A9 /* LifeGroupMeetingEntryViewModel.swift */,
 				94725C8A1874630EC2645C58 /* LifeGroupMeetingHistoryView.swift */,
 			);
 			path = LifeGroupMeeting;
@@ -764,11 +745,10 @@
 		A11CE57100000000000001F4 /* PazChurchTests */ = {
 			isa = PBXGroup;
 			children = (
-				C9CC9929E4F0DA5A78870527 /* LifeGroupReportsTests.swift */,
-				F8AFA5B2FBD754C34AFC4309 /* LifeGroupReportFormTests.swift */,
 				A11CE5710000000000000001 /* DeepLinkDestinationTests.swift */,
 				A11CE5710000000000000002 /* LifeGroupTaskMarkdownTests.swift */,
 				A11CE5710000000000000003 /* HomeViewModelTests.swift */,
+				7640C7C6A833CF4260A45B10 /* LifeGroupReunioesUXTests.swift */,
 				0B2301A5623C7D0648BD02DE /* LifeGroupMeetingViewModelTests.swift */,
 			);
 			path = PazChurchTests;
@@ -966,11 +946,6 @@
 				9B35B93C7F743C40EC9D2013 /* GlassCard.swift in Sources */,
 				214CF4956D0B65E1AFA723F8 /* HomeView.swift in Sources */,
 				7D84EAFFB66F36F34DCC7984 /* LifeGroupHomeCard.swift in Sources */,
-				0A3D77FBFA2947F33B50A96E /* LifeGroupReportsViewModel.swift in Sources */,
-				0D5D7D637EE313C737EA0CDB /* LifeGroupReportFormView.swift in Sources */,
-				E508038BA0B3E749A4B8A2CA /* LifeGroupReportFormViewModel.swift in Sources */,
-				3F99685C6044E69D79B29D35 /* LifeGroupReportsView.swift in Sources */,
-				9FE88920EB30FCB77097041E /* LifeGroupReportDetailView.swift in Sources */,
 				81241EF8344367972B2409AF /* HomeViewModel.swift in Sources */,
 				DF21AEDC064DBA45469FB713 /* InteractivePopGestureDisabler.swift in Sources */,
 				171CAD8D0367A6425919DB72 /* JourneyLevelUpOverlay.swift in Sources */,
@@ -990,6 +965,8 @@
 				DDD8D95E11E0C12C71CD8A49 /* LifeGroupMeetingAttendanceSection.swift in Sources */,
 				E4652FBDFC04BA31C4CE3A56 /* LifeGroupMeetingReportSection.swift in Sources */,
 				A6D64CC3C878CB89CEF48B27 /* LifeGroupMeetingComponents.swift in Sources */,
+				F8411319A6CB12E0FCC34F94 /* LifeGroupMeetingEntryView.swift in Sources */,
+				45F454122DAB562AAF108059 /* LifeGroupMeetingEntryViewModel.swift in Sources */,
 				C9621EF3B19A986CE23C8E55 /* LifeGroupMeetingHistoryView.swift in Sources */,
 				65BD6B55FF25446AC29997D2 /* LifeGroupManageView.swift in Sources */,
 				3D84D9AFE377A15FCE617E1F /* LifeGroupPickerSheet.swift in Sources */,
@@ -1053,9 +1030,8 @@
 			files = (
 				A11CE5710000000000000065 /* DeepLinkDestinationTests.swift in Sources */,
 				A11CE5710000000000000066 /* LifeGroupTaskMarkdownTests.swift in Sources */,
-				42CA3B771426D7A0770A7563 /* LifeGroupReportsTests.swift in Sources */,
-				EB37166DBE8F0005EC5433BF /* LifeGroupReportFormTests.swift in Sources */,
 				A11CE5710000000000000067 /* HomeViewModelTests.swift in Sources */,
+				F758E33DD8293D3B4905DC0B /* LifeGroupReunioesUXTests.swift in Sources */,
 				3A68E6DF2DCD4296CD7C2E37 /* LifeGroupMeetingViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

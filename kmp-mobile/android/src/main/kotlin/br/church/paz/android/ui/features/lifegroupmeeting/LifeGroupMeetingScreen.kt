@@ -111,7 +111,12 @@ fun LifeGroupMeetingScreen(
                 when {
                     uiState.isLoading -> MeetingSkeleton()
                     uiState.loadError != null ->
-                        PazErrorState(message = uiState.loadError.orEmpty(), onRetry = viewModel::load)
+                        if (uiState.loadErrorRetryable) {
+                            PazErrorState(message = uiState.loadError.orEmpty(), onRetry = viewModel::load)
+                        } else {
+                            // Missing group / permission: retrying cannot help.
+                            MeetingLoadFailure(message = uiState.loadError.orEmpty(), onBack = viewModel::onBack)
+                        }
                     uiState.needsExtraChoice && uiState.isWriteForbidden ->
                         Column(Modifier.fillMaxSize().padding(PazSpacing.Lg)) {
                             NoticeCard(text = LifeGroupMeetingRules.noMeetingToViewMessage(), isWarning = false)
@@ -121,10 +126,60 @@ fun LifeGroupMeetingScreen(
                             date = uiState.meetingDate,
                             onExtraChanged = viewModel::onExtraMeetingChanged,
                         )
+                    uiState.isEmptyReadOnly -> EmptyReadOnlyContent(uiState = uiState)
                     else -> MeetingContent(uiState = uiState, viewModel = viewModel)
                 }
             }
         }
+    }
+}
+
+/** A date nothing was recorded for, opened read-only: an empty state (with the deadline banner), not an error. */
+@Composable
+private fun EmptyReadOnlyContent(uiState: LifeGroupMeetingUiState) {
+    val meeting = uiState.meeting
+    Column(
+        modifier = Modifier.fillMaxSize().padding(PazSpacing.Lg),
+        verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+    ) {
+        if (meeting != null) ReadOnlyBanner(uiState = uiState, editDeadline = meeting.editDeadline)
+        NoticeCard(text = LifeGroupMeetingRules.noMeetingToViewMessage(), isWarning = false)
+    }
+}
+
+@Composable
+private fun MeetingLoadFailure(
+    message: String,
+    onBack: () -> Unit,
+) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(
+            modifier = Modifier.padding(PazSpacing.Xl),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+        ) {
+            Text(message, style = MaterialTheme.typography.bodyMedium)
+            PazButton(text = "Voltar", onClick = onBack, modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+/** Why the meeting cannot be edited (supervisor / closed window), or the "edit until" hint while it can. */
+@Composable
+private fun ReadOnlyBanner(
+    uiState: LifeGroupMeetingUiState,
+    editDeadline: String,
+) {
+    if (uiState.isWriteForbidden) {
+        NoticeCard(text = LifeGroupMeetingRules.writeForbiddenMessage(), isWarning = false)
+    } else if (uiState.isReadOnly) {
+        NoticeCard(text = LifeGroupMeetingRules.readOnlyMessage(editDeadline), isWarning = true)
+    } else if (editDeadline.isNotBlank()) {
+        Text(
+            LifeGroupMeetingRules.editableUntilMessage(editDeadline),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        )
     }
 }
 
@@ -150,27 +205,25 @@ private fun MeetingContent(
             }
         }
         if (meeting != null) {
-            item {
-                if (uiState.isWriteForbidden) {
-                    NoticeCard(text = LifeGroupMeetingRules.writeForbiddenMessage(), isWarning = false)
-                } else if (readOnly) {
-                    NoticeCard(text = LifeGroupMeetingRules.readOnlyMessage(meeting.editDeadline), isWarning = true)
-                } else if (meeting.editDeadline.isNotBlank()) {
-                    Text(
-                        LifeGroupMeetingRules.editableUntilMessage(meeting.editDeadline),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    )
-                }
-            }
+            item { ReadOnlyBanner(uiState = uiState, editDeadline = meeting.editDeadline) }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
                     StatusPill(
-                        text = if (uiState.isAttendanceSaved) "Presença salva" else "Presença pendente",
+                        text =
+                            when {
+                                uiState.isAttendanceSaved -> "Presença salva"
+                                readOnly -> "Sem presença"
+                                else -> "Presença pendente"
+                            },
                         done = uiState.isAttendanceSaved,
                     )
                     StatusPill(
-                        text = if (uiState.isReportSaved) "Relatório enviado" else "Relatório pendente",
+                        text =
+                            when {
+                                uiState.isReportSaved -> "Relatório enviado"
+                                readOnly -> "Sem relatório"
+                                else -> "Relatório pendente"
+                            },
                         done = uiState.isReportSaved,
                     )
                     if (uiState.meeting?.attendance?.isExtra == true || (uiState.isExtra && uiState.showExtraToggle)) {
@@ -193,13 +246,16 @@ private fun MeetingContent(
 
         // ---- Presença ------------------------------------------------------------------
         item { SectionTitle("Presença") }
-        item {
-            AttendanceHeader(uiState = uiState, onAllPresentChanged = viewModel::onAllPresentChanged)
+        if (uiState.showAttendanceRoster) {
+            item {
+                AttendanceHeader(uiState = uiState, onAllPresentChanged = viewModel::onAllPresentChanged)
+            }
         }
-        if (meeting?.attendance == null) {
+        if (!uiState.showAttendanceRoster) {
             item {
                 Text(
-                    "Nenhuma presença registrada para esta data.",
+                    // Legacy report without presence, or a read-only date: never list a pre-filled roster.
+                    "Sem presença registrada para esta data.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )

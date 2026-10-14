@@ -117,4 +117,25 @@ class PazHttpClientTest {
         val client = createPazHttpClient(storage, "http://test", engine, debug = true)
         client.get("/ping") // should not throw
     }
+
+    @Test
+    fun `error code of a failed response is exposed on the thrown exception`() = runTest {
+        val storage = FakeTokenStorage().also { it.save(TokenPair("a", "r")) }
+        val engine =
+            MockEngine {
+                respond(
+                    """{"statusCode":404,"code":"group_not_found","message":"Life group with ID 5 not found"}""",
+                    HttpStatusCode.NotFound,
+                    jsonHeaders,
+                )
+            }
+        val client = createPazHttpClient(storage, "http://test", engine)
+        val error = runCatching { client.get("/x").throwOnClientOrServerError() }.exceptionOrNull()
+        assertEquals(404, error?.anyHttpStatusCodeOrNull())
+        assertEquals("group_not_found", error?.httpErrorCodeOrNull())
+
+        val noCode = MockEngine { respond("""{"message":"Cannot GET /x"}""", HttpStatusCode.NotFound, jsonHeaders) }
+        val error2 = runCatching { createPazHttpClient(storage, "http://test", noCode).get("/x").throwOnClientOrServerError() }.exceptionOrNull()
+        assertNull(error2?.httpErrorCodeOrNull())
+    }
 }

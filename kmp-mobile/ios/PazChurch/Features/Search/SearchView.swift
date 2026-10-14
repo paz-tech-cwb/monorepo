@@ -179,7 +179,7 @@ struct SearchView: View {
                     resultsList
                 }
             }
-            .background(PazMeshBackground())
+            .pazScreenBackground()
         }
     }
 

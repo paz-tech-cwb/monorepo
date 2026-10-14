@@ -48,7 +48,9 @@ class LifeGroupAnalyticsViewModel(
     private var loadJob: Job? = null
 
     init {
-        loadOverview()
+        // The overview is church-wide (groups by sector, members with/without a group...) and feeds the
+        // group dropdown: a single-group view needs neither, so it is not even requested.
+        if (initialLifeGroupId == null) loadOverview()
         load()
     }
 
@@ -111,9 +113,14 @@ class LifeGroupAnalyticsViewModel(
                                     )
                                 }
                             }
+                        // A single group has nothing to distribute (it IS the one group): skip the request.
                         val distributionDeferred =
                             async {
-                                runCatchingCancellable { analyticsRepository.getDistribution(lifeGroupId = state.lifeGroupId) }
+                                if (state.isScopedToGroup) {
+                                    null
+                                } else {
+                                    runCatchingCancellable { analyticsRepository.getDistribution(lifeGroupId = state.lifeGroupId) }
+                                }
                             }
 
                         val attendanceResult = attendanceDeferred.await()
@@ -125,11 +132,11 @@ class LifeGroupAnalyticsViewModel(
                                 isRefreshing = false,
                                 attendanceRows = attendanceResult.getOrNull()?.rows ?: current.attendanceRows,
                                 attendanceError = attendanceResult.exceptionOrNull()?.toInlineErrorMessage(),
-                                byDay = distributionResult.getOrNull()?.byDay ?: current.byDay,
-                                byHour = distributionResult.getOrNull()?.byHour ?: current.byHour,
-                                byNeighborhood = distributionResult.getOrNull()?.byNeighborhood ?: current.byNeighborhood,
-                                byCity = distributionResult.getOrNull()?.byCity ?: current.byCity,
-                                distributionError = distributionResult.exceptionOrNull()?.toInlineErrorMessage(),
+                                byDay = distributionResult?.getOrNull()?.byDay ?: current.byDay,
+                                byHour = distributionResult?.getOrNull()?.byHour ?: current.byHour,
+                                byNeighborhood = distributionResult?.getOrNull()?.byNeighborhood ?: current.byNeighborhood,
+                                byCity = distributionResult?.getOrNull()?.byCity ?: current.byCity,
+                                distributionError = distributionResult?.exceptionOrNull()?.toInlineErrorMessage(),
                             )
                         }
                     }

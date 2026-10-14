@@ -47,7 +47,7 @@ struct ReportsListView: View {
                 Spacer().frame(height: 32)
             }
         }
-        .background(PazMeshBackground())
+        .pazScreenBackground()
         .navigationTitle("Relatórios")
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)

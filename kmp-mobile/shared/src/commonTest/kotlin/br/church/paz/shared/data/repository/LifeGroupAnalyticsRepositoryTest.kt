@@ -72,4 +72,19 @@ class LifeGroupAnalyticsRepositoryTest {
         assertEquals(0, result.membersTotal)
         assertTrue(result.lifeGroups.isEmpty())
     }
+
+    @Test
+    fun `getOverview sends life_group_id only when scoped`() = runTest {
+        val queries = mutableListOf<String?>()
+        val engine = MockEngine { request ->
+            queries += request.url.parameters["life_group_id"]
+            respond("""{}""", HttpStatusCode.OK, jsonHeaders)
+        }
+        val repo = buildRepo(engine)
+
+        repo.getOverview()
+        repo.getOverview(lifeGroupId = 2)
+
+        assertEquals(listOf<String?>(null, "2"), queries)
+    }
 }

@@ -22,7 +22,7 @@ struct AgendaListView: View {
                     eventList
                 }
             }
-            .background(PazMeshBackground())
+            .pazScreenBackground()
             .navigationTitle("Agenda")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)

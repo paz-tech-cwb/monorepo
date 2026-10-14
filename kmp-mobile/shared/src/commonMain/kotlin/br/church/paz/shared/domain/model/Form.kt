@@ -243,32 +243,3 @@ data class CasaDePazCycle(
     val month: String,
     val status: String,
 )
-
-/**
- * Wire payload of `POST /forms/life-group-reports` (mirrors the backend `CreateLifeGroupReportDto`).
- *
- * `area_id`/`sector_id` are deliberately absent: the backend derives them from the group.
- * Build it with [LifeGroupReportDraft.toForm] so values are validated and normalised
- * (`offering` is a decimal string such as "150.50", the three multi-value fields are arrays).
- */
-@Serializable
-data class LifeGroupReportForm(
-    // ISO `yyyy-MM-dd`; never in the future (church day, America/Sao_Paulo).
-    val date: String,
-    @SerialName("life_group_id") val lifeGroupId: Int,
-    @SerialName("committed_members") val committedMembers: Int,
-    @SerialName("committed_members_present") val committedMembersPresent: Int,
-    @SerialName("kids_0_to_11") val kids0To11: Int,
-    val guests: Int,
-    val mdas: Int,
-    val offering: String,
-    @SerialName("committed_at_tadel") val committedAtTadel: Int,
-    @SerialName("committed_at_culto") val committedAtCulto: Int,
-    @SerialName("leader_attended") val leaderAttended: List<String>,
-    @SerialName("disciples_count") val disciplesCount: Int,
-    @SerialName("disciples_discipled_this_week") val disciplesDiscipledThisWeek: Int,
-    @SerialName("pastoring_activity_type") val pastoringActivityType: List<String>,
-    @SerialName("pastoring_activity_other") val pastoringActivityOther: String? = null,
-    @SerialName("training_activity_type") val trainingActivityType: List<String>,
-    @SerialName("training_activity_other") val trainingActivityOther: String? = null,
-)

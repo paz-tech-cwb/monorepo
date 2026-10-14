@@ -10,7 +10,7 @@ struct CasaDePazLessonsView: View {
 
     var body: some View {
         screenContent
-            .background(PazMeshBackground())
+            .pazScreenBackground()
             .navigationTitle("Conteúdo Casa de Paz")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)

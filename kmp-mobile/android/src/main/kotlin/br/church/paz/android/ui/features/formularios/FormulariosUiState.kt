@@ -18,8 +18,8 @@ sealed class FormulariosEffect {
         val formId: String,
     ) : FormulariosEffect()
 
-    /** Weekly life-group report: always the submit screen, even for readers (leaders have can_read). */
-    data object NavigateToLifeGroupReportSubmit : FormulariosEffect()
+    /** Weekly life-group report: always the Reunião flow (group picker / Reuniões), even for readers (leaders have can_read). */
+    data object NavigateToLifeGroupMeetings : FormulariosEffect()
 
     data object NavigateBack : FormulariosEffect()
 }
