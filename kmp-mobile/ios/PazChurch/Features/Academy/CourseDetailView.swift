@@ -26,7 +26,7 @@ struct CourseDetailView: View {
                 ErrorStateView(message: "Curso não encontrado", onRetry: { Task { await viewModel.load() } })
             }
         }
-        .background(PazMeshBackground().ignoresSafeArea())
+        .pazScreenBackground()
         .navigationTitle(viewModel.course?.title ?? "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)

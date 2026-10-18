@@ -351,4 +351,25 @@ class LifeGroupMeetingRepositoryTest {
             assertNull(html.code)
             assertNull(html.serverMessage)
         }
+
+    @Test
+    fun `a route that is not deployed is server unavailable not group not found`() =
+        runTest {
+            // Exact body Nest answers when the /meetings route does not exist (failed deploy).
+            val missingRoute =
+                failure(
+                    HttpStatusCode.NotFound,
+                    """{"message":"Cannot GET /api/life-groups/2/meetings/2026-09-08","error":"Not Found","statusCode":404}""",
+                )
+            assertNull(missingRoute.code)
+            assertEquals(LifeGroupMeetingErrors.Kind.SERVER_UNAVAILABLE, LifeGroupMeetingErrors.kind(missingRoute))
+            assertEquals(LifeGroupMeetingErrors.MESSAGE_SERVER_UNAVAILABLE, LifeGroupMeetingErrors.message(missingRoute))
+
+            val unknownGroup =
+                failure(HttpStatusCode.NotFound, """{"statusCode":404,"code":"group_not_found","message":"Life group with ID 2 not found"}""")
+            assertEquals(LifeGroupMeetingErrors.Kind.GROUP_NOT_FOUND, LifeGroupMeetingErrors.kind(unknownGroup))
+            // Backends that predate the code keep the same classification through the message.
+            val legacy = failure(HttpStatusCode.NotFound, """{"statusCode":404,"message":"Life group with ID 2 not found"}""")
+            assertEquals(LifeGroupMeetingErrors.Kind.GROUP_NOT_FOUND, LifeGroupMeetingErrors.kind(legacy))
+        }
 }

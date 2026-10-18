@@ -8,7 +8,6 @@ import br.church.paz.shared.domain.model.ConversionForm
 import br.church.paz.shared.domain.model.CourseForm
 import br.church.paz.shared.domain.model.FormCatalogItem
 import br.church.paz.shared.domain.model.GuestForm
-import br.church.paz.shared.domain.model.LifeGroupReportForm
 import br.church.paz.shared.domain.model.LifeGroupSummary
 import br.church.paz.shared.domain.model.MemberRegistrationForm
 import br.church.paz.shared.domain.model.MultiplicationForm
@@ -109,10 +108,6 @@ class FormsRepositoryImpl(private val client: HttpClient) : FormsRepository {
     @Throws(Exception::class)
     override suspend fun submitCourse(form: CourseForm) =
         post("api/forms/member-registrations/courses", form)
-
-    @Throws(Exception::class)
-    override suspend fun submitLifeGroupReport(form: LifeGroupReportForm) =
-        post("api/forms/life-group-reports", form)
 
     @Throws(Exception::class)
     override suspend fun submitSectorReport(form: SectorSupervisorReportForm) =

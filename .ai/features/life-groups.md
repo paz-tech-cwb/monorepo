@@ -295,6 +295,16 @@ One screen per meeting (group + date) with Presença first and Relatório second
 - iOS: `ios/PazChurch/Features/LifeGroupMeeting/` (`LifeGroupMeetingView` + attendance/report section views, `LifeGroupMeetingViewModel`, `LifeGroupMeetingHistoryView`/`ViewModel`, `LifeGroupMeetingServices` = Swift seams over the shared repository/draft store plus error mapping through `LifeGroupMeetingErrors`). Same behavior as Android: all rules come from the shared `LifeGroupMeetingRules`. History is a pushed screen from the "Reuniões" row of `LifeGroupDetailView` (same `canViewGroupReports` gate) with a "Nova reunião" sheet (graphical `DatePicker`, upper bound = today in America/Sao_Paulo, default `defaultNewMeetingDate`, extra-meeting hint). `paz://presenca/{id}/{date}` still parses to `DeepLinkDestination.lifeGroupAttendanceEditor` (enum case name kept; parsing/allowlist untouched) and now renders `LifeGroupMeetingDeepLinkView` -> the combined screen on the Home stack. The old `Features/LifeGroupAttendance/` views/view models were removed (`LifeGroupAttendanceRepository` stays: it feeds the history).
 - Not touched: reminders, push copy, deep link strings, the Formulários catalog entry and `paz://form/life-group-reports`. On this base the standalone Phase 0 report form (legacy `POST /forms/life-group-reports`) is not present at all; if/when it lands it should stay reachable only through Formulários/the deep link, while group detail uses "Reuniões".
 
+### Reuniões UX rework (client-only, shared + Android + iOS)
+
+Client-side rework on top of the meetings API; the backend side (404 root cause, `group_not_found` code, 200 read-only draft for past dates without a record, group-scoped analytics incl. `/overview?life_group_id=`) is PR #102 (`fix/meetings-404-analytics-scope`).
+
+- Information architecture: group screen rows are Reuniões, Membros, Estudo do Life, Elegibilidade (leader/co-leader). "Enviar relatório", "Relatórios semanais" and the group-level "Relatórios" row are gone; Reuniões has two tabs [Reuniões | Relatórios]. Details, mockup and rules: `features/mobile-app.md` ("Reuniões UX").
+- Formulários entry and `paz://form/life-group-reports` open the Reunião flow (`LifeGroupMeetingRules.resolveEntry`). The legacy `POST /api/forms/life-group-reports` stays for old builds.
+- Client error contract (`LifeGroupMeetingErrors.kind`): 404 is "group not found" only with `code: group_not_found` (or the legacy message); any other 404/501/502/503 = route missing on the server (failed deploy) -> "Recurso indisponível no servidor. Tente novamente mais tarde.".
+- A past date without a record is a normal 200 (read-only draft) -> read-only empty state, never an error. `attendance: null` (legacy report on a non-regular weekday) renders the report read-only with "Sem presença registrada".
+- Analytics for one group send `life_group_id`; the single-group view shows a client-side summary (`summarizeAttendance`) instead of church-wide cards.
+
 Migration `1796000000000-AddAttendanceLinkToLifeGroupReports` (human gate, not run
 in any real environment by this branch): nullable `life_group_reports.attendance_id`
 uuid FK -> `life_group_attendance(id)` ON DELETE SET NULL + index

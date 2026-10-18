@@ -8,7 +8,6 @@ import br.church.paz.shared.domain.model.ConversionForm
 import br.church.paz.shared.domain.model.CourseForm
 import br.church.paz.shared.domain.model.FormCatalogItem
 import br.church.paz.shared.domain.model.GuestForm
-import br.church.paz.shared.domain.model.LifeGroupReportForm
 import br.church.paz.shared.domain.model.LifeGroupSummary
 import br.church.paz.shared.domain.model.MemberRegistrationForm
 import br.church.paz.shared.domain.model.MultiplicationForm
@@ -41,8 +40,6 @@ interface FormsRepository {
     suspend fun submitServiceReport(form: ServiceReportForm)
     @Throws(Exception::class)
     suspend fun submitCourse(form: CourseForm)
-    @Throws(Exception::class)
-    suspend fun submitLifeGroupReport(form: LifeGroupReportForm)
     @Throws(Exception::class)
     suspend fun submitSectorReport(form: SectorSupervisorReportForm)
     @Throws(Exception::class)

@@ -138,10 +138,6 @@ class LifeGroupDetailViewModel(
             emptyList()
         }
 
-    fun onReportsTap() {
-        viewModelScope.launch { _effect.send(LifeGroupDetailEffect.NavigateToReports(lifeGroupId)) }
-    }
-
     fun onManageTap() {
         viewModelScope.launch { _effect.send(LifeGroupDetailEffect.NavigateToManage(lifeGroupId)) }
     }
@@ -160,7 +156,7 @@ class LifeGroupDetailViewModel(
 }
 
 /**
- * Who sees the per-group "Relatórios" / "Relatórios semanais" entries: this group's own
+ * Who sees the per-group "Reuniões" entry (meetings, weekly reports and stats): this group's own
  * leader/co-leader ([isGroupLeadership], by id — works for a co-leader whose role is `member`),
  * or admin/pastor/area leader/sector leader (the client cannot know their scope; the backend
  * answers 403/404 for out-of-scope groups). A `life_group_leader` of ANOTHER group, plain

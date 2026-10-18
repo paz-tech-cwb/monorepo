@@ -49,4 +49,14 @@ extension View {
     func pazMeshBackground() -> some View {
         background(PazMeshBackground())
     }
+
+    /// The ONE full-screen background of a screen. `.background(PazMeshBackground())` alone sizes the mesh
+    /// to the content, so a compact state view (error, empty, loading) leaves a small mesh region over the
+    /// real, larger screen background (two visible backgrounds). Filling the proposed size first makes the
+    /// mesh cover the whole screen. State views must therefore never add a background or glass card of
+    /// their own around their content.
+    func pazScreenBackground() -> some View {
+        frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(PazMeshBackground())
+    }
 }

@@ -12,6 +12,8 @@ data class LifeGroupMeetingUiState(
     val meetingDate: String,
     val isLoading: Boolean = true,
     val loadError: String? = null,
+    // False for a missing group / missing permission: retrying cannot help, the screen offers "Voltar" only.
+    val loadErrorRetryable: Boolean = true,
     // The server said the date is not the group's weekday: the user must tick "Reunião extra" first.
     val needsExtraChoice: Boolean = false,
     val isExtra: Boolean = false,
@@ -38,6 +40,17 @@ data class LifeGroupMeetingUiState(
     val isReadOnly: Boolean get() = isWriteForbidden || meeting?.isEditable == false
 
     val isAttendanceSaved: Boolean get() = meeting?.isAttendanceSaved == true
+
+    /**
+     * A date nothing was ever recorded for, opened by someone who cannot write it (supervisor, or past the
+     * edit window): the server answers 200 with a draft; the screen shows an empty state, never an error and
+     * never a roster pre-filled with "everybody present".
+     */
+    val isEmptyReadOnly: Boolean get() = meeting?.hasNoRecord == true && isReadOnly
+
+    /** The presence roster is listed: editable meetings, or read-only ones that really have a saved presence. */
+    val showAttendanceRoster: Boolean
+        get() = meeting?.attendance != null && (!isReadOnly || isAttendanceSaved)
 
     val isReportSaved: Boolean get() = meeting?.isReportSaved == true
 
@@ -99,7 +112,11 @@ sealed class LifeGroupMeetingEffect {
     data object NavigateBack : LifeGroupMeetingEffect()
 }
 
+/** The two tabs of the Reuniões screen: the meetings list and the group's stats ("Relatórios"). */
+enum class LifeGroupMeetingsTab { MEETINGS, REPORTS }
+
 data class LifeGroupMeetingHistoryUiState(
+    val selectedTab: LifeGroupMeetingsTab = LifeGroupMeetingsTab.MEETINGS,
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val meetings: List<LifeGroupMeetingSummary> = emptyList(),

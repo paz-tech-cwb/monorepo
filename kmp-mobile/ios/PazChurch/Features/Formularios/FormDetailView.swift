@@ -383,11 +383,11 @@ class FormDetailViewModelIOS {
             ))
 
         case .lifeGroupReport:
-            // The weekly report has its own screen (LifeGroupReportFormView) that builds the real DTO
-            // payload; this generic form must never post a report.
+            // The weekly report is filed from the Reuniões flow (LifeGroupMeetingEntryView); this generic
+            // form must never post a report.
             throw NSError(
                 domain: "FormDetail", code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "O relatório semanal é enviado pela tela do Life Group."]
+                userInfo: [NSLocalizedDescriptionKey: "O relatório semanal é enviado pela tela de Reuniões do Life Group."]
             )
 
         case .course:

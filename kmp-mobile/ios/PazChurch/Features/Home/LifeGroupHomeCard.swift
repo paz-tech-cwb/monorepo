@@ -15,11 +15,41 @@ func lifeGroupMeetingLabel(day: String?, time: String?) -> String? {
     }
 }
 
-/// One card per life group on the home screen: the header (name, leader, meeting, members) opens
-/// the group detail; the viewer's upcoming tasks for this group ("Minhas tarefas") are folded in
-/// below it. The header and each task row are SIBLING NavigationLinks, never nested.
-struct LifeGroupHomeCard: View {
+/// The viewer's life groups as ONE glass card ("Meus grupos"): with several groups a "MEUS GRUPOS" header and one
+/// row per group separated by dividers; with a single group the same card keeps its "LIFE GROUP" kicker
+/// (unchanged look). Layout decisions come from the shared `homeLifeGroupsLayout`. Each row's header opens that
+/// group's detail and the viewer's upcoming tasks ("Minhas tarefas") are folded in below it; the header and each
+/// task row are SIBLING NavigationLinks, never nested.
+struct LifeGroupsHomeSection: View {
+    let cards: [HomeLifeGroupCard]
+    let taskRepository: LifeGroupTaskRepository
+
+    var body: some View {
+        let layout = HomeLifeGroupCardKt.homeLifeGroupsLayout(groupCount: Int32(cards.count))
+        VStack(alignment: .leading, spacing: PazSpacing.sm) {
+            if layout.showsSectionHeader {
+                Text(HomeLifeGroupsSection.shared.HEADER_SEVERAL)
+                    .font(PazTypography.labelMedium)
+                    .foregroundStyle(PazColors.accent.opacity(0.7))
+                    .accessibilityAddTraits(.isHeader)
+            }
+            ForEach(Array(cards.enumerated()), id: \.element.group.id) { index, card in
+                if index > 0 {
+                    Divider().padding(.vertical, PazSpacing.xs)
+                }
+                LifeGroupHomeRow(card: card, showsKicker: layout.showsRowKicker, taskRepository: taskRepository)
+            }
+        }
+        .padding(PazSpacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassCard(radius: PazSpacing.cardRadiusCompact)
+    }
+}
+
+/// One group inside `LifeGroupsHomeSection`: header (tap -> group detail) plus its folded-in tasks.
+struct LifeGroupHomeRow: View {
     let card: HomeLifeGroupCard
+    let showsKicker: Bool
     let taskRepository: LifeGroupTaskRepository
 
     var body: some View {
@@ -30,9 +60,11 @@ struct LifeGroupHomeCard: View {
             } label: {
                 HStack(spacing: PazSpacing.md) {
                     VStack(alignment: .leading, spacing: PazSpacing.xs) {
-                        Text("LIFE GROUP")
-                            .font(PazTypography.labelMedium)
-                            .foregroundStyle(PazColors.accent.opacity(0.7))
+                        if showsKicker {
+                            Text(HomeLifeGroupsSection.shared.KICKER_SINGLE)
+                                .font(PazTypography.labelMedium)
+                                .foregroundStyle(PazColors.accent.opacity(0.7))
+                        }
                         Text(group.name)
                             .font(PazTypography.titleMedium)
                             .foregroundStyle(PazColors.ink)
@@ -72,8 +104,5 @@ struct LifeGroupHomeCard: View {
                 LifeGroupTaskRows(tasks: card.tasks, repository: taskRepository)
             }
         }
-        .padding(PazSpacing.lg)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassCard(radius: PazSpacing.cardRadiusCompact)
     }
 }

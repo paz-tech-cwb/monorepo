@@ -15,13 +15,13 @@ struct FormDetailDeepLinkView: View {
             } else if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(PazMeshBackground())
+                    .pazScreenBackground()
             } else {
                 ContentUnavailableView(
                     "Formulário não encontrado",
                     systemImage: "doc.badge.exclamationmark"
                 )
-                .background(PazMeshBackground())
+                .pazScreenBackground()
             }
         }
         .task {
@@ -48,13 +48,13 @@ struct MinistryDetailDeepLinkView: View {
             } else if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(PazMeshBackground())
+                    .pazScreenBackground()
             } else {
                 ContentUnavailableView(
                     "Ministério não encontrado",
                     systemImage: "person.3"
                 )
-                .background(PazMeshBackground())
+                .pazScreenBackground()
             }
         }
         .task {
@@ -81,7 +81,7 @@ struct LifeGroupMeetingDeepLinkView: View {
                 "Grupo não encontrado",
                 systemImage: "person.fill.questionmark"
             )
-            .background(PazMeshBackground())
+            .pazScreenBackground()
         }
     }
 }
@@ -100,13 +100,13 @@ struct LifeGroupDetailDeepLinkView: View {
             } else if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(PazMeshBackground())
+                    .pazScreenBackground()
             } else {
                 ContentUnavailableView(
                     "Célula não encontrada",
                     systemImage: "person.fill.questionmark"
                 )
-                .background(PazMeshBackground())
+                .pazScreenBackground()
             }
         }
         .task {

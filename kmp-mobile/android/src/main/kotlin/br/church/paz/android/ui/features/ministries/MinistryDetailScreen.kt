@@ -24,7 +24,6 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.People
@@ -258,11 +257,6 @@ fun LifeGroupDetailScreen(
                         br.church.paz.android.navigation.Screen.LifeGroupManage
                             .createRoute(effect.lifeGroupId),
                     )
-                is LifeGroupDetailEffect.NavigateToReports ->
-                    navController.navigate(
-                        br.church.paz.android.navigation.Screen.LifeGroupReports
-                            .createRoute(effect.lifeGroupId),
-                    )
                 is LifeGroupDetailEffect.NavigateToTaskMembers ->
                     navController.navigate(
                         br.church.paz.android.navigation.Screen.LifeGroupTaskMembers
@@ -312,9 +306,9 @@ fun LifeGroupDetailScreen(
                             .createRoute(group.id.toString(), group.meetingDay, uiState.canWriteMeetings),
                     )
                 },
-                onSubmitReportTap = {
+                onMembersTap = {
                     navController.navigate(
-                        br.church.paz.android.navigation.Screen.LifeGroupReportSubmit
+                        br.church.paz.android.navigation.Screen.LifeGroupMembersList
                             .createRoute(group.id.toString()),
                     )
                 },
@@ -322,13 +316,6 @@ fun LifeGroupDetailScreen(
                 onTaskTap = viewModel::onTaskTap,
                 onTaskMembersTap = viewModel::onTaskMembersTap,
                 canViewGroupReports = uiState.canViewGroupReports,
-                onReportsTap = viewModel::onReportsTap,
-                onAnalyticsTap = {
-                    navController.navigate(
-                        br.church.paz.android.navigation.Screen.LifeGroupAnalytics
-                            .createRoute(group.id.toString()),
-                    )
-                },
             )
         }
     }
@@ -340,13 +327,11 @@ private fun LifeGroupContent(
     canManageAttendance: Boolean,
     onStudyTap: () -> Unit,
     onMeetingsTap: () -> Unit,
-    onSubmitReportTap: () -> Unit,
+    onMembersTap: () -> Unit,
     myTasks: List<LifeGroupTask>,
     onTaskTap: (String) -> Unit,
     onTaskMembersTap: () -> Unit,
     canViewGroupReports: Boolean,
-    onReportsTap: () -> Unit,
-    onAnalyticsTap: () -> Unit,
 ) {
     val context = LocalContext.current
     var showLeadershipDialog by remember { mutableStateOf(false) }
@@ -499,175 +484,74 @@ private fun LifeGroupContent(
             item { MyTasksCard(tasks = myTasks, onTaskTap = onTaskTap) }
         }
 
-        item {
-            PazGlassCard(
-                modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onStudyTap),
-                cornerRadius = PazSpacing.CardRadiusCompact,
-            ) {
-                Row(
-                    modifier = Modifier.padding(PazSpacing.Lg),
-                    horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        Icons.Outlined.MenuBook,
-                        contentDescription = null,
-                        tint = PazColors.Primary,
-                        modifier = Modifier.size(22.dp),
-                    )
-                    Text("Estudo do Life", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                    Icon(
-                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                    )
-                }
-            }
-        }
-
-        // "Reuniões" replaces the old "Presença" card: presence + weekly report of each meeting live in one
-        // screen. Same gate as the per-group reports (leader/co-leader, or admin/pastor/area/sector leader).
+        // Information architecture (one row per destination; the weekly report, the report list and the stats
+        // live INSIDE "Reuniões" now): Reuniões, Membros, Estudo do Life, Elegibilidade para tarefas.
+        // "Reuniões": same gate as before (leader/co-leader, or admin/pastor/area/sector leader).
         if (canViewGroupReports) {
             item {
-                PazGlassCard(
-                    modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onMeetingsTap),
-                    cornerRadius = PazSpacing.CardRadiusCompact,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(PazSpacing.Lg),
-                        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            Icons.Outlined.Groups,
-                            contentDescription = null,
-                            tint = PazColors.Primary,
-                            modifier = Modifier.size(22.dp),
-                        )
-                        Text("Reuniões", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                        Icon(
-                            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        )
-                    }
-                }
+                LifeGroupNavRow(icon = Icons.Outlined.Groups, label = "Reuniões", onClick = onMeetingsTap)
             }
         }
 
-        // Weekly report submit: same gate as "Presença" (this group's own leader/co-leader), which is
-        // exactly who the backend lets create the report; opens the form with this group preselected.
-        if (canManageAttendance) {
+        // The roster is only returned to who may see it (null = hidden), like on iOS.
+        lifeGroup.members?.let { members ->
             item {
-                PazGlassCard(
-                    modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onSubmitReportTap),
-                    cornerRadius = PazSpacing.CardRadiusCompact,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(PazSpacing.Lg),
-                        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Outlined.Assignment,
-                            contentDescription = null,
-                            tint = PazColors.Primary,
-                            modifier = Modifier.size(22.dp),
-                        )
-                        Text("Enviar relatório", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                        Icon(
-                            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        )
-                    }
-                }
+                LifeGroupNavRow(
+                    icon = Icons.Outlined.Person,
+                    label = "Membros",
+                    onClick = onMembersTap,
+                    trailingText = members.size.toString(),
+                )
             }
+        }
+
+        item {
+            LifeGroupNavRow(icon = Icons.Outlined.MenuBook, label = "Estudo do Life", onClick = onStudyTap)
         }
 
         // Only this group's leader/co-leader manages task eligibility.
         if (canManageAttendance) {
             item {
-                PazGlassCard(
-                    modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onTaskMembersTap),
-                    cornerRadius = PazSpacing.CardRadiusCompact,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(PazSpacing.Lg),
-                        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            Icons.Outlined.Person,
-                            contentDescription = null,
-                            tint = PazColors.Primary,
-                            modifier = Modifier.size(22.dp),
-                        )
-                        Text("Elegibilidade para tarefas", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                        Icon(
-                            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        )
-                    }
-                }
-            }
-        }
-
-        if (canViewGroupReports) {
-            item {
-                PazGlassCard(
-                    modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onAnalyticsTap),
-                    cornerRadius = PazSpacing.CardRadiusCompact,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(PazSpacing.Lg),
-                        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            Icons.Outlined.BarChart,
-                            contentDescription = null,
-                            tint = PazColors.Primary,
-                            modifier = Modifier.size(22.dp),
-                        )
-                        Text("Relatórios", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                        Icon(
-                            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        )
-                    }
-                }
-            }
-            item {
-                PazGlassCard(
-                    modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onReportsTap),
-                    cornerRadius = PazSpacing.CardRadiusCompact,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(PazSpacing.Lg),
-                        horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Outlined.Assignment,
-                            contentDescription = null,
-                            tint = PazColors.Primary,
-                            modifier = Modifier.size(22.dp),
-                        )
-                        Text("Relatórios semanais", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                        Icon(
-                            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                        )
-                    }
-                }
+                LifeGroupNavRow(icon = Icons.Outlined.Person, label = "Elegibilidade para tarefas", onClick = onTaskMembersTap)
             }
         }
 
         item { Spacer(Modifier.height(PazSpacing.Xl)) }
+    }
+}
+
+/** One tappable navigation row of the life group screen (icon, label, optional count, chevron). */
+@Composable
+private fun LifeGroupNavRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    trailingText: String? = null,
+) {
+    PazGlassCard(
+        modifier = Modifier.fillMaxWidth().clip(PazShapes.large).clickable(onClick = onClick),
+        cornerRadius = PazSpacing.CardRadiusCompact,
+    ) {
+        Row(
+            modifier = Modifier.padding(PazSpacing.Lg),
+            horizontalArrangement = Arrangement.spacedBy(PazSpacing.Md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(icon, contentDescription = null, tint = PazColors.Primary, modifier = Modifier.size(22.dp))
+            Text(label, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            if (trailingText != null) {
+                Text(
+                    trailingText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                )
+            }
+            Icon(
+                Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+            )
+        }
     }
 }
 

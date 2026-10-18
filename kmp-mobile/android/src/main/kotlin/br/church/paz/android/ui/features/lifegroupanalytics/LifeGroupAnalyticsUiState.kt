@@ -1,8 +1,10 @@
 package br.church.paz.android.ui.features.lifegroupanalytics
 
 import br.church.paz.shared.domain.model.LifeGroupAttendancePoint
+import br.church.paz.shared.domain.model.LifeGroupAttendanceSummary
 import br.church.paz.shared.domain.model.LifeGroupDistributionBucket
 import br.church.paz.shared.domain.model.LifeGroupOverview
+import br.church.paz.shared.domain.model.summarizeAttendance
 
 enum class DistributionTab { DAY, HOUR, NEIGHBORHOOD, CITY }
 
@@ -47,6 +49,9 @@ data class LifeGroupAnalyticsUiState(
     val attendanceError: String? = null,
     val distributionError: String? = null,
 ) {
+    /** Totals of the loaded attendance rows: the only summary that is safe for a single group. */
+    val attendanceSummary: LifeGroupAttendanceSummary get() = attendanceRows.summarizeAttendance()
+
     val distributionForSelectedTab: List<LifeGroupDistributionBucket>
         get() =
             when (distributionTab) {

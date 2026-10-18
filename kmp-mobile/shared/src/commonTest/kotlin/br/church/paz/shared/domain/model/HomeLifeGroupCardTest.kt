@@ -102,4 +102,13 @@ class HomeLifeGroupCardTest {
         val tasks = listOf(task("a", 1, "2026-10-13"), task("b", 1, "2026-10-14"))
         assertEquals(listOf("a"), selectUpcomingLifeGroupTasks(tasks, "2026-10-12", 1).map { it.id })
     }
+
+    @Test
+    fun `one group keeps the kicker and no header while several groups share one section with dividers`() {
+        assertEquals(HomeLifeGroupsLayout(showsSectionHeader = false, showsRowKicker = true, dividerCount = 0), homeLifeGroupsLayout(1))
+        assertEquals(HomeLifeGroupsLayout(showsSectionHeader = true, showsRowKicker = false, dividerCount = 1), homeLifeGroupsLayout(2))
+        assertEquals(HomeLifeGroupsLayout(showsSectionHeader = true, showsRowKicker = false, dividerCount = 2), homeLifeGroupsLayout(3))
+        assertEquals(0, homeLifeGroupsLayout(0).dividerCount)
+        assertEquals("MEUS GRUPOS", HomeLifeGroupsSection.HEADER_SEVERAL)
+    }
 }

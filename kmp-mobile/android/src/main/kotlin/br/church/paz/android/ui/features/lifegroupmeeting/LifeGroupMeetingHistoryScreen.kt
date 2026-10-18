@@ -27,7 +27,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,6 +58,8 @@ import br.church.paz.android.ui.components.PazCardSkeleton
 import br.church.paz.android.ui.components.PazErrorState
 import br.church.paz.android.ui.components.PazMeshBackground
 import br.church.paz.android.ui.components.PazPullToRefresh
+import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsPanel
+import br.church.paz.android.ui.features.lifegroupanalytics.LifeGroupAnalyticsViewModel
 import br.church.paz.android.ui.theme.PazShapePill
 import br.church.paz.android.ui.theme.PazShapes
 import br.church.paz.android.ui.theme.PazSpacing
@@ -81,7 +86,15 @@ fun LifeGroupMeetingHistoryScreen(
     // Reload whenever this screen returns to the foreground (e.g. popping back from a meeting after a
     // save): the ViewModel is scoped to the back stack entry and only loads once in init otherwise.
     val lifecycleOwner = LocalLifecycleOwner.current
-    val currentOnResume = rememberUpdatedState(viewModel::refresh)
+    // The Relatórios tab keeps its own ViewModel: flag it stale on every return so it reloads when shown.
+    var reportsStale by remember { mutableStateOf(false) }
+    var hasResumedOnce by remember { mutableStateOf(false) }
+    val currentOnResume =
+        rememberUpdatedState {
+            viewModel.refresh()
+            if (hasResumedOnce) reportsStale = true
+            hasResumedOnce = true
+        }
     DisposableEffect(lifecycleOwner) {
         val observer =
             LifecycleEventObserver { _, event ->
@@ -117,7 +130,7 @@ fun LifeGroupMeetingHistoryScreen(
                 )
             },
             floatingActionButton = {
-                if (uiState.canWrite) {
+                if (uiState.canWrite && uiState.selectedTab == LifeGroupMeetingsTab.MEETINGS) {
                     ExtendedFloatingActionButton(
                         onClick = { showDatePicker = true },
                         icon = { Icon(Icons.Filled.Add, contentDescription = null) },
@@ -127,20 +140,45 @@ fun LifeGroupMeetingHistoryScreen(
             },
             containerColor = Color.Transparent,
         ) { innerPadding ->
-            PazPullToRefresh(
-                isRefreshing = uiState.isRefreshing,
-                onRefresh = viewModel::refresh,
-                modifier = Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding()),
-            ) {
-                when {
-                    uiState.isLoading -> MeetingHistorySkeleton()
-                    uiState.error != null -> PazErrorState(message = uiState.error.orEmpty(), onRetry = viewModel::load)
-                    uiState.meetings.isEmpty() -> MeetingHistoryEmpty(canWrite = uiState.canWrite)
-                    else ->
-                        MeetingHistoryList(
-                            meetings = uiState.meetings,
-                            onMeetingTap = { viewModel.onMeetingTapped(it.date) },
+            Column(Modifier.fillMaxSize().padding(top = innerPadding.calculateTopPadding())) {
+                MeetingsTabSelector(
+                    selected = uiState.selectedTab,
+                    onSelected = viewModel::onTabSelected,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = PazSpacing.Lg, vertical = PazSpacing.Sm),
+                )
+                when (uiState.selectedTab) {
+                    LifeGroupMeetingsTab.MEETINGS ->
+                        PazPullToRefresh(
+                            isRefreshing = uiState.isRefreshing,
+                            onRefresh = viewModel::refresh,
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                        ) {
+                            when {
+                                uiState.isLoading -> MeetingHistorySkeleton()
+                                uiState.error != null -> PazErrorState(message = uiState.error.orEmpty(), onRetry = viewModel::load)
+                                uiState.meetings.isEmpty() -> MeetingHistoryEmpty(canWrite = uiState.canWrite)
+                                else ->
+                                    MeetingHistoryList(
+                                        meetings = uiState.meetings,
+                                        onMeetingTap = { viewModel.onMeetingTapped(it.date) },
+                                    )
+                            }
+                        }
+                    // The stats of THIS group only (no group picker); the panel has no background of its own.
+                    LifeGroupMeetingsTab.REPORTS -> {
+                        val analyticsViewModel: LifeGroupAnalyticsViewModel =
+                            koinViewModel(parameters = { parametersOf(lifeGroupId.toInt()) })
+                        LaunchedEffect(reportsStale) {
+                            if (reportsStale) {
+                                analyticsViewModel.refresh()
+                                reportsStale = false
+                            }
+                        }
+                        LifeGroupAnalyticsPanel(
+                            viewModel = analyticsViewModel,
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
                         )
+                    }
                 }
             }
         }
@@ -157,6 +195,34 @@ fun LifeGroupMeetingHistoryScreen(
                 viewModel.onNewMeetingDateChosen(date)
             },
         )
+    }
+}
+
+/** The segmented control of the Reuniões screen: [Reuniões | Relatórios]. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MeetingsTabSelector(
+    selected: LifeGroupMeetingsTab,
+    onSelected: (LifeGroupMeetingsTab) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val tabs = LifeGroupMeetingsTab.entries
+    SingleChoiceSegmentedButtonRow(modifier = modifier) {
+        tabs.forEachIndexed { index, tab ->
+            SegmentedButton(
+                selected = tab == selected,
+                onClick = { onSelected(tab) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = tabs.size),
+                label = {
+                    Text(
+                        when (tab) {
+                            LifeGroupMeetingsTab.MEETINGS -> "Reuniões"
+                            LifeGroupMeetingsTab.REPORTS -> "Relatórios"
+                        },
+                    )
+                },
+            )
+        }
     }
 }
 
@@ -239,13 +305,11 @@ private fun MeetingRow(
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(PazSpacing.Xs)) {
             Text(brDateString(meeting.date), style = MaterialTheme.typography.bodyMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(PazSpacing.Sm)) {
-                val presence =
-                    if (meeting.hasAttendance) {
-                        "Presença ${meeting.presentCount ?: 0}/${meeting.membersCount ?: 0}"
-                    } else {
-                        "Presença pendente"
-                    }
-                Chip(text = presence, done = meeting.hasAttendance)
+                // A legacy report without presence shows only the "Relatório" chip: there is no presence to
+                // be "pending" (the meeting screen explains "sem presença registrada").
+                if (meeting.hasAttendance) {
+                    Chip(text = "Presença ${meeting.presentCount ?: 0}/${meeting.membersCount ?: 0}", done = true)
+                }
                 if (meeting.reportStatusKnown) {
                     Chip(text = if (meeting.hasReport) "Relatório enviado" else "Relatório pendente", done = meeting.hasReport)
                 }

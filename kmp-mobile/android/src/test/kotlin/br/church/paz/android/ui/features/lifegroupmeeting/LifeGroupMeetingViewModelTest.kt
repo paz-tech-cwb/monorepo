@@ -728,4 +728,120 @@ class LifeGroupMeetingViewModelTest {
             assertNotNull(vm.uiState.value.meeting)
             coVerify(exactly = 0) { repository.getMeeting(7, date, null) }
         }
+
+    // ---- errors and past dates without a record ----
+
+    @Test
+    fun `a missing route is unavailable and retryable never group not found`() =
+        runTest {
+            coEvery { repository.getMeeting(7, date, null) } throws
+                LifeGroupMeetingException(404, null, "Cannot GET /api/life-groups/7/meetings/$date")
+            val vm = viewModel()
+            settle()
+
+            val state = vm.uiState.value
+            assertEquals("Recurso indisponível no servidor. Tente novamente mais tarde.", state.loadError)
+            assertFalse(state.loadError!!.contains("Grupo não encontrado"))
+            assertTrue(state.loadErrorRetryable)
+
+            // The server comes back: retry opens the screen normally.
+            coEvery { repository.getMeeting(7, date, null) } returns draftMeeting()
+            vm.load()
+            settle()
+            assertNull(vm.uiState.value.loadError)
+            assertNotNull(vm.uiState.value.meeting)
+        }
+
+    @Test
+    fun `group_not_found says so and is not retryable`() =
+        runTest {
+            coEvery { repository.getMeeting(7, date, null) } throws LifeGroupMeetingException(404, "group_not_found", "x")
+            val vm = viewModel()
+            settle()
+
+            assertTrue(vm.uiState.value.loadError!!.contains("Grupo não encontrado"))
+            assertFalse(vm.uiState.value.loadErrorRetryable)
+        }
+
+    @Test
+    fun `no permission is not retryable and a network failure is offline and retryable`() =
+        runTest {
+            coEvery { repository.getMeeting(7, date, null) } throws LifeGroupMeetingException(403, "meeting_access_forbidden", null)
+            val denied = viewModel()
+            settle()
+            assertTrue(denied.uiState.value.loadError!!.contains("permissão"))
+            assertFalse(denied.uiState.value.loadErrorRetryable)
+
+            coEvery { repository.getMeeting(7, date, null) } throws java.io.IOException("timeout")
+            val offline = viewModel()
+            settle()
+            assertTrue(offline.uiState.value.loadError!!.contains("conexão"))
+            assertTrue(offline.uiState.value.loadErrorRetryable)
+        }
+
+    @Test
+    fun `a past date with no record outside the edit window opens as a read only empty state not an error`() =
+        runTest {
+            // Server answer for 2026-09-08 without any record: 200, a draft roster, can_edit=false.
+            coEvery { repository.getMeeting(7, date, null) } returns
+                meeting(attendance(entries(true, true), isDraft = true), canEdit = false)
+            val vm = viewModel()
+            settle()
+
+            val state = vm.uiState.value
+            assertNull(state.loadError)
+            assertTrue(state.isReadOnly)
+            assertTrue(state.isEmptyReadOnly)
+            // Never a roster pre-filled with "everybody present" for a record that does not exist.
+            assertFalse(state.showAttendanceRoster)
+            assertFalse(state.canSaveAttendance)
+        }
+
+    @Test
+    fun `a supervisor on a date with no record gets the empty state`() =
+        runTest {
+            coEvery { repository.getMeeting(7, date, null) } returns
+                meeting(attendance(entries(true, true), isDraft = true), canWrite = false, canEdit = false)
+            val vm = viewModel()
+            settle()
+
+            assertTrue(vm.uiState.value.isEmptyReadOnly)
+            assertFalse(vm.uiState.value.showAttendanceRoster)
+        }
+
+    @Test
+    fun `an editable new meeting is not the empty state and lists the draft roster`() =
+        runTest {
+            coEvery { repository.getMeeting(7, date, null) } returns draftMeeting()
+            val vm = viewModel()
+            settle()
+
+            assertFalse(vm.uiState.value.isEmptyReadOnly)
+            assertTrue(vm.uiState.value.showAttendanceRoster)
+        }
+
+    @Test
+    fun `a read only meeting with a saved presence still lists who was present`() =
+        runTest {
+            coEvery { repository.getMeeting(7, date, null) } returns savedMeeting(true, false, canEdit = false)
+            val vm = viewModel()
+            settle()
+
+            assertFalse(vm.uiState.value.isEmptyReadOnly)
+            assertTrue(vm.uiState.value.showAttendanceRoster)
+        }
+
+    @Test
+    fun `a legacy report without presence is read only with the report and no roster`() =
+        runTest {
+            coEvery { repository.getMeeting(7, date, null) } returns meeting(null, report = report(), canEdit = false)
+            val vm = viewModel()
+            settle()
+
+            val state = vm.uiState.value
+            assertFalse(state.isEmptyReadOnly)
+            assertTrue(state.isReportSaved)
+            assertFalse(state.showAttendanceRoster)
+            assertFalse(state.canEditReport)
+        }
 }

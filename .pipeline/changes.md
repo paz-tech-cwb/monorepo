@@ -1,27 +1,54 @@
-# Changes: meetings 404 hardening + group-scoped analytics (backend)
+# Changes: Reunioes UX (shared + Android + iOS)
 
-## Root cause of the TestFlight "Grupo nao encontrado"
-Deploy Backend run 38479306265 (release commit 84f1dd9e) FAILED (SSH waited on `/var/lock/vps-deploy/global.lock`, then `client_loop: send disconnect: Broken pipe`, exit 255). The `/meetings` routes were not live; Nest answered its generic `Cannot GET /api/life-groups/2/meetings/2026-09-08` 404 (no `code`) and the clients map any 404 to "Grupo nao encontrado". The service itself never answers 404 for a leader of an existing group, and a past date without a record is a 200 read-only draft (proved on a real Postgres).
+Branch `feat/life-group-reunioes-ux` from develop c8f13d25. Client only; backend contract = PR #102.
 
-## Backend
-- `common/errors/coded-error-body.ts` (new): `codedErrorBody(status, code, message)`.
-- Stable `code` on: `group_not_found` (404; meetings + attendance services, analytics overview), `life_group_access_forbidden` (403; `assertCanAccessLifeGroup`, analytics), `invalid_meeting_date_format`, `invalid_meeting_date`, `date_in_future` (400; `assertValidMeetingDate`), `invalid_extra_meeting_param` (400; meetings controller). Messages unchanged. A 404 with no `code` = route missing.
-- `life-group-analytics`: `GET /overview?life_group_id=` (new `OverviewQueryDto`); scoped => every figure restricted to the group (members_total = members_in_group = roster; without-group = 0; `life_groups` = [group]); response echoes `life_group_id` (null unscoped). 403 outside access, 404 unknown group (unrestricted caller). Unscoped unchanged.
-- Tests: service/controller unit specs, opt-in real-Postgres integration specs (`life-group-meetings.integration.spec.ts` +7, new `life-group-analytics.integration.spec.ts` 10).
-- Docs: `.ai/features/life-groups.md` (error-code contract, scoped overview), `.ai/apps/backend.md`, `.ai/features/deployment.md` ("After a failed Deploy Backend").
+## Shared (`kmp-mobile/shared`)
+- `LifeGroupMeetingErrors`: `Kind` enum + `kind(error)`, `isRetryable`, `messageForHttpStatus`, constants `MESSAGE_*`, `CODE_GROUP_NOT_FOUND`. 404 = group not found only with `group_not_found` (or legacy "Life group with ID N not found"); other 404/501/502/503 = server unavailable.
+- `LifeGroupMeetingRules.resolveEntry(role, myGroups, allGroups): LifeGroupMeetingEntry` (+ `LifeGroupMeetingEntryGroup`), `isLeadership(group)`.
+- `LifeGroupMeeting.hasNoRecord`, `LifeGroupMeetingSummary.isReportOnly`.
+- `summarizeAttendance()` / `LifeGroupAttendanceSummary` (single-group stats summary).
+- `LifeGroupAnalyticsRepository.getOverview(lifeGroupId: Int? = null)` (sends `life_group_id`). Swift: default args are not exposed, pass `nil`/`KotlinInt`.
+- `homeLifeGroupsLayout(groupCount)`, `HomeLifeGroupsSection`.
+- `Throwable.anyHttpStatusCodeOrNull()` (also 5xx).
+- Not removed yet (iOS still compiles against them): `LifeGroupReportDraft`, `LifeGroupReportRules`, `LifeGroupReportForm`, `FormsRepository.submitLifeGroupReport`. iOS agent: after deleting the iOS form (`Features/LifeGroupReports/LifeGroupReportForm*`, `LifeGroupReportFormTests`, pbxproj entries) delete these and their tests (`LifeGroupReportDraftTest`, `FormsRepositoryLifeGroupReportTest`).
 
-## Required mobile change (NOT done here; kmp-mobile belongs to another agent)
-1. `shared/.../domain/repository/LifeGroupAnalyticsRepository.kt`: `suspend fun getOverview(lifeGroupId: Int? = null): LifeGroupOverview`.
-2. `shared/.../data/repository/LifeGroupAnalyticsRepositoryImpl.kt` `getOverview`: `client.get("api/life-group-analytics/overview") { lifeGroupId?.let { parameter("life_group_id", it) } }`. (Optionally add `life_group_id` to `LifeGroupOverviewDto`; it is ignorable.)
-3. iOS `Features/LifeGroupAnalytics/LifeGroupAnalyticsViewModel.swift` `loadOverview()`: call `getOverview(lifeGroupId: lifeGroupId)` (the `Int32?` already stored; pass `nil` when not scoped). Android `ui/features/lifegroupanalytics/LifeGroupAnalyticsViewModel.kt` `loadOverview()` (line ~63): same, with the screen's `lifeGroupId` argument. Update the Android VM test mock `getOverview()` -> `getOverview(any())` and the repository test.
-4. When scoped (`isScopedToGroup`), hide the "in groups / without group" donut (backend returns `members_total == members_in_group`) and the sector/group filter dropdown (`life_groups` has one item).
-5. Error mapping: map 404 to "Grupo nao encontrado" ONLY when the body `code == "group_not_found"`; a 404 without `code` (or 5xx) should show a generic "Servico indisponivel/atualize o app" message. Branch on `code` (`extra_meeting_required`, `date_in_future`, ...), never `message`.
-Old clients keep working (param optional, response only gained `life_group_id`).
+## Android
+- Reunioes screen: segmented [Reunioes | Relatorios] (`LifeGroupMeetingsTab`, VM `onTabSelected`); Relatorios tab embeds `LifeGroupAnalyticsPanel` scoped to the group (no group picker, no overview cards, no distribution, summary card, PDF export button in the panel).
+- Reuniao screen: non-retryable load failures show "Voltar"; read-only date without a record = empty state (`isEmptyReadOnly`), roster hidden unless a presence is saved (`showAttendanceRoster`), pills "Sem presenca"/"Sem relatorio" when read-only.
+- History rows: no "Presenca pendente" chip (report-only rows show only the Relatorio chip); errors via `messageForHttpStatus`.
+- Entry flow: `LifeGroupMeetingEntryScreen/ViewModel`, route `life_group_meeting_entry`; `form_detail|form_steps/life-group-reports` host it; Formularios effect renamed `NavigateToLifeGroupMeetings`.
+- Group detail rows: Reunioes, Membros (new on Android), Estudo do Life, Elegibilidade; removed Enviar relatorio / Relatorios semanais / Relatorios.
+- Removed: package `ui/features/lifegroupreports/` (form, list, detail, VMs, tests), routes `LifeGroupReports`, `LifeGroupReportSubmit`, `LifeGroupReportDetail`, Koin entries.
+- Home: `LifeGroupsHomeSection` (one card, "MEUS GRUPOS" header + dividers for several groups).
+- Analytics VM: scoped mode skips overview and distribution requests.
 
-## Behavior notes / risks
-- `overview` now validates its query with the global pipe (`forbidNonWhitelisted`): an unknown query param on `/overview` is a 400 (previously ignored). No client sends one.
-- Draft roster for a date without a record is the CURRENT roster (not historical membership).
-- `assertValidMeetingDate` compares with the UTC date (pre-existing): between 21:00 and 24:00 Sao Paulo "tomorrow" is still accepted by GET. Not changed.
+## Double background: findings and pattern (for iOS)
+Android already had a single background on every Reuniao screen: `Box(fillMaxSize){ PazMeshBackground(); Scaffold(containerColor=Transparent){ content padded by top inset only } }`; error/empty/loading states are plain content (`Box(fillMaxSize)`, no background); cards wrap items only. No Android change was needed beyond keeping new screens/panel on that pattern.
+iOS cause (read from `LifeGroupMeetingView`): `content.background(PazMeshBackground())` sizes the mesh to the content; `ErrorStateView` is compact, so a small mesh region sits over the real (larger) screen background. Fix: make the root fill the screen first, then background: `content.frame(maxWidth: .infinity, maxHeight: .infinity).background(PazMeshBackground().ignoresSafeArea())` (or `ZStack { PazMeshBackground().ignoresSafeArea(); content }`); state views (error/empty) must not add their own background/glassCard. Audit History, Reports list/detail (being removed), Eligibility, and the new entry/picker with the same rule.
 
-## Follow-up: history rows open for any date with a record
-`GET /meetings/:date` already returned 200 for such dates; now locked by specs (controller + real Postgres): legacy report on a non-regular weekday -> 200 `attendance: null` + populated `report` (`derived` nulls); saved extra attendance opens without the flag; no-record non-regular date stays 400 `extra_meeting_required`; past regular date without record = 200 read-only draft. No production code change.
+## Assumptions / defaults
+See spec.md A1-A6. Extra: a supervisor with exactly one supervised group opens it directly; admin/pastor always get the picker; single-group stats hide church-wide cards (overview param exists but the scoped view does not call it).
+
+## iOS (`kmp-mobile/ios/PazChurch`)
+- Compile fix: `LifeGroupAnalyticsViewModel.loadOverview` calls `getOverview(lifeGroupId: nil)` (church-wide, feeds the unscoped group dropdown). Scoped mode (`isScopedToGroup`) skips overview and distribution (`loadInitial()`), exposes `attendanceSummary` (`LifeGroupAnalyticsKt.summarizeAttendance`).
+- Errors: `LifeGroupMeetingErrorMapping` now also exposes `kind`, `isRetryable`, `historyMessage`. `LifeGroupMeetingViewModel.loadErrorRetryable`; missing group / no permission show "Voltar" instead of "Tentar novamente"; history and entry errors use the mapped copy.
+- Read-only states: `isEmptyReadOnly` (deadline banner + "Não há reunião registrada nesta data."), `showAttendanceRoster`, pills "Sem presença"/"Sem relatório"; legacy report without presence renders "Sem presença registrada para esta data.".
+- Double background: root cause `.background(PazMeshBackground())` sizing the mesh to compact content (`ErrorStateView`). New `View.pazScreenBackground()` (frame max + mesh); applied to the meeting/history/entry/analytics screens and every other screen root that can host a compact state view (list in `.ai/features/mobile-app.md`). State views add no background/card. `SearchView` now also uses it (compact empty states). Left unchanged on purpose: `AccountView` (ScrollView root), `AgendaDetailView` bottom bar, `VideoPlayerView` inner scroll, `PazChurchApp` app-level mesh.
+- IA: group detail rows Reuniões (first), Membros, Estudo do Life, Elegibilidade; removed "Enviar relatório", "Relatórios semanais", "Relatórios". `LifeGroupMeetingHistoryView` = segmented [Reuniões | Relatórios] (`LifeGroupMeetingsTab`); Relatórios = `LifeGroupAnalyticsPanel` scoped to the group (no picker, no overview cards, no distribution). Row chips via `LifeGroupMeetingRowChips`.
+- Entry: `LifeGroupMeetingEntryView`/`ViewModel` (shared `resolveEntry`), hosted by `FormDestinationView` for the `life-group-reports` form (Formulários list and `paz://form/life-group-reports` via `FormDetailDeepLinkView`).
+- Home: `LifeGroupsHomeSection` (one glass card, dividers, "MEUS GRUPOS"/"LIFE GROUP" from shared `HomeLifeGroupsSection`, layout from `homeLifeGroupsLayout`), sibling NavigationLinks, cap 3 and "Ver todos (N)" unchanged.
+- Removed (iOS): `Features/LifeGroupReports/` (LifeGroupReportFormView/ViewModel, LifeGroupReportsView/ViewModel, LifeGroupReportDetailView), tests `LifeGroupReportFormTests`, `LifeGroupReportsTests` (gate matrix kept in `LifeGroupReunioesUXTests`), pbxproj entries.
+- Removed (shared, nothing else referenced them on either platform): `LifeGroupReportDraft.kt` (draft, rules, groups, validation), `LifeGroupReportForm` DTO, `FormsRepository.submitLifeGroupReport` (+impl, AuthRepositoryTest fake), `LifeGroupReportDraftTest`, `FormsRepositoryLifeGroupReportTest`. Backend `POST /forms/life-group-reports` untouched.
+- Tests: `PazChurchTests/LifeGroupReunioesUXTests.swift` (error kinds, retry policy, no-record read-only, report-only, row chips, entry resolution, scoped analytics calls, home layout, tabs, gate matrix); `LifeGroupMeetingViewModelTests` updated for the 404 contract.
+
+## Review fixes (reunioes ux)
+Malcolm's minors (m1-m11), both platforms where applicable:
+- m1 iOS entry: `loadIfNeeded()` (first load only) from `.task`; `load()` keeps the previous entry on a failed refresh.
+- m2 `LifeGroupMeetingErrors.messageForHttpStatus(statusCode, code)`; `throwOnClientOrServerError` records the body `code` on the call (`Throwable.httpErrorCodeOrNull()`); Android history VM, iOS `historyMessage` and the entry screens pass it, so a legacy attendance 404 with `group_not_found` reads "Grupo não encontrado".
+- m3 MemberJourneyView: one `.pazScreenBackground()` on the root. m4 SearchView converted (AccountView/Agenda/VideoPlayer reviewed, left).
+- m5 `LifeGroupAttendanceSummary.cardTitle/cardValue/cardSubtitle` in shared, used by both platforms (singular/plural).
+- m6 Relatórios tab reloads after returning from a meeting (Android `reportsStale`, iOS `refreshIfLoaded`).
+- m7 "MEUS GRUPOS" heading semantics (iOS `.isHeader`, Android `heading()`).
+- m8 Android PDF export refuses when attendance failed to load; summary card hidden in the export too.
+- m9 `resolveEntry`: led groups first, then supervised (not led) read-only; admin/pastor skip `getMyLifeGroups()` (Android + iOS).
+- m10 Android entry error uses the mapped message. m11 docs claim softened (`.ai/features/mobile-app.md`).

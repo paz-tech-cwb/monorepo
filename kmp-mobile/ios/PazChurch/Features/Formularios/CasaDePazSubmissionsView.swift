@@ -97,7 +97,7 @@ struct CasaDePazSubmissionsListView: View {
 
     var body: some View {
         screenContent
-            .background(PazMeshBackground())
+            .pazScreenBackground()
             .navigationTitle("Casa de Paz")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
@@ -535,7 +535,7 @@ struct CasaDePazSubmissionDetailView: View {
             }
             .padding(.horizontal, PazSpacing.lg)
         }
-        .background(PazMeshBackground())
+        .pazScreenBackground()
         .navigationTitle("Editar Registro")
         .navigationBarTitleDisplayMode(.inline)
         .task { await viewModel.loadCycles() }
