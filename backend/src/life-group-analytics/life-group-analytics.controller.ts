@@ -12,6 +12,7 @@ import type { RequestWithScope } from '../forms-core/guards/scope.guard';
 import { LifeGroupAnalyticsService } from './life-group-analytics.service';
 import { AttendanceQueryDto } from './dto/attendance-query.dto';
 import { DistributionQueryDto } from './dto/distribution-query.dto';
+import { OverviewQueryDto } from './dto/overview-query.dto';
 
 // @SerializeOptions is required here: the service returns plain object
 // literals (not @Expose()-decorated DTO classes), and the app's global
@@ -38,7 +39,7 @@ export class LifeGroupAnalyticsController {
   }
 
   @Get('overview')
-  overview(@Req() req: RequestWithScope) {
-    return this.svc.overview(req.formScope, { id: req.user.id });
+  overview(@Query() query: OverviewQueryDto, @Req() req: RequestWithScope) {
+    return this.svc.overview(req.formScope, { id: req.user.id }, query);
   }
 }

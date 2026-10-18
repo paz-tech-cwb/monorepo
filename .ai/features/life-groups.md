@@ -243,6 +243,42 @@ Module `backend/src/life-group-meetings/`.
   snapshots from typos) and is left as an open product question. Reminders never target
   groups without a fixed day or extra meetings.
 
+### Error-code contract (meetings GET/PUT and attendance GET/PUT)
+
+Every application error carries a stable `code` next to `statusCode`/`error`/`message`
+(`common/errors/coded-error-body.ts`). Clients branch on `code`, never on `message`.
+
+| Status | `code` | When |
+|---|---|---|
+| 404 | `group_not_found` | the group id does not exist (also analytics overview with an unknown `life_group_id`). A leader/co-leader/supervisor of an EXISTING group never gets it. |
+| 403 | `life_group_access_forbidden` | group exists but the caller is not admin/pastor, in scope, or its leader/co-leader |
+| 403 | `meeting_write_forbidden`, `edit_window_closed` | write without role / edit window closed |
+| 400 | `invalid_meeting_date_format`, `invalid_meeting_date`, `date_in_future` | bad `:date` |
+| 400 | `invalid_extra_meeting_param` | `?extra_meeting=` is not exactly `true`/`false` |
+| 400 | `extra_meeting_required`, `extra_meeting_on_regular_day`, `extra_meeting_not_applicable` | weekday rule (see Extra meetings) |
+| 409/422 | `attendance_required`, `extra_meeting_limit_reached`, `group_has_no_sector`, `sector_has_no_area` | PUT-only |
+| 404 | (none) | Nest's generic `{"message":"Cannot GET /api/...","error":"Not Found","statusCode":404}`: the running build does not have the route (failed/lagging deploy). Clients must NOT map this to "group not found". |
+
+`GET .../meetings/:date` for a PAST date with no record, outside the edit window,
+for a leader of the group: 200 draft with `can_write=true`, `can_edit=false`,
+`attendance.is_draft=true`, `edit_deadline` in the past (never 404/400). The draft
+roster of any date without a record is the group's CURRENT roster (not a
+reconstruction of who was in the group then). The weekday rule still applies to
+dates with NO record at all: a non-regular weekday of a fixed-day group is
+`400 extra_meeting_required` even in the past. Any date that already has a record
+opens 200 regardless of weekday and without `?extra_meeting=true`: a saved attendance
+(including `is_extra=true`) is returned as saved; a non-deleted report for that
+(group, date) without attendance on a non-regular weekday returns
+`attendance: null`, `report: {...}`, `derived: {committed_members: null,
+committed_members_present: null}`, `can_write`/`can_edit` by the usual rules (report-only
+legacy records on a regular weekday return the draft attendance, `is_draft: true`).
+
+Incident (2026-10-13, TestFlight 404 on `GET /life-groups/2/meetings/2026-09-08`):
+the Deploy Backend run for release commit 84f1dd9e failed (SSH waited on
+`/var/lock/vps-deploy/global.lock`, then `Broken pipe`, exit 255), so the
+`/meetings` routes and migrations `1796000000000`/`1796000000001` were not live; the
+generic Nest 404 was mapped to "Grupo nao encontrado" by the clients.
+
 ## Combined "Reunião" screen (Phase 3: shared + Android + iOS)
 
 One screen per meeting (group + date) with Presença first and Relatório second, on top of the meetings API above (stacked on PR #96, no backend change).
@@ -417,6 +453,25 @@ targeting) and there is no draft state: creating a study IS publishing it.
   can write through the API but has no button on mobile (give them the
   `life_group_leader` role or publish on their behalf). admin-ui login is limited
   to leadership roles, so a plain `member` writer cannot use it either.
+
+## Life group analytics: group-scoped overview
+
+`GET /api/life-group-analytics/overview` accepts `?life_group_id=<id>` (same
+authorization as attendance/distribution: scope or the group's own
+leader/co-leader, else 403 `life_group_access_forbidden`; unknown group 404
+`group_not_found`). When present EVERY figure is restricted to that group:
+`life_groups=[that group]`, `total_kids` = its kids, `avg_members_per_group` = its
+roster size, `groups_by_sector` = its sector, `members_in_group` = `members_total`
+= its roster (so "without group" = `members_total - members_in_group` = 0 by
+definition; clients hide that slice in single-group mode). The response echoes
+`life_group_id` (null when unscoped). Unscoped behavior (admin whole table,
+sector/area scope union) is unchanged. `attendance` and `distribution` already
+supported `life_group_id`. Root cause of "2 in groups and 83 without group" on the
+group Relatorios screen: the overview endpoint had no filter and the clients called
+it without a parameter (`getOverview()`).
+Client change required (mobile): `LifeGroupAnalyticsRepository.getOverview(lifeGroupId: Int? = null)` sends
+`life_group_id` when non-null; the iOS/Android analytics view models pass their
+scoped `lifeGroupId` and, when scoped, hide the "without group" donut/legend.
 
 ## Weekly life group reports (read API)
 

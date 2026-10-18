@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Put,
@@ -12,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { codedErrorBody } from '../common/errors/coded-error-body';
 import { ScopeGuard } from '../forms-core/guards/scope.guard';
 import type { RequestWithScope } from '../forms-core/guards/scope.guard';
 import { LifeGroupMeetingsService } from './life-group-meetings.service';
@@ -29,7 +31,11 @@ function parseExtraMeetingQuery(raw: unknown): boolean | undefined {
   if (raw === 'true') return true;
   if (raw === 'false') return false;
   throw new BadRequestException(
-    "extra_meeting must be 'true' or 'false' (lowercase).",
+    codedErrorBody(
+      HttpStatus.BAD_REQUEST,
+      'invalid_extra_meeting_param',
+      "extra_meeting must be 'true' or 'false' (lowercase).",
+    ),
   );
 }
 

@@ -1,0 +1,10 @@
+# Test results
+
+Node v22.23.3 (scratchpad). Throwaway PostgreSQL 17.5 (embedded-postgres 17.5.0-beta.15 installed with --ignore-scripts in NEW scratchpad dir `pg12`, 127.0.0.1:54942, user pgtest, DB `mig`); full chain of migrations run with `nest build` + `typeorm -d dist/db/data-source.js migration:run` (ends with 1796000000000, 1796000000001; `migrations` table confirms).
+
+- Build: `npx nest build` OK.
+- Real Postgres: `life-group-meetings.integration` 42/42 (incl. 7 new "error-code contract": leader + 5-weeks-old date + no record => 200 read-only draft with can_edit=false; admin editable; past non-regular weekday 400 extra_meeting_required; future 400 date_in_future; unknown group 404 group_not_found; non-member 403 life_group_access_forbidden; missing route => generic 404 with no code). `life-group-analytics.integration` 10/10 (2 groups + 3 users without group; scoped overview exact figures, leader 403 on other group, sector supervisor scoped to one group, 404/403/400; attendance/distribution scoped; unscoped unchanged).
+- Bug reproduction: with develop's service/controller restored, the new analytics integration spec FAILED (scoped overview returned whole table: members_total 15, members_in_group 6, total_kids 7, both groups listed); with the fix it passes. attendance/distribution tests passed on both (they already supported the filter).
+- Scoped jest (life-group-meetings, life-group-analytics, life-group-attendance, forms-core): green; default run skips the 2 integration suites.
+- Full jest (`npx jest`): Test Suites 6 failed / 3 skipped / 79 passed (85 of 88); Tests 5 failed / 60 skipped / 927 passed. The 6 failing suites are exactly the known baseline set: auth.controller, notification-sender, home.controller, onboarding.service, reach.dto, user-device-tokens.
+- eslint on all changed/new files (src/life-group-analytics, life-group-meetings, life-group-attendance, common/errors): 0 errors, 0 warnings. prettier --check: clean (the .md docs under .ai were already non-prettier-clean on develop).
