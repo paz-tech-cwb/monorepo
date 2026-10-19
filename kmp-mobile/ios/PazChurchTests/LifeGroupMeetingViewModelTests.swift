@@ -348,12 +348,13 @@ final class LifeGroupMeetingViewModelTests: XCTestCase {
     func testLoadErrorMapsAndRetrySucceeds() async {
         let service = FakeMeetingService()
         service.getResults = [
-            .failure(meetingError(404, nil)),
+            .failure(meetingError(404, "group_not_found")),
             .success(meeting(attendance: attendance([true], isDraft: true))),
         ]
         let vm = makeViewModel(service: service)
         await vm.load()
         XCTAssertEqual(vm.loadError, "Grupo não encontrado. Atualize a tela e tente novamente.")
+        XCTAssertFalse(vm.loadErrorRetryable)
         await vm.load()
         XCTAssertNil(vm.loadError)
         XCTAssertNotNil(vm.meeting)

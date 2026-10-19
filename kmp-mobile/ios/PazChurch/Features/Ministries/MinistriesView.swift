@@ -46,7 +46,7 @@ struct MinistriesView: View {
                 .refreshable { await viewModel.load() }
             }
         }
-        .background(PazMeshBackground())
+        .pazScreenBackground()
         .navigationTitle("Ministérios")
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)

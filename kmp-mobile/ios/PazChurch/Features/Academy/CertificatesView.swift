@@ -27,7 +27,7 @@ struct CertificatesView: View {
                 }
             }
         }
-        .background(PazMeshBackground().ignoresSafeArea())
+        .pazScreenBackground()
         .navigationTitle("Meus certificados")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)

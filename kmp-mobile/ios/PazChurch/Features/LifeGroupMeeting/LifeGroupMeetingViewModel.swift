@@ -14,6 +14,8 @@ final class LifeGroupMeetingViewModel {
 
     var isLoading = true
     var loadError: String?
+    /// False for a missing group / missing permission: retrying cannot help, the screen offers "Voltar" only.
+    var loadErrorRetryable = true
     /// The server said the date is not the group's weekday: the user must flip "Reunião extra" first.
     var needsExtraChoice = false
     var isExtra = false
@@ -70,6 +72,29 @@ final class LifeGroupMeetingViewModel {
 
     var isAttendanceSaved: Bool {
         meeting?.isAttendanceSaved ?? false
+    }
+
+    /// A date nothing was ever recorded for, opened by someone who cannot write it (supervisor, or past the
+    /// edit window): the server answers 200 with a draft; the screen shows an empty state, never an error
+    /// and never a roster pre-filled with "everybody present".
+    var isEmptyReadOnly: Bool {
+        (meeting?.hasNoRecord ?? false) && isReadOnly
+    }
+
+    /// The presence roster is listed: editable meetings, or read-only ones that really have a saved presence.
+    var showAttendanceRoster: Bool {
+        meeting?.attendance != nil && (!isReadOnly || isAttendanceSaved)
+    }
+
+    /// Chip copy of the presence status; read-only meetings without one say "Sem presença", not "pendente".
+    var attendancePillText: String {
+        if isAttendanceSaved { return "Presença salva" }
+        return isReadOnly ? "Sem presença" : "Presença pendente"
+    }
+
+    var reportPillText: String {
+        if isReportSaved { return "Relatório enviado" }
+        return isReadOnly ? "Sem relatório" : "Relatório pendente"
     }
 
     var isReportSaved: Bool {
@@ -156,6 +181,7 @@ final class LifeGroupMeetingViewModel {
     func load() async {
         isLoading = true
         loadError = nil
+        loadErrorRetryable = true
         if userId == nil {
             userId = await currentUserId()
         }
@@ -202,6 +228,7 @@ final class LifeGroupMeetingViewModel {
             } else {
                 isLoading = false
                 loadError = LifeGroupMeetingErrorMapping.message(error)
+                loadErrorRetryable = LifeGroupMeetingErrorMapping.isRetryable(error)
             }
         }
     }

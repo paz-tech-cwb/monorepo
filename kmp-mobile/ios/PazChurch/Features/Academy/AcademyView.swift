@@ -20,7 +20,7 @@ struct AcademyView: View {
     var body: some View {
         NavigationStack {
             screenContent
-                .background(PazMeshBackground())
+                .pazScreenBackground()
                 .navigationTitle("Academia")
                 .navigationBarTitleDisplayMode(.large)
                 .toolbarBackground(.hidden, for: .navigationBar)

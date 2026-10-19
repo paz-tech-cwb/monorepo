@@ -10,7 +10,7 @@ struct CasaDePazLessonDetailView: View {
 
     var body: some View {
         screenContent
-            .background(PazMeshBackground())
+            .pazScreenBackground()
             .navigationTitle(viewModel.lesson.map { "Semana \($0.week)" } ?? "Casa de Paz")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)

@@ -331,7 +331,9 @@ class LifeGroupMeetingRulesTest {
         assertTrue(msg(422, "group_has_no_sector").contains("setor"))
         assertTrue(msg(422, "sector_has_no_area").contains("área"))
         assertTrue(msg(403).contains("permissão"))
-        assertTrue(msg(404).contains("não encontrado"))
+        // A bare 404 is NOT "group not found": the route may be missing on the server.
+        assertEquals(LifeGroupMeetingErrors.MESSAGE_SERVER_UNAVAILABLE, msg(404))
+        assertEquals(LifeGroupMeetingErrors.MESSAGE_GROUP_NOT_FOUND, msg(404, "group_not_found"))
         assertTrue(msg(409).contains("ao mesmo tempo"))
         assertTrue(msg(500).contains("servidor"))
         assertEquals("custom", msg(400, null, "custom"))
@@ -387,5 +389,219 @@ class LifeGroupMeetingRulesTest {
     fun `write forbidden copy explains who can write`() {
         assertTrue(LifeGroupMeetingRules.writeForbiddenMessage().contains("Somente leitura"))
         assertTrue(LifeGroupMeetingRules.noMeetingToViewMessage().contains("Não há reunião"))
+    }
+
+    @Test
+    fun `404 is group not found only with the group_not_found code or the legacy group message`() {
+        fun kind(
+            status: Int,
+            code: String? = null,
+            server: String? = null,
+        ) = LifeGroupMeetingErrors.kind(LifeGroupMeetingException(status, code, server))
+
+        assertEquals(LifeGroupMeetingErrors.Kind.GROUP_NOT_FOUND, kind(404, "group_not_found"))
+        // Older backend: no code, the Nest NotFoundException message.
+        assertEquals(LifeGroupMeetingErrors.Kind.GROUP_NOT_FOUND, kind(404, null, "Life group with ID 2 not found"))
+        // Route not deployed: Nest's generic 404.
+        assertEquals(LifeGroupMeetingErrors.Kind.SERVER_UNAVAILABLE, kind(404, null, "Cannot GET /api/life-groups/2/meetings/2026-09-08"))
+        assertEquals(LifeGroupMeetingErrors.Kind.SERVER_UNAVAILABLE, kind(404))
+        // A different code on a 404 is not a group lookup failure either.
+        assertEquals(LifeGroupMeetingErrors.Kind.SERVER_UNAVAILABLE, kind(404, "something_else"))
+        assertEquals(LifeGroupMeetingErrors.Kind.SERVER_UNAVAILABLE, kind(503))
+        assertEquals(LifeGroupMeetingErrors.Kind.NO_PERMISSION, kind(403, "meeting_write_forbidden"))
+        assertEquals(LifeGroupMeetingErrors.Kind.SESSION_EXPIRED, kind(401))
+        assertEquals(LifeGroupMeetingErrors.Kind.OTHER, kind(500))
+        assertEquals(LifeGroupMeetingErrors.Kind.OFFLINE, LifeGroupMeetingErrors.kind(RuntimeException("timeout")))
+    }
+
+    @Test
+    fun `route unavailable never says group not found and the legacy message still does`() {
+        val unavailable =
+            LifeGroupMeetingErrors.message(
+                LifeGroupMeetingException(404, null, "Cannot GET /api/life-groups/2/meetings/2026-09-08"),
+            )
+        assertEquals("Recurso indisponível no servidor. Tente novamente mais tarde.", unavailable)
+        assertFalse(unavailable.contains("Grupo não encontrado"))
+        assertTrue(
+            LifeGroupMeetingErrors
+                .message(LifeGroupMeetingException(404, null, "Life group with ID 2 not found"))
+                .contains("Grupo não encontrado"),
+        )
+        assertEquals(LifeGroupMeetingErrors.MESSAGE_OFFLINE, LifeGroupMeetingErrors.message(RuntimeException("boom")))
+    }
+
+    @Test
+    fun `history errors without a body are mapped by status`() {
+        assertEquals(LifeGroupMeetingErrors.MESSAGE_OFFLINE, LifeGroupMeetingErrors.messageForHttpStatus(null, null))
+        assertEquals(LifeGroupMeetingErrors.MESSAGE_NO_PERMISSION, LifeGroupMeetingErrors.messageForHttpStatus(403, null))
+        assertEquals(LifeGroupMeetingErrors.MESSAGE_SERVER_UNAVAILABLE, LifeGroupMeetingErrors.messageForHttpStatus(404, null))
+        assertTrue(LifeGroupMeetingErrors.messageForHttpStatus(500, null).contains("servidor"))
+    }
+
+    @Test
+    fun `retry is offered except for a missing group and a missing permission`() {
+        assertTrue(LifeGroupMeetingErrors.isRetryable(LifeGroupMeetingException(404, null, null)))
+        assertTrue(LifeGroupMeetingErrors.isRetryable(RuntimeException("offline")))
+        assertFalse(LifeGroupMeetingErrors.isRetryable(LifeGroupMeetingException(404, "group_not_found", null)))
+        assertFalse(LifeGroupMeetingErrors.isRetryable(LifeGroupMeetingException(403, null, null)))
+    }
+
+    @Test
+    fun `hasNoRecord is true for a draft without report and false once anything is saved`() {
+        assertTrue(meeting(attendance(listOf(entry(1, true)), isDraft = true)).hasNoRecord)
+        assertTrue(meeting(null).hasNoRecord)
+        assertFalse(meeting(attendance(listOf(entry(1, true)))).hasNoRecord)
+        assertFalse(meeting(null, report()).hasNoRecord)
+        assertFalse(meeting(attendance(listOf(entry(1, true)), isDraft = true), report()).hasNoRecord)
+    }
+
+    @Test
+    fun `history row of a legacy report has no presence`() {
+        val rows =
+            LifeGroupMeetingRules.mergeHistory(
+                attendance = emptyList(),
+                reports = listOf(report()),
+            )
+        assertTrue(rows.single().isReportOnly)
+        assertFalse(
+            LifeGroupMeetingSummary("2026-10-07", true, true, true, 2, 3).isReportOnly,
+        )
+    }
+
+    // ---- entry ----
+
+    private fun group(
+        id: Int,
+        name: String,
+        relationship: String?,
+        supervised: Boolean = false,
+    ) = LifeGroup(id = id, name = name, relationship = relationship, isSupervised = supervised)
+
+    @Test
+    fun `entry opens the only led group directly`() {
+        val entry =
+            LifeGroupMeetingRules.resolveEntry(
+                role = UserRole.member,
+                myGroups = listOf(group(2, "Centro", "leader"), group(3, "Norte", "member")),
+                allGroups = emptyList(),
+            )
+        assertEquals(2, entry.directGroupId)
+        assertEquals(listOf(2), entry.groups.map { it.group.id })
+        assertTrue(entry.groups.single().canWrite)
+        assertNull(entry.emptyMessage)
+    }
+
+    @Test
+    fun `entry shows a picker for several led groups sorted by name`() {
+        val entry =
+            LifeGroupMeetingRules.resolveEntry(
+                UserRole.life_group_leader,
+                listOf(group(5, "Zeta", "co_leader"), group(2, "alfa", "leader"), group(9, "Beta", "supervisor", supervised = true)),
+                emptyList(),
+            )
+        assertNull(entry.directGroupId)
+        // Led groups sorted by name, then the supervised one (read-only).
+        assertEquals(listOf(2, 5, 9), entry.groups.map { it.group.id })
+        assertEquals(listOf(true, true, false), entry.groups.map { it.canWrite })
+    }
+
+    @Test
+    fun `entry for admin and pastor is a picker over every group even when there is one`() {
+        val all = listOf(group(8, "B", null), group(1, "a", null), group(8, "B", null))
+        val admin = LifeGroupMeetingRules.resolveEntry(UserRole.admin, emptyList(), all)
+        assertNull(admin.directGroupId)
+        assertEquals(listOf(1, 8), admin.groups.map { it.group.id })
+        assertTrue(admin.groups.all { it.canWrite })
+        val pastor = LifeGroupMeetingRules.resolveEntry(UserRole.pastor, emptyList(), listOf(group(4, "Solo", null)))
+        assertNull(pastor.directGroupId)
+        assertEquals(1, pastor.groups.size)
+        assertEquals("Nenhum Life Group cadastrado.", LifeGroupMeetingRules.resolveEntry(UserRole.admin, emptyList(), emptyList()).emptyMessage)
+    }
+
+    @Test
+    fun `entry for a supervisor only is read only`() {
+        val several =
+            LifeGroupMeetingRules.resolveEntry(
+                UserRole.sector_leader,
+                listOf(group(2, "A", "supervisor", true), group(3, "B", "member", true), group(4, "C", "member")),
+                emptyList(),
+            )
+        assertNull(several.directGroupId)
+        assertEquals(listOf(2, 3), several.groups.map { it.group.id })
+        assertTrue(several.groups.none { it.canWrite })
+        val single = LifeGroupMeetingRules.resolveEntry(UserRole.sector_leader, listOf(group(2, "A", "supervisor", true)), emptyList())
+        assertEquals(2, single.directGroupId)
+        assertFalse(single.groups.single().canWrite)
+    }
+
+    @Test
+    fun `entry for someone who leads nothing explains why`() {
+        val entry = LifeGroupMeetingRules.resolveEntry(UserRole.member, listOf(group(2, "A", "member")), emptyList())
+        assertNull(entry.directGroupId)
+        assertTrue(entry.groups.isEmpty())
+        assertNotNull(entry.emptyMessage)
+    }
+}
+
+class LifeGroupAttendanceSummaryTest {
+    private fun point(
+        meetings: Int,
+        present: Int,
+        members: Int,
+    ) = LifeGroupAttendancePoint("2026-10", meetings, present, members, 0.0)
+
+    @Test
+    fun `summary sums the rows and rounds the percentage`() {
+        val summary = listOf(point(2, 9, 12), point(1, 5, 12), point(0, 0, 0)).summarizeAttendance()
+        assertEquals(3, summary.meetingsCount)
+        assertEquals(14, summary.presentCount)
+        assertEquals(24, summary.membersCount)
+        assertEquals(58, summary.attendancePercent)
+    }
+
+    @Test
+    fun `summary without any member slot has no percentage`() {
+        val summary = listOf(point(0, 0, 0)).summarizeAttendance()
+        assertEquals(0, summary.meetingsCount)
+        assertNull(summary.attendancePercent)
+        assertNull(emptyList<LifeGroupAttendancePoint>().summarizeAttendance().attendancePercent)
+    }
+
+    @Test
+    fun `summary card copy is shared and keeps singular and plural correct`() {
+        val many = listOf(point(2, 9, 12), point(1, 5, 12)).summarizeAttendance()
+        assertEquals("Frequência do grupo", many.cardTitle)
+        assertEquals("58%", many.cardValue)
+        assertEquals("3 reuniões · 14 presenças de 24", many.cardSubtitle)
+        val one = listOf(point(1, 1, 10)).summarizeAttendance()
+        assertEquals("1 reunião · 1 presença de 10", one.cardSubtitle)
+        assertEquals("–", emptyList<LifeGroupAttendancePoint>().summarizeAttendance().cardValue)
+    }
+
+    @Test
+    fun `entry lists led groups first then supervised ones read-only`() {
+        fun g(id: Int, name: String, rel: String?, supervised: Boolean = false) =
+            LifeGroup(id = id, name = name, relationship = rel, isSupervised = supervised)
+        val entry =
+            LifeGroupMeetingRules.resolveEntry(
+                UserRole.member,
+                listOf(g(2, "B", "supervisor", true), g(1, "A", "leader")),
+                emptyList(),
+            )
+        assertEquals(listOf(1, 2), entry.groups.map { it.group.id })
+        assertEquals(listOf(true, false), entry.groups.map { it.canWrite })
+        assertNull(entry.directGroupId)
+    }
+
+    @Test
+    fun `error code passes through to the history copy`() {
+        assertEquals(
+            LifeGroupMeetingErrors.MESSAGE_GROUP_NOT_FOUND,
+            LifeGroupMeetingErrors.messageForHttpStatus(404, LifeGroupMeetingErrors.CODE_GROUP_NOT_FOUND),
+        )
+        assertEquals(
+            LifeGroupMeetingErrors.MESSAGE_SERVER_UNAVAILABLE,
+            LifeGroupMeetingErrors.messageForHttpStatus(404, null),
+        )
     }
 }

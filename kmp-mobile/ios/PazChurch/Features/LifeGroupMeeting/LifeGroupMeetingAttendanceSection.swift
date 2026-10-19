@@ -7,7 +7,7 @@ struct LifeGroupMeetingAttendanceSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: PazSpacing.md) {
-            if !viewModel.entries.isEmpty {
+            if viewModel.showAttendanceRoster, !viewModel.entries.isEmpty {
                 Text(viewModel.presenceSummary)
                     .font(PazTypography.titleSmall)
                     .foregroundStyle(PazColors.titleInk)
@@ -44,8 +44,9 @@ struct LifeGroupMeetingAttendanceSection: View {
 
     @ViewBuilder
     private var roster: some View {
-        if viewModel.meeting?.attendance == nil {
-            hint("Nenhuma presença registrada para esta data.")
+        if !viewModel.showAttendanceRoster {
+            // Legacy report without presence, or a read-only date: never list a pre-filled roster.
+            hint("Sem presença registrada para esta data.")
         } else if viewModel.entries.isEmpty {
             hint("Este grupo ainda não tem membros para lançar presença.")
         } else {

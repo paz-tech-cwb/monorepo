@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpStatus,
   Injectable,
   Logger,
   NotFoundException,
@@ -8,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, IsNull } from 'typeorm';
+import { codedErrorBody } from '../common/errors/coded-error-body';
 import { LifeGroup } from '../life-groups/entities/life-group.entity';
 import { LifeGroupAttendance } from '../life-group-attendance/entities/life-group-attendance.entity';
 import { LifeGroupAttendanceService } from '../life-group-attendance/life-group-attendance.service';
@@ -86,7 +88,11 @@ export class LifeGroupMeetingsService {
     });
     if (!lifeGroup) {
       throw new NotFoundException(
-        `Life group with ID ${lifeGroupId} not found`,
+        codedErrorBody(
+          HttpStatus.NOT_FOUND,
+          'group_not_found',
+          `Life group with ID ${lifeGroupId} not found`,
+        ),
       );
     }
     return lifeGroup;

@@ -58,6 +58,12 @@ data class LifeGroupMeeting(
 
     val isReportSaved: Boolean get() = report != null
 
+    /**
+     * Nothing was ever recorded for this date (no saved attendance, no report): the server answers 200
+     * with a draft for it. Opening such a date is never an error; a read-only viewer sees an empty state.
+     */
+    val hasNoRecord: Boolean get() = !isAttendanceSaved && !isReportSaved
+
     /** Presence and report may be typed and saved: write-authorized AND inside the edit window. */
     val isEditable: Boolean get() = canWrite && canEdit
 }
@@ -264,7 +270,28 @@ data class LifeGroupMeetingSummary(
     val hasReport: Boolean,
     val presentCount: Int?,
     val membersCount: Int?,
+) {
+    /** A legacy weekly report filed without presence: only the "Relatório" chip is meaningful. */
+    val isReportOnly: Boolean get() = !hasAttendance && hasReport
+}
+
+/** One group of the entry picker, with the viewer's write permission for it. */
+data class LifeGroupMeetingEntryGroup(
+    val group: LifeGroup,
+    val canWrite: Boolean,
 )
+
+/**
+ * Result of `LifeGroupMeetingRules.resolveEntry`: [directGroupId] set = open that group's Reuniões
+ * straight away; else show [groups] as a picker; [emptyMessage] set = nothing to open.
+ */
+data class LifeGroupMeetingEntry(
+    val groups: List<LifeGroupMeetingEntryGroup>,
+    val directGroupId: Int?,
+    val emptyMessage: String?,
+) {
+    fun group(id: Int): LifeGroupMeetingEntryGroup? = groups.firstOrNull { it.group.id == id }
+}
 
 /** A suggested chip: [value] goes on the wire, [label] is shown. */
 data class LifeGroupMeetingOption(

@@ -28,7 +28,7 @@ struct QuestionnaireView: View {
                 ErrorStateView(message: "Este questionário não possui perguntas", onRetry: { dismiss() })
             }
         }
-        .background(PazMeshBackground().ignoresSafeArea())
+        .pazScreenBackground()
         .navigationTitle(viewModel.result == nil ? (viewModel.questionnaire?.title ?? "Questionário") : "")
         // `.inline` instead of `.large` — a large title resizes as scroll content height
         // changes per step, which read as visual jank mid-flow (mirrors FormStepView).

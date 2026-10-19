@@ -1,49 +1,54 @@
-# Changes: Phase 3 shared + Android (combined "Reunião" screen)
+# Changes: Reunioes UX (shared + Android + iOS)
 
-Branch `feat/life-group-meeting-screen`, stacked on PR #96 (`feat/life-group-meetings-api`, 123e5f0). No backend change.
+Branch `feat/life-group-reunioes-ux` from develop c8f13d25. Client only; backend contract = PR #102.
 
 ## Shared (`kmp-mobile/shared`)
-- New: `domain/model/LifeGroupMeeting.kt` (models, report input/draft/validation, local draft, history summary), `domain/model/LifeGroupMeetingRules.kt` (`LifeGroupMeetingRules`, `LifeGroupMeetingErrors`), `domain/repository/LifeGroupMeetingRepository.kt` (+ `LifeGroupMeetingException`, `MeetingDraftStore`), `data/repository/LifeGroupMeetingRepositoryImpl.kt`, `data/repository/MeetingDraftStorage.kt` (+ `MeetingDraftStore.android.kt` DataStore, `MeetingDraftStore.ios.kt` NSUserDefaults).
-- Changed: `AuthRepositoryImpl` (optional `meetingDraftStore`, wiped on logout), `SharedModule`, `IosAppContainer` (`lifeGroupMeetingRepository`, `meetingDraftStore`), `LifeGroupReportRepositoryImpl` (report DTOs `internal` for reuse).
-- Tests: `LifeGroupMeetingRulesTest`, `LifeGroupMeetingReportDraftTest`, `LifeGroupMeetingRepositoryTest`, `MeetingDraftStorageTest`, `AuthRepositoryTest` (+logout wipes drafts), `FakeMeetingDraftStore`.
+- `LifeGroupMeetingErrors`: `Kind` enum + `kind(error)`, `isRetryable`, `messageForHttpStatus`, constants `MESSAGE_*`, `CODE_GROUP_NOT_FOUND`. 404 = group not found only with `group_not_found` (or legacy "Life group with ID N not found"); other 404/501/502/503 = server unavailable.
+- `LifeGroupMeetingRules.resolveEntry(role, myGroups, allGroups): LifeGroupMeetingEntry` (+ `LifeGroupMeetingEntryGroup`), `isLeadership(group)`.
+- `LifeGroupMeeting.hasNoRecord`, `LifeGroupMeetingSummary.isReportOnly`.
+- `summarizeAttendance()` / `LifeGroupAttendanceSummary` (single-group stats summary).
+- `LifeGroupAnalyticsRepository.getOverview(lifeGroupId: Int? = null)` (sends `life_group_id`). Swift: default args are not exposed, pass `nil`/`KotlinInt`.
+- `homeLifeGroupsLayout(groupCount)`, `HomeLifeGroupsSection`.
+- `Throwable.anyHttpStatusCodeOrNull()` (also 5xx).
+- Not removed yet (iOS still compiles against them): `LifeGroupReportDraft`, `LifeGroupReportRules`, `LifeGroupReportForm`, `FormsRepository.submitLifeGroupReport`. iOS agent: after deleting the iOS form (`Features/LifeGroupReports/LifeGroupReportForm*`, `LifeGroupReportFormTests`, pbxproj entries) delete these and their tests (`LifeGroupReportDraftTest`, `FormsRepositoryLifeGroupReportTest`).
 
-## Android (`kmp-mobile/android`)
-- New package `ui/features/lifegroupmeeting/`: `LifeGroupMeetingScreen`, `LifeGroupMeetingViewModel`, `LifeGroupMeetingUiState`, `LifeGroupMeetingHistoryScreen`, `LifeGroupMeetingHistoryViewModel`, `MeetingDates`.
-- Nav: `Screen.LifeGroupMeetings`, `Screen.LifeGroupMeeting`, `LifeGroupAttendanceEditor` kept as alias of the same screen (push `paz://presenca/{id}/{date}` unchanged); `PazNavGraph`; Koin in `AndroidModule`.
-- `MinistryDetailScreen`: "Presença" card replaced by "Reuniões" (gate `canViewGroupReports`).
-- Removed: `ui/features/lifegroupattendance/*` (editor, history, ui state, view models).
-- Tests: `LifeGroupMeetingViewModelTest` (22), `LifeGroupMeetingHistoryViewModelTest` (7), `MeetingDatesTest`, `FakeMeetingDraftStore`.
+## Android
+- Reunioes screen: segmented [Reunioes | Relatorios] (`LifeGroupMeetingsTab`, VM `onTabSelected`); Relatorios tab embeds `LifeGroupAnalyticsPanel` scoped to the group (no group picker, no overview cards, no distribution, summary card, PDF export button in the panel).
+- Reuniao screen: non-retryable load failures show "Voltar"; read-only date without a record = empty state (`isEmptyReadOnly`), roster hidden unless a presence is saved (`showAttendanceRoster`), pills "Sem presenca"/"Sem relatorio" when read-only.
+- History rows: no "Presenca pendente" chip (report-only rows show only the Relatorio chip); errors via `messageForHttpStatus`.
+- Entry flow: `LifeGroupMeetingEntryScreen/ViewModel`, route `life_group_meeting_entry`; `form_detail|form_steps/life-group-reports` host it; Formularios effect renamed `NavigateToLifeGroupMeetings`.
+- Group detail rows: Reunioes, Membros (new on Android), Estudo do Life, Elegibilidade; removed Enviar relatorio / Relatorios semanais / Relatorios.
+- Removed: package `ui/features/lifegroupreports/` (form, list, detail, VMs, tests), routes `LifeGroupReports`, `LifeGroupReportSubmit`, `LifeGroupReportDetail`, Koin entries.
+- Home: `LifeGroupsHomeSection` (one card, "MEUS GRUPOS" header + dividers for several groups).
+- Analytics VM: scoped mode skips overview and distribution requests.
 
-## Docs
-`.ai/features/life-groups.md`, `.ai/features/mobile-app.md`, `.ai/apps/mobile.md`.
+## Double background: findings and pattern (for iOS)
+Android already had a single background on every Reuniao screen: `Box(fillMaxSize){ PazMeshBackground(); Scaffold(containerColor=Transparent){ content padded by top inset only } }`; error/empty/loading states are plain content (`Box(fillMaxSize)`, no background); cards wrap items only. No Android change was needed beyond keeping new screens/panel on that pattern.
+iOS cause (read from `LifeGroupMeetingView`): `content.background(PazMeshBackground())` sizes the mesh to the content; `ErrorStateView` is compact, so a small mesh region sits over the real (larger) screen background. Fix: make the root fill the screen first, then background: `content.frame(maxWidth: .infinity, maxHeight: .infinity).background(PazMeshBackground().ignoresSafeArea())` (or `ZStack { PazMeshBackground().ignoresSafeArea(); content }`); state views (error/empty) must not add their own background/glassCard. Audit History, Reports list/detail (being removed), Eligibility, and the new entry/picker with the same rule.
 
-## Decisions / flags
-- Phase 0 standalone report form is NOT in this base (lives on `fix/life-group-report-submit`), so no "Enviar relatório" row existed here to remove and the Formulários entry / `paz://form/life-group-reports` are untouched. Phase 0's `LifeGroupReportRules` parsers are mirrored (not imported) in `LifeGroupMeetingRules`: consolidate after both merge.
-- History is a separate screen opened from the "Reuniões" card (not an inline list in the detail screen), to avoid adding two more network calls to the detail view model.
-- Report multi-values: Tadel/Culto chips + free text (option lists are still design Q8).
+## Assumptions / defaults
+See spec.md A1-A6. Extra: a supervisor with exactly one supervised group opens it directly; admin/pastor always get the picker; single-group stats hide church-wide cards (overview param exists but the scoped view does not call it).
 
-## Phase 3 iOS (`kmp-mobile/ios`)
-- New `PazChurch/Features/LifeGroupMeeting/`: `LifeGroupMeetingServices` (Swift seams over the shared repository/draft store/history endpoints, error mapping via `LifeGroupMeetingErrors`, `LifeGroupMeetingReportDraft` helpers, ISO date helpers), `LifeGroupMeetingViewModel`, `LifeGroupMeetingHistoryViewModel`, `LifeGroupMeetingView` (+ `...AttendanceSection`, `...ReportSection`, `...Components`), `LifeGroupMeetingHistoryView` ("Reuniões" list + "Nova reunião" date-picker sheet).
-- `MinistryDetailView.swift` (`LifeGroupDetailView`): "Presença" row replaced by "Reuniões" (gate `canViewGroupReports`, as on Android; was `canManageAttendance`).
-- `paz://presenca/{id}/{date}`: `DeepLinkDestination.lifeGroupAttendanceEditor` case name and parsing/allowlist kept; `MainTabView` now renders `LifeGroupMeetingDeepLinkView` (replaces `LifeGroupAttendanceEditorDeepLinkView`).
-- Removed `Features/LifeGroupAttendance/*` (editor, history, view models; no remaining references, analytics unaffected). `project.pbxproj` hand-edited (old group removed, new `LifeGroupMeeting` group + test file; `plutil -lint` OK); `project.yml` needs no change (directory sources).
-- Tests: `PazChurchTests/LifeGroupMeetingViewModelTests.swift` (23 tests).
-- Docs: `.ai/features/life-groups.md`, `.ai/features/mobile-app.md`, `.ai/apps/mobile.md`.
-- Decisions/flags: (1) iOS history row gate widened from `canManageAttendance` to `canViewGroupReports` (user instruction / Android parity): admin/pastor/area/sector leaders now see "Reuniões". (2) The old per-group meetingDay comes from the group already in `LifeGroupDetailView` (no extra church repository call, unlike Android). (3) After an `edit_window_closed` save error the reload replaces the inline error with the read-only banner (Android parity). (4) Draft writes are fire-and-forget Tasks chained in order.
+## iOS (`kmp-mobile/ios/PazChurch`)
+- Compile fix: `LifeGroupAnalyticsViewModel.loadOverview` calls `getOverview(lifeGroupId: nil)` (church-wide, feeds the unscoped group dropdown). Scoped mode (`isScopedToGroup`) skips overview and distribution (`loadInitial()`), exposes `attendanceSummary` (`LifeGroupAnalyticsKt.summarizeAttendance`).
+- Errors: `LifeGroupMeetingErrorMapping` now also exposes `kind`, `isRetryable`, `historyMessage`. `LifeGroupMeetingViewModel.loadErrorRetryable`; missing group / no permission show "Voltar" instead of "Tentar novamente"; history and entry errors use the mapped copy.
+- Read-only states: `isEmptyReadOnly` (deadline banner + "Não há reunião registrada nesta data."), `showAttendanceRoster`, pills "Sem presença"/"Sem relatório"; legacy report without presence renders "Sem presença registrada para esta data.".
+- Double background: root cause `.background(PazMeshBackground())` sizing the mesh to compact content (`ErrorStateView`). New `View.pazScreenBackground()` (frame max + mesh); applied to the meeting/history/entry/analytics screens and every other screen root that can host a compact state view (list in `.ai/features/mobile-app.md`). State views add no background/card. `SearchView` now also uses it (compact empty states). Left unchanged on purpose: `AccountView` (ScrollView root), `AgendaDetailView` bottom bar, `VideoPlayerView` inner scroll, `PazChurchApp` app-level mesh.
+- IA: group detail rows Reuniões (first), Membros, Estudo do Life, Elegibilidade; removed "Enviar relatório", "Relatórios semanais", "Relatórios". `LifeGroupMeetingHistoryView` = segmented [Reuniões | Relatórios] (`LifeGroupMeetingsTab`); Relatórios = `LifeGroupAnalyticsPanel` scoped to the group (no picker, no overview cards, no distribution). Row chips via `LifeGroupMeetingRowChips`.
+- Entry: `LifeGroupMeetingEntryView`/`ViewModel` (shared `resolveEntry`), hosted by `FormDestinationView` for the `life-group-reports` form (Formulários list and `paz://form/life-group-reports` via `FormDetailDeepLinkView`).
+- Home: `LifeGroupsHomeSection` (one glass card, dividers, "MEUS GRUPOS"/"LIFE GROUP" from shared `HomeLifeGroupsSection`, layout from `homeLifeGroupsLayout`), sibling NavigationLinks, cap 3 and "Ver todos (N)" unchanged.
+- Removed (iOS): `Features/LifeGroupReports/` (LifeGroupReportFormView/ViewModel, LifeGroupReportsView/ViewModel, LifeGroupReportDetailView), tests `LifeGroupReportFormTests`, `LifeGroupReportsTests` (gate matrix kept in `LifeGroupReunioesUXTests`), pbxproj entries.
+- Removed (shared, nothing else referenced them on either platform): `LifeGroupReportDraft.kt` (draft, rules, groups, validation), `LifeGroupReportForm` DTO, `FormsRepository.submitLifeGroupReport` (+impl, AuthRepositoryTest fake), `LifeGroupReportDraftTest`, `FormsRepositoryLifeGroupReportTest`. Backend `POST /forms/life-group-reports` untouched.
+- Tests: `PazChurchTests/LifeGroupReunioesUXTests.swift` (error kinds, retry policy, no-record read-only, report-only, row chips, entry resolution, scoped analytics calls, home layout, tabs, gate matrix); `LifeGroupMeetingViewModelTests` updated for the 404 contract.
 
-## Review fixes (phase 3)
-Merged `origin/feat/life-group-meetings-api` first (conflict only in `.pipeline/test-results.md`: kept this branch's, archived PR #96's as `.pipeline/archive/test-results-pr96-2026-10-13.md`).
-- M1 Android history: `refresh()` is a no-op while a load is in flight (init + ON_RESUME no longer double load or race), `isLoading = showSkeleton || meetings.isEmpty()` (no empty-state flash), previous job cancelled by an explicit `load()`.
-- M2 Android history: `meetingDay` is a route/Koin argument (`Screen.LifeGroupMeetings.createRoute(id, meetingDay)`, optional query arg), passed from `MinistryDetailScreen`; `ChurchRepository.getAllLifeGroups()` dropped from the history VM.
-- M3 (Android `LifeGroupMeetingUiState`, iOS `LifeGroupMeetingViewModel`): `canSaveReport = canEditReport && !isBusy && reportDirty`; an untouched form is never saveable.
-- m1: presence toggles / all-present / report edits ignored while `isBusy` (VM + `MemberRow` disabled on Android, `.disabled` on iOS).
-- m2: Android draft write runs in `NonCancellable`, chained after the previous write (latest edit wins, survives leaving the screen). iOS already used unstructured chained Tasks.
-- m4: `LifeGroupMeetingErrors.isExtraFlagRejected` (shared); both VMs drop the extra flag and refetch once.
-- m5: `normalizeOffering` keeps "0.125" as 3 decimals -> null (thousands separator needs a non-zero leading digit). `LifeGroupReportRules` (PR #97) untouched.
-- m6 (route part): malformed `lifeGroupId`/`date` pops the back stack (`InvalidRouteFallback`) instead of a blank screen. The backend English 400 text is left as is.
-- m8: `LifeGroupMeetingRules.legacyReportMessage()` shown when `attendance == null && report != null`.
-Leftovers (not changed): M4 (merge with #97, whoever merges second), m3 stale draft over newer server data, m7, m9, m10-m12, entry-point gate decision (author flag 3).
-
-## Supervisors read-only on mobile (D11) - 2026-10-13
-- Shared: `LifeGroupMeetingRules.canWrite(role, isGroupLeadership)`, `writeForbiddenMessage`, `noMeetingToViewMessage`; `LifeGroupMeeting.canWrite` (from `can_write`, default false) and `isEditable = canWrite && canEdit`; repository maps `can_write`.
-- Android + iOS: meeting screen read-only for supervisors (no extra switch, no "Todos presentes", no save, disabled toggles, banner); history hides "Nova reunião" and ignores new-meeting dates unless `canWrite`; group detail resolves `canWriteMeetings` with the shared rule and passes it down (route arg / init param); deep link keeps working with an unknown hint (server flag only). Merged `origin/feat/life-group-meetings-api` (backend D11); `.pipeline` kept ours, other side archived as `archive/*.meetings-api.md`.
+## Review fixes (reunioes ux)
+Malcolm's minors (m1-m11), both platforms where applicable:
+- m1 iOS entry: `loadIfNeeded()` (first load only) from `.task`; `load()` keeps the previous entry on a failed refresh.
+- m2 `LifeGroupMeetingErrors.messageForHttpStatus(statusCode, code)`; `throwOnClientOrServerError` records the body `code` on the call (`Throwable.httpErrorCodeOrNull()`); Android history VM, iOS `historyMessage` and the entry screens pass it, so a legacy attendance 404 with `group_not_found` reads "Grupo não encontrado".
+- m3 MemberJourneyView: one `.pazScreenBackground()` on the root. m4 SearchView converted (AccountView/Agenda/VideoPlayer reviewed, left).
+- m5 `LifeGroupAttendanceSummary.cardTitle/cardValue/cardSubtitle` in shared, used by both platforms (singular/plural).
+- m6 Relatórios tab reloads after returning from a meeting (Android `reportsStale`, iOS `refreshIfLoaded`).
+- m7 "MEUS GRUPOS" heading semantics (iOS `.isHeader`, Android `heading()`).
+- m8 Android PDF export refuses when attendance failed to load; summary card hidden in the export too.
+- m9 `resolveEntry`: led groups first, then supervised (not led) read-only; admin/pastor skip `getMyLifeGroups()` (Android + iOS).
+- m10 Android entry error uses the mapped message. m11 docs claim softened (`.ai/features/mobile-app.md`).

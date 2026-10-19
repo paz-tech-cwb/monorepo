@@ -64,7 +64,7 @@ struct NotificationPrefsView: View {
             .padding(.horizontal, PazSpacing.lg)
             .padding(.vertical, PazSpacing.md)
         }
-        .background(PazMeshBackground())
+        .pazScreenBackground()
         .navigationTitle("Notificações")
         .navigationBarTitleDisplayMode(.large)
         .toolbarBackground(.hidden, for: .navigationBar)

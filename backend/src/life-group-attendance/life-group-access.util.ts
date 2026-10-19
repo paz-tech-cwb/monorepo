@@ -1,4 +1,5 @@
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, HttpStatus } from '@nestjs/common';
+import { codedErrorBody } from '../common/errors/coded-error-body';
 import { LifeGroup } from '../life-groups/entities/life-group.entity';
 import { ResolvedScope } from '../forms-core/services/scope-resolver.service';
 
@@ -20,7 +21,13 @@ export function assertCanAccessLifeGroup(
   if (scope.lifeGroupIds.includes(lifeGroup.id)) return;
   if (lifeGroup.coLeader?.id === actor.id) return;
   if (lifeGroup.leader?.id === actor.id) return;
-  throw new ForbiddenException('You do not have access to this life group.');
+  throw new ForbiddenException(
+    codedErrorBody(
+      HttpStatus.FORBIDDEN,
+      'life_group_access_forbidden',
+      'You do not have access to this life group.',
+    ),
+  );
 }
 
 export interface LifeGroupWriteActor {

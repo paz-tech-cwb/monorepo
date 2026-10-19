@@ -33,7 +33,7 @@ class FormulariosViewModelTest {
     fun `life group report goes to the submit screen even when the actor can read`() =
         runTest {
             assertEquals(
-                FormulariosEffect.NavigateToLifeGroupReportSubmit,
+                FormulariosEffect.NavigateToLifeGroupMeetings,
                 tap("life-group-reports", canRead = true),
             )
         }
@@ -42,7 +42,7 @@ class FormulariosViewModelTest {
     fun `life group report goes to the submit screen when the actor cannot read`() =
         runTest {
             assertEquals(
-                FormulariosEffect.NavigateToLifeGroupReportSubmit,
+                FormulariosEffect.NavigateToLifeGroupMeetings,
                 tap("life-group-reports", canRead = false),
             )
         }

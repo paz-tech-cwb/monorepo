@@ -43,7 +43,7 @@ struct EditProfileView: View {
             .padding(.horizontal, PazSpacing.lg)
             .padding(.vertical, PazSpacing.md)
         }
-        .background(PazMeshBackground())
+        .pazScreenBackground()
         .navigationTitle("Editar Perfil")
         .navigationBarTitleDisplayMode(.large)
         .navigationBarBackButtonHidden(true)

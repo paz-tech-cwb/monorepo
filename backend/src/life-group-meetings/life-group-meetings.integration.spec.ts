@@ -854,4 +854,124 @@ maybe('life-group-meetings (real PostgreSQL)', () => {
       .expect(200);
     expect(list.body).toEqual([]);
   });
+
+  describe('GET error-code contract (the TestFlight 404 report)', () => {
+    it('leader, past date outside the edit window, NO record: 200 read-only draft of the current roster', async () => {
+      const res = await http()
+        .get(meetingUrl(9001, OLD))
+        .set(as(9101))
+        .expect(200);
+      expect(res.body).toMatchObject({
+        life_group_id: 9001,
+        meeting_date: OLD,
+        can_write: true,
+        can_edit: false,
+        report: null,
+        attendance: { id: null, is_draft: true, members_count: 3 },
+      });
+      expect(res.body.edit_deadline < THIS_WEEK).toBe(true);
+      expect(
+        res.body.attendance.entries.map((e: { name: string }) => e.name),
+      ).toEqual(['Ana', 'Bruno', 'Carla']);
+      // The draft is never persisted.
+      expect(await count('life_group_attendance', 'life_group_id=9001')).toBe(
+        0,
+      );
+    });
+
+    it('the same date for an admin is editable', async () => {
+      const res = await http()
+        .get(meetingUrl(9001, OLD))
+        .set(as(9109))
+        .expect(200);
+      expect(res.body.can_edit).toBe(true);
+    });
+
+    it('past non-regular weekday: 400 extra_meeting_required', async () => {
+      const [y, m, d] = OLD.split('-').map(Number);
+      const tuesday = dateKeyOf(shiftDays({ year: y, month: m, day: d }, -1));
+      const res = await http()
+        .get(meetingUrl(9001, tuesday))
+        .set(as(9101))
+        .expect(400);
+      expect(res.body.code).toBe('extra_meeting_required');
+    });
+
+    it('legacy report on a non-regular weekday opens 200 (attendance null); saved extra opens without the flag; no record stays 400', async () => {
+      const [y, m, d] = OLD.split('-').map(Number);
+      const tuesday = dateKeyOf(shiftDays({ year: y, month: m, day: d }, -1));
+      await ds.query(
+        `INSERT INTO life_group_reports (date,area_id,sector_id,life_group_id,committed_members,committed_members_present,kids_0_to_11,guests,mdas,committed_at_tadel,committed_at_culto,disciples_count,disciples_discipled_this_week,pastoring_activity_type,training_activity_type,"submittedById")
+         VALUES ($1,9001,9001,9001,9,9,0,0,0,0,0,0,0,'{}','{}',9101)`,
+        [tuesday],
+      );
+      const legacy = await http()
+        .get(meetingUrl(9001, tuesday))
+        .set(as(9101))
+        .expect(200);
+      expect(legacy.body.attendance).toBeNull();
+      expect(legacy.body.report).toMatchObject({ date: tuesday });
+      expect(legacy.body.can_edit).toBe(false);
+
+      const extraDay = around(0, -1); // Tuesday of this week
+      await http()
+        .put(meetingUrl(9001, extraDay))
+        .set(as(9101))
+        .send({ attendance: att(), extra_meeting: true })
+        .expect(200);
+      const saved = await http()
+        .get(meetingUrl(9001, extraDay))
+        .set(as(9101))
+        .expect(200);
+      expect(saved.body.attendance).toMatchObject({
+        is_extra: true,
+        is_draft: false,
+      });
+
+      const none = await http()
+        .get(meetingUrl(9001, around(1, -1)))
+        .set(as(9101))
+        .expect(400);
+      expect(none.body.code).toBe('extra_meeting_required');
+    });
+
+    it('future date: 400 date_in_future', async () => {
+      const [y, m, d] = THIS_WEEK.split('-').map(Number);
+      const future = dateKeyOf(shiftDays({ year: y, month: m, day: d }, 14));
+      const res = await http()
+        .get(meetingUrl(9001, future))
+        .set(as(9101))
+        .expect(400);
+      expect(res.body.code).toBe('date_in_future');
+    });
+
+    it('unknown group: 404 group_not_found', async () => {
+      const res = await http()
+        .get(meetingUrl(9999, OLD))
+        .set(as(9109))
+        .expect(404);
+      expect(res.body).toMatchObject({
+        statusCode: 404,
+        error: 'Not Found',
+        code: 'group_not_found',
+      });
+    });
+
+    it('non-member: 403 life_group_access_forbidden (never a 404)', async () => {
+      const res = await http()
+        .get(meetingUrl(9001, OLD))
+        .set(as(9111))
+        .expect(403);
+      expect(res.body.code).toBe('life_group_access_forbidden');
+    });
+
+    it('a route the build does not have: generic 404, NO code', async () => {
+      const res = await http()
+        .get(`/life-groups/9001/meetings-missing/${OLD}`)
+        .set(as(9101))
+        .expect(404);
+      expect(res.body.code).toBeUndefined();
+      expect(res.body.message).toMatch(/^Cannot GET /);
+    });
+  });
 });
